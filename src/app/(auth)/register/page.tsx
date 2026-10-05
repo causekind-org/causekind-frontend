@@ -96,6 +96,13 @@ async function detectCountryFromIP(): Promise<string> {
   return detectCountryCode();
 }
 
+// ── Per-role instruction placeholders ───────────────────────────────────────────────
+const ROLE_PLACEHOLDERS: Record<string, { fullName: string; email: string }> = {
+  DONOR: { fullName: "Enter your full name", email: "Enter your email address" },
+  DONEE: { fullName: "Enter your full name", email: "Enter your email address" },
+  NGO_PARTNER: { fullName: "Enter your organization name", email: "Enter your organization's official email" },
+};
+
 // ── Input component ──────────────────────────────────────────────────────────────
 /**
  * Text field with timed validation feedback.
@@ -688,7 +695,7 @@ function RegisterContent() {
                 <Field
                   id="fullName"
                   label={form.role === "NGO_PARTNER" ? "Organization Name *" : t("fullName")}
-                  placeholder={form.role === "NGO_PARTNER" ? "Helping Hearts Foundation" : "Jane Doe"}
+                  placeholder={(ROLE_PLACEHOLDERS[form.role] ?? ROLE_PLACEHOLDERS.DONOR).fullName}
                   value={form.fullName}
                   onChange={val => {
                     set("fullName", val);
@@ -713,7 +720,7 @@ function RegisterContent() {
                   id="email"
                   label={form.role === "NGO_PARTNER" ? "Official Email Address *" : t("email")}
                   type="email"
-                  placeholder={form.role === "NGO_PARTNER" ? "contact@helpinghearts.org" : "you@example.com"}
+                  placeholder={(ROLE_PLACEHOLDERS[form.role] ?? ROLE_PLACEHOLDERS.DONOR).email}
                   value={form.email}
                   onChange={val => { set("email", val); setFormError(null); v.onChange("email", () => validateEmail(val)); }}
                   onBlur={() => v.onBlur("email", validators.email)}
@@ -756,7 +763,7 @@ function RegisterContent() {
                     id="phone"
                     type="tel"
                     inputMode="numeric"
-                    placeholder={t("phone")}
+                    placeholder={form.role === "NGO_PARTNER" ? "Enter your organization's phone number" : "Enter your phone number"}
                     value={phoneNumber}
                     maxLength={maxPhoneLength}
                     aria-invalid={v.get("phone").status === "invalid" || undefined}
@@ -926,7 +933,7 @@ function RegisterContent() {
                   <input
                     id="website"
                     type="url"
-                    placeholder="https://www.helpinghearts.org"
+                    placeholder="Enter your website or social media link"
                     value={ngoWebsite}
                     onChange={e => setNgoWebsite(e.target.value)}
                     className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[#b04a15] focus:ring-2 focus:ring-[#b04a15]/20 transition"

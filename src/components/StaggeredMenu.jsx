@@ -386,7 +386,7 @@ export const StaggeredMenu = ({
         ))}
       </div>
 
-      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" inert={!open}>
+      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" data-lenis-prevent inert={!open}>
         <div className="sm-panel-inner">
           {header && <div className="sm-panel-header">{header}</div>}
 
