@@ -42,6 +42,7 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
 import { DeferredOverlays } from "@/components/DeferredOverlays";
+import { DonateChoice } from "@/components/donate/DonateChoice";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -197,6 +198,8 @@ export default async function RootLayout({
                     style={{ zIndex: 2147483647 }}
                   />
                   <DeferredOverlays />
+                  {/* Every Donate button opens this In-Kind / Money choice. */}
+                  <DonateChoice />
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>
