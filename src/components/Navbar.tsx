@@ -25,6 +25,7 @@ import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
+import { openDonateChoice } from "@/components/donate/DonateChoice";
 import { DONATE_HREF } from "@/lib/donateScroll";
 import {
   AlertDialog,
@@ -1278,6 +1279,8 @@ export function SiteHeader() {
             link: l.href,
             ariaLabel: l.label,
             active: isActive(l.href.split("?")[0]),
+            // Donate opens the In-Kind / Money choice; the menu closes itself.
+            ...(l.href === DONATE_HREF ? { onClick: openDonateChoice } : {}),
           })),
           ...(user
             ? [
