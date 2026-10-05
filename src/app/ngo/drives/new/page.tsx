@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { useAuth } from "@/hooks/useAuth";
-import { getMyNgoApplication, createNgoDrive } from "@/lib/api";
+import { getMyNgoApplication, createNgoDrive, updateNgoDrive, getNgoDriveDetail, uploadNgoDriveReferencePhoto, ApiError } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,7 +21,6 @@ import { DraftSaveStatus } from "@/features/wizard-kit/DraftSaveStatus";
 import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import type { SaveStatus } from "@/features/wizard-kit/types";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
-import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 type NgoDriveStep = "drive-type" | "drive-details" | "beneficiaries-handover" | "review-declarations";
 
@@ -71,7 +70,22 @@ const URGENCIES = [
 function NewNgoDriveForm() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
-  const { isVerified, isPhotosDue, lockReason, photosDueRequestName, status: ngoStatus, canPostRequest } = useNgoStatus();
+  const searchParams = useSearchParams();
+  // "Edit & resubmit" from /ngo/drives/[id]: same form, pre-filled, saved with PUT.
+  const editParam = searchParams?.get("edit");
+  const editId = editParam && /^\d+$/.test(editParam) ? Number(editParam) : null;
+  const [editLoadError, setEditLoadError] = useState("");
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const { isVerified, isPhotosDue, lockReason, photosDueRequestName, isLoading: statusLoading, error: statusError, refresh: refreshStatus, canStartDrive, driveLockReason } = useNgoStatus();
+
+  // The last status that finished loading without an error. useNgoStatus refreshes on
+  // window focus and live updates, and reports "not verified" while it does; gating on
+  // the live value sent verified NGOs back to the dashboard mid-form. Only a settled,
+  // successful read can lock or redirect.
+  const [settled, setSettled] = useState<{ isVerified: boolean; isPhotosDue: boolean; canStartDrive: boolean } | null>(null);
+  useEffect(() => {
+    if (!statusLoading && !statusError) setSettled({ isVerified, isPhotosDue, canStartDrive });
+  }, [statusLoading, statusError, isVerified, isPhotosDue, canStartDrive]);
 
   const [ngoContactName, setNgoContactName] = useState("");
   const [ngoContactPhone, setNgoContactPhone] = useState("");
@@ -101,7 +115,7 @@ function NewNgoDriveForm() {
   const [urgency, setUrgency] = useState<"NORMAL" | "HIGH" | "CRITICAL">("NORMAL");
   const [condition, setCondition] = useState<"NEW_ONLY" | "NEW_OR_GENTLY_USED">("NEW_ONLY");
   const [details, setDetails] = useState("");
-  const [referencePhotoDataUrl, setReferencePhotoDataUrl] = useState("");
+  const [referencePhotoUrl, setReferencePhotoUrl] = useState("");
 
   // Step 2
   const [beneficiaryGroup, setBeneficiaryGroup] = useState("");
@@ -143,7 +157,40 @@ function NewNgoDriveForm() {
   // Load draft
   const [draftLoaded, setDraftLoaded] = useState(false);
   useEffect(() => {
-    if (!user || draftLoaded) return;
+    if (!user || draftLoaded || editId === null) return;
+    let active = true;
+    getNgoDriveDetail(editId).then(d => {
+      if (!active) return;
+      if (d.status !== "CHANGES_REQUESTED" && d.status !== "PENDING_REVIEW") {
+        setEditLoadError("Only drives under review or with changes requested can be edited.");
+        return;
+      }
+      setTitle(d.title || "");
+      setCategory(d.category || "");
+      setItemName(d.itemName || "");
+      setQuantity(d.quantityNeeded || "");
+      setUnit((d.unit as typeof unit) || "PIECES");
+      setDescription(d.description || "");
+      setUrgency((d.urgency as typeof urgency) || "NORMAL");
+      setCondition((d.itemCondition as typeof condition) || "NEW_ONLY");
+      setDetails(d.details || "");
+      setReferencePhotoUrl(d.referencePhotoUrl && !d.referencePhotoUrl.startsWith("data:") ? d.referencePhotoUrl : "");
+      setBeneficiaryGroup(d.beneficiaryGroup || "");
+      setBeneficiaryCount(d.beneficiaryCount || "");
+      setNeededBy(d.neededBy || "");
+      setAvailableDays(((d.availableDays || "").split(",").filter(Boolean)) as typeof availableDays);
+      setAvailableFrom((d.availableFrom || "").slice(0, 5));
+      setAvailableTo((d.availableTo || "").slice(0, 5));
+      setContactName(d.contactName || "");
+      setContactPhone(d.contactPhone || "");
+      setStep("drive-details");
+      setDraftLoaded(true);
+    }).catch(() => { if (active) setEditLoadError("We couldn't load this drive. Please try again."); });
+    return () => { active = false; };
+  }, [user, draftLoaded, editId]);
+
+  useEffect(() => {
+    if (!user || draftLoaded || editId !== null) return;
     try {
       const d = localStorage.getItem(DRAFT_KEY);
       if (d) {
@@ -157,7 +204,7 @@ function NewNgoDriveForm() {
         setUrgency(p.urgency || "NORMAL");
         setCondition(p.condition || "NEW_ONLY");
         setDetails(p.details || "");
-        setReferencePhotoDataUrl(p.referencePhotoDataUrl || "");
+        setReferencePhotoUrl(typeof p.referencePhotoUrl === "string" && !p.referencePhotoUrl.startsWith("data:") ? p.referencePhotoUrl : "");
         setBeneficiaryGroup(p.beneficiaryGroup || "");
         setBeneficiaryCount(p.beneficiaryCount || "");
         setNeededBy(p.neededBy || "");
@@ -193,7 +240,7 @@ function NewNgoDriveForm() {
     setSaveStatus("saving");
     try {
       const saveObj = {
-        title, category, itemName, quantity, unit, description, urgency, condition, details, referencePhotoDataUrl,
+        title, category, itemName, quantity, unit, description, urgency, condition, details, referencePhotoUrl,
         beneficiaryGroup, beneficiaryCount, neededBy, availableDays, availableFrom, availableTo, contactName, contactPhone,
         declarations: { accurate: declAccurate, usedOnlyForBeneficiaries: declUsedOnly, proofWithin48h: declProof, facesWithConsent: declFaces, notDuplicate: declNotDuplicate, falseInfoConsequences: declFalseInfo, contactConsent: declContact }
       };
@@ -202,20 +249,27 @@ function NewNgoDriveForm() {
     } catch {
       setSaveStatus("error");
     }
-  }, [draftLoaded, title, category, itemName, quantity, unit, description, urgency, condition, details, referencePhotoDataUrl, beneficiaryGroup, beneficiaryCount, neededBy, availableDays, availableFrom, availableTo, contactName, contactPhone, declAccurate, declUsedOnly, declProof, declFaces, declNotDuplicate, declFalseInfo, declContact, DRAFT_KEY]);
+  }, [draftLoaded, title, category, itemName, quantity, unit, description, urgency, condition, details, referencePhotoUrl, beneficiaryGroup, beneficiaryCount, neededBy, availableDays, availableFrom, availableTo, contactName, contactPhone, declAccurate, declUsedOnly, declProof, declFaces, declNotDuplicate, declFalseInfo, declContact, DRAFT_KEY]);
 
   useEffect(() => {
-    if (draftLoaded) saveDraft();
-  }, [draftLoaded, saveDraft]);
+    if (draftLoaded && editId === null) saveDraft();
+  }, [draftLoaded, saveDraft, editId]);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      if (!canPostRequest) {
-        if (lockReason) toast.error(lockReason);
-        router.replace("/dashboard/ngo");
-      }
-    }
-  }, [authLoading, user, canPostRequest, lockReason, router]);
+    if (authLoading || user) return;
+    const next = editId !== null ? `/ngo/drives/new?edit=${editId}` : "/ngo/drives/new";
+    console.warn("[NGO REDIRECT] reason: not logged in");
+    router.replace(`/login?next=${encodeURIComponent(next)}`);
+  }, [authLoading, user, editId, router]);
+
+  // Redirect only when the NGO is confirmed not verified. Never while loading, and never
+  // because a status request failed (that shows an inline error with "Try again").
+  useEffect(() => {
+    if (authLoading || !user || !settled || settled.isVerified) return;
+    console.warn("[NGO REDIRECT] reason: NGO is not verified");
+    if (lockReason) toast.error(lockReason);
+    router.replace("/dashboard/ngo");
+  }, [authLoading, user, settled, lockReason, router]);
 
   const goToStep = useCallback((next: NgoDriveStep, dir: number) => {
     setDirection(dir);
@@ -228,16 +282,16 @@ function NewNgoDriveForm() {
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    setPhotoUploading(true);
     try {
       const compressed = await compressImageIfNeeded(file);
-      const reader = new FileReader();
-      reader.onload = () => {
-        setReferencePhotoDataUrl(reader.result as string);
-        toast.success("Photo attached");
-      };
-      reader.readAsDataURL(compressed);
+      setReferencePhotoUrl(await uploadNgoDriveReferencePhoto(compressed));
+      toast.success("Photo attached");
     } catch (err: any) {
-      toast.error(err.message || "Failed to attach photo");
+      toast.error(err?.message || "Failed to attach photo");
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = "";
     }
   }
 
@@ -247,7 +301,8 @@ function NewNgoDriveForm() {
       if (!title.trim() || title.length < 10 || title.length > 80) e.title = "Title must be 10-80 characters";
       if (!category) e.category = "Category is required";
       if (!itemName.trim() || itemName.length < 2 || itemName.length > 60) e.itemName = "Item name must be 2-60 characters";
-      if (quantity === "" || quantity < 1 || quantity > 10000) e.quantity = "Quantity must be 1-10000";
+      // Drives collect items in bulk (the server refuses fewer than 2).
+      if (quantity === "" || quantity < 2 || quantity > 10000) e.quantity = "Drives collect in bulk: ask for 2 to 10000";
       if (!unit) e.unit = "Unit is required";
       if (!description.trim() || description.length < 30 || description.length > 1000) e.description = "Description must be 30-1000 characters";
       if (!condition) e.condition = "Condition is required";
@@ -263,8 +318,9 @@ function NewNgoDriveForm() {
         if (d < minDate || d > maxDate) e.neededBy = "Date must be 3-90 days from today";
       }
       if (availableDays.length === 0) e.availableDays = "Select at least one day";
-      if (!availableFrom || !availableTo) e.availableHours = "Select hours";
-      else if (availableTo <= availableFrom) e.availableHours = "End time must be after start time";
+      if (!availableFrom) e.availableFrom = "Select a start time";
+      if (!availableTo) e.availableTo = "Select an end time";
+      else if (availableFrom && availableTo <= availableFrom) e.availableTo = "End time must be after start time";
       if (!contactName.trim()) e.contactName = "Contact name is required";
       if (!contactPhone.trim() || contactPhone.length < 10) e.contactPhone = "Valid phone is required";
     }
@@ -297,7 +353,7 @@ function NewNgoDriveForm() {
         driveType: "ITEMS" as const,
         title, category, itemName, quantity: Number(quantity), unit, condition,
         details: details || undefined,
-        referencePhotoUrl: referencePhotoDataUrl || undefined,
+        referencePhotoUrl: referencePhotoUrl || undefined,
         description, urgency,
         beneficiaryGroup, beneficiaryCount: Number(beneficiaryCount),
         neededBy, availableDays, availableFrom, availableTo,
@@ -316,22 +372,27 @@ function NewNgoDriveForm() {
         };
         const existing = JSON.parse(localStorage.getItem(DEMO_DRIVES_KEY) || "[]");
         localStorage.setItem(DEMO_DRIVES_KEY, JSON.stringify([newDrive, ...existing]));
+      } else if (editId !== null) {
+        await updateNgoDrive(editId, payload);
       } else {
-        try {
-          await createNgoDrive(payload);
-        } catch (e: any) {
-          if (e.status === 404 || e.status === 405 || e.status === 501) {
-            toast.info("Drive submission is launching soon. Your drive is saved on this device — you won't lose it.", { duration: 5000 });
-            return;
-          }
-          throw e;
-        }
+        await createNgoDrive(payload);
       }
       
-      localStorage.removeItem(DRAFT_KEY);
+      if (editId === null) localStorage.removeItem(DRAFT_KEY);
       setSubmitted(true);
     } catch (e) {
-      toast.error("Something went wrong. Your drive is saved — please try again.");
+      // Show what the backend actually objected to. Field errors carry the reason
+      // (validation, not verified, proof due); the code-level message is the fallback.
+      const body = e instanceof ApiError ? (e.data as { fieldErrors?: { field?: string; message?: string }[] } | undefined) : undefined;
+      const errors = (body?.fieldErrors ?? []).filter(f => f?.message);
+      if (errors.length > 0) {
+        const byField: Record<string, string> = {};
+        errors.forEach(f => { if (f.field && f.field !== "drive") byField[f.field] = f.message!; });
+        setFieldErrors(byField);
+        toast.error(errors.map(f => f.message).join(" · "));
+      } else {
+        toast.error(e instanceof Error && e.message ? e.message : "Something went wrong. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -339,8 +400,62 @@ function NewNgoDriveForm() {
 
   const canSubmit = declAccurate && declUsedOnly && declProof && declFaces && declNotDuplicate && declFalseInfo && declContact;
 
-  if (authLoading || !user || ngoStatus === "loading") return <FormSkeleton />;
-  if (!canPostRequest) {
+  if (authLoading || !user) return <FormSkeleton />;
+  if (editLoadError) {
+    return (
+      <div role="alert" className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">This drive can&apos;t be edited</h1>
+        <p className="text-stone-500 mb-6">{editLoadError}</p>
+        <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">Go to dashboard</Link>
+      </div>
+    );
+  }
+  if (!settled) {
+    if (statusError && !statusLoading) {
+      return (
+        <div role="alert" className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+          <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">We couldn&apos;t check your NGO status</h1>
+          <p className="text-stone-500 mb-6">{statusError}</p>
+          <button type="button" onClick={() => void refreshStatus()} className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
+            Try again
+          </button>
+        </div>
+      );
+    }
+    return <FormSkeleton />;
+  }
+  // One drive at a time: a NEW drive waits until the earlier one is finished. Editing a
+  // drive the admin sent back is not a new drive.
+  if (settled.isVerified && !settled.canStartDrive && editId === null && !submitted) {
+    return (
+      <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+        <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">One drive at a time</h1>
+        <p className="text-stone-500 mb-6 max-w-md">{driveLockReason}</p>
+        <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
+          Go to dashboard
+        </Link>
+      </div>
+    );
+  }
+
+  // Proof due blocks a NEW drive only; fixing one the admin sent back is always allowed.
+  if (settled.isVerified && settled.isPhotosDue && editId === null) {
+    return (
+      <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+        <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Handover photos due</h1>
+        <p className="text-stone-500 mb-6">Upload the handover photos for {photosDueRequestName || "your recent handover"} before starting another drive.</p>
+        <Link href="/ngo/handovers" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
+          Go to Handovers &amp; Photos
+        </Link>
+        <Link href="/dashboard/ngo" className="mt-3 text-sm font-bold text-ngo-700 hover:underline">
+          Drive proof due? Open your dashboard
+        </Link>
+      </div>
+    );
+  }
+  if (!settled.isVerified) {
     return (
       <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
@@ -359,7 +474,7 @@ function NewNgoDriveForm() {
         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-6">
           <CheckCircle2 className="w-8 h-8" />
         </div>
-        <h1 className="text-2xl font-bold text-stone-900 dark:text-white mb-2 text-center">Drive submitted for review</h1>
+        <h1 className="text-2xl font-bold text-stone-900 dark:text-white mb-2 text-center">{editId !== null ? "Drive resubmitted for review" : "Drive submitted for review"}</h1>
         <p className="text-stone-500 dark:text-stone-400 text-center max-w-md mb-8">
           Our team will check it and notify you when it goes live.
         </p>
@@ -367,9 +482,12 @@ function NewNgoDriveForm() {
           <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-lg border border-stone-200 font-bold text-stone-600 hover:bg-stone-50 transition-colors">
             Go to dashboard
           </Link>
-          <button onClick={() => { setSubmitted(false); goToStep("drive-type", -1); }} className="px-6 py-2.5 rounded-lg bg-ngo-600 text-white font-bold hover:bg-ngo-700 transition-colors">
-            Start another drive
-          </button>
+          <div className="flex flex-col items-center gap-1">
+            <button type="button" disabled className="px-6 py-2.5 rounded-lg bg-stone-200 text-stone-500 font-bold cursor-not-allowed">
+              Start another drive
+            </button>
+            <p className="text-xs text-stone-500 max-w-[220px] text-center">Available after your current drive is completed and its photos are approved.</p>
+          </div>
         </div>
       </div>
     );
@@ -453,7 +571,7 @@ function NewNgoDriveForm() {
           <div className="grid grid-cols-2 gap-4">
             <WizardField label="Quantity" required error={fieldErrors.quantity}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="quantity" type="number" min={1} max={10000} placeholder="e.g. 40" value={quantity} onChange={e => setQuantity(e.target.value ? Number(e.target.value) : "")} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+<Input id={id} name="quantity" type="number" min={2} max={10000} placeholder="e.g. 40" value={quantity} onChange={e => setQuantity(e.target.value ? Number(e.target.value) : "")} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
             <WizardField label="Unit" required error={fieldErrors.unit}>
@@ -524,15 +642,14 @@ function NewNgoDriveForm() {
           <div>
             <label className="text-xs font-bold text-stone-700 dark:text-stone-200 block mb-1">Reference photo (optional)</label>
             <div className="flex items-center gap-4">
-              <button type="button" onClick={() => document.getElementById('photo-upload')?.click()} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-xs font-semibold text-slate-700">
-                <UploadCloud className="w-4 h-4" /> Upload Image
+              <button type="button" onClick={() => document.getElementById('photo-upload')?.click()} disabled={photoUploading} className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg hover:bg-slate-50 text-xs font-semibold text-slate-700">
+                <UploadCloud className="w-4 h-4" /> {photoUploading ? "Uploading…" : "Upload Image"}
               </button>
               <input id="photo-upload" type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handlePhotoUpload} />
-              <LocalTestUploadButton onFile={(f) => handlePhotoUpload({ target: { files: [f] } } as any)} accept="image" />
-              {referencePhotoDataUrl && (
+              {referencePhotoUrl && (
                 <div className="relative w-12 h-12 rounded-lg border border-slate-200 overflow-hidden shrink-0">
-                  <img src={referencePhotoDataUrl} alt="Reference" className="w-full h-full object-cover" />
-                  <button type="button" onClick={() => setReferencePhotoDataUrl("")} className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-lg">
+                  <img src={referencePhotoUrl} alt="Reference" className="w-full h-full object-cover" />
+                  <button type="button" onClick={() => setReferencePhotoUrl("")} className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-lg">
                     <X className="w-3 h-3" />
                   </button>
                 </div>
@@ -590,6 +707,17 @@ function NewNgoDriveForm() {
           <WizardField label="Available days" required error={fieldErrors.availableDays} hint="Days you can receive items or do pickups.">
             {({ id, describedBy }) => (
               <div id={id} data-field="availableDays" aria-describedby={describedBy} className="flex flex-wrap gap-2">
+                {(() => {
+                  // "All" is a shortcut only: the value sent stays the list of days.
+                  const allSelected = DROP_OFF_DAYS.every(d => availableDays.includes(d.id));
+                  return (
+                    <button type="button" aria-pressed={allSelected}
+                      onClick={() => setAvailableDays(allSelected ? [] : DROP_OFF_DAYS.map(d => d.id))}
+                      className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${allSelected ? 'bg-ngo-700 border-ngo-700 text-white' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}>
+                      All
+                    </button>
+                  );
+                })()}
                 {DROP_OFF_DAYS.map(day => {
                   const active = availableDays.includes(day.id);
                   return (
@@ -639,7 +767,7 @@ function NewNgoDriveForm() {
   const DECLARATIONS = [
     { id: "declAccurate", checked: declAccurate, setter: setDeclAccurate, text: "The information in this drive is true and accurate to the best of our knowledge." },
     { id: "declUsedOnly", checked: declUsedOnly, setter: setDeclUsedOnly, text: "Donated items will be used only for the beneficiaries described here, and will never be sold, rented, or exchanged for money." },
-    { id: "declProof", checked: declProof, setter: setDeclProof, text: "We will upload handover photos within 48 hours of distributing the items, and understand we can't start a new drive until proof is uploaded." },
+    { id: "declProof", checked: declProof, setter: setDeclProof, text: "We will upload handover photos within 48 hours of distributing the items, and understand we can't start a new drive until this one is completed and its photos are approved." },
     { id: "declFaces", checked: declFaces, setter: setDeclFaces, text: "People's faces will appear in photos only with their consent (a guardian's consent for children)." },
     { id: "declNotDuplicate", checked: declNotDuplicate, setter: setDeclNotDuplicate, text: "This drive is not a duplicate of another active drive on CauseKind." },
     { id: "declFalseInfo", checked: declFalseInfo, setter: setDeclFalseInfo, text: "We understand that false information may lead to this drive being removed and our NGO's verification being suspended." },

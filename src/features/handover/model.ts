@@ -283,6 +283,8 @@ export function resolveHandoverState(input: {
 
 const TERMINAL_STATUSES = new Set([
   "CANCELLED", "WITHDRAWN", "FAILED", "REJECTED", "DONOR_REJECTED", "ADMIN_REJECTED", "DONEE_DECLINED",
+  // NGO drive offers only.
+  "NGO_DECLINED", "ENDED",
 ]);
 
 const COMPLETED_STATUSES = new Set(["COMPLETED", "FULFILLED", "CERTIFICATE_ISSUED", "RECEIVED_PARTIAL"]);

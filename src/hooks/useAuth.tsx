@@ -15,6 +15,7 @@ export type AuthUser = {
   fullName?: string;
   email: string;
   role: string;
+  phone?: string;
 };
 
 type AuthContextValue = {
@@ -131,7 +132,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })
       .then(data => {
         if (data?.email && data?.role) {
-          const fresh: AuthUser = { id: data.id, userId: data.id, email: data.email, role: data.role, fullName: data.fullName };
+          const fresh: AuthUser = { id: data.id, userId: data.id, email: data.email, role: data.role, fullName: data.fullName, phone: data.phone };
           localStorage.setItem(USER_KEY, JSON.stringify(fresh));
           setUserState(fresh);
         }
@@ -158,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Also clear any legacy token key from old sessions
     localStorage.removeItem("ck_token");
     sessionStorage.removeItem("ck_token");
+    sessionStorage.removeItem("ck_ngo_profile_toast_shown");
     setUserState(null);
 
     const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";

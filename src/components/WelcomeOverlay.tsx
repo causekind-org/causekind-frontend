@@ -5,58 +5,73 @@ import { HandHeart, Sparkles, X, Terminal, ShieldCheck, Database, Lock, CheckCir
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname, useRouter } from "next/navigation";
 import { getMyProfile } from "@/lib/api";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 type OverlayConfig = {
   icon: React.ReactNode;
   headline: string;
   subline: string;
-  accentBg: string;      
-  iconWrapBg: string;    
-  iconColor: string;     
-  confettiColor: string; 
+  accentBg: string;
+  iconWrapBg: string;
+  iconColor: string;
+  confettiColor: string;
+};
+
+const ORANGE_THEME = {
+  accentBg: "bg-[#f0b97a]",
+  iconWrapBg: "bg-[#f0b97a]/20",
+  iconColor: "text-[#b04a15]",
+  confettiColor: "#f0b97a",
+};
+
+const NGO_THEME = {
+  accentBg: "bg-ngo-500",
+  iconWrapBg: "bg-ngo-500/20 dark:bg-ngo-500/30",
+  iconColor: "text-ngo-700 dark:text-ngo-400",
+  confettiColor: "#34a578",
 };
 
 function getConfig(role: string | undefined): OverlayConfig {
-  switch (role) {
-    case "DONEE":
-      return {
-        icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
-        headline: "Welcome — support starts here",
-        subline:
-          "Post your verified needs and connect with generous donors nearby. Your community is ready to help — let's get started.",
-        accentBg: "bg-[#1e3a60]",
-        iconWrapBg: "bg-[#1e3a60]/10 dark:bg-[#1e3a60]/30",
-        iconColor: "text-[#1e3a60] dark:text-blue-400",
-        confettiColor: "#4a7fba",
-      };
-    default:
-      return {
-        icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
-        headline: "Welcome to CauseKind",
-        subline:
-          "You're all set. Explore nearby needs, manage requests, and help build a kinder community.",
-        accentBg: "bg-[#f0b97a]",
-        iconWrapBg: "bg-[#f0b97a]/20",
-        iconColor: "text-[#b04a15]",
-        confettiColor: "#f0b97a",
-      };
+  const normalizedRole = role?.toUpperCase();
+
+  if (normalizedRole === "DONEE") {
+    return {
+      icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
+      headline: "Welcome — support starts here",
+      subline:
+        "Post your verified needs and connect with generous donors nearby. Your community is ready to help — let's get started.",
+      accentBg: "bg-[#1e3a60]",
+      iconWrapBg: "bg-[#1e3a60]/10 dark:bg-[#1e3a60]/30",
+      iconColor: "text-[#1e3a60] dark:text-blue-400",
+      confettiColor: "#4a7fba",
+    };
   }
+
+  const theme = isNgoRole(normalizedRole) ? NGO_THEME : ORANGE_THEME;
+
+  return {
+    icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
+    headline: "Welcome to CauseKind",
+    subline:
+      "You're all set. Explore nearby needs, manage requests, and help build a kinder community.",
+    ...theme,
+  };
 }
 
 function Sparkles12({ color }: { color: string }) {
   const positions = [
-    { top: "8%",  left: "12%", delay: "0s",    size: 6  },
-    { top: "5%",  left: "50%", delay: "0.12s", size: 5  },
-    { top: "10%", left: "82%", delay: "0.08s", size: 7  },
-    { top: "25%", left: "94%", delay: "0.2s",  size: 4  },
-    { top: "65%", left: "92%", delay: "0.15s", size: 6  },
-    { top: "88%", left: "78%", delay: "0.05s", size: 5  },
-    { top: "92%", left: "50%", delay: "0.18s", size: 7  },
-    { top: "88%", left: "22%", delay: "0.1s",  size: 4  },
-    { top: "65%", left: "6%",  delay: "0.22s", size: 6  },
-    { top: "42%", left: "3%",  delay: "0.07s", size: 5  },
-    { top: "30%", left: "88%", delay: "0.25s", size: 4  },
-    { top: "50%", left: "96%", delay: "0.03s", size: 5  },
+    { top: "8%", left: "12%", delay: "0s", size: 6 },
+    { top: "5%", left: "50%", delay: "0.12s", size: 5 },
+    { top: "10%", left: "82%", delay: "0.08s", size: 7 },
+    { top: "25%", left: "94%", delay: "0.2s", size: 4 },
+    { top: "65%", left: "92%", delay: "0.15s", size: 6 },
+    { top: "88%", left: "78%", delay: "0.05s", size: 5 },
+    { top: "92%", left: "50%", delay: "0.18s", size: 7 },
+    { top: "88%", left: "22%", delay: "0.1s", size: 4 },
+    { top: "65%", left: "6%", delay: "0.22s", size: 6 },
+    { top: "42%", left: "3%", delay: "0.07s", size: 5 },
+    { top: "30%", left: "88%", delay: "0.25s", size: 4 },
+    { top: "50%", left: "96%", delay: "0.03s", size: 5 },
   ];
 
   return (
@@ -88,7 +103,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
         const first = p?.fullName?.trim().split(/\s+/)[0];
         if (first && !cancelled) setProfileName(first);
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => { cancelled = true; };
   }, [user?.email, user?.fullName]);
 
@@ -97,10 +112,10 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
   }
 
   const embers = [
-    { left: "12%", size: 4, delay: "0s",   dur: "11s" },
+    { left: "12%", size: 4, delay: "0s", dur: "11s" },
     { left: "28%", size: 3, delay: "3.5s", dur: "13s" },
     { left: "45%", size: 5, delay: "1.2s", dur: "10s" },
-    { left: "62%", size: 3, delay: "5s",   dur: "14s" },
+    { left: "62%", size: 3, delay: "5s", dur: "14s" },
     { left: "78%", size: 4, delay: "2.2s", dur: "12s" },
     { left: "90%", size: 3, delay: "6.5s", dur: "13s" },
   ];
@@ -246,11 +261,11 @@ function DefaultWelcomeView({ user, exiting, dismiss }: { user: any; exiting: bo
 // ── Super Admin — "command center boot-up" ──────────────────────────────────────
 function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
   const bootLines = [
-    { icon: Terminal,     text: "Initializing CauseKind core…",       delay: 0.2 },
-    { icon: Lock,         text: "Authenticating super-admin keys…",   delay: 0.6 },
-    { icon: Database,     text: "Mounting database control surfaces…", delay: 1.0 },
-    { icon: ShieldCheck,  text: "Elevating privileges → ROOT",         delay: 1.4 },
-    { icon: CheckCircle2, text: "All systems online.",                 delay: 1.8 },
+    { icon: Terminal, text: "Initializing CauseKind core…", delay: 0.2 },
+    { icon: Lock, text: "Authenticating super-admin keys…", delay: 0.6 },
+    { icon: Database, text: "Mounting database control surfaces…", delay: 1.0 },
+    { icon: ShieldCheck, text: "Elevating privileges → ROOT", delay: 1.4 },
+    { icon: CheckCircle2, text: "All systems online.", delay: 1.8 },
   ];
 
   return (
@@ -358,9 +373,9 @@ export function WelcomeOverlay() {
 
   if (isAdminDash || !show) return null;
 
-  if (user?.role === "DONOR")       return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
+  if (user?.role === "DONOR") return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
   if (user?.role === "SUPER_ADMIN") return <SuperAdminWelcomeView exiting={exiting} dismiss={dismiss} />;
-  if (user?.role === "ADMIN")       return null;
+  if (user?.role === "ADMIN") return null;
 
   return <DefaultWelcomeView user={user} exiting={exiting} dismiss={dismiss} />;
 }

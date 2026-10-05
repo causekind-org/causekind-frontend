@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import { getNgoDrive } from "@/lib/api";
 
 export type DriveProgressBarProps = {
   driveId: number;
@@ -22,12 +23,10 @@ export function DriveProgressBar({
 
   const fetchQuantities = useCallback(async () => {
     try {
-      const res = await fetch(`/api/v1/drives/${driveId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setReceived(data.quantityReceived || 0);
-        setPledged(data.quantityPledged || 0);
-      }
+      // Through the API client: a relative fetch would hit the frontend host, not the API.
+      const data = await getNgoDrive(driveId);
+      setReceived(data.quantityReceived || 0);
+      setPledged(data.quantityPledged || 0);
     } catch (e) {
       // Ignore
     }

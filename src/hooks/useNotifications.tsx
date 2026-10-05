@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers } from "@/lib/api";
+import { getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers, getMyNgoDrives, getNgoDriveOffersForNgo, getMyNgoDriveOffers } from "@/lib/api";
 import { useAuth } from "./useAuth";
 
 export type AppNotification = {
@@ -158,13 +158,63 @@ async function deriveNotifications(rawRole: string): Promise<IncomingNotificatio
     });
   }
 
+  // ── NGO notifications (drives only) ────────────────────────────────────────
+  if (role === "NGO_PARTNER") {
+    const drives = await getMyNgoDrives().catch(() => []);
+    for (const d of drives) {
+      const ts = toTimestamp(d.reviewedAt ?? d.submittedAt ?? d.createdAt);
+      const page = `/ngo/drives/${d.id}`;
+      if (d.status === "PENDING_REVIEW") {
+        notifs.push({ id: `ngo-drive-review-${d.id}`, title: "Drive submitted for review", body: `"${d.title}" is with our team. We'll let you know once it's reviewed.`, type: "info", link: page, timestamp: ts });
+      } else if (d.status === "CHANGES_REQUESTED") {
+        notifs.push({ id: `ngo-drive-changes-${d.id}`, title: "Changes requested", body: `"${d.title}" needs changes${d.adminReason ? ": " + d.adminReason : "."}`, type: "rejected", link: page, timestamp: ts });
+      } else if (d.status === "REJECTED") {
+        notifs.push({ id: `ngo-drive-rejected-${d.id}`, title: "Drive not approved", body: `"${d.title}" was not approved${d.adminReason ? ": " + d.adminReason : "."}`, type: "rejected", link: page, timestamp: ts });
+      } else if (d.status === "LIVE" || d.status === "FULLY_PLEDGED") {
+        notifs.push({ id: `ngo-drive-live-${d.id}`, title: d.status === "LIVE" ? "Your drive is live" : "Your drive is fully pledged", body: `"${d.title}" is visible to donors near you.`, type: "approved", link: page, timestamp: ts });
+        const offers = await getNgoDriveOffersForNgo(d.id, "PENDING_NGO_REVIEW").catch(() => []);
+        offers.forEach(o => notifs.push({ id: `ngo-drive-offer-${o.id}`, title: "New offer to review", body: `${o.donorDisplayName || "A donor"} offered ${o.quantity ?? ""} for "${d.title}". Accept or decline it.`, type: "match", link: page, timestamp: toTimestamp(o.submittedAt) }));
+      } else if (d.status === "COLLECTION_COMPLETE") {
+        notifs.push({ id: `ngo-drive-collected-${d.id}`, title: "Upload your distribution proof", body: `Collection for "${d.title}" is complete. Distribute the items and upload your proof.`, type: "info", link: `${page}?tab=proof`, timestamp: ts });
+      } else if (d.status === "PROOF_SUBMITTED") {
+        notifs.push({ id: `ngo-drive-proof-${d.id}`, title: "Proof under review", body: `We're reviewing your distribution proof for "${d.title}".`, type: "info", link: page, timestamp: ts });
+      } else if (d.status === "FULFILLED") {
+        notifs.push({ id: `ngo-drive-fulfilled-${d.id}`, title: "Drive fulfilled", body: `"${d.title}" is complete. You can start a new drive.`, type: "fulfilled", link: "/dashboard/ngo", timestamp: ts });
+      } else if (d.status === "CLOSED") {
+        notifs.push({ id: `ngo-drive-closed-${d.id}`, title: "Drive closed", body: `"${d.title}" closed with nothing received. You can start a new drive.`, type: "info", link: "/dashboard/ngo", timestamp: ts });
+      }
+    }
+  }
+
   // ── DONOR notifications ────────────────────────────────────────────────────
   if (role === "DONOR") {
-    const [listings, matches, myOffers] = await Promise.all([
+    const [listings, matches, myOffers, driveOffers] = await Promise.all([
       getMyItemListings({ silent401: true }).catch(() => []),
       getMyMatches().catch(() => []),
       getMyDonationOffers().catch(() => []),
+      getMyNgoDriveOffers().catch(() => []),
     ]);
+
+    // Offers to NGO drives: the NGO reviews; the handover starts as soon as it accepts.
+    driveOffers.forEach(o => {
+      const ts = toTimestamp(o.submittedAt);
+      const hub = `/ngo-drive-offers/${o.id}/handover`;
+      if (o.status === "NGO_ACCEPTED") {
+        notifs.push({ id: `drive-offer-accepted-${o.id}`, title: "The NGO accepted your offer", body: `Plan the handover for "${o.driveTitle}" now.`, type: "approved", link: hub, timestamp: ts });
+      } else if (o.status === "NGO_DECLINED") {
+        notifs.push({ id: `drive-offer-declined-${o.id}`, title: "The NGO declined your offer", body: `"${o.driveTitle}"${o.ngoDeclineReason ? ": " + o.ngoDeclineReason : ""}`, type: "rejected", link: "/dashboard", timestamp: ts });
+      } else if (o.status === "NEEDS_INFORMATION") {
+        notifs.push({ id: `drive-offer-info-${o.id}`, title: "Update your drive offer", body: `The NGO needs a change to your offer for "${o.driveTitle}".`, type: "info", link: `/drives/${o.driveId}/give`, timestamp: ts });
+      } else if (o.status === "HANDOVER_IN_PROGRESS" || o.status === "HANDOVER_AT_RISK") {
+        notifs.push({ id: `drive-offer-handover-${o.id}`, title: "Handover planned", body: `Show the OTP to the NGO when you hand over your items for "${o.driveTitle}".`, type: "match", link: hub, timestamp: ts });
+      } else if (o.status === "ISSUE_WINDOW_OPEN") {
+        notifs.push({ id: `drive-offer-received-${o.id}`, title: "The NGO received your items", body: `Thank you for giving to "${o.driveTitle}".`, type: "fulfilled", link: hub, timestamp: ts });
+      } else if (o.status === "COMPLETED") {
+        notifs.push({ id: `drive-offer-complete-${o.id}`, title: "See how your items were used", body: `"${o.driveTitle}" is fulfilled. View the distribution proof.`, type: "fulfilled", link: `/drives/${o.driveId}/proof`, timestamp: ts });
+      } else if (o.status === "ENDED") {
+        notifs.push({ id: `drive-offer-ended-${o.id}`, title: "Drive ended", body: `"${o.driveTitle}" closed before your offer was handed over.`, type: "info", link: "/dashboard", timestamp: ts });
+      }
+    });
 
     // Donor Flow 2 offer status notifications
     myOffers.forEach(o => {

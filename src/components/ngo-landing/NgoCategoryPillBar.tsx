@@ -32,7 +32,7 @@ const DISPLAY_CATEGORIES = [...IN_KIND_CATEGORIES].sort((a, b) => {
 
 export function NgoCategoryPillBar() {
   const router = useRouter();
-  const { isLoading, error, refresh, isVerified, isPhotosDue, photosDueRequestName } = useNgoStatus();
+  const { isLoading, error, refresh, isVerified, isPhotosDue, photosDueRequestName, canStartDrive, driveLockReason } = useNgoStatus();
 
   const handleCategoryClick = (e: React.MouseEvent, catName: string) => {
     if (isLoading || error) {
@@ -41,10 +41,15 @@ export function NgoCategoryPillBar() {
       if (error) void refresh();
       return;
     }
+    if (isVerified && !isPhotosDue && !canStartDrive) {
+      e.preventDefault();
+      toast.info(driveLockReason);
+      return;
+    }
     if (isVerified && isPhotosDue) {
       e.preventDefault();
       toast.warning(
-        `Upload handover photos for ${photosDueRequestName} to post your next request.`,
+        `Upload handover photos for ${photosDueRequestName} to start your next drive.`,
         {
           action: {
             label: "Upload",
@@ -59,7 +64,7 @@ export function NgoCategoryPillBar() {
     <div className="relative w-full">
       {/* Outer rounded pill container spanning content width */}
       <nav
-        aria-label="NGO In-Kind Request Categories"
+        aria-label="Drive categories"
         className="relative mx-auto max-w-7xl rounded-full bg-white dark:bg-zinc-900 border border-ngo-100 dark:border-zinc-800 shadow-[0_10px_30px_-8px_rgba(18,61,46,0.08)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.5)] px-3 sm:px-6 py-2 sm:py-2.5 backdrop-blur-md"
       >
         {/* Horizontal scroll container on mobile, full grid on desktop */}

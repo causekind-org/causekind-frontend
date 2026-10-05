@@ -6,6 +6,8 @@ import {
   LEGAL_STRUCTURES,
   type LegalStructure,
   type NGOFormState,
+  getNgoStillNeededItems,
+  fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { LegalStructureCard } from "@/features/ngo-registration/components/LegalStructureCard";
 import { controlClass } from "@/features/wizard-kit/WizardField";
@@ -24,10 +26,10 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
 
   function validate(): boolean {
     const next: Record<string, string> = {};
-    if (!data.organizationName.trim()) next.organizationName = "Organization name is required.";
+    if (!fieldText(data.organizationName)) next.organizationName = "Organization name is required.";
     if (!data.legalStructure) next.legalStructure = "Please select a legal structure.";
-    if (!data.registrationNumber.trim()) next.registrationNumber = "Registration number is required.";
-    if (!data.registeredOfficeAddress.trim()) next.registeredOfficeAddress = "Registered office address is required.";
+    if (!fieldText(data.registrationNumber)) next.registrationNumber = "Registration number is required.";
+    if (!fieldText(data.registeredOfficeAddress)) next.registeredOfficeAddress = "Registered office address is required.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -41,6 +43,8 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
       <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
     ) : null;
   }
+
+  const missing = getNgoStillNeededItems("org-details", data);
 
   return (
     <div className="space-y-6">
@@ -154,10 +158,10 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
           {field("registeredOfficeAddress")}
         </div>
 
-        {/* Year of Establishment (optional) */}
+        {/* Year of Establishment (required) */}
         <div className="space-y-1">
           <label htmlFor="ngo-year" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Year of Establishment
+            Year of Establishment <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
           </label>
           <input
             id="ngo-year"
@@ -173,23 +177,31 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleContinue}
-          className="flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
-        >
-          Continue
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </button>
+      <div className="flex flex-col items-end gap-2 pt-2">
+        <div className="flex w-full items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={handleContinue}
+            disabled={missing.length > 0}
+            className="flex items-center gap-1.5 rounded-xl bg-ngo-700 disabled:bg-stone-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
+          >
+            Continue
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+        {missing.length > 0 && (
+          <p className="text-3xs text-stone-500 dark:text-stone-400 text-right pr-1">
+            Still needed: {missing.join(", ")}
+          </p>
+        )}
       </div>
     </div>
   );

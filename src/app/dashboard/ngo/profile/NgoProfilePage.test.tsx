@@ -161,7 +161,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
     await waitFor(
       () => {
         expect(screen.getByText(/items requested/i)).toBeInTheDocument();
-        expect(screen.getByText(/active campaigns/i)).toBeInTheDocument();
+        expect(screen.getByText(/live drives/i)).toBeInTheDocument();
         expect(screen.getByText(/donations matched/i)).toBeInTheDocument();
       },
       { timeout: 5000 }
@@ -229,7 +229,7 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
     expect(screen.getByText("Milestones")).toBeInTheDocument();
     expect(screen.getByText("Profile Submitted")).toBeInTheDocument();
     expect(screen.getByText("Verified Partner")).toBeInTheDocument();
-    expect(screen.getByText("First Campaign")).toBeInTheDocument();
+    expect(screen.getByText("First Drive")).toBeInTheDocument();
   });
 
   it("renders Application Status card and earned milestones when application is submitted", async () => {

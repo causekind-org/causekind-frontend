@@ -197,6 +197,8 @@ function RegisterContent() {
   // and so a user who changes it is never overwritten by a later re-render.
   const initialRole = (() => {
     const raw = searchParams.get("role")?.toUpperCase();
+    // NGO links use the short `?role=NGO`; it means the NGO_PARTNER sign-up form.
+    if (raw === "NGO") return "NGO_PARTNER";
     return raw === "DONEE" || raw === "DONOR" || raw === "NGO_PARTNER" ? raw : "DONOR";
   })();
 
@@ -505,7 +507,7 @@ function RegisterContent() {
           password: form.password,
           website: ngoWebsite.trim() || undefined,
         });
-        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName });
+        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName, phone: fullPhone });
         trackCompleteRegistration({ method: "ngo" });
         toast.success("NGO account created! Welcome to CauseKind.");
         router.replace("/");

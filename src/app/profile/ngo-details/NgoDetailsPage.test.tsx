@@ -311,4 +311,42 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/profile"));
     expect(submitNgoApplication).not.toHaveBeenCalled();
   }, 20000);
+
+  it("pre-fills fields from signup data if no draft exists, but keeps draft data if present", async () => {
+    window.scrollTo = vi.fn();
+    mockStepParam = null;
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+
+    // Mock useAuth directly to ensure fullName and phone exist for testing pre-fill
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 101, email: "ngo@example.com", fullName: "John Doe NGO", phone: "1234567890", role: "NGO_PARTNER" },
+      isLoading: false,
+      isRestoring: false,
+      setUser: vi.fn(),
+      logout: vi.fn(),
+      setAuth: vi.fn(),
+    });
+
+    // Test 1: No draft - should use signup data (from the global mock user in this file)
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+    const { unmount } = render(<NgoDetailsPage />);
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Organization Name/i)).toHaveValue("John Doe NGO");
+    });
+    
+    // Test 2: Has draft - should keep draft data
+    unmount();
+    vi.clearAllMocks();
+    vi.mocked(getNgoDraft).mockResolvedValue({
+      organizationName: "Saved Draft Foundation",
+      mobileNumber: "1112223333",
+      officialEmail: "draft@ngo.org",
+    } as any);
+    
+    render(<NgoDetailsPage />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Organization Name/i)).toHaveValue("Saved Draft Foundation");
+    });
+  });
 });

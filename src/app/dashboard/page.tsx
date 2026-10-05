@@ -15,7 +15,7 @@ import {
   reopenItemRequest, cancelItemRequest, deleteItemRequestDraft, hideWithdrawnRequest,
   getOfferCancellationOptions, type CancellationOption,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer,
-  getMyNgoDriveOffers, type NgoDriveOfferResponse
+  getMyNgoDriveOffers, cancelNgoDriveOffer, type NgoDriveOfferResponse
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
@@ -561,6 +561,11 @@ const OFFER_STATUS_META: Record<string, OfferMeta> = {
   PENDING_ADMIN_APPROVAL:        { label: "Admin Reviewing",          explanation: "CauseKind admin is doing a final check before approving the handover.", severity: "info" },
   ADMIN_APPROVED:                { label: "Approved! Schedule Handover", explanation: "Your offer was approved. Please schedule the handover now.", action: "handover", actionLabel: "Go to Handover Hub", severity: "warning" },
   ADMIN_REJECTED:                { label: "Rejected by Admin",        explanation: "Admin could not approve this offer. See the reason and your next steps below.", action: "browse", actionLabel: "Browse other requests", severity: "error" },
+  // NGO drive offers: the NGO reviews; the handover starts as soon as it accepts.
+  PENDING_NGO_REVIEW:            { label: "NGO Reviewing",            explanation: "The NGO is reviewing your photos and details.", severity: "info" },
+  NGO_ACCEPTED:                  { label: "Accepted! Plan Handover",  explanation: "The NGO accepted your offer. Plan the handover now.", action: "handover", actionLabel: "Go to Handover Hub", severity: "warning" },
+  NGO_DECLINED:                  { label: "Declined by NGO",          explanation: "The NGO could not use this offer. See the reason below.", action: "browse", actionLabel: "Browse other needs", severity: "error" },
+  ENDED:                         { label: "Drive Ended",              explanation: "This drive closed before your offer was handed over.", severity: "neutral" },
   HANDOVER_IN_PROGRESS:          { label: "Handover in Progress",     explanation: "The handover is scheduled. Confirm the OTP when you physically hand over the item.", action: "handover", actionLabel: "Open Handover Hub", severity: "info" },
   HANDOVER_AT_RISK:              { label: "Handover At Risk",         explanation: "The handover has been rescheduled multiple times. Admin review may be required.", action: "handover", actionLabel: "View Handover Hub", severity: "warning" },
   ISSUE_WINDOW_OPEN:             { label: "Issue Window Open",        explanation: "Delivery confirmed! Both parties can report any problems within the issue window.", action: "issues", actionLabel: "Report an issue", severity: "success" },
@@ -609,12 +614,12 @@ function OfferStageCard({
     }) ?? ""
   );
 
-  const isTerminal = ["COMPLETED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(offer.status);
+  const isTerminal = ["COMPLETED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "DONEE_DECLINED", "NGO_DECLINED", "ENDED"].includes(offer.status);
 
   const actionHref = offer._type === "DRIVE_OFFER" ? 
     (meta.action === "edit"        ? `/drives/${offer.driveId}/give` :
      meta.action === "handover"    ? `/ngo-drive-offers/${offer.id}/handover` :
-     meta.action === "issues"      ? `/ngo-drive-offers/${offer.id}/issues` :
+     meta.action === "issues"      ? `/ngo-drive-offers/${offer.id}/handover` :
      meta.action === "certificate" ? `/certificate?offerId=${offer.id}&type=ngo_drive` :
      meta.action === "browse"      ? `/requests` : null)
     : 
@@ -754,9 +759,47 @@ function OfferStageCard({
             {meta.actionLabel}
           </Link>
         )}
-        <OfferCancelAction offerId={offer.id} onCancelled={onCancelled} />
+        {offer._type === "DRIVE_OFFER"
+          // Drive offers have their own cancel endpoint; the donation-offer one is a different record.
+          ? <DriveOfferCancelAction offerId={offer.id} status={offer.status} onCancelled={onCancelled} />
+          : <OfferCancelAction offerId={offer.id} onCancelled={onCancelled} />}
       </div>
     </div>
+  );
+}
+
+/** Withdraw (before the handover) or cancel (during it) an offer to an NGO drive. */
+const DRIVE_OFFER_CANCELLABLE = new Set([
+  "DRAFT", "NEEDS_INFORMATION", "SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING",
+  "PENDING_NGO_REVIEW", "NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK",
+]);
+function DriveOfferCancelAction({ offerId, status, onCancelled }: { offerId: number; status: string; onCancelled: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  if (!DRIVE_OFFER_CANCELLABLE.has(status)) return null;
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <button type="button" onClick={() => setOpen(true)}
+        className="rounded-xl border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 dark:border-zinc-700 dark:text-stone-300 dark:hover:bg-zinc-800">
+        Cancel offer
+      </button>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancel your offer to this drive?</AlertDialogTitle>
+          <AlertDialogDescription>The NGO will be told, and the quantity goes back to the drive for other donors.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>Keep my offer</AlertDialogCancel>
+          <AlertDialogAction disabled={busy} onClick={async (e) => {
+            e.preventDefault();
+            setBusy(true);
+            try { await cancelNgoDriveOffer(offerId, "Cancelled by donor"); toast.success("Offer cancelled."); setOpen(false); onCancelled(); }
+            catch (err) { toast.error(err instanceof Error && err.message ? err.message : "We couldn't cancel this offer."); }
+            finally { setBusy(false); }
+          }}>Cancel offer</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 
@@ -1967,6 +2010,8 @@ export default function DashboardPage() {
         requestTitle: d.driveTitle,
         requestCategory: "NGO Drive",
         requestCity: d.ngoName,
+        // The NGO's decline reason is shown where the card shows any reason.
+        rejectionReason: d.ngoDeclineReason || d.rejectionReason,
         flowType: null
       }));
       setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
@@ -2022,6 +2067,8 @@ export default function DashboardPage() {
         requestTitle: d.driveTitle,
         requestCategory: "NGO Drive",
         requestCity: d.ngoName,
+        // The NGO's decline reason is shown where the card shows any reason.
+        rejectionReason: d.ngoDeclineReason || d.rejectionReason,
         flowType: null
       }));
       setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
@@ -2101,6 +2148,8 @@ export default function DashboardPage() {
           requestTitle: d.driveTitle,
           requestCategory: "NGO Drive",
           requestCity: d.ngoName,
+          // The NGO's decline reason is shown where the card shows any reason.
+          rejectionReason: d.ngoDeclineReason || d.rejectionReason,
           flowType: null
         }));
         setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));

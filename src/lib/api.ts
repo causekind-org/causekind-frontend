@@ -499,9 +499,21 @@ export function createCampaign(data: {
 
 // ── Admin ─────────────────────────────────────────────────────────────────────
 
-export function adminGetCampaigns(status?: string) {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-  return request<Campaign[]>(`/api/v1/admin/campaigns${qs}`);
+/**
+ * Admin queue tabs pass `{ excludeNgo: true }`: NGO work (applications, drives, drive
+ * offers, proofs) is reviewed only in the NGO tabs. Reports call without it.
+ */
+export type AdminListOptions = { excludeNgo?: boolean };
+function adminListQuery(status?: string, opts?: AdminListOptions) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (opts?.excludeNgo) params.set("excludeNgo", "true");
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
+export function adminGetCampaigns(status?: string, opts?: AdminListOptions) {
+  return request<Campaign[]>(`/api/v1/admin/campaigns${adminListQuery(status, opts)}`);
 }
 
 export function approveCampaign(id: number) {
@@ -808,9 +820,8 @@ export function createItemListing(data: CreateListingPayload) {
   });
 }
 
-export function adminGetItemListings(status?: string) {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-  return request<ItemListing[]>(`/api/v1/admin/items${qs}`);
+export function adminGetItemListings(status?: string, opts?: AdminListOptions) {
+  return request<ItemListing[]>(`/api/v1/admin/items${adminListQuery(status, opts)}`);
 }
 
 export function adminApproveItemListing(id: number) {
@@ -1448,9 +1459,8 @@ export function analyzeIdProof(documentUrl: string, documentId?: number) {
   });
 }
 
-export function adminGetItemRequests(status?: string) {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-  return request<ItemRequest[]>(`/api/v1/admin/item-requests${qs}`);
+export function adminGetItemRequests(status?: string, opts?: AdminListOptions) {
+  return request<ItemRequest[]>(`/api/v1/admin/item-requests${adminListQuery(status, opts)}`);
 }
 
 export function adminApproveItemRequest(id: number) {
@@ -2820,9 +2830,8 @@ export function getChatUnreadCount(offerId: number) {
 // Donor Flow 2 — Admin
 // ─────────────────────────────────────────────────────────────────────────────
 
-export function adminGetAllOffers(status?: string) {
-  const q = status ? `?status=${status}` : "";
-  return request<DonationOffer[]>(`/api/v1/admin/offers${q}`);
+export function adminGetAllOffers(status?: string, opts?: AdminListOptions) {
+  return request<DonationOffer[]>(`/api/v1/admin/offers${adminListQuery(status, opts)}`);
 }
 
 export function adminActionOffer(offerId: number, action: string, reason?: string, backupOfferId?: number) {
@@ -2929,13 +2938,6 @@ export function analyzeItemImage(image: File): Promise<{ description: string }> 
   });
 }
 
-export function requestListing(listingId: number, reason: string) {
-  return request<ItemMatch>("/api/v1/matches/request", {
-    method: "POST",
-    body: JSON.stringify({ listingId, reason }),
-  });
-}
-
 export function getMyMatches() {
   return request<ItemMatch[]>("/api/v1/matches/mine", { silent401: true });
 }
@@ -2944,9 +2946,8 @@ export function getMatch(id: number) {
   return request<ItemMatch>(`/api/v1/matches/${id}`);
 }
 
-export function adminGetMatches(status?: string) {
-  const qs = status ? `?status=${encodeURIComponent(status)}` : "";
-  return request<ItemMatch[]>(`/api/v1/admin/matches${qs}`);
+export function adminGetMatches(status?: string, opts?: AdminListOptions) {
+  return request<ItemMatch[]>(`/api/v1/admin/matches${adminListQuery(status, opts)}`);
 }
 
 export function adminApproveMatch(id: number) {
@@ -4671,13 +4672,16 @@ export function adminGetNgoEvidenceLink(id: string, file: NgoReviewFile) {
 }
 
 export type NgoHandover = {
-  kind: "MATCH" | "OFFER"; id: number; requestId: number | null; title: string; status: string;
+  /** DRIVE_OFFER: a donor offer to one of the NGO's drives; requestId is then the drive id. */
+  kind: "MATCH" | "OFFER" | "DRIVE_OFFER"; id: number; requestId: number | null; title: string; status: string;
   quantity: number; scheduledAt: string | null; received: boolean; dualConfirmed: boolean;
   photoDue: boolean; href: string;
 };
 export type NgoOverview = {
   activeRequests: number; itemsPledged: number; dropoffsToConfirm: number; photosDue: number;
   photosDueRequestName: string; verifiedDeliveries: number; handovers: NgoHandover[];
+  /** One drive at a time: false while an earlier drive is not finished (proof approved). */
+  canStartDrive?: boolean; blockingDriveTitle?: string; blockingDriveStatus?: string;
 };
 export function getNgoOverview() {
   // Activity events must not reuse totals cached before the handover changed.
@@ -4758,20 +4762,144 @@ export type NgoDrive = {
   contactPhone: string;
   status: string;
   adminReason?: string;
+  details?: string | null;
+  referencePhotoUrl?: string | null;
   createdAt: string;
   submittedAt?: string;
   reviewedAt?: string;
   reviewedBy?: string;
   liveAt?: string;
+  proofDueAt?: string | null;
+  distributionProofSubmittedAt?: string | null;
+  beneficiariesReached?: number | null;
 };
 
-export async function getNgoDrives(status?: string): Promise<NgoDrive[]> {
-  const query = status ? `?status=${status}` : "";
-  return await request<NgoDrive[]>(`/api/v1/drives${query}`);
+/** A LIVE drive as the public sees it (GET /api/v1/drives). */
+export type PublicNgoDrive = {
+  id: number;
+  title: string;
+  category: string;
+  itemName: string;
+  quantityNeeded: number;
+  unit: string;
+  condition?: string;
+  details?: string;
+  referencePhotoUrl?: string | null;
+  description?: string;
+  urgency: string;
+  beneficiaryGroup?: string;
+  beneficiaryCount?: number;
+  neededBy: string;
+  availableDays?: string[];
+  availableFrom?: string;
+  availableTo?: string;
+  quantityPledged: number;
+  quantityReceived: number;
+  stillNeeded: number;
+  status: string;
+  ngoOrganizationName?: string | null;
+  ngoCity?: string | null;
+  verified: boolean;
+};
+
+// ── Admin: NGO drives, drive offers, distribution proofs ────────────────────
+
+export type AdminDriveStatusFilter = "PENDING_REVIEW" | "CHANGES_REQUESTED" | "LIVE" | "FULLY_PLEDGED"
+  | "COLLECTION_COMPLETE" | "PROOF_SUBMITTED" | "FULFILLED" | "CLOSED" | "CANCELLED" | "REJECTED";
+
+export function adminGetNgoDrives(status: AdminDriveStatusFilter = "PENDING_REVIEW") {
+  return request<NgoDrive[]>(`/api/v1/admin/ngo-drives?status=${status}`);
+}
+export function adminGetNgoDrive(id: number) {
+  return request<NgoDrive>(`/api/v1/admin/ngo-drives/${id}`);
+}
+export function adminGetNgoDriveNgo(id: number) {
+  return request<{ ngoUserId: number; ngoName: string; applicationId?: string; applicationStatus?: string }>(
+    `/api/v1/admin/ngo-drives/${id}/ngo`);
+}
+export function adminApproveNgoDrive(id: number) {
+  return request<NgoDrive>(`/api/v1/admin/ngo-drives/${id}/approve`, { method: "PATCH" });
+}
+export function adminRequestNgoDriveChanges(id: number, reason: string) {
+  return request<NgoDrive>(`/api/v1/admin/ngo-drives/${id}/request-changes`, { method: "PATCH", body: JSON.stringify({ reason }) });
+}
+export function adminRejectNgoDrive(id: number, reason: string) {
+  return request<NgoDrive>(`/api/v1/admin/ngo-drives/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
+}
+export type AdminProofDrive = NgoDrive & { distributionProofUrls?: string | null; distributionProofSubmittedAt?: string | null; beneficiariesReached?: number | null };
+export function adminGetNgoDriveProofs() {
+  return request<AdminProofDrive[]>("/api/v1/admin/ngo-drives/proofs");
+}
+export function adminApproveNgoDriveProof(id: number) {
+  return request<void>(`/api/v1/admin/ngo-drives/${id}/proof/approve`, { method: "PATCH" });
+}
+export function adminRejectNgoDriveProof(id: number, reason: string) {
+  return request<void>(`/api/v1/admin/ngo-drives/${id}/proof/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
+}
+export type AdminPendingDriveOffer = {
+  id: number; status: string; submittedAt?: string | null; matchScore?: number | null;
+  compatibilityIndicator?: string | null; driveId: number; driveTitle: string; driveItemName?: string;
+  driveUnit?: string; ngoName?: string; donorName?: string; donorCity?: string | null;
+  quantity?: number; condition?: string; approximateAge?: string; knownDefects?: string;
+  notesForNgo?: string; handoverMethod?: string;
+};
+export function adminGetPendingNgoDriveOffers() {
+  return request<AdminPendingDriveOffer[]>("/api/v1/admin/ngo-drive-offers/pending");
+}
+/** Filter groups the backend accepts (AdminNgoDriveOfferController.FILTERS). */
+export type AdminDriveOfferFilter = "PENDING" | "APPROVED" | "IN_HANDOVER" | "COMPLETED" | "REJECTED" | "CANCELLED";
+export function adminGetNgoDriveOffers(status: AdminDriveOfferFilter = "PENDING") {
+  return request<AdminPendingDriveOffer[]>(`/api/v1/admin/ngo-drive-offers?status=${status}`);
+}
+export type AdminDriveOfferDetail = AdminPendingDriveOffer & {
+  rejectionReason?: string | null; ngoDeclineReason?: string | null; photos: string[];
+  handover?: {
+    method: string | null; scheduledAt: string | null; atRisk: boolean; rescheduleCount: number;
+    donorConfirmedAt?: string | null; ngoConfirmedAt?: string | null; otpVerified?: boolean;
+  };
+};
+export function adminGetNgoDriveOffer(id: number) {
+  return request<AdminDriveOfferDetail>(`/api/v1/admin/ngo-drive-offers/${id}`);
+}
+export function adminApproveNgoDriveOffer(id: number) {
+  return request<unknown>(`/api/v1/admin/ngo-drive-offers/${id}/approve`, { method: "PATCH" });
+}
+export function adminRejectNgoDriveOffer(id: number, reason: string) {
+  return request<unknown>(`/api/v1/admin/ngo-drive-offers/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
 }
 
-export async function getNgoDrive(id: number): Promise<NgoDrive> {
-  return await request<NgoDrive>(`/api/v1/drives/${id}`);
+/** LIVE drives only; the backend filters by status itself and accepts just `category`. */
+export async function getNgoDrives(category?: string): Promise<PublicNgoDrive[]> {
+  const query = category ? `?category=${encodeURIComponent(category)}` : "";
+  return await request<PublicNgoDrive[]>(`/api/v1/drives${query}`);
+}
+
+/** Edits a drive in PENDING_REVIEW or CHANGES_REQUESTED; the backend puts it back to PENDING_REVIEW. */
+export async function updateNgoDrive(id: number, payload: CreateNgoDrivePayload): Promise<NgoDrive> {
+  return await request<NgoDrive>(`/api/v1/ngo-drives/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Uploads a drive's reference photo and returns its URL (never a data URL). */
+export async function uploadNgoDriveReferencePhoto(file: File): Promise<string> {
+  const body = new FormData(); body.append("file", file);
+  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const response = await fetch(`${BASE_URL}/api/v1/ngo-drives/uploads/reference-photo`, {
+    method: "POST", body, credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+    throw new ApiError(response.status, result?.fieldErrors?.[0]?.message || result?.detail || "We could not upload the photo. Please try again.", result);
+  }
+  const { url } = await response.json() as { url: string };
+  return url;
+}
+
+export async function getNgoDrive(id: number): Promise<PublicNgoDrive> {
+  return await request<PublicNgoDrive>(`/api/v1/drives/${id}`);
 }
 
 export async function cancelNgoDrive(driveId: number): Promise<void> {
@@ -4802,6 +4930,8 @@ export type NgoDriveOfferResponse = {
   pickupPincode?: string;
   rejectionReason?: string;
   ngoDeclineReason?: string;
+  /** Photos the NGO took of the items it received at the handover. */
+  receiptPhotos?: string[];
   submittedAt?: string;
   driveTitle: string;
   ngoName: string;
@@ -4815,8 +4945,21 @@ export type NgoDriveOfferResponse = {
     status: string;
     sortOrder: number;
   }>;
+  driveStatus?: string;
+  driveItemName?: string;
+  driveUnit?: string;
+  /** The NGO's handover window: MON..SUN and HH:mm. */
+  driveAvailableDays?: string[];
+  driveAvailableFrom?: string | null;
+  driveAvailableTo?: string | null;
+  /** Shared once the NGO has accepted the offer. */
   handoverDetails?: {
     organizationName: string;
+    registeredOfficeAddress?: string | null;
+    contactName?: string | null;
+    contactPhone?: string | null;
+    availableDays?: string | null;
+    availableHours?: string | null;
   };
 };
 
@@ -4828,15 +4971,12 @@ export async function createNgoDriveOfferDraft(driveId: number): Promise<{ id: n
 }
 
 export async function uploadNgoDriveOfferMedia(offerId: number, formData: FormData): Promise<any> {
-  // Using native fetch because request() sets Content-Type: application/json by default
-  const token = localStorage.getItem("ck_token");
-  const headers: HeadersInit = {};
-  if (token) headers["Authorization"] = `Bearer ${token}`;
-
-  const res = await fetch(`/api/v1/drive-offers/${offerId}/media`, {
+  // Native fetch because request() sets Content-Type: application/json. Auth is the
+  // session cookie, like every other upload (the old ck_token header no longer exists).
+  const res = await fetch(`${BASE_URL}/api/v1/drive-offers/${offerId}/media`, {
     method: "POST",
-    headers,
     body: formData,
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -4961,15 +5101,40 @@ export async function closeNgoDrive(driveId: number, data: { reason: string }): 
     body: JSON.stringify(data),
   });
 }
-export async function uploadDistributionProof(driveId: number, file: File): Promise<void> {
+export async function uploadDistributionProof(driveId: number, files: File[], beneficiariesReached: number): Promise<void> {
   const formData = new FormData();
-  formData.append("files", file);
-  const res = await fetch(`/api/v1/ngo-drives/${driveId}/distribution-proof`, {
+  files.forEach((f) => formData.append("files", f));
+  formData.append("beneficiariesReached", String(beneficiariesReached));
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-drives/${driveId}/distribution-proof`, {
     method: "POST",
     body: formData,
-    // Add credentials if needed or fetch wrapper that handles auth
+    credentials: "include",
   });
-  if (!res.ok) throw new Error("Upload failed");
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || "Upload failed");
+}
+
+/** The planned handover of a drive offer (donor or the drive's NGO); null until the donor plans it. */
+export async function getNgoDriveOfferHandover(offerId: number): Promise<NgoDriveOfferHandoverRecordResponse | null> {
+  const record = await request<NgoDriveOfferHandoverRecordResponse | undefined>(`/api/v1/drive-offers/${offerId}/handover`);
+  return record ?? null;
+}
+
+/** One offer to the NGO's own drive (the donor-only /drive-offers/{id} refuses the NGO). */
+export async function getNgoDriveOfferForNgo(driveId: number, offerId: number): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}`);
+}
+
+/** Photos the NGO takes of the items it received; needed before it confirms the handover. */
+export async function uploadNgoDriveReceiptPhotos(driveId: number, offerId: number, files: File[]): Promise<string[]> {
+  const formData = new FormData();
+  files.forEach((f) => formData.append("files", f));
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-drives/${driveId}/offers/${offerId}/receipt-photos`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || "Upload failed");
+  return await res.json();
 }
 
 
@@ -4983,6 +5148,8 @@ export type NgoDriveProofResponse = {
   uploadedAt: string;
   media: { mediaUrl: string; mediaType: string }[];
   quantityDistributed: number;
+  /** People reached at the distribution, as reported with the proof (null on older proofs). */
+  beneficiariesReached?: number | null;
   ngoStatement: string | null;
   status: string;
 };

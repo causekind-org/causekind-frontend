@@ -40,7 +40,7 @@ export function NGOProgress({ currentStep, completedSteps, onJump }: NGOProgress
         {NGO_STEPS.map((step, i) => {
           const isCurrent = step === currentStep;
           const isDone = completedSteps.has(step) && !isCurrent;
-          const canJump = isDone;
+          const canJump = isDone || i <= idx;
           const isLast = i === NGO_STEPS.length - 1;
 
           return (

@@ -32,6 +32,7 @@ describe("NgoCampaignPrompt", () => {
     mockUseNgoStatus.mockReturnValue({
       isVerified: true,
       status: "verified",
+      canPostRequest: true,
     });
     mockUseAuth.mockReturnValue({
       user: { id: "ngo-1", email: "ngo@example.com", role: "NGO_PARTNER" },
@@ -47,6 +48,7 @@ describe("NgoCampaignPrompt", () => {
     mockUseNgoStatus.mockReturnValue({
       isVerified: false,
       status: "incomplete",
+      canPostRequest: false,
     });
 
     render(<NgoCampaignPrompt />);
@@ -94,11 +96,11 @@ describe("NgoCampaignPrompt", () => {
       vi.advanceTimersByTime(10000);
     });
     expect(screen.getByText(/NGO Portal/i)).toBeInTheDocument();
-    expect(screen.getByText(/Post a campaign \/ request/i)).toBeInTheDocument();
+    expect(screen.getByText(/^Start a drive$/i)).toBeInTheDocument();
     expect(screen.getByText(/Tell donors what you need/i)).toBeInTheDocument();
 
     const ctaLink = screen.getByRole("link", { name: /Post/i });
-    expect(ctaLink).toHaveAttribute("href", "/requests/new");
+    expect(ctaLink).toHaveAttribute("href", "/ngo/drives/new");
 
     // Advance 9.5s -> still visible
     act(() => {

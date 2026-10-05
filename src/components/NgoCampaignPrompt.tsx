@@ -111,7 +111,7 @@ export function NgoCampaignPrompt() {
     <div className="fixed top-[8.5rem] lg:top-[10rem] left-0 z-[9980] pointer-events-none">
       <div
         aria-live="polite"
-        aria-label="Post a campaign prompt"
+        aria-label="Start a drive prompt"
         className="pointer-events-auto w-[calc(100vw-2rem)] max-w-[300px] sm:max-w-[320px]"
         style={{
           opacity: entered ? 1 : 0,
@@ -147,7 +147,7 @@ export function NgoCampaignPrompt() {
                 NGO Portal
               </p>
               <p className="mt-0.5 truncate text-sm font-black leading-tight text-stone-950 dark:text-stone-100">
-                Post a campaign / request
+                Start a drive
               </p>
               <p className="mt-0.5 truncate text-2xs font-semibold leading-snug text-stone-600 dark:text-stone-400">
                 Tell donors what you need.

@@ -14,16 +14,16 @@ describe("GiftJourneyTracker Component Suite", () => {
     expect(screen.getByText("What happens after you post")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "From listing your needs to donor handover, every step is direct, transparent, and closed with photo proof."
+        "From starting a drive to donor handover, every step is direct, transparent, and closed with photo proof."
       )
     ).toBeInTheDocument();
   });
 
-  it("renders NGO request lifecycle steps and allows clicking steps to view details", () => {
+  it("renders NGO drive lifecycle steps and allows clicking steps to view details", () => {
     render(<GiftJourneyTracker />);
 
     expect(screen.getByText("Illustrative journey · 40 blankets")).toBeInTheDocument();
-    expect(screen.getByText("1. You post a request")).toBeInTheDocument();
+    expect(screen.getByText("1. You start a drive")).toBeInTheDocument();
     expect(screen.getByText("2. Donors nearby pledge them")).toBeInTheDocument();
     expect(screen.getByText("3. They drop off, and you confirm receipt")).toBeInTheDocument();
     expect(screen.getByText("4. You upload a handover photo")).toBeInTheDocument();
@@ -49,5 +49,6 @@ describe("GiftJourneyTracker Component Suite", () => {
     fireEvent.click(replayButton);
 
     expect(screen.getByText("1. You start a drive")).toBeInTheDocument();
+    expect(screen.getByText("Step 1 of 5")).toBeInTheDocument();
   });
 });
