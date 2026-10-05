@@ -11,7 +11,8 @@ export function GoogleReviewsSection() {
   
   useEffect(() => {
     let mounted = true;
-    getReviews().then((res) => {
+    const controller = new AbortController();
+    getReviews(controller.signal).then((res) => {
       if (mounted) setData(res);
     });
 
@@ -25,6 +26,7 @@ export function GoogleReviewsSection() {
     mql.addEventListener('change', handler);
     return () => {
       mounted = false;
+      controller.abort();
       mql.removeEventListener('change', handler);
     };
   }, []);
@@ -55,20 +57,20 @@ export function GoogleReviewsSection() {
 
       <div className="max-w-6xl mx-auto px-5 sm:px-8 w-full flex flex-col items-center">
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-3 text-center">
-          Trusted by Our Clients
+          Reviews from Google Maps
         </h2>
         
         {/* Rating Pill */}
         <a 
-          href="#"
+          href={data.mapsUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-3 px-4 py-2 mt-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-stone-800 rounded-full shadow-sm hover:shadow-md transition-shadow group"
         >
-          <div className="w-5 h-5 flex items-center justify-center font-bold text-white text-xs bg-blue-600 rounded-full">G</div>
+          <span translate="no" className="text-sm font-normal whitespace-nowrap text-[#5E5E5E] dark:text-white">Google Maps</span>
           <div className="flex items-center gap-1 text-[#fbbc04]">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-4 h-4 fill-current" />
+              <Star key={i} className={`w-4 h-4 ${i < Math.round(data.overallRating) ? 'fill-current' : 'fill-transparent'}`} />
             ))}
           </div>
           <div className="flex items-center gap-2">
@@ -78,6 +80,12 @@ export function GoogleReviewsSection() {
           <ExternalLink className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300 transition-colors" />
         </a>
 
+        <p className="mt-4 text-sm text-stone-600 dark:text-stone-300 text-center">Up to 5 reviews, ordered by relevance by Google. <a href={data.mapsUrl} target="_blank" rel="noopener noreferrer" className="underline">See all reviews</a></p>
+        {data.attributions.map((attribution, index) => (
+          <p key={index} className="text-sm text-stone-600 dark:text-stone-300">
+            {attribution.providerUri ? <a href={attribution.providerUri} target="_blank" rel="noopener noreferrer">{attribution.provider}</a> : attribution.provider}
+          </p>
+        ))}
         {/* Carousel / Marquee */}
         <div className="w-full mt-10 sm:mt-14 relative">
           {prefersReducedMotion ? (
@@ -124,6 +132,7 @@ export function GoogleReviewsSection() {
 
 function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpandChange?: (expanded: boolean) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null);
   
   const handleToggle = () => {
     const newState = !expanded;
@@ -149,14 +158,13 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
           ))}
         </div>
         <div className="flex items-center gap-1 opacity-70">
-           <span className="w-3.5 h-3.5 flex items-center justify-center font-bold text-white text-[8px] bg-blue-600 rounded-full">G</span>
-           <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Google</span>
+           <span translate="no" className="text-xs font-normal whitespace-nowrap text-[#5E5E5E] dark:text-white">Google Maps</span>
         </div>
       </div>
       
       <div className="flex-1 mb-4">
         <p className={`text-sm text-stone-600 dark:text-stone-300 leading-relaxed ${!expanded ? 'line-clamp-4' : ''}`}>
-          "{review.text}"
+          {review.text || 'This reviewer left a rating without a comment.'}
         </p>
         {review.text.length > 150 && (
           <button 
@@ -171,21 +179,23 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
       <div className="w-full h-px bg-stone-100 dark:bg-stone-800 mb-4" />
 
       <div className="flex items-center gap-3">
-        {review.avatarUrl ? (
-          <img src={review.avatarUrl} alt={review.name} className="w-10 h-10 rounded-full object-cover" />
+        {review.avatarUrl && failedAvatarUrl !== review.avatarUrl ? (
+          <img
+            src={review.avatarUrl}
+            alt={review.name}
+            referrerPolicy="no-referrer"
+            onError={() => setFailedAvatarUrl(review.avatarUrl ?? null)}
+            className="w-10 h-10 shrink-0 rounded-full object-cover"
+          />
         ) : (
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm ${getAvatarColor(review.name)}`}>
+          <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm ${getAvatarColor(review.name)}`}>
             {getInitial(review.name)}
           </div>
         )}
         <div className="flex flex-col">
-          <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{review.name}</span>
-          <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-500 uppercase tracking-wider flex items-center gap-1">
-            <svg viewBox="0 0 24 24" fill="none" className="w-3 h-3 text-current">
-               <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            Verified review
-          </span>
+          {review.authorUrl ? <a href={review.authorUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-stone-900 dark:text-stone-100 hover:underline">{review.name}</a> : <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{review.name}</span>}
+          <span className="text-xs text-stone-500 dark:text-stone-400">{review.date}</span>
+          {review.reviewUrl && <a href={review.reviewUrl} target="_blank" rel="noopener noreferrer" className="text-xs underline text-stone-600 dark:text-stone-300">View review on Google Maps</a>}
         </div>
       </div>
     </div>

@@ -79,7 +79,6 @@ const TRUST_CARDS: TrustCardData[] = [
 const TRUST_STATS = [
   { value: "100%", label: "Admin-verified listings", color: "text-[var(--ck-role-accent,#B5480F)]" },
   { value: "10 km", label: "Local matching radius", color: "text-[var(--ck-role-accent)]" },
-  { value: "₹0", label: "Platform or hidden fees", color: "text-[var(--ck-role-accent)]" },
   { value: "Zero", label: "Middlemen or warehouses", color: "text-stone-800 dark:text-stone-100" },
 ];
 
@@ -158,7 +157,7 @@ function TrustSafetyMobile() {
         </SnapCarousel>
       </div>
 
-      <dl className="mt-3 grid grid-cols-4 rounded-xl bg-white/70 dark:bg-[#14100E]/70 border border-stone-200/80 dark:border-stone-800 shadow-xs divide-x divide-stone-200/60 dark:divide-stone-800/60">
+      <dl className="mt-3 grid grid-cols-3 rounded-xl bg-white/70 dark:bg-[#14100E]/70 border border-stone-200/80 dark:border-stone-800 shadow-xs divide-x divide-stone-200/60 dark:divide-stone-800/60">
         {TRUST_STATS.map((st, i) => (
           <div key={st.label} data-reveal-item style={stagger(5 + i)} className="flex flex-col-reverse items-center text-center px-1 py-2.5">
             <dt className="text-[10px] leading-tight font-medium text-stone-600 dark:text-stone-400 mt-0.5">{st.label}</dt>
@@ -203,7 +202,6 @@ function TrustSafetyFull({
   // Animated stat values state for smooth render
   const [stat1, setStat1] = useState(0);
   const [stat2, setStat2] = useState(0);
-  const [stat3, setStat3] = useState(0);
   const [typedZero, setTypedZero] = useState("");
 
   useEffect(() => {
@@ -213,7 +211,6 @@ function TrustSafetyFull({
     if (prefersReducedMotion) {
       setStat1(100);
       setStat2(10);
-      setStat3(0);
       setTypedZero("Zero");
       return;
     }
@@ -294,7 +291,6 @@ function TrustSafetyFull({
           onUpdate: () => {
             setStat1(Math.round(statObj.count1));
             setStat2(Math.round(statObj.count2));
-            setStat3(Math.round(statObj.count3));
           },
         },
         "-=0.5"
@@ -428,7 +424,7 @@ function TrustSafetyFull({
         {/* ================= ANIMATED STATS ROW ================= */}
         <div
           ref={statsContainerRef}
-          className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl bg-white/70 dark:bg-[#14100E]/70 border border-stone-200/80 dark:border-stone-800 backdrop-blur-sm shadow-xs"
+          className="grid grid-cols-3 gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl bg-white/70 dark:bg-[#14100E]/70 border border-stone-200/80 dark:border-stone-800 backdrop-blur-sm shadow-xs"
         >
           {/* Stat 1: 100% */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2">
@@ -450,18 +446,8 @@ function TrustSafetyFull({
             </div>
           </div>
 
-          {/* Stat 3: ₹0 */}
-          <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-t md:border-t-0 md:border-l border-stone-200/60 dark:border-stone-800/60">
-            <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[var(--ck-role-accent)] font-mono tracking-tight">
-              ₹{stat3}
-            </div>
-            <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
-              Platform or hidden fees
-            </div>
-          </div>
-
-          {/* Stat 4: Zero */}
-          <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-t md:border-t-0 border-l border-stone-200/60 dark:border-stone-800/60">
+          {/* Stat 3: Zero */}
+          <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-l border-stone-200/60 dark:border-stone-800/60">
             <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-stone-800 dark:text-stone-100 font-mono tracking-tight min-h-[1.75rem] flex items-center justify-center">
               {typedZero || "\u00A0"}
             </div>
