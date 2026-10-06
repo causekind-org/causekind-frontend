@@ -327,12 +327,18 @@ export function HowItWorksSection() {
   const [hasScrolledIn, setHasScrolledIn] = useState(false);
 
   // The roles advance on their own while the section is on screen (every 2s on
-  // phones, 2s on desktop, paused while the pointer rests on the section), until
+  // phones, 2s on desktop, paused while the mouse rests on the tabs or cards), until
   // the reader picks a role or swipes — then it is theirs.
   const onScreen = useInView(sectionRef, { amount: 0.35 });
   const [isPhone, setIsPhone] = useState(false);
   const [userDriven, setUserDriven] = useState(false);
+  // Only the tabs and cards pause it: the section fills the screen, so pausing on
+  // the whole section kept desktop permanently paused under a resting mouse.
   const [hovering, setHovering] = useState(false);
+  const pauseOnHover = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setHovering(true);
+  };
+  const resumeOnLeave = () => setHovering(false);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -401,8 +407,6 @@ export function HowItWorksSection() {
   return (
     <section
       ref={sectionRef}
-      onPointerEnter={(e) => { if (e.pointerType === "mouse") setHovering(true); }}
-      onPointerLeave={() => setHovering(false)}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
       className="ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
@@ -467,6 +471,8 @@ export function HowItWorksSection() {
           <div
             ref={tabListRef}
             role="tablist"
+            onPointerEnter={pauseOnHover}
+            onPointerLeave={resumeOnLeave}
             aria-label="User role journey selector"
             onKeyDown={handleKeyDown}
             className="inline-flex p-1 rounded-full bg-stone-200/70 dark:bg-stone-900/90 border border-stone-300/60 dark:border-stone-800 shadow-inner max-w-full overflow-x-auto scrollbar-none"
@@ -520,6 +526,8 @@ export function HowItWorksSection() {
         {/* Steps Grid with Connecting Path */}
         <div
           role="tabpanel"
+          onPointerEnter={pauseOnHover}
+          onPointerLeave={resumeOnLeave}
           id={`tabpanel-${activeTab}`}
           aria-labelledby={`tab-${activeTab}`}
           className="relative w-full"
