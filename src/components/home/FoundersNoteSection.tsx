@@ -10,28 +10,55 @@ import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 import { galleryFonts } from "@/components/home/supportGallery/fonts";
 import fm from "./FoundersNoteMobile.module.css";
 import { usePlaceholderPreview } from "@/lib/placeholderPreview";
+import { DoneeSectionHeading, DONEE_HEADING_GAP } from "./DoneeSectionHeading";
+
+/** The donee page's centered heading block for this section (donee tone only). */
+function FoundersDoneeHeading() {
+  return (
+    <DoneeSectionHeading
+      eyebrow="Why we built CauseKind"
+      title="Neighbours helping neighbours."
+      lede="A note from our founder."
+    />
+  );
+}
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
 /**
+ * "donor" is the main landing page's terracotta and must stay as it was.
+ * "donee" scopes the donee role tokens onto the section (`data-ck-role-theme`
+ * in styles.css), so the `--ck-role-*` accents below resolve to navy in light
+ * mode and sky blue in dark mode.
+ */
+export type FoundersNoteTone = "donor" | "donee";
+
+/**
  * Illustrated Friendly Person Silhouette (Avatar Placeholder)
  * Rendered when FOUNDER.photo is null.
  * Styled in CauseKind warm peach & terracotta brand colours.
  */
-function FounderAvatarPlaceholder() {
+function FounderAvatarPlaceholder({ tone = "donor" }: { tone?: FoundersNoteTone }) {
+  const isDonee = tone === "donee";
   return (
-    <div className="relative w-full h-full flex items-center justify-center bg-gradient-to-b from-[#FCEADE] to-[#F5D5C0] dark:from-[#2A170F] dark:to-[#1C100A] overflow-hidden">
+    <div className={isDonee
+      ? "relative w-full h-full flex items-center justify-center bg-[var(--ck-role-soft)] overflow-hidden"
+      : "relative w-full h-full flex items-center justify-center bg-gradient-to-b from-[#FCEADE] to-[#F5D5C0] dark:from-[#2A170F] dark:to-[#1C100A] overflow-hidden"}>
       {/* Soft warm radial glow */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(181,72,15,0.15),transparent_70%)]" />
+      {isDonee ? (
+        <div className="absolute inset-0" style={{ background: "radial-gradient(circle at 50% 40%, rgba(var(--ck-role-shadow-rgb), 0.15), transparent 70%)" }} />
+      ) : (
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(181,72,15,0.15),transparent_70%)]" />
+      )}
 
       {/* Friendly minimalist illustrated silhouette SVG */}
       <svg
         viewBox="0 0 200 240"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="w-3/4 h-3/4 object-contain text-[#B5480F] dark:text-[#E07A5F] opacity-90 transition-transform duration-500 hover:scale-105"
+        className={`w-3/4 h-3/4 object-contain ${isDonee ? "text-[var(--ck-role-accent)]" : "text-[#B5480F] dark:text-[#E07A5F]"} opacity-90 transition-transform duration-500 hover:scale-105`}
         aria-hidden="true"
       >
         {/* Head */}
@@ -61,17 +88,18 @@ function FounderAvatarPlaceholder() {
 }
 
 /**
- * Phone version (< 768px). A letterhead ΓÇö small portrait beside the heading,
- * the note in a quote rule underneath ΓÇö read like a pull quote. Here the note
+ * Phone version (< 768px). A letterhead — small portrait beside the heading,
+ * the note in a quote rule underneath — read like a pull quote. Here the note
  * is what it says it is: a letter to the neighbourhood. The founder's photo is
  * a taped print beside the heading, hanging over the corner of a folded sheet
  * on its envelope; "Dear neighbour,", a doodle of two homes a few streets
  * apart, and a signed sign-off with a CauseKind stamp and postmark. The sheet
  * and print rise on the section's reveal; the route and the signature draw in
- * and the postmark lands when each of them reaches the screen ΓÇö all
+ * and the postmark lands when each of them reaches the screen — all
  * transform/opacity (styles in FoundersNoteMobile.module.css).
  */
-function FoundersNoteMobile() {
+function FoundersNoteMobile({ tone = "donor" }: { tone?: FoundersNoteTone }) {
+  const isDonee = tone === "donee";
   const ref = useRevealOnce<HTMLElement>();
   const doodleRef = useRevealOnce<HTMLDivElement>();
   const signoffRef = useRevealOnce<HTMLElement>();
@@ -81,22 +109,29 @@ function FoundersNoteMobile() {
       ref={ref}
       id="founders-note"
       aria-label="Why We Built CauseKind"
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5`}
+      data-ck-role-theme={isDonee ? "donee" : undefined}
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5${isDonee ? ` ${fm.donee}` : ""}`}
     >
-      <p data-reveal-item style={stagger(0)} className={fm.eyebrow}>
-        Why we built CauseKind
-      </p>
-      <div className={fm.masthead}>
-        <h2 data-reveal-item style={stagger(1)} className={fm.title}>
-          Neighbours helping <em>neighbours.</em>
-        </h2>
+      {isDonee ? (
+        <FoundersDoneeHeading />
+      ) : (
+        <p data-reveal-item style={stagger(0)} className={fm.eyebrow}>
+          Why we built CauseKind
+        </p>
+      )}
+      <div className={isDonee ? `${fm.masthead} ${fm.mastheadPrintOnly}` : fm.masthead}>
+        {!isDonee && (
+          <h2 data-reveal-item style={stagger(1)} className={fm.title}>
+            Neighbours helping <em>neighbours.</em>
+          </h2>
+        )}
         <figure data-reveal-item="scale" style={stagger(3)} className={fm.print}>
           <div className={fm.printPhoto}>
             {FOUNDER.photo ? (
               <Image src={FOUNDER.photo} alt={`${FOUNDER.name}, founder of CauseKind`} fill sizes="130px" className="object-cover object-top" />
             ) : (
               <div className="absolute inset-0" aria-hidden="true">
-                <FounderAvatarPlaceholder />
+                <FounderAvatarPlaceholder tone={tone} />
               </div>
             )}
           </div>
@@ -137,7 +172,7 @@ function FoundersNoteMobile() {
             </div>
 
             <p>
-              We built CauseKind to connect the two ΓÇö simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
+              We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
             </p>
           </div>
 
@@ -167,7 +202,7 @@ function FoundersNoteMobile() {
                         stroke="none"
                       />
                     </svg>
-                    <span className={fm.stampValue}>Γé╣0</span>
+                    <span className={fm.stampValue}>₹0</span>
                   </div>
                 </div>
                 <svg className={fm.postmark} viewBox="0 0 120 80" fill="none">
@@ -178,7 +213,7 @@ function FoundersNoteMobile() {
                   <circle cx="40" cy="40" r="21.5" stroke="currentColor" strokeWidth="1.2" />
                   <text fontSize="7.2" letterSpacing="0.6">
                     <textPath href={`#${ringId}`} textLength="168" lengthAdjust="spacingAndGlyphs">
-                      NEIGHBOURHOOD POST ΓÇó CAUSEKIND ΓÇó
+                      NEIGHBOURHOOD POST • CAUSEKIND •
                     </textPath>
                   </text>
                   <text x="40" y="38" fontSize="6.5" textAnchor="middle" letterSpacing="0.8">WITHIN</text>
@@ -205,22 +240,24 @@ function FoundersNoteMobile() {
 
 export function FoundersNoteSection({
   variant = "desktop",
+  tone = "donor",
 }: {
   variant?: "desktop" | "mobile";
+  tone?: FoundersNoteTone;
 }) {
   // Visibility safety: placeholder content shows only in dev and on staging, never in production
   const previewAllowed = usePlaceholderPreview();
   if (FOUNDER.isPlaceholder && !previewAllowed) {
     return null;
   }
-  if (variant === "desktop") return <FoundersNoteFull variant="desktop" />;
+  if (variant === "desktop") return <FoundersNoteFull variant="desktop" tone={tone} />;
   return (
     <>
       <div className="md:hidden">
-        <FoundersNoteMobile />
+        <FoundersNoteMobile tone={tone} />
       </div>
       <div className="hidden md:block">
-        <FoundersNoteFull variant="mobile" />
+        <FoundersNoteFull variant="mobile" tone={tone} />
       </div>
     </>
   );
@@ -228,9 +265,32 @@ export function FoundersNoteSection({
 
 function FoundersNoteFull({
   variant,
+  tone = "donor",
 }: {
   variant: "desktop" | "mobile";
+  tone?: FoundersNoteTone;
 }) {
+  const isDonee = tone === "donee";
+  // Accent classes per tone. The donor strings are the original ones verbatim.
+  const accent = isDonee
+    ? {
+        ring: "border-[var(--ck-role-accent)]/30!",
+        backplate: "bg-[var(--ck-role-soft)]",
+        line: "bg-[var(--ck-role-accent)]",
+        eyebrow: "text-[var(--ck-role-accent)]",
+        quote: "text-[var(--ck-role-accent)]/30",
+        divider: "border-[var(--ck-role-border)]!",
+        title: "text-[var(--ck-role-accent)]",
+      }
+    : {
+        ring: "border-[#B5480F]/30 dark:border-[#B5480F]/40",
+        backplate: "bg-[#FCEADE] dark:bg-[#2A170F]",
+        line: "bg-[#B5480F]",
+        eyebrow: "text-[#B5480F] dark:text-[#F4A25B]",
+        quote: "text-[#B5480F]/25 dark:text-[#E07A5F]/30",
+        divider: "border-stone-200/60 dark:border-stone-800/60",
+        title: "text-[#B5480F] dark:text-[#F4A25B]",
+      };
   const sectionRef = useRef<HTMLElement>(null);
   const photoFrameRef = useRef<HTMLDivElement>(null);
   const quoteMarkRef = useRef<HTMLDivElement>(null);
@@ -278,7 +338,7 @@ function FoundersNoteFull({
     if (prefersReducedMotion) return;
 
     const mm = gsap.matchMedia();
-    // Tablet only for the "mobile" variant ΓÇö phones render FoundersNoteMobile.
+    // Tablet only for the "mobile" variant — phones render FoundersNoteMobile.
     const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(min-width: 768px) and (max-width: 1023px)";
 
     mm.add(mediaQuery, () => {
@@ -367,29 +427,40 @@ function FoundersNoteFull({
       ref={sectionRef}
       id="founders-note"
       aria-label="Why We Built CauseKind"
+      data-ck-role-theme={isDonee ? "donee" : undefined}
       className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors"
     >
       {/* Ambient background glow */}
-      <div
-        className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] bg-[radial-gradient(circle,_rgba(181,72,15,0.08)_0%,_transparent_70%)] blur-3xl pointer-events-none"
-        aria-hidden="true"
-      />
+      {isDonee ? (
+        <div
+          className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] blur-3xl pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(var(--ck-role-shadow-rgb), 0.08) 0%, transparent 70%)" }}
+          aria-hidden="true"
+        />
+      ) : (
+        <div
+          className="absolute top-1/2 left-1/3 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] bg-[radial-gradient(circle,_rgba(181,72,15,0.08)_0%,_transparent_70%)] blur-3xl pointer-events-none"
+          aria-hidden="true"
+        />
+      )}
 
       <div className="relative max-w-6xl mx-auto px-5 sm:px-8 w-full flex flex-col justify-center">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] items-center gap-8 sm:gap-10 lg:gap-14">
+        {/* Donee: the heading sits centered above the photo + note. */}
+        {isDonee && <FoundersDoneeHeading />}
+        <div className={`grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] items-center gap-8 sm:gap-10 lg:gap-14${isDonee ? ` ${DONEE_HEADING_GAP}` : ""}`}>
           
-          {/* ΓöÇΓöÇ LEFT COLUMN: Photo / Avatar Frame ΓöÇΓöÇ */}
+          {/* ── LEFT COLUMN: Photo / Avatar Frame ── */}
           <div className="flex justify-center lg:justify-start">
             <div className="relative group">
               {/* Outer decorative dashed orange ring */}
               <div
-                className="absolute -inset-2.5 rounded-[1.75rem] border-2 border-dashed border-[#B5480F]/30 dark:border-[#B5480F]/40 pointer-events-none"
+                className={`absolute -inset-2.5 rounded-[1.75rem] border-2 border-dashed ${accent.ring} pointer-events-none`}
                 aria-hidden="true"
               />
 
               {/* Decorative soft peach offset backplate */}
               <div
-                className="absolute inset-0 rounded-2xl sm:rounded-3xl bg-[#FCEADE] dark:bg-[#2A170F] translate-x-1.5 translate-y-1.5 -z-10"
+                className={`absolute inset-0 rounded-2xl sm:rounded-3xl ${accent.backplate} translate-x-1.5 translate-y-1.5 -z-10`}
                 aria-hidden="true"
               />
 
@@ -408,32 +479,37 @@ function FoundersNoteFull({
                     priority={false}
                   />
                 ) : (
-                  <FounderAvatarPlaceholder />
+                  <FounderAvatarPlaceholder tone={tone} />
                 )}
               </div>
             </div>
           </div>
 
-          {/* ΓöÇΓöÇ RIGHT COLUMN: Founder's Note Text ΓöÇΓöÇ */}
+          {/* ── RIGHT COLUMN: Founder's Note Text ── */}
           <div ref={textBlockRef} className="flex flex-col text-center lg:text-left">
-            {/* Eyebrow Label */}
-            <div className="founder-anim-item flex items-center justify-center lg:justify-start gap-2 mb-2">
-              <span className="h-0.5 w-6 rounded-full bg-[#B5480F]" />
-              <p className="text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] text-[#B5480F] dark:text-[#F4A25B]">
-                WHY WE BUILT CAUSEKIND
-              </p>
-              <span className="h-0.5 w-6 rounded-full bg-[#B5480F] lg:hidden" />
-            </div>
+            {/* Eyebrow + heading: here for the donor; above the grid for the donee. */}
+            {!isDonee && (
+              <>
+                {/* Eyebrow Label */}
+                <div className="founder-anim-item flex items-center justify-center lg:justify-start gap-2 mb-2">
+                  <span className={`h-0.5 w-6 rounded-full ${accent.line}`} />
+                  <p className={`text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] ${accent.eyebrow}`}>
+                    WHY WE BUILT CAUSEKIND
+                  </p>
+                  <span className={`h-0.5 w-6 rounded-full ${accent.line} lg:hidden`} />
+                </div>
 
-            {/* Section Heading */}
-            <h2 className="founder-anim-item text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
-              Neighbours helping neighbours.
-            </h2>
+                {/* Section Heading */}
+                <h2 className="founder-anim-item text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
+                  Neighbours helping neighbours.
+                </h2>
+              </>
+            )}
 
             {/* Large Decorative Quote Icon */}
             <div
               ref={quoteMarkRef}
-              className="flex justify-center lg:justify-start my-3 sm:my-4 text-[#B5480F]/25 dark:text-[#E07A5F]/30"
+              className={`flex justify-center lg:justify-start my-3 sm:my-4 ${accent.quote}`}
               aria-hidden="true"
             >
               <Quote className="w-8 h-8 sm:w-10 sm:h-10 fill-current rotate-180" />
@@ -446,12 +522,12 @@ function FoundersNoteFull({
                 {FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}
               </p>
               <p>
-                We built CauseKind to connect the two ΓÇö simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
+                We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
               </p>
             </div>
 
-            {/* ΓöÇΓöÇ Sign-off: Signature, Name & Title ΓöÇΓöÇ */}
-            <div className="founder-anim-item mt-6 sm:mt-8 pt-4 border-t border-stone-200/60 dark:border-stone-800/60 flex flex-col items-center lg:items-start">
+            {/* ── Sign-off: Signature, Name & Title ── */}
+            <div className={`founder-anim-item mt-6 sm:mt-8 pt-4 border-t ${accent.divider} flex flex-col items-center lg:items-start`}>
               {/* Optional Signature SVG (Inlined for draw animation) */}
               {FOUNDER.signature && svgSignature && (
                 <div
@@ -467,7 +543,7 @@ function FoundersNoteFull({
               </p>
 
               {/* Founder Title */}
-              <p className="text-xs sm:text-sm font-semibold text-[#B5480F] dark:text-[#F4A25B] mt-0.5">
+              <p className={`text-xs sm:text-sm font-semibold ${accent.title} mt-0.5`}>
                 {FOUNDER.title}
               </p>
             </div>

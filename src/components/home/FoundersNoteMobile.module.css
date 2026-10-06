@@ -395,6 +395,40 @@
   filter: invert(1);
 }
 
+/* ── Donee tone ────────────────────────────────────────────────────────────
+   On the donee landing page the section carries data-ck-role-theme="donee",
+   so these tokens are navy in light mode and sky blue in dark mode. Same
+   specificity as the dark rules above but later in the file, so they win in
+   both themes. Paper, envelope and ink stay neutral. */
+.donee .eyebrow,
+.donee .title em,
+.donee .role,
+.donee .route,
+.donee .heart,
+.donee .salutation,
+.donee .postmark {
+  color: var(--ck-role-accent);
+}
+.donee .print::before {
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / 0.18) 0 3px, transparent 3px 7px),
+    color-mix(in srgb, var(--ck-role-highlight) 55%, transparent);
+}
+.donee .stampArt {
+  color: var(--ck-role-on-accent);
+  background: linear-gradient(160deg, var(--ck-role-highlight) 0%, var(--ck-role-accent) 78%);
+}
+.donee .stampValue {
+  color: var(--ck-role-on-accent);
+}
+/* Donee: the eyebrow and title move to the shared centered heading above, so
+   the masthead holds only the taped print, kept at the right edge. */
+.mastheadPrintOnly {
+  margin-top: 1.25rem;
+  grid-template-columns: auto;
+  justify-content: end;
+}
+
 /* ── Reveal choreography ───────────────────────────────────────────────────
    The doodle and the sign-off each carry their own useRevealOnce, so the
    route draws and the postmark lands when *they* come on screen, not when the
