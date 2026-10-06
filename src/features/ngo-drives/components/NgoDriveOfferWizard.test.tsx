@@ -27,12 +27,12 @@ import { NgoDriveOfferWizard } from "./NgoDriveOfferWizard";
 import { driveOfferModelFrom, serializeDriveOffer } from "../driveOfferSerializer";
 
 /** The exact JSON the wizard sends for the form filled below (also used by the backend test and walk.py). */
+// No handover method or pickup address: the four-step form leaves those to the handover page.
 export const WIZARD_ITEM_DETAILS = {
   quantity: 3, condition: "Like New", approximateAge: "1 year", knownDefects: "None", notesForNgo: "Washed and folded",
-  matchesRequirements: true, handoverMethod: "DROP_OFF", pickupCity: "Pune", pickupLocality: "Kothrud", pickupPincode: "411038",
+  matchesRequirements: true,
 };
-const DTO_KEYS = ["quantity", "condition", "approximateAge", "knownDefects", "notesForNgo", "matchesRequirements",
-  "handoverMethod", "pickupCity", "pickupLocality", "pickupPincode"].sort();
+const DTO_KEYS = ["quantity", "condition", "approximateAge", "knownDefects", "notesForNgo", "matchesRequirements"].sort();
 
 const draftOffer = {
   id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust",
@@ -56,9 +56,9 @@ function renderWizard(onSaveExit = vi.fn(), onSubmitted = vi.fn()) {
 }
 
 /** Goes Back (if needed) to Details: the wizard opens on the first incomplete step. */
-const ORDER = [/Add photos|Photos/i, /Tell us about the item/, /Condition & fit/, /Pickup & delivery/];
+const ORDER = [/Add photos|Photos/i, /Tell us about the item/, /Condition & fit/, /Review your offer/];
 async function toDetails() {
-  await waitFor(() => expect(heading()).toMatch(/Tell us about the item|Condition & fit|Pickup & delivery/));
+  await waitFor(() => expect(heading()).toMatch(/Tell us about the item|Condition & fit|Review your offer/));
   while (!/Tell us about the item/.test(heading())) {
     const at = ORDER.findIndex(re => re.test(heading()));
     clickLast(/^back$/i);
@@ -75,12 +75,6 @@ async function fillToReview(c: HTMLElement) {
   clickLast(/^continue$/i);
   await waitFor(() => expect(heading()).toMatch(/Condition & fit/));
   fireEvent.change(field(c, "condition"), { target: { value: "Like New" } });
-  clickLast(/^continue$/i);
-  await waitFor(() => expect(heading()).toMatch(/Pickup & delivery/));
-  fireEvent.change(field(c, "pickupCity"), { target: { value: "Pune" } });
-  fireEvent.change(field(c, "pickupPincode"), { target: { value: "411038" } });
-  fireEvent.change(field(c, "pickupLocality"), { target: { value: "Kothrud" } });
-  fireEvent.click(field(c, "donorDropOffAvailable"));
   clickLast(/^continue$/i);
   await waitFor(() => expect(screen.getByRole("button", { name: /Send offer to the NGO/ })).toBeInTheDocument());
   // The Review card mounts after the previous card's exit animation.
@@ -105,6 +99,8 @@ describe("NgoDriveOfferWizard request bodies", { timeout: 20000 }, () => {
       expect(Object.keys(body).filter(k => k !== "quantity").sort()).toEqual(DTO_KEYS.filter(k => k !== "quantity"));
       expect(body).not.toHaveProperty("accessoriesIncluded");
       expect(body).not.toHaveProperty("donorDropOffAvailable");
+      expect(body).not.toHaveProperty("handoverMethod");
+      expect(body).not.toHaveProperty("pickupCity");
     }
     fireEvent.click(container.querySelector('input[name="declarationsConfirmed"]')!);
     api.submitNgoDriveOffer.mockResolvedValue({ id: 9, quantity: 3, status: "SUBMITTED" });
@@ -120,14 +116,14 @@ describe("NgoDriveOfferWizard request bodies", { timeout: 20000 }, () => {
     const { container, onSaveExit } = renderWizard();
     await fillToReview(container);
     clickLast(/^back$/i);
-    await waitFor(() => expect(heading()).toMatch(/Pickup & delivery/));
+    await waitFor(() => expect(heading()).toMatch(/Condition & fit/));
     expect(window.scrollTo).toHaveBeenCalled();
-    await waitFor(() => expect(field(container, "pickupLocality")).not.toBeNull());
+    await waitFor(() => expect(field(container, "condition")).not.toBeNull());
     api.updateNgoDriveOfferItem.mockClear();
-    fireEvent.change(field(container, "pickupLocality"), { target: { value: "Kothrud East" } });
+    fireEvent.change(field(container, "condition"), { target: { value: "Good" } });
     clickLast(/save & exit/i);
     await waitFor(() => expect(onSaveExit).toHaveBeenCalled());
-    expect(api.updateNgoDriveOfferItem).toHaveBeenLastCalledWith(9, { ...WIZARD_ITEM_DETAILS, pickupLocality: "Kothrud East", matchesRequirements: false });
+    expect(api.updateNgoDriveOfferItem).toHaveBeenLastCalledWith(9, { ...WIZARD_ITEM_DETAILS, condition: "Good", matchesRequirements: false });
   });
 
   it("Save & exit leaves even when nothing changed", async () => {
@@ -169,14 +165,48 @@ describe("drive offer mapping", () => {
     const saved = { ...draftOffer, ...WIZARD_ITEM_DETAILS, matchesRequirements: undefined } as never;
     const model = driveOfferModelFrom(saved);
     expect(model).toMatchObject({ quantity: "3", condition: "Like New", approximateAge: "1 year", hasKnownDefects: false,
-      accessoriesIncluded: "Washed and folded", pickupCity: "Pune", pickupLocality: "Kothrud", pickupPincode: "411038", donorDropOffAvailable: true });
+      accessoriesIncluded: "Washed and folded" });
     expect(model.photos).toHaveLength(2);
     expect(serializeDriveOffer({ ...model, declarationsConfirmed: true }, { maxQuantity: 50 })).toEqual(WIZARD_ITEM_DETAILS);
   });
 
-  it("NGO pickup maps to NGO_PICKUP and back", () => {
-    const model = driveOfferModelFrom({ ...draftOffer, handoverMethod: "NGO_PICKUP" } as never);
-    expect(model.donorDropOffAvailable).toBe(false);
-    expect(serializeDriveOffer(model, { maxQuantity: 50 }).handoverMethod).toBe("NGO_PICKUP");
+  it("sends no handover method or pickup address, even for an older NGO_PICKUP draft (chosen on the handover page)", () => {
+    const model = driveOfferModelFrom({ ...draftOffer, handoverMethod: "NGO_PICKUP", pickupCity: "Pune" } as never);
+    const body = serializeDriveOffer(model, { maxQuantity: 50 }) as Record<string, unknown>;
+    for (const k of ["handoverMethod", "pickupCity", "pickupLocality", "pickupPincode"]) expect(body).not.toHaveProperty(k);
+  });
+});
+
+// Drives only: the condition list follows the drive's "Condition accepted".
+describe("NgoDriveOfferWizard condition options", { timeout: 20000 }, () => {
+  async function conditionOptions(accepted: readonly string[] | null) {
+    const { container } = render(
+      <NgoDriveOfferWizard offerId={9} offer={draftOffer as never} driveId={5} ngoName="Hope Trust" driveUnit="PIECES"
+        initialQuantityReceived={0} initialQuantityPledged={0} requestTitle="Winter blankets" requestedQuantity={50}
+        stillNeededQuantity={50} adminNote={null} onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()}
+        acceptedConditions={accepted} />,
+    );
+    await toDetails();
+    fireEvent.change(field(container, "quantity"), { target: { value: "3" } });
+    fireEvent.change(field(container, "approximateAge"), { target: { value: "1 year" } });
+    clickLast(/^continue$/i);
+    await waitFor(() => expect(heading()).toMatch(/Condition & fit/));
+    const select = field(container, "condition") as unknown as HTMLSelectElement;
+    return Array.from(select.options).map(o => o.value).filter(Boolean);
+  }
+
+  it.each([
+    ["SEALED_ONLY", ["Unused"]],
+    ["NEW_ONLY", ["Unused", "Like New"]],
+    ["NEW_OR_GENTLY_USED", ["Unused", "Like New", "Good"]],
+    ["USED_WORKING", ["Unused", "Like New", "Good", "Fair"]],
+    ["ANY_USABLE", ["Unused", "Like New", "Good", "Fair", "Needs Minor Repair"]],
+  ])("a %s drive offers only its accepted conditions", async (_rule, accepted) => {
+    expect(await conditionOptions(accepted)).toEqual(accepted);
+    expect(screen.getByText(`This drive accepts: ${accepted.join(", ")}`)).toBeInTheDocument();
+  });
+
+  it("a drive without a known rule still offers every condition", async () => {
+    expect(await conditionOptions(null)).toEqual(["Unused", "Like New", "Good", "Fair", "Needs Minor Repair", "Not Working"]);
   });
 });

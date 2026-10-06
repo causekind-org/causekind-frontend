@@ -22,6 +22,11 @@ import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import type { SaveStatus } from "@/features/wizard-kit/types";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
 
+import { DRIVE_CONDITIONS, driveConditionLabel, driveConditionRule, isDriveCondition, type DriveCondition } from "@/features/ngo-drives/driveConditions";
+
+/** Matches the backend's limit on drive details. */
+const DETAILS_MAX = 500;
+
 type NgoDriveStep = "drive-type" | "drive-details" | "beneficiaries-handover" | "review-declarations";
 
 const NGO_DRIVE_STEPS: NgoDriveStep[] = ["drive-details", "beneficiaries-handover", "review-declarations"];
@@ -113,7 +118,7 @@ function NewNgoDriveForm() {
   const [unit, setUnit] = useState<"PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS">("PIECES");
   const [description, setDescription] = useState("");
   const [urgency, setUrgency] = useState<"NORMAL" | "HIGH" | "CRITICAL">("NORMAL");
-  const [condition, setCondition] = useState<"NEW_ONLY" | "NEW_OR_GENTLY_USED">("NEW_ONLY");
+  const [condition, setCondition] = useState<DriveCondition>("NEW_ONLY");
   const [details, setDetails] = useState("");
   const [referencePhotoUrl, setReferencePhotoUrl] = useState("");
 
@@ -172,7 +177,7 @@ function NewNgoDriveForm() {
       setUnit((d.unit as typeof unit) || "PIECES");
       setDescription(d.description || "");
       setUrgency((d.urgency as typeof urgency) || "NORMAL");
-      setCondition((d.itemCondition as typeof condition) || "NEW_ONLY");
+      setCondition(isDriveCondition(d.itemCondition) ? d.itemCondition : "NEW_ONLY");
       setDetails(d.details || "");
       setReferencePhotoUrl(d.referencePhotoUrl && !d.referencePhotoUrl.startsWith("data:") ? d.referencePhotoUrl : "");
       setBeneficiaryGroup(d.beneficiaryGroup || "");
@@ -202,7 +207,7 @@ function NewNgoDriveForm() {
         setUnit(p.unit || "PIECES");
         setDescription(p.description || "");
         setUrgency(p.urgency || "NORMAL");
-        setCondition(p.condition || "NEW_ONLY");
+        setCondition(isDriveCondition(p.condition) ? p.condition : "NEW_ONLY");
         setDetails(p.details || "");
         setReferencePhotoUrl(typeof p.referencePhotoUrl === "string" && !p.referencePhotoUrl.startsWith("data:") ? p.referencePhotoUrl : "");
         setBeneficiaryGroup(p.beneficiaryGroup || "");
@@ -304,12 +309,14 @@ function NewNgoDriveForm() {
       // Drives collect items in bulk (the server refuses fewer than 2).
       if (quantity === "" || quantity < 2 || quantity > 10000) e.quantity = "Drives collect in bulk: ask for 2 to 10000";
       if (!unit) e.unit = "Unit is required";
+      if (!details.trim()) e.details = "Add the details donors need";
+      else if (details.length > DETAILS_MAX) e.details = `Details cannot exceed ${DETAILS_MAX} characters`;
       if (!description.trim() || description.length < 30 || description.length > 1000) e.description = "Description must be 30-1000 characters";
       if (!condition) e.condition = "Condition is required";
     }
     if (s === "beneficiaries-handover") {
       if (!beneficiaryGroup) e.beneficiaryGroup = "Beneficiary group is required";
-      if (beneficiaryCount === "" || beneficiaryCount < 1) e.beneficiaryCount = "Must be at least 1";
+      if (beneficiaryCount === "" || beneficiaryCount < 1) e.beneficiaryCount = "Enter how many people will benefit (at least 1)";
       if (!neededBy) e.neededBy = "Date is required";
       else {
         const d = new Date(neededBy);
@@ -352,7 +359,7 @@ function NewNgoDriveForm() {
       const payload = {
         driveType: "ITEMS" as const,
         title, category, itemName, quantity: Number(quantity), unit, condition,
-        details: details || undefined,
+        details: details.trim(),
         referencePhotoUrl: referencePhotoUrl || undefined,
         description, urgency,
         beneficiaryGroup, beneficiaryCount: Number(beneficiaryCount),
@@ -591,6 +598,11 @@ function NewNgoDriveForm() {
         
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="story-heading">
           <h3 id="story-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">2. Drive Story</h3>
+          <WizardField label="Details" required error={fieldErrors.details} hint={`Include sizes, condition, colours, brands or anything else donors should know. ${details.length}/${DETAILS_MAX}`}>
+            {({ id, describedBy, invalid }) => (
+              <Textarea id={id} name="details" rows={3} maxLength={DETAILS_MAX} value={details} onChange={e => setDetails(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+            )}
+          </WizardField>
           <WizardField label="Why it's needed" required error={fieldErrors.description} hint={`${description.length}/1000 — who it's for, why now, and what it will change`}>
             {({ id, describedBy, invalid }) => (
               <Textarea id={id} name="description" rows={5} maxLength={1000} placeholder="e.g. As winter sets in, the elders in our shelter lack warm blankets..." value={description} onChange={e => setDescription(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
@@ -619,23 +631,16 @@ function NewNgoDriveForm() {
   
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="item-req-heading">
           <h3 id="item-req-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">4. Item Requirements</h3>
-          <WizardField label="Condition accepted" required error={fieldErrors.condition}>
+          <WizardField label="Condition accepted" required error={fieldErrors.condition} hint={driveConditionRule(condition) ?? undefined}>
             {({ id, describedBy, invalid }) => (
               <Select value={condition} onValueChange={setCondition as any}>
                 <SelectTrigger id={id} data-field="condition" aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="NEW_ONLY">New only</SelectItem>
-                  <SelectItem value="NEW_OR_GENTLY_USED">New or gently used</SelectItem>
+                  {DRIVE_CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
               </Select>
-            )}
-          </WizardField>
-  
-          <WizardField label="Details (optional)" error={fieldErrors.details} hint={`${details.length}/200 — Size, age group, specs — anything donors should know.`}>
-            {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="details" rows={3} maxLength={200} value={details} onChange={e => setDetails(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
   
@@ -680,9 +685,9 @@ function NewNgoDriveForm() {
             )}
           </WizardField>
   
-          <WizardField label="Approximate number" required error={fieldErrors.beneficiaryCount} hint="Never include names — donors only see the group and the number.">
+          <WizardField label="How many people will benefit?" required error={fieldErrors.beneficiaryCount} hint="People or families helped, not the number of items.">
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="beneficiaryCount" type="number" min={1} placeholder="e.g. 50" value={beneficiaryCount} onChange={e => setBeneficiaryCount(e.target.value ? Number(e.target.value) : "")} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="beneficiaryCount" type="number" min={1} value={beneficiaryCount} onChange={e => setBeneficiaryCount(e.target.value ? Number(e.target.value) : "")} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -782,6 +787,14 @@ function NewNgoDriveForm() {
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Title & Item</span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md truncate text-stone-900 dark:text-stone-100">{title} <br/><span className="text-stone-400 text-xs">{quantity} {UNITS.find(u => u.id === unit)?.label}</span></span>
+          </div>
+          <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
+            <span className="text-stone-500">Condition accepted</span>
+            <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">{driveConditionLabel(condition)}</span>
+          </div>
+          <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
+            <span className="text-stone-500">People who will benefit</span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100">{beneficiaryCount} {beneficiaryGroup}</span>
           </div>
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Needed by</span>

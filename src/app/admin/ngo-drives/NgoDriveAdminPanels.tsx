@@ -10,6 +10,7 @@ import {
   type AdminDriveStatusFilter, type AdminDriveOfferFilter, type AdminDriveOfferDetail,
   type AdminPendingDriveOffer, type AdminProofDrive, type NgoDrive,
 } from "@/lib/api";
+import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
 
 const field = "w-full rounded-lg border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
@@ -58,6 +59,14 @@ const DRIVE_FILTERS: { value: AdminDriveStatusFilter; text: string }[] = [
   { value: "REJECTED", text: "Rejected" },
 ];
 
+
+type DriveDecision = "approve" | "changes" | "reject";
+const DRIVE_DECISIONS: { value: DriveDecision; text: string; confirm: string }[] = [
+  { value: "approve", text: "Approve", confirm: "Approve drive" },
+  { value: "changes", text: "Request changes", confirm: "Request changes" },
+  { value: "reject", text: "Reject", confirm: "Reject drive" },
+];
+
 export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
   const [status, setStatus] = useState<AdminDriveStatusFilter>("PENDING_REVIEW");
   const [drives, setDrives] = useState<NgoDrive[]>([]);
@@ -65,6 +74,8 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
   const [detail, setDetail] = useState<NgoDrive | null>(null);
   const [ngo, setNgo] = useState<{ ngoName: string; applicationId?: string; applicationStatus?: string } | null>(null);
   const [reason, setReason] = useState("");
+  /** Picked first; approve needs no reason, the other two need their own. */
+  const [choice, setChoice] = useState<DriveDecision | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const { fail, clear, view: errorView } = useErrors();
@@ -78,7 +89,7 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
   useEffect(() => { void load(); }, [load]);
 
   async function open(id: number) {
-    clear(); setNotice(""); setReason(""); setNgo(null);
+    clear(); setNotice(""); setReason(""); setChoice(null); setNgo(null);
     try {
       const [drive, owner] = await Promise.all([adminGetNgoDrive(id), adminGetNgoDriveNgo(id)]);
       setDetail(drive); setNgo(owner);
@@ -92,6 +103,7 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
       if (kind === "approve") await adminApproveNgoDrive(detail.id);
       else if (kind === "changes") await adminRequestNgoDriveChanges(detail.id, reason.trim());
       else await adminRejectNgoDrive(detail.id, reason.trim());
+      setChoice(null); setReason("");
       setNotice(kind === "approve" ? "Approved. The drive is live and the NGO has been notified."
         : kind === "changes" ? "Changes requested. The NGO can edit and resubmit." : "Drive rejected. The NGO can see your reason.");
       setDetail(await adminGetNgoDrive(detail.id));
@@ -137,8 +149,9 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               {Object.entries({
                 Category: d.category, Item: d.itemName, Quantity: `${d.quantityNeeded} ${label(d.unit)}`,
-                Condition: label(d.itemCondition), Urgency: label(d.urgency),
-                Beneficiaries: `${d.beneficiaryCount} · ${d.beneficiaryGroup}`,
+                "Condition accepted": [driveConditionLabel(d.itemCondition), driveConditionRule(d.itemCondition)].filter(Boolean).join(" · "),
+                Urgency: label(d.urgency),
+                "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}`,
                 "Needed by": d.neededBy, "Available days": (d.availableDays || "").split(",").join(", "),
                 Hours: `${(d.availableFrom || "").slice(0, 5)} – ${(d.availableTo || "").slice(0, 5)}`,
                 Contact: `${d.contactName} · ${d.contactPhone}`,
@@ -151,14 +164,31 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
             {d.status === "PENDING_REVIEW" && (
               <div className="mt-6 space-y-4 border-t border-stone-200 pt-6 dark:border-zinc-700">
                 <h3 className="font-bold">Record your decision</h3>
-                <label className="block text-sm">Reason (required to request changes or reject)
-                  <textarea className={field} rows={3} maxLength={500} value={reason} disabled={busy} onChange={e => setReason(e.target.value)} />
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  <button className={primary} disabled={busy} onClick={() => void decide("approve")}>Approve</button>
-                  <button className={button} disabled={busy} onClick={() => void decide("changes")}>Request changes</button>
-                  <button className={`${button} border-red-300 text-red-700`} disabled={busy} onClick={() => void decide("reject")}>Reject</button>
-                </div>
+                <fieldset className="flex flex-wrap gap-2" aria-label="Decision">
+                  {DRIVE_DECISIONS.map(option => (
+                    <label key={option.value}
+                      className={`flex min-h-10 cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold ${choice === option.value
+                        ? (option.value === "reject" ? "border-red-400 bg-red-50 text-red-800 dark:bg-red-950/40 dark:text-red-200" : "border-ngo-700 bg-ngo-50 text-ngo-900 dark:bg-ngo-900/30 dark:text-ngo-100")
+                        : "border-stone-300 dark:border-zinc-700"}`}>
+                      <input type="radio" name="drive-decision" value={option.value} checked={choice === option.value} disabled={busy}
+                        onChange={() => { setChoice(option.value); setReason(""); clear(); }} />
+                      {option.text}
+                    </label>
+                  ))}
+                </fieldset>
+                {choice && choice !== "approve" && (
+                  <label className="block text-sm">{choice === "changes" ? "What needs to change" : "Reason for rejection"}
+                    <span className="text-red-600" aria-hidden> *</span>
+                    <textarea className={field} rows={3} maxLength={500} value={reason} disabled={busy} required
+                      onChange={e => setReason(e.target.value)} />
+                  </label>
+                )}
+                {choice && (
+                  <button className={choice === "reject" ? `${button} border-red-300 bg-red-700 text-white` : primary}
+                    disabled={busy || (choice !== "approve" && !reason.trim())} onClick={() => void decide(choice)}>
+                    {busy ? "Saving…" : DRIVE_DECISIONS.find(o => o.value === choice)!.confirm}
+                  </button>
+                )}
               </div>
             )}
           </>}

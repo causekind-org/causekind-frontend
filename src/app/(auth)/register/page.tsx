@@ -166,6 +166,34 @@ function Field({
   );
 }
 
+/**
+ * NGO signup only: an email or phone that is already registered, pinned to its field
+ * with the exact wording. Reads the server's field errors (normal and Google NGO signup),
+ * falling back to the older message-only response.
+ */
+type NgoDuplicate = { field: "email" | "phone"; errorKey: string; text: string };
+const NGO_DUPLICATE_EMAIL: NgoDuplicate = { field: "email", errorKey: "emailAlreadyRegistered", text: "This email is already registered" };
+const NGO_DUPLICATE_PHONE: NgoDuplicate = { field: "phone", errorKey: "phoneAlreadyRegistered", text: "This phone number is already registered" };
+function ngoDuplicates(err: unknown): NgoDuplicate[] {
+  const found = new Map<string, NgoDuplicate>();
+  const fieldErrors = err instanceof ApiError
+    ? (err.data as { fieldErrors?: { field?: string; code?: string; message?: string }[] } | undefined)?.fieldErrors ?? []
+    : [];
+  for (const fe of fieldErrors) {
+    const byField = fe?.field === "officialEmail" || fe?.field === "email" ? NGO_DUPLICATE_EMAIL
+      : fe?.field === "phoneNumber" || fe?.field === "phone" ? NGO_DUPLICATE_PHONE : null;
+    const mapped = mapServerErrorToField(fe?.message ?? "");
+    const duplicate = fe?.code === "ALREADY_REGISTERED" || mapped?.errorKey === "emailAlreadyRegistered" || mapped?.errorKey === "phoneAlreadyRegistered";
+    if (byField && duplicate) found.set(byField.field, byField);
+  }
+  if (found.size === 0 && err instanceof Error) {
+    const mapped = mapServerErrorToField(err.message);
+    if (mapped?.errorKey === "emailAlreadyRegistered") found.set("email", NGO_DUPLICATE_EMAIL);
+    if (mapped?.errorKey === "phoneAlreadyRegistered") found.set("phone", NGO_DUPLICATE_PHONE);
+  }
+  return [...found.values()];
+}
+
 // ── Main content ───────────────────────────────────────────────────────────────
 function RegisterContent() {
   const t = useTranslations("auth.register");
@@ -518,6 +546,7 @@ function RegisterContent() {
           if (err instanceof ApiError && err.status === 404) {
              throw new Error("GOOGLE_NGO_404");
           }
+          if (ngoDuplicates(err).length > 0) throw err;
           // A field error (e.g. PAN format) carries its own message; surface that so it can
           // be pinned next to its field below instead of the generic summary.
           const fe = err instanceof ApiError
@@ -569,6 +598,15 @@ function RegisterContent() {
       const raw = err instanceof Error ? err.message : "Registration failed";
       if (raw === "GOOGLE_NGO_404") {
         setGoogleNgo404(true);
+        return;
+      }
+      // NGO signup: an already-registered email / phone goes next to that field.
+      const duplicates = form.role === "NGO_PARTNER" ? ngoDuplicates(err) : [];
+      if (duplicates.length > 0) {
+        for (const d of duplicates) v.setServerError(d.field, d.errorKey, d.text);
+        const el = document.getElementById(duplicates[0].field);
+        el?.focus();
+        el?.scrollIntoView?.({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
         return;
       }
       // Known identifiers get pinned to their field so the fix is obvious;
@@ -807,7 +845,9 @@ function RegisterContent() {
               readOnly={isSocialFlow}
               hint={isSocialFlow ? t("googleLinkedHint") : undefined}
               autoComplete="email"
-              field={isSocialFlow ? undefined : v.get("email")}
+              field={isSocialFlow
+                ? (form.role === "NGO_PARTNER" && v.get("email").serverErrorText ? v.get("email") : undefined)
+                : v.get("email")}
             />
           </div>
         </Reveal>

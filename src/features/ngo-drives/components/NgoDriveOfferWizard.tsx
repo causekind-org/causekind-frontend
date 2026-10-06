@@ -3,14 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
-import { ArrowLeft, TriangleAlert, ShieldCheck } from "lucide-react";
+import { ArrowLeft, TriangleAlert, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   submitNgoDriveOffer, updateNgoDriveOfferItem,
-  type NgoDriveOfferResponse, type CompatibilityCheck
+  getNgoDriveOfferVideoCapability, createNgoDriveOfferVideoSlot, finalizeNgoDriveOfferVideo,
+  getNgoDriveOfferVideoStatus, getNgoDriveOfferVideoPlayback, deleteNgoDriveOfferVideo,
+  type NgoDriveOfferResponse, type CompatibilityCheck, type OfferVideoStatus, type OfferVideoStatusName,
 } from "@/lib/api";
-import { DriveProgressBar } from "@/features/ngo-drives/components/DriveProgressBar";
-import { detectLocationFromServer } from "@/app/actions/locations";
+import { useOfferVideo, type VideoEndpoints } from "@/features/donation-offer-wizard/useOfferVideo";
+import { PhotoCaptureDialog, prefersNativeCamera } from "./PhotoCaptureDialog";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
 import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
@@ -24,15 +26,13 @@ import { useWizardDraft } from "@/features/wizard-kit/useWizardDraft";
 import { OfferPhotosStep, type ScreeningState } from "@/features/donation-offer-wizard/steps/OfferPhotosStep";
 import { OfferDetailsStep } from "@/features/donation-offer-wizard/steps/OfferDetailsStep";
 import { OfferConditionStep, type CompatState } from "@/features/donation-offer-wizard/steps/OfferConditionStep";
-import { OfferPickupStep } from "@/features/donation-offer-wizard/steps/OfferPickupStep";
 import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferReviewStep";
 import { useDriveOfferPhotos } from "./useDriveOfferPhotos";
 import {
-  OFFER_STEPS, emptyOfferModel, firstIncompleteOfferStep, needsSpecNotes,
-  offerStepIndex, uploadedOfferPhotos,
+  emptyOfferModel, firstIncompleteOfferStep, needsSpecNotes, uploadedOfferPhotos,
   type OfferModel, type OfferStep,
 } from "@/features/donation-offer-wizard/offerModel";
-import { offerStepForField, validateOfferAll, validateOfferStep } from "@/features/donation-offer-wizard/offerSchema";
+import { offerStepForField, validateOfferStep } from "@/features/donation-offer-wizard/offerSchema";
 import { ApiError } from "@/lib/api";
 
 /**
@@ -53,6 +53,50 @@ import {
   driveOfferModelFrom, driveOfferSnapshotKey, driveOfferMaterialDigest, serializeDriveOffer, DRIVE_OFFER_DECLARATION_GROUPS,
 } from "../driveOfferSerializer";
 
+/**
+ * The drive give form has four steps. Pickup & delivery is not asked here: the donor
+ * chooses drop-off or NGO pickup, and gives the pickup address, on the handover page
+ * once the NGO has accepted the offer.
+ */
+export const DRIVE_OFFER_STEPS = ["photos", "details", "condition", "review"] as const satisfies readonly OfferStep[];
+type DriveOfferStep = (typeof DRIVE_OFFER_STEPS)[number];
+const driveStepIndex = (s: OfferStep) => (DRIVE_OFFER_STEPS as readonly OfferStep[]).indexOf(s);
+
+/** Every error the four steps can show (none for pickup fields, which this form never asks). */
+function validateDriveOfferAll(model: OfferModel, maxQuantity?: number | null): Record<string, string> {
+  return Object.assign({}, ...DRIVE_OFFER_STEPS.map(s => validateOfferStep(s, model, null, maxQuantity)));
+}
+
+/** Where a resumed draft opens: the shared rule, with its pickup step mapped to Review. */
+function firstIncompleteDriveStep(model: OfferModel): DriveOfferStep {
+  const s = firstIncompleteOfferStep(model);
+  return (DRIVE_OFFER_STEPS as readonly OfferStep[]).includes(s) ? (s as DriveOfferStep) : "review";
+}
+
+/** "PIECES" → "pieces", for "This drive needs only N more pieces." */
+function unitWords(unit: string | null | undefined): string {
+  return unit ? unit.replaceAll("_", " ").toLowerCase() : "items";
+}
+
+/** The drive offer's video as the shared video hook expects it, read from the saved offer. */
+function videoStatusFrom(offer: NgoDriveOfferResponse | null): OfferVideoStatus | null {
+  const v = offer?.media?.find(m => m.mediaType === "VIDEO" && m.status !== "REJECTED" && m.status !== "DELETED");
+  if (!v) return null;
+  return {
+    mediaId: v.id, status: v.status as OfferVideoStatusName, moderationCode: null,
+    durationMs: v.durationMs ?? null, playbackUrl: v.playbackUrl ?? null, available: true,
+  };
+}
+
+const DRIVE_VIDEO_ENDPOINTS: Omit<VideoEndpoints, "current"> = {
+  capability: getNgoDriveOfferVideoCapability,
+  slot: createNgoDriveOfferVideoSlot,
+  finalize: finalizeNgoDriveOfferVideo,
+  status: getNgoDriveOfferVideoStatus,
+  playback: getNgoDriveOfferVideoPlayback,
+  remove: deleteNgoDriveOfferVideo,
+};
+
 const STEP_LABELS: Record<OfferStep, string> = {
   photos: "Show the item",
   details: "Tell us about the item",
@@ -72,7 +116,7 @@ const STEP_INTROS: Record<OfferStep, string> = {
 };
 
 /**
- * The five-step donation-offer editor.
+ * The four-step drive give form (photos, details, condition, review).
  *
  * <p>Composed from the same primitives as the listing wizard — the stack, the
  * glow, the motion variants, the autosave queue — so the two flows animate and
@@ -84,9 +128,11 @@ const STEP_INTROS: Record<OfferStep, string> = {
  */
 export function NgoDriveOfferWizard({
   offerId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
-  driveId, ngoName, driveUnit, initialQuantityReceived, initialQuantityPledged,
+  driveUnit, acceptedConditions,
 }: {
   offerId: number;
+  /** Donor conditions the drive accepts; null/empty shows every condition. */
+  acceptedConditions?: readonly string[] | null;
   driveId: number;
   ngoName: string;
   driveUnit: string;
@@ -118,7 +164,7 @@ export function NgoDriveOfferWizard({
 
   const [model, setModel] = useState<OfferModel>(() => offer ? driveOfferModelFrom(offer) : emptyOfferModel);
   const [step, setStep] = useState<OfferStep>(() =>
-    offer ? firstIncompleteOfferStep(driveOfferModelFrom(offer)) : "photos");
+    offer ? firstIncompleteDriveStep(driveOfferModelFrom(offer)) : "photos");
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -126,7 +172,8 @@ export function NgoDriveOfferWizard({
   const [savingExit, setSavingExit] = useState(false);
   const [advancing, setAdvancing] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [gps, setGps] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [enlarged, setEnlarged] = useState<string | null>(null);
 
   const [screening, setScreening] = useState<ScreeningState>({ kind: "idle" });
   const [compat, setCompat] = useState<CompatibilityCheck | null>(null);
@@ -262,6 +309,21 @@ export function NgoDriveOfferWizard({
   // offerId exists for this component’s whole lifetime (the prelude creates the
   // draft), so the resolver is immediate here. The listing wizard is the one
   // that needs it lazy.
+  const resolveOfferId = useCallback(async () => offerId, [offerId]);
+  const offerRef = useRef(offer);
+  // Stable for the hook (it fetches capability once); `current` resumes a video
+  // already on the saved offer, so a returning donor still sees it.
+  const videoEndpoints = useMemo<VideoEndpoints>(
+    () => ({ ...DRIVE_VIDEO_ENDPOINTS, current: async () => videoStatusFrom(offerRef.current) }), []);
+  const videoApi = useOfferVideo(resolveOfferId, videoEndpoints);
+  const { hydrate: hydrateVideo } = videoApi;
+  useEffect(() => { if (videoStatusFrom(offerRef.current)) void hydrateVideo(offerId); }, [hydrateVideo, offerId]);
+
+  /** Phones and tablets open their own camera; elsewhere, the webcam dialog. */
+  const takePhoto = useCallback((openNativeCamera: () => void) => {
+    if (prefersNativeCamera()) openNativeCamera();
+    else setCameraOpen(true);
+  }, []);
 
 
   // Re-screen once uploads settle, keyed on the uploaded set.
@@ -342,20 +404,37 @@ export function NgoDriveOfferWizard({
 
   const photosBlocked = screening.kind === "prohibited";
 
+  // Quantity over what the drive still needs: shown in red under the field as the
+  // donor types, and Continue stays blocked (the shared rule refuses it too).
+  const overNeedMessage = useMemo(() => {
+    const qty = Number(model.quantity);
+    if (stillNeededQuantity == null || stillNeededQuantity <= 0 || !Number.isInteger(qty)) return null;
+    return qty > stillNeededQuantity
+      ? `This drive needs only ${stillNeededQuantity} more ${unitWords(driveUnit)}.`
+      : null;
+  }, [model.quantity, stillNeededQuantity, driveUnit]);
+  const shownErrors = useMemo(() => {
+    const out = { ...errors };
+    if (overNeedMessage) out.quantity = overNeedMessage;
+    else if (out.quantity?.startsWith("This drive needs only") || out.quantity?.startsWith("This request needs only")) delete out.quantity;
+    return out;
+  }, [errors, overNeedMessage]);
+
   const handleContinue = useCallback(async () => {
     const stepErrors = validateOfferStep(step, model, null, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
       return;
     }
+    if (step === "details" && overNeedMessage) stepErrors.quantity = overNeedMessage;
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors);
       focusField(Object.keys(stepErrors)[0]);
       return;
     }
 
-    const idx = offerStepIndex(step);
-    if (idx < OFFER_STEPS.length - 1) {
+    const idx = driveStepIndex(step);
+    if (idx < DRIVE_OFFER_STEPS.length - 1) {
       setAdvancing(true);
       try {
         // Flush before advancing so the next step — and the compatibility check —
@@ -365,12 +444,12 @@ export function NgoDriveOfferWizard({
           showSaveFailure("We couldn't save your changes. Check your connection and try again.");
           return;
         }
-        goTo(OFFER_STEPS[idx + 1], 1);
+        goTo(DRIVE_OFFER_STEPS[idx + 1], 1);
       } finally {
         setAdvancing(false);
       }
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity, showSaveFailure]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity, showSaveFailure, overNeedMessage]);
 
   /** Field errors next to their fields (jumping to that step), the summary in a toast. */
   function showSaveFailure(fallback: string) {
@@ -393,7 +472,7 @@ export function NgoDriveOfferWizard({
     submitLockRef.current = true;
     setSubmitError(null);
 
-    const allErrors = validateOfferAll(model, null, stillNeededQuantity);
+    const allErrors = validateDriveOfferAll(model, stillNeededQuantity);
     if (Object.keys(allErrors).length > 0) {
       const first = Object.keys(allErrors)[0];
       const target = offerStepForField(first);
@@ -452,41 +531,11 @@ export function NgoDriveOfferWizard({
     }
   }, [flush, model, onExit, onSaveExit]);
 
-  const handleUseMyLocation = useCallback(async () => {
-    setGps({ running: true, error: null });
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10_000 }));
-      const resolved = await detectLocationFromServer(pos.coords.latitude, pos.coords.longitude);
-      if (!resolved.ok) throw new Error(resolved.reason);
-      const address = resolved.address;
-      const city = address.city || address.town || address.village || address.state_district || "";
-      const locality = address.suburb || address.neighbourhood || address.road || "";
-      const pincode = address.postcode || "";
-      setModel(prev => {
-        const next: OfferModel = {
-          ...prev,
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          pickupCity: city || prev.pickupCity,
-          pickupPincode: pincode || prev.pickupPincode,
-          pickupLocality: locality || prev.pickupLocality,
-        };
-        queueSave(next);
-        return next;
-      });
-      setGps({ running: false, error: null });
-    } catch {
-      // Never blocking — the fields below are the real input.
-      setGps({ running: false, error: "We couldn't find your location. Please type your city below." });
-    }
-  }, [queueSave]);
-
   // ── Step availability ─────────────────────────────────────────────────────
   const availability = useMemo(() => {
     const out = {} as Record<OfferStep, StepAvailability>;
     const savedSnapshot = draft.isSnapshotSaved(model);
-    for (const s of OFFER_STEPS) {
+    for (const s of DRIVE_OFFER_STEPS) {
       const complete = Object.keys(validateOfferStep(s, model, null, stillNeededQuantity)).length === 0;
       // Only a completed step whose data the server has confirmed is safe to
       // jump back to; otherwise the donor could edit an unsaved earlier answer.
@@ -512,9 +561,9 @@ export function NgoDriveOfferWizard({
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
               Give to this drive
             </h2>
-            <p className="mb-8 text-sm text-white/50">Five short steps. We save as you go.</p>
+            <p className="mb-8 text-sm text-white/50">Four short steps. We save as you go.</p>
             <WizardProgressRail
-              current={step} steps={OFFER_STEPS} navLabel="Donation offer progress"
+              current={step} steps={DRIVE_OFFER_STEPS} navLabel="Donation offer progress"
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
           <p className="text-2xs text-white/35">Your name and address stay private until the NGO accepts your offer.</p>
@@ -543,7 +592,7 @@ export function NgoDriveOfferWizard({
               <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
             </div>
             <WizardProgressBar
-              current={step} steps={OFFER_STEPS} navLabel="Donation offer progress"
+              current={step} steps={DRIVE_OFFER_STEPS} navLabel="Donation offer progress"
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
 
@@ -554,7 +603,7 @@ export function NgoDriveOfferWizard({
             <div className="mx-auto w-full max-w-[680px]">
               <div className="mb-4 hidden items-center justify-between lg:flex">
                 <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
-                  Step {offerStepIndex(step) + 1} of {OFFER_STEPS.length}
+                  Step {driveStepIndex(step) + 1} of {DRIVE_OFFER_STEPS.length}
                 </p>
                 <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
               </div>
@@ -568,24 +617,7 @@ export function NgoDriveOfferWizard({
                 </div>
               )}
 
-              <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 shadow-sm">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1">
-                    <ShieldCheck className="w-3 h-3" />
-                    {ngoName}
-                  </span>
-                </div>
-                <h3 className="font-extrabold text-stone-800 dark:text-stone-200 text-sm mb-3">{requestTitle}</h3>
-                <DriveProgressBar
-                  driveId={driveId}
-                  quantityNeeded={requestedQuantity || 0}
-                  initialQuantityReceived={initialQuantityReceived}
-                  initialQuantityPledged={initialQuantityPledged}
-                  unit={driveUnit}
-                />
-              </div>
-
-              <StepCardStack depth={offerStepIndex(step)}>
+              <StepCardStack depth={driveStepIndex(step)}>
                 <AnimatePresence mode="wait" initial={false} custom={isRtl ? -direction : direction}>
                   <motion.section
                     key={step}
@@ -612,7 +644,7 @@ export function NgoDriveOfferWizard({
 
                       <div className="mb-2 empty:hidden">
                         <StepErrorSummary
-                          errors={Object.fromEntries(Object.entries(errors).filter(([, v]) => v))}
+                          errors={Object.fromEntries(Object.entries(shownErrors).filter(([, v]) => v))}
                           onFocusField={focusField}
                         />
                       </div>
@@ -624,23 +656,23 @@ export function NgoDriveOfferWizard({
                           onRetryPhoto={photoApi.retryPhoto}
                           onRemovePhoto={photoApi.removePhoto}
                           onRescreen={() => { screenedKeyRef.current = null; void runScreening(); }}
+                          onTakePhoto={takePhoto}
+                          video={videoApi}
+                          onPickVideo={file => void videoApi.upload(file)}
+                          onRemoveVideo={() => void videoApi.remove()}
                         />
                       )}
                       {step === "details" && (
                         <OfferDetailsStep
-                          model={model} errors={errors} onChange={setField}
+                          model={model} errors={shownErrors} onChange={setField}
                           requestedQuantity={requestedQuantity} stillNeededQuantity={stillNeededQuantity}
                           showSpecNotes={showSpecNotes}
                         />
                       )}
                       {step === "condition" && (
-                        <OfferConditionStep model={model} errors={errors} onChange={setField} compat={compatState} />
-                      )}
-                      {step === "pickup" && (
-                        <OfferPickupStep
-                          model={model} errors={errors} onChange={setField}
-                          gps={gps} onUseMyLocation={() => void handleUseMyLocation()}
-                        />
+                        <OfferConditionStep model={model} errors={errors} onChange={setField} compat={compatState}
+                          conditions={acceptedConditions?.length ? acceptedConditions : undefined}
+                          conditionHint={acceptedConditions?.length ? `This drive accepts: ${acceptedConditions.join(", ")}` : undefined} />
                       )}
                       {step === "review" && (
                         <>
@@ -649,6 +681,34 @@ export function NgoDriveOfferWizard({
                             declarationsInvalidated={declarationsInvalidated}
                             onChange={setField} onEdit={s => goTo(s, -1)}
                             declarationGroups={DRIVE_OFFER_DECLARATION_GROUPS}
+                            hidePickup
+                            photoGallery={photos => (
+                              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label="Your photos">
+                                {photos.map((p, i) => (
+                                  <li key={p.id}>
+                                    <button type="button" onClick={() => setEnlarged(p.url)}
+                                      aria-label={`Enlarge photo ${i + 1}`}
+                                      className="block aspect-[4/3] w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-950">
+                                      {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
+                                      <img src={p.url} alt={`Photo ${i + 1}`} className="h-full w-full object-contain" />
+                                    </button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                            video={videoApi.video ? (
+                              <div className="mt-2" data-testid="review-video">
+                                {videoApi.playbackUrl || videoApi.video.playbackUrl ? (
+                                  <video controls preload="metadata" aria-label="Your item video"
+                                    src={(videoApi.playbackUrl || videoApi.video.playbackUrl) as string}
+                                    className="aspect-video w-full rounded-xl border border-stone-200 bg-black object-contain dark:border-zinc-800" />
+                                ) : (
+                                  <p className="text-2xs text-stone-500 dark:text-stone-400">
+                                    Video added · {videoApi.video.status === "REJECTED" ? "not accepted" : "being checked"}
+                                  </p>
+                                )}
+                              </div>
+                            ) : undefined}
                           />
                           {submitError && (
                             <p role="alert" className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-2xs font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
@@ -665,8 +725,8 @@ export function NgoDriveOfferWizard({
           </div>
 
           <WizardNavigation
-            canGoBack={offerStepIndex(step) > 0}
-            onBack={() => goTo(OFFER_STEPS[offerStepIndex(step) - 1], -1)}
+            canGoBack={driveStepIndex(step) > 0}
+            onBack={() => goTo(DRIVE_OFFER_STEPS[driveStepIndex(step) - 1], -1)}
             onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={isLast ? "Send offer to the NGO" : "Continue"}
@@ -679,6 +739,22 @@ export function NgoDriveOfferWizard({
           />
         </form>
       </div>
+      <PhotoCaptureDialog
+        open={cameraOpen}
+        onCancel={() => setCameraOpen(false)}
+        onCaptured={file => { setCameraOpen(false); photoApi.addFiles([file]); }}
+      />
+      {enlarged && (
+        <div role="dialog" aria-modal="true" aria-label="Photo"
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4" onClick={() => setEnlarged(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
+          <img src={enlarged} alt="Enlarged photo" className="max-h-[88vh] max-w-full rounded-lg object-contain" onClick={e => e.stopPropagation()} />
+          <button type="button" onClick={() => setEnlarged(null)} aria-label="Close photo"
+            className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/90 text-stone-900">
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
+      )}
     </MotionConfig>
   );
 }

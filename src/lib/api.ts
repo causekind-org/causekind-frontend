@@ -2514,6 +2514,36 @@ export function deleteOfferVideo(offerId: number, mediaId: number) {
   return request<void>(`/api/v1/offers/${offerId}/video/${mediaId}`, { method: "DELETE" });
 }
 
+// ── Item video on an NGO drive offer: same contract as the donation-offer video above ──
+
+export function getNgoDriveOfferVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/drive-offers/video/capability");
+}
+
+export function createNgoDriveOfferVideoSlot(offerId: number, contentLength: number, contentType?: string) {
+  const type = contentType ? `&contentType=${encodeURIComponent(contentType)}` : "";
+  return request<OfferVideoSlot>(
+    `/api/v1/drive-offers/${offerId}/video/slot?contentLength=${contentLength}${type}`,
+    { method: "POST" },
+  );
+}
+
+export function finalizeNgoDriveOfferVideo(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/drive-offers/${offerId}/video/${mediaId}/finalize`, { method: "POST" });
+}
+
+export function getNgoDriveOfferVideoStatus(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/drive-offers/${offerId}/video/${mediaId}`);
+}
+
+export function getNgoDriveOfferVideoPlayback(offerId: number, mediaId: number) {
+  return request<{ url: string }>(`/api/v1/drive-offers/${offerId}/video/${mediaId}/playback`);
+}
+
+export function deleteNgoDriveOfferVideo(offerId: number, mediaId: number) {
+  return request<void>(`/api/v1/drive-offers/${offerId}/video/${mediaId}`, { method: "DELETE" });
+}
+
 /**
  * PUT the bytes straight at S3 using the presigned URL.
  *
@@ -4594,7 +4624,12 @@ export type NgoApplicationStatusResponse = {
   updatedAt: string | null;
   rejectionReason: string | null;
   needsInformationDetails: string | null;
+  /** Per-item correction request (NEEDS_INFORMATION): wizard field key and the reviewer's note. */
+  correctionItems?: NgoCorrectionItem[];
 };
+
+/** A wizard field or file a reviewer asked to fix, e.g. "registrationNumber" or "documents.trust-deed". */
+export type NgoCorrectionItem = { field: string; note: string };
 
 /**
  * Retrieves the currently authenticated NGO's application status.
@@ -4664,11 +4699,14 @@ export type NgoReviewApplication = NgoApplicationStatusResponse & {
 export type NgoReviewFile = {
   id: number; kind: "document" | "photo"; type: string; name: string;
   ownershipRecorded: boolean; moderationVerdict: string | null;
+  /** Wizard key of this file (e.g. "documents.trust-deed", "logo"), used to flag it for correction. */
+  field?: string; mimeType?: string | null;
 };
 export type NgoReviewDetail = {
   application: NgoReviewApplication; files: NgoReviewFile[]; submissions: NgoReviewApplication[];
   decisions: { id: number; fromStatus: string; toStatus: string; changedByEmail: string; note: string; changedAt: string }[];
   current: boolean;
+  corrections?: { summary: string; items: NgoCorrectionItem[] } | null;
 };
 export function adminGetNgoApplications(status: string, page = 0) {
   const params = new URLSearchParams({ page: String(page) });
@@ -4679,9 +4717,10 @@ export function adminGetNgoApplications(status: string, page = 0) {
 export function adminGetNgoApplication(id: string) {
   return request<NgoReviewDetail>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}`);
 }
-export function adminDecideNgoApplication(id: string, status: "APPROVED" | "REJECTED" | "NEEDS_INFORMATION", reason: string) {
+export function adminDecideNgoApplication(id: string, status: "APPROVED" | "REJECTED" | "NEEDS_INFORMATION", reason: string,
+  items?: NgoCorrectionItem[]) {
   return request<NgoReviewApplication>(`/api/v1/admin/ngo-applications/${encodeURIComponent(id)}/decision`, {
-    method: "PATCH", body: JSON.stringify({ status, reason }),
+    method: "PATCH", body: JSON.stringify(items && items.length ? { status, reason, items } : { status, reason }),
   });
 }
 export function adminGetNgoEvidenceLink(id: string, file: NgoReviewFile) {
@@ -4725,8 +4764,8 @@ export type CreateNgoDrivePayload = {
   itemName: string;
   quantity: number;
   unit: "PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS";
-  condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED";
-  details?: string;
+  condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED" | "SEALED_ONLY" | "USED_WORKING" | "ANY_USABLE";
+  details: string;
   referencePhotoUrl?: string;
   description: string;
   urgency: "NORMAL" | "HIGH" | "CRITICAL";
@@ -4800,6 +4839,10 @@ export type PublicNgoDrive = {
   quantityNeeded: number;
   unit: string;
   condition?: string;
+  /** Donor item conditions the drive accepts (server rule); empty or missing means any. */
+  acceptedConditions?: string[];
+  /** Plain-language rule, e.g. "Accepts: Unused, Like New". */
+  conditionRule?: string | null;
   details?: string;
   referencePhotoUrl?: string | null;
   description?: string;
@@ -4961,6 +5004,9 @@ export type NgoDriveOfferResponse = {
     mediaType: string;
     status: string;
     sortOrder: number;
+    /** VIDEO only: short-lived URL to the screened copy, once approved. */
+    playbackUrl?: string | null;
+    durationMs?: number | null;
   }>;
   driveStatus?: string;
   driveItemName?: string;

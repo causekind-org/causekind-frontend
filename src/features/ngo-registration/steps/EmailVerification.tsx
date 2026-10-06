@@ -155,7 +155,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified, resumed 
           </p>
           {IS_NGO_DEMO_MODE && (
             <p className="text-3xs font-semibold text-amber-600 dark:text-amber-400">
-              Demo Mode Active: Enter any 6 digits (e.g. 123456)
+              Demo Mode Active: Enter any 6 digits
             </p>
           )}
         </div>

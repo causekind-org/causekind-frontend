@@ -8,12 +8,15 @@ import {
   type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
+import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 
 interface LegalDocumentsProps {
   data: NGOFormState;
   onChange: (patch: Partial<NGOFormState>) => void;
   onBack: () => void;
   onContinue: () => void;
+  /** Items a reviewer asked to fix, with their notes (shown next to each). */
+  corrections?: NgoCorrections;
 }
 
 /**
@@ -23,7 +26,7 @@ interface LegalDocumentsProps {
  * in Step 1. Changing the structure (via Back → Step 1) clears the documents
  * state, so stale uploads from a previous structure don't bleed through.
  */
-export function LegalDocuments({ data, onChange, onBack, onContinue }: LegalDocumentsProps) {
+export function LegalDocuments({ data, onChange, onBack, onContinue, corrections }: LegalDocumentsProps) {
   const docs = getDocsForStructure(data.legalStructure);
   const mustHaveDocs = docs.filter((d) => d.category === "must-have");
   const supportingDocs = docs.filter((d) => d.category === "supporting");
@@ -73,15 +76,17 @@ export function LegalDocuments({ data, onChange, onBack, onContinue }: LegalDocu
           </h3>
           <div className="space-y-2.5">
             {mustHaveDocs.map((doc) => (
-              <DocUploadCard
-                key={doc.id}
-                docId={doc.id}
-                label={doc.label}
-                category={doc.category}
-                uploaded={data.documents[doc.id] ?? null}
-                onUpload={(file) => setDoc(doc.id, file)}
-                onRemove={() => setDoc(doc.id, null)}
-              />
+              <div key={doc.id}>
+                <DocUploadCard
+                  docId={doc.id}
+                  label={doc.label}
+                  category={doc.category}
+                  uploaded={data.documents[doc.id] ?? null}
+                  onUpload={(file) => setDoc(doc.id, file)}
+                  onRemove={() => setDoc(doc.id, null)}
+                />
+                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} />
+              </div>
             ))}
           </div>
         </div>
@@ -95,15 +100,17 @@ export function LegalDocuments({ data, onChange, onBack, onContinue }: LegalDocu
           </h3>
           <div className="space-y-2.5">
             {supportingDocs.map((doc) => (
-              <DocUploadCard
-                key={doc.id}
-                docId={doc.id}
-                label={doc.label}
-                category={doc.category}
-                uploaded={data.documents[doc.id] ?? null}
-                onUpload={(file) => setDoc(doc.id, file)}
-                onRemove={() => setDoc(doc.id, null)}
-              />
+              <div key={doc.id}>
+                <DocUploadCard
+                  docId={doc.id}
+                  label={doc.label}
+                  category={doc.category}
+                  uploaded={data.documents[doc.id] ?? null}
+                  onUpload={(file) => setDoc(doc.id, file)}
+                  onRemove={() => setDoc(doc.id, null)}
+                />
+                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} />
+              </div>
             ))}
           </div>
         </div>

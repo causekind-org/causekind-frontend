@@ -36,7 +36,7 @@ export type ScreeningState =
  */
 export function OfferPhotosStep({
   photos, error, screening, onAddFiles, onRetryPhoto, onRemovePhoto, onRescreen,
-  video, onPickVideo, onRemoveVideo,
+  video, onPickVideo, onRemoveVideo, onTakePhoto,
 }: {
   photos: WizardPhoto[];
   error?: string;
@@ -53,6 +53,12 @@ export function OfferPhotosStep({
   video?: OfferVideoState;
   onPickVideo?: (file: File) => void;
   onRemoveVideo?: () => void;
+  /**
+   * Optional. Replaces what "Take photo" does; it receives a function that opens
+   * the device camera input. Without it the button opens that input directly, as
+   * it always has (phones open the camera; desktop browsers show the file picker).
+   */
+  onTakePhoto?: (openNativeCamera: () => void) => void;
 }) {
   const t = useTranslations();
   const reduced = !!useReducedMotion();
@@ -80,7 +86,7 @@ export function OfferPhotosStep({
       <div className="grid grid-cols-2 gap-2">
         <motion.button
           type="button" {...pressProps(reduced)}
-          onClick={() => cameraRef.current?.click()}
+          onClick={() => onTakePhoto ? onTakePhoto(() => cameraRef.current?.click()) : cameraRef.current?.click()}
           className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-soft)] px-3 py-2.5 text-sm font-bold text-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         >
           <Camera className="h-4 w-4" aria-hidden /> Take photo
