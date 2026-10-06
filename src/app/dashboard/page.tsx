@@ -52,6 +52,12 @@ import MatchChatPopup from "@/components/MatchChatPopup";
 import { OfferJourney, donorJourneyIndex, buildDonorJourney } from "@/components/OfferJourney";
 import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
 import { findMatchForListing, isCompletedMatch, MATCHED_DONATION_STAGES, getListingCompletionDate } from "@/lib/matchedDonations";
+import { formatMatchProximity } from "@/lib/matchDistance";
+import {
+  filterInventory, inventoryFilterOptions, filterRequests, requestFilterOptions,
+  type InventoryFilter, type RequestFilter,
+} from "@/lib/dashboardFilters";
+import { DashboardFilterChips } from "@/components/DashboardFilterChips";
 
 // Once both parties accept, scheduling/confirmation/chat all live on the
 // Handover Hub page instead of inline dashboard forms.
@@ -258,6 +264,27 @@ function WithdrawListingDialog({
   );
 }
 
+/**
+ * Where one of a listing's matches stands, in the donor's words. Shown on the
+ * inventory row so the donor can see which need each item is spoken for by
+ * without cross-referencing the Matches tab.
+ */
+function donorMatchStage(status: string): { label: string; tone: "action" | "progress" | "waiting" } {
+  if (status === "DONOR_REVIEW") return { label: "Confirm it's available", tone: "action" };
+  if (status === "DONEE_ACCEPTED") return { label: "Give final confirmation", tone: "action" };
+  if (status === "PENDING_APPROVAL") return { label: "Admin reviewing", tone: "waiting" };
+  if (status === "AWAITING_DONEE_CONFIRMATION") return { label: "Waiting on recipient", tone: "waiting" };
+  if (status === "DELIVERED_PENDING_CONFIRMATION") return { label: "Delivered — awaiting confirmation", tone: "progress" };
+  if (HANDOVER_HUB_STATUSES.has(status)) return { label: "Handover in progress", tone: "progress" };
+  return { label: status.replace(/_/g, " ").toLowerCase(), tone: "waiting" };
+}
+
+const MATCH_STAGE_TONE: Record<"action" | "progress" | "waiting", string> = {
+  action: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-300",
+  progress: "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-700/60 dark:bg-emerald-950/30 dark:text-emerald-300",
+  waiting: "border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300",
+};
+
 function DonorListingRow({
   listing: l,
   index,
@@ -266,6 +293,8 @@ function DonorListingRow({
   onWithdrawPrompt,
   onDelete,
   onSelect,
+  listingMatches = [],
+  onOpenMatches,
 }: {
   listing: ItemListing;
   index: number;
@@ -274,10 +303,15 @@ function DonorListingRow({
   onWithdrawPrompt: (id: number) => void;
   onDelete: (id: number) => void;
   onSelect: (l: ItemListing) => void;
+  /** This listing's live (non-history) matches, each one a nearby verified need. */
+  listingMatches?: ItemMatch[];
+  /** Jump to the Matches tab, where accept/decline actually happens. */
+  onOpenMatches?: () => void;
 }) {
   const badge = getListingStatusBadge(l.status);
   const isDraft = l.status === "DRAFT";
   const needsInfo = l.status === "NEEDS_INFORMATION";
+  const isLive = l.status === "ELIGIBLE_FOR_MATCHING" || l.status === "AVAILABLE";
 
   return (
     <motion.div
@@ -367,6 +401,71 @@ function DonorListingRow({
       </div>
 
       <ListingJourneyRail status={l.status} />
+
+      {listingMatches.length > 0 ? (
+        <div className="mt-3.5 rounded-xl border border-[var(--ck-role-accent)]/20 bg-gradient-to-br from-[var(--ck-role-accent)]/[0.06] to-transparent p-2.5 sm:p-3 dark:border-[var(--ck-role-accent)]/30 dark:from-[var(--ck-role-accent)]/10">
+          <p className="flex items-center gap-1.5 text-3xs font-black uppercase tracking-[0.18em] text-[var(--ck-role-accent)]">
+            <Handshake className="w-3.5 h-3.5" />
+            Matched to {listingMatches.length} nearby need{listingMatches.length > 1 ? "s" : ""}
+          </p>
+          <ul className="mt-2 divide-y divide-stone-200/70 dark:divide-zinc-800">
+            {listingMatches.map((m) => {
+              const stage = donorMatchStage(m.status);
+              const proximity = formatMatchProximity(m);
+              const urgent = m.requestUrgency === "CRITICAL" || m.requestUrgency === "HIGH";
+              return (
+                <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0.5 last:pb-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-stone-800 dark:text-stone-200">
+                      <TranslatedText text={m.requestTitle || "A verified need"} />
+                    </p>
+                    <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-stone-500 dark:text-stone-400">
+                      {proximity && (
+                        <span className="inline-flex items-center gap-0.5">
+                          <MapPin className="w-3 h-3 text-[var(--ck-role-accent)]" />{proximity}
+                        </span>
+                      )}
+                      {m.requestQuantity != null && <span>Needs {m.requestQuantity}</span>}
+                      {urgent && (
+                        <span className="font-bold text-red-600 dark:text-red-400">
+                          {m.requestUrgency === "CRITICAL" ? "Critical" : "Urgent"}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className={`rounded-full border px-2 py-0.5 text-3xs font-bold whitespace-nowrap ${MATCH_STAGE_TONE[stage.tone]}`}>
+                      {stage.label}
+                    </span>
+                    {HANDOVER_HUB_STATUSES.has(m.status) ? (
+                      <Link href={`/matches/${m.id}/handover`} className="text-2xs font-bold text-[var(--ck-role-accent)] hover:underline whitespace-nowrap">
+                        Handover hub →
+                      </Link>
+                    ) : stage.tone === "action" && onOpenMatches ? (
+                      <button
+                        type="button"
+                        id={`listing-${l.id}-review-match-${m.id}`}
+                        onClick={onOpenMatches}
+                        className="text-2xs font-bold text-[var(--ck-role-accent)] hover:underline whitespace-nowrap"
+                      >
+                        Review →
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : isLive ? (
+        <p className="mt-3 flex items-center gap-2 text-2xs text-stone-400 dark:text-stone-500">
+          <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--ck-role-accent)]/60 motion-reduce:hidden" />
+            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--ck-role-accent)]" />
+          </span>
+          No matching need nearby yet — we check every new verified request and will notify you.
+        </p>
+      ) : null}
 
       {needsInfo && (
         <div className="mt-2.5 text-xs text-amber-700 dark:text-amber-400 font-semibold bg-amber-100 dark:bg-amber-950/20 rounded-lg p-2">
@@ -1266,7 +1365,8 @@ function FulfilledListingCard({
   listing: ItemListing;
   match: ItemMatch | null;
 }) {
-  const thumbnailUrl = listing.imageUrl || (listing.imageUrls ? listing.imageUrls.split(",")[0] : null);
+  // photoUrls holds approved photo rows; the legacy tail is "|"-joined, not ",".
+  const thumbnailUrl = listing.photoUrls?.[0] || listing.imageUrl || (listing.imageUrls ? listing.imageUrls.split("|")[0] : null);
   const hasCertificate = isCompletedMatch(match);
 
   return (
@@ -1289,7 +1389,7 @@ function FulfilledListingCard({
         </div>
         {thumbnailUrl && (
           <div className="relative h-10 sm:h-12 w-10 sm:w-12 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-            <Image src={thumbnailUrl} alt="" fill className="object-cover" />
+            <Image src={thumbnailUrl} alt="" fill sizes="48px" className="object-cover" unoptimized />
           </div>
         )}
       </div>
@@ -1427,7 +1527,7 @@ function FulfilledRequestMatchCard({
         </div>
         {thumbnailUrl && (
           <div className="relative h-10 sm:h-12 w-10 sm:w-12 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-            <Image src={thumbnailUrl} alt="" fill className="object-cover" />
+            <Image src={thumbnailUrl} alt="" fill sizes="48px" className="object-cover" unoptimized />
           </div>
         )}
       </div>
@@ -1875,6 +1975,8 @@ function DoneeDashboard({
   const [now] = useState(() => Date.now());
   // Null until the donee picks a tab (or arrives with one in the URL hash).
   const [chosenSection, setChosenSection] = useState<DoneeSection | null>(null);
+  // Sub-filter inside Your Requests. Client-side only — no refetch, no reload.
+  const [requestFilter, setRequestFilter] = useState<RequestFilter>("all");
 
   useEffect(() => {
     getOffersForMyRequests().then(setIncomingOffers).catch(() => { }).finally(() => setOffersLoaded(true));
@@ -1961,6 +2063,12 @@ function DoneeDashboard({
   // match still counted as "active" and never left the list.
   const activeMatches = doneeMatches.filter(m => !MATCH_HISTORY_STATUSES.has(m.status));
   const pastMatches = doneeMatches.filter(m => MATCH_HISTORY_STATUSES.has(m.status));
+  // A need with a live match counts as "Matched" even before its status moves.
+  const liveMatchRequestIds = new Set(
+    activeMatches.map(m => m.requestId).filter((id): id is number => id != null),
+  );
+  const requestOptions = requestFilterOptions(itemRequests, liveMatchRequestIds);
+  const filteredRequests = filterRequests(itemRequests, requestFilter, liveMatchRequestIds);
   const activeOffers = incomingOffers.filter(o => !isPastOffer(o, now));
   const pastOffers = incomingOffers.filter(o => isPastOffer(o, now));
   const offersNeedYou = activeOffers.some(o => OFFER_NEEDS_DONEE.has(o.status));
@@ -2422,6 +2530,37 @@ function DoneeDashboard({
                   </NewRequestLink>
                 </div>
               ) : (
+                <DashboardFilterChips
+                  label="Filter your requests"
+                  options={requestOptions}
+                  value={requestFilter}
+                  onChange={setRequestFilter}
+                  tone="donee"
+                  idPrefix="request-filter"
+                />
+              )}
+
+              {itemRequests.length === 0 ? null : requestFilter !== "all" ? (
+                filteredRequests.length === 0 ? (
+                  <div className="py-7 text-center space-y-2">
+                    <p className="text-sm text-stone-400">
+                      Nothing under &ldquo;{requestOptions.find(o => o.key === requestFilter)?.label}&rdquo; right now.
+                    </p>
+                    <button type="button" onClick={() => setRequestFilter("all")}
+                      className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">
+                      Show all requests
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <AnimatePresence initial={false}>
+                      {filteredRequests.map((r, i) => (
+                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )
+              ) : (
                 <div className="space-y-6 mt-4">
                   {([
                     ["Pending", requestGroups.pending],
@@ -2637,6 +2776,8 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<"donor" | "donee">("donor");
   // Null until the donor picks a section (or arrives with one in the URL hash).
   const [chosenDonorSection, setChosenDonorSection] = useState<DonorSection | null>(null);
+  // Sub-filter inside Your Inventory. Client-side only — no refetch, no reload.
+  const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
 
   // Listing action state
   const [listingActionLoading, setListingActionLoading] = useState<number | null>(null);
@@ -2788,6 +2929,30 @@ export default function DashboardPage() {
   // for the section's own history strip, exactly as on the donee side.
   const activeDonorMatches = donorMatches.filter(m => !MATCH_HISTORY_STATUSES.has(m.status));
   const pastDonorMatches = donorMatches.filter(m => MATCH_HISTORY_STATUSES.has(m.status));
+  // Each listing's live matches — drives the "Matched" filter and the
+  // matched-needs strip on its inventory row.
+  const liveMatchesByListing = new Map<number, ItemMatch[]>();
+  for (const m of activeDonorMatches) {
+    if (m.listingId == null) continue;
+    liveMatchesByListing.set(m.listingId, [...(liveMatchesByListing.get(m.listingId) ?? []), m]);
+  }
+  const liveMatchListingIds = new Set(liveMatchesByListing.keys());
+  const inventoryOptions = inventoryFilterOptions(itemListings, liveMatchListingIds);
+  const filteredInventory = filterInventory(itemListings, inventoryFilter, liveMatchListingIds);
+  const renderListingRow = (l: ItemListing, i: number) => (
+    <DonorListingRow
+      key={l.id}
+      listing={l}
+      index={i}
+      listingActionLoading={listingActionLoading}
+      onAction={handleListingAction}
+      onWithdrawPrompt={(id) => setWithdrawListingId(id)}
+      onDelete={handleDeleteListing}
+      onSelect={setSelectedListing}
+      listingMatches={liveMatchesByListing.get(l.id)}
+      onOpenMatches={() => selectDonorSection("matches")}
+    />
+  );
   const liveDonorOffers = donationOffers.filter(isLiveDonorOffer);
   const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));
   const donorMatchesNeedYou = activeDonorMatches.some(m => MATCH_NEEDS_DONOR.has(m.status));
@@ -2989,7 +3154,40 @@ export default function DashboardPage() {
                         <Plus className="w-3.5 h-3.5" /> Add an item
                       </Link>
                     </div>
-                    {visibleDonorListings.length === 0 ? (
+                    {itemListings.length > 0 && (
+                      <DashboardFilterChips
+                        label="Filter your inventory"
+                        options={inventoryOptions}
+                        value={inventoryFilter}
+                        onChange={setInventoryFilter}
+                        tone="donor"
+                        idPrefix="inventory-filter"
+                      />
+                    )}
+                    {inventoryFilter !== "all" ? (
+                      filteredInventory.length === 0 ? (
+                        <div className="py-7 text-center space-y-2">
+                          <p className="text-sm text-stone-400">
+                            Nothing under &ldquo;{inventoryOptions.find(o => o.key === inventoryFilter)?.label}&rdquo; right now.
+                          </p>
+                          <button type="button" onClick={() => setInventoryFilter("all")}
+                            className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline">
+                            Show all items
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="mt-4">
+                          {inventoryFilter === "completed" && (
+                            <p className="mb-3 text-2xs text-stone-400">
+                              Certificates for these are under Your Offers &rarr; Matched Donations.
+                            </p>
+                          )}
+                          <AnimatePresence initial={false}>
+                            {filteredInventory.map((l, i) => renderListingRow(l, i))}
+                          </AnimatePresence>
+                        </div>
+                      )
+                    ) : visibleDonorListings.length === 0 ? (
                       <div className="py-7 sm:py-12 text-center space-y-2">
                         <p className="text-sm text-stone-400">You haven&apos;t listed any items to donate yet.</p>
                         <Link href="/items/new" className="inline-block mt-3">
@@ -3007,18 +3205,7 @@ export default function DashboardPage() {
                           <div key={label}>
                             <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
                             <AnimatePresence initial={false}>
-                              {group.map((l, i) => (
-                                <DonorListingRow
-                                  key={l.id}
-                                  listing={l}
-                                  index={i}
-                                  listingActionLoading={listingActionLoading}
-                                  onAction={handleListingAction}
-                                  onWithdrawPrompt={(id) => setWithdrawListingId(id)}
-                                  onDelete={handleDeleteListing}
-                                  onSelect={setSelectedListing}
-                                />
-                              ))}
+                              {group.map((l, i) => renderListingRow(l, i))}
                             </AnimatePresence>
                           </div>
                         ))}

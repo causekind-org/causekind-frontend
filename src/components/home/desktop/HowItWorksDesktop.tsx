@@ -297,7 +297,6 @@ export function HowItWorksDesktop() {
   const [isStoppedPermanently, setIsStoppedPermanently] = useState(false);
   const [isPageVisible, setIsPageVisible] = useState(true);
   const [pressedHref, setPressedHref] = useState<string | null>(null);
-  const [isHoveredSection, setIsHoveredSection] = useState(false);
 
   const autoTimerRef = useRef<NodeJS.Timeout | null>(null);
   const timerStartRef = useRef<number>(Date.now());
@@ -322,13 +321,12 @@ export function HowItWorksDesktop() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // Compute pause state (only off-screen, hidden browser tab, permanent stop, reduced-motion, or hovered)
+  // Compute pause state (only off-screen, hidden browser tab, permanent stop, reduced-motion)
   const isPaused =
     isStoppedPermanently ||
     Boolean(reduceMotion) ||
     !isSectionVisible ||
-    !isPageVisible ||
-    isHoveredSection;
+    !isPageVisible;
 
   // Master continuous timer management
   useEffect(() => {
@@ -366,28 +364,25 @@ export function HowItWorksDesktop() {
     };
   }, []);
 
-  // Manual tab click: switch immediately, restart 2s timer from this tab, KEEP rotating
+  // Manual tab click: switch immediately and stop rotation (like userDriven on mobile)
   const handleTabClick = (tabId: RoleTab) => {
     setActiveTab(tabId);
-    remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
-    timerStartRef.current = Date.now();
+    setIsStoppedPermanently(true);
   };
 
-  // Keyboard navigation: switch immediately, restart 2s timer, KEEP rotating
+  // Keyboard navigation: switch immediately and stop rotation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
     if (e.key === "ArrowRight") {
       e.preventDefault();
       const nextIndex = (currentIndex + 1) % TABS.length;
       setActiveTab(TABS[nextIndex].id);
-      remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
-      timerStartRef.current = Date.now();
+      setIsStoppedPermanently(true);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
       setActiveTab(TABS[prevIndex].id);
-      remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
-      timerStartRef.current = Date.now();
+      setIsStoppedPermanently(true);
     }
   };
 
@@ -409,8 +404,6 @@ export function HowItWorksDesktop() {
       ref={sectionRef}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
-      onMouseEnter={() => setIsHoveredSection(true)}
-      onMouseLeave={() => setIsHoveredSection(false)}
       className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
       style={
         {

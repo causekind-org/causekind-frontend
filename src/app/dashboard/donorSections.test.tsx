@@ -180,6 +180,41 @@ describe("donor dashboard sections", () => {
   });
 });
 
+describe("inventory filters", () => {
+  it("filters the inventory by state without reloading, with a count on each chip", async () => {
+    mocks.listings.mockResolvedValue([
+      listing(1, "DRAFT", { title: "Draft chair" }),
+      listing(2, "AVAILABLE", { title: "Live table" }),
+      listing(3, "AVAILABLE", { title: "Matched laptop" }),
+      listing(4, "FULFILLED", { title: "Done earbuds" }),
+    ]);
+    // In progress but not waiting on the donor, so the dashboard opens on Inventory.
+    mocks.matches.mockResolvedValue([match(21, "PICKUP_SCHEDULED", { listingId: 3 })]);
+    render(<DashboardPage />);
+    await openTab(/Your Inventory/);
+
+    const chips = screen.getByRole("group", { name: "Filter your inventory" });
+    expect(within(chips).getByRole("button", { name: "All (3)" })).toHaveAttribute("aria-pressed", "true");
+    expect(within(chips).getByRole("button", { name: "Drafts (1)" })).toBeInTheDocument();
+
+    await userEvent.click(within(chips).getByRole("button", { name: "Drafts (1)" }));
+    expect(screen.getByText("Draft chair")).toBeInTheDocument();
+    expect(screen.queryByText("Live table")).toBeNull();
+
+    // A live listing with a matched need sits under Matched, not Listed.
+    await userEvent.click(within(chips).getByRole("button", { name: "Matched (1)" }));
+    expect(screen.getByText("Matched laptop")).toBeInTheDocument();
+    expect(screen.queryByText("Live table")).toBeNull();
+
+    await userEvent.click(within(chips).getByRole("button", { name: "Listed (1)" }));
+    expect(screen.getByText("Live table")).toBeInTheDocument();
+
+    // Finished items are reachable from here, though All leaves them out.
+    await userEvent.click(within(chips).getByRole("button", { name: "Completed (1)" }));
+    expect(screen.getByText("Done earbuds")).toBeInTheDocument();
+  });
+});
+
 describe("which matches are this donor's", () => {
   it("keeps a namesake's match off the donor's tab", async () => {
     // getMyMatches returns both sides' matches and the dashboard splits them.

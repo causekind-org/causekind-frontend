@@ -465,7 +465,8 @@ function NewRequestForm() {
   // Step 1 — need details
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  // "" while the field is being cleared, so backspace can empty it.
+  const [quantity, setQuantity] = useState<number | "">(1);
   const [urgency, setUrgency] = useState("NORMAL");
   const [description, setDescription] = useState("");
   const [isEmergency, setIsEmergency] = useState(false);
@@ -680,7 +681,7 @@ function NewRequestForm() {
   const buildPayload = useCallback((): Partial<UpdateRequestPayload> => ({
     title: title || undefined,
     category: category || undefined,
-    quantity,
+    quantity: quantity || undefined,
     urgency,
     city: buildCityString() || undefined,
     pincode: pincode || undefined,
@@ -706,7 +707,7 @@ function NewRequestForm() {
     if (s === 1) {
       if (!title.trim()) e.title = "Title is required";
       if (!category) e.category = "Category is required";
-      if (quantity < 1) e.quantity = "Quantity must be at least 1";
+      if (!quantity || quantity < 1) e.quantity = "Quantity must be at least 1";
       if (!description || description.length < 30) e.description = `Describe your need in at least 30 characters (currently ${description.length})`;
       const city = showCityFreeText ? cityFreeText : cityValue;
       if (!city) e.city = "City is required";
@@ -1021,7 +1022,7 @@ function NewRequestForm() {
         <WizardField label="Quantity" required error={fieldErrors.quantity}>
           {({ id, describedBy, invalid }) => (
             <Input id={id} name="quantity" type="number" min={1} aria-describedby={describedBy} aria-invalid={invalid}
-              value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="h-11" />
+              value={quantity} onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))} className="h-11" />
           )}
         </WizardField>
       </div>
@@ -1443,7 +1444,7 @@ function NewRequestForm() {
                     <DoneeReviewStep
                       title={title}
                       category={category}
-                      quantity={quantity}
+                      quantity={quantity || 0}
                       urgency={urgency}
                       description={description}
                       isEmergency={isEmergency}

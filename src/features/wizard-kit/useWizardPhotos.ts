@@ -158,12 +158,15 @@ export function useWizardPhotos(options: {
         return;
       }
 
+      // The local preview is KEPT after upload, not revoked. A listing photo has
+      // no remote url until screening approves it, so dropping the preview here
+      // left an empty tile until a reload fetched the approved url. It is the
+      // same picture, already decoded, and is revoked on remove or unmount.
       setPhotos(prev => prev.map(p => {
         if (p.id !== id) return p;
-        revoke(p.localUrl);
         return {
           ...p, status: "uploaded", remoteUrl: result.remoteUrl,
-          mediaId: result.mediaId ?? null, localUrl: null, error: null,
+          mediaId: result.mediaId ?? null, error: null,
           // Carried through where the flow supplies it. "uploaded" above is the
           // transfer finishing; this is what the server has decided about the
           // picture, which at this point is usually "nothing yet".

@@ -131,7 +131,8 @@ export function PhotosStep({
       <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           <AnimatePresence initial={false}>
             {photos.map((photo, i) => {
-              const src = photo.remoteUrl ?? photo.localUrl ?? "";
+              // Local preview first: remoteUrl is "" until screening approves the photo.
+              const src = photo.localUrl || photo.remoteUrl || "";
               const isMain = i === 0;
               return (
                 <motion.li
@@ -158,6 +159,10 @@ export function PhotosStep({
                   {photo.status === "failed" && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 bg-red-900/70 p-2 text-center">
                       <p className="text-3xs font-bold text-white">Upload failed</p>
+                      {/* The server's own reason ("too large", "already added"), not a bare "failed". */}
+                      {photo.error && (
+                        <p role="alert" className="text-4xs leading-snug text-white/90">{photo.error}</p>
+                      )}
                       <button
                         type="button"
                         onClick={() => onRetryPhoto(photo.id)}

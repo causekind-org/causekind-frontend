@@ -248,7 +248,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
 
   if (!listing) return null;
 
-  const photos = [
+  const photos = listing.photoUrls?.length ? listing.photoUrls : [
     listing.imageUrl,
     ...(listing.imageUrls ? listing.imageUrls.split("|") : []),
   ].filter(Boolean) as string[];

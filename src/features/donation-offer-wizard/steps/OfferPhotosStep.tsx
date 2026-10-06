@@ -114,7 +114,7 @@ export function OfferPhotosStep({
       {photos.length > 0 && (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {photos.map((p, i) => {
-            const src = p.remoteUrl ?? p.localUrl;
+            const src = p.localUrl || p.remoteUrl;
             return (
               <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-900">
                 {src && (

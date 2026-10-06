@@ -70,6 +70,8 @@ import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
+import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
@@ -274,12 +276,22 @@ export default function HomeClient({
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      <WhoAreWeSection />
+      <div className="hidden lg:block">
+        <WhoAreWeDesktop />
+      </div>
+      <div className="lg:hidden">
+        <WhoAreWeSection />
+      </div>
 
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
-      <HowItWorksSection />
+      <div className="hidden lg:block">
+        <HowItWorksDesktop />
+      </div>
+      <div className="lg:hidden">
+        <HowItWorksSection />
+      </div>
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">

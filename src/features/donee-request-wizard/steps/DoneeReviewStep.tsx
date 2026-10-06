@@ -43,7 +43,7 @@ export function DoneeReviewStep({
         <ReviewRow label="Location" value={[city, pincode].filter(Boolean).join(" - ") || "Not specified"} />
         <div className="py-2 border-t border-stone-100 dark:border-zinc-800/50 mt-2">
           <p className="text-xs text-stone-500 mb-1">Description</p>
-          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line">{description || "No description provided"}</p>
+          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{description || "No description provided"}</p>
         </div>
       </ReviewSection>
 
@@ -61,7 +61,7 @@ export function DoneeReviewStep({
         )}
         <div className="py-2 border-t border-stone-100 dark:border-zinc-800/50 mt-2">
           <p className="text-xs text-stone-500 mb-1">Why they cannot buy this item</p>
-          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line">{verification.reasonCannotBuy || "Not provided"}</p>
+          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{verification.reasonCannotBuy || "Not provided"}</p>
         </div>
       </ReviewSection>
 

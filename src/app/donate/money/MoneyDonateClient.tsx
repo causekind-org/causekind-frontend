@@ -33,8 +33,8 @@ export default function MoneyDonateClient() {
           that cost rather than only those who scroll past the form. Compressing
           the files in public/videos is the fix, not moving the section. */}
       <ImpactCarousel />
-      <MoneyFlowStory />
       <MoneyDonationForm />
+      <MoneyFlowStory />
       <AboutSahas />
       <TrustCredibility />
     </div>
