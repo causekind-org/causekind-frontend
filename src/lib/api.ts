@@ -2995,6 +2995,29 @@ export function analyzeItemImage(image: File): Promise<{ description: string }> 
   });
 }
 
+/** A saved bell notification (V36). `id` matches the live stream's "n-<id>". */
+export type SavedNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  createdAt: string;
+  read: boolean;
+};
+
+export function getMyNotifications() {
+  return request<SavedNotification[]>("/api/v1/notifications", { silent401: true });
+}
+
+export function markNotificationRead(id: string) {
+  return request<{ read: boolean }>(`/api/v1/notifications/${id.replace(/^n-/, "")}/read`, { method: "POST" });
+}
+
+export function markAllNotificationsRead() {
+  return request<{ updated: number }>("/api/v1/notifications/read-all", { method: "POST" });
+}
+
 export function getMyMatches() {
   return request<ItemMatch[]>("/api/v1/matches/mine", { silent401: true });
 }
