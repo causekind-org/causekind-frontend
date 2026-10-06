@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { HeroSection } from "@/components/home/HeroSection";
-import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
@@ -40,7 +39,8 @@ export function RoleHome({
   return (
     <div className={`ck-role-desktop-${role} relative z-10 w-full`}>
       <HeroSection />
-      <WhoAreWeSection />
+      {/* The main page's About (flip cards), in the default donor colours. */}
+      <WhoAreWeDesktop />
       <SupportGallery />
       <div className="ck-home-paper relative z-10">
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />

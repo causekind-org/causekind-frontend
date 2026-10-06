@@ -241,6 +241,12 @@ export default function HomeClient({
   const showLiveNeeds = roleStr !== "DONEE";
   // Donees get their own landing tree at every width (see RoleHome's DoneeHome).
   const showDoneeHome = roleStr === "DONEE" && !isRestoring;
+  // No one signed in. The guest page shows the closing CTA without its card,
+  // below "The people behind CauseKind"; signed-in viewers of this shared tree
+  // (donors under 1024px, other roles) keep the card and the original order.
+  const isGuest = !user;
+  // Donors get the main page's About (flip cards) at every width.
+  const isDonor = roleStr === "DONOR";
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -282,12 +288,18 @@ export default function HomeClient({
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      <div className="hidden lg:block">
+      {isDonor ? (
         <WhoAreWeDesktop />
-      </div>
-      <div className="lg:hidden">
-        <WhoAreWeSection />
-      </div>
+      ) : (
+        <>
+          <div className="hidden lg:block">
+            <WhoAreWeDesktop />
+          </div>
+          <div className="lg:hidden">
+            <WhoAreWeSection />
+          </div>
+        </>
+      )}
 
       <SupportGallery />
 
@@ -435,11 +447,19 @@ export default function HomeClient({
         )}
 
 
-        {/* SECTION 8 — FINAL CTA */}
-        <FinalCtaComponent variant="desktop" />
-
-        {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
-        <CreditsSection />
+        {/* SECTION 8/9 — FINAL CTA and THE PEOPLE BEHIND CAUSEKIND. Guests see
+            the partners first, then the CTA without its card. */}
+        {isGuest ? (
+          <>
+            <CreditsSection />
+            <FinalCtaComponent variant="desktop" card={false} />
+          </>
+        ) : (
+          <>
+            <FinalCtaComponent variant="desktop" />
+            <CreditsSection />
+          </>
+        )}
       </div>
       </div>
       )}
@@ -612,15 +632,27 @@ export default function HomeClient({
           />
         )}
 
-        {/* SECTION 8 — FINAL CTA */}
-        <div className="-mx-5">
-          <FinalCtaComponent variant="mobile" />
-        </div>
-
-        {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
-        <div className="-mx-5">
-          <CreditsSection />
-        </div>
+        {/* SECTION 8/9 — FINAL CTA and THE PEOPLE BEHIND CAUSEKIND (guests:
+            partners first, CTA without its card). */}
+        {isGuest ? (
+          <>
+            <div className="-mx-5">
+              <CreditsSection />
+            </div>
+            <div className="-mx-5">
+              <FinalCtaComponent variant="mobile" card={false} />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="-mx-5">
+              <FinalCtaComponent variant="mobile" />
+            </div>
+            <div className="-mx-5">
+              <CreditsSection />
+            </div>
+          </>
+        )}
 
       </div>
       )}

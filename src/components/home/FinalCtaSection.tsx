@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { CONTACT_INFO, LANDING_ROUTES, HOME_ROLE_COLORS } from "@/lib/landingConstants";
 import { WhatsAppTellAFriendButton } from "@/components/home/WhatsAppTellAFriend";
+import { TRUST_PILL_EYEBROW } from "@/components/home/DoneeSectionHeading";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -24,8 +25,14 @@ if (typeof window !== "undefined") {
 
 export function FinalCtaSection({
   variant = "desktop",
+  card = true,
 }: {
   variant?: "desktop" | "mobile";
+  /**
+   * true: the dark rounded card (signed-in pages). false: the same content
+   * straight on the page background, restyled for it (guest landing page).
+   */
+  card?: boolean;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -106,6 +113,10 @@ export function FinalCtaSection({
     return () => mm.revert();
   }, [reduce, variant]);
 
+  // "what you already have.": peach reads on the dark card; on the light page
+  // it needs the deeper terracotta, lifting back to peach in dark mode.
+  const highlight = card ? "text-[#F4A25B]" : "text-[#B5480F] dark:text-[#F4A25B]";
+
   // WhatsApp Notify URL with pre-filled message
   const whatsappNotifyUrl = `https://wa.me/917719938619?text=${encodeURIComponent(
     "Hi CauseKind! Please notify me when online donations and fundraising launch."
@@ -122,9 +133,12 @@ export function FinalCtaSection({
         {/* Main CTA Card */}
         <div
           ref={cardRef}
-          className="relative w-full rounded-3xl bg-[#1C1410] dark:bg-[#241A15] border border-stone-800/80 dark:border-stone-700/60 shadow-2xl overflow-hidden p-6 sm:p-8 lg:p-10 text-center flex flex-col justify-between"
+          className={card
+            ? "relative w-full rounded-3xl bg-[#1C1410] dark:bg-[#241A15] border border-stone-800/80 dark:border-stone-700/60 shadow-2xl overflow-hidden p-6 sm:p-8 lg:p-10 text-center flex flex-col justify-between"
+            : "relative w-full py-6 sm:py-8 text-center flex flex-col justify-between"}
         >
           {/* ════════ AURORA DRIFTING BLOBS ════════ */}
+          {card && (
           <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
             {/* Blob 1: Orange Warmth */}
             <div className="aurora-blob-1 absolute top-[-10%] left-[20%] w-[320px] h-[320px] rounded-full bg-[#B5480F]/25 blur-3xl" />
@@ -135,33 +149,36 @@ export function FinalCtaSection({
             {/* Dark vignette overlay */}
             <div className="absolute inset-0 bg-radial from-transparent via-[#1C1410]/40 to-[#1C1410]/80 dark:via-[#241A15]/40 dark:to-[#241A15]/80" />
           </div>
+          )}
 
           {/* Card Inner Content */}
           <div className="relative z-10 max-w-3xl mx-auto flex flex-col items-center">
             {/* Small Top Eyebrow */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold tracking-widest uppercase bg-white/10 text-amber-200 border border-white/15 mb-3 backdrop-blur-xs">
-              <Sparkles className="w-3.5 h-3.5 text-[#F4A25B]" aria-hidden="true" />
+            <div className={card
+              ? "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold tracking-widest uppercase bg-white/10 text-amber-200 border border-white/15 mb-3 backdrop-blur-xs"
+              : `${TRUST_PILL_EYEBROW} mb-3 sm:mb-4`}>
+              <Sparkles className={card ? "w-3.5 h-3.5 text-[#F4A25B]" : "w-3.5 h-3.5"} aria-hidden="true" />
               <span>START IN 60 SECONDS</span>
             </div>
 
             {/* Heading with Word-by-Word Reveal */}
             <h2
               ref={headingRef}
-              className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight"
+              className={`text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight ${card ? "text-white" : "text-stone-900 dark:text-stone-100"}`}
             >
               <span className="inline-block cta-heading-word mr-1.5">Someone</span>
               <span className="inline-block cta-heading-word mr-1.5">nearby</span>
               <span className="inline-block cta-heading-word mr-1.5">is</span>
               <span className="inline-block cta-heading-word mr-1.5">waiting</span>
               <span className="inline-block cta-heading-word mr-1.5">for</span>
-              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]">what</span>
-              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]">you</span>
-              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]">already</span>
-              <span className="inline-block cta-heading-word text-[#F4A25B]">have.</span>
+              <span className={`inline-block cta-heading-word mr-1.5 ${highlight}`}>what</span>
+              <span className={`inline-block cta-heading-word mr-1.5 ${highlight}`}>you</span>
+              <span className={`inline-block cta-heading-word mr-1.5 ${highlight}`}>already</span>
+              <span className={`inline-block cta-heading-word ${highlight}`}>have.</span>
             </h2>
 
             {/* Subtext */}
-            <p className="mt-2.5 text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed font-normal">
+            <p className={`mt-2.5 text-xs sm:text-sm ${card ? "text-stone-300" : "text-stone-600 dark:text-stone-400"} max-w-xl leading-relaxed font-normal`}>
               Join free in a minute. Give, ask, or help your community — whichever side you're on.
             </p>
 
@@ -215,21 +232,21 @@ export function FinalCtaSection({
 
             {/* ════════ TELL A FRIEND ON WHATSAPP ════════ */}
             <div className="mt-5 sm:mt-6 flex flex-col items-center gap-2">
-              <p className="text-xs sm:text-[13px] font-semibold text-stone-300">
+              <p className={`text-xs sm:text-[13px] font-semibold ${card ? "text-stone-300" : "text-stone-700 dark:text-stone-300"}`}>
                 Know someone who&apos;d love this?
               </p>
-              <WhatsAppTellAFriendButton variant="outline" />
+              <WhatsAppTellAFriendButton variant={card ? "outline" : "outline-light"} />
             </div>
 
             {/* Small reassurance line */}
-            <p className="mt-3 text-[11px] sm:text-xs font-medium text-stone-400">
+            <p className={`mt-3 text-[11px] sm:text-xs font-medium ${card ? "text-stone-400" : "text-stone-500 dark:text-stone-400"}`}>
               Free for everyone · Verified · Local
             </p>
           </div>
 
           {/* ════════ COMING SOON STRIP ════════ */}
-          <div className="relative z-10 mt-5 pt-4 sm:mt-6 sm:pt-4 border-t border-stone-800 dark:border-stone-700/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
-            <div className="text-stone-300 text-xs sm:text-[13px] font-normal text-center sm:text-left">
+          <div className={`relative z-10 mt-5 pt-4 sm:mt-6 sm:pt-4 border-t ${card ? "border-stone-800 dark:border-stone-700/60" : "border-stone-200/80 dark:border-stone-800/80"} flex flex-col sm:flex-row items-center justify-between gap-3 text-left`}>
+            <div className={`${card ? "text-stone-300" : "text-stone-600 dark:text-stone-300"} text-xs sm:text-[13px] font-normal text-center sm:text-left`}>
               <span>Fundraising, online donations and CSR partnerships are coming soon.</span>
             </div>
 
