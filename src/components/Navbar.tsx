@@ -650,7 +650,8 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    { href: "/requests", label: t("nav.donate") },
+    // Donees ask, they do not give: the same slot reads "Requests" for them.
+    { href: "/requests", label: user?.role === "DONEE" ? t("mobileNav.requests") : t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -673,7 +674,7 @@ export function SiteHeader() {
    * locales already carry them and nothing degrades to English.
    */
   const mobileNavLinks = navLinks.flatMap((link) =>
-    link.href === "/requests"
+    link.href === "/requests" && user?.role !== "DONEE"
       ? [
           // Same constant the button uses, so the drawer lands on the donation
           // form too rather than at the top of the page.

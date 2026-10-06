@@ -273,6 +273,8 @@ export function HeroSection() {
                   </span>
                 )}
 
+                {/* Donees do not browse other people's needs: no board link for them. */}
+                {user?.role !== "DONEE" && (
                 <Link
                   href="/requests"
                   className="ck-hero-secondary-cta group relative isolate order-1 inline-flex min-h-14 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#fdf5ed] px-5 text-[0.95rem] font-extrabold leading-tight text-[#1a130d] shadow-none lg:order-2 lg:min-h-12 lg:bg-transparent lg:px-2 lg:text-[0.56rem] lg:uppercase lg:tracking-[0.02em] lg:text-[var(--ck-home-ink,#b04a15)] lg:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.82),0_10px_22px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:text-[var(--ck-home-ink,#e07b3a)] dark:hover:bg-white/5 dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 lg:text-xs lg:tracking-[0.04em]"
@@ -281,6 +283,7 @@ export function HeroSection() {
                   <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
                   <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                 </Link>
+                )}
 
                 {/* Money donation stays last on desktop and is hidden for donees. */}
                 <DonateNowButton

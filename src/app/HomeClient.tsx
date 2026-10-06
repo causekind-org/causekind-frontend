@@ -234,6 +234,8 @@ export default function HomeClient({
 
   const roleStr = user?.role?.replace(/^ROLE_/, "");
   const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
+  // The live needs board is for givers; a donee is shown no one else's needs.
+  const showLiveNeeds = roleStr !== "DONEE";
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -283,9 +285,11 @@ export default function HomeClient({
       <HowItWorksSection />
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
-      <div className="ck-home-paper hidden lg:block relative z-10">
-        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-      </div>
+      {showLiveNeeds && (
+        <div className="ck-home-paper hidden lg:block relative z-10">
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+        </div>
+      )}
 
       {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
       <div className="hidden lg:block">
@@ -490,7 +494,7 @@ export default function HomeClient({
         )}
 
         {/* SECTION 6 — LIVE NEEDS */}
-        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+        {showLiveNeeds && <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />}
 
         {/* SECTION 5 — CAN I TRUST YOU */}
         <div className="-mx-5">
