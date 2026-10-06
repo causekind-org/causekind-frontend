@@ -9,7 +9,7 @@ import { getMyItemRequests, type ItemRequest } from "@/lib/api";
 import { requestBucket } from "@/lib/dashboardFilters";
 import { getRequestFulfilment } from "@/lib/requestFulfilment";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
-import { DoneeSectionHeading, DONEE_CARD, DONEE_PILL_BUTTON, DONEE_SECTION } from "./DoneeSectionHeading";
+import { DoneeSectionHeading, DONEE_CARD, DONEE_HEADING_GAP, DONEE_PILL_BUTTON, DONEE_SECTION } from "./DoneeSectionHeading";
 
 /** Where the donee's full list of their own requests lives. */
 const ALL_REQUESTS_HREF = "/dashboard#requests";
@@ -166,25 +166,14 @@ export function MyRequestsSection() {
       className={DONEE_SECTION}
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <DoneeSectionHeading id="my-requests-heading" eyebrow="My requests" title="Your requests at a glance." />
-          {!empty && (
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-3 shrink-0">
-              <Link
-                href={ALL_REQUESTS_HREF}
-                className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[var(--ck-role-accent)] hover:underline underline-offset-4"
-              >
-                View all <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </Link>
-              <NewRequestLink href="/requests/new" className={DONEE_PILL_BUTTON}>
-                <Plus className="w-4 h-4" aria-hidden="true" />
-                Post a new need
-              </NewRequestLink>
-            </div>
-          )}
-        </div>
+        <DoneeSectionHeading
+          id="my-requests-heading"
+          eyebrow="My requests"
+          title="Your requests at a glance."
+          lede="Track every need you've posted and see what's on its way."
+        />
 
-        <div className="mt-8 sm:mt-10">
+        <div className={DONEE_HEADING_GAP}>
           {failed ? (
             <div role="alert" className={`${DONEE_CARD} flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5`}>
               <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
@@ -223,6 +212,23 @@ export function MyRequestsSection() {
             </ul>
           )}
         </div>
+
+        {/* Below the cards, centered under the centered heading. The empty
+            state carries its own "Post your first need" button instead. */}
+        {!empty && (
+          <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-3">
+            <Link
+              href={ALL_REQUESTS_HREF}
+              className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[var(--ck-role-accent)] hover:underline underline-offset-4"
+            >
+              View all <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            </Link>
+            <NewRequestLink href="/requests/new" className={DONEE_PILL_BUTTON}>
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              Post a new need
+            </NewRequestLink>
+          </div>
+        )}
       </div>
     </section>
   );

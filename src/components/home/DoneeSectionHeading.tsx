@@ -1,12 +1,16 @@
 import React from "react";
 
 /**
- * Eyebrow + heading shared by the donee-only landing sections (How receiving
- * works, My requests, Handover tips). Same shape as the About and founder
- * sections: a short rule, a small uppercase label, then an extrabold heading.
+ * Centered eyebrow + heading + subtitle shared by the donee-only landing
+ * sections (How receiving works, My requests, Handover tips).
+ *
+ * <p>The eyebrow carries a short rule on both sides, the same line style as the
+ * About and founder sections (the founder note centers it this way too). The
+ * heading uses the Trust & Safety heading's exact scale, and the gap to the
+ * content below ({@link DONEE_HEADING_GAP}) follows that section's spacing.
  *
  * <p>Colours come from `--ck-role-*`, so the sections using it put
- * `data-ck-role-theme="donee"` on their own root — navy in light mode, sky blue
+ * `data-ck-role-theme="donee"` on their own root: navy in light mode, sky blue
  * in dark mode.
  */
 export function DoneeSectionHeading({
@@ -21,24 +25,28 @@ export function DoneeSectionHeading({
   id?: string;
 }) {
   return (
-    <div className="flex flex-col items-start text-left">
-      <div className="flex items-center gap-2.5 mb-3">
+    <div className="flex flex-col items-center text-center">
+      <div className="flex items-center justify-center gap-2.5 mb-3">
         <span className="h-0.5 w-6 sm:w-8 rounded-full bg-[var(--ck-role-accent)]" aria-hidden="true" />
         <p className="text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] text-[var(--ck-role-accent)]">
           {eyebrow}
         </p>
+        <span className="h-0.5 w-6 sm:w-8 rounded-full bg-[var(--ck-role-accent)]" aria-hidden="true" />
       </div>
       <h2 id={id} className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight leading-tight text-stone-900 dark:text-stone-100">
         {title}
       </h2>
       {lede && (
-        <p className="mt-2 text-sm sm:text-base text-stone-600 dark:text-stone-400 font-medium leading-relaxed max-w-2xl">
+        <p className="mt-2 max-w-[600px] text-sm text-stone-600 dark:text-stone-400 font-medium leading-relaxed">
           {lede}
         </p>
       )}
     </div>
   );
 }
+
+/** Space between the heading block and the section's content. */
+export const DONEE_HEADING_GAP = "mt-6 sm:mt-8";
 
 /** Primary pill button classes for the donee sections (matches "Know more"). */
 export const DONEE_PILL_BUTTON =

@@ -3,7 +3,7 @@
 import React from "react";
 import { PenLine, ShieldCheck, HandHeart, PackageCheck, Plus } from "lucide-react";
 import { NewRequestLink } from "@/components/NewRequestLink";
-import { DoneeSectionHeading, DONEE_PILL_BUTTON, DONEE_SECTION } from "./DoneeSectionHeading";
+import { DoneeSectionHeading, DONEE_HEADING_GAP, DONEE_PILL_BUTTON, DONEE_SECTION } from "./DoneeSectionHeading";
 
 const STEPS = [
   { icon: PenLine, title: "Post your need", text: "Tell us exactly what you need and how many." },
@@ -25,9 +25,14 @@ export function HowReceivingWorksSection() {
       className={DONEE_SECTION}
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <DoneeSectionHeading id="how-receiving-works-heading" eyebrow="How it works" title="Getting help is simple." />
+        <DoneeSectionHeading
+          id="how-receiving-works-heading"
+          eyebrow="How it works"
+          title="Getting help is simple."
+          lede="From posting your need to receiving it, here's what happens."
+        />
 
-        <ol className="relative mt-8 sm:mt-12 grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-8 max-w-2xl lg:max-w-none">
+        <ol className={`relative ${DONEE_HEADING_GAP} mx-auto grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-8 max-w-xl lg:max-w-none`}>
           {/* Desktop connector: runs between the first and last badge centres. */}
           <span
             aria-hidden="true"
@@ -67,7 +72,7 @@ export function HowReceivingWorksSection() {
           })}
         </ol>
 
-        <div className="mt-10 sm:mt-12 flex justify-start lg:justify-center">
+        <div className="mt-10 sm:mt-12 flex justify-center">
           <NewRequestLink href="/requests/new" className={DONEE_PILL_BUTTON}>
             <Plus className="w-4 h-4" aria-hidden="true" />
             Post a new need
