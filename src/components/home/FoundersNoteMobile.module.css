@@ -421,6 +421,13 @@
 .donee .stampValue {
   color: var(--ck-role-on-accent);
 }
+/* Donee: the eyebrow and title move to the shared centered heading above, so
+   the masthead holds only the taped print, kept at the right edge. */
+.mastheadPrintOnly {
+  margin-top: 1.25rem;
+  grid-template-columns: auto;
+  justify-content: end;
+}
 
 /* ── Reveal choreography ───────────────────────────────────────────────────
    The doodle and the sign-off each carry their own useRevealOnce, so the

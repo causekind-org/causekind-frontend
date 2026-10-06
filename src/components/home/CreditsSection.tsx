@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { DoneeSectionHeading, DONEE_HEADING_GAP } from "./DoneeSectionHeading";
 
 /**
  * "The people behind CauseKind": the trust that runs the platform and the firm
@@ -21,14 +22,23 @@ export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "don
       data-ck-role-theme={variant === "donee" ? "donee" : undefined}
       className="w-full bg-[#F8F6F2] dark:bg-[#0E0C0A] px-5 py-12 sm:py-16 lg:px-[120px]"
     >
-      <p
-        id="credits-heading"
-        className="mb-6 text-center text-xs font-extrabold uppercase tracking-[0.28em] text-[var(--ck-role-accent,#B04A15)] dark:text-[var(--ck-role-accent,#F4A25B)] sm:mb-8"
-      >
-        The people behind CauseKind
-      </p>
+      {variant === "donee" ? (
+        <DoneeSectionHeading
+          id="credits-heading"
+          eyebrow="Our partners"
+          title="The people behind CauseKind."
+          lede="CauseKind is made possible by these organisations."
+        />
+      ) : (
+        <p
+          id="credits-heading"
+          className="mb-6 text-center text-xs font-extrabold uppercase tracking-[0.28em] text-[var(--ck-role-accent,#B04A15)] dark:text-[var(--ck-role-accent,#F4A25B)] sm:mb-8"
+        >
+          The people behind CauseKind
+        </p>
+      )}
 
-      <div className={`mx-auto grid max-w-[1040px] grid-cols-1 border-y ${line} md:grid-cols-2`}>
+      <div className={`mx-auto grid max-w-[1040px] grid-cols-1 border-y ${line} md:grid-cols-2${variant === "donee" ? ` ${DONEE_HEADING_GAP}` : ""}`}>
         <div className={`flex items-center gap-5 border-b ${line} py-8 md:border-b-0 md:border-r md:py-10 md:pr-10`}>
           <Image
             src="/images/money-donation/sahas-logo-transparent.png"

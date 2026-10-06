@@ -13,6 +13,7 @@ import {
 import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 import { galleryFonts } from "@/components/home/supportGallery/fonts";
 import m from "./TrustSafetyMobile.module.css";
+import { DONEE_PILL_EYEBROW } from "./DoneeSectionHeading";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -172,17 +173,20 @@ function TrustSafetyMobile() {
 
 export function TrustSafetySection({
   variant = "desktop",
+  tone = "donor",
 }: {
   variant?: "desktop" | "mobile";
+  /** "donee" swaps in the donee page's larger pill; nothing else changes. */
+  tone?: "donor" | "donee";
 }) {
-  if (variant === "desktop") return <TrustSafetyFull variant="desktop" />;
+  if (variant === "desktop") return <TrustSafetyFull variant="desktop" tone={tone} />;
   return (
     <>
       <div className="md:hidden">
         <TrustSafetyMobile />
       </div>
       <div className="hidden md:block">
-        <TrustSafetyFull variant="mobile" />
+        <TrustSafetyFull variant="mobile" tone={tone} />
       </div>
     </>
   );
@@ -190,8 +194,10 @@ export function TrustSafetySection({
 
 function TrustSafetyFull({
   variant,
+  tone = "donor",
 }: {
   variant: "desktop" | "mobile";
+  tone?: "donor" | "donee";
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const badgeShieldRef = useRef<HTMLDivElement>(null);
@@ -334,7 +340,9 @@ function TrustSafetyFull({
           {/* Section Eyebrow Badge */}
           <div
             ref={badgeShieldRef}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] border border-[var(--ck-role-accent,#B5480F)]/20 bg-[var(--ck-role-accent,#B5480F)]/5 mb-3 sm:mb-4"
+            className={tone === "donee"
+              ? `${DONEE_PILL_EYEBROW} mb-3 sm:mb-4`
+              : "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] border border-[var(--ck-role-accent,#B5480F)]/20 bg-[var(--ck-role-accent,#B5480F)]/5 mb-3 sm:mb-4"}
           >
             TRUST & SAFETY
           </div>

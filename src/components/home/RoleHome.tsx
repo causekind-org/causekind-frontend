@@ -68,10 +68,10 @@ function DoneeHome({ hero }: { hero?: React.ReactNode }) {
       <HowReceivingWorksSection />
       <MyRequestsSection />
       <div className="hidden lg:block">
-        <TrustSafetySection variant="desktop" />
+        <TrustSafetySection variant="desktop" tone="donee" />
       </div>
       <div className="lg:hidden">
-        <TrustSafetySection variant="mobile" />
+        <TrustSafetySection variant="mobile" tone="donee" />
       </div>
       <HandoverTipsSection />
       <div className="hidden lg:block">

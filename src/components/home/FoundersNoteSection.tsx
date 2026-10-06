@@ -10,6 +10,18 @@ import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 import { galleryFonts } from "@/components/home/supportGallery/fonts";
 import fm from "./FoundersNoteMobile.module.css";
 import { usePlaceholderPreview } from "@/lib/placeholderPreview";
+import { DoneeSectionHeading, DONEE_HEADING_GAP } from "./DoneeSectionHeading";
+
+/** The donee page's centered heading block for this section (donee tone only). */
+function FoundersDoneeHeading() {
+  return (
+    <DoneeSectionHeading
+      eyebrow="Why we built CauseKind"
+      title="Neighbours helping neighbours."
+      lede="A note from our founder."
+    />
+  );
+}
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -100,13 +112,19 @@ function FoundersNoteMobile({ tone = "donor" }: { tone?: FoundersNoteTone }) {
       data-ck-role-theme={isDonee ? "donee" : undefined}
       className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5${isDonee ? ` ${fm.donee}` : ""}`}
     >
-      <p data-reveal-item style={stagger(0)} className={fm.eyebrow}>
-        Why we built CauseKind
-      </p>
-      <div className={fm.masthead}>
-        <h2 data-reveal-item style={stagger(1)} className={fm.title}>
-          Neighbours helping <em>neighbours.</em>
-        </h2>
+      {isDonee ? (
+        <FoundersDoneeHeading />
+      ) : (
+        <p data-reveal-item style={stagger(0)} className={fm.eyebrow}>
+          Why we built CauseKind
+        </p>
+      )}
+      <div className={isDonee ? `${fm.masthead} ${fm.mastheadPrintOnly}` : fm.masthead}>
+        {!isDonee && (
+          <h2 data-reveal-item style={stagger(1)} className={fm.title}>
+            Neighbours helping <em>neighbours.</em>
+          </h2>
+        )}
         <figure data-reveal-item="scale" style={stagger(3)} className={fm.print}>
           <div className={fm.printPhoto}>
             {FOUNDER.photo ? (
@@ -427,7 +445,9 @@ function FoundersNoteFull({
       )}
 
       <div className="relative max-w-6xl mx-auto px-5 sm:px-8 w-full flex flex-col justify-center">
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] items-center gap-8 sm:gap-10 lg:gap-14">
+        {/* Donee: the heading sits centered above the photo + note. */}
+        {isDonee && <FoundersDoneeHeading />}
+        <div className={`grid grid-cols-1 lg:grid-cols-[280px_1fr] xl:grid-cols-[320px_1fr] items-center gap-8 sm:gap-10 lg:gap-14${isDonee ? ` ${DONEE_HEADING_GAP}` : ""}`}>
           
           {/* ── LEFT COLUMN: Photo / Avatar Frame ── */}
           <div className="flex justify-center lg:justify-start">
@@ -467,19 +487,24 @@ function FoundersNoteFull({
 
           {/* ── RIGHT COLUMN: Founder's Note Text ── */}
           <div ref={textBlockRef} className="flex flex-col text-center lg:text-left">
-            {/* Eyebrow Label */}
-            <div className="founder-anim-item flex items-center justify-center lg:justify-start gap-2 mb-2">
-              <span className={`h-0.5 w-6 rounded-full ${accent.line}`} />
-              <p className={`text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] ${accent.eyebrow}`}>
-                WHY WE BUILT CAUSEKIND
-              </p>
-              <span className={`h-0.5 w-6 rounded-full ${accent.line} lg:hidden`} />
-            </div>
+            {/* Eyebrow + heading: here for the donor; above the grid for the donee. */}
+            {!isDonee && (
+              <>
+                {/* Eyebrow Label */}
+                <div className="founder-anim-item flex items-center justify-center lg:justify-start gap-2 mb-2">
+                  <span className={`h-0.5 w-6 rounded-full ${accent.line}`} />
+                  <p className={`text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] ${accent.eyebrow}`}>
+                    WHY WE BUILT CAUSEKIND
+                  </p>
+                  <span className={`h-0.5 w-6 rounded-full ${accent.line} lg:hidden`} />
+                </div>
 
-            {/* Section Heading */}
-            <h2 className="founder-anim-item text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
-              Neighbours helping neighbours.
-            </h2>
+                {/* Section Heading */}
+                <h2 className="founder-anim-item text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
+                  Neighbours helping neighbours.
+                </h2>
+              </>
+            )}
 
             {/* Large Decorative Quote Icon */}
             <div
