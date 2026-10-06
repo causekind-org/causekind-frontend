@@ -70,6 +70,8 @@ import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
+import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
@@ -254,6 +256,7 @@ export default function HomeClient({
 
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+      <div aria-hidden className="ck-home-grain" />
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -274,12 +277,22 @@ export default function HomeClient({
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      <WhoAreWeSection />
+      <div className="hidden lg:block">
+        <WhoAreWeDesktop />
+      </div>
+      <div className="lg:hidden">
+        <WhoAreWeSection />
+      </div>
 
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
-      <HowItWorksSection />
+      <div className="hidden lg:block">
+        <HowItWorksDesktop />
+      </div>
+      <div className="lg:hidden">
+        <HowItWorksSection />
+      </div>
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       <div className="ck-home-paper hidden lg:block relative z-10">

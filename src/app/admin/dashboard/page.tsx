@@ -153,11 +153,13 @@ function splitValues(value?: string | null, separator: "," | "|" = ",") {
 }
 
 function listingPhotos(listing: ItemListing) {
+  if (listing.photoUrls?.length) return listing.photoUrls;
   return [listing.imageUrl, ...(listing.imageUrls ? listing.imageUrls.split("|") : [])]
     .filter(Boolean) as string[];
 }
 
 function matchListingPhotos(match: ItemMatch) {
+  if (match.listingPhotoUrls?.length) return match.listingPhotoUrls;
   return [match.listingImageUrl, ...(match.listingImageUrls ? match.listingImageUrls.split("|") : [])]
     .filter(Boolean) as string[];
 }

@@ -11,9 +11,11 @@ interface FeatureCardProps {
   icon: React.ReactNode;
   className?: string;
   spotlightColor?: string;
+  /** Open the In-Kind / Money choice instead of following href (see DonateChoice). */
+  donateChoice?: boolean;
 }
 
-const FeatureCard: React.FC<FeatureCardProps> = ({ href, title, description, icon, className = "", spotlightColor = "rgba(255, 255, 255, 0.15)" }) => {
+const FeatureCard: React.FC<FeatureCardProps> = ({ href, title, description, icon, className = "", spotlightColor = "rgba(255, 255, 255, 0.15)", donateChoice = false }) => {
   const divRef = useRef<HTMLAnchorElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
@@ -68,6 +70,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ href, title, description, ico
   return (
     <Link
       href={href}
+      data-donate-choice={donateChoice || undefined}
       ref={divRef}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
@@ -133,6 +136,7 @@ export function DonorCtaSection() {
           {/* Card 2: Donate (Secondary) */}
           <FeatureCard
             href="/donate/money"
+            donateChoice
             title="Donate"
             description="Support the cause with a contribution."
             icon={<Heart className="w-8 h-8 text-[var(--ck-home-accent,#b04a15)]" />}

@@ -153,7 +153,7 @@ export function adaptMatch(
     state,
     rawStatus: match.status,
     title,
-    imageUrl: match.donorImages?.[0] ?? match.listingImageUrl ?? null,
+    imageUrl: match.donorImages?.[0] ?? match.listingPhotoUrls?.[0] ?? match.listingImageUrl ?? null,
     transactionCode: `CK-M${String(match.id).padStart(5, "0")}`,
     counterpart: role === "DONOR"
       ? { name: match.doneeName, phone: match.doneeContact }

@@ -146,7 +146,7 @@ export function useListingPhotos(options: {
         moderationCode: remote.moderationCode,
         // Only an approved photo has a url; anything else keeps whatever local
         // preview it had rather than being blanked mid-screening.
-        remoteUrl: remote.url ?? p.remoteUrl,
+        remoteUrl: remote.url || p.remoteUrl,
       };
     }));
   }, [setPhotos]);

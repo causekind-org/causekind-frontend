@@ -25,6 +25,7 @@ import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
+import { openDonateChoice } from "@/components/donate/DonateChoice";
 import { DONATE_HREF } from "@/lib/donateScroll";
 import { isNgoRole } from "@/lib/isNgoRole";
 import { toast } from "@/lib/toast";
@@ -1355,6 +1356,8 @@ export function SiteHeader() {
             link: l.href,
             ariaLabel: l.label,
             active: isActive(l.href.split("?")[0]),
+            // Donate opens the In-Kind / Money choice; the menu closes itself.
+            ...(l.href === DONATE_HREF ? { onClick: openDonateChoice } : {}),
           })),
           ...(user
             ? [
@@ -1449,7 +1452,7 @@ export function SiteFooter() {
     ...(user && !isNgoAccount ? [{ href: "/requests", l: t("inkindRequests") }] : []),
   ];
   return (
-    <footer className="bg-[#120c04] text-stone-250" id="footer">
+    <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
       {/* items-start stops the short columns stretching; the row-span on Get
           support (below) is what actually compacts this on mobile. */}
       <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-sm grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
@@ -1484,6 +1487,11 @@ export function SiteFooter() {
             </span>
           </div>
 
+          {/* Solid on this near-black ground — an outline pill's border would
+              not clear the 3:1 a control boundary needs. Donee-hidden in CSS. */}
+          <div className="pt-2">
+            <DonateNowButton size="sm" showArrow={false} />
+          </div>
         </div>
         {giveBackLinks.length > 0 && (
           <div className="space-y-2 sm:space-y-2.5">

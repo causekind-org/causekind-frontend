@@ -339,3 +339,63 @@
     transition: none !important;
   }
 }
+
+/* ── Chapter 2 end card: claymorphic Donate Now ─────────────────────────────
+   Rides the .c2-final caption's data-on switch, rising in after the headline
+   and the glowing line. Clickable only while the card is shown. Puffy clay:
+   a soft drop shadow below plus inner light (top-left) and inner shade
+   (bottom-right). The global breathe animation animates box-shadow, so it is
+   switched off here or it would overwrite the clay shadow every frame. */
+.clayCtaWrap {
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 24px, 0) scale(0.92);
+  transition: opacity 0.35s ease, transform 0.35s ease-in;
+}
+.cap[data-on="true"] .clayCtaWrap {
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s ease 0.9s,
+    transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s;
+}
+.clayCta:global(.ck-donate-cta) {
+  border-radius: 9999px;
+  animation: none;
+  box-shadow:
+    0 18px 34px -12px color-mix(in srgb, var(--ck-donate-acc) 55%, transparent),
+    0 6px 12px -4px rgb(60 25 5 / 0.25),
+    inset 5px 6px 10px rgb(255 255 255 / 0.32),
+    inset -6px -8px 14px rgb(70 25 0 / 0.30);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.2s ease;
+}
+.clayCta:global(.ck-donate-cta):hover {
+  transform: translateY(-2px) scale(1.03);
+}
+.clayCta:global(.ck-donate-cta):active {
+  transform: translateY(1px) scale(0.96, 0.93);
+  box-shadow:
+    0 8px 16px -10px color-mix(in srgb, var(--ck-donate-acc) 50%, transparent),
+    inset 6px 8px 14px rgb(70 25 0 / 0.30),
+    inset -3px -4px 8px rgb(255 255 255 / 0.22);
+}
+.clayCta:global(.ck-donate-cta):focus-visible {
+  outline: 3px solid var(--ck-donate-hi);
+  outline-offset: 4px;
+}
+.clayCta :global(.ck-donate-sheen),
+.clayCta :global(.ck-donate-ring) {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clayCtaWrap,
+  .cap[data-on="true"] .clayCtaWrap,
+  .clayCta:global(.ck-donate-cta) {
+    transition: none !important;
+  }
+  .clayCta:global(.ck-donate-cta):hover,
+  .clayCta:global(.ck-donate-cta):active {
+    transform: none;
+  }
+}

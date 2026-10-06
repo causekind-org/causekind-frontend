@@ -119,8 +119,26 @@ export function DonationOfferWizard({
    */
   const modelRef = useRef(model);
   modelRef.current = model;
-  const [step, setStep] = useState<OfferStep>(() =>
-    offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0]);
+  /*
+    A reload reopens the step the donor was on, not the first unfinished one.
+
+    Without this, refreshing on Photos dropped the donor onto Condition (the
+    first incomplete step) as if they had pressed Continue. The remembered step
+    is only honoured when it is not PAST the first incomplete step, so a resume
+    can still never skip work that is left to do.
+  */
+  const stepKey = `ck-offer-step-${offerId}`;
+  const [step, setStep] = useState<OfferStep>(() => {
+    const resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0];
+    try {
+      const saved = sessionStorage.getItem(stepKey) as OfferStep | null;
+      if (saved && steps.includes(saved) && steps.indexOf(saved) <= steps.indexOf(resume)) return saved;
+    } catch { /* storage unavailable — fall back to the resume step */ }
+    return resume;
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(stepKey, step); } catch { /* best-effort */ }
+  }, [stepKey, step]);
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);

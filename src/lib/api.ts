@@ -684,6 +684,12 @@ export type ItemListing = {
   submittedAt: string | null;
   imageUrl: string | null;
   imageUrls: string | null;
+  /**
+   * Every photo to display, cover first — the listing's approved photos, or the
+   * legacy columns above for listings that predate photo rows. Read this for
+   * display; `imageUrl`/`imageUrls` are only the legacy columns.
+   */
+  photoUrls?: string[];
   maximumDeliveryRadius: number | null;
   transportPayerPreference: string | null;
   availabilityExpiry: string | null;
@@ -1686,6 +1692,8 @@ export type ItemMatch = {
   listingStatus: string | null;
   listingImageUrl: string | null;
   listingImageUrls: string | null;
+  /** The listing's photos to display, cover first (approved photos, else the legacy columns). */
+  listingPhotoUrls?: string[];
   listingBrand: string | null;
   listingModel: string | null;
   listingApproximateAge: string | null;
@@ -2148,6 +2156,8 @@ export type DonationOffer = {
    * was offered — so anything listing deliveries beside a total must use it.
    */
   receivedQuantity: number | null;
+  /** ISO timestamp when the 48-hour issue reporting window closes, or null if not yet dual-confirmed. */
+  windowExpiresAt?: string | null;
 };
 
 /**
