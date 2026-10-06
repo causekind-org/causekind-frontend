@@ -795,13 +795,13 @@ export function ComingSoonMagnets({ heading }: { heading?: React.ReactNode } = {
 
       <div className="text-center mb-12 relative z-[1]">
         <span
-          className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4"
+          className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-4 lg:px-3 lg:py-1 lg:text-[10px] lg:font-medium lg:tracking-[0.2em] lg:ring-1 lg:ring-[var(--ck-home-ink,#b04a15)]/15"
           style={{ background: `color-mix(in srgb, ${TERRACOTTA} 9%, transparent)`, color: "var(--ck-home-ink,#b04a15)" }}
         >
           On the way
         </span>
         <h2
-          className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100"
+          className="text-3xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 lg:text-6xl lg:font-semibold lg:tracking-[-0.035em] lg:[font-family:var(--font-source-serif-4),Georgia,serif]"
           style={{ lineHeight: 1.2 }}
         >
           {heading ?? (

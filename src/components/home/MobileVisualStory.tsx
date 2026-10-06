@@ -161,7 +161,7 @@ export function MobileVisualStory({ requests, fulfilledNeeds = [] }: { requests:
       <section className={`${styles.section} ${styles.closing}`} aria-labelledby="mobile-closing-heading">
         <h2 id="mobile-closing-heading"><T>A little help. A good place to start.</T></h2>
         <Link className={styles.button} href="/requests"><T>{donee ? "See community needs" : "Find someone to help"}</T><ArrowRight aria-hidden="true" /></Link>
-        {canGive && <div className={styles.money}><p><T>Want to give money?</T></p><DonateNowButton size="sm" variant="outline" /></div>}
+        {canGive && <div className={styles.money}><p><T>Want to give money?</T></p><DonateNowButton size="sm" variant="outline" direct /></div>}
       </section>
     </div>
   );

@@ -7,10 +7,10 @@ import {
   getNextDemoPhotoId,
   type NGOFormState,
   type UploadedFile,
+  getNgoStillNeededItems,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { uploadNgoPhoto } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 interface OrgPhotosProps {
   data: NGOFormState;
@@ -164,6 +164,8 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
     setActivityErrors(nextErrors);
   }
 
+  const missing = getNgoStillNeededItems("org-photos", data);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -185,7 +187,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-                Organization Logo
+                Organization Logo <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
               </p>
               <p className="text-3xs text-stone-400 dark:text-stone-500">
                 Square or transparent PNG recommended (PNG, JPG, WebP · max 8MB)
@@ -208,6 +210,9 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                   <p className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
                     {data.logo.name}
                   </p>
+                  {data.logo.rejectedReason && (
+                    <p role="alert" className="mt-0.5 text-3xs font-semibold text-red-700 dark:text-red-300">{data.logo.rejectedReason}</p>
+                  )}
                   <p className="text-3xs text-stone-500 dark:text-stone-400">
                     {data.logo.demo ? "Demo Logo Asset" : "Uploaded Image"}
                   </p>
@@ -236,7 +241,6 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 disabled={uploadingLogo}
                 onChange={(e) => handleLogoFiles(e.target.files)}
               />
-              <LocalTestUploadButton onFile={(f) => handleLogoFiles([f] as any)} accept="image" />
               <div
                 role="button"
                 tabIndex={0}
@@ -333,7 +337,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-                Registered Office Photo
+                Registered Office Photo <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
               </p>
               <p className="text-3xs text-stone-400 dark:text-stone-500">
                 Front entrance or nameboard of your registered address
@@ -356,6 +360,9 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                   <p className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
                     {data.officePhoto.name}
                   </p>
+                  {data.officePhoto.rejectedReason && (
+                    <p role="alert" className="mt-0.5 text-3xs font-semibold text-red-700 dark:text-red-300">{data.officePhoto.rejectedReason}</p>
+                  )}
                   <p className="text-3xs text-stone-500 dark:text-stone-400">
                     {data.officePhoto.demo ? "Demo Office Image" : "Uploaded Image"}
                   </p>
@@ -384,7 +391,6 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                 disabled={uploadingOffice}
                 onChange={(e) => handleOfficeFiles(e.target.files)}
               />
-              <LocalTestUploadButton onFile={(f) => handleOfficeFiles([f] as any)} accept="image" />
               <div
                 role="button"
                 tabIndex={0}
@@ -512,7 +518,6 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                     disabled={isUploadingThis}
                     onChange={(e) => handleActivityFile(idx, e.target.files)}
                   />
-                  <LocalTestUploadButton onFile={(f) => handleActivityFile(idx, [f] as any)} accept="image" />
 
                   {photo ? (
                     <div className="space-y-2">
@@ -534,6 +539,9 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                         <p className="text-3xs font-bold text-stone-700 dark:text-stone-300 truncate">
                           {photo.name}
                         </p>
+                        {photo.rejectedReason && (
+                          <p role="alert" className="mt-0.5 text-3xs font-semibold text-red-700 dark:text-red-300">{photo.rejectedReason}</p>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -615,23 +623,31 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onBack}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={onContinue}
-          className="flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
-        >
-          Continue
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </button>
+      <div className="flex flex-col items-end gap-2 pt-2">
+        <div className="flex w-full items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={onContinue}
+            disabled={missing.length > 0}
+            className="flex items-center gap-1.5 rounded-xl bg-ngo-700 disabled:bg-stone-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
+          >
+            Continue
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+        {missing.length > 0 && (
+          <p className="text-3xs text-stone-500 dark:text-stone-400 text-right pr-1">
+            Still needed: {missing.join(", ")}
+          </p>
+        )}
       </div>
     </div>
   );

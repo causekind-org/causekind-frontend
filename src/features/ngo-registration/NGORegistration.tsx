@@ -7,9 +7,12 @@ import {
   IS_NGO_DEMO_MODE,
   NGO_STEPS,
   formatSubmissionTime,
+  prefillNgoFormWithUser,
   type NGOFormState,
   type NGOStep,
   type UploadedFile,
+  calculateNgoProgress,
+  fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { NGOProgress } from "@/features/ngo-registration/components/NGOProgress";
 import { OrgDetails } from "@/features/ngo-registration/steps/OrgDetails";
@@ -69,7 +72,9 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
   const { user } = useAuth();
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
-  const [completedSteps, setCompletedSteps] = useState<Set<NGOStep>>(new Set());
+  // True when the OTP step was restored for an application submitted before a reload.
+  const [resumedVerification, setResumedVerification] = useState(false);
+  const { completedSteps } = calculateNgoProgress(data);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [reviewMessage, setReviewMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,16 +117,6 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
             if (savedStep && (NGO_STEPS as readonly string[]).includes(savedStep)) {
               const typedStep = savedStep as NGOStep;
               setCurrentStep(typedStep);
-              const stepIdx = NGO_STEPS.indexOf(typedStep);
-              if (stepIdx > 0) {
-                const prevSteps = new Set<NGOStep>();
-                for (let i = 0; i < stepIdx; i++) {
-                  prevSteps.add(NGO_STEPS[i]);
-                }
-                setCompletedSteps(prevSteps);
-              } else {
-                setCompletedSteps(new Set());
-              }
             }
           }
         }
@@ -147,6 +142,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
             window.location.replace("/profile/ngo-details");
             return null;
           }
+          if (application.status === "PENDING_VERIFICATION") setResumedVerification(true);
           setCurrentStep(application.status === "PENDING_VERIFICATION" ? "email-verification" : "submitted");
           return null;
         }
@@ -157,7 +153,11 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
         return getNgoDraft();
       })
       .then((draft) => {
-        if (cancelled || !draft) return;
+        if (cancelled) return;
+        if (!draft) {
+          setData((prev) => prefillNgoFormWithUser(prev, user));
+          return;
+        }
 
         const restoredDocs: Record<string, UploadedFile | null> = {};
         if (draft.documents) {
@@ -175,39 +175,29 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
           });
         }
 
-        setData((prev) => ({
+        setData((prev) => prefillNgoFormWithUser({
           ...prev,
-          organizationName: draft.organizationName ?? prev.organizationName,
+          organizationName: fieldText(draft.organizationName) || prev.organizationName,
           legalStructure: (draft.legalStructure as any) ?? prev.legalStructure,
-          registrationNumber: draft.registrationNumber ?? prev.registrationNumber,
-          registeredOfficeAddress: draft.registeredOfficeAddress ?? prev.registeredOfficeAddress,
-          yearOfEstablishment: draft.yearOfEstablishment ?? prev.yearOfEstablishment,
-          representativeName: draft.representativeName ?? prev.representativeName,
+          registrationNumber: fieldText(draft.registrationNumber) || prev.registrationNumber,
+          registeredOfficeAddress: fieldText(draft.registeredOfficeAddress) || prev.registeredOfficeAddress,
+          yearOfEstablishment: fieldText(draft.yearOfEstablishment) || prev.yearOfEstablishment,
+          representativeName: fieldText(draft.representativeName) || prev.representativeName,
           designation: draft.designation ?? prev.designation,
-          mobileNumber: draft.mobileNumber ?? prev.mobileNumber,
-          officialEmail: draft.officialEmail ?? prev.officialEmail,
+          mobileNumber: fieldText(draft.mobileNumber) || prev.mobileNumber,
+          officialEmail: fieldText(draft.officialEmail) || prev.officialEmail,
           confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
           authorizationLetter: draft.authorizationLetter ? fromDto(draft.authorizationLetter) : prev.authorizationLetter,
           documents: Object.keys(restoredDocs).length > 0 ? restoredDocs : prev.documents,
           logo: draft.logo ? fromDto(draft.logo) : prev.logo,
           officePhoto: draft.officePhoto ? fromDto(draft.officePhoto) : prev.officePhoto,
           activityPhotos: restoredActivity,
-        }));
+        }, user));
 
         const savedStep = draft.currentStep as string;
         if (savedStep && (NGO_STEPS as readonly string[]).includes(savedStep)) {
           const typedStep = savedStep as NGOStep;
           setCurrentStep(typedStep);
-          const stepIdx = NGO_STEPS.indexOf(typedStep);
-          if (stepIdx > 0) {
-            const prevSteps = new Set<NGOStep>();
-            for (let i = 0; i < stepIdx; i++) {
-              prevSteps.add(NGO_STEPS[i]);
-            }
-            setCompletedSteps(prevSteps);
-          } else {
-            setCompletedSteps(new Set());
-          }
         }
       })
       .catch((err) => {
@@ -272,14 +262,6 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
     setData((prev) => ({ ...prev, ...patch }));
   }
 
-  function markStepComplete(step: NGOStep) {
-    setCompletedSteps((prev) => {
-      const next = new Set(prev);
-      next.add(step);
-      return next;
-    });
-  }
-
   function goToStep(step: NGOStep | "submitted") {
     setCurrentStep(step);
     // Scroll smoothly to top of card when step changes
@@ -290,28 +272,24 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
 
   // Step 1 -> 2
   function handleContinueFromOrgDetails() {
-    markStepComplete("org-details");
     goToStep("legal-documents");
     saveDraftProgress("legal-documents", data);
   }
 
   // Step 2 -> 3
   function handleContinueFromLegalDocs() {
-    markStepComplete("legal-documents");
     goToStep("authorized-rep");
     saveDraftProgress("authorized-rep", data);
   }
 
   // Step 3 -> 4
   function handleContinueFromAuthorizedRep() {
-    markStepComplete("authorized-rep");
     goToStep("org-photos");
     saveDraftProgress("org-photos", data);
   }
 
   // Step 4 -> 5
   function handleContinueFromOrgPhotos() {
-    markStepComplete("org-photos");
     goToStep("review-submit");
     saveDraftProgress("review-submit", data);
   }
@@ -333,7 +311,6 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
           submittedAt: subTime,
           officialEmail: user?.email || data.officialEmail,
         });
-        markStepComplete("review-submit");
         goToStep("email-verification");
       } finally {
         setIsSubmitting(false);
@@ -378,7 +355,6 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
         officialEmail: response.officialEmail || user?.email || data.officialEmail,
       });
 
-      markStepComplete("review-submit");
       goToStep("email-verification");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Submission failed. Please try again.";
@@ -394,7 +370,6 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
 
   // Step 6 -> Success
   function handleVerifiedOtp() {
-    markStepComplete("email-verification");
     if (typeof window !== "undefined" && data.applicationId) {
       try {
         const userIdentifier = user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
@@ -439,7 +414,6 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
       }
     }
     setData(INITIAL_NGO_FORM);
-    setCompletedSteps(new Set());
     setSubmitError(null);
     goToStep("org-details");
   }
@@ -522,7 +496,10 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
             <EmailVerification
               data={data}
               onChange={updateData}
-              onBack={() => goToStep("review-submit")}
+              // Reopened after a reload: the application is already submitted (resubmitting
+              // is refused as a duplicate), so offer Resend at once and no way back.
+              onBack={resumedVerification ? undefined : () => goToStep("review-submit")}
+              resumed={resumedVerification}
               onVerified={handleVerifiedOtp}
             />
           )}

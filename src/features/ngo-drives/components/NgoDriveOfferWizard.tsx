@@ -29,11 +29,29 @@ import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferRev
 import { useDriveOfferPhotos } from "./useDriveOfferPhotos";
 import {
   OFFER_STEPS, emptyOfferModel, firstIncompleteOfferStep, needsSpecNotes,
-  offerModelFrom, offerStepIndex, uploadedOfferPhotos,
+  offerStepIndex, uploadedOfferPhotos,
   type OfferModel, type OfferStep,
 } from "@/features/donation-offer-wizard/offerModel";
-import { offerMaterialDigest, offerSnapshotKey, serializeOffer } from "@/features/donation-offer-wizard/offerSerializer";
 import { offerStepForField, validateOfferAll, validateOfferStep } from "@/features/donation-offer-wizard/offerSchema";
+import { ApiError } from "@/lib/api";
+
+/**
+ * The server's field errors ({field, message}) keyed by form field, plus one summary
+ * line. Field names are the form's own (quantity, condition, photos, pickupCity,
+ * declarationsConfirmed), so each message can sit next to its field.
+ */
+export function driveOfferErrors(e: unknown, fallback: string): { fields: Record<string, string>; message: string } {
+  const list = e instanceof ApiError
+    ? ((e.data as { fieldErrors?: { field: string; message: string }[] } | undefined)?.fieldErrors ?? [])
+    : [];
+  const fields: Record<string, string> = {};
+  for (const fe of list) if (fe?.field && !fields[fe.field]) fields[fe.field] = fe.message;
+  const message = list.length > 0 ? list.map(fe => fe.message).join(" · ") : e instanceof Error && e.message ? e.message : fallback;
+  return { fields, message };
+}
+import {
+  driveOfferModelFrom, driveOfferSnapshotKey, driveOfferMaterialDigest, serializeDriveOffer, DRIVE_OFFER_DECLARATION_GROUPS,
+} from "../driveOfferSerializer";
 
 const STEP_LABELS: Record<OfferStep, string> = {
   photos: "Show the item",
@@ -48,9 +66,9 @@ const STEP_INTROS: Record<OfferStep, string> = {
   photos: "A few good photos do most of the work.",
   details: "What are you giving, and how much of it?",
   purchasePlan: "Tell the recipient what you plan to buy, and how soon.",
-  condition: "How is it doing, and what should the recipient know?",
+  condition: "How is it doing, and what should the NGO know?",
   pickup: "Where would this be collected from?",
-  review: "One last look before it goes to the recipient and our team.",
+  review: "One last look before it goes to the NGO.",
 };
 
 /**
@@ -98,9 +116,9 @@ export function NgoDriveOfferWizard({
     [showSpecNotes, stillNeededQuantity],
   );
 
-  const [model, setModel] = useState<OfferModel>(() => offer ? offerModelFrom(offer as any) : emptyOfferModel);
+  const [model, setModel] = useState<OfferModel>(() => offer ? driveOfferModelFrom(offer) : emptyOfferModel);
   const [step, setStep] = useState<OfferStep>(() =>
-    offer ? firstIncompleteOfferStep(offerModelFrom(offer as any)) : "photos");
+    offer ? firstIncompleteOfferStep(driveOfferModelFrom(offer)) : "photos");
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -115,12 +133,23 @@ export function NgoDriveOfferWizard({
   const [compatState, setCompatState] = useState<CompatState>({ kind: "incomplete" });
 
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const lastSaveErrorRef = useRef<unknown>(null);
 
   // ── Autosave ──────────────────────────────────────────────────────────────
-  const snapshotKey = useCallback((m: OfferModel) => offerSnapshotKey(m, serializerOpts), [serializerOpts]);
+  const snapshotKey = useCallback((m: OfferModel) => driveOfferSnapshotKey(m, serializerOpts), [serializerOpts]);
   const createDraft = useCallback(async () => offerId, [offerId]);
   const updateDraft = useCallback(
-    (id: number, m: OfferModel) => updateNgoDriveOfferItem(id, serializeOffer(m, serializerOpts)),
+    async (id: number, m: OfferModel) => {
+      try {
+        const res = await updateNgoDriveOfferItem(id, serializeDriveOffer(m, serializerOpts));
+        lastSaveErrorRef.current = null;
+        return res;
+      } catch (e) {
+        // useWizardDraft only reports "not saved"; keep the reason to show the donor.
+        lastSaveErrorRef.current = e;
+        throw e;
+      }
+    },
     [serializerOpts],
   );
 
@@ -135,7 +164,7 @@ export function NgoDriveOfferWizard({
   useEffect(() => {
     if (offer && !baselineRef.current) {
       baselineRef.current = true;
-      markSavedBaseline(offerModelFrom(offer as any));
+      markSavedBaseline(driveOfferModelFrom(offer));
     }
   }, [offer, markSavedBaseline]);
 
@@ -155,14 +184,14 @@ export function NgoDriveOfferWizard({
       // submitting a promise about specific content; changing that content
       // afterwards would submit something they never saw.
       if (key !== "declarationsConfirmed" && confirmedDigestRef.current !== null) {
-        if (offerMaterialDigest(next) !== confirmedDigestRef.current) {
+        if (driveOfferMaterialDigest(next) !== confirmedDigestRef.current) {
           next.declarationsConfirmed = false;
           confirmedDigestRef.current = null;
           setDeclarationsInvalidated(true);
         }
       }
       if (key === "declarationsConfirmed" && value === true) {
-        confirmedDigestRef.current = offerMaterialDigest(next);
+        confirmedDigestRef.current = driveOfferMaterialDigest(next);
         setDeclarationsInvalidated(false);
       }
 
@@ -298,7 +327,8 @@ export function NgoDriveOfferWizard({
     setDirection(dir);
     setErrors({});
     setStep(next);
-  }, []);
+    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+  }, [reduced]);
 
   // Focus the new card's heading so a keyboard or screen-reader user lands in
   // the content rather than back at the top of the document.
@@ -332,8 +362,7 @@ export function NgoDriveOfferWizard({
         // never reason about data the server has not accepted.
         const saved = await flush(model);
         if (!saved) {
-          setErrors({ [step === "review" ? "declarationsConfirmed" : "quantity"]: "" });
-          toast.error("We couldn't save your changes. Check your connection and try again.");
+          showSaveFailure("We couldn't save your changes. Check your connection and try again.");
           return;
         }
         goTo(OFFER_STEPS[idx + 1], 1);
@@ -341,7 +370,20 @@ export function NgoDriveOfferWizard({
         setAdvancing(false);
       }
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity, showSaveFailure]);
+
+  /** Field errors next to their fields (jumping to that step), the summary in a toast. */
+  function showSaveFailure(fallback: string) {
+    const { fields, message } = driveOfferErrors(lastSaveErrorRef.current, fallback);
+    if (Object.keys(fields).length > 0) {
+      setErrors(fields);
+      const first = Object.keys(fields)[0];
+      const target = offerStepForField(first);
+      if (target && target !== step) goTo(target, -1);
+    }
+    toast.error(message);
+    return message;
+  }
 
   /** Synchronous guard. Disabled UI alone loses the race on a double tap. */
   const submitLockRef = useRef(false);
@@ -370,14 +412,21 @@ export function NgoDriveOfferWizard({
     setSubmitting(true);
     try {
       const saved = await flush(model);
-      if (!saved) throw new Error("Your latest changes could not be saved.");
+      if (!saved) {
+        setSubmitError(showSaveFailure("Your latest changes could not be saved."));
+        submitLockRef.current = false;
+        return;
+      }
       const result = await submitNgoDriveOffer(offerId);
       setSubmitted(true);
       onSubmitted(result);
     } catch (e) {
       // Stay on Review. A failed submit that navigated away would strand the
-      // donor on a status screen for an offer that was never sent.
-      setSubmitError(e instanceof Error ? e.message : "We couldn't submit your offer. Please try again.");
+      // donor on a status screen for an offer that was never sent. The server names
+      // each missing field; show them next to their fields and in the summary.
+      const { fields, message } = driveOfferErrors(e, "We couldn't send your offer. Please try again.");
+      if (Object.keys(fields).length > 0) setErrors(fields);
+      setSubmitError(message);
       submitLockRef.current = false;
     } finally {
       setSubmitting(false);
@@ -386,10 +435,18 @@ export function NgoDriveOfferWizard({
 
   const handleSaveExit = useCallback(async () => {
     setSavingExit(true);
+    const toastId = toast.loading("Saving…");
     try {
       const saved = await flush(model);
-      if (!saved) { toast.error("We couldn't save your changes — please try again."); return; }
+      if (!saved) {
+        toast.dismiss(toastId);
+        showSaveFailure("We couldn't save your changes. Please try again.");
+        return;
+      }
+      toast.success("Draft saved", { id: toastId });
       (onSaveExit ?? onExit)();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "We couldn't save your changes — please try again.", { id: toastId });
     } finally {
       setSavingExit(false);
     }
@@ -453,14 +510,14 @@ export function NgoDriveOfferWizard({
               <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
             </button>
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-              Offer this item
+              Give to this drive
             </h2>
             <p className="mb-8 text-sm text-white/50">Five short steps. We save as you go.</p>
             <WizardProgressRail
               current={step} steps={OFFER_STEPS} navLabel="Donation offer progress"
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
-          <p className="text-2xs text-white/35">Your name and address stay private until a match is approved.</p>
+          <p className="text-2xs text-white/35">Your name and address stay private until the NGO accepts your offer.</p>
         </aside>
 
         <form
@@ -591,6 +648,7 @@ export function NgoDriveOfferWizard({
                             model={model} errors={errors} requestTitle={requestTitle} compat={compat}
                             declarationsInvalidated={declarationsInvalidated}
                             onChange={setField} onEdit={s => goTo(s, -1)}
+                            declarationGroups={DRIVE_OFFER_DECLARATION_GROUPS}
                           />
                           {submitError && (
                             <p role="alert" className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-2xs font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
@@ -611,7 +669,7 @@ export function NgoDriveOfferWizard({
             onBack={() => goTo(OFFER_STEPS[offerStepIndex(step) - 1], -1)}
             onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
             onSaveExit={() => void handleSaveExit()}
-            continueLabel={isLast ? "Submit donation offer" : "Continue"}
+            continueLabel={isLast ? "Send offer to the NGO" : "Continue"}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

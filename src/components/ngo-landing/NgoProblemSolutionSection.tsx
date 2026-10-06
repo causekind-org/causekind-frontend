@@ -13,7 +13,7 @@ interface ContrastRow {
 const CONTRAST_ROWS: ContrastRow[] = [
   {
     usual: "Post on WhatsApp groups and hope",
-    causeKind: "Reviewed requests can reach nearby donors",
+    causeKind: "Reviewed drives can reach nearby donors",
   },
   {
     usual: "Donors aren't sure you're real",

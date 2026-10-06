@@ -73,7 +73,7 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
     <section aria-labelledby="ck-doors-heading">
       <h2
         id="ck-doors-heading"
-        className="text-2xl font-extrabold leading-[1.16] tracking-tight text-stone-900 dark:text-stone-50"
+        className="[font-family:var(--font-source-serif-4),Georgia,serif] text-[1.625rem] font-semibold leading-[1.1] tracking-[-0.03em] text-stone-900 dark:text-stone-50"
       >
         {t("mobileQuestion")}
       </h2>
@@ -92,7 +92,7 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
             <p className="text-3xs font-extrabold uppercase tracking-[0.16em] text-[var(--ck-home-highlight,#f0a06a)]">
               {t("donor.eyebrow")}
             </p>
-            <h3 className="mt-3 text-xl font-extrabold leading-[1.22] tracking-tight">
+            <h3 className="[font-family:var(--font-source-serif-4),Georgia,serif] mt-3 text-[1.375rem] font-semibold leading-[1.15] tracking-[-0.025em]">
               {t("mobileDonorHeading")}
             </h3>
 
@@ -125,7 +125,7 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
               data-tour="guest-join"
               onClick={() => pick("donor")}
               data-cta-live="dark"
-              className="ck-cta-live mt-5 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] bg-white text-[0.9375rem] font-extrabold text-stone-900 transition-transform active:scale-[0.97]"
+              className="ck-cta-live mt-5 flex min-h-[3.125rem] items-center justify-center rounded-full bg-white text-[0.9375rem] font-extrabold text-stone-900 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98]"
             >
               {t("donor.cta")}
             </Link>
@@ -137,7 +137,7 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
           <p className="text-3xs font-extrabold uppercase tracking-[0.16em] text-teal-700 dark:text-teal-400">
             {t("donee.eyebrow")}
           </p>
-          <h3 className="mt-3 text-xl font-extrabold leading-[1.22] tracking-tight text-stone-900 dark:text-stone-50">
+          <h3 className="[font-family:var(--font-source-serif-4),Georgia,serif] mt-3 text-[1.375rem] font-semibold leading-[1.15] tracking-[-0.025em] text-stone-900 dark:text-stone-50">
             {t("mobileDoneeHeading")}
           </h3>
           <p className="mt-3 text-[0.8125rem] leading-relaxed text-stone-600 dark:text-stone-300 [text-wrap:pretty]">
@@ -147,7 +147,7 @@ export function MobileDoors({ door, pick }: { door: Door; pick: (next: Door) => 
           <Link
             href="/register?role=DONEE"
             onClick={() => pick("donee")}
-            className="mt-4 flex min-h-[3.125rem] items-center justify-center rounded-[0.8125rem] border-[1.5px] border-teal-700 text-[0.9375rem] font-extrabold text-teal-700 transition-transform active:scale-[0.97] dark:border-teal-400 dark:text-teal-400"
+            className="mt-4 flex min-h-[3.125rem] items-center justify-center rounded-full border-[1.5px] border-teal-700 text-[0.9375rem] font-extrabold text-teal-700 transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] dark:border-teal-400 dark:text-teal-400"
           >
             {t("donee.cta")}
           </Link>

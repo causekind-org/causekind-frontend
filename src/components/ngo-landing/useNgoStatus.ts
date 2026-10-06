@@ -10,6 +10,7 @@ import {
   IS_NGO_DEMO_MODE,
   type NGOFormState,
   type NGOStep,
+  fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 
 export type NgoStatusType = "loading" | "incomplete" | "under_review" | "changes_requested" | "verified";
@@ -18,15 +19,15 @@ function parseFormState(raw: any): NGOFormState {
   if (!raw) return INITIAL_NGO_FORM;
   return {
     ...INITIAL_NGO_FORM,
-    organizationName: raw.organizationName || "",
+    organizationName: fieldText(raw.organizationName),
     legalStructure: raw.legalStructure || "",
-    registrationNumber: raw.registrationNumber || "",
-    registeredOfficeAddress: raw.registeredOfficeAddress || "",
-    yearOfEstablishment: raw.yearOfEstablishment || "",
-    representativeName: raw.representativeName || "",
+    registrationNumber: fieldText(raw.registrationNumber),
+    registeredOfficeAddress: fieldText(raw.registeredOfficeAddress),
+    yearOfEstablishment: fieldText(raw.yearOfEstablishment),
+    representativeName: fieldText(raw.representativeName),
     designation: raw.designation || "",
-    mobileNumber: raw.mobileNumber || "",
-    officialEmail: raw.officialEmail || "",
+    mobileNumber: fieldText(raw.mobileNumber),
+    officialEmail: fieldText(raw.officialEmail),
     authorizationLetter: raw.authorizationLetter || null,
     logo: raw.logo || null,
     officePhoto: raw.officePhoto || null,
@@ -76,7 +77,7 @@ export function triggerNgoLockedToast(
         : undefined,
     });
   } else if (isPhotosDue) {
-    toast.warning(`Upload handover photos for ${photosDueRequestName} to post your next request.`, {
+    toast.warning(`Upload handover photos for ${photosDueRequestName} to start your next drive.`, {
       action: router
         ? {
             label: "Upload",
@@ -107,6 +108,10 @@ export interface NgoStatusData {
   isPhotosDue: boolean;
   canPostRequest: boolean;
   lockReason: string;
+  /** One drive at a time (no local test flag bypasses this). */
+  canStartDrive: boolean;
+  blockingDriveTitle: string;
+  driveLockReason: string;
   hasShownWelcome: boolean;
   markWelcomeShown: () => void;
   documents: Record<string, any>;
@@ -140,7 +145,7 @@ export function useNgoStatus(): NgoStatusData {
       setStatus(raw === "APPROVED" ? "verified"
         : raw === "REJECTED" || raw === "NEEDS_INFORMATION" ? "changes_requested"
         : raw === "UNDER_REVIEW" || raw === "PENDING_VERIFICATION" ? "under_review" : "incomplete");
-      setNgoName(application?.organizationName || draft?.organizationName || "Your Organization");
+      setNgoName(application?.organizationName || draft?.organizationName || user?.fullName || "Your Organization");
       const form = parseFormState(draft || application);
       setProgress(calculateNgoProgress(form));
       setDocuments(form.documents || {});
@@ -183,10 +188,15 @@ export function useNgoStatus(): NgoStatusData {
 
   const isVerified = !isLoading && !error && status === "verified";
   const isPhotosDue = (overview?.photosDue ?? 0) > 0;
-  const canPostRequest = isVerified && !isPhotosDue;
+  const canStartDrive = overview?.canStartDrive !== false;
+  const blockingDriveTitle = overview?.blockingDriveTitle ?? "";
+  const driveLockReason = canStartDrive ? ""
+    : `Available after your current drive${blockingDriveTitle ? ` "${blockingDriveTitle}"` : ""} is completed and its photos are approved.`;
+  const canPostRequest = isVerified && !isPhotosDue && canStartDrive;
   const lockReason = isLoading ? "Checking your NGO status…" : error || (!isVerified
     ? "Available once CauseKind verifies your NGO."
-    : isPhotosDue ? `Upload handover photos for ${overview?.photosDueRequestName} before posting another request.` : "");
+    : isPhotosDue ? `Upload handover photos for ${overview?.photosDueRequestName} before starting another drive.`
+    : driveLockReason);
   return {
     isLoading: isLoading || authLoading, error, refresh, overview, status, ngoName,
     stepNumber: progress.completedCount, totalSteps: 6, nextIncompleteStep: progress.nextIncompleteStep,
@@ -194,7 +204,7 @@ export function useNgoStatus(): NgoStatusData {
     activeRequests: overview?.activeRequests ?? 0, itemsPledged: overview?.itemsPledged ?? 0,
     dropoffsToConfirm: overview?.dropoffsToConfirm ?? 0, photosDue: overview?.photosDue ?? 0,
     photosDueRequestName: overview?.photosDueRequestName ?? "", isVerified, isPhotosDue,
-    canPostRequest, lockReason, hasShownWelcome, markWelcomeShown,
+    canPostRequest, lockReason, canStartDrive, blockingDriveTitle, driveLockReason, hasShownWelcome, markWelcomeShown,
     documents, isError: !!error,
   };
 }

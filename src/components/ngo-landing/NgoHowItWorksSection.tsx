@@ -17,7 +17,7 @@ import { NgoSectionLabel } from "./NgoSectionLabel";
 import { TrueFocus } from "./TrueFocus";
 
 export function NgoHowItWorksSection() {
-  const { status, isVerified, canPostRequest } = useNgoStatus();
+  const { status, isVerified, canPostRequest, lockReason } = useNgoStatus();
   const [activeFocusIndex, setActiveFocusIndex] = useState(0);
 
   // NGO Steps definitions
@@ -207,6 +207,14 @@ export function NgoHowItWorksSection() {
                 : "Complete your 6-step registration to start receiving in-kind gifts."}
             </p>
 
+            {isVerified && !canPostRequest ? (
+              <div className="flex flex-col items-start gap-1.5">
+                <button type="button" disabled className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-stone-200 text-stone-500 font-bold px-7 py-3 text-xs sm:text-sm cursor-not-allowed">
+                  <span>Start a Drive</span>
+                </button>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{lockReason}</p>
+              </div>
+            ) : (
             <Link
               href={ctaHref}
               className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 text-white font-bold px-7 py-3 text-xs sm:text-sm shadow-lg shadow-ngo-700/25 transition-all duration-200"
@@ -214,6 +222,7 @@ export function NgoHowItWorksSection() {
               <span>{ctaLabel}</span>
               <ArrowRight className="w-4 h-4" />
             </Link>
+            )}
           </div>
         </motion.div>
 

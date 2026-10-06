@@ -164,4 +164,48 @@ describe("Navbar - NGO Profile Button States", () => {
     expect(await screen.findByRole("link", { name: "NGO Approved" })).toHaveAttribute("href", "/profile/ngo-details");
     expect(screen.queryByText("Application Under Review")).not.toBeInTheDocument();
   });
+
+  it("renders 'Drives' pill for NGO_PARTNER, but 'Donate' (nav.donate) for DONOR", async () => {
+    // 1. NGO_PARTNER
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 201, email: "fresh@ngo.org", role: "NGO_PARTNER" },
+      isLoading: false,
+      isRestoring: false,
+      setUser: vi.fn(),
+      logout: vi.fn(),
+      setAuth: vi.fn(),
+    });
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+
+    const { unmount } = render(<SiteHeader />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Drives")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("nav.donate")).not.toBeInTheDocument();
+
+    const drivesLink = screen.getByText("Drives").closest("a");
+    expect(drivesLink).toHaveAttribute("href", "/dashboard/ngo#live-drives");
+
+    unmount();
+
+    // 2. DONOR
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 301, email: "donor@example.com", role: "DONOR" },
+      isLoading: false,
+      isRestoring: false,
+      setUser: vi.fn(),
+      logout: vi.fn(),
+      setAuth: vi.fn(),
+    });
+
+    render(<SiteHeader />);
+    await waitFor(() => {
+      expect(screen.getByText("nav.donate")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Drives")).not.toBeInTheDocument();
+    
+    const donateLink = screen.getByText("nav.donate").closest("a");
+    expect(donateLink).toHaveAttribute("href", "/requests");
+  });
 });

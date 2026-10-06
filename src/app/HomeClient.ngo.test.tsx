@@ -7,9 +7,14 @@ import { getMyNgoApplication, getCampaigns, getPlatformStats, getRecentActivity,
 const mockReplace = vi.fn();
 const mockPush = vi.fn();
 
-// HeroSection pulls Anton from next/font/google, which has no jsdom
-// implementation. Same stub heroFrontDoor.test.tsx already uses.
-vi.mock("next/font/google", () => ({ Anton: () => ({ style: { fontFamily: "Anton" } }) }));
+// HeroSection and the cinematic landing load fonts from
+// next/font/google, which has no jsdom implementation.
+vi.mock("next/font/google", () => {
+  const font = (name: string) => () => ({ style: { fontFamily: name }, variable: `font-${name}`, className: "" });
+  // Every next/font/google loader used in src gets the same stub.
+  const names = ["Anton", "Archivo", "Big_Shoulders", "Caveat", "Dancing_Script", "Fraunces", "IBM_Plex_Mono", "Inter", "Lora", "Nunito", "Playfair_Display", "Plus_Jakarta_Sans", "Roboto_Mono", "Source_Serif_4"];
+  return Object.fromEntries(names.map((name) => [name, font(name)]));
+});
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -27,6 +32,8 @@ vi.mock("@/lib/api", () => ({
   getPublicItemRequests: vi.fn().mockResolvedValue([]),
   getItemRequests: vi.fn().mockResolvedValue([]),
   getMyProfile: vi.fn().mockResolvedValue(null),
+  getNgoDraft: vi.fn().mockResolvedValue(null),
+  getNgoOverview: vi.fn().mockResolvedValue(null),
 }));
 
 // The festive hero and board reach NewRequestLink, which reads the
@@ -57,7 +64,9 @@ describe("HomeClient - NGO Experience (Root URL /)", () => {
     sessionStorage.clear();
   });
 
-  it("shows welcome modal for incomplete NGO profile on root URL, and Maybe Later dismisses it", async () => {
+  // The old blocking "Complete Your Profile" modal was replaced by the welcome overlay and
+  // NgoProfileToast; on "/" the NGO landing itself points an incomplete NGO at the wizard.
+  it("incomplete NGO on root URL sees the NGO landing with a link into the application wizard", async () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "fresh@charity.org", role: "NGO_PARTNER" },
       isLoading: false,
@@ -68,37 +77,6 @@ describe("HomeClient - NGO Experience (Root URL /)", () => {
     });
     vi.mocked(getMyNgoApplication).mockResolvedValue(null);
 
-    const { unmount } = render(
-      <HomeClient
-        initialCampaigns={[]}
-        initialStats={null}
-        initialActivity={[]}
-        initialItemRequests={[]}
-      />
-    );
-
-    // Shows welcome modal
-    await waitFor(
-      () => {
-        expect(screen.getByText("Complete Your Profile")).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
-
-    const completeLink = screen.getByRole("link", { name: /Complete Profile Now/i });
-    expect(completeLink).toHaveAttribute("href", "/profile/ngo-details");
-
-    // Dismiss with "Maybe later"
-    const maybeLaterBtn = screen.getByRole("button", { name: /Maybe later/i });
-    fireEvent.click(maybeLaterBtn);
-
-    await waitFor(() => {
-      expect(screen.queryByText("Complete Your Profile")).not.toBeInTheDocument();
-    });
-
-    unmount();
-
-    // BUG 6: On fresh load/login, the modal must reappear (no sessionStorage suppression)
     render(
       <HomeClient
         initialCampaigns={[]}
@@ -108,12 +86,10 @@ describe("HomeClient - NGO Experience (Root URL /)", () => {
       />
     );
 
-    await waitFor(
-      () => {
-        expect(screen.getByText("Complete Your Profile")).toBeInTheDocument();
-      },
-      { timeout: 5000 }
-    );
+    const links = await screen.findAllByRole("link", { name: /Start (your )?application/i }, { timeout: 5000 });
+    for (const link of links) expect(link.getAttribute("href")).toMatch(/^\/profile\/ngo-details/);
+    expect(screen.queryByText("Complete Your Profile")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Maybe later/i })).not.toBeInTheDocument();
   }, 30000);
 
   it("submitted NGO sees full landing page (not status card) and no welcome modal", async () => {

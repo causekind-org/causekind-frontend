@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
-import { getNgoDrive, getNgoDriveProof, type NgoDrive, type NgoDriveProofResponse } from "@/lib/api";
+import { getNgoDrive, getNgoDriveProof, type PublicNgoDrive, type NgoDriveProofResponse } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
 
 export default function DriveProofPage() {
@@ -12,7 +12,7 @@ export default function DriveProofPage() {
   const id = Number(params.id);
   const router = useRouter();
 
-  const [drive, setDrive] = useState<NgoDrive | null>(null);
+  const [drive, setDrive] = useState<PublicNgoDrive | null>(null);
   const [proof, setProof] = useState<NgoDriveProofResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,7 +74,7 @@ export default function DriveProofPage() {
             </div>
             <div className="flex-1 bg-stone-50 rounded-xl p-4 border border-stone-100 w-full">
               <div className="text-3xl font-black text-emerald-600 mb-1">
-                {drive.beneficiaryCount}
+                {proof.beneficiariesReached ?? drive.beneficiaryCount}
               </div>
               <div className="text-stone-500 font-medium uppercase tracking-wide text-xs">
                 Reached {drive.beneficiaryGroup}
@@ -84,7 +84,7 @@ export default function DriveProofPage() {
 
           {proof.ngoStatement && (
             <div className="mb-8 bg-stone-50 p-6 rounded-xl border border-stone-100 relative">
-              <span className="absolute -top-3 left-6 bg-white px-2 text-xs font-bold uppercase text-stone-400 tracking-wider">A message from {(drive as any).ngoName}</span>
+              <span className="absolute -top-3 left-6 bg-white px-2 text-xs font-bold uppercase text-stone-400 tracking-wider">A message from {drive.ngoOrganizationName || "Verified NGO"}</span>
               <p className="text-stone-700 italic leading-relaxed">"{proof.ngoStatement}"</p>
             </div>
           )}

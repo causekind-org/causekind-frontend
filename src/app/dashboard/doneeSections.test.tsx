@@ -37,6 +37,8 @@ vi.mock("@/lib/api", () => ({
   getOffersForMyRequests: mocks.incomingOffers,
   getMyItemListings: () => Promise.resolve([]),
   getMyDonationOffers: () => Promise.resolve([]),
+  // The dashboard also loads offers to NGO drives since the drive feature.
+  getMyNgoDriveOffers: () => Promise.resolve([]),
 }));
 
 const DAY = 24 * 60 * 60 * 1000;

@@ -27,9 +27,8 @@ export function NewRequestLink({
   let destination = typeof href === "string" ? href : "/requests/new";
   const isNgo = ["NGO", "NGO_PARTNER"].includes(user?.role?.toUpperCase() || "");
   if (isNgo && destination.split("?")[0] === "/requests/new") {
-    const query = new URLSearchParams(destination.split("?")[1] || "");
-    if (query.has("draftId")) { query.set("draft", query.get("draftId")!); query.delete("draftId"); }
-    destination = `/ngo/requests/new${query.size ? `?${query}` : ""}`;
+    // NGOs post drives, never the donee request form.
+    destination = "/ngo/drives/new";
   }
 
   return (

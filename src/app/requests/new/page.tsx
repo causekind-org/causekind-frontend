@@ -615,9 +615,8 @@ function NewRequestForm() {
     if (authLoading) return;
     if (!user) { router.push("/login"); return; }
     if (["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) {
-      const query = new URLSearchParams();
-      if (resumeDraftId) query.set("draft", String(resumeDraftId));
-      router.replace(`/ngo/requests/new${query.size ? `?${query}` : ""}`);
+      // NGOs post drives: straight to the drive form (old NGO request drafts are read-only).
+      router.replace("/ngo/drives/new");
       return;
     }
     getProfile()

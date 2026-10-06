@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useNgoStatus, triggerNgoLockedToast } from "./useNgoStatus";
+import { toast } from "@/lib/toast";
 
 interface NgoRequestsDropdownProps {
   onNavigate?: () => void;
@@ -31,6 +32,8 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
     isPhotosDue,
     photosDueRequestName,
     canPostRequest,
+    canStartDrive,
+    driveLockReason,
     activeRequests,
     dropoffsToConfirm,
     photosDue,
@@ -39,6 +42,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
   const handleLockedClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isVerified && !isPhotosDue && !canStartDrive) { toast.info(driveLockReason); return; }
     triggerNgoLockedToast(status, isPhotosDue, photosDueRequestName, router);
   };
 
@@ -88,7 +92,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
               {ngoName || "NGO Management"}
             </h3>
             <p className="text-2xs text-stone-500 dark:text-stone-400">
-              Manage your verified community in-kind requests &amp; drop-offs
+              Manage your drives &amp; drop-offs
             </p>
           </div>
         </div>
@@ -97,7 +101,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
 
       {/* ── Main 3 Action Cards Grid ──────────────────────────────── */}
       <div className="grid grid-cols-12 gap-5">
-        {/* 1. Post a Request */}
+        {/* 1. Start a Drive */}
         <div className="col-span-4">
           {canPostRequest ? (
             <Link
@@ -118,11 +122,11 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   Start a Drive
                 </h4>
                 <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
-                  Request physical supplies, equipment, or emergency relief from givers within 10 km.
+                  Collect physical supplies, equipment, or emergency relief from givers within 10 km.
                 </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-bold text-ngo-700 dark:text-ngo-300 group-hover:translate-x-0.5 transition-transform">
-                <span>Start new request</span>
+                <span>Start a drive</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </div>
             </Link>
@@ -149,21 +153,22 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                 <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                   {isPhotosDue
                     ? `Upload photos for "${photosDueRequestName}" to unlock new posts.`
+                    : isVerified && !canStartDrive ? driveLockReason
                     : "Unlocks once CauseKind verifies your NGO legal documents."}
                 </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-medium text-amber-700 dark:text-amber-400">
-                <span>{isPhotosDue ? "Photos due" : "Verification required"}</span>
+                <span>{isPhotosDue ? "Photos due" : isVerified && !canStartDrive ? "One drive at a time" : "Verification required"}</span>
               </div>
             </button>
           )}
         </div>
 
-        {/* 2. Active Requests */}
+        {/* 2. Live Drives */}
         <div className="col-span-4">
           {isVerified ? (
             <Link
-              href="/ngo/requests"
+              href="/dashboard/ngo#live-drives"
               onClick={onNavigate}
               className="group flex flex-col justify-between h-full p-5 rounded-2xl bg-white/70 dark:bg-black/55 hover:bg-white dark:hover:bg-black/75 border border-stone-200/70 dark:border-stone-800 hover:border-ngo-600/40 dark:hover:border-ngo-500/40 transition-all duration-300 shadow-2xs hover:shadow-md cursor-pointer"
             >
@@ -180,11 +185,11 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   Live Drives
                 </h4>
                 <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
-                  Monitor live requests, givers&apos; in-kind pledges, and current fulfillment status.
+                  Monitor live drives, givers&apos; in-kind pledges, and current fulfillment status.
                 </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-bold text-ngo-700 dark:text-ngo-300 group-hover:translate-x-0.5 transition-transform">
-                <span>View request list</span>
+                <span>View live drives</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </div>
             </Link>
@@ -209,7 +214,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   Live Drives
                 </h4>
                 <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-                  Your organization&apos;s request management hub unlocks upon verification.
+                  Your organization&apos;s drive hub unlocks upon verification.
                 </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-medium text-stone-500 dark:text-stone-400">

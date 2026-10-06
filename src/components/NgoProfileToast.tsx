@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X, Sparkles } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { getMyNgoApplication } from "@/lib/api";
+import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
 
 interface NgoProfileToastProps {
   isProfileComplete?: boolean;
@@ -14,7 +14,6 @@ interface NgoProfileToastProps {
 }
 
 const VISIBLE_MS = 5000;
-const REPEAT_INTERVAL_MS = 15000;
 const EXIT_MS = 380;
 
 export function NgoProfileToast(props: NgoProfileToastProps) {
@@ -37,64 +36,31 @@ export function NgoProfileToast(props: NgoProfileToastProps) {
 function AuthenticatedNgoProfileToast({
   isProfileComplete = false,
   isModalOpen = false,
-  userId,
 }: NgoProfileToastProps) {
-  const { user } = useAuth();
   const pathname = usePathname();
+  const { status, stepNumber, totalSteps, isLoading: isStatusLoading } = useNgoStatus();
 
-  const userIdentifier =
-    userId ??
-    user?.id ??
-    user?.userId ??
-    (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-
-  const [sessionDismissed, setSessionDismissed] = useState<boolean>(() => {
+  // Track if we've already shown it during this login session
+  const [hasShownThisSession] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
-    return sessionStorage.getItem("ngo-profile-toast-session-dismissed") === "true";
+    return sessionStorage.getItem("ck_ngo_profile_toast_shown") === "true";
   });
 
-  const checkStatusFromStorage = useCallback(() => {
-    if (typeof window === "undefined") return false;
-    try {
-      const keysToCheck: string[] = [
-        `ngo-demo-application-${userIdentifier}`,
-        `ngo-application-${userIdentifier}`,
-      ];
+  // Track if the Welcome Overlay has finished (or if it wasn't pending)
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return sessionStorage.getItem("ck_welcome_pending") !== "1";
+  });
 
-      if (user?.email) {
-        const emailId = user.email.toLowerCase().replace(/[^a-z0-9]/g, "_");
-        if (emailId !== userIdentifier) {
-          keysToCheck.push(`ngo-demo-application-${emailId}`);
-          keysToCheck.push(`ngo-application-${emailId}`);
-        }
-      }
-
-      for (const key of keysToCheck) {
-        const cached = localStorage.getItem(key);
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          const status = parsed?.status || parsed?.submissionStatus;
-          if (
-            status === "UNDER_REVIEW" ||
-            status === "APPROVED" ||
-            status === "PENDING_VERIFICATION" ||
-            status === "SUBMITTED"
-          ) {
-            return true;
-          }
-        }
-      }
-    } catch {
-      // ignore
+  useEffect(() => {
+    const handler = () => setWelcomeDismissed(true);
+    window.addEventListener("ck-welcome-dismissed", handler);
+    // Double check just in case it was dismissed right before this mounted
+    if (sessionStorage.getItem("ck_welcome_pending") !== "1") {
+      setWelcomeDismissed(true);
     }
-    return false;
-  }, [userIdentifier, user?.email]);
-
-  const [isApplicationUnderReview, setIsApplicationUnderReview] = useState<boolean>(() => {
-    return checkStatusFromStorage();
-  });
-
-  const isEffectivelyComplete = isProfileComplete || isApplicationUnderReview || sessionDismissed;
+    return () => window.removeEventListener("ck-welcome-dismissed", handler);
+  }, []);
 
   const [visible, setVisible] = useState(false);
   const [entered, setEntered] = useState(false);
@@ -103,7 +69,13 @@ function AuthenticatedNgoProfileToast({
 
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const loopTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearAllTimers = useCallback(() => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    hideTimerRef.current = null;
+    exitTimerRef.current = null;
+  }, []);
 
   // Track hero visibility on landing page
   useEffect(() => {
@@ -137,88 +109,27 @@ function AuthenticatedNgoProfileToast({
     };
   }, [pathname]);
 
-  const clearAllTimers = useCallback(() => {
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
-    if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
-    hideTimerRef.current = null;
-    exitTimerRef.current = null;
-    loopTimerRef.current = null;
+  // Determine completeness
+  // Approved, under review, or 6/6 steps completed means it's effectively complete.
+  const isCompleteByApp = status !== "incomplete" || stepNumber >= totalSteps;
+  // Submitting the application hides the toast at once; the status reload that follows
+  // can take a moment to report UNDER_REVIEW.
+  const [submitted, setSubmitted] = useState(false);
+  useEffect(() => {
+    const onSubmitted = () => setSubmitted(true);
+    window.addEventListener("ngo-application-submitted", onSubmitted);
+    return () => window.removeEventListener("ngo-application-submitted", onSubmitted);
   }, []);
+  const isEffectivelyComplete = isProfileComplete || isCompleteByApp || hasShownThisSession || submitted;
 
-  // Listen for real-time submission events or storage updates
   useEffect(() => {
-    const handleUpdate = (e?: Event) => {
-      const customEvent = e as CustomEvent;
-      const status = customEvent?.detail?.status;
-      if (
-        status === "UNDER_REVIEW" ||
-        status === "APPROVED" ||
-        status === "PENDING_VERIFICATION" ||
-        status === "SUBMITTED"
-      ) {
-        setIsApplicationUnderReview(true);
-        clearAllTimers();
-        setVisible(false);
-        setEntered(false);
-        return;
-      }
-
-      if (checkStatusFromStorage()) {
-        setIsApplicationUnderReview(true);
-        clearAllTimers();
-        setVisible(false);
-        setEntered(false);
-      }
-    };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("ngo-application-submitted", handleUpdate);
-      window.addEventListener("storage", handleUpdate);
-      return () => {
-        window.removeEventListener("ngo-application-submitted", handleUpdate);
-        window.removeEventListener("storage", handleUpdate);
-      };
-    }
-  }, [checkStatusFromStorage, clearAllTimers]);
-
-  // Check backend application status if authenticated
-  useEffect(() => {
-    if (isEffectivelyComplete) return;
-
-    if (checkStatusFromStorage()) {
-      setIsApplicationUnderReview(true);
-      clearAllTimers();
-      setVisible(false);
-      setEntered(false);
-      return;
-    }
-
-    if (user) {
-      getMyNgoApplication()
-        .then((app) => {
-          const status = app?.status || (app as any)?.submissionStatus;
-          if (
-            status === "UNDER_REVIEW" ||
-            status === "APPROVED" ||
-            status === "PENDING_VERIFICATION" ||
-            status === "SUBMITTED"
-          ) {
-            setIsApplicationUnderReview(true);
-            clearAllTimers();
-            setVisible(false);
-            setEntered(false);
-          }
-        })
-        .catch(() => {
-          // ignore
-        });
-    }
-  }, [user, isEffectivelyComplete, checkStatusFromStorage, clearAllTimers]);
-
-  const showToast = useCallback(() => {
-    if (isEffectivelyComplete) return;
+    if (isStatusLoading || isEffectivelyComplete || isModalOpen || !welcomeDismissed) return;
     if (pathname === "/" && !scrolledPastHero) return;
+
+    // Show it once, and record that it was shown in this session
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("ck_ngo_profile_toast_shown", "true");
+    }
 
     clearAllTimers();
     setVisible(true);
@@ -233,33 +144,15 @@ function AuthenticatedNgoProfileToast({
       setEntered(false);
       exitTimerRef.current = setTimeout(() => {
         setVisible(false);
-        loopTimerRef.current = setTimeout(() => {
-          showToast();
-        }, REPEAT_INTERVAL_MS);
       }, EXIT_MS);
     }, VISIBLE_MS);
-  }, [clearAllTimers, isEffectivelyComplete, pathname, scrolledPastHero]);
-
-  useEffect(() => {
-    if (isEffectivelyComplete || isModalOpen || (pathname === "/" && !scrolledPastHero)) {
-      clearAllTimers();
-      setVisible(false);
-      setEntered(false);
-      return;
-    }
-
-    showToast();
 
     return () => {
       clearAllTimers();
     };
-  }, [isEffectivelyComplete, isModalOpen, pathname, scrolledPastHero, showToast, clearAllTimers]);
+  }, [isStatusLoading, isEffectivelyComplete, isModalOpen, welcomeDismissed, pathname, scrolledPastHero, clearAllTimers]);
 
   function dismiss() {
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("ngo-profile-toast-session-dismissed", "true");
-    }
-    setSessionDismissed(true);
     clearAllTimers();
     setEntered(false);
     exitTimerRef.current = setTimeout(() => {
@@ -268,17 +161,12 @@ function AuthenticatedNgoProfileToast({
   }
 
   function handleAction() {
-    if (typeof window !== "undefined") {
-      sessionStorage.setItem("ngo-profile-toast-session-dismissed", "true");
-    }
-    setSessionDismissed(true);
     clearAllTimers();
     setVisible(false);
     setEntered(false);
   }
 
   if (isEffectivelyComplete || !visible || (pathname === "/" && !scrolledPastHero)) return null;
-
 
   return (
     <div className="fixed bottom-[calc(var(--ck-bottom-chrome)+1.75rem)] left-1/2 -translate-x-1/2 z-[9980] pointer-events-none w-max max-w-[calc(100vw-1.5rem)]">
@@ -318,7 +206,7 @@ function AuthenticatedNgoProfileToast({
               Complete your profile
             </span>
             <span className="text-3xs sm:text-2xs text-stone-500 dark:text-stone-400 truncate leading-tight">
-              Unlock verification and campaigns
+              Unlock verification and drives
             </span>
           </div>
 

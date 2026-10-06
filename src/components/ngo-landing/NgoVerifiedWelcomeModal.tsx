@@ -45,7 +45,7 @@ export function NgoVerifiedWelcomeModal() {
               {ngoName} is now verified ✓
             </h4>
             <p className="text-xs text-stone-600 dark:text-stone-300 mt-1 leading-relaxed">
-              Your organization can now post in-kind requests, receive items from local donors within 10 km, and issue verified certificates.
+              Your organization can now start drives, receive items from local donors within 10 km, and issue verified certificates.
             </p>
           </div>
 

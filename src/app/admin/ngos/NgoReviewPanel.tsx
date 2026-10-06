@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  adminGetNgoApplications, adminGetNgoApplication, adminDecideNgoApplication, adminGetNgoEvidenceLink,
+  adminGetNgoApplications, adminGetNgoApplication, adminDecideNgoApplication, adminGetNgoEvidenceLink, ApiError,
   type NgoReviewApplication, type NgoReviewDetail, type NgoReviewFile,
 } from "@/lib/api";
 
@@ -11,13 +11,19 @@ const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibo
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase();
 const message = (error: unknown) => error instanceof Error ? error.message : "Could not load NGO applications. Please retry.";
 
+/** Per-item reasons the server gave (e.g. each missing required document), if any. */
+const fieldMessages = (error: unknown): string[] => {
+  const body = error instanceof ApiError ? (error.data as { fieldErrors?: { message?: string }[] } | undefined) : undefined;
+  return (body?.fieldErrors ?? []).map(f => f?.message ?? "").filter(Boolean);
+};
+
 /**
  * The NGO application review: list by status, everything the NGO submitted,
  * its evidence behind short-lived links, AI notes (advisory), and the decision.
  * Approving creates the NGO profile server-side, which unlocks requests and drives.
  *
- * Shared by the admin dashboard's "NGO Applications" tab and the standalone
- * /admin/ngos page, so there is one review path to maintain.
+ * The admin dashboard's "NGO Applications" tab (/admin/ngos redirects there), so there
+ * is one review path to maintain.
  */
 export function NgoReviewPanel({
   initialApplicationId = null,
@@ -37,6 +43,7 @@ export function NgoReviewPanel({
   const [opening, setOpening] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [errorItems, setErrorItems] = useState<string[]>([]);
   const [notice, setNotice] = useState("");
   const [reason, setReason] = useState("");
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED" | "NEEDS_INFORMATION">("NEEDS_INFORMATION");
@@ -45,7 +52,7 @@ export function NgoReviewPanel({
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    setError("");
+    setError(""); setErrorItems([]);
     try {
       const result = await adminGetNgoApplications(status, page);
       setApplications(result.content);
@@ -58,7 +65,7 @@ export function NgoReviewPanel({
 
   const open = useCallback(async (id: string) => {
     const request = ++selection.current;
-    setOpening(true); setDetail(null); setLinks({}); setReason(""); setError(""); setNotice("");
+    setOpening(true); setDetail(null); setLinks({}); setReason(""); setError(""); setErrorItems([]); setNotice("");
     setDecision("NEEDS_INFORMATION");
     try {
       const result = await adminGetNgoApplication(id);
@@ -81,7 +88,7 @@ export function NgoReviewPanel({
   async function saveDecision(event: React.FormEvent) {
     event.preventDefault();
     if (!detail || busy) return;
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError(""); setErrorItems([]); setNotice("");
     const id = detail.application.applicationId;
     try {
       await adminDecideNgoApplication(id, decision, reason);
@@ -91,7 +98,11 @@ export function NgoReviewPanel({
       setNotice(decision === "APPROVED"
         ? "Approved. The NGO can now post requests and start drives, and has been notified."
         : "Decision saved. The applicant can see the updated status and your explanation.");
-    } catch (e) { setError(message(e)); }
+    } catch (e) {
+      const items = fieldMessages(e);
+      setErrorItems(items);
+      setError(items.length ? "This application can't be approved yet:" : message(e));
+    }
     finally { setBusy(false); }
   }
 
@@ -101,14 +112,23 @@ export function NgoReviewPanel({
       <div className="flex flex-wrap items-end gap-3">
         <label className="min-w-52 text-sm">Application status
           <select className={field} value={status} disabled={busy || loading} onChange={e => { setStatus(e.target.value); setPage(0); }}>
-            <option value="UNDER_REVIEW">Awaiting review</option><option value="NEEDS_INFORMATION">Corrections requested</option>
+            <option value="UNDER_REVIEW">Awaiting review</option><option value="PENDING_VERIFICATION">Pending verification</option><option value="NEEDS_INFORMATION">Corrections requested</option>
             <option value="APPROVED">Approved</option><option value="REJECTED">Rejected</option>
             <option value="PENDING_VERIFICATION">Email verification pending</option><option value="">All current applications</option>
           </select>
         </label>
         <button className={button} disabled={loading || busy} onClick={() => void refresh()}>Refresh</button>
       </div>
-      {error && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">{error}</p>}
+      {error && (
+        <div role="alert" className="rounded-lg border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+          <p>{error}</p>
+          {errorItems.length > 0 && (
+            <ul className="mt-2 list-disc pl-5 space-y-0.5">
+              {errorItems.map(item => <li key={item}>{item}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <section aria-label="Current applications" className="space-y-3">

@@ -9,7 +9,7 @@ import Link from "@/components/AppLink";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
-import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, registerNgo, googleAuth, googleComplete } from "@/lib/api";
+import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, registerNgo, registerNgoWithGoogle, googleAuth, googleComplete, ApiError } from "@/lib/api";
 import { trackCompleteRegistration } from "@/lib/metaEvents";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
@@ -96,6 +96,13 @@ async function detectCountryFromIP(): Promise<string> {
   return detectCountryCode();
 }
 
+// ── Per-role instruction placeholders ───────────────────────────────────────────
+const ROLE_PLACEHOLDERS: Record<string, { fullName: string; email: string }> = {
+  DONOR: { fullName: "Enter your full name", email: "Enter your email address" },
+  DONEE: { fullName: "Enter your full name", email: "Enter your email address" },
+  NGO_PARTNER: { fullName: "Enter your organization name", email: "Enter your organization's official email" },
+};
+
 // ── Input component ──────────────────────────────────────────────────────────────
 /**
  * Text field with timed validation feedback.
@@ -167,7 +174,8 @@ function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const isSocialFlow = searchParams.get("social") === "google";
+  const [fallbackToEmailAuth, setFallbackToEmailAuth] = useState(false);
+  const isSocialFlow = searchParams.get("social") === "google" && !fallbackToEmailAuth;
 
   // Where to return once the account exists. A guest who clicked "offer help",
   // was sent to login and chose "create account" arrives here with the request
@@ -197,6 +205,8 @@ function RegisterContent() {
   // and so a user who changes it is never overwritten by a later re-render.
   const initialRole = (() => {
     const raw = searchParams.get("role")?.toUpperCase();
+    // NGO links use the short `?role=NGO`; it means the NGO_PARTNER sign-up form.
+    if (raw === "NGO") return "NGO_PARTNER";
     return raw === "DONEE" || raw === "DONOR" || raw === "NGO_PARTNER" ? raw : "DONOR";
   })();
 
@@ -212,6 +222,7 @@ function RegisterContent() {
   const [showPassword, setShowPassword] = useState(false);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(true);
+  const [googleNgo404, setGoogleNgo404] = useState(false);
 
   const [dialCountry, setDialCountry] = useState("IN");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -482,7 +493,7 @@ function RegisterContent() {
     if (firstInvalid) {
       const el = document.getElementById(firstInvalid);
       el?.focus();
-      el?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+      el?.scrollIntoView?.({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
       return;
     }
     setFormError(null);
@@ -493,7 +504,34 @@ function RegisterContent() {
 
     setLoading(true);
     try {
-      if (form.role === "NGO_PARTNER") {
+      if (form.role === "NGO_PARTNER" && isSocialFlow && googleToken) {
+        // NGO with Google: no password; the email is the Google account's (read-only above).
+        const res = await registerNgoWithGoogle(googleToken, {
+          organizationName: form.fullName.trim(),
+          phoneNumber: fullPhone,
+          panNumber: ngoPan.trim().toUpperCase(),
+          country: countryIso,
+          state: stateIso,
+          city: cityStr,
+          website: ngoWebsite.trim() || undefined,
+        }).catch((err: unknown) => {
+          if (err instanceof ApiError && err.status === 404) {
+             throw new Error("GOOGLE_NGO_404");
+          }
+          // A field error (e.g. PAN format) carries its own message; surface that so it can
+          // be pinned next to its field below instead of the generic summary.
+          const fe = err instanceof ApiError
+            ? (err.data as { fieldErrors?: { field: string; message: string }[] } | undefined)?.fieldErrors?.[0]
+            : undefined;
+          throw fe ? new Error(fe.message) : err;
+        });
+        sessionStorage.removeItem("ck_google_token");
+        sessionStorage.removeItem("ck_google_profile");
+        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName, phone: fullPhone });
+        trackCompleteRegistration({ method: "google" });
+        toast.success("NGO account created! Welcome to CauseKind.");
+        router.replace("/");
+      } else if (form.role === "NGO_PARTNER") {
         const res = await registerNgo({
           organizationName: form.fullName.trim(),
           officialEmail: form.email.trim(),
@@ -505,7 +543,7 @@ function RegisterContent() {
           password: form.password,
           website: ngoWebsite.trim() || undefined,
         });
-        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName });
+        setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName, phone: fullPhone });
         trackCompleteRegistration({ method: "ngo" });
         toast.success("NGO account created! Welcome to CauseKind.");
         router.replace("/");
@@ -529,6 +567,10 @@ function RegisterContent() {
       }
     } catch (err) {
       const raw = err instanceof Error ? err.message : "Registration failed";
+      if (raw === "GOOGLE_NGO_404") {
+        setGoogleNgo404(true);
+        return;
+      }
       // Known identifiers get pinned to their field so the fix is obvious;
       // anything unrecognised goes to the form-level alert rather than being
       // attached to a guessed field. Entered values are never discarded.
@@ -537,7 +579,7 @@ function RegisterContent() {
         v.setServerError(mapped.field, mapped.errorKey, raw);
         const el = document.getElementById(mapped.field);
         el?.focus();
-        el?.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
+        el?.scrollIntoView?.({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
       } else {
         setFormError(raw);
       }
@@ -707,6 +749,23 @@ function RegisterContent() {
       </Reveal>
 
       {/* Form */}
+      {googleNgo404 ? (
+        <div className="text-center py-4 space-y-4">
+          <p className="text-stone-700 dark:text-stone-300">
+            Google sign-up for NGOs isn't available yet. Please sign up with email and password.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setGoogleNgo404(false);
+              setFallbackToEmailAuth(true);
+            }}
+            className="w-full py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-bold rounded-xl transition"
+          >
+            Switch to email sign-up
+          </button>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" noValidate>
         {/* Server errors that belong to no single field. Values are kept. */}
         <AuthFormAlert message={formError} />
@@ -715,7 +774,7 @@ function RegisterContent() {
             <Field
               id="fullName"
               label={form.role === "NGO_PARTNER" ? "Organization Name *" : t("fullName")}
-              placeholder={form.role === "NGO_PARTNER" ? "Helping Hearts Foundation" : "Jane Doe"}
+              placeholder={(ROLE_PLACEHOLDERS[form.role] ?? ROLE_PLACEHOLDERS.DONOR).fullName}
               value={form.fullName}
               onChange={val => {
                 set("fullName", val);
@@ -725,9 +784,10 @@ function RegisterContent() {
               onBlur={() => v.onBlur("fullName", validators.fullName)}
               onCompositionStart={() => v.onCompositionStart("fullName")}
               onCompositionEnd={() => v.onCompositionEnd("fullName", validators.fullName)}
-              readOnly={isSocialFlow && !!form.fullName}
+              // Google fills a person's name; an NGO still types its organization's name.
+              readOnly={isSocialFlow && !!form.fullName && form.role !== "NGO_PARTNER"}
               autoComplete={form.role === "NGO_PARTNER" ? "organization" : "name"}
-              field={isSocialFlow && form.fullName ? undefined : v.get("fullName")}
+              field={isSocialFlow && form.fullName && form.role !== "NGO_PARTNER" ? undefined : v.get("fullName")}
             />
           </div>
         </Reveal>
@@ -740,7 +800,7 @@ function RegisterContent() {
               id="email"
               label={form.role === "NGO_PARTNER" ? "Official Email Address *" : t("email")}
               type="email"
-              placeholder={form.role === "NGO_PARTNER" ? "contact@helpinghearts.org" : "you@example.com"}
+              placeholder={(ROLE_PLACEHOLDERS[form.role] ?? ROLE_PLACEHOLDERS.DONOR).email}
               value={form.email}
               onChange={val => { set("email", val); setFormError(null); v.onChange("email", () => validateEmail(val)); }}
               onBlur={() => v.onBlur("email", validators.email)}
@@ -783,7 +843,7 @@ function RegisterContent() {
                 id="phone"
                 type="tel"
                 inputMode="numeric"
-                placeholder={t("phone")}
+                placeholder={form.role === "NGO_PARTNER" ? "Enter your organization's phone number" : "Enter your phone number"}
                 value={phoneNumber}
                 maxLength={maxPhoneLength}
                 aria-invalid={v.get("phone").status === "invalid" || undefined}
@@ -953,7 +1013,7 @@ function RegisterContent() {
               <input
                 id="website"
                 type="url"
-                placeholder="https://www.helpinghearts.org"
+                placeholder="Enter your website or social media link"
                 value={ngoWebsite}
                 onChange={e => setNgoWebsite(e.target.value)}
                 className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-20)] transition"
@@ -1049,6 +1109,7 @@ function RegisterContent() {
           </button>
         </Reveal>
       </form>
+      )}
 
       {/* Social buttons — only on non-social flow and non-NGO */}
       {!isSocialFlow && form.role !== "NGO_PARTNER" && (

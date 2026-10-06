@@ -7,6 +7,7 @@ import {
   legalStructureLabel,
   type NGOFormState,
   type NGOStep,
+  getNgoStillNeededItems,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 
 interface ReviewSubmitProps {
@@ -36,6 +37,11 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
     setError(null);
     onSubmit();
   }
+
+  const incompleteSteps = (["org-details", "legal-documents", "authorized-rep", "org-photos"] as NGOStep[]).filter(
+    (step) => getNgoStillNeededItems(step, data).length > 0
+  );
+  const prevStepsComplete = incompleteSteps.length === 0;
 
   return (
     <div className="space-y-6">
@@ -298,34 +304,41 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
       )}
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isSubmitting}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={!data.confirmationChecked || isSubmitting}
-          className="flex items-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 shadow-sm"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            <>
-              <ShieldCheck className="h-4 w-4" />
-              Submit Application
-            </>
-          )}
-        </button>
+      <div className="flex flex-col items-end gap-2 pt-2">
+        <div className="flex w-full items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={isSubmitting}
+            className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={!data.confirmationChecked || !prevStepsComplete || isSubmitting}
+            className="flex items-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 disabled:bg-stone-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 shadow-sm"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Submitting...
+              </>
+            ) : (
+              <>
+                <ShieldCheck className="h-4 w-4" />
+                Submit Application
+              </>
+            )}
+          </button>
+        </div>
+        {!prevStepsComplete && (
+          <p className="text-3xs text-stone-500 dark:text-stone-400 text-right pr-1">
+            Complete previous steps to submit.
+          </p>
+        )}
       </div>
     </div>
   );

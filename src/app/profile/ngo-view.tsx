@@ -624,7 +624,7 @@ export function NgoProfileView() {
 
   const statsRow = [
     { value: 0, label: "items requested" },
-    { value: 0, label: "active campaigns" },
+    { value: 0, label: "live drives" },
     { value: 0, label: "donations matched" },
   ];
 
@@ -645,8 +645,8 @@ export function NgoProfileView() {
       earned: application?.status === "APPROVED",
     },
     {
-      label: "First Campaign",
-      desc: "Launched first community campaign",
+      label: "First Drive",
+      desc: "Launched first drive",
       icon: Megaphone,
       earned: false,
     },
@@ -952,7 +952,7 @@ export function NgoProfileView() {
                       4. Verified NGO Partner Badge & Active Platform Access
                     </p>
                     <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      Upon approval, your public verified profile goes live to receive in-kind donations and run verified community campaigns.
+                      Upon approval, your public verified profile goes live to receive in-kind donations and run verified drives.
                     </p>
                   </div>
                 </div>
@@ -1010,7 +1010,7 @@ export function NgoProfileView() {
                   Your story starts here
                 </p>
                 <p className="text-xs text-stone-400 max-w-[280px] mx-auto">
-                  Complete your NGO profile to unlock verification, verified badges, and community campaigns.
+                  Complete your NGO profile to unlock verification, verified badges, and drives.
                 </p>
                 <Link href="/profile/ngo-details" className="inline-block">
                   <Button size="sm" className="bg-ngo-700 hover:bg-ngo-600 text-white mt-2">

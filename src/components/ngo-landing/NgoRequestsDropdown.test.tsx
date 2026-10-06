@@ -46,7 +46,7 @@ describe("NgoRequestsDropdown", () => {
       documents: [],
       isVerified: false,
       isPhotosDue: false,
-      canPostRequest: false,
+      canPostRequest: false, canStartDrive: true, blockingDriveTitle: "", driveLockReason: "",
       lockReason: "Available once CauseKind verifies your NGO.",
       hasShownWelcome: true,
       markWelcomeShown: vi.fn(),
@@ -89,7 +89,7 @@ describe("NgoRequestsDropdown", () => {
       documents: [],
       isVerified: true,
       isPhotosDue: false,
-      canPostRequest: true,
+      canPostRequest: true, canStartDrive: true, blockingDriveTitle: "", driveLockReason: "",
       lockReason: "",
       hasShownWelcome: true,
       markWelcomeShown: vi.fn(),
@@ -106,8 +106,8 @@ describe("NgoRequestsDropdown", () => {
     const activeReqLink = screen.getByRole("link", { name: /live drives/i });
     const handoversLink = screen.getByRole("link", { name: /handovers & photos/i });
 
-    expect(postReqLink).toHaveAttribute("href", "/ngo/requests/new");
-    expect(activeReqLink).toHaveAttribute("href", "/ngo/requests");
+    expect(postReqLink).toHaveAttribute("href", "/ngo/drives/new");
+    expect(activeReqLink).toHaveAttribute("href", "/dashboard/ngo#live-drives");
     expect(handoversLink).toHaveAttribute("href", "/ngo/handovers");
   });
 });

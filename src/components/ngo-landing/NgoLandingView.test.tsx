@@ -20,10 +20,10 @@ describe("NGO landing with server-backed status", () => {
     render(<NgoLandingView />);
     await screen.findByRole("link", { name: /Start your application/ });
     expect(screen.queryByText("✓ Verified by CauseKind")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Post a Request/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Start a Drive/i })).toBeInTheDocument();
   });
   it("opens the next incomplete section from the server draft", async () => {
-    vi.mocked(getNgoDraft).mockResolvedValue({ organizationName: "Helping Hands", legalStructure: "trust", registrationNumber: "REG-1", registeredOfficeAddress: "Pune" } as never);
+    vi.mocked(getNgoDraft).mockResolvedValue({ organizationName: "Helping Hands", legalStructure: "trust", registrationNumber: "REG-1", registeredOfficeAddress: "Pune", yearOfEstablishment: "2005" } as never);
     render(<NgoLandingView />);
     expect(await screen.findByRole("link", { name: /Continue application/ })).toHaveAttribute("href", "/profile/ngo-details?step=legal-documents");
   });
@@ -32,12 +32,11 @@ describe("NGO landing with server-backed status", () => {
     render(<NgoLandingView />);
     await waitFor(() => expect(screen.getAllByRole("link", { name: label })[0]).toHaveAttribute("href", "/profile/ngo-details"));
   });
-  it("unlocks request creation only after server approval", async () => {
+  it("unlocks drive creation only after server approval", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
     await screen.findByText("✓ Verified by CauseKind");
-    expect(screen.getAllByRole("link", { name: /Post a Request/i })[0]).toHaveAttribute("href", "/ngo/requests/new");
-    expect(screen.getByRole("link", { name: /Category Education/i })).toHaveAttribute("href", "/ngo/requests/new?category=Education");
+    expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new");
   });
   it("shows a failed activity read as an error rather than zero activity", async () => {
     vi.mocked(getNgoOverview).mockRejectedValue(new Error("Activity unavailable"));

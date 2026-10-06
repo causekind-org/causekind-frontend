@@ -124,6 +124,11 @@ function DoneeOffersView() {
       router.push("/login");
       return;
     }
+    if (["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) {
+      // NGOs review drive offers on their dashboard, not here.
+      router.replace("/dashboard/ngo#live-drives");
+      return;
+    }
     getOffersForMyRequests()
       .then(setOffers)
       .catch(() => {})

@@ -36,7 +36,7 @@ export function DoneeDoorEvidence() {
           {t("eyebrow")}
         </span>
       </div>
-      <h2 className="mt-3 text-2xl font-extrabold leading-[1.2] tracking-tight text-stone-900 dark:text-stone-50">
+      <h2 className="[font-family:var(--font-source-serif-4),Georgia,serif] mt-3 text-[1.625rem] font-semibold leading-[1.1] tracking-[-0.03em] text-stone-900 dark:text-stone-50">
         <LetterSwap text={t("heading")} />
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-stone-600 dark:text-stone-300 [text-wrap:pretty]">
