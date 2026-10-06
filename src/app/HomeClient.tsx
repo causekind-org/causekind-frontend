@@ -239,6 +239,7 @@ export default function HomeClient({
   const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
   // The live needs board is for givers; a donee is shown no one else's needs.
   const showLiveNeeds = roleStr !== "DONEE";
+  const isDonee = roleStr === "DONEE";
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -279,13 +280,20 @@ export default function HomeClient({
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
-      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      <div className="hidden lg:block">
-        <WhoAreWeDesktop />
-      </div>
-      <div className="lg:hidden">
-        <WhoAreWeSection />
-      </div>
+      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit). Donees get the main
+          page's About layout at every width, in the donee blue. */}
+      {isDonee ? (
+        <WhoAreWeDesktop variant="donee" />
+      ) : (
+        <>
+          <div className="hidden lg:block">
+            <WhoAreWeDesktop />
+          </div>
+          <div className="lg:hidden">
+            <WhoAreWeSection />
+          </div>
+        </>
+      )}
 
       <SupportGallery />
 
@@ -605,7 +613,7 @@ export default function HomeClient({
 
         {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
         <div className="-mx-5">
-          <CreditsSection />
+          <CreditsSection variant={isDonee ? "donee" : "donor"} />
         </div>
 
       </div>

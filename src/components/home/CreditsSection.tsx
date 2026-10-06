@@ -7,11 +7,15 @@ import Image from "next/image";
  *
  * <p>Server component, English-only copy (proper names, not in messages/*.json).
  * The RMH logo has a white background, so in dark mode it sits on a white tile.
+ *
+ * <p>`variant="donee"` scopes the donee role tokens onto the section so the accent
+ * labels turn navy (sky blue in dark mode); the logos keep their own colours.
  */
-export function CreditsSection() {
+export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "donee" } = {}) {
   return (
     <section
       aria-labelledby="credits-heading"
+      data-ck-role-theme={variant === "donee" ? "donee" : undefined}
       className="w-full bg-[#F8F6F2] dark:bg-[#0E0C0A] px-5 py-12 sm:py-16 lg:px-[120px]"
     >
       <p
