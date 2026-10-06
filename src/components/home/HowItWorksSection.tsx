@@ -314,6 +314,8 @@ function MobileStepCard({ step }: { step: StepData }) {
 
 /** How long each role stays up on phones before the carousel moves on. */
 const AUTO_ADVANCE_MS = 2000;
+/** Desktop shows four cards of text per role: give them time to be read. */
+const AUTO_ADVANCE_DESKTOP_MS = 2000;
 
 export function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -324,11 +326,13 @@ export function HowItWorksSection() {
   const [activeTab, setActiveTab] = useState<RoleTab>("donor");
   const [hasScrolledIn, setHasScrolledIn] = useState(false);
 
-  // Phones only: the roles advance on their own while the section is on
-  // screen, until the reader picks a role or swipes — then it is theirs.
+  // The roles advance on their own while the section is on screen (every 2s on
+  // phones, 2s on desktop, paused while the pointer rests on the section), until
+  // the reader picks a role or swipes — then it is theirs.
   const onScreen = useInView(sectionRef, { amount: 0.35 });
   const [isPhone, setIsPhone] = useState(false);
   const [userDriven, setUserDriven] = useState(false);
+  const [hovering, setHovering] = useState(false);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -339,16 +343,17 @@ export function HowItWorksSection() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const autoplay = isPhone && onScreen && !reduceMotion && !userDriven;
+  const autoplay = onScreen && !reduceMotion && !userDriven && !hovering;
+  const advanceMs = isPhone ? AUTO_ADVANCE_MS : AUTO_ADVANCE_DESKTOP_MS;
   const activeIndex = TABS.findIndex((t) => t.id === activeTab);
 
   useEffect(() => {
     if (!autoplay) return;
     const id = window.setTimeout(() => {
       setActiveTab(TABS[(activeIndex + 1) % TABS.length].id);
-    }, AUTO_ADVANCE_MS);
+    }, advanceMs);
     return () => window.clearTimeout(id);
-  }, [autoplay, activeIndex]);
+  }, [autoplay, activeIndex, advanceMs]);
 
   const selectTab = (id: RoleTab) => {
     setUserDriven(true);
@@ -396,6 +401,8 @@ export function HowItWorksSection() {
   return (
     <section
       ref={sectionRef}
+      onPointerEnter={(e) => { if (e.pointerType === "mouse") setHovering(true); }}
+      onPointerLeave={() => setHovering(false)}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
       className="ck-m-section relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
@@ -504,7 +511,7 @@ export function HowItWorksSection() {
                 key={i === activeIndex && autoplay ? `run-${activeTab}` : "idle"}
                 className={mStyles.fill}
                 data-s={i === activeIndex ? (autoplay ? "run" : "on") : "off"}
-                style={{ ["--dur" as string]: `${AUTO_ADVANCE_MS}ms` } as React.CSSProperties}
+                style={{ ["--dur" as string]: `${advanceMs}ms` } as React.CSSProperties}
               />
             </span>
           ))}
