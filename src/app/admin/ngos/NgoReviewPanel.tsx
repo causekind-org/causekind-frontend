@@ -5,6 +5,7 @@ import {
   adminGetNgoApplications, adminGetNgoApplication, adminDecideNgoApplication, adminGetNgoEvidenceLink, ApiError,
   type NgoReviewApplication, type NgoReviewDetail, type NgoReviewFile,
 } from "@/lib/api";
+import { correctionFieldLabel } from "@/features/ngo-registration/ngoRegistrationModel";
 
 const field = "w-full rounded-lg border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
@@ -17,9 +18,25 @@ const fieldMessages = (error: unknown): string[] => {
   return (body?.fieldErrors ?? []).map(f => f?.message ?? "").filter(Boolean);
 };
 
+/** The wizard's text fields, in wizard order, that a reviewer can flag for correction. */
+const TEXT_FIELDS = [
+  "organizationName", "legalStructure", "registrationNumber", "registeredOfficeAddress", "yearOfEstablishment",
+  "representativeName", "designation", "mobileNumber", "officialEmail",
+] as const;
+
+/**
+ * Evidence links are presigned for five minutes (private storage). Refresh a little before
+ * that so previews and "Open PDF" keep working while the reviewer reads.
+ */
+const LINK_REFRESH_MS = 4 * 60 * 1000;
+
+const fileKey = (file: NgoReviewFile) => `${file.kind}-${file.id}`;
+const isImage = (file: NgoReviewFile) =>
+  file.mimeType ? file.mimeType.startsWith("image/") : file.kind === "photo";
+
 /**
  * The NGO application review: list by status, everything the NGO submitted,
- * its evidence behind short-lived links, AI notes (advisory), and the decision.
+ * its evidence previewed through short-lived links, AI notes (advisory), and the decision.
  * Approving creates the NGO profile server-side, which unlocks requests and drives.
  *
  * The admin dashboard's "NGO Applications" tab (/admin/ngos redirects there), so there
@@ -47,8 +64,13 @@ export function NgoReviewPanel({
   const [notice, setNotice] = useState("");
   const [reason, setReason] = useState("");
   const [decision, setDecision] = useState<"APPROVED" | "REJECTED" | "NEEDS_INFORMATION">("NEEDS_INFORMATION");
-  const [links, setLinks] = useState<Record<string, string>>({});
+  /** Items flagged for correction → the reviewer's note for each. */
+  const [flagged, setFlagged] = useState<Record<string, string>>({});
+  const [links, setLinks] = useState<Record<string, { url: string; at: number }>>({});
+  const [linkErrors, setLinkErrors] = useState<Record<string, boolean>>({});
+  const [enlarged, setEnlarged] = useState<{ url: string; name: string } | null>(null);
   const selection = useRef(0);
+  const retried = useRef<Set<string>>(new Set());
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -65,7 +87,8 @@ export function NgoReviewPanel({
 
   const open = useCallback(async (id: string) => {
     const request = ++selection.current;
-    setOpening(true); setDetail(null); setLinks({}); setReason(""); setError(""); setErrorItems([]); setNotice("");
+    setOpening(true); setDetail(null); setLinks({}); setLinkErrors({}); setEnlarged(null); retried.current = new Set();
+    setReason(""); setFlagged({}); setError(""); setErrorItems([]); setNotice("");
     setDecision("NEEDS_INFORMATION");
     try {
       const result = await adminGetNgoApplication(id);
@@ -76,28 +99,85 @@ export function NgoReviewPanel({
 
   useEffect(() => { if (initialApplicationId) void open(initialApplicationId); }, [initialApplicationId, open]);
 
-  async function evidence(file: NgoReviewFile) {
-    if (!detail) return;
+  /** Fetches a fresh signed link for each file through the same access-checked endpoint. */
+  const fetchLinks = useCallback(async (applicationId: string, files: NgoReviewFile[]) => {
     const request = selection.current;
-    try {
-      const result = await adminGetNgoEvidenceLink(detail.application.applicationId, file);
-      if (request === selection.current) setLinks(prev => ({ ...prev, [`${file.kind}-${file.id}`]: result.url }));
-    } catch (e) { setError(message(e)); }
+    await Promise.all(files.map(async (file) => {
+      const key = fileKey(file);
+      try {
+        const result = await adminGetNgoEvidenceLink(applicationId, file);
+        if (request !== selection.current) return;
+        setLinks(prev => ({ ...prev, [key]: { url: result.url, at: Date.now() } }));
+        setLinkErrors(prev => ({ ...prev, [key]: false }));
+      } catch {
+        if (request === selection.current) setLinkErrors(prev => ({ ...prev, [key]: true }));
+      }
+    }));
+  }, []);
+
+  // Previews load as soon as an application opens, and links renew before they expire.
+  useEffect(() => {
+    if (!detail || detail.files.length === 0) return;
+    const id = detail.application.applicationId;
+    void fetchLinks(id, detail.files);
+    const timer = setInterval(() => void fetchLinks(id, detail.files), LINK_REFRESH_MS);
+    return () => clearInterval(timer);
+  }, [detail, fetchLinks]);
+
+  /** An image that failed to load most likely has an expired link: renew it once. */
+  function previewFailed(file: NgoReviewFile) {
+    const key = fileKey(file);
+    if (!detail || retried.current.has(key)) { setLinkErrors(prev => ({ ...prev, [key]: true })); return; }
+    retried.current.add(key);
+    void fetchLinks(detail.application.applicationId, [file]);
+  }
+
+  /** "Open PDF": renews the link first if it is close to expiring. */
+  function openFile(event: React.MouseEvent<HTMLAnchorElement>, file: NgoReviewFile) {
+    const link = links[fileKey(file)];
+    if (!detail || !link || Date.now() - link.at < LINK_REFRESH_MS) return;
+    event.preventDefault();
+    // Opened now (inside the click) so it is not blocked; it gets the fresh link below.
+    const tab = window.open("", "_blank");
+    if (tab) tab.opener = null;
+    void adminGetNgoEvidenceLink(detail.application.applicationId, file).then(result => {
+      setLinks(prev => ({ ...prev, [fileKey(file)]: { url: result.url, at: Date.now() } }));
+      if (tab) tab.location.href = result.url; else window.open(result.url, "_blank", "noopener");
+    }).catch(e => { tab?.close(); setError(message(e)); });
+  }
+
+  const flaggedItems = Object.entries(flagged).map(([fieldKey, note]) => ({ field: fieldKey, note: note.trim() }));
+  const correctionsReady = flaggedItems.length > 0 && flaggedItems.every(item => item.note.length > 0);
+
+  function toggleFlag(fieldKey: string, on: boolean) {
+    setFlagged(prev => {
+      const next = { ...prev };
+      if (on) next[fieldKey] = prev[fieldKey] ?? ""; else delete next[fieldKey];
+      return next;
+    });
   }
 
   async function saveDecision(event: React.FormEvent) {
     event.preventDefault();
     if (!detail || busy) return;
+    if (decision === "NEEDS_INFORMATION" && !correctionsReady) {
+      setError(flaggedItems.length === 0
+        ? "Pick at least one item that needs changes."
+        : "Write what is wrong for each item you picked.");
+      return;
+    }
     setBusy(true); setError(""); setErrorItems([]); setNotice("");
     const id = detail.application.applicationId;
     try {
-      await adminDecideNgoApplication(id, decision, reason);
+      await adminDecideNgoApplication(id, decision, reason, decision === "NEEDS_INFORMATION" ? flaggedItems : undefined);
       setDetail(await adminGetNgoApplication(id));
       await refresh();
       onDecision?.();
       setNotice(decision === "APPROVED"
         ? "Approved. The NGO can now post requests and start drives, and has been notified."
-        : "Decision saved. The applicant can see the updated status and your explanation.");
+        : decision === "NEEDS_INFORMATION"
+          ? "Corrections requested. The NGO will see everything else filled in and only these items to fix."
+          : "Decision saved. The applicant can see the updated status and your explanation.");
     } catch (e) {
       const items = fieldMessages(e);
       setErrorItems(items);
@@ -105,6 +185,11 @@ export function NgoReviewPanel({
     }
     finally { setBusy(false); }
   }
+
+  const checklist = detail ? [
+    ...TEXT_FIELDS.map(key => ({ key, name: correctionFieldLabel(key), value: String(detail.application[key] ?? "") })),
+    ...detail.files.filter(f => f.field).map(f => ({ key: f.field!, name: correctionFieldLabel(f.field!), value: f.name || label(f.type) })),
+  ] : [];
 
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
@@ -158,18 +243,49 @@ export function NgoReviewPanel({
                 "Account email verified": detail.application.verifiedAt ? new Date(detail.application.verifiedAt).toLocaleString() : "Pending",
               }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
             </dl>
+            {detail.corrections && detail.corrections.items.length > 0 && (
+              <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
+                <h3 className="font-bold">Corrections requested</h3>
+                {detail.corrections.summary && <p className="mt-1 whitespace-pre-wrap">{detail.corrections.summary}</p>}
+                <ul className="mt-2 list-disc space-y-0.5 pl-5">
+                  {detail.corrections.items.map(item => <li key={item.field}><span className="font-semibold">{correctionFieldLabel(item.field)}</span>: {item.note}</li>)}
+                </ul>
+              </div>
+            )}
             <h3 className="mt-7 font-bold">Evidence</h3>
-            <p className="mt-1 text-xs text-stone-500">Secure file links expire after five minutes. Generate another link if needed.</p>
+            <p className="mt-1 text-xs text-stone-500">Files are private. Previews use secure links that expire after five minutes and renew automatically.</p>
             {detail.files.length === 0 && <p className="mt-3 text-sm">No uploaded evidence found.</p>}
-            <ul className="mt-3 space-y-3">{detail.files.map(file => {
-              const key = `${file.kind}-${file.id}`;
-              return <li key={key} className="rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-700">
-                <p className="break-words font-semibold">{file.name || label(file.type)}</p>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2">{detail.files.map(file => {
+              const key = fileKey(file);
+              const link = links[key];
+              const name = file.name || label(file.type);
+              return <li key={key} data-testid="evidence-item" className="rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-700">
+                {isImage(file) ? (
+                  link && !linkErrors[key] ? (
+                    <button type="button" className="block w-full overflow-hidden rounded-md bg-stone-100 dark:bg-zinc-800"
+                      onClick={() => setEnlarged({ url: link.url, name })} aria-label={`Enlarge ${name}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL, not optimisable */}
+                      <img src={link.url} alt={name} className="h-40 w-full object-contain" onError={() => previewFailed(file)} />
+                    </button>
+                  ) : (
+                    <div className="flex h-40 items-center justify-center rounded-md bg-stone-100 text-xs text-stone-500 dark:bg-zinc-800">
+                      {linkErrors[key] ? "Preview unavailable" : "Loading preview…"}
+                    </div>
+                  )
+                ) : null}
+                <p className={`${isImage(file) ? "mt-2 " : ""}break-words font-semibold`}>{name}</p>
                 <p className="text-xs capitalize">{label(file.type)}{file.moderationVerdict ? ` · ${file.moderationVerdict}` : ""}</p>
                 {!file.ownershipRecorded && <p className="mt-1 text-amber-700">Historical ownership is unverified. Request a fresh upload before approval.</p>}
                 <div className="mt-2 flex flex-wrap gap-4">
-                  <button type="button" className="underline" onClick={() => void evidence(file)}>Generate secure link</button>
-                  {links[key] && <a href={links[key]} target="_blank" rel="noopener noreferrer" className="underline">Open file</a>}
+                  {link ? (
+                    <a href={link.url} target="_blank" rel="noopener noreferrer" className="font-semibold underline" onClick={e => openFile(e, file)}>
+                      {isImage(file) ? "Open full size" : "Open PDF"}
+                    </a>
+                  ) : linkErrors[key] ? (
+                    <button type="button" className="underline" onClick={() => void fetchLinks(detail.application.applicationId, [file])}>Retry loading file</button>
+                  ) : (
+                    <span className="text-xs text-stone-500">Preparing secure link…</span>
+                  )}
                 </div>
               </li>;
             })}</ul>
@@ -183,11 +299,37 @@ export function NgoReviewPanel({
               <label className="block text-sm">Decision<select className={field} value={decision} disabled={busy} onChange={e => setDecision(e.target.value as typeof decision)}>
                 <option value="NEEDS_INFORMATION">Request corrections</option><option value="APPROVED">Approve organization</option><option value="REJECTED">Reject application</option>
               </select></label>
-              <label className="block text-sm">Explanation for the applicant{decision !== "APPROVED" && " (required)"}
-                <textarea className={field} rows={4} maxLength={2000} required={decision !== "APPROVED"} disabled={busy} value={reason} onChange={e => setReason(e.target.value)} placeholder="Explain what you reviewed and what the organization needs to do next." />
+              {decision === "NEEDS_INFORMATION" && (
+                <fieldset className="space-y-2" aria-label="Items that need changes">
+                  <legend className="text-sm font-semibold">What needs changes? <span className="font-normal text-stone-500">Pick each item and say what is wrong.</span></legend>
+                  <ul className="divide-y divide-stone-200 rounded-lg border border-stone-200 dark:divide-zinc-700 dark:border-zinc-700">
+                    {checklist.map(item => {
+                      const on = item.key in flagged;
+                      return <li key={item.key} className="p-3">
+                        <label className="flex items-start gap-3 text-sm">
+                          <input type="checkbox" className="mt-0.5 h-4 w-4" checked={on} disabled={busy}
+                            onChange={e => toggleFlag(item.key, e.target.checked)} />
+                          <span className="min-w-0">
+                            <span className="block font-semibold">{item.name}</span>
+                            <span className="block break-words text-xs text-stone-500">{item.value || "Not provided"}</span>
+                          </span>
+                        </label>
+                        {on && (
+                          <textarea className={`${field} mt-2`} rows={2} maxLength={500} disabled={busy} required
+                            aria-label={`What is wrong with ${item.name}`} value={flagged[item.key]}
+                            onChange={e => setFlagged(prev => ({ ...prev, [item.key]: e.target.value }))} />
+                        )}
+                      </li>;
+                    })}
+                  </ul>
+                </fieldset>
+              )}
+              <label className="block text-sm">{decision === "NEEDS_INFORMATION" ? "Message to the applicant (optional)" : "Explanation for the applicant"}{decision === "REJECTED" && " (required)"}
+                <textarea className={field} rows={decision === "NEEDS_INFORMATION" ? 2 : 4} maxLength={2000} required={decision === "REJECTED"} disabled={busy} value={reason} onChange={e => setReason(e.target.value)} />
               </label>
               <p className="text-xs text-stone-500">Approving lets this NGO post requests and start drives. Every decision updates the applicant’s status.</p>
-              <button className={`${button} bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900`} disabled={busy}>{busy ? "Saving decision…" : "Save decision"}</button>
+              <button className={`${button} bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900`}
+                disabled={busy || (decision === "NEEDS_INFORMATION" && !correctionsReady)}>{busy ? "Saving decision…" : "Save decision"}</button>
             </form>}
             {detail.decisions.length > 0 && <div className="mt-6"><h3 className="font-bold">Decision history</h3><ul className="mt-2 space-y-3 text-sm">
               {detail.decisions.map(entry => <li key={entry.id}><p>{label(entry.fromStatus)} → {label(entry.toStatus)} · {entry.changedByEmail}</p><p className="whitespace-pre-wrap">{entry.note}</p><p className="text-xs text-stone-500">{new Date(entry.changedAt).toLocaleString()}</p></li>)}
@@ -198,6 +340,17 @@ export function NgoReviewPanel({
           </>}
         </section>
       </div>
+      {enlarged && (
+        <div role="dialog" aria-modal="true" aria-label={enlarged.name}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setEnlarged(null)}>
+          <div className="relative max-h-full max-w-5xl" onClick={e => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- short-lived signed URL */}
+            <img src={enlarged.url} alt={enlarged.name} className="max-h-[85vh] max-w-full rounded-lg object-contain" />
+            <button type="button" className="absolute right-2 top-2 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-stone-900"
+              onClick={() => setEnlarged(null)}>Close</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

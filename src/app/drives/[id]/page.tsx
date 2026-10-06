@@ -10,11 +10,11 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { PageSkeleton } from "@/components/skeletons";
 import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
 import { errorMessage, giveState, isNotFound, stillNeeded } from "@/features/ngo-drives/driveGiveState";
+import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
 
-const CONDITION_RULE: Record<string, string> = {
-  NEW_ONLY: "New or unused items only.",
+/** Older condition values that are not in the drive form's list any more. */
+const LEGACY_CONDITION_TEXT: Record<string, string> = {
   GENTLY_USED: "Gently used items are welcome (clean, working, no major damage).",
-  NEW_OR_GENTLY_USED: "New or gently used items (clean, working, no major damage).",
 };
 const DAY: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
 const humanize = (v?: string | null) => (v ? v.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : "");
@@ -115,7 +115,12 @@ export default function DriveDetailPage() {
                 {drive.quantityNeeded} {humanize(drive.unit)} of {drive.itemName}
               </Fact>
               <Fact icon={<ShieldCheck className="h-5 w-5" />} label="Condition">
-                {CONDITION_RULE[drive.condition ?? ""] ?? (humanize(drive.condition) || "Any good condition")}
+                {drive.condition ? (LEGACY_CONDITION_TEXT[drive.condition] ?? driveConditionLabel(drive.condition)) : "Any good condition"}
+                {(drive.conditionRule || driveConditionRule(drive.condition)) && (
+                  <span className="mt-0.5 block text-sm font-normal text-stone-600 dark:text-stone-400">
+                    {drive.conditionRule || driveConditionRule(drive.condition)}
+                  </span>
+                )}
               </Fact>
               {drive.beneficiaryCount != null && (
                 <Fact icon={<Users className="h-5 w-5" />} label="Who it helps">

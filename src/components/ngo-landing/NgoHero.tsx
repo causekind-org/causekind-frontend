@@ -100,10 +100,7 @@ export function NgoHero() {
   let secondaryCtaText = stepNumber === 0 ? "Start your application →" : "Continue application →";
   let secondaryCtaHref = wizardHref || "/profile/ngo-details";
 
-  if (isVerified) {
-    secondaryCtaText = "View my application";
-    secondaryCtaHref = "/profile/ngo-details";
-  } else if (status === "under_review") {
+  if (status === "under_review") {
     secondaryCtaText = "View application status";
     secondaryCtaHref = "/profile/ngo-details";
   } else if (status === "changes_requested") {
@@ -293,25 +290,13 @@ export function NgoHero() {
                   </div>
                 )}
 
-                {/* Secondary CTA */}
-                <Link
+                {/* Secondary CTA — not for a verified NGO, whose one action is Start a Drive */}
+                {!isVerified && <Link
                   href={secondaryCtaHref}
                   className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 lg:py-[1.4vh] text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
                 >
                   <span>{secondaryCtaText}</span>
-                </Link>
-
-                {/* Drives are the second way in: a time-boxed collection (e.g. 40
-                    blankets for a winter drive) alongside ordinary requests. Same gate. */}
-                {canPostRequest && (
-                  <Link
-                    href="/ngo/drives/new"
-                    className="inline-flex items-center justify-center gap-1 text-sm font-bold text-ngo-700 dark:text-ngo-300 hover:underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700 rounded"
-                  >
-                    <span>Or start a drive</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </Link>
-                )}
+                </Link>}
               </motion.div>
 
               {/* Helper Text Under Hero Button */}
@@ -333,8 +318,8 @@ export function NgoHero() {
               </motion.div>
             </motion.div>
 
-            {/* RIGHT COLUMN: Verified Floating Request Card (Only shown for verified NGOs) */}
-            {isVerified && (
+            {/* RIGHT COLUMN: the NGO's live drive (verified NGOs with an active drive only) */}
+            {isVerified && activeRequests > 0 && (
               <div className="lg:col-span-5 flex flex-col items-start lg:items-end justify-end mt-auto">
                 <motion.div
                   initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 16 }}
@@ -347,28 +332,6 @@ export function NgoHero() {
                   className="w-full max-w-sm"
                 >
                   <div className="rounded-[14px] bg-white/95 dark:bg-stone-900/95 border border-ngo-100 dark:border-zinc-800 shadow-[0_12px_30px_rgba(0,0,0,0.12)] p-4 sm:p-5 backdrop-blur-md">
-                    {activeRequests === 0 ? (
-                      <div>
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-3xs font-semibold text-stone-500 dark:text-stone-400">
-                            Your drives will look like this
-                          </span>
-                          <span className="text-4xs uppercase tracking-wider bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 font-bold px-1.5 py-0.5 rounded">
-                            Sample
-                          </span>
-                        </div>
-                        <p className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 mb-2">
-                          40 blankets · Kopri Night Shelter
-                        </p>
-                        <div className="h-1.5 w-full rounded-full bg-stone-100 dark:bg-zinc-800 overflow-hidden mb-1.5">
-                          <div className="h-full bg-ngo-600 rounded-full w-0" />
-                        </div>
-                        <div className="flex items-center justify-between text-3xs text-stone-500 dark:text-stone-400 font-medium">
-                          <span>0 of 40 pledged</span>
-                          <span>10 km donor reach</span>
-                        </div>
-                      </div>
-                    ) : (
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="text-3xs font-bold uppercase tracking-wider text-ngo-700 dark:text-ngo-300">
@@ -397,7 +360,6 @@ export function NgoHero() {
                           <span>Live</span>
                         </div>
                       </div>
-                    )}
                   </div>
                 </motion.div>
               </div>

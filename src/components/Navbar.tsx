@@ -61,6 +61,9 @@ const logoLetterVariants = {
   visible: { opacity: 1, y: 0 },
 };
 
+/** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
+const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
+
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
@@ -637,6 +640,27 @@ export function SiteHeader() {
     window.addEventListener("focus", refresh);
     return () => { active = false; window.removeEventListener("ngo-application-submitted", refresh); window.removeEventListener("focus", refresh); };
   }, [isNgo, user, pathname]);
+  // NGO only: the "NGO Approved" pill shows for two minutes after the NGO first sees its
+  // approval (first-seen time kept per account in localStorage), then never again.
+  const [ngoApprovedPillExpired, setNgoApprovedPillExpired] = useState(false);
+  const ngoAccountKey = user ? String(user.id ?? user.userId ?? user.email ?? "") : "";
+  useEffect(() => {
+    setNgoApprovedPillExpired(false);
+    if (!isNgo || ngoApplicationState !== "APPROVED" || !ngoAccountKey) return;
+    const key = `ck_ngo_approved_seen_${ngoAccountKey}`;
+    let firstSeen = Date.now();
+    try {
+      const stored = Number(localStorage.getItem(key));
+      if (Number.isFinite(stored) && stored > 0) firstSeen = stored;
+      else localStorage.setItem(key, String(firstSeen));
+    } catch {
+      // Storage unavailable: show the pill for this visit's two minutes only.
+    }
+    const remaining = firstSeen + NGO_APPROVED_PILL_MS - Date.now();
+    if (remaining <= 0) { setNgoApprovedPillExpired(true); return; }
+    const timer = setTimeout(() => setNgoApprovedPillExpired(true), remaining);
+    return () => clearTimeout(timer);
+  }, [isNgo, ngoApplicationState, ngoAccountKey]);
   const ngoApplicationLabel = ngoApplicationState === "APPROVED" ? "NGO Approved"
     : ngoApplicationState === "UNDER_REVIEW" ? "Application Under Review"
     : ngoApplicationState === "PENDING_VERIFICATION" ? "Verify Application Email"
@@ -1047,7 +1071,7 @@ export function SiteHeader() {
               <DonateNowButton size="sm" label="Donate" showArrow={false} />
             )}
 
-            {isNgoDashboard && (
+            {isNgoDashboard && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
               <Link href="/profile/ngo-details">
                 <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
                   {ngoApplicationLabel}
