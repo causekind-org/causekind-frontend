@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useNgoDashboardData } from "@/hooks/useNgoDashboardData";
+import { DriveQuantityBar } from "@/features/ngo-drives/components/DriveQuantityBar";
 import { NgoReadinessRail } from "@/components/profile/NgoReadinessRail";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyMatches, type ItemMatch } from "@/lib/api";
@@ -39,25 +40,6 @@ function getInitials(name: string): string {
   if (words.length === 0) return "U";
   if (words.length === 1) return words[0][0]?.toUpperCase() ?? "U";
   return ((words[0][0] ?? "") + (words[words.length - 1][0] ?? "")).toUpperCase();
-}
-
-function getRequestStatusBadge(status: string) {
-  const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-    DRAFT: { label: "Draft", variant: "outline" },
-    PENDING_VERIFICATION: { label: "Under Verification", variant: "outline" },
-    VERIFIED_PRIVATE_MATCHING: { label: "Matching Privately", variant: "secondary" },
-    POTENTIAL_MATCH_FOUND: { label: "Match Found", variant: "secondary" },
-    AWAITING_MATCH_APPROVAL: { label: "Match Pending Approval", variant: "secondary" },
-    PUBLICATION_CONSENT_REQUIRED: { label: "Consent Needed", variant: "secondary" },
-    PUBLIC_REQUEST: { label: "Public Appeal", variant: "default" },
-    RESERVED: { label: "Reserved", variant: "outline" },
-    FULFILMENT_IN_PROGRESS: { label: "Fulfilment In Progress", variant: "secondary" },
-    FULFILLED: { label: "Completed", variant: "default" },
-    EXPIRED: { label: "Expired", variant: "outline" },
-    REJECTED: { label: "Rejected", variant: "destructive" },
-    CANCELLED: { label: "Withdrawn", variant: "outline" },
-  };
-  return map[status] ?? { label: status, variant: "outline" as const };
 }
 
 function getUnitLabel(u: string) {
@@ -123,7 +105,9 @@ export default function NgoDashboardPage() {
   const resolvedActiveMatches = matches.filter(m => !["FULFILLED", "CANCELLED", "REJECTED", "FAILED"].includes(m.status)).length;
   const resolvedRequestsCount = requests.length;
 
-  const liveDrives = requests.filter(r => ["OPEN", "ACTIVE", "POTENTIAL_MATCH_FOUND", "VERIFIED_PRIVATE_MATCHING", "PUBLIC_REQUEST", "PARTIALLY_MATCHED", "PUBLICATION_CONSENT_REQUIRED", "PENDING_VERIFICATION"].includes(r.status));
+  // Real NgoDriveStatus values (backend enum), not the old item-request statuses.
+  const liveDrives = requests.filter(r => ["LIVE", "FULLY_PLEDGED"].includes(r.status));
+  const reviewDrives = requests.filter(r => ["PENDING_REVIEW", "CHANGES_REQUESTED", "REJECTED"].includes(r.status));
   const fulfilledDrives = requests.filter(r => ["FULFILLED", "FULLY_FULFILLED"].includes(r.status));
 
   const showSections = isVerified;
@@ -228,7 +212,8 @@ export default function NgoDashboardPage() {
         {/* Sections */}
 
           {(() => {
-            const needsAttention = requests.filter(r => r.status === 'COLLECTION_COMPLETE' || r.status === 'PROOF_REJECTED');
+            // A rejected proof sends the drive back to COLLECTION_COMPLETE, so this one status covers both.
+            const needsAttention = requests.filter(r => r.status === 'COLLECTION_COMPLETE');
             if (needsAttention.length > 0) {
               return (
                 <div className="mb-8">
@@ -244,7 +229,7 @@ export default function NgoDashboardPage() {
                           <div>
                             <h4 className="font-bold text-red-900 dark:text-red-100">{drive.title}</h4>
                             <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-                              {drive.status === 'PROOF_REJECTED' ? "Proof was rejected. Please re-upload." : "Collection complete. Proof of distribution is due."}
+                              {drive.adminReason ? `Proof of distribution is due. ${drive.adminReason}` : "Collection complete. Proof of distribution is due."}
                             </p>
                           </div>
                           <Button variant="destructive" size="sm" className="shrink-0">Action needed</Button>
@@ -258,7 +243,38 @@ export default function NgoDashboardPage() {
             return null;
           })()}
           
-          <section>
+          {reviewDrives.length > 0 && (
+            <section aria-labelledby="review-drives-heading" className="mb-8">
+              <div className="border-b-2 border-amber-600/60 dark:border-amber-400/50 pb-3 mb-4">
+                <p id="review-drives-heading" className="text-3xs font-black uppercase tracking-[0.24em] text-amber-700 dark:text-amber-400">Waiting or blocked</p>
+                <p className="text-xs text-stone-400 mt-1">Drives that are not live yet.</p>
+              </div>
+              <div className="space-y-3">
+                {reviewDrives.map((drive: any) => {
+                  const label = drive.status === "PENDING_REVIEW" ? "Under review"
+                    : drive.status === "CHANGES_REQUESTED" ? "Changes requested" : "Rejected";
+                  return (
+                    <Link key={drive.id} href={`/ngo/drives/${drive.id}`} className="block">
+                      <div className="bg-white dark:bg-zinc-900 border border-stone-200/80 dark:border-zinc-800 rounded-xl p-4 hover:bg-stone-50 dark:hover:bg-zinc-800/50 transition-colors">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="font-bold text-stone-900 dark:text-stone-100 min-w-0 truncate">{drive.title}</h4>
+                          <Badge variant={drive.status === "REJECTED" ? "destructive" : "secondary"} className="shrink-0">{label}</Badge>
+                        </div>
+                        {drive.status !== "PENDING_REVIEW" && drive.adminReason && (
+                          <p className="text-sm text-stone-600 dark:text-stone-400 mt-1.5"><strong>Reason:</strong> {drive.adminReason}</p>
+                        )}
+                        {drive.status === "CHANGES_REQUESTED" && (
+                          <p className="text-xs font-bold text-ngo-700 dark:text-ngo-400 mt-2">Open to edit &amp; resubmit →</p>
+                        )}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          <section id="live-drives" className="scroll-mt-24">
             <div className="border-b-2 border-ngo-700/60 dark:border-ngo-400/50 pb-3">
               <p className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-400">Live Drives</p>
             <p className="text-xs text-stone-400 mt-1">Drives donors near you can give to right now.</p>
@@ -291,14 +307,23 @@ export default function NgoDashboardPage() {
               <div className="py-8 sm:py-14 text-center space-y-3">
                 <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No live drives yet</p>
                 <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Start a drive and tell givers exactly what you need.</p>
-                <Link href="/ngo/drives/new">
-                  <Button size="sm" className="bg-ngo-700 hover:bg-ngo-800 text-white mt-2">Start a Drive</Button>
-                </Link>
+                {canPostRequest ? (
+                  <Link href="/ngo/drives/new">
+                    <Button size="sm" className="bg-ngo-700 hover:bg-ngo-800 text-white mt-2">Start a Drive</Button>
+                  </Link>
+                ) : (
+                  <div className="space-y-1">
+                    <Button size="sm" disabled className="mt-2 bg-stone-200 text-stone-500 cursor-not-allowed">
+                      <Lock className="w-3.5 h-3.5 mr-1" /> Start a Drive
+                    </Button>
+                    <p className="text-2xs text-stone-500 max-w-[260px] mx-auto">{lockReason}</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="space-y-4">
                 {liveDrives.sort((a: any, b: any) => new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime()).map((drive: any) => {
-                  const isAwaiting = drive.status === "PENDING_VERIFICATION";
+                  const isAwaiting = drive.status === "FULLY_PLEDGED";
                   return (
                     <div key={drive.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden mb-4">
                       <Link href={`/ngo/drives/${drive.id}`} className="block">
@@ -315,7 +340,7 @@ export default function NgoDashboardPage() {
                                   )}
                                   <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider">{drive.category}</span>
                                 </div>
-                                <Badge variant={isAwaiting ? "secondary" : "default"} className={isAwaiting ? "bg-stone-100 text-stone-600" : "bg-green-100 text-green-700"}>{isAwaiting ? "Awaiting approval" : "Live"}</Badge>
+                                <Badge variant={isAwaiting ? "secondary" : "default"} className={isAwaiting ? "bg-stone-100 text-stone-600" : "bg-green-100 text-green-700"}>{isAwaiting ? "Fully pledged" : "Live"}</Badge>
                               </div>
                               <h3 className="font-bold text-lg text-stone-900 dark:text-stone-100 mb-1">{drive.title}</h3>
                               <p className="text-sm text-stone-600 dark:text-stone-400 mb-3 font-medium">
@@ -327,13 +352,9 @@ export default function NgoDashboardPage() {
                                 {drive.neededBy && <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> Needed by {new Date(drive.neededBy).toLocaleDateString()}</span>}
                               </div>
                               
-                              <div className="space-y-1.5">
-                                <div className="flex items-center justify-between text-xs font-medium">
-                                  <span className="text-stone-700 dark:text-stone-300">{drive.quantityPledged || 0} of {drive.quantityNeeded} pledged</span>
-                                </div>
-                                <div className="w-full max-w-sm h-2 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden flex">
-                                  <div className="h-full bg-ngo-300 dark:bg-ngo-800" style={{ width: `${Math.min(100, ((drive.quantityPledged || 0) / (drive.quantityNeeded || 1)) * 100)}%` }} />
-                                </div>
+                              <div className="max-w-md">
+                                <DriveQuantityBar compact needed={drive.quantityNeeded} received={drive.quantityReceived || 0}
+                                  pledged={drive.quantityPledged || 0} unit={getUnitLabel(drive.unit)} />
                               </div>
                             </div>
                           </div>

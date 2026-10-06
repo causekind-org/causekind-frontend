@@ -133,7 +133,14 @@ export function ReviewSubmitStep({
         {fields.visible("accessoriesIncluded") && <ReviewRow label={fields.label("accessoriesIncluded")} value={model.accessoriesIncluded} />}
         {fields.visible("dimensions") && <ReviewRow label={fields.label("dimensions")} value={model.dimensions} />}
         {fields.visible("approximateWeight") && <ReviewRow label={fields.label("approximateWeight")} value={model.approximateWeight} />}
-        <ReviewRow label="Description" value={model.description} />
+        {/* Full width, not a ReviewRow: free text reads badly squeezed into the
+            right-aligned value column, and its line breaks are kept. */}
+        <div className="border-t border-stone-200/70 pt-1.5 dark:border-zinc-800">
+          <p className="text-2xs text-stone-500 dark:text-stone-400">Description</p>
+          <p className={`mt-0.5 whitespace-pre-line wrap-anywhere text-2xs font-semibold ${model.description.trim() ? "text-stone-800 dark:text-stone-100" : "text-stone-300 dark:text-zinc-600"}`}>
+            {model.description.trim() ? model.description : "—"}
+          </p>
+        </div>
       </ReviewSection>
 
       <ReviewSection title="Location" onEdit={() => onJump("location")}>

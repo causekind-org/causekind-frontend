@@ -340,6 +340,7 @@ export function Chapter2TheEcosystem() {
         gsap.set(q(".c2-pin-inner"), { scale: 0, svgOrigin: "0 0" });
         gsap.set(q(".c2-v-shield, .c2-v-check"), { drawSVG: "0%" });
         gsap.set(q(".c2-final-line"), { scaleY: 0 });
+        gsap.set(q(".c2-donate-btn"), { opacity: 0, y: 20 });
         gsap.set(q(".st-worn-bag"), { opacity: 0, y: -300, scale: 1.3, svgOrigin: "28 150" });
         gsap.set(q(".st-strap"), { drawSVG: "0%" });
         gsap.set(q(".st-happy"), { opacity: 0 });
@@ -675,6 +676,7 @@ export function Chapter2TheEcosystem() {
           tl.set(q(".c2-cam"), { visibility: "hidden" }, 89.2);
           tl.to(q(".c2-hud"), { opacity: 0, duration: 1.5 }, 87);
           tl.to(q(".c2-final-line"), { scaleY: 1, duration: 4, ease: "power2.inOut" }, 92);
+          tl.to(q(".c2-donate-btn"), { opacity: 1, y: 0, duration: 2, ease: "power2.out" }, 94);
           tl.set({}, {}, 100);
 
           const loops = [
@@ -1447,7 +1449,7 @@ export function Chapter2TheEcosystem() {
           ))}
         </p>
         <span className="c2-final-line mt-8 block h-[18vh] w-[3px] origin-top rounded-full bg-gradient-to-b from-[#ff7a2f] to-transparent shadow-[0_0_18px_rgba(255,122,47,0.7)]" />
-        <div className={`${styles.clayCtaWrap} mt-6`}>
+        <div className={`c2-donate-btn pointer-events-auto ${styles.clayCtaWrap} mt-6`}>
           <DonateNowButton size="lg" label="Donate Now" className={styles.clayCta} />
         </div>
       </div>

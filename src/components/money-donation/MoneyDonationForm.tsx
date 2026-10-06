@@ -34,6 +34,7 @@ function loadRazorpayScript(): Promise<boolean> {
 }
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000];
+const MAX_DONATION = 9999999;
 
 /**
  * Tip options, in rupees. Zero is a first-class choice rather than something the
@@ -138,7 +139,9 @@ export function MoneyDonationForm() {
   };
 
   const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^0-9]/g, '');
+    // Seven digits caps the amount at MAX_DONATION (₹99,99,999); slicing also
+    // catches pasted values that would slip past maxLength.
+    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 7);
     setCustomAmount(val);
     setIsCustom(true);
     setAmount('');
@@ -155,12 +158,32 @@ export function MoneyDonationForm() {
       toast.error('Please select or enter a valid donation amount.');
       return;
     }
-    if (!formData.fullName) {
-      toast.error('Please enter your name.');
+    if (donation > MAX_DONATION) {
+      toast.error(`Donation amount cannot exceed ₹${money(MAX_DONATION)}.`);
       return;
     }
-    if (!user && !formData.email) {
-      toast.error('Please enter your email so we can send your receipt.');
+    if (!formData.fullName || formData.fullName.trim().length < 2) {
+      toast.error('Please enter your full name.');
+      return;
+    }
+    const invalidMatches = formData.fullName.match(/[^A-Z\s.'-]/gi);
+    if (invalidMatches && invalidMatches.length > 0) {
+      toast.error('Full name cannot contain numbers or special characters.');
+      return;
+    }
+    if (!user) {
+      if (!formData.email || !formData.email.trim()) {
+        toast.error('Please enter your email address.');
+        return;
+      }
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        toast.error('Please enter a valid email address (e.g., name@example.com).');
+        return;
+      }
+    }
+    if (!formData.mobileNumber || formData.mobileNumber.length !== maxPhoneLength) {
+      toast.error(`Please enter a valid ${maxPhoneLength}-digit mobile number.`);
       return;
     }
     // Required since 2026-09-18. The trust reports every donor's PAN in Form
@@ -370,6 +393,7 @@ export function MoneyDonationForm() {
                         aria-describedby="mobileDonationHint"
                         value={isCustom ? customAmount : amount}
                         onChange={handleCustomAmountChange}
+                        maxLength={7}
                       />
                     </div>
                     <p id="mobileDonationHint" className={styles.hint}>Tap the amount to enter your own</p>
@@ -463,6 +487,7 @@ export function MoneyDonationForm() {
                           inputMode="numeric"
                           value={customAmount}
                           onChange={handleCustomAmountChange}
+                          maxLength={7}
                           placeholder="Amount"
                           className="h-11 w-full rounded-xl border border-amber-500 bg-[#fffdfa] pl-6 pr-2 text-sm font-bold tabular-nums text-foreground shadow-xs outline-none ring-2 ring-amber-400/40 placeholder:font-semibold placeholder:text-stone-400 dark:bg-[#221008] dark:placeholder:text-stone-500"
                         />
@@ -579,7 +604,15 @@ export function MoneyDonationForm() {
                         name="fullName"
                         required
                         value={formData.fullName}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          const invalidMatches = val.match(/[^A-Z\s.'-]/g);
+                          if (invalidMatches && invalidMatches.length > 0) {
+                            const uniqueInvalid = Array.from(new Set(invalidMatches)).join(' ');
+                            toast.error(`Special characters or numbers are not allowed: ${uniqueInvalid}`, { id: 'name-char-error' });
+                          }
+                          setFormData({ ...formData, fullName: val.replace(/[^A-Z\s.'-]/g, '') });
+                        }}
                         className={inputClasses}
                         placeholder="Enter your full name"
                       />
@@ -597,7 +630,12 @@ export function MoneyDonationForm() {
                           name="email"
                           required
                           value={formData.email}
-                          onChange={handleChange}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              email: e.target.value.toLowerCase().replace(/\s/g, ''),
+                            })
+                          }
                           className={inputClasses}
                           placeholder="Enter your email address"
                         />

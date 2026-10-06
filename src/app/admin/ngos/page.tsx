@@ -1,24 +1,24 @@
 "use client";
 
-import { Suspense } from "react";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { NgoReviewPanel } from "./NgoReviewPanel";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
-/** Standalone NGO review page — the same panel as the dashboard's "NGO Applications" tab. */
-export default function NgoReviewPage() {
-  return <Suspense fallback={<p role="status">Loading NGO application…</p>}><NgoReviewContent /></Suspense>;
-}
-
-function NgoReviewContent() {
-  const params = useSearchParams();
+/**
+ * Legacy route. NGO applications are reviewed in the admin dashboard's NGO Applications
+ * tab; this forwards old links (/admin/ngos?application=<id>) there.
+ */
+export default function NgoReviewRedirect() {
+  const router = useRouter();
+  useEffect(() => {
+    const application = new URLSearchParams(window.location.search).get("application");
+    const qs = new URLSearchParams({ tab: "ngo-applications" });
+    if (application) qs.set("application", application);
+    router.replace(`/admin/dashboard?${qs.toString()}`);
+  }, [router]);
   return (
-    <main className="min-h-screen bg-stone-50 px-4 py-8 text-stone-900 dark:bg-zinc-950 dark:text-stone-100 sm:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <Link href="/admin/dashboard?tab=ngo-applications" className="text-sm underline">Back to admin dashboard</Link>
-        <h1 className="text-3xl font-bold">NGO applications</h1>
-        <NgoReviewPanel initialApplicationId={params.get("application")} />
-      </div>
-    </main>
+    <div className="flex min-h-screen items-center justify-center">
+      <Loader2 className="size-8 animate-spin text-muted-foreground" />
+    </div>
   );
 }

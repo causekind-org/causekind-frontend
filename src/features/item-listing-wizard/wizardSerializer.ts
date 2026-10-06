@@ -33,7 +33,7 @@ export function serialize(model: WizardModel): Partial<CreateListingPayload> {
     title: model.title.trim(),
     category: model.category,
     subcategory: model.subcategory,
-    quantity: model.quantity,
+    quantity: Number(model.quantity) || 0,
     condition: model.condition,
     approximateAge: model.approximateAge,
 

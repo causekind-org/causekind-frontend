@@ -11,6 +11,7 @@ import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyze
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import PublicRequestsBoard from "@/components/PublicRequestsBoard";
+import { NgoDrivesRedirect } from "@/components/ngo-landing/NgoDrivesRedirect";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,10 +47,6 @@ import { RequestDirectory, type LocationState } from "./RequestDirectory";
 const DoneeRequestsPage = dynamic(
   () => import("./donee-view").then(m => m.DoneeRequestsPage),
   { loading: () => <PageSkeleton><CardGridSkeleton count={6} label="Loading your requests" /></PageSkeleton> },
-);
-const NgoRequestsPage = dynamic(
-  () => import("./ngo-view").then(m => m.NgoRequestsPage),
-  { loading: () => <PageSkeleton><CardGridSkeleton count={6} label="Loading NGO portal" /></PageSkeleton> },
 );
 
 type ReqSortValue = "nearest" | "urgent" | "newest" | "qty";
@@ -729,8 +726,8 @@ export default function RequestsClient({
   // Dedicated donee portal
   if (user.role === "DONEE") return <DoneeRequestsPage />;
 
-  // Dedicated NGO portal
-  if (user.role === "NGO" || user.role === "NGO_PARTNER") return <NgoRequestsPage />;
+  // NGOs only have drives: send them to their live drives.
+  if (user.role === "NGO" || user.role === "NGO_PARTNER") return <NgoDrivesRedirect />;
 
   // ── Render ────────────────────────────────────────────────────────────────
 

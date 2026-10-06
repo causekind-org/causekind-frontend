@@ -10,7 +10,6 @@ import {
   type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { uploadNgoDocument } from "@/lib/api";
-import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 interface DocUploadCardProps {
   docId: string;
@@ -98,6 +97,12 @@ export function DocUploadCard({
                 <FileText className="h-3 w-3 shrink-0" aria-hidden />
                 {uploaded.demo ? (uploaded.name || "Demo upload") : uploaded.name}
               </p>
+              {uploaded.rejectedReason && (
+                <p role="alert" className="mt-1 flex items-start gap-1 text-2xs font-semibold text-red-700 dark:text-red-300">
+                  <AlertCircle className="h-3 w-3 shrink-0 mt-0.5" aria-hidden />
+                  {uploaded.rejectedReason}
+                </p>
+              )}
             </div>
           </div>
           <button
@@ -170,7 +175,6 @@ export function DocUploadCard({
           disabled={isUploading}
           onChange={(e) => handleFiles(e.target.files)}
         />
-        <LocalTestUploadButton onFile={(f) => handleFiles([f] as any)} accept="pdf,image" />
         <div className="flex flex-col items-center justify-center gap-1 py-4 px-3 text-center">
           {isUploading ? (
             <>

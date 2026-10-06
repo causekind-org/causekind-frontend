@@ -30,10 +30,10 @@ const NGO_JOURNEY_STEPS: NgoJourneyStep[] = [
   {
     id: 1,
     icon: FileText,
-    title: "You post a request",
+    title: "You start a drive",
     description: "Submit the items, quantity and intended use. Our team reviews each need before matching.",
     timestamp: "Step 1",
-    statusBadge: "Request Submitted for Review",
+    statusBadge: "Drive Submitted for Review",
   },
   {
     id: 2,
@@ -144,7 +144,7 @@ export function GiftJourneyTracker() {
         </h2>
 
         <p className="text-xs sm:text-sm md:text-base text-stone-600 dark:text-stone-400 mt-3 max-w-2xl mx-auto leading-relaxed">
-          From listing your needs to donor handover, every step is direct, transparent, and closed with photo proof.
+          From starting a drive to donor handover, every step is direct, transparent, and closed with photo proof.
         </p>
       </div>
 
@@ -157,7 +157,7 @@ export function GiftJourneyTracker() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 mb-8 border-b border-stone-100 dark:border-zinc-800 text-left">
           <div>
             <span className="text-3xs font-semibold text-stone-500 dark:text-stone-400">
-              Sample request
+              Sample drive
             </span>
             <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 mt-0.5">
               Illustrative journey · 40 blankets

@@ -183,6 +183,7 @@ describe("HandoverSafetyActions - Problem reporting options by role", { timeout:
 });
 
 function createMatchVm(role: "DONOR" | "DONEE", completedAt?: string | null): HandoverViewModel {
+  const at = completedAt !== undefined ? completedAt : new Date().toISOString();
   return {
     flow: "MATCH",
     id: 2,
@@ -196,9 +197,9 @@ function createMatchVm(role: "DONOR" | "DONEE", completedAt?: string | null): Ha
     donorAllowsDoneeCall: false,
     schedule: null,
     confirmation: {
-      donorConfirmedAt: new Date().toISOString(),
+      donorConfirmedAt: at,
       donorConfirmedQty: 1,
-      doneeConfirmedAt: new Date().toISOString(),
+      doneeConfirmedAt: at,
       doneeConfirmedQty: 1,
       conditionRating: "GOOD",
       partlyConfirmed: false,
@@ -209,53 +210,57 @@ function createMatchVm(role: "DONOR" | "DONEE", completedAt?: string | null): Ha
     closed: true,
     offeredQuantity: 1,
     delivery: null,
-    completedAt: completedAt !== undefined ? completedAt : new Date().toISOString(),
+    completedAt: at,
   };
 }
 
-describe("HandoverSafetyActions - 3-hour post-completion reporting window", () => {
-  it("renders Report a problem button at completedAt + 2h59m for donor", async () => {
-    const twoHours59mAgo = new Date(Date.now() - (2 * 60 + 59) * 60 * 1000).toISOString();
-    const matchVm = createMatchVm("DONOR", twoHours59mAgo);
+describe("HandoverSafetyActions - 48-hour post-completion reporting window", () => {
+  it("renders enabled Report a problem button at completedAt + 47h for donor", async () => {
+    const fortySevenHoursAgo = new Date(Date.now() - 47 * 60 * 60 * 1000).toISOString();
+    const matchVm = createMatchVm("DONOR", fortySevenHoursAgo);
     render(<HandoverSafetyActions vm={matchVm} onChanged={vi.fn()} />);
 
     const reportBtn = await screen.findByRole("button", { name: /report a problem/i });
     expect(reportBtn).toBeInTheDocument();
+    expect(reportBtn).toBeEnabled();
   });
 
-  it("renders Report a problem button at completedAt + 2h59m for donee", async () => {
-    const twoHours59mAgo = new Date(Date.now() - (2 * 60 + 59) * 60 * 1000).toISOString();
-    const matchVm = createMatchVm("DONEE", twoHours59mAgo);
+  it("renders enabled Report a problem button at completedAt + 47h for donee", async () => {
+    const fortySevenHoursAgo = new Date(Date.now() - 47 * 60 * 60 * 1000).toISOString();
+    const matchVm = createMatchVm("DONEE", fortySevenHoursAgo);
     render(<HandoverSafetyActions vm={matchVm} onChanged={vi.fn()} />);
 
     const reportBtn = await screen.findByRole("button", { name: /report a problem/i });
     expect(reportBtn).toBeInTheDocument();
+    expect(reportBtn).toBeEnabled();
   });
 
-  it("hides Report a problem button at completedAt + 3h01m for donor", async () => {
-    const threeHours01mAgo = new Date(Date.now() - (3 * 60 + 1) * 60 * 1000).toISOString();
-    const matchVm = createMatchVm("DONOR", threeHours01mAgo);
-    const { container } = render(<HandoverSafetyActions vm={matchVm} onChanged={vi.fn()} />);
+  it("disables Report a problem button at completedAt + 49h for donor", async () => {
+    const fortyNineHoursAgo = new Date(Date.now() - 49 * 60 * 60 * 1000).toISOString();
+    const matchVm = createMatchVm("DONOR", fortyNineHoursAgo);
+    render(<HandoverSafetyActions vm={matchVm} onChanged={vi.fn()} />);
 
-    await waitFor(() => {
-      expect(screen.queryByRole("button", { name: /report a problem/i })).not.toBeInTheDocument();
-      expect(container.firstChild).toBeNull();
-    });
+    const reportBtn = await screen.findByRole("button", { name: /report a problem/i });
+    expect(reportBtn).toBeInTheDocument();
+    expect(reportBtn).toBeDisabled();
+    expect(reportBtn).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("hides Report a problem button at completedAt + 3h01m for donee", async () => {
-    const threeHours01mAgo = new Date(Date.now() - (3 * 60 + 1) * 60 * 1000).toISOString();
-    const matchVm = createMatchVm("DONEE", threeHours01mAgo);
-    const { container } = render(<HandoverSafetyActions vm={matchVm} onChanged={vi.fn()} />);
+  it("disables Report a problem button at completedAt + 49h for donee", async () => {
+    const fortyNineHoursAgo = new Date(Date.now() - 49 * 60 * 60 * 1000).toISOString();
+    const matchVm = createMatchVm("DONEE", fortyNineHoursAgo);
+    render(<HandoverSafetyActions vm={matchVm} onChanged={vi.fn()} />);
 
-    await waitFor(() => {
-      expect(screen.queryByRole("button", { name: /report a problem/i })).not.toBeInTheDocument();
-      expect(container.firstChild).toBeNull();
-    });
+    const reportBtn = await screen.findByRole("button", { name: /report a problem/i });
+    expect(reportBtn).toBeInTheDocument();
+    expect(reportBtn).toBeDisabled();
+    expect(reportBtn).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("fails safe by hiding Report a problem button when completedAt is null or missing", async () => {
+  it("fails safe by hiding Report a problem button when completedAt and confirmation are null", async () => {
     const matchVm = createMatchVm("DONOR", null);
+    matchVm.confirmation.donorConfirmedAt = null;
+    matchVm.confirmation.doneeConfirmedAt = null;
     const { container } = render(<HandoverSafetyActions vm={matchVm} onChanged={vi.fn()} />);
 
     await waitFor(() => {

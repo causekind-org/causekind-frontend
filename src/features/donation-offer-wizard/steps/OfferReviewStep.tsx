@@ -11,7 +11,7 @@ import {
 } from "../offerModel";
 
 export function OfferReviewStep({
-  model, errors, requestTitle, compat, declarationsInvalidated, onChange, onEdit, flowType,
+  model, errors, requestTitle, compat, declarationsInvalidated, onChange, onEdit, flowType, declarationGroups,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
@@ -21,6 +21,7 @@ export function OfferReviewStep({
   onChange: <K extends keyof OfferModel>(key: K, value: OfferModel[K]) => void;
   onEdit: (step: OfferStep) => void;
   flowType?: string | null;
+  declarationGroups?: readonly any[];
 }) {
   const photos = uploadedOfferPhotos(model.photos);
   const payer = DELIVERY_PAYERS.find(p => p.value === model.deliveryCostBornBy);
@@ -101,7 +102,7 @@ export function OfferReviewStep({
       </ReviewSection>
 
       <DeclarationsBlock
-        groups={declarationGroupsFor(flowType)}
+        groups={declarationGroups ?? declarationGroupsFor(flowType)}
         groupTitles={OFFER_GROUP_TITLES}
         confirmed={model.declarationsConfirmed}
         onConfirmedChange={v => onChange("declarationsConfirmed", v)}

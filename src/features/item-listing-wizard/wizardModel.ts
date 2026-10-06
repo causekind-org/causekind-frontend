@@ -133,7 +133,8 @@ export type WizardModel = {
   category: string;
   subcategory: string;
   title: string;
-  quantity: number;
+  /** "" while the field is being cleared; the schema rejects it as below 1. */
+  quantity: number | "";
   brand: string;
   model: string;
   approximateAge: string;

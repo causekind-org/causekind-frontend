@@ -23,6 +23,7 @@ export function NgoGlanceStrip() {
     photosDue,
     photosDueRequestName,
     canPostRequest,
+    lockReason,
   } = useNgoDashboardData();
 
   // Strip is rendered for verified NGOs ONLY
@@ -49,10 +50,10 @@ export function NgoGlanceStrip() {
               </div>
               <div>
                 <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                  Photos Due · Request Posting Paused
+                  Photos Due · New Drives Paused
                 </p>
                 <p className="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-100 mt-0.5">
-                  Upload handover photos for <span className="underline decoration-amber-500">{photosDueRequestName}</span> to post your next request.
+                  Upload handover photos for <span className="underline decoration-amber-500">{photosDueRequestName}</span> to start your next drive.
                 </p>
               </div>
             </div>
@@ -89,7 +90,7 @@ export function NgoGlanceStrip() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-            {/* 1. Active requests */}
+            {/* 1. Live drives */}
             <div className="flex items-center gap-3.5 p-3 sm:p-4 rounded-2xl bg-stone-50 dark:bg-zinc-800/60 border border-stone-200/60 dark:border-zinc-700/60">
               <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-xl bg-ngo-700 text-white flex items-center justify-center shrink-0 shadow-md">
                 <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -174,9 +175,10 @@ export function NgoGlanceStrip() {
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-ngo-700 dark:text-ngo-300 shrink-0" />
                 <span>
-                  Nothing posted yet. Your first request takes 2 minutes.
+                  No drives yet. Your first drive takes 2 minutes.
                 </span>
               </div>
+              {canPostRequest ? (
               <Link
                 href="/ngo/drives/new"
                 className="inline-flex items-center gap-1.5 font-bold text-ngo-700 dark:text-ngo-300 hover:text-ngo-800 dark:hover:text-ngo-200"
@@ -184,6 +186,11 @@ export function NgoGlanceStrip() {
                 <span>Start a Drive</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 font-bold text-stone-400 cursor-not-allowed" aria-disabled="true" title={lockReason}>
+                  Start a Drive · {lockReason}
+                </span>
+              )}
             </div>
           )}
         </div>

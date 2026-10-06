@@ -12,7 +12,6 @@ import { MAX_OFFER_PHOTOS, MIN_OFFER_PHOTOS } from "../offerModel";
 import { OFFER_ACCEPT_ATTR } from "../useOfferPhotos";
 import type { OfferVideoState } from "../useOfferVideo";
 import { OfferVideoField } from "./OfferVideoField";
-import { LocalTestUploadButton } from "@/components/LocalTestUploadButton";
 
 export type ScreeningState =
   | { kind: "idle" }
@@ -99,7 +98,6 @@ export function OfferPhotosStep({
         multiple className="sr-only" onChange={pick(cameraRef)} aria-hidden tabIndex={-1} />
       <input ref={galleryRef} type="file" accept={OFFER_ACCEPT_ATTR}
         multiple className="sr-only" onChange={pick(galleryRef)} aria-hidden tabIndex={-1} />
-      <LocalTestUploadButton onFile={(f) => pick(cameraRef)({ target: { files: [f] } } as any)} accept="image" />
 
       {error && (
         <p id="photos-error" className="text-3xs font-semibold text-red-600 dark:text-red-400">{error}</p>
@@ -114,7 +112,7 @@ export function OfferPhotosStep({
       {photos.length > 0 && (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {photos.map((p, i) => {
-            const src = p.remoteUrl ?? p.localUrl;
+            const src = p.localUrl || p.remoteUrl;
             return (
               <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-900">
                 {src && (

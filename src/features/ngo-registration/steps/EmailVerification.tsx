@@ -11,18 +11,25 @@ import { useAuth } from "@/hooks/useAuth";
 interface EmailVerificationProps {
   data: NGOFormState;
   onChange: (patch: Partial<NGOFormState>) => void;
-  onBack: () => void;
+  /** Omit when there is nothing to go back to: the application is already submitted. */
+  onBack?: () => void;
   onVerified: () => void;
+  /**
+   * True when this step was reopened for an application submitted earlier (for example
+   * after a page reload). The code may be long gone from the inbox, so Resend is offered
+   * straight away; the server still enforces its own cooldown.
+   */
+  resumed?: boolean;
 }
 
 const OTP_LENGTH = 6;
 const COOLDOWN_SECONDS = 60;
 
-export function EmailVerification({ data, onChange, onBack, onVerified }: EmailVerificationProps) {
+export function EmailVerification({ data, onChange, onBack, onVerified, resumed = false }: EmailVerificationProps) {
   const { user } = useAuth();
   const signupEmail = user?.email || data.officialEmail || "representative@org.ngo";
   const [code, setCode] = useState(data.emailOtp || "");
-  const [cooldown, setCooldown] = useState(COOLDOWN_SECONDS);
+  const [cooldown, setCooldown] = useState(resumed ? 0 : COOLDOWN_SECONDS);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +136,12 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
           <Mail className="h-3.5 w-3.5 text-ngo-700 dark:text-ngo-300" />
           {signupEmail}
         </p>
+        {resumed && (
+          <p className="text-xs text-stone-500 dark:text-stone-400 pt-1">
+            Your application is already submitted and is waiting for this code. Enter it below, or
+            request a new one if you can no longer find the email.
+          </p>
+        )}
       </div>
 
       {/* OTP Input Card */}
@@ -221,16 +234,18 @@ export function EmailVerification({ data, onChange, onBack, onVerified }: EmailV
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 pt-2">
-        <button
-          type="button"
-          onClick={onBack}
-          disabled={isVerifying || isResending}
-          className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back
-        </button>
+      <div className={cn("flex items-center gap-3 pt-2", onBack ? "justify-between" : "justify-end")}>
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            disabled={isVerifying || isResending}
+            className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </button>
+        )}
         <button
           type="button"
           onClick={() => handleVerify(code)}

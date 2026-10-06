@@ -168,7 +168,7 @@ export function NgoTrustSection() {
 
         <div className="rounded-3xl border border-ngo-200 p-6 dark:border-zinc-700">
           <h3 className="text-xl font-bold">Your organization’s verification</h3>
-          <p className="mt-3 text-sm">{isLoading ? "Checking your application…" : error ? "We couldn’t check your application. Please retry from your profile." : isVerified ? `${ngoName} has an approved CauseKind application. Each new item request is reviewed separately.` : "Complete your application and email verification. Our team reviews the organization before request posting is enabled."}</p>
+          <p className="mt-3 text-sm">{isLoading ? "Checking your application…" : error ? "We couldn’t check your application. Please retry from your profile." : isVerified ? `${ngoName} has an approved CauseKind application. Each new drive is reviewed separately.` : "Complete your application and email verification. Our team reviews the organization before you can start drives."}</p>
           <Link href="/profile/ngo-details" className="mt-4 inline-block text-sm font-semibold underline">View your application</Link>
         </div>
       </div>

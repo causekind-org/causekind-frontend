@@ -40,7 +40,7 @@ describe("ngoRegistrationModel", () => {
     const docs = getDocsForStructure("trust");
     expect(docs.some((d) => d.id === "trust-reg-cert" && d.category === "must-have")).toBe(true);
     expect(docs.some((d) => d.id === "trust-deed" && d.category === "must-have")).toBe(true);
-    expect(docs.some((d) => d.id === "trust-pan" && d.category === "supporting")).toBe(true);
+    expect(docs.some((d) => d.id === "trust-pan" && d.category === "must-have")).toBe(true);
   });
 
   it("resolves correct documents for Society", () => {

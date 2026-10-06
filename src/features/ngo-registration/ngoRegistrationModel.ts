@@ -79,16 +79,16 @@ export interface DocDefinition {
 const TRUST_DOCS: DocDefinition[] = [
   { id: "trust-reg-cert", label: "Trust Registration Certificate", category: "must-have" },
   { id: "trust-deed", label: "Registered Trust Deed", category: "must-have" },
-  { id: "trust-pan", label: "Trust PAN Card", category: "supporting" },
-  { id: "trustee-info", label: "Current Trustee / Office-Bearer Info", category: "supporting" },
+  { id: "trust-pan", label: "Trust PAN Card", category: "must-have" },
+  { id: "trustee-info", label: "Current Trustee / Office-Bearer Info", category: "must-have" },
 ];
 
 const SOCIETY_DOCS: DocDefinition[] = [
   { id: "society-reg-cert", label: "Society Registration Certificate", category: "must-have" },
   { id: "society-moa", label: "Memorandum of Association (MOA)", category: "must-have" },
   { id: "society-bye-laws", label: "Rules & Bye-laws", category: "must-have" },
-  { id: "society-pan", label: "Society PAN Card", category: "supporting" },
-  { id: "governing-body", label: "Current Governing Body Info", category: "supporting" },
+  { id: "society-pan", label: "Society PAN Card", category: "must-have" },
+  { id: "governing-body", label: "Current Governing Body Info", category: "must-have" },
 ];
 
 const SECTION8_DOCS: DocDefinition[] = [
@@ -96,8 +96,8 @@ const SECTION8_DOCS: DocDefinition[] = [
   { id: "cin", label: "CIN (Corporate Identity Number)", category: "must-have" },
   { id: "s8-moa", label: "Memorandum of Association (MOA)", category: "must-have" },
   { id: "s8-aoa", label: "Articles of Association (AOA)", category: "must-have" },
-  { id: "company-pan", label: "Company PAN Card", category: "supporting" },
-  { id: "director-info", label: "Current Director Info", category: "supporting" },
+  { id: "company-pan", label: "Company PAN Card", category: "must-have" },
+  { id: "director-info", label: "Current Director Info", category: "must-have" },
 ];
 
 export function getDocsForStructure(structure: LegalStructure): DocDefinition[] {
@@ -125,6 +125,8 @@ export interface UploadedFile {
   mimeType?: string;
   /** true when the user used "Mark as uploaded" demo shortcut */
   demo?: boolean;
+  /** Set when the server refused this file on submit; the user must re-upload it. */
+  rejectedReason?: string;
 }
 
 export interface NGOFormState {
@@ -230,8 +232,12 @@ export function legalStructureLabel(s: LegalStructure): string {
 }
 
 // ── Temporary Demo Mode Configuration ──────────────────────────────────────────
-// TEMPORARY: Demo Mode — bypasses S3 uploads and allows instant demo testing. Off by default.
-export const IS_NGO_DEMO_MODE = process.env.NEXT_PUBLIC_NGO_DEMO_MODE === "true";
+// TEMPORARY: Demo Mode — simulates submit and OTP in the browser without calling the
+// backend. Off by default, and only ever on in a development build: a production
+// bundle with the flag set by mistake would otherwise "accept" applications that
+// never reach the server.
+export const IS_NGO_DEMO_MODE =
+  process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_DEMO_MODE === "true";
 
 let nextDemoDocId = -1;
 /** Returns an incrementing negative document ID for demo mode uploads. */
@@ -257,6 +263,15 @@ export const NGO_STEP_FULL_TITLES: Record<NGOStep, string> = {
 };
 
 /**
+ * Text value of a form field. Saved drafts and server applications can carry numbers
+ * (year, registration number, mobile) where the form keeps strings, so never call
+ * string methods on the raw value.
+ */
+export function fieldText(value: unknown): string {
+  return value == null ? "" : String(value).trim();
+}
+
+/**
  * Returns an array of human-readable missing item descriptions for a given step.
  * Returns an empty array if the step is fully completed.
  */
@@ -264,10 +279,11 @@ export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): strin
   const missing: string[] = [];
   switch (step) {
     case "org-details":
-      if (!data.organizationName?.trim()) missing.push("Organization name");
+      if (!fieldText(data.organizationName)) missing.push("Organization name");
       if (!data.legalStructure) missing.push("Legal structure (Trust, Society, or Section 8)");
-      if (!data.registrationNumber?.trim()) missing.push("Registration number");
-      if (!data.registeredOfficeAddress?.trim()) missing.push("Registered office address");
+      if (!fieldText(data.registrationNumber)) missing.push("Registration number");
+      if (!fieldText(data.registeredOfficeAddress)) missing.push("Registered office address");
+      if (!fieldText(data.yearOfEstablishment) || !/^(18|19|20)\d{2}$/.test(fieldText(data.yearOfEstablishment))) missing.push("Valid year of establishment (4 digits)");
       break;
     case "legal-documents":
       if (!data.legalStructure) {
@@ -282,10 +298,11 @@ export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): strin
       }
       break;
     case "authorized-rep":
-      if (!data.representativeName?.trim()) missing.push("Representative full name");
+      if (!fieldText(data.representativeName)) missing.push("Representative full name");
       if (!data.designation) missing.push("Designation");
-      if (!data.mobileNumber?.trim()) missing.push("Mobile number");
-      if (!data.officialEmail?.trim()) missing.push("Official email address");
+      if (!fieldText(data.mobileNumber) || !/^\d{10}$/.test(fieldText(data.mobileNumber).replace(/\D/g, "").slice(-10))) missing.push("10-digit mobile number");
+      if (!fieldText(data.officialEmail) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fieldText(data.officialEmail))) missing.push("Valid official email address");
+      if (!data.authorizationLetter) missing.push("Authorization letter");
       break;
     case "org-photos":
       if (!data.logo) missing.push("Official organization logo");
@@ -339,4 +356,12 @@ export function calculateNgoProgress(data: NGOFormState): CalculatedNgoProgress 
   };
 }
 
-
+export function prefillNgoFormWithUser(form: NGOFormState, user: any | null): NGOFormState {
+  if (!user) return form;
+  return {
+    ...form,
+    organizationName: form.organizationName || user.fullName || "",
+    mobileNumber: form.mobileNumber || user.phone || "",
+    officialEmail: form.officialEmail || user.email || "",
+  };
+}

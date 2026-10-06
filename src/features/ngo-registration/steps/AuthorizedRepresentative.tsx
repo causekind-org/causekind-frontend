@@ -4,8 +4,12 @@ import { useState } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import {
   DESIGNATIONS,
+  IS_NGO_DEMO_MODE,
   type NGOFormState,
+  getNgoStillNeededItems,
+  fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
+import { uploadNgoDocument } from "@/lib/api";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
@@ -23,14 +27,16 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
 
   function validate(): boolean {
     const next: Record<string, string> = {};
-    if (!data.representativeName.trim()) next.representativeName = "Full name is required.";
+    if (!fieldText(data.representativeName)) next.representativeName = "Full name is required.";
     if (!data.designation) next.designation = "Please select a designation.";
-    if (!data.mobileNumber.trim()) next.mobileNumber = "Mobile number is required.";
-    if (!data.officialEmail.trim()) next.officialEmail = "Official email is required.";
+    if (!fieldText(data.mobileNumber)) next.mobileNumber = "Mobile number is required.";
+    if (!fieldText(data.officialEmail)) next.officialEmail = "Official email is required.";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.officialEmail)) next.officialEmail = "Enter a valid email address.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
+
+  const missing = getNgoStillNeededItems("authorized-rep", data);
 
   function handleContinue() {
     if (validate()) onContinue();
@@ -147,7 +153,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
           <DocUploadCard
             docId="authorization-letter"
             label="Authorization letter"
-            category="supporting"
+            category="must-have"
             uploaded={data.authorizationLetter}
             onUpload={(file) => onChange({ authorizationLetter: file })}
             onRemove={() => onChange({ authorizationLetter: null })}
@@ -156,15 +162,22 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between gap-3 pt-2">
-        <button type="button" onClick={onBack} className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
-          <ArrowLeft className="h-4 w-4" aria-hidden />
-          Back
-        </button>
-        <button type="button" onClick={handleContinue} className="flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
-          Continue
-          <ArrowRight className="h-4 w-4" aria-hidden />
-        </button>
+      <div className="flex flex-col items-end gap-2 pt-2">
+        <div className="flex w-full items-center justify-between gap-3">
+          <button type="button" onClick={onBack} className="flex items-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-transparent px-4 py-2.5 text-sm font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            Back
+          </button>
+          <button type="button" onClick={handleContinue} disabled={missing.length > 0} className="flex items-center gap-1.5 rounded-xl bg-ngo-700 disabled:bg-stone-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
+            Continue
+            <ArrowRight className="h-4 w-4" aria-hidden />
+          </button>
+        </div>
+        {missing.length > 0 && (
+          <p className="text-3xs text-stone-500 dark:text-stone-400 text-right pr-1">
+            Still needed: {missing.join(", ")}
+          </p>
+        )}
       </div>
     </div>
   );

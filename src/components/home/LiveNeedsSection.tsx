@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { loginUrlFor } from "@/lib/safeRedirect";
-import type { PlatformStats, PublicItemRequest } from "@/lib/api";
+import { getNgoDrives, type PlatformStats, type PublicItemRequest, type PublicNgoDrive } from "@/lib/api";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
@@ -32,6 +32,34 @@ import LetterSwap from "@/components/LetterSwap";
  * cards make a long mobile section; that is what a feed looks like.
  */
 const NEEDS_SHOWN = 6;
+
+/** A live NGO drive shaped like an item request, so one grid renders both. */
+type NeedCard = PublicItemRequest & { ngoDriveId?: number; ngoName?: string | null };
+
+function driveAsNeed(d: PublicNgoDrive): NeedCard {
+  return {
+    id: d.id,
+    title: d.title,
+    category: d.category,
+    description: d.description ?? "",
+    urgency: d.urgency,
+    emergency: false,
+    city: d.ngoCity ?? "",
+    quantity: d.stillNeeded ?? d.quantityNeeded,
+    ngoDriveId: d.id,
+    ngoName: d.ngoOrganizationName,
+  } as unknown as NeedCard;
+}
+
+/** Requests and drives alternate, so drives are not all pushed to later pages. */
+function interleave(requests: NeedCard[], drives: NeedCard[]): NeedCard[] {
+  const out: NeedCard[] = [];
+  for (let i = 0; i < Math.max(requests.length, drives.length); i++) {
+    if (i < requests.length) out.push(requests[i]);
+    if (i < drives.length) out.push(drives[i]);
+  }
+  return out;
+}
 
 export function LiveNeedsSection({
   initialRequests = [],
@@ -86,7 +114,16 @@ export function LiveNeedsSection({
 
   // Purely backend-driven now — whatever the API returns (including an empty
   // array) is what renders. No local fallback/dummy data masking a real empty state.
-  const allNeeds = initialRequests ?? [];
+  // LIVE NGO drives (public endpoint, no location filter yet) mixed into the grid.
+  const [drives, setDrives] = useState<NeedCard[]>([]);
+  useEffect(() => {
+    let active = true;
+    getNgoDrives()
+      .then((rows) => { if (active) setDrives((rows ?? []).map(driveAsNeed)); })
+      .catch(() => { /* drives are optional here; requests still render */ });
+    return () => { active = false; };
+  }, []);
+  const allNeeds = useMemo(() => interleave(initialRequests ?? [], drives), [initialRequests, drives]);
 
   /*
    * The filtered list and the six we show are derived separately, on purpose.
@@ -324,11 +361,14 @@ export function LiveNeedsSection({
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
               const isDonor = role === "DONOR";
               const isDonee = role === "DONEE";
-              const offerUrl = isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
+              const isDrive = need.ngoDriveId !== undefined;
+              const offerUrl = isDrive
+                ? `/drives/${need.ngoDriveId}`
+                : isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
                 <motion.article
-                  key={need.id}
+                  key={isDrive ? `drive-${need.ngoDriveId}` : `request-${need.id}`}
                   initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
                   animate={isInView ? { opacity: 1, y: 0 } : undefined}
                   transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
@@ -347,6 +387,12 @@ export function LiveNeedsSection({
                         <AnimatedCategoryIcon category={need.category} iconClassName="w-3.5 h-3.5" />
                         {need.category}
                       </span>
+
+                      {isDrive && (
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                          NGO drive
+                        </span>
+                      )}
 
                       {isUrgent && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-red-600 dark:text-red-400">
@@ -388,7 +434,15 @@ export function LiveNeedsSection({
                             {need.quantity}
                           </strong>
                         </span>
-                        {need.doneeFirstName && (
+                        {isDrive && need.ngoName && (
+                          <>
+                            <span className="text-stone-300 dark:text-stone-700">·</span>
+                            <span className="truncate text-stone-400 dark:text-stone-500 text-3xs">
+                              By {need.ngoName}
+                            </span>
+                          </>
+                        )}
+                        {!isDrive && need.doneeFirstName && (
                           <>
                             <span className="text-stone-300 dark:text-stone-700">·</span>
                             <span className="truncate text-stone-400 dark:text-stone-500 text-3xs">
@@ -402,13 +456,13 @@ export function LiveNeedsSection({
                     {/* Every card is now fully visible, so every CTA is live and
                         keyboard-reachable — the carousel had to disable the
                         blurred neighbours' links. */}
-                    {!isDonee && (
+                    {(isDrive || !isDonee) && (
                     <Link
                       href={offerUrl}
                       className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
                     >
-                      {!isDonor && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
-                      <span>{isDonor ? "Offer this item" : "Log in to offer this item"}</span>
+                      {!isDonor && !isDrive && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
+                      <span>{isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}</span>
                       <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
                     </Link>
                     )}

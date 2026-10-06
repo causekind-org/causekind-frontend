@@ -27,6 +27,9 @@ import DonateMegaMenu from "@/components/DonateMegaMenu";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import { openDonateChoice } from "@/components/donate/DonateChoice";
 import { DONATE_HREF } from "@/lib/donateScroll";
+import { isNgoRole } from "@/lib/isNgoRole";
+import { toast } from "@/lib/toast";
+import { useNgoStatus, triggerNgoLockedToast } from "@/components/ngo-landing/useNgoStatus";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -690,6 +693,49 @@ export function SiteHeader() {
     return pathname === href || pathname.startsWith(href + "/");
   }
 
+  // NGO side menu (NGO_PARTNER only). My Drives sub-items keep the useNgoStatus
+  // lock; local test mode unlocks them, as on the upload buttons.
+  const isNgoPartner = isNgoRole(user?.role?.toUpperCase());
+  const ngoStatus = useNgoStatus();
+  const ngoLocalTestMode =
+    process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_LOCAL_TEST_MODE === "true";
+  const ngoLockedClick = () => {
+    if (ngoStatus.isVerified && !ngoStatus.isPhotosDue && !ngoStatus.canStartDrive) {
+      toast.info(ngoStatus.driveLockReason);
+      return;
+    }
+    triggerNgoLockedToast(ngoStatus.status, ngoStatus.isPhotosDue, ngoStatus.photosDueRequestName, router);
+  };
+  // `hardLocked` is the one-drive-at-a-time rule, which local test mode never unlocks.
+  const ngoDriveItem = (label: string, link: string, locked: boolean, hardLocked = false) => {
+    const isLocked = (locked && !ngoLocalTestMode) || hardLocked;
+    return {
+      label,
+      link,
+      ariaLabel: label,
+      isLocked,
+      active: !link.includes("#") && isActive(link),
+      ...(isLocked ? { onClick: ngoLockedClick } : {}),
+    };
+  };
+  const ngoMenuItems = [
+    { label: t("nav.home"), link: "/", ariaLabel: t("nav.home"), active: isActive("/") },
+    {
+      label: "My Drives",
+      ariaLabel: "My Drives",
+      children: [
+        ngoDriveItem("Post a Drive", "/ngo/drives/new",
+          !ngoStatus.isVerified || ngoStatus.isPhotosDue, !ngoStatus.canStartDrive),
+        ngoDriveItem("Live Drives", "/dashboard/ngo#live-drives", !ngoStatus.isVerified),
+        ngoDriveItem("Handovers & Photos", "/ngo/handovers", !ngoStatus.isVerified),
+      ],
+    },
+    { label: t("nav.blog"), link: "/blog", ariaLabel: t("nav.blog"), active: isActive("/blog") },
+    ...aboutMenuItems.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
+    { label: "Dashboard", link: "/dashboard/ngo", ariaLabel: "Go to dashboard", active: isActive("/dashboard/ngo") },
+    { label: "Profile", link: "/profile", ariaLabel: "View profile", active: isActive("/profile") },
+  ];
+
   // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
 
@@ -872,6 +918,13 @@ export function SiteHeader() {
               // fill them, so "what should I donate" is noise on their nav.
               const isInKindTrigger = link.href === "/requests" && user?.role !== "DONEE";
               if (isInKindTrigger) {
+                const isNgoPartnerActive = isNgoRole(user?.role?.toUpperCase());
+                const triggerHref = isNgoPartnerActive ? "/dashboard/ngo#live-drives" : link.href;
+                const triggerLabel = isNgoPartnerActive ? "Drives" : link.label;
+                const active = isNgoPartnerActive
+                  ? (pathname === "/dashboard/ngo" || pathname.startsWith("/ngo/drives/"))
+                  : isActive(link.href);
+
                 return (
                   <div
                     key={link.label}
@@ -880,7 +933,7 @@ export function SiteHeader() {
                     onMouseLeave={handleInKindMouseLeave}
                   >
                     <Link
-                      href={link.href}
+                      href={triggerHref}
                       data-tour="nav-requests"
                       onFocus={handleInKindMouseEnter}
                       aria-expanded={isInKindMegaMenuOpen}
@@ -898,7 +951,7 @@ export function SiteHeader() {
                         />
                       )}
                       {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                      <span className="relative z-10">{link.label}</span>
+                      <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
                           isInKindMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
@@ -1271,7 +1324,7 @@ export function SiteHeader() {
         colors={[roleColors.highlight, roleColors.accent]}
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
-        items={[
+        items={isNgoPartner ? ngoMenuItems : [
           // `isActive` matches against the pathname, which never carries a query
           // string — so the Donate entry (…?scroll=donate-form) has to be tested
           // on its path alone or it could never light up.
@@ -1288,7 +1341,7 @@ export function SiteHeader() {
                 ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
                 {
                   label: "My Profile",
-                  link: isNgo ? "/dashboard/ngo/profile" : "/profile",
+                  link: "/profile",
                   ariaLabel: "View profile"
                 },
               ]
@@ -1369,12 +1422,14 @@ export function SiteFooter() {
     isWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
+  // NGOs only have drives: no in-kind request board or campaign creation links.
+  const isNgoAccount = user?.role === "NGO" || user?.role === "NGO_PARTNER";
   const giveBackLinks = [
     ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
-    ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
+    ...(user && !isNgoAccount ? [{ href: "/requests", l: t("inkindRequests") }] : []),
   ];
   return (
-    <footer className="bg-[#120c04] text-stone-250" id="footer">
+    <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
       {/* items-start stops the short columns stretching; the row-span on Get
           support (below) is what actually compacts this on mobile. */}
       <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-sm grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
@@ -1409,6 +1464,11 @@ export function SiteFooter() {
             </span>
           </div>
 
+          {/* Solid on this near-black ground — an outline pill's border would
+              not clear the 3:1 a control boundary needs. Donee-hidden in CSS. */}
+          <div className="pt-2">
+            <DonateNowButton size="sm" showArrow={false} />
+          </div>
         </div>
         {giveBackLinks.length > 0 && (
           <div className="space-y-2 sm:space-y-2.5">
@@ -1433,7 +1493,7 @@ export function SiteFooter() {
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
               { href: "/register?role=NGO", l: "Register your NGO" },
               { href: "/give-safely", l: "Safety guidelines" },
-              ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
+              ...(FEATURES.money && !isNgoAccount ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
               { href: "/faq", l: t("helpFaq") },
               { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (

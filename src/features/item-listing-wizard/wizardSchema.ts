@@ -39,7 +39,8 @@ export const wizardSchema = z.object({
   category: z.string().min(1, "Choose a category"),
   subcategory: z.string().min(1, "Choose a subcategory"),
   title: z.string().trim().min(1, "Give your item a title").max(120, "Keep the title under 120 characters"),
-  quantity: z.coerce.number().int("Quantity must be a whole number").min(1, "Quantity must be at least 1"),
+  // Accepts "" (a cleared field) so the input can be emptied; it coerces to 0 and fails min(1).
+  quantity: z.union([z.literal(""), z.number()]).pipe(z.coerce.number().int("Quantity must be a whole number").min(1, "Quantity must be at least 1")),
   brand: z.string().max(80, "Keep the brand under 80 characters"),
   model: z.string().max(80, "Keep the model under 80 characters"),
 

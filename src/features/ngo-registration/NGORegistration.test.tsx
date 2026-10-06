@@ -2,7 +2,14 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { NGORegistration } from "./NGORegistration";
-import { submitNgoApplication, verifyNgoOtp } from "@/lib/api";
+import { submitNgoApplication, uploadNgoDocument, verifyNgoOtp, getNgoDraft, getMyNgoApplication, resendNgoOtp } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: vi.fn().mockReturnValue({
+    user: null,
+  }),
+}));
 
 vi.mock("@/lib/api", () => ({
   uploadNgoDocument: vi.fn().mockImplementation(async (file, category) => ({
@@ -59,15 +66,18 @@ describe("NGORegistration Component", () => {
     expect(screen.getAllByText(/Step 1 of 6/i).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("shows validation errors when continuing with empty fields on Step 1", async () => {
+  it("disables the Continue button and shows missing fields on Step 1", async () => {
     render(<NGORegistration />);
     const continueBtn = screen.getByRole("button", { name: /Continue/i });
-    fireEvent.click(continueBtn);
-
-    expect(screen.getByText(/Organization name is required/i)).toBeInTheDocument();
-    expect(screen.getByText(/Please select a legal structure/i)).toBeInTheDocument();
-    expect(screen.getByText(/Registration number is required/i)).toBeInTheDocument();
-    expect(screen.getByText(/Registered office address is required/i)).toBeInTheDocument();
+    
+    expect(continueBtn).toBeDisabled();
+    const stillNeeded = screen.getByText(/Still needed:/i);
+    expect(stillNeeded).toBeInTheDocument();
+    expect(stillNeeded).toHaveTextContent(/Organization name/i);
+    expect(stillNeeded).toHaveTextContent(/Legal structure/i);
+    expect(stillNeeded).toHaveTextContent(/Registration number/i);
+    expect(stillNeeded).toHaveTextContent(/Registered office address/i);
+    expect(stillNeeded).toHaveTextContent(/year of establishment/i);
   });
 
   it("advances to Step 2 when Step 1 is valid", async () => {
@@ -78,8 +88,10 @@ describe("NGORegistration Component", () => {
     await user.click(screen.getByRole("button", { name: /Trust/i }));
     await user.type(screen.getByLabelText(/Registration Number/i), "TRU/2020/001");
     await user.type(screen.getByLabelText(/Registered Office Address/i), "123 Charity Lane, Mumbai");
+    await user.type(screen.getByLabelText(/Year of Establishment/i), "2018");
 
     const continueBtn = screen.getByRole("button", { name: /Continue/i });
+    expect(continueBtn).not.toBeDisabled();
     await user.click(continueBtn);
 
     // Should now be on Step 2: Legal Documents
@@ -110,6 +122,8 @@ describe("NGORegistration Component", () => {
     const dummyPdf = new File(["%PDF-1.4 dummy"], "cert.pdf", { type: "application/pdf" });
     await user.upload(docInputs[0], dummyPdf); // Trust Registration Certificate
     await user.upload(docInputs[1], dummyPdf); // Registered Trust Deed
+    await user.upload(docInputs[2], dummyPdf); // Trust PAN Card
+    await user.upload(docInputs[3], dummyPdf); // Trustee Info
     await waitFor(() => {
       expect(screen.queryByText(/Uploading.../i)).not.toBeInTheDocument();
     });
@@ -184,6 +198,67 @@ describe("NGORegistration Component", () => {
 
     // Confirm that with demo mode OFF, real API calls are invoked normally
     expect(submitNgoApplication).toHaveBeenCalledTimes(1);
+    // Every file in the payload is a reference to a backend upload record.
+    const payload = vi.mocked(submitNgoApplication).mock.calls[0][0];
+    expect(payload.authorizationLetter?.documentId).toBe(101);
+    expect(payload.documents["trust-reg-cert"]?.documentId).toBe(101);
+    expect(payload.logo?.photoId).toBe(201);
     expect(verifyNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-ABCD1234", "123456");
   }, 60000);
+
+  it("pre-fills fields from signup data if no draft exists, but keeps draft data if present", async () => {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 1, email: "signup@ngo.org", fullName: "Signup Foundation", phone: "9876543210", role: "NGO" },
+      isLoading: false,
+      isRestoring: false,
+      logout: vi.fn(),
+      setUser: vi.fn(),
+      setAuth: vi.fn(),
+    });
+
+    // Test 1: No draft - should use signup data
+    vi.mocked(getNgoDraft).mockResolvedValueOnce(null);
+    const { unmount } = render(<NGORegistration />);
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Organization Name/i)).toHaveValue("Signup Foundation");
+    });
+    
+    // Test 2: Has draft - should keep draft data
+    unmount();
+    vi.mocked(getNgoDraft).mockResolvedValueOnce({
+      organizationName: "Saved Draft Foundation",
+      mobileNumber: "1112223333",
+      officialEmail: "draft@ngo.org",
+    } as any);
+    
+    render(<NGORegistration />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Organization Name/i)).toHaveValue("Saved Draft Foundation");
+    });
+  });
+
+  // Finding #9: a reload between submit and OTP must not strand the applicant. The
+  // backend refuses a resubmit while PENDING_VERIFICATION, so the OTP step is restored.
+  it("restores the OTP step after a reload with a PENDING_VERIFICATION application, and Resend works there", async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { id: 7, email: "rep@helpinghearts.org", role: "NGO_PARTNER" } } as never);
+    vi.mocked(getMyNgoApplication).mockResolvedValueOnce({
+      applicationId: "CK-NGO-2026-PEND0001",
+      organizationName: "Helping Hearts Trust",
+      status: "PENDING_VERIFICATION",
+    } as never);
+
+    render(<NGORegistration />);
+
+    const resend = await screen.findByRole("button", { name: "Resend code" });
+    // Already submitted: no way back to Review & Submit, and no cooldown on Resend.
+    expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
+    expect(resend).not.toBeDisabled();
+    expect(getNgoDraft).not.toHaveBeenCalled();
+
+    fireEvent.click(resend);
+    await waitFor(() => expect(resendNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-PEND0001"));
+    expect(await screen.findByRole("button", { name: /Resend code in \d+s/ })).toBeDisabled();
+    expect(submitNgoApplication).not.toHaveBeenCalled();
+  });
 });

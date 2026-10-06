@@ -13,9 +13,11 @@ import {
   formatSubmissionTime,
   getNgoStillNeededItems,
   calculateNgoProgress,
+  prefillNgoFormWithUser,
   type NGOFormState,
   type NGOStep,
   type UploadedFile,
+  fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { OrgDetails } from "@/features/ngo-registration/steps/OrgDetails";
 import { LegalDocuments } from "@/features/ngo-registration/steps/LegalDocuments";
@@ -29,6 +31,7 @@ import {
   getNgoDraft,
   saveNgoDraft,
   getMyNgoApplication,
+  ApiError,
   type UploadedFileDto,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
@@ -50,6 +53,9 @@ function toDto(file: UploadedFile | null): UploadedFileDto | null {
 
 function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
   if (!dto) return null;
+  // A saved reference with no upload id is not a file the backend will attach, so
+  // showing it as uploaded would only hide that it has to be uploaded again.
+  if (!IS_NGO_DEMO_MODE && dto.documentId == null && dto.photoId == null) return null;
   return {
     name: dto.name || "Uploaded document",
     documentId: dto.documentId ?? undefined,
@@ -60,6 +66,12 @@ function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
     mimeType: dto.mimeType ?? undefined,
     demo: dto.demo ?? false,
   };
+}
+
+// Reads a ?step=... deep link. email-verification is never a valid entry point.
+function readUrlStep(param: string | null): NGOStep | null {
+  if (!param || param === "email-verification") return null;
+  return (NGO_STEPS as readonly string[]).includes(param) ? (param as NGOStep) : null;
 }
 
 export default function NgoDetailsPage() {
@@ -81,6 +93,8 @@ function NgoDetailsEditor() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const appliedStepLink = useRef<string | null>(null);
+  const startingStepChosen = useRef(false);
+  const initialUrlStep = useRef<NGOStep | null>(readUrlStep(searchParams.get("step")));
 
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
@@ -90,6 +104,8 @@ function NgoDetailsEditor() {
   const [applicationStatus, setApplicationStatus] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
   const [restoreError, setRestoreError] = useState("");
+  // "fresh" = just submitted in this session, "restored" = returned to a pending application.
+  const [awaitingVerification, setAwaitingVerification] = useState<"fresh" | "restored" | null>(null);
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
@@ -120,7 +136,7 @@ function NgoDetailsEditor() {
             if (demoAppRaw) {
               try {
                 submittedApp = JSON.parse(demoAppRaw);
-              } catch {}
+              } catch { }
             }
           }
           if (!submittedApp) {
@@ -144,6 +160,7 @@ function NgoDetailsEditor() {
               submittedAt: submittedApp.submittedAt || "",
               officialEmail: user?.email || prev.officialEmail,
             }));
+            setAwaitingVerification("restored");
             setCurrentStep("email-verification");
             setLoading(false);
             return;
@@ -176,7 +193,7 @@ function NgoDetailsEditor() {
           if (raw) {
             try {
               draft = JSON.parse(raw);
-            } catch {}
+            } catch { }
           }
         }
 
@@ -189,39 +206,50 @@ function NgoDetailsEditor() {
           }
         }
 
-        if (draft && active) {
-          const restoredDocs: Record<string, UploadedFile | null> = {};
-          if (draft.documents) {
-            for (const [key, dto] of Object.entries(draft.documents)) {
-              restoredDocs[key] = fromDto(dto as any);
+        if (active) {
+          if (draft) {
+            const restoredDocs: Record<string, UploadedFile | null> = {};
+            if (draft.documents) {
+              for (const [key, dto] of Object.entries(draft.documents)) {
+                restoredDocs[key] = fromDto(dto as any);
+              }
             }
-          }
 
-          setData((prev) => ({
-            ...prev,
-            organizationName: draft.organizationName || prev.organizationName,
-            legalStructure: (draft.legalStructure as any) || prev.legalStructure,
-            registrationNumber: draft.registrationNumber || prev.registrationNumber,
-            registeredOfficeAddress: draft.registeredOfficeAddress || prev.registeredOfficeAddress,
-            yearOfEstablishment: draft.yearOfEstablishment || prev.yearOfEstablishment,
-            representativeName: draft.representativeName || prev.representativeName,
-            designation: draft.designation || prev.designation,
-            mobileNumber: draft.mobileNumber || prev.mobileNumber,
-            officialEmail: draft.officialEmail || prev.officialEmail || user?.email || "",
-            authorizationLetter: fromDto(draft.authorizationLetter) || prev.authorizationLetter,
-            logo: fromDto(draft.logo) || prev.logo,
-            officePhoto: fromDto(draft.officePhoto) || prev.officePhoto,
-            activityPhotos:
-              draft.activityPhotos && draft.activityPhotos.length > 0
-                ? draft.activityPhotos.map(fromDto)
-                : prev.activityPhotos,
-            confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
-            documents: { ...prev.documents, ...restoredDocs },
-          }));
-
-          if (draft.currentStep && draft.currentStep !== "submitted") {
-            setCurrentStep(draft.currentStep as NGOStep);
+            setData((prev) => prefillNgoFormWithUser({
+              ...prev,
+              organizationName: fieldText(draft.organizationName) || prev.organizationName,
+              legalStructure: (draft.legalStructure as any) || prev.legalStructure,
+              registrationNumber: fieldText(draft.registrationNumber) || prev.registrationNumber,
+              registeredOfficeAddress: fieldText(draft.registeredOfficeAddress) || prev.registeredOfficeAddress,
+              yearOfEstablishment: fieldText(draft.yearOfEstablishment) || prev.yearOfEstablishment,
+              representativeName: fieldText(draft.representativeName) || prev.representativeName,
+              designation: draft.designation || prev.designation,
+              mobileNumber: fieldText(draft.mobileNumber) || prev.mobileNumber,
+              officialEmail: fieldText(draft.officialEmail) || prev.officialEmail,
+              authorizationLetter: fromDto(draft.authorizationLetter) || prev.authorizationLetter,
+              logo: fromDto(draft.logo) || prev.logo,
+              officePhoto: fromDto(draft.officePhoto) || prev.officePhoto,
+              activityPhotos:
+                draft.activityPhotos && draft.activityPhotos.length > 0
+                  ? draft.activityPhotos.map(fromDto)
+                  : prev.activityPhotos,
+              confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
+              documents: { ...prev.documents, ...restoredDocs },
+            }, user));
+          } else {
+            setData((prev) => prefillNgoFormWithUser(prev, user));
           }
+        }
+
+        // Choose the starting step once: a ?step= deep link wins over the saved draft step.
+        if (active && !startingStepChosen.current) {
+          startingStepChosen.current = true;
+          const savedStep =
+            draft?.currentStep && (NGO_STEPS as readonly string[]).includes(draft.currentStep)
+              ? (draft.currentStep as NGOStep)
+              : null;
+          const startStep = initialUrlStep.current ?? savedStep;
+          if (startStep) setCurrentStep(startStep);
         }
       } finally {
         if (active) setLoading(false);
@@ -235,15 +263,42 @@ function NgoDetailsEditor() {
     };
   }, [user, isLoading, router, userIdentifier]);
 
-  // Apply each deep link once after restoration; lifecycle screens take precedence.
+  // Keep the URL in sync with the current step.
   useEffect(() => {
-    if (loading) return;
-    const stepParam = searchParams.get("step");
-    if (appliedStepLink.current === stepParam) return;
-    appliedStepLink.current = stepParam;
-    if (data.applicationId || !stepParam || stepParam === "email-verification") return;
-    if (NGO_STEPS.includes(stepParam as NGOStep)) setCurrentStep(stepParam as NGOStep);
-  }, [searchParams, loading, data.applicationId]);
+    if (loading || data.applicationId || currentStep === "submitted") return;
+    if (typeof window !== "undefined") {
+      const currentSearch = new URLSearchParams(window.location.search);
+      if (currentSearch.get("step") !== currentStep) {
+        window.history.replaceState(null, "", `?step=${currentStep}`);
+      }
+    }
+  }, [currentStep, loading, data.applicationId]);
+
+  /**
+   * Puts the server's per-file refusals (UPLOAD_NOT_READY field errors) on the files
+   * themselves, so each upload card shows which one to re-upload. Returns the messages.
+   */
+  function markRejectedFiles(err: unknown): string[] {
+    const body = err instanceof ApiError ? (err.data as { fieldErrors?: { field?: string; message?: string }[] } | undefined) : undefined;
+    const rejected = (body?.fieldErrors ?? []).filter(f => f?.field && f?.message);
+    if (rejected.length === 0) return [];
+    const mark = (file: UploadedFile | null, message: string) => (file ? { ...file, rejectedReason: message } : file);
+    const patch: Partial<NGOFormState> = {};
+    const documents = { ...data.documents };
+    const activityPhotos = [...data.activityPhotos];
+    for (const { field, message } of rejected) {
+      if (field!.startsWith("documents.")) documents[field!.slice(10)] = mark(documents[field!.slice(10)] ?? null, message!);
+      else if (field === "authorizationLetter") patch.authorizationLetter = mark(data.authorizationLetter, message!);
+      else if (field === "logo") patch.logo = mark(data.logo, message!);
+      else if (field === "officePhoto") patch.officePhoto = mark(data.officePhoto, message!);
+      else if (field!.startsWith("activityPhotos.")) {
+        const i = Number(field!.slice(15));
+        if (Number.isInteger(i) && i >= 0 && i < activityPhotos.length) activityPhotos[i] = mark(activityPhotos[i], message!);
+      }
+    }
+    updateData({ ...patch, documents, activityPhotos });
+    return rejected.map(f => f.message!);
+  }
 
   function updateData(patch: Partial<NGOFormState>) {
     setData((prev) => {
@@ -302,7 +357,8 @@ function NgoDetailsEditor() {
         toast.success("Registration draft saved");
       }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to save draft");
+      const rejected = markRejectedFiles(e);
+      toast.error(rejected.length ? rejected.join(" · ") : e instanceof Error ? e.message : "Failed to save draft");
     } finally {
       setBusy(false);
     }
@@ -347,6 +403,7 @@ function NgoDetailsEditor() {
           submittedAt: subTime,
           officialEmail: user?.email || data.officialEmail,
         });
+        setAwaitingVerification("fresh");
         goToStep("email-verification");
       } finally {
         setBusy(false);
@@ -386,10 +443,13 @@ function NgoDetailsEditor() {
       });
 
       setApplicationStatus("PENDING_VERIFICATION");
+      setAwaitingVerification("fresh");
       setReviewMessage("");
       goToStep("email-verification");
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Submission failed. Please try again.";
+      const rejected = markRejectedFiles(err);
+      const msg = rejected.length ? rejected.join(" · ")
+        : err instanceof Error ? err.message : "Submission failed. Please try again.";
       setSubmitError(msg);
       toast.error(msg);
     } finally {
@@ -475,24 +535,26 @@ function NgoDetailsEditor() {
             </div>
             <div className="flex items-baseline gap-2.5">
               <span className="text-4xl font-black leading-none tabular-nums text-ngo-700 dark:text-ngo-300">
-                {currentStep === "submitted" ? "100%" : `${progress.percent}%`}
+                {currentStep === "submitted" || currentStep === "email-verification" ? "100%" : `${progress.percent}%`}
               </span>
               <span className="text-xs font-semibold text-stone-500">
-                {currentStep === "submitted" ? 6 : progress.completedCount} of 6 done
+                {currentStep === "submitted" ? 6 : currentStep === "email-verification" ? 5 : progress.completedCount} of 6 done
               </span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-zinc-800">
               <div
                 className="h-full rounded-full bg-ngo-700 transition-[width] duration-500"
-                style={{ width: `${currentStep === "submitted" ? 100 : progress.percent}%` }}
+                style={{ width: `${currentStep === "submitted" || currentStep === "email-verification" ? 100 : progress.percent}%` }}
               />
             </div>
             <p className="text-xs leading-relaxed text-stone-500">
               {currentStep === "submitted"
                 ? (applicationStatus === "APPROVED" ? "Your organization’s application is approved." : "Your application is submitted and under review.")
-                : remaining === 0
-                ? "All steps completed. Ready to submit."
-                : `${remaining} ${remaining === 1 ? "step" : "steps"} left before you can submit.`}
+                : awaitingVerification
+                  ? "Submitted. Enter the email code to finish."
+                  : remaining === 0
+                    ? "All steps completed. Ready to submit."
+                    : `${remaining} ${remaining === 1 ? "step" : "steps"} left before you can submit.`}
             </p>
           </div>
 
@@ -505,22 +567,20 @@ function NgoDetailsEditor() {
                 <button
                   key={stepKey}
                   type="button"
-                  disabled={!!data.applicationId || stepKey === "email-verification"}
                   onClick={() => goToStep(stepKey)}
-                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${
-                    isCurrent
+                  disabled={stepKey === "email-verification" || (!!awaitingVerification && !isCurrent)}
+                  className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${isCurrent
                       ? "bg-ngo-50 font-bold text-ngo-700 dark:bg-ngo-900/30 dark:text-ngo-300"
                       : "font-semibold text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-zinc-800/60"
-                  }`}
+                    }`}
                 >
                   <span
-                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-black ${
-                      isCurrent
+                    className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-black ${isCurrent
                         ? "bg-ngo-700 text-white"
                         : isCompleted
-                        ? "bg-emerald-600 text-white"
-                        : "border border-stone-300 text-stone-400 dark:border-zinc-600"
-                    }`}
+                          ? "bg-emerald-600 text-white"
+                          : "border border-stone-300 text-stone-400 dark:border-zinc-600"
+                      }`}
                   >
                     {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                   </span>
@@ -586,7 +646,9 @@ function NgoDetailsEditor() {
             <p className="mt-2 text-xs text-stone-500">
               {currentStep === "submitted"
                 ? "Application submitted."
-                : `${remaining} ${remaining === 1 ? "step" : "steps"} left before submit.`}
+                : awaitingVerification
+                  ? "Submitted. Enter the email code to finish."
+                  : `${remaining} ${remaining === 1 ? "step" : "steps"} left before submit.`}
             </p>
             {currentStep !== "submitted" && (
               <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -597,13 +659,12 @@ function NgoDetailsEditor() {
                     <button
                       key={stepKey}
                       type="button"
-                      disabled={!!data.applicationId || stepKey === "email-verification"}
                       onClick={() => goToStep(stepKey)}
-                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 ${
-                        isCurrent
+                      disabled={stepKey === "email-verification" || (!!awaitingVerification && !isCurrent)}
+                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${isCurrent
                           ? "bg-ngo-700 text-white"
                           : "border border-stone-300 text-stone-600 dark:border-zinc-600 dark:text-stone-300"
-                      }`}
+                        }`}
                     >
                       {isCompleted ? <Check className="w-3.5 h-3.5" /> : `${index + 1}.`} {NGO_STEP_FULL_TITLES[stepKey]}
                     </button>
@@ -702,8 +763,9 @@ function NgoDetailsEditor() {
                       <EmailVerification
                         data={data}
                         onChange={updateData}
-                        onBack={handlePreviousSection}
+                        onBack={awaitingVerification ? undefined : handlePreviousSection}
                         onVerified={handleVerifiedOtp}
+                        resumed={awaitingVerification === "restored"}
                       />
                     )}
                   </div>
@@ -721,26 +783,29 @@ function NgoDetailsEditor() {
                       {NGO_STEP_FULL_TITLES[currentStep as NGOStep]}
                     </span>
                   </p>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={handleSaveDraft}
-                      className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
-                    >
-                      {busy ? "Saving…" : "Save draft"}
-                    </button>
-                    {NGO_STEPS.indexOf(currentStep as NGOStep) > 0 && (
+                  {/* Not rendered (rather than hidden) once submitted, so neither action is reachable by keyboard either. */}
+                  {!awaitingVerification && (
+                    <div className="flex flex-wrap items-center gap-3">
                       <button
                         type="button"
                         disabled={busy}
-                        onClick={handlePreviousSection}
+                        onClick={handleSaveDraft}
                         className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                       >
-                        Previous
+                        {busy ? "Saving…" : "Save draft"}
                       </button>
-                    )}
-                  </div>
+                      {NGO_STEPS.indexOf(currentStep as NGOStep) > 0 && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={handlePreviousSection}
+                          className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                        >
+                          Previous
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}

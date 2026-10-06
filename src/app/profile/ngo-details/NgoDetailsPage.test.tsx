@@ -1,16 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import NgoDetailsPage from "./page";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getMyNgoApplication,
   getNgoDraft,
+  resendNgoOtp,
   saveNgoDraft,
   submitNgoApplication,
+  verifyNgoOtp,
 } from "@/lib/api";
 
 const mockReplace = vi.fn();
 const mockPush = vi.fn();
+// The ?step= value the page sees. A fresh object per render, as in the real hook.
+let mockStepParam: string | null = null;
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
@@ -18,7 +23,7 @@ vi.mock("next/navigation", () => ({
     push: mockPush,
   }),
   useSearchParams: () => ({
-    get: vi.fn().mockReturnValue(null),
+    get: (key: string) => (key === "step" ? mockStepParam : null),
   }),
 }));
 
@@ -27,6 +32,10 @@ vi.mock("@/lib/api", () => ({
   getNgoDraft: vi.fn(),
   saveNgoDraft: vi.fn(),
   submitNgoApplication: vi.fn(),
+  verifyNgoOtp: vi.fn(),
+  resendNgoOtp: vi.fn(),
+  uploadNgoDocument: vi.fn(),
+  uploadNgoPhoto: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -37,6 +46,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockStepParam = null;
+    window.history.replaceState(null, "", "/profile/ngo-details");
   });
 
   it("renders sidebar with readiness progress, 6 step navigation, and Still Needed checklist", async () => {
@@ -164,4 +175,178 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     const returnBtn = screen.getAllByRole("link", { name: /Return to Profile/i })[0];
     expect(returnBtn).toHaveAttribute("href", "/profile");
   }, 15000);
+
+  // ── Reload between submit and OTP ──────────────────────────────────────────
+
+  function signInAsNgo() {
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
+      isLoading: false,
+      isRestoring: false,
+      setUser: vi.fn(),
+      logout: vi.fn(),
+      setAuth: vi.fn(),
+    });
+  }
+
+  const pendingApplication = {
+    applicationId: "CK-NGO-2026-PENDING1",
+    organizationName: "Smile Foundation",
+    status: "PENDING_VERIFICATION",
+    submittedAt: "2026-09-12T10:00:00",
+    verifiedAt: null,
+    updatedAt: null,
+    rejectionReason: null,
+    needsInformationDetails: null,
+  };
+
+  it("reopens the OTP step for an application that was submitted but never verified", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    // Submit deleted the draft, so after a reload the application is all there is.
+    vi.mocked(getMyNgoApplication).mockResolvedValue(pendingApplication);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+
+    render(<NgoDetailsPage />);
+
+    await waitFor(
+      () => expect(screen.getByRole("heading", { name: /Verify Official Email/i })).toBeInTheDocument(),
+      { timeout: 8000 }
+    );
+    expect(screen.getByText("CK-NGO-2026-PENDING1")).toBeInTheDocument();
+    expect(screen.getByText(/already submitted and is waiting for this code/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/5 of 6 done/).length).toBeGreaterThanOrEqual(1);
+
+    // Nothing to go back to: the form steps are closed and there is no Back / Save draft.
+    expect(screen.queryByRole("button", { name: /^Back$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Save draft/i })).not.toBeInTheDocument();
+    for (const stepButton of screen.getAllByRole("button", { name: /Organization Details/i })) {
+      expect(stepButton).toBeDisabled();
+    }
+    fireEvent.click(screen.getAllByRole("button", { name: /Organization Details/i })[0]);
+    expect(screen.getByRole("heading", { name: /Verify Official Email/i })).toBeInTheDocument();
+  }, 15000);
+
+  // ── ?step= ─────────────────────────────────────────────────────────────────
+
+  async function stepHeading(n: number) {
+    await waitFor(() => expect(screen.getAllByText(new RegExp(`Step ${n} of 6`)).length).toBeGreaterThanOrEqual(1), {
+      timeout: 8000,
+    });
+  }
+
+  it("applies ?step= once on load, then navigation is not pulled back to it", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    mockStepParam = "legal-documents";
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+
+    render(<NgoDetailsPage />);
+    await stepHeading(2);
+    expect(window.location.search).toBe("?step=legal-documents");
+
+    // The page still reports ?step=legal-documents through useSearchParams, exactly the
+    // situation in which the old effect snapped the wizard back to Step 2.
+    fireEvent.click(screen.getAllByRole("button", { name: /Authorized Representative/i })[0]);
+    await stepHeading(3);
+    fireEvent.click(screen.getAllByRole("button", { name: /^Previous$/i })[0]);
+    await stepHeading(2);
+    fireEvent.click(screen.getAllByRole("button", { name: /Organization Photos/i })[0]);
+    await stepHeading(4);
+
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getAllByText(/Step 4 of 6/).length).toBeGreaterThanOrEqual(1);
+    expect(window.location.search).toBe("?step=org-photos");
+  }, 20000);
+
+  it("prefers the URL step over the draft's saved step, and otherwise resumes the draft and writes it to the URL", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+    vi.mocked(getNgoDraft).mockResolvedValue({ currentStep: "org-photos", organizationName: "Smile Foundation" });
+
+    mockStepParam = "authorized-rep";
+    const first = render(<NgoDetailsPage />);
+    await stepHeading(3);
+    first.unmount();
+
+    mockStepParam = null;
+    window.history.replaceState(null, "", "/profile/ngo-details");
+    render(<NgoDetailsPage />);
+    await stepHeading(4);
+    expect(window.location.search).toBe("?step=org-photos");
+  }, 20000);
+
+  it("ignores a ?step= that names no step or the email step", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+
+    mockStepParam = "email-verification";
+    render(<NgoDetailsPage />);
+    await stepHeading(1);
+    expect(window.location.search).toBe("?step=org-details");
+  }, 15000);
+
+  it("offers Resend immediately on the restored OTP step and verifies against the restored application", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    vi.mocked(getMyNgoApplication).mockResolvedValue(pendingApplication);
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+    vi.mocked(resendNgoOtp).mockResolvedValue({ message: "sent" });
+    vi.mocked(verifyNgoOtp).mockResolvedValue({ message: "verified" });
+    const user = userEvent.setup();
+
+    render(<NgoDetailsPage />);
+
+    const resend = await screen.findByRole("button", { name: /^Resend code$/i }, { timeout: 8000 });
+    expect(resend).toBeEnabled();
+    await user.click(resend);
+    await waitFor(() => expect(resendNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-PENDING1"));
+
+    await user.type(screen.getByRole("textbox"), "123456");
+    await waitFor(() => expect(verifyNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-PENDING1", "123456"));
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/profile"));
+    expect(submitNgoApplication).not.toHaveBeenCalled();
+  }, 20000);
+
+  it("pre-fills fields from signup data if no draft exists, but keeps draft data if present", async () => {
+    window.scrollTo = vi.fn();
+    mockStepParam = null;
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+
+    // Mock useAuth directly to ensure fullName and phone exist for testing pre-fill
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 101, email: "ngo@example.com", fullName: "John Doe NGO", phone: "1234567890", role: "NGO_PARTNER" },
+      isLoading: false,
+      isRestoring: false,
+      setUser: vi.fn(),
+      logout: vi.fn(),
+      setAuth: vi.fn(),
+    });
+
+    // Test 1: No draft - should use signup data (from the global mock user in this file)
+    vi.mocked(getNgoDraft).mockResolvedValue(null);
+    const { unmount } = render(<NgoDetailsPage />);
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Organization Name/i)).toHaveValue("John Doe NGO");
+    });
+    
+    // Test 2: Has draft - should keep draft data
+    unmount();
+    vi.clearAllMocks();
+    vi.mocked(getNgoDraft).mockResolvedValue({
+      organizationName: "Saved Draft Foundation",
+      mobileNumber: "1112223333",
+      officialEmail: "draft@ngo.org",
+    } as any);
+    
+    render(<NgoDetailsPage />);
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Organization Name/i)).toHaveValue("Saved Draft Foundation");
+    });
+  });
 });

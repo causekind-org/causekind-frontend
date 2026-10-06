@@ -8,9 +8,11 @@ import {
   HandHeart,
   Building2,
   Check,
-  KeyRound,
+  BadgeCheck,
 } from "lucide-react";
-import { SnapCarousel, useRevealOnce, stagger } from "@/components/home/mobile/primitives";
+import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
+import { galleryFonts } from "@/components/home/supportGallery/fonts";
+import m from "./TrustSafetyMobile.module.css";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -98,73 +100,71 @@ function TrustSafetyMobile() {
       ref={ref}
       id="trust"
       aria-label="Trust and Safety"
-      className="ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] px-5"
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] border-t border-stone-200/80 dark:border-stone-800/80 px-5`}
     >
-      <div className="flex flex-col items-center text-center">
-        <div
-          data-reveal-item
-          style={stagger(0)}
-          className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] border border-[var(--ck-role-accent,#B5480F)]/20 bg-[var(--ck-role-accent,#B5480F)]/5 mb-3 sm:mb-4 mt-2"
-        >
-          TRUST & SAFETY
-        </div>
-        <h2 data-reveal-item style={stagger(2)} className="text-2xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
-          Built on trust, for everyone.
-        </h2>
-        <p data-reveal-item style={stagger(3)} className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-          Clear verification, complete privacy protection, and transparent community handovers.
-        </p>
+      <div data-reveal-item style={stagger(0)} className={m.eyebrow}>
+        Trust &amp; safety
       </div>
+      <h2 data-reveal-item style={stagger(1)} className={m.title}>
+        Built on trust, <em>for everyone.</em>
+      </h2>
+      <p data-reveal-item style={stagger(2)} className={m.lede}>
+        Clear verification, complete privacy protection, and transparent community handovers.
+      </p>
 
-      <div data-reveal-item="left" style={stagger(4)} className="mt-4">
-        <SnapCarousel label="Trust and safety for each role">
-          {TRUST_CARDS.map((card, idx) => {
-            const IconComponent = card.icon;
-            return (
-              <div
-                key={card.id}
-                className="relative flex flex-col justify-between p-4 rounded-2xl bg-white dark:bg-[#181411] border border-stone-200/90 dark:border-stone-800 shadow-sm overflow-hidden"
-              >
-                <div className="absolute inset-x-0 top-0 h-1" style={{ backgroundColor: card.roleColor }} aria-hidden="true" />
-                <div>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wider ${card.accentBg}`}>
-                    <IconComponent className="w-3.5 h-3.5" aria-hidden="true" />
-                    {card.roleTitle}
+      <ol className={m.stack} aria-label="Trust and safety for each role">
+        {TRUST_CARDS.map((card, idx) => {
+          const IconComponent = card.icon;
+          return (
+            <li
+              key={card.id}
+              className={m.slot}
+              style={{ ["--k" as string]: idx, ["--role" as string]: card.roleColor } as React.CSSProperties}
+            >
+              <article data-reveal-item style={stagger(3 + idx)} className={m.card}>
+                <header className={m.head}>
+                  <span className={m.headIcon} aria-hidden="true">
+                    <IconComponent className="w-3.5 h-3.5" />
                   </span>
-                  <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-200 mt-2.5 mb-2.5">{card.roleSubtitle}</h3>
-                  <ul className="space-y-2 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+                  <span className={m.headLabel}>{card.roleTitle}</span>
+                  <span className={m.headNum} aria-hidden="true">0{idx + 1}</span>
+                </header>
+                <div className={m.body}>
+                  <h3 className={m.cardTitle}>{card.roleSubtitle}</h3>
+                  <ul className={m.points}>
                     {card.points.map((point) => (
-                      <li key={point} className="flex items-start gap-2">
-                        <span
-                          className="flex-shrink-0 mt-0.5 w-4 h-4 rounded-full flex items-center justify-center text-white"
-                          style={{ backgroundColor: card.roleColor }}
-                          aria-hidden="true"
-                        >
-                          <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      <li key={point} className={m.point}>
+                        <span className={m.check} aria-hidden="true">
+                          <Check className="w-3 h-3 stroke-[3]" />
                         </span>
                         <span>{point}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
-                <div className="mt-3 pt-2.5 border-t border-stone-100 dark:border-stone-800/80 flex items-center justify-between text-[11px] font-medium text-stone-600 dark:text-stone-300">
-                  <span>Guaranteed protocol</span>
-                  <span className="font-mono text-[10px]">0{idx + 1}/03</span>
-                </div>
-              </div>
-            );
-          })}
-        </SnapCarousel>
-      </div>
+                <footer className={m.foot}>
+                  <span className={m.footLabel}>
+                    <BadgeCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                    Guaranteed protocol
+                  </span>
+                  <span className={m.footIndex}>0{idx + 1} / 03</span>
+                </footer>
+              </article>
+            </li>
+          );
+        })}
+      </ol>
 
-      <dl className="mt-3 grid grid-cols-3 rounded-xl bg-white/70 dark:bg-[#14100E]/70 border border-stone-200/80 dark:border-stone-800 shadow-xs divide-x divide-stone-200/60 dark:divide-stone-800/60">
-        {TRUST_STATS.map((st, i) => (
-          <div key={st.label} data-reveal-item style={stagger(5 + i)} className="flex flex-col-reverse items-center text-center px-1 py-2.5">
-            <dt className="text-[10px] leading-tight font-medium text-stone-600 dark:text-stone-400 mt-0.5">{st.label}</dt>
-            <dd className={`text-base font-extrabold font-mono tracking-tight ${st.color}`}>{st.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <div data-reveal-item style={stagger(6)} className={m.ticketWrap}>
+        <dl className={m.ticket}>
+          {TRUST_STATS.map((st) => (
+            <div key={st.label} className={m.cell}>
+              <dt className={m.label}>{st.label}</dt>
+              <dd className={`${m.value} ${st.color}`}>{st.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
     </section>
   );
