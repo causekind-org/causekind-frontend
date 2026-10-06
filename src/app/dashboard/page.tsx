@@ -913,35 +913,35 @@ type OfferMeta = {
 };
 
 const OFFER_STATUS_META: Record<string, OfferMeta> = {
-  DRAFT: { label: "Draft", explanation: "Complete your item details and photos to submit the offer.", action: "edit", actionLabel: "Continue offer", severity: "warning" },
-  SUBMITTED: { label: "Submitted", explanation: "Your offer has been submitted and is queued for AI screening.", severity: "info" },
-  AI_ELIGIBILITY_SCREENING: { label: "AI Eligibility Check", explanation: "We are checking if your item is safe and eligible to donate.", severity: "info" },
-  AI_COMPATIBILITY_SCREENING: { label: "AI Compatibility Check", explanation: "We are comparing your item details against the request requirements.", severity: "info" },
-  COMPATIBILITY_CHECKED: { label: "Compatibility Checked", explanation: "AI check is complete. Sending to the recipient for review.", severity: "info" },
-  NEEDS_INFORMATION: { label: "More Information Needed", explanation: "Your offer needs additional details before it can proceed.", action: "edit", actionLabel: "Update details", severity: "warning" },
-  SOFT_RESERVED_PRIMARY: { label: "Sent to Recipient", explanation: "Your offer is the primary offer and the recipient is reviewing it.", severity: "info" },
-  SOFT_RESERVED_BACKUP: { label: "Backup Offer", explanation: "Your offer is on standby as a backup in case the primary offer falls through.", severity: "neutral" },
-  PENDING_DONEE_REVIEW: { label: "Recipient Reviewing", explanation: "The recipient is reviewing your item photos and details.", severity: "info" },
-  DONEE_ACCEPTED: { label: "Recipient Accepted", explanation: "Great! The recipient accepted your offer. Waiting for you to reconfirm.", action: "reconfirm", actionLabel: "Reconfirm availability", severity: "warning" },
-  DONEE_DECLINED: { label: "Recipient Declined", explanation: "The recipient declined this offer.", severity: "error" },
-  DONOR_RECONFIRMATION_REQUIRED: { label: "Reconfirmation Required", explanation: "Please confirm your item is still available and in the same condition.", action: "reconfirm", actionLabel: "Confirm item is ready", severity: "warning" },
-  DONOR_RECONFIRMED: { label: "Reconfirmed", explanation: "You confirmed availability. Waiting for CauseKind admin to do a final review.", severity: "info" },
-  CONDITION_CHANGED_RESCREENING: { label: "Re-screening", explanation: "Item condition changed — AI is re-checking your updated details.", severity: "info" },
-  PENDING_ADMIN_APPROVAL: { label: "Admin Reviewing", explanation: "CauseKind admin is doing a final check before approving the handover.", severity: "info" },
-  ADMIN_APPROVED: { label: "Approved! Schedule Handover", explanation: "Your offer was approved. Please schedule the handover now.", action: "handover", actionLabel: "Go to Handover Hub", severity: "warning" },
-  ADMIN_REJECTED: { label: "Rejected by Admin", explanation: "Admin could not approve this offer. See the reason and your next steps below.", action: "browse", actionLabel: "Browse other requests", severity: "error" },
-  HANDOVER_IN_PROGRESS: { label: "Handover in Progress", explanation: "The handover is scheduled. Confirm the OTP when you physically hand over the item.", action: "handover", actionLabel: "Open Handover Hub", severity: "info" },
-  HANDOVER_AT_RISK: { label: "Handover At Risk", explanation: "The handover has been rescheduled multiple times. Admin review may be required.", action: "handover", actionLabel: "View Handover Hub", severity: "warning" },
-  ISSUE_WINDOW_OPEN: { label: "Issue Window Open", explanation: "Delivery confirmed! Both parties can report any problems within the issue window.", action: "issues", actionLabel: "Report a problem", severity: "success" },
-  ISSUE_RAISED: { label: "Issue Under Review", explanation: "An issue has been reported. Our team is looking into it.", severity: "warning" },
-  COMPLETED: { label: "Donation Complete!", explanation: "The donation was successfully completed.", action: "certificate", actionLabel: "View Certificate", severity: "success" },
-  CANCELLED: { label: "Cancelled", explanation: "This offer was cancelled.", severity: "neutral" },
-  WITHDRAWN: { label: "Withdrawn", explanation: "You withdrew this offer.", severity: "neutral" },
-  //ngo
+  DRAFT:                         { label: "Draft",                    explanation: "Complete your item details and photos to submit the offer.", action: "edit", actionLabel: "Continue offer", severity: "warning" },
+  SUBMITTED:                     { label: "Submitted",                explanation: "Your offer has been submitted and is queued for AI screening.", severity: "info" },
+  AI_ELIGIBILITY_SCREENING:      { label: "AI Eligibility Check",     explanation: "We are checking if your item is safe and eligible to donate.", severity: "info" },
+  AI_COMPATIBILITY_SCREENING:    { label: "AI Compatibility Check",   explanation: "We are comparing your item details against the request requirements.", severity: "info" },
+  COMPATIBILITY_CHECKED:         { label: "Compatibility Checked",    explanation: "AI check is complete. Sending to the recipient for review.", severity: "info" },
+  NEEDS_INFORMATION:             { label: "More Information Needed",  explanation: "Your offer needs additional details before it can proceed.", action: "edit", actionLabel: "Update details", severity: "warning" },
+  SOFT_RESERVED_PRIMARY:         { label: "Sent to Recipient",        explanation: "Your offer is the primary offer and the recipient is reviewing it.", severity: "info" },
+  SOFT_RESERVED_BACKUP:          { label: "Backup Offer",             explanation: "Your offer is on standby as a backup in case the primary offer falls through.", severity: "neutral" },
+  PENDING_DONEE_REVIEW:          { label: "Recipient Reviewing",      explanation: "The recipient is reviewing your item photos and details.", severity: "info" },
+  DONEE_ACCEPTED:                { label: "Recipient Accepted",       explanation: "Great! The recipient accepted your offer. Waiting for you to reconfirm.", action: "reconfirm", actionLabel: "Reconfirm availability", severity: "warning" },
+  DONEE_DECLINED:                { label: "Recipient Declined",       explanation: "The recipient declined this offer.", severity: "error" },
+  DONOR_RECONFIRMATION_REQUIRED: { label: "Reconfirmation Required",  explanation: "Please confirm your item is still available and in the same condition.", action: "reconfirm", actionLabel: "Confirm item is ready", severity: "warning" },
+  DONOR_RECONFIRMED:             { label: "Reconfirmed",              explanation: "You confirmed availability. Waiting for CauseKind admin to do a final review.", severity: "info" },
+  CONDITION_CHANGED_RESCREENING: { label: "Re-screening",             explanation: "Item condition changed — AI is re-checking your updated details.", severity: "info" },
+  PENDING_ADMIN_APPROVAL:        { label: "Admin Reviewing",          explanation: "CauseKind admin is doing a final check before approving the handover.", severity: "info" },
+  ADMIN_APPROVED:                { label: "Approved! Schedule Handover", explanation: "Your offer was approved. Please schedule the handover now.", action: "handover", actionLabel: "Go to Handover Hub", severity: "warning" },
+  ADMIN_REJECTED:                { label: "Rejected by Admin",        explanation: "Admin could not approve this offer. See the reason and your next steps below.", action: "browse", actionLabel: "Browse other requests", severity: "error" },
+  // NGO drive offers: the NGO reviews; the handover starts as soon as it accepts.
   PENDING_NGO_REVIEW:            { label: "NGO Reviewing",            explanation: "The NGO is reviewing your photos and details.", severity: "info" },
   NGO_ACCEPTED:                  { label: "Accepted! Plan Handover",  explanation: "The NGO accepted your offer. Plan the handover now.", action: "handover", actionLabel: "Go to Handover Hub", severity: "warning" },
   NGO_DECLINED:                  { label: "Declined by NGO",          explanation: "The NGO could not use this offer. See the reason below.", action: "browse", actionLabel: "Browse other needs", severity: "error" },
   ENDED:                         { label: "Drive Ended",              explanation: "This drive closed before your offer was handed over.", severity: "neutral" },
+  HANDOVER_IN_PROGRESS:          { label: "Handover in Progress",     explanation: "The handover is scheduled. Confirm the OTP when you physically hand over the item.", action: "handover", actionLabel: "Open Handover Hub", severity: "info" },
+  HANDOVER_AT_RISK:              { label: "Handover At Risk",         explanation: "The handover has been rescheduled multiple times. Admin review may be required.", action: "handover", actionLabel: "View Handover Hub", severity: "warning" },
+  ISSUE_WINDOW_OPEN:             { label: "Issue Window Open",        explanation: "Delivery confirmed! Both parties can report any problems within the issue window.", action: "issues", actionLabel: "Report an issue", severity: "success" },
+  ISSUE_RAISED:                  { label: "Issue Under Review",       explanation: "An issue has been reported. Our team is looking into it.", severity: "warning" },
+  COMPLETED:                     { label: "Donation Complete!",       explanation: "The donation was successfully completed.", action: "certificate", actionLabel: "View Certificate", severity: "success" },
+  CANCELLED:                     { label: "Cancelled",                explanation: "This offer was cancelled.", severity: "neutral" },
+  WITHDRAWN:                     { label: "Withdrawn",                explanation: "You withdrew this offer.", severity: "neutral" },
 };
 
 const SEVERITY_STYLES = {
@@ -985,17 +985,18 @@ function OfferStageCard({
 
   const isTerminal = ["COMPLETED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "DONEE_DECLINED", "NGO_DECLINED", "ENDED"].includes(offer.status);
 
-  const actionHref = offer._type === "DRIVE_OFFER"
-    ? (meta.action === "edit" ? `/drives/${offer.driveId}/give` :
-      meta.action === "handover" ? `/ngo-drive-offers/${offer.id}/handover` :
-        meta.action === "issues" ? `/ngo-drive-offers/${offer.id}/handover` :
-          meta.action === "certificate" ? `/certificate?offerId=${offer.id}&type=ngo_drive` :
-            meta.action === "browse" ? `/requests` : null)
-    : (meta.action === "edit" ? `/requests/${offer.requestId}/offer` :
-      meta.action === "handover" ? `/offers/${offer.id}/handover` :
-        meta.action === "issues" ? `/offers/${offer.id}/issues` :
-          meta.action === "certificate" ? `/certificate?offerId=${offer.id}` :
-            meta.action === "browse" ? `/requests` : null);
+  const actionHref = offer._type === "DRIVE_OFFER" ? 
+    (meta.action === "edit"        ? `/drives/${offer.driveId}/give` :
+     meta.action === "handover"    ? `/ngo-drive-offers/${offer.id}/handover` :
+     meta.action === "issues"      ? `/ngo-drive-offers/${offer.id}/handover` :
+     meta.action === "certificate" ? `/certificate?offerId=${offer.id}&type=ngo_drive` :
+     meta.action === "browse"      ? `/requests` : null)
+    : 
+    (meta.action === "edit"        ? `/requests/${offer.requestId}/offer` :
+     meta.action === "handover"    ? `/offers/${offer.id}/handover` :
+     meta.action === "issues"      ? `/offers/${offer.id}/issues` :
+     meta.action === "certificate" ? `/certificate?offerId=${offer.id}` :
+     meta.action === "browse"      ? `/requests` : null);
 
   const isCompleted = offer.status === "COMPLETED";
   const cardBorderClass = isCompleted

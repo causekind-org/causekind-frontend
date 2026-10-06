@@ -165,6 +165,7 @@ function TrustSafetyMobile() {
           ))}
         </dl>
       </div>
+
     </section>
   );
 }
