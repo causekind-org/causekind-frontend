@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
-import { getReviews, GoogleReviewsData, GoogleReview } from "@/data/googleReviews";
+import { getReviews, GoogleReviewsData, GoogleReview, SAMPLE_REVIEWS } from "@/data/googleReviews";
+import { isPlaceholderPreviewHost } from "@/lib/placeholderPreview";
 
 export function GoogleReviewsSection() {
   const [data, setData] = useState<GoogleReviewsData | null>(null);
@@ -13,7 +14,8 @@ export function GoogleReviewsSection() {
     let mounted = true;
     const controller = new AbortController();
     getReviews(controller.signal).then((res) => {
-      if (mounted) setData(res);
+      // Staging/dev only: fall back to sample reviews when the live Google API is not configured
+      if (mounted) setData(res ?? (isPlaceholderPreviewHost() ? SAMPLE_REVIEWS : null));
     });
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');

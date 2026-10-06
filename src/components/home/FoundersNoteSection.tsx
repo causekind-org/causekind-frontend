@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useId, useRef } from "react";
 import Image from "next/image";
@@ -9,6 +9,7 @@ import { FOUNDER } from "@/lib/landingConstants";
 import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
 import { galleryFonts } from "@/components/home/supportGallery/fonts";
 import fm from "./FoundersNoteMobile.module.css";
+import { usePlaceholderPreview } from "@/lib/placeholderPreview";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -207,8 +208,9 @@ export function FoundersNoteSection({
 }: {
   variant?: "desktop" | "mobile";
 }) {
-  // Visibility safety: Hide in production if isPlaceholder is true
-  if (FOUNDER.isPlaceholder && process.env.NODE_ENV !== "development") {
+  // Visibility safety: placeholder content shows only in dev and on staging, never in production
+  const previewAllowed = usePlaceholderPreview();
+  if (FOUNDER.isPlaceholder && !previewAllowed) {
     return null;
   }
   if (variant === "desktop") return <FoundersNoteFull variant="desktop" />;
