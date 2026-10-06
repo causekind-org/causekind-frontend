@@ -1464,11 +1464,6 @@ export function SiteFooter() {
             </span>
           </div>
 
-          {/* Solid on this near-black ground — an outline pill's border would
-              not clear the 3:1 a control boundary needs. Donee-hidden in CSS. */}
-          <div className="pt-2">
-            <DonateNowButton size="sm" showArrow={false} />
-          </div>
         </div>
         {giveBackLinks.length > 0 && (
           <div className="space-y-2 sm:space-y-2.5">

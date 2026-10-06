@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback, useId } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
@@ -11,10 +11,6 @@ import {
   Building2,
   Heart,
   ArrowRight,
-  BookOpen,
-  Shirt,
-  Wind,
-  Armchair,
   MapPin,
   ShieldCheck,
 } from "lucide-react";
@@ -261,40 +257,6 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-// Custom Teddy Bear SVG Icon matching causekind item icons
-function TeddyBearIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <circle cx="6.5" cy="6.5" r="2.5" />
-      <circle cx="17.5" cy="6.5" r="2.5" />
-      <circle cx="12" cy="10" r="5" />
-      <circle cx="10.2" cy="9.5" r="0.7" fill="currentColor" />
-      <circle cx="13.8" cy="9.5" r="0.7" fill="currentColor" />
-      <ellipse cx="12" cy="11.5" rx="1.5" ry="1.1" />
-      <path d="M8.5 15c-1.2 1.8-1.2 4-0.5 5.5h8c0.7-1.5 0.7-3.7-0.5-5.5" />
-      <ellipse cx="12" cy="17.5" rx="2.2" ry="1.8" />
-    </svg>
-  );
-}
-
-// Interactive floating icon item definition for hover bursts on living words
-interface PopItem {
-  id: number;
-  icon: React.ComponentType<{ className?: string }>;
-  x: number;
-  y: number;
-  rotate: number;
-  color: string;
-}
-
 // Orbit Planet configuration
 interface PlanetData {
   id: "donor" | "donee" | "ngo";
@@ -327,8 +289,6 @@ export function WhoAreWeDesktop() {
 
   const [isInView, setIsInView] = useState(false);
   const [activeHoverPlanet, setActiveHoverPlanet] = useState<string | null>(null);
-  const [extraThingsPops, setExtraThingsPops] = useState<PopItem[]>([]);
-  const [needThemPops, setNeedThemPops] = useState<PopItem[]>([]);
 
   // 3D Mouse Parallax state
   const [mouseTilt, setMouseTilt] = useState({ x: 0, y: 0 });
@@ -400,46 +360,6 @@ export function WhoAreWeDesktop() {
     },
   ];
 
-  // 1. Living Words Hover Bursts ("extra things" with book, shirt, fan, teddy bear, chair)
-  const triggerExtraThingsBurst = useCallback(() => {
-    const burstIcons = [BookOpen, Shirt, Wind, TeddyBearIcon, Armchair];
-    const colors = [
-      HOME_ROLE_COLORS.donor.main,
-      HOME_ROLE_COLORS.donee.main,
-      HOME_ROLE_COLORS.ngo.main,
-      "#D95D24",
-      HOME_ROLE_COLORS.donee.darkAccent,
-    ];
-    const newPops: PopItem[] = Array.from({ length: 5 }).map((_, i) => ({
-      id: Date.now() + i,
-      icon: burstIcons[i % burstIcons.length],
-      x: (i - 2) * 26 + (Math.random() * 12 - 6),
-      y: -20 - Math.random() * 25,
-      rotate: (Math.random() - 0.5) * 40,
-      color: colors[i % colors.length],
-    }));
-    setExtraThingsPops(newPops);
-    setTimeout(() => {
-      setExtraThingsPops([]);
-    }, 900);
-  }, []);
-
-  // 2. Living Words Hover Bursts ("need them" with 3 bouncing map pins)
-  const triggerNeedThemBurst = useCallback(() => {
-    const newPops: PopItem[] = Array.from({ length: 3 }).map((_, i) => ({
-      id: Date.now() + i,
-      icon: MapPin,
-      x: (i - 1) * 28 + (Math.random() * 8 - 4),
-      y: -24 - Math.random() * 20,
-      rotate: (i - 1) * 15,
-      color: HOME_ROLE_COLORS.donor.main,
-    }));
-    setNeedThemPops(newPops);
-    setTimeout(() => {
-      setNeedThemPops([]);
-    }, 900);
-  }, []);
-
   // 3. Mouse Parallax for Orbit Container
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (typeof window === "undefined" || window.matchMedia("(pointer: coarse)").matches) return;
@@ -489,80 +409,16 @@ export function WhoAreWeDesktop() {
             {/* Heading with Living Words & Marker Underlines */}
             <h2 className="text-2xl sm:text-3xl lg:text-[clamp(1.75rem,2.2vw+0.2rem,2.6rem)] font-extrabold tracking-tight leading-[1.3] text-stone-900 dark:text-stone-100 max-w-3xl">
               <span>We connect people who have </span>
-              {/* Interactive Living Word: "extra things" */}
-              <span
-                onMouseEnter={triggerExtraThingsBurst}
-                onFocus={triggerExtraThingsBurst}
-                tabIndex={0}
-                className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold cursor-pointer group/living select-none outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring,#B5480F)]"
-              >
+              {/* "extra things": static marker underline (hover burst removed 2026-10-06) */}
+              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold">
                 extra things
-                {/* Underline */}
-                <span className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full group-hover/living:bg-[var(--ck-role-accent,#B5480F)] transition-colors" />
-                {/* Pop-up item particles */}
-                <AnimatePresence>
-                  {extraThingsPops.map((pop) => {
-                    const IconComp = pop.icon;
-                    return (
-                      <motion.span
-                        key={pop.id}
-                        className="absolute pointer-events-none z-30"
-                        initial={{ opacity: 1, scale: 0.4, x: 0, y: 0, rotate: 0 }}
-                        animate={{
-                          opacity: 0,
-                          scale: 1.15,
-                          x: pop.x,
-                          y: pop.y,
-                          rotate: pop.rotate,
-                        }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.75, ease: "easeOut" }}
-                      >
-                        <span
-                          className="w-6 h-6 rounded-lg p-1 shadow-sm flex items-center justify-center text-white"
-                          style={{ backgroundColor: pop.color }}
-                        >
-                          <IconComp className="w-4 h-4" />
-                        </span>
-                      </motion.span>
-                    );
-                  })}
-                </AnimatePresence>
+                <span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
               </span>
               <span> with people nearby who </span>
-              {/* Interactive Living Word: "need them" */}
-              <span
-                onMouseEnter={triggerNeedThemBurst}
-                onFocus={triggerNeedThemBurst}
-                tabIndex={0}
-                className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold cursor-pointer group/need select-none outline-none rounded-sm focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring,#B5480F)]"
-              >
+              {/* "need them.": static marker underline (hover burst removed 2026-10-06) */}
+              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold">
                 need them.
-                {/* Underline */}
-                <span className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full group-hover/need:bg-[var(--ck-role-accent,#B5480F)] transition-colors" />
-                {/* Pop-up map pin particles */}
-                <AnimatePresence>
-                  {needThemPops.map((pop) => (
-                    <motion.span
-                      key={pop.id}
-                      className="absolute pointer-events-none z-30"
-                      initial={{ opacity: 1, scale: 0.5, x: 0, y: 0, rotate: 0 }}
-                      animate={{
-                        opacity: 0,
-                        scale: 1.2,
-                        x: pop.x,
-                        y: pop.y,
-                        rotate: pop.rotate,
-                      }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.7, ease: "backOut" }}
-                    >
-                      <span className="w-6 h-6 rounded-full bg-[var(--ck-role-accent,#B5480F)] shadow-sm flex items-center justify-center text-white">
-                        <MapPin className="w-3.5 h-3.5" />
-                      </span>
-                    </motion.span>
-                  ))}
-                </AnimatePresence>
+                <span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
               </span>
             </h2>
 

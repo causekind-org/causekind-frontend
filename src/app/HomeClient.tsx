@@ -70,6 +70,7 @@ import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+import { CreditsSection } from "@/components/home/CreditsSection";
 import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
 import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
@@ -434,6 +435,9 @@ export default function HomeClient({
 
         {/* SECTION 8 — FINAL CTA */}
         <FinalCtaComponent variant="desktop" />
+
+        {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
+        <CreditsSection />
       </div>
       </div>
       )}
@@ -597,6 +601,11 @@ export default function HomeClient({
         {/* SECTION 8 — FINAL CTA */}
         <div className="-mx-5">
           <FinalCtaComponent variant="mobile" />
+        </div>
+
+        {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
+        <div className="-mx-5">
+          <CreditsSection />
         </div>
 
       </div>
