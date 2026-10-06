@@ -1101,10 +1101,16 @@ export type ListingImageAnalysis = {
 };
 
 /** Sends already-uploaded S3 photo URLs to Claude vision for listing-field suggestions. */
+/**
+ * Photo autofill. Its own 3-minute timeout: the model reasons over up to five
+ * photos before answering (often 20–60s), and the default 20s request timeout
+ * aborted it client-side, which read as "Photo analysis failed".
+ */
 export function analyzeListingImages(imageUrls: string[]) {
   return request<ListingImageAnalysis>(`/api/v1/items/analyze-images`, {
     method: "POST",
     body: JSON.stringify({ imageUrls }),
+    signal: AbortSignal.timeout(180_000),
   });
 }
 
