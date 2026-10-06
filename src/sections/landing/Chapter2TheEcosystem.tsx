@@ -32,6 +32,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 
+import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import styles from "./cinematic/cinematic.module.css";
 import { cineFonts } from "./cinematic/fonts";
 import { BAG } from "./cinematic/cutouts";
@@ -1446,6 +1447,9 @@ export function Chapter2TheEcosystem() {
           ))}
         </p>
         <span className="c2-final-line mt-8 block h-[18vh] w-[3px] origin-top rounded-full bg-gradient-to-b from-[#ff7a2f] to-transparent shadow-[0_0_18px_rgba(255,122,47,0.7)]" />
+        <div className={`${styles.clayCtaWrap} mt-6`}>
+          <DonateNowButton size="lg" label="Donate Now" className={styles.clayCta} />
+        </div>
       </div>
 
       {/* ── Film furniture ───────────────────────────────────────────────── */}
