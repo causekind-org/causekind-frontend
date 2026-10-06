@@ -32,6 +32,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { DrawSVGPlugin } from "gsap/DrawSVGPlugin";
 
+import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import styles from "./cinematic/cinematic.module.css";
 import { cineFonts } from "./cinematic/fonts";
 import { BAG } from "./cinematic/cutouts";
@@ -1448,14 +1449,8 @@ export function Chapter2TheEcosystem() {
           ))}
         </p>
         <span className="c2-final-line mt-8 block h-[18vh] w-[3px] origin-top rounded-full bg-gradient-to-b from-[#ff7a2f] to-transparent shadow-[0_0_18px_rgba(255,122,47,0.7)]" />
-        <div className="c2-donate-btn mt-10 pointer-events-auto">
-          <a
-            href="/donate/money"
-            className="inline-flex h-14 items-center justify-center rounded-full bg-primary px-10 text-[1.05rem] font-bold tracking-wide text-primary-foreground shadow-lg transition-transform hover:scale-105 active:scale-95"
-            style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
-          >
-            Donate Now
-          </a>
+        <div className={`c2-donate-btn pointer-events-auto ${styles.clayCtaWrap} mt-6`}>
+          <DonateNowButton size="lg" label="Donate Now" className={styles.clayCta} />
         </div>
       </div>
 
