@@ -12,6 +12,9 @@ import Image from "next/image";
  * labels turn navy (sky blue in dark mode); the logos keep their own colours.
  */
 export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "donee" } = {}) {
+  // Donee rules use the role border, important because an unlayered
+  // `* { border-color }` in styles.css otherwise wins over any border utility.
+  const line = variant === "donee" ? "border-[var(--ck-role-border)]!" : "border-[#E2D6C8] dark:border-stone-800";
   return (
     <section
       aria-labelledby="credits-heading"
@@ -25,8 +28,8 @@ export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "don
         The people behind CauseKind
       </p>
 
-      <div className="mx-auto grid max-w-[1040px] grid-cols-1 border-y border-[#E2D6C8] dark:border-stone-800 md:grid-cols-2">
-        <div className="flex items-center gap-5 border-b border-[#E2D6C8] py-8 dark:border-stone-800 md:border-b-0 md:border-r md:py-10 md:pr-10">
+      <div className={`mx-auto grid max-w-[1040px] grid-cols-1 border-y ${line} md:grid-cols-2`}>
+        <div className={`flex items-center gap-5 border-b ${line} py-8 md:border-b-0 md:border-r md:py-10 md:pr-10`}>
           <Image
             src="/images/money-donation/sahas-logo-transparent.png"
             alt="Sahas Charitable Trust logo"

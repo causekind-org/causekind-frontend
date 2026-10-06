@@ -9,6 +9,9 @@ import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { DonorTwoDoors } from "@/components/home/DonorTwoDoors";
 import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
 import { CreditsSection } from "@/components/home/CreditsSection";
+import { HowReceivingWorksSection } from "@/components/home/HowReceivingWorksSection";
+import { MyRequestsSection } from "@/components/home/MyRequestsSection";
+import { HandoverTipsSection } from "@/components/home/HandoverTipsSection";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import type { PublicItemRequest, PlatformStats } from "@/lib/api";
@@ -16,11 +19,14 @@ import type { PublicItemRequest, PlatformStats } from "@/lib/api";
 export function RoleHome({ 
   role,
   initialPublicRequests,
-  stats
+  stats,
+  hero,
 }: { 
   role: "donor" | "donee",
   initialPublicRequests?: PublicItemRequest[],
-  stats?: PlatformStats | null
+  stats?: PlatformStats | null,
+  /** Donee only: the hero to render, so phones keep their own (cinematic) one. */
+  hero?: React.ReactNode,
 }) {
   useEffect(() => {
     // Refresh ScrollTrigger when RoleHome mounts
@@ -29,23 +35,53 @@ export function RoleHome({
     }, 150);
   }, []);
 
+  if (role === "donee") return <DoneeHome hero={hero} />;
+
   return (
     <div className={`ck-role-desktop-${role} relative z-10 w-full`}>
       <HeroSection />
-      {/* Donees get the main page's About layout in the donee blue. */}
-      {role === "donee" ? <WhoAreWeDesktop variant="donee" /> : <WhoAreWeSection />}
-      {role === "donor" && <SupportGallery />}
-      {/* The live needs board is for givers; a donee is shown no one else's needs. */}
-      {role === "donor" && (
-        <div className="ck-home-paper relative z-10">
-          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
-        </div>
-      )}
+      <WhoAreWeSection />
+      <SupportGallery />
+      <div className="ck-home-paper relative z-10">
+        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+      </div>
       <TrustSafetySection variant="desktop" />
       <FoundersNoteSection variant="desktop" />
       <GoogleReviewsSection />
-      {role === "donor" && <DonorTwoDoors />}
-      {role === "donee" && <CreditsSection variant="donee" />}
+      <DonorTwoDoors />
+    </div>
+  );
+}
+
+/**
+ * The donee landing page, at every width. The order is fixed by design:
+ * hero, about, how receiving works, my requests, trust & safety, handover
+ * tips, founder's note, reviews, the people behind CauseKind. Accents are the
+ * donee blue throughout; no live needs board (a donee is shown no one else's
+ * needs).
+ */
+function DoneeHome({ hero }: { hero?: React.ReactNode }) {
+  return (
+    <div className="ck-role-desktop-donee relative z-10 w-full">
+      {hero ?? <HeroSection />}
+      <WhoAreWeDesktop variant="donee" />
+      <HowReceivingWorksSection />
+      <MyRequestsSection />
+      <div className="hidden lg:block">
+        <TrustSafetySection variant="desktop" />
+      </div>
+      <div className="lg:hidden">
+        <TrustSafetySection variant="mobile" />
+      </div>
+      <HandoverTipsSection />
+      <div className="hidden lg:block">
+        <FoundersNoteSection variant="desktop" tone="donee" />
+      </div>
+      <div className="lg:hidden">
+        <FoundersNoteSection variant="mobile" tone="donee" />
+      </div>
+      <GoogleReviewsSection />
+      <CreditsSection variant="donee" />
     </div>
   );
 }

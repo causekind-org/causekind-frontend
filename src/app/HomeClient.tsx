@@ -239,7 +239,8 @@ export default function HomeClient({
   const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
   // The live needs board is for givers; a donee is shown no one else's needs.
   const showLiveNeeds = roleStr !== "DONEE";
-  const isDonee = roleStr === "DONEE";
+  // Donees get their own landing tree at every width (see RoleHome's DoneeHome).
+  const showDoneeHome = roleStr === "DONEE" && !isRestoring;
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -251,7 +252,7 @@ export default function HomeClient({
   }, []);
 
   // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
-  const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+  const showGuestDesktopTree = (isRestoring || !isDonorOrDonee || !isDesktop) && !showDoneeHome;
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -280,20 +281,13 @@ export default function HomeClient({
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
-      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit). Donees get the main
-          page's About layout at every width, in the donee blue. */}
-      {isDonee ? (
-        <WhoAreWeDesktop variant="donee" />
-      ) : (
-        <>
-          <div className="hidden lg:block">
-            <WhoAreWeDesktop />
-          </div>
-          <div className="lg:hidden">
-            <WhoAreWeSection />
-          </div>
-        </>
-      )}
+      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
+      <div className="hidden lg:block">
+        <WhoAreWeDesktop />
+      </div>
+      <div className="lg:hidden">
+        <WhoAreWeSection />
+      </div>
 
       <SupportGallery />
 
@@ -451,12 +445,23 @@ export default function HomeClient({
       )}
 
       {/* ROLE HOME FOR DESKTOP */}
-      {isDonorOrDonee && !isRestoring && isDesktop && (
+      {roleStr === "DONOR" && !isRestoring && isDesktop && (
         <div className="max-lg:hidden w-full">
           <RoleHome 
-            role={roleStr?.toLowerCase() as "donor" | "donee"} 
+            role="donor" 
             initialPublicRequests={initialPublicRequests} 
             stats={stats} 
+          />
+        </div>
+      )}
+
+      {/* DONEE HOME — every width. Phones keep the hero they had (the
+          cinematic film when it is on); desktop keeps the plain hero. */}
+      {showDoneeHome && (
+        <div className="w-full">
+          <RoleHome
+            role="donee"
+            hero={isDesktop ? <HeroComponent /> : FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
           />
         </div>
       )}
@@ -489,6 +494,7 @@ export default function HomeClient({
       {/* Below 768px every section pads itself (`.ck-m-section`, with room for
           the bottom dock), so the column's own 44px gap and top pad drop out
           there rather than stacking on top of it. */}
+      {!showDoneeHome && (
       <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
@@ -613,10 +619,11 @@ export default function HomeClient({
 
         {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
         <div className="-mx-5">
-          <CreditsSection variant={isDonee ? "donee" : "donor"} />
+          <CreditsSection />
         </div>
 
       </div>
+      )}
     </div>
   );
 }

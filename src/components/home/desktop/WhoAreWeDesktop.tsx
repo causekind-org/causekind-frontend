@@ -118,10 +118,11 @@ function HoverFlipCard({ title, desc, icon: Icon, variant = "donor" }: { title: 
     ? "w-10 h-10 rounded-xl bg-[var(--ck-role-accent)] flex items-center justify-center mb-4"
     : "w-10 h-10 rounded-xl bg-[#B5480F] flex items-center justify-center mb-4";
   const badgeIconClass = variant === "donee" ? "w-5 h-5 text-[var(--ck-role-on-accent)]" : "w-5 h-5 text-white";
-  // The donor border resolves to a warm peach on the home page; the donee edge
-  // is the role border token (accent at 20%) on a cool dark surface instead.
+  // The donor border resolves to a warm peach on the home page: an unlayered
+  // `* { border-color }` in styles.css beats every border utility. The donee
+  // edge is the role border token, marked important so it actually applies.
   const faceClass = variant === "donee"
-    ? "bg-white dark:bg-zinc-900 border-[var(--ck-role-border)]"
+    ? "bg-white dark:bg-zinc-900 border-[var(--ck-role-border)]!"
     : "bg-white dark:bg-[#1C1410] border-stone-200 dark:border-stone-800";
   return (
     <div
