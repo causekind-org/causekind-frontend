@@ -46,6 +46,33 @@ const DOCS = NEED_PROFILE_DOCS;
 const DOCS_STEP = GROUPS.length;
 const STEPS = [...GROUPS.map(g => g.title), "Identity documents"];
 
+/**
+ * Which server "missing" items belong to which required section, mirrored from
+ * DoneeProfileService.missing(). A required section is done when none of its
+ * items is still missing; a section with no compulsory fields is always done
+ * (owner, 2026-10-06); documents are done when no required document is missing.
+ */
+const SECTION_MISSING: Record<number, string[]> = {
+  0: ["People in home", "Dependents", "Age", "Housing type"],
+  1: ["Monthly household income", "Income source", "Financial situation"],
+};
+function stepDone(index: number, missing: string[], _saved: Partial<RequestVerification>): boolean {
+  if (index === DOCS_STEP) return !DOCS.some(d => d.required && missing.includes(d.type));
+  const owned = SECTION_MISSING[index];
+  if (owned) return !owned.some(m => missing.includes(m));
+  return true;
+}
+
+/** Compulsory fields of one section that are still blank in the form. */
+function blankRequired(index: number, details: Partial<RequestVerification>): string[] {
+  const group = GROUPS[index];
+  if (!group) return [];
+  const isBlank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
+  const keys = group.fields.filter(f => f.required && isBlank(details[f.key])).map(f => f.key as string);
+  if (index === 0 && !details.housingType) keys.push("housingType");
+  return keys;
+}
+
 export default function NeedProfilePage() { return <Suspense fallback={null}><NeedProfileEditor /></Suspense>; }
 function NeedProfileEditor() {
   const {user,isLoading}=useAuth(); const router=useRouter(); const params=useSearchParams();
@@ -58,6 +85,19 @@ function NeedProfileEditor() {
   // would lose in-progress edits on every switch, and the page's tests drive a
   // household field and a document upload within one render.
   const [active,setActive]=useState(0);
+  // Compulsory fields left blank when the donee tried to move on.
+  const [blankKeys,setBlankKeys]=useState<Set<string>>(new Set());
+  function nextSection(){
+    const blanks=blankRequired(active,details);
+    if(blanks.length){
+      setBlankKeys(new Set(blanks));
+      toast.error("Fill in the fields marked * before moving on.");
+      document.getElementById(blanks[0]==="housingType"?"profile-housing":`profile-${blanks[0]}`)?.focus();
+      return;
+    }
+    setBlankKeys(new Set());
+    setActive(active+1);
+  }
   const next=params.get("next");
   // Allowlist, not a sanitiser: `next` is attacker-controllable, so only these
   // exact shapes round-trip. `category` comes from the donee-view tiles.
@@ -83,7 +123,7 @@ function NeedProfileEditor() {
     setBusy(true); setChecking(type); setUploadErrors(v=>({...v,[type]:undefined}));
     try {const doc=await uploadNeedProfileDocument(type,prepared);const p=await getDoneeNeedProfile();setProfile(p);
       if(doc.aiVerified===false) toast.error("Please replace this document. See the AI feedback below.");
-      else toast.success(doc.aiVerified===true?"Saved ? AI screening passed":"Saved for admin review");}
+      else toast.success(doc.aiVerified===true?"Saved — AI screening passed":"Saved for admin review");}
     catch(e){const message=e instanceof Error?e.message:"Upload failed";setUploadErrors(v=>({...v,[type]:message}));toast.error(message);}
     finally{setBusy(false);setChecking(null);}
   }
@@ -126,7 +166,8 @@ function NeedProfileEditor() {
           {STEPS.map((title,index)=>
             <button key={title} type="button" onClick={()=>setActive(index)}
               className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${index===active?"bg-stone-100 font-bold text-[#1e3a60] dark:bg-zinc-800 dark:text-blue-200":"font-semibold text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-zinc-800/60"}`}>
-              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-black ${index===active?"bg-[var(--ck-role-accent)] text-white":"border border-stone-300 text-stone-400 dark:border-zinc-600"}`}>{index+1}</span>
+              {(()=>{const done=stepDone(index,profile.missing,profile.details);return(
+              <span aria-label={done?"Done":undefined} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-black ${done?"bg-emerald-500 text-white":index===active?"bg-[var(--ck-role-accent)] text-white":"border border-stone-300 text-stone-400 dark:border-zinc-600"}`}>{done?<Check className="h-3 w-3" strokeWidth={3.5} aria-hidden />:index+1}</span>);})()}
               {title}
             </button>
           )}
@@ -177,12 +218,13 @@ function NeedProfileEditor() {
                     {group.fields.map(field=><div key={field.key} className={field.type==="textarea"?"sm:col-span-2":""}>
                       <label className="mb-1.5 block text-2xs font-black uppercase tracking-wider text-stone-500" htmlFor={`profile-${field.key}`}>{field.label}{field.required?" *":""}</label>
                       {field.type==="textarea"
-                        ? <Textarea id={`profile-${field.key}`} rows={4} maxLength={field.max} value={String(details[field.key]??"")} onChange={e=>{setDetails(v=>({...v,[field.key]:e.target.value}));setDirty(true);}} className="text-sm placeholder:text-xs"/>
-                        : <Input id={`profile-${field.key}`} type={field.type||"text"} min={0} max={field.type==="number"?field.max:undefined} maxLength={field.type!=="number"?field.max:undefined} value={details[field.key] as string|number ?? ""} onChange={e=>{const value=e.target.value;setDetails(v=>({...v,[field.key]:field.type==="number"?(value===""?null:Number(value)):value}));setDirty(true);}}/>}
+                        ? <Textarea id={`profile-${field.key}`} rows={4} maxLength={field.max} placeholder={field.required?undefined:"Not provided"} aria-invalid={blankKeys.has(field.key)||undefined} value={String(details[field.key]??"")} onChange={e=>{setDetails(v=>({...v,[field.key]:e.target.value}));setDirty(true);setBlankKeys(s=>{const n=new Set(s);n.delete(field.key);return n;});}} className={`text-sm placeholder:text-xs ${blankKeys.has(field.key)?"border-red-500 ring-1 ring-red-500":""}`}/>
+                        : <Input id={`profile-${field.key}`} placeholder={field.required?undefined:"Not provided"} aria-invalid={blankKeys.has(field.key)||undefined} className={blankKeys.has(field.key)?"border-red-500 ring-1 ring-red-500":undefined} type={field.type||"text"} min={0} max={field.type==="number"?field.max:undefined} maxLength={field.type!=="number"?field.max:undefined} value={details[field.key] as string|number ?? ""} onChange={e=>{const value=e.target.value;setDetails(v=>({...v,[field.key]:field.type==="number"?(value===""?null:Number(value)):value}));setDirty(true);setBlankKeys(s=>{const n=new Set(s);n.delete(field.key);return n;});}}/>}
+                      {blankKeys.has(field.key)&&<p className="mt-1 text-xs font-semibold text-red-600">This is required.</p>}
                     </div>)}
                     {index===0&&<div>
                       <label htmlFor="profile-housing" className="mb-1.5 block text-2xs font-black uppercase tracking-wider text-stone-500">Housing type *</label>
-                      <select id="profile-housing" value={details.housingType||""} onChange={e=>{setDetails(v=>({...v,housingType:(e.target.value || null) as RequestVerification["housingType"]}));setDirty(true);}} className="h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 text-sm dark:border-zinc-700"><option value="">Select</option>{["OWNED","RENTED","TEMPORARY","SHELTER"].map(h=><option key={h} value={h}>{h.charAt(0)+h.slice(1).toLowerCase()}</option>)}</select>
+                      <select id="profile-housing" aria-invalid={blankKeys.has("housingType")||undefined} value={details.housingType||""} onChange={e=>{setDetails(v=>({...v,housingType:(e.target.value || null) as RequestVerification["housingType"]}));setDirty(true);setBlankKeys(s=>{const n=new Set(s);n.delete("housingType");return n;});}} className={`h-10 w-full rounded-md border bg-transparent px-3 text-sm dark:border-zinc-700 ${blankKeys.has("housingType")?"border-red-500 ring-1 ring-red-500":"border-slate-200"}`}><option value="">Select</option>{["OWNED","RENTED","TEMPORARY","SHELTER"].map(h=><option key={h} value={h}>{h.charAt(0)+h.slice(1).toLowerCase()}</option>)}</select>
                     </div>}
                   </div>
                   {index===0&&<div className="mt-8 rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
@@ -214,7 +256,7 @@ function NeedProfileEditor() {
                   : `${remaining} left`}
               </p>
               <div className="flex flex-wrap items-center gap-3">
-                {active<DOCS_STEP && <Button type="button" variant="outline" disabled={busy} onClick={()=>setActive(active+1)}>Next section</Button>}
+                {active<DOCS_STEP && <Button type="button" variant="outline" disabled={busy} onClick={nextSection}>Next section</Button>}
                 <Button type="submit" variant="outline" disabled={busy}>{busy?"Working…":"Save profile"}</Button>
                 {/* Only once there is somewhere to continue to. Offering this on
                     section one invites a click that can only end in the "complete

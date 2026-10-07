@@ -836,13 +836,6 @@ export type CreateListingPayload = {
   declarationsAccepted?: boolean;
 };
 
-export function createItemListing(data: CreateListingPayload) {
-  return request<ItemListing>("/api/v1/items", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
 export function adminGetItemListings(status?: string, opts?: AdminListOptions) {
   return request<ItemListing[]>(`/api/v1/admin/items${adminListQuery(status, opts)}`);
 }
@@ -1101,10 +1094,16 @@ export type ListingImageAnalysis = {
 };
 
 /** Sends already-uploaded S3 photo URLs to Claude vision for listing-field suggestions. */
+/**
+ * Photo autofill. Its own 3-minute timeout: the model reasons over up to five
+ * photos before answering (often 20–60s), and the default 20s request timeout
+ * aborted it client-side, which read as "Photo analysis failed".
+ */
 export function analyzeListingImages(imageUrls: string[]) {
   return request<ListingImageAnalysis>(`/api/v1/items/analyze-images`, {
     method: "POST",
     body: JSON.stringify({ imageUrls }),
+    signal: AbortSignal.timeout(180_000),
   });
 }
 
@@ -1805,6 +1804,14 @@ export function confirmMatchHandoverDonor(id: number, data: {
   return request<ItemMatch>(`/api/v1/matches/${id}/handover/confirm-donor`, {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+/** Step 2 of a match handover: the recipient enters the donor's code (unlocks both confirmations). */
+export function verifyMatchHandoverOtp(id: number, otp: string) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/handover/verify-otp`, {
+    method: "POST",
+    body: JSON.stringify({ otp }),
   });
 }
 
@@ -2712,6 +2719,14 @@ export function confirmHandoverDonor(offerId: number, quantityHandedOver: number
   });
 }
 
+/** Step 2 of an offer handover: the recipient enters the donor's code (unlocks both confirmations). */
+export function verifyHandoverOtp(offerId: number, otp: string) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/verify-otp`, {
+    method: "POST",
+    body: JSON.stringify({ otp }),
+  });
+}
+
 export function confirmHandoverDonee(offerId: number, data: {
   otp?: string; quantityReceived: number;
   conditionRating?: string; conditionNotes?: string; verificationMethod?: string;
@@ -2954,6 +2969,29 @@ export function analyzeItemImage(image: File): Promise<{ description: string }> 
     if (!res.ok) throw new Error("Image analysis failed");
     return res.json() as Promise<{ description: string }>;
   });
+}
+
+/** A saved bell notification (V36). `id` matches the live stream's "n-<id>". */
+export type SavedNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  createdAt: string;
+  read: boolean;
+};
+
+export function getMyNotifications() {
+  return request<SavedNotification[]>("/api/v1/notifications", { silent401: true });
+}
+
+export function markNotificationRead(id: string) {
+  return request<{ read: boolean }>(`/api/v1/notifications/${id.replace(/^n-/, "")}/read`, { method: "POST" });
+}
+
+export function markAllNotificationsRead() {
+  return request<{ updated: number }>("/api/v1/notifications/read-all", { method: "POST" });
 }
 
 export function getMyMatches() {

@@ -56,11 +56,15 @@ export const wizardSchema = z.object({
     .min(30, "Describe the item in at least 30 characters")
     .max(2000, "Keep the description under 2000 characters"),
 
-  countryIso: z.string().min(1, "Choose a country"),
-  stateIso: z.string().min(1, "Choose a state or province"),
-  city: z.string().trim().min(1, "Choose a city"),
+  // Location is no longer asked for (the Confirm location step was removed
+  // 2026-10-06): it comes from the donor's profile, which has no PIN code. So none
+  // of these may be required, or a donor could be blocked at submit by a field
+  // they cannot see. The backend treats all of them as optional.
+  countryIso: z.string(),
+  stateIso: z.string(),
+  city: z.string().trim(),
   locality: z.string().max(120, "Keep the locality under 120 characters"),
-  pincode: z.string().trim().min(1, "Enter a PIN or postal code"),
+  pincode: z.string().trim(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
 

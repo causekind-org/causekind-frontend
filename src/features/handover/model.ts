@@ -74,6 +74,11 @@ export type HandoverConfirmationState = {
   conditionRating: string | null;
   /** Server-computed where available. Never guessed from status. */
   partlyConfirmed: boolean;
+  /**
+   * The recipient has entered the donor's handover code (2026-10-07). Both
+   * "I have donated the item" and "I have received the item" wait for it.
+   */
+  otpVerified: boolean;
 };
 
 export type HandoverParticipant = {

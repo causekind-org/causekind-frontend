@@ -506,34 +506,45 @@ export default function OfferWizardPage() {
     toast.info("This option is coming soon — for now, offer an item you already own.");
   }
 
-  // ── Step 1: Select flow type + create/resume draft ────────────────────────
-  async function handleFlowSelect(flowType: DonorFlowType) {
+  // ── Step 1: Select flow type — opens the form, creates nothing ────────────
+  // The draft is created by the wizard on the first real save (createOfferLazily
+  // below). Picking a card used to POST a draft immediately, so a donor who only
+  // looked around left an empty DRAFT behind that the donee could see.
+  function handleFlowSelect(flowType: DonorFlowType) {
+    if (blockedByOther) return; // the page already knows another donor is mid-offer
     set("flowType", flowType);
-    setLoading(true);
     setError(null);
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /**
+   * Called by the wizard (through its autosave queue) the first time it needs an
+   * offer id. Same outcomes the old flow-select handled: a resumed draft, an
+   * existing active offer (back to step 1 with its banner), or another donor
+   * already mid-offer (the blocked dialog). Throws in the last two so nothing is
+   * saved against an offer the donor cannot edit.
+   */
+  async function createOfferLazily(): Promise<DonationOffer> {
+    const flowType = form.flowType as DonorFlowType;
     try {
       const returned = await createOfferDraft(requestId, flowType);
       setOffer(returned);
-      // If this resumes an in-progress draft rather than starting a fresh one,
-      // refill the form so the donor doesn't have to re-enter everything.
-      if (returned.itemDetails) hydrateForm(returned);
-      // If backend returned an existing active offer (not a fresh draft), handle it
       if (returned.status !== "DRAFT" && returned.status !== "NEEDS_INFORMATION") {
         setExistingOffer(returned);
-        return; // Stay on Step 1 — the existing offer banner will appear
+        setStep(1);
+        throw new Error("This request already has your active offer.");
       }
-      setStep(2);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      return returned;
     } catch (e: unknown) {
       if ((e as ApiConflictError)?.code === "OFFER_BLOCKED_ACTIVE_ELSEWHERE") {
         setBlockedByOther(true);
-      } else {
-        setError(e instanceof Error ? e.message : "Failed to create offer draft");
+        setStep(1);
       }
-    } finally {
-      setLoading(false);
+      throw e;
     }
   }
+
 
 
   if (requestLoadFailed) {
@@ -595,7 +606,7 @@ export default function OfferWizardPage() {
   // The request/flow picker creates the server draft. Once it exists, the
   // editable item form owns the viewport so its desktop rail, stacked card and
   // mobile sticky controls are not constrained by the legacy page wrapper.
-  if (step === 2 && offer) {
+  if (step === 2 && (offer || form.flowType)) {
     // `overflow-x-clip`, deliberately NOT `overflow-x-hidden`: `hidden` would
     // make this a scroll container, and this wizard's three `position: sticky`
     // elements would then stick to it instead of the viewport.
@@ -610,12 +621,14 @@ export default function OfferWizardPage() {
         className="min-h-screen overflow-x-clip bg-[#faf8f5] dark:bg-zinc-950"
       >
         <DonationOfferWizard
-          offerId={offer.id}
+          offerId={offer?.id ?? null}
           offer={offer}
+          flowType={(offer?.flowType ?? form.flowType) as DonationOffer["flowType"]}
+          createOffer={createOfferLazily}
           requestTitle={request.title}
           requestedQuantity={request.quantity}
           stillNeededQuantity={stillNeeded}
-          adminNote={offer.status === "NEEDS_INFORMATION" ? offer.displayRejectionReason : null}
+          adminNote={offer?.status === "NEEDS_INFORMATION" ? offer.displayRejectionReason : null}
           onExit={() => {
             setExistingOffer(offer);
             setStep(1);

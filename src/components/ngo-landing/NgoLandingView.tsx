@@ -7,6 +7,7 @@ import { NgoProblemSolutionSection } from "./NgoProblemSolutionSection";
 import { NgoTransparencySection } from "./NgoTransparencySection";
 import { NgoTrustSection } from "./NgoTrustSection";
 import { NgoHowItWorksSection } from "./NgoHowItWorksSection";
+import { CreditsSection } from "@/components/home/CreditsSection";
 import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
 
 function NgoLandingViewContent() {
@@ -32,6 +33,9 @@ function NgoLandingViewContent() {
 
       {/* SECTION 5 — HOW IT WORKS (For NGOs and trusts / True Focus headline + 3 Step Cards + CTA) */}
       <NgoHowItWorksSection />
+
+      {/* The people behind CauseKind: same credit as the public home page. */}
+      <CreditsSection />
 
       {/* SECTION 6 — COMMUNITY REVIEWS (Trusted by Givers and NGOs Marquee - last section before footer) */}
       {/* Publish testimonials only when sourced and approved for use. */}

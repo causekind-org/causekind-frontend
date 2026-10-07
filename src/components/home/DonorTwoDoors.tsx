@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { DONATE_HREF } from "@/lib/donateScroll";
 
 /**
  * "Ready to help?" — the logged-in donor home's closing choice between giving
@@ -73,7 +74,10 @@ export function DonorTwoDoors() {
 
           {/* Door 2 — give money */}
           <Link
-            href="/donate/money"
+            // Land on the donation form, not the top of the page. The page's
+            // arrival handler owns the scroll, as for every DonateNowButton.
+            href={DONATE_HREF}
+            scroll={false}
             className="group relative flex min-h-[248px] flex-col justify-between gap-[18px] overflow-hidden rounded-[22px] border-[1.5px] border-[#EAD9CB] bg-white p-6 text-stone-900 no-underline transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF6F1] motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus-visible:ring-offset-[#0E0C0A] md:min-h-[320px] md:rounded-[28px] md:p-10"
             style={{ ["--tw-ring-color" as string]: accent }}
           >

@@ -44,6 +44,7 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 import { DeferredOverlays } from "@/components/DeferredOverlays";
 import { DonateChoice } from "@/components/donate/DonateChoice";
 import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
+import { MatchActionDock } from "@/components/matches/MatchActionDock";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -201,8 +202,10 @@ export default async function RootLayout({
                   <DeferredOverlays />
                   {/* Every Donate button opens this In-Kind / Money choice. */}
                   <DonateChoice />
-                  {/* Logged-in donors' next step after "Donate items". */}
+                  {/* Guests' and donors' next step after "Donate items". */}
                   <DonateItemsChoiceModal />
+                  {/* Donor-only: a waiting match, once, until answered or closed. */}
+                  <MatchActionDock />
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>

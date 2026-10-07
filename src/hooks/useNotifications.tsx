@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers, getMyNgoDrives, getNgoDriveOffersForNgo, getMyNgoDriveOffers } from "@/lib/api";
+import { getMyNotifications, markAllNotificationsRead, type SavedNotification, getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers, getMyNgoDrives, getNgoDriveOffersForNgo, getMyNgoDriveOffers } from "@/lib/api";
 import { useAuth } from "./useAuth";
 
 export type AppNotification = {
@@ -20,10 +20,12 @@ export type AppNotification = {
 /** What deriveNotifications/SSE produce — receivedAt is stamped at merge time */
 type IncomingNotification = Omit<AppNotification, "receivedAt"> & { receivedAt?: number };
 
+// Read state for DERIVED notices only (worked out from the user's current data on
+// each load). Saved notices keep their read state on the server.
 const SEEN_KEY  = "ck_notif_seen_v3";
-// Per-user persistent tray. Notifications only ever *accumulate* here — a status
-// moving on (or an entity disappearing) never removes its notification; the only
-// way one leaves the tray is being pushed off the bottom by the 10-item cap.
+// The old per-email browser copy of the whole tray. No longer written: it outlived
+// deleted accounts (a re-created account with the same email inherited it). Purged
+// once on load. The bell's saved list now comes from GET /api/v1/notifications.
 const STORE_PREFIX = "ck_notif_store_v1_";
 const POLL_MS   = 90_000;
 const MAX_NOTIFICATIONS = 10;
@@ -62,23 +64,37 @@ function sortAndCap(list: AppNotification[]): AppNotification[] {
   return [...list].sort((a, b) => b.receivedAt - a.receivedAt).slice(0, MAX_NOTIFICATIONS);
 }
 
-function loadStore(key: string): AppNotification[] {
+function purgeLegacyStores() {
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? parsed.filter((n) => n && typeof n.id === "string" && typeof n.receivedAt === "number")
-      : [];
-  } catch { return []; }
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(STORE_PREFIX)) localStorage.removeItem(key);
+    }
+  } catch {}
 }
-function saveStore(key: string, list: AppNotification[]) {
-  try { localStorage.setItem(key, JSON.stringify(list)); } catch {}
+
+const KNOWN_TYPES: AppNotification["type"][] = ["match", "approved", "rejected", "fulfilled", "info"];
+
+function fromSaved(n: SavedNotification): AppNotification {
+  const ts = toTimestamp(n.createdAt) || Date.now();
+  return {
+    id: n.id,
+    title: n.title,
+    body: n.body ?? "",
+    type: KNOWN_TYPES.includes(n.type as AppNotification["type"]) ? (n.type as AppNotification["type"]) : "info",
+    link: n.link ?? "/dashboard",
+    timestamp: ts,
+    receivedAt: ts,
+  };
 }
 
 function toTimestamp(iso: string | null | undefined): number {
   if (!iso) return 0;
-  const t = new Date(iso).getTime();
+  // The backend sends LocalDateTime with no zone, and the server clock is UTC
+  // (Cloud Run). Read zone-less stamps as UTC; parsed as local time they came out
+  // 5.5 hours old in India.
+  const zoned = /([zZ]|[+-]\d{2}:?\d{2})$/.test(iso) || !iso.includes("T");
+  const t = new Date(zoned ? iso : iso + "Z").getTime();
   return Number.isNaN(t) ? 0 : t;
 }
 
@@ -305,53 +321,58 @@ async function deriveNotifications(rawRole: string): Promise<IncomingNotificatio
 
 function useNotificationState(): NotificationsContextValue {
   const { user, isLoading } = useAuth();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unread, setUnread] = useState(0);
-  const storeKey = user?.email ? `${STORE_PREFIX}${user.email}` : null;
-  const hydratedRef = useRef(false);
+  // Two sources, nothing cached in the browser:
+  //  - saved: the user's notices from the server (V36), plus live pushes on top.
+  //    Deleting a user deletes these, so a re-created account starts empty.
+  //  - derived: "action required"-style notices worked out from the user's current
+  //    requests/matches/offers on each refresh, replaced wholesale every time.
+  const [saved, setSaved] = useState<AppNotification[]>([]);
+  const [savedRead, setSavedRead] = useState<Set<string>>(new Set());
+  const [derived, setDerived] = useState<AppNotification[]>([]);
+  const [seenVersion, setSeenVersion] = useState(0);
 
-  // Hydrate the tray from this user's persistent store (survives reloads/logins)
-  useEffect(() => {
-    hydratedRef.current = false;
-    if (!storeKey) { setNotifications([]); setUnread(0); return; }
-    setNotifications(sortAndCap(loadStore(storeKey)));
-    hydratedRef.current = true;
-  }, [storeKey]);
+  useEffect(() => { purgeLegacyStores(); }, []);
 
-  // Persist every change and recompute the unread badge
+  // Signed out or switched account: drop everything from the previous user.
+  const userKey = user?.email ?? null;
   useEffect(() => {
-    if (!hydratedRef.current || !storeKey) return;
-    saveStore(storeKey, notifications);
+    setSaved([]);
+    setSavedRead(new Set());
+    setDerived([]);
+  }, [userKey]);
+
+  const notifications = useMemo(() => {
+    const ids = new Set<string>();
+    const all = [...saved, ...derived].filter(n => (ids.has(n.id) ? false : (ids.add(n.id), true)));
+    return sortAndCap(all);
+  }, [saved, derived]);
+
+  const unread = useMemo(() => {
     const seen = loadSeen();
-    setUnread(notifications.filter(n => !seen.has(n.id)).length);
-  }, [notifications, storeKey]);
-
-  // Merge-only: already-known ids are left untouched (their position/receivedAt is
-  // stable), unknown ids are stamped and enter at the top. Nothing is ever removed
-  // here — only the sortAndCap 10-item cap drops the oldest from the bottom.
-  const merge = useCallback((incoming: IncomingNotification[]) => {
-    setNotifications(prev => {
-      const known = new Set(prev.map(p => p.id));
-      const fresh = incoming.filter(n => !known.has(n.id));
-      if (fresh.length === 0) return prev;
-      // First fill of an empty tray: stamp with the event's own time so a backlog
-      // doesn't all read "just now". After that, new arrivals stamp now → top.
-      const stamped = fresh.map(n => ({
-        ...n,
-        receivedAt: n.receivedAt ?? (prev.length === 0 ? (n.timestamp || Date.now()) : Date.now()),
-      }));
-      return sortAndCap([...prev, ...stamped]);
-    });
-  }, []);
+    return notifications.filter(n => (n.id.startsWith("n-") ? !savedRead.has(n.id) : !seen.has(n.id))).length;
+    // seenVersion: re-read the derived seen set after markAllRead writes it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifications, savedRead, seenVersion]);
 
   const addNotification = useCallback((n: IncomingNotification) => {
-    merge([{ ...n, receivedAt: Date.now() }]);
-  }, [merge]);
+    const now = Date.now();
+    setSaved(prev => (prev.some(p => p.id === n.id) ? prev : [{ ...n, receivedAt: now }, ...prev]));
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!user?.role) return;
-    merge(await deriveNotifications(user.role));
-  }, [user?.role, merge]);
+    const [server, live] = await Promise.all([
+      getMyNotifications().catch(() => null),
+      deriveNotifications(user.role).catch(() => null),
+    ]);
+    if (server) {
+      setSaved(server.map(fromSaved));
+      setSavedRead(new Set(server.filter(n => n.read).map(n => n.id)));
+    }
+    if (live) {
+      setDerived(live.map(n => ({ ...n, receivedAt: n.receivedAt ?? (n.timestamp || Date.now()) })));
+    }
+  }, [user?.role]);
 
   useEffect(() => {
     if (isLoading || !user) return;
@@ -444,10 +465,14 @@ function useNotificationState(): NotificationsContextValue {
 
   const markAllRead = useCallback(() => {
     const seen = loadSeen();
-    notifications.forEach(n => seen.add(n.id));
+    derived.forEach(n => seen.add(n.id));
     saveSeen(seen);
-    setUnread(0);
-  }, [notifications]);
+    setSeenVersion(v => v + 1);
+    if (saved.some(n => !savedRead.has(n.id))) {
+      setSavedRead(new Set(saved.map(n => n.id)));
+      markAllNotificationsRead().catch(() => {});
+    }
+  }, [derived, saved, savedRead]);
 
   return useMemo(
     () => ({ notifications, unread, markAllRead, refresh }),
