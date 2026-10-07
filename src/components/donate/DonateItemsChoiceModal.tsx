@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, HandHeart, PackagePlus, XIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
-import { DesktopOption, openDonateChoice, useIsPhone } from "@/components/donate/DonateChoice";
+import { DesktopOption, PhoneOption, POPUP, openDonateChoice, useIsPhone } from "@/components/donate/DonateChoice";
 import { useAuth } from "@/hooks/useAuth";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
@@ -118,9 +118,7 @@ export function DonateItemsChoiceModal() {
     </>
   );
 
-  const eyebrow = (
-    <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-500">Donate items</span>
-  );
+  const eyebrow = <span className={POPUP.eyebrow}>Donate items</span>;
   const subtitle = "List something you no longer need, or give exactly what someone has asked for.";
 
   if (isPhone) {
@@ -129,6 +127,7 @@ export function DonateItemsChoiceModal() {
         <DrawerContent
           onCloseAutoFocus={onCloseAutoFocus}
           className="max-h-[92dvh] rounded-t-[26px] bg-white pb-7 pt-1 dark:bg-zinc-900"
+          // Same sheet as DonateChoice's phone view, plus Back and ×.
         >
           {/* Back and × stay put while the rest scrolls. */}
           <div className="mt-2 flex shrink-0 items-center justify-between px-4">
@@ -149,7 +148,22 @@ export function DonateItemsChoiceModal() {
               </DrawerTitle>
               <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400">{subtitle}</DrawerDescription>
             </div>
-            <div className="mt-4 flex flex-col gap-3">{cards}</div>
+            <div className="mt-4 flex flex-col gap-3">
+              <PhoneOption
+                tone="items"
+                icon={PackagePlus}
+                title="List an item"
+                text="Something you no longer use? List it in 5 short steps; we match it nearby."
+                onSelect={() => go(LIST_ITEM_HREF)}
+              />
+              <PhoneOption
+                tone="need"
+                icon={HandHeart}
+                title="Fulfil a need"
+                text="Browse verified requests near you and give exactly what's asked for."
+                onSelect={() => go(NEEDS_HREF)}
+              />
+            </div>
           </div>
         </DrawerContent>
       </Drawer>
@@ -158,20 +172,19 @@ export function DonateItemsChoiceModal() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent
-        onCloseAutoFocus={onCloseAutoFocus}
-        className="max-w-[760px] gap-7 overflow-y-auto rounded-[28px] border-0 bg-white p-10 pb-7 shadow-2xl dark:bg-zinc-900"
-      >
-        <div className="flex flex-col gap-2 pr-12">
-          <BackButton onClick={back} className="-mt-5 mb-1" />
+      <DialogContent onCloseAutoFocus={onCloseAutoFocus} className={POPUP.content}>
+        <div className={POPUP.header}>
+          {/* Sits up in the top padding, level with ×, so it adds little height. */}
+          <BackButton
+            onClick={back}
+            className="-mb-1 -mt-4 [@media(max-height:720px)]:-mb-1.5 [@media(max-height:720px)]:-mt-3"
+          />
           {eyebrow}
-          <DialogTitle className="text-[32px] font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-            How would you like to donate?
-          </DialogTitle>
-          <DialogDescription className="text-base text-stone-500 dark:text-stone-400">{subtitle}</DialogDescription>
+          <DialogTitle className={POPUP.title}>How would you like to donate?</DialogTitle>
+          <DialogDescription className={POPUP.subtitle}>{subtitle}</DialogDescription>
         </div>
 
-        <div className="grid grid-cols-2 gap-5">{cards}</div>
+        <div className={POPUP.grid}>{cards}</div>
       </DialogContent>
     </Dialog>
   );
