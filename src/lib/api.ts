@@ -1853,6 +1853,14 @@ export function confirmMatchHandoverDonor(id: number, data: {
   });
 }
 
+/** Step 2 of a match handover: the recipient enters the donor's code (unlocks both confirmations). */
+export function verifyMatchHandoverOtp(id: number, otp: string) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/handover/verify-otp`, {
+    method: "POST",
+    body: JSON.stringify({ otp }),
+  });
+}
+
 export function confirmMatchHandoverDonee(id: number, data: {
   otp?: string; quantityReceived: number;
   conditionRating?: string; conditionNotes?: string; verificationMethod?: string;
@@ -2754,6 +2762,14 @@ export function confirmHandoverDonor(offerId: number, quantityHandedOver: number
   return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/confirm-donor`, {
     method: "POST",
     body: JSON.stringify({ quantityHandedOver, verificationMethod }),
+  });
+}
+
+/** Step 2 of an offer handover: the recipient enters the donor's code (unlocks both confirmations). */
+export function verifyHandoverOtp(offerId: number, otp: string) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/verify-otp`, {
+    method: "POST",
+    body: JSON.stringify({ otp }),
   });
 }
 

@@ -433,11 +433,11 @@ export default function HomeClient({
         )}
 
 
-        {/* SECTION 8 — FINAL CTA */}
-        <FinalCtaComponent variant="desktop" />
-
-        {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
+        {/* SECTION 8 — THE PEOPLE BEHIND CAUSEKIND */}
         <CreditsSection />
+
+        {/* SECTION 9 — FINAL CTA */}
+        <FinalCtaComponent variant="desktop" />
       </div>
       </div>
       )}
@@ -598,14 +598,14 @@ export default function HomeClient({
           />
         )}
 
-        {/* SECTION 8 — FINAL CTA */}
-        <div className="-mx-5">
-          <FinalCtaComponent variant="mobile" />
-        </div>
-
-        {/* SECTION 9 — THE PEOPLE BEHIND CAUSEKIND */}
+        {/* SECTION 8 — THE PEOPLE BEHIND CAUSEKIND */}
         <div className="-mx-5">
           <CreditsSection />
+        </div>
+
+        {/* SECTION 9 — FINAL CTA */}
+        <div className="-mx-5">
+          <FinalCtaComponent variant="mobile" />
         </div>
 
       </div>

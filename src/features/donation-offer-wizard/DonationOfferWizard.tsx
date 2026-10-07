@@ -67,14 +67,23 @@ const STEP_COUNT_WORD: Record<number, string> = { 4: "Four", 5: "Five" };
  * glow, the motion variants, the autosave queue — so the two flows animate and
  * persist identically rather than being two lookalike implementations that drift.
  *
- * <p>The draft already exists before this mounts: the prelude creates it when
- * the donor picks a flow type. So there is no `ensureDraft` race here, and
- * `offerId` is non-null for the whole lifetime of this component.
+ * <p>The draft is created lazily (2026-10-07): picking a flow type no longer
+ * creates one, so a donor who only looks around leaves nothing behind (and the
+ * donee never sees an empty "DRAFT" offer). `offerId` is null until the first
+ * real save — the first autosave, photo upload, check or submit — which calls
+ * `createOffer` through the autosave queue's `ensureDraft`. Concurrent callers
+ * share one POST.
  */
 export function DonationOfferWizard({
-  offerId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  offerId, offer, flowType: flowTypeProp, createOffer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote,
+  onSubmitted, onExit, onSaveExit,
 }: {
-  offerId: number;
+  /** Null for a fresh offer: the draft does not exist until the first save. */
+  offerId: number | null;
+  /** The flow the donor picked; used when there is no offer yet. */
+  flowType?: DonationOffer["flowType"] | null;
+  /** Creates the server draft (or returns the resumed one) and resolves it. */
+  createOffer: () => Promise<DonationOffer>;
   /** Hydration source — a resumed DRAFT or NEEDS_INFORMATION offer. */
   offer: DonationOffer | null;
   requestTitle: string | null;
@@ -93,7 +102,7 @@ export function DonationOfferWizard({
   const locale = useLocale();
   const isRtl = locale === "ar" || locale === "ur";
 
-  const flowType = offer?.flowType ?? null;
+  const flowType = offer?.flowType ?? flowTypeProp ?? null;
   const purchase = isPurchaseFlow(flowType);
   const showSpecNotes = needsSpecNotes(flowType);
   const serializerOpts = useMemo(
@@ -127,7 +136,7 @@ export function DonationOfferWizard({
     is only honoured when it is not PAST the first incomplete step, so a resume
     can still never skip work that is left to do.
   */
-  const stepKey = `ck-offer-step-${offerId}`;
+  const stepKey = `ck-offer-step-${offerId ?? "new"}`;
   const [step, setStep] = useState<OfferStep>(() => {
     const resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0];
     try {
@@ -158,7 +167,7 @@ export function DonationOfferWizard({
 
   // ── Autosave ──────────────────────────────────────────────────────────────
   const snapshotKey = useCallback((m: OfferModel) => offerSnapshotKey(m, serializerOpts), [serializerOpts]);
-  const createDraft = useCallback(async () => offerId, [offerId]);
+  const createDraft = useCallback(async () => (await createOffer()).id, [createOffer]);
   /**
    * One save, two endpoints on the purchase flow.
    *
@@ -199,7 +208,7 @@ export function DonationOfferWizard({
   const draft = useWizardDraft<OfferModel>({
     initialId: offerId, createDraft, updateDraft, snapshotKey,
   });
-  const { queueSave, queueSaveNow, flush, markSavedBaseline } = draft;
+  const { queueSave, queueSaveNow, flush, markSavedBaseline, ensureDraft } = draft;
 
   // Hydrated data is already what the server holds; without this baseline the
   // status chip would claim unsaved changes the instant the editor opened.
@@ -285,7 +294,7 @@ export function DonationOfferWizard({
     const token = ++screenTokenRef.current;
     setScreening({ kind: "running" });
     try {
-      const res = await analyzeOfferImages(offerId);
+      const res = await analyzeOfferImages(await ensureDraft());
       if (token !== screenTokenRef.current) return; // superseded
       if (!res.aiAvailable) {
         setScreening({ kind: "unavailable", note: res.note ?? "We couldn't check your photos just now — you can continue." });
@@ -298,7 +307,7 @@ export function DonationOfferWizard({
       if (token !== screenTokenRef.current) return;
       setScreening({ kind: "unavailable", note: "We couldn't check your photos just now — you can continue." });
     }
-  }, [model.photos, offerId]);
+  }, [model.photos, ensureDraft]);
 
   const onPhotoSetChanged = useCallback(() => {
     // Any change invalidates the previous verdict immediately, before the new
@@ -308,7 +317,7 @@ export function DonationOfferWizard({
   }, []);
 
   const photoApi = useOfferPhotos({
-    offerId,
+    resolveOfferId,
     photos: model.photos,
     setPhotos,
     onUrlsChanged: onPhotoSetChanged,
@@ -318,10 +327,8 @@ export function DonationOfferWizard({
   // The optional item video. Held here rather than inside the photos step so it
   // survives stepping away and back — screening runs on the server and its
   // verdict should not be lost because the donor moved to Details and returned.
-  // offerId exists for this component’s whole lifetime (the prelude creates the
-  // draft), so the resolver is immediate here. The listing wizard is the one
-  // that needs it lazy.
-  const resolveOfferId = useCallback(async () => offerId, [offerId]);
+  // Lazy: resolves the draft id, creating the draft on first use.
+  const resolveOfferId = ensureDraft;
   const videoApi = useOfferVideo(resolveOfferId);
 
   // Re-screen once uploads settle, keyed on the uploaded set.
@@ -367,7 +374,7 @@ export function DonationOfferWizard({
 
         setCompatState({ kind: "checking" });
         try {
-          const check = await checkOfferCompatibility(offerId);
+          const check = await checkOfferCompatibility(await ensureDraft());
           if (token !== compatTokenRef.current) return;
           compatSavedKeyRef.current = key;
           setCompat(check);
@@ -380,7 +387,7 @@ export function DonationOfferWizard({
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model.quantity, model.condition, offerId]);
+  }, [model.quantity, model.condition, ensureDraft]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
   /**
@@ -478,7 +485,7 @@ export function DonationOfferWizard({
     try {
       const saved = await flush(model);
       if (!saved) throw new Error("Your latest changes could not be saved.");
-      const result = await submitOffer(offerId, true);
+      const result = await submitOffer(await ensureDraft(), true);
       setSubmitted(true);
       onSubmitted(result);
     } catch (e) {
@@ -489,7 +496,7 @@ export function DonationOfferWizard({
     } finally {
       setSubmitting(false);
     }
-  }, [model, submitted, photosBlocked, flush, offerId, onSubmitted, step, goTo, focusField, flowType, stillNeededQuantity]);
+  }, [model, submitted, photosBlocked, flush, ensureDraft, onSubmitted, step, goTo, focusField, flowType, stillNeededQuantity]);
 
   const handleSaveExit = useCallback(async () => {
     setSavingExit(true);

@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   getMatch, saveMatchLogistics, generateDeliveryOtp,
-  confirmMatchHandoverDonor, confirmMatchHandoverDonee, setMatchDoneeCallPermission,
+  confirmMatchHandoverDonor, confirmMatchHandoverDonee, verifyMatchHandoverOtp, setMatchDoneeCallPermission,
   requestMatchDeliveryAddress, submitMatchDeliveryAddress, getMatchDeliveryAddressSuggestion,
   type ItemMatch,
 } from "@/lib/api";
@@ -111,6 +111,9 @@ export default function MatchHandoverHubPage() {
           },
           confirmDonor: async ({ quantity }) => {
             setMatch(await confirmMatchHandoverDonor(matchId, { quantityHandedOver: quantity }));
+          },
+          verifyOtp: async (code) => {
+            setMatch(await verifyMatchHandoverOtp(matchId, code));
           },
           confirmDonee: async ({ otp: code, quantity, conditionRating }) => {
             setMatch(await confirmMatchHandoverDonee(matchId, {

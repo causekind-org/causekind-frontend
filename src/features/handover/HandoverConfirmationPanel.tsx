@@ -37,13 +37,18 @@ const OTP_LOCKOUT_ATTEMPTS = 5;
  * afford to guess; this cannot.
  */
 export function HandoverConfirmationPanel({
-  vm, onGenerateOtp, onDonorConfirm, onDoneeConfirm, otp,
+  vm, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, otp,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
   onGenerateOtp: () => Promise<void>;
   onDonorConfirm: (p: DonorConfirmPayload) => Promise<void>;
   onDoneeConfirm: (p: DoneeConfirmPayload) => Promise<void>;
+  /**
+   * Present for offers and matches (2026-10-07): the order is code -> recipient
+   * verifies it -> each side confirms. NGO drives keep the one-step flow.
+   */
+  onVerifyOtp?: (otp: string) => Promise<void>;
 }) {
   const donor = vm.role === "DONOR";
   const alreadyConfirmed = donor
@@ -77,8 +82,8 @@ export function HandoverConfirmationPanel({
   }
 
   return donor
-    ? <DonorConfirm vm={vm} otp={otp} onGenerateOtp={onGenerateOtp} onConfirm={onDonorConfirm} />
-    : <DoneeConfirm vm={vm} onConfirm={onDoneeConfirm} />;
+    ? <DonorConfirm vm={vm} otp={otp} onGenerateOtp={onGenerateOtp} onConfirm={onDonorConfirm} stepped={onVerifyOtp != null} />
+    : <DoneeConfirm vm={vm} onConfirm={onDoneeConfirm} onVerifyOtp={onVerifyOtp} />;
 }
 
 function DonorOtpSection({
@@ -173,12 +178,15 @@ function DonorOtpSection({
  * offer's quantity as the primary source (see HandoverService.confirmHandoverDonor),
  * so all this panel has to do is confirm, not collect.
  */
-function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
+function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped }: {
   vm: HandoverViewModel;
   otp: string | null;
   onGenerateOtp: () => Promise<void>;
   onConfirm: (p: DonorConfirmPayload) => Promise<void>;
+  /** Code must be verified by the recipient before the donor can confirm. */
+  stepped: boolean;
 }) {
+  const codeVerified = !stepped || vm.confirmation.otpVerified;
   const [busy, setBusy] = useState<"otp" | "confirm" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -195,12 +203,26 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
   return (
     <Panel title="Confirm the handover">
       <div className="space-y-3 sm:space-y-4">
-        <DonorOtpSection
-          otp={otp}
-          onGenerateOtp={onGenerateOtp}
-          disabled={busy === "confirm"}
-          onBusyChange={(isBusy) => setBusy(isBusy ? "otp" : null)}
-        />
+        {codeVerified && stepped ? (
+          <p className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm font-semibold text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300">
+            <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            The recipient entered your code. You can confirm the handover now.
+          </p>
+        ) : (
+          <DonorOtpSection
+            otp={otp}
+            onGenerateOtp={onGenerateOtp}
+            disabled={busy === "confirm"}
+            onBusyChange={(isBusy) => setBusy(isBusy ? "otp" : null)}
+          />
+        )}
+        {!codeVerified && (
+          <p role="status" className="text-sm text-stone-600 dark:text-stone-300">
+            {otp
+              ? "Waiting for the recipient to enter the code. This updates by itself."
+              : "Generate the code first, then give it to the recipient when you meet."}
+          </p>
+        )}
 
         <div className="space-y-1.5 border-t border-stone-100 pt-4 dark:border-zinc-800">
           {offered != null && offered > 0 && (
@@ -216,10 +238,10 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
           <p className="pt-1 text-xs text-stone-500 dark:text-stone-400">
             You can&apos;t undo this — it&apos;s the record of what was given.
           </p>
-          <Button onClick={confirm} disabled={busy !== null} className={`${handoverPrimary} w-full`}>
+          <Button onClick={confirm} disabled={busy !== null || !codeVerified} className={`${handoverPrimary} w-full`}>
             {busy === "confirm"
               ? <><Loader2 className="animate-spin" aria-hidden /> Recording</>
-              : <><ShieldCheck aria-hidden /> I handed it over</>}
+              : <><ShieldCheck aria-hidden /> I have donated the item</>}
           </Button>
           {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
         </div>
@@ -230,10 +252,13 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm }: {
 
 // ── Donee ───────────────────────────────────────────────────────────────────
 
-function DoneeConfirm({ vm, onConfirm }: {
+function DoneeConfirm({ vm, onConfirm, onVerifyOtp }: {
   vm: HandoverViewModel;
   onConfirm: (p: DoneeConfirmPayload) => Promise<void>;
+  onVerifyOtp?: (otp: string) => Promise<void>;
 }) {
+  const stepped = onVerifyOtp != null;
+  const codeVerified = stepped && vm.confirmation.otpVerified;
   const [otp, setOtp] = useState("");
   const [qty, setQty] = useState("");
   const [condition, setCondition] = useState(CONDITIONS[0].value);
@@ -260,11 +285,27 @@ function DoneeConfirm({ vm, onConfirm }: {
 
   const photosValid = vm.flow !== "NGO_OFFER" || (photos.length >= 1 && photos.length <= 5);
 
-  async function confirm() {
-    if (busy || !qtyValid || !otpComplete || lockedOut || !photosValid) return;
+  /** Step 2: send the code alone. Confirms nothing; unlocks both confirmations. */
+  async function verify() {
+    if (!onVerifyOtp || busy || !otpComplete || lockedOut) return;
     setBusy(true); setError(null);
     try {
-      await onConfirm({ otp: otp.trim(), quantity: qtyNum, conditionRating: condition });
+      await onVerifyOtp(otp.trim());
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Couldn't check the code.";
+      if (/otp|code/i.test(message)) setFailedAttempts((n) => n + 1);
+      setError(message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirm() {
+    if (busy || !qtyValid || !photosValid) return;
+    if (!codeVerified && (!otpComplete || lockedOut)) return;
+    setBusy(true); setError(null);
+    try {
+      await onConfirm({ ...(codeVerified ? {} : { otp: otp.trim() }), quantity: qtyNum, conditionRating: condition });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Couldn't record your confirmation.";
       // Track locally only to warn ahead of the lockout. The server holds the real
@@ -290,6 +331,12 @@ function DoneeConfirm({ vm, onConfirm }: {
           </p>
         )}
 
+        {codeVerified ? (
+          <p className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm font-semibold text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300">
+            <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+            Code verified. Now confirm what you received.
+          </p>
+        ) : (
         <div className="space-y-1.5">
           <label className={handoverLabel}>
             Code from the donor
@@ -328,7 +375,18 @@ function DoneeConfirm({ vm, onConfirm }: {
               Too many incorrect attempts. Ask the donor to generate a fresh code.
             </p>
           )}
+          {stepped && (
+            <Button onClick={verify} disabled={busy || !otpComplete || lockedOut} className={`${handoverPrimary} w-full`}>
+              {busy
+                ? <><Loader2 className="animate-spin" aria-hidden /> Checking</>
+                : <><KeyRound aria-hidden /> Verify code</>}
+            </Button>
+          )}
         </div>
+        )}
+
+        {/* Stepped flows: nothing below until the code is verified. */}
+        {(!stepped || codeVerified) && (<>
 
         <div className="space-y-1.5">
           <label htmlFor="donee-qty" className={handoverLabel}>
@@ -417,11 +475,16 @@ function DoneeConfirm({ vm, onConfirm }: {
             ? "Once you both confirm, there's a short window to report a problem before this closes."
             : "Once you both confirm, this handover closes and a delivery record is created."}
         </p>
-        <Button onClick={confirm} disabled={!qtyValid || !otpComplete || !photosValid || busy || lockedOut} className={`${handoverPrimary} w-full`}>
+        <Button
+          onClick={confirm}
+          disabled={!qtyValid || !photosValid || busy || (!codeVerified && (!otpComplete || lockedOut))}
+          className={`${handoverPrimary} w-full`}
+        >
           {busy
             ? <><Loader2 className="animate-spin" aria-hidden /> Recording</>
-            : <><ShieldCheck aria-hidden /> I received it</>}
+            : <><ShieldCheck aria-hidden /> I have received the item</>}
         </Button>
+        </>)}
         {error && !otpInvalid && (
           <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>
         )}

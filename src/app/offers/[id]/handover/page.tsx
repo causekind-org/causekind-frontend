@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   getDonationOffer, getHandover, scheduleHandover, rescheduleHandover,
-  generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee,
+  generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee, verifyHandoverOtp,
   requestOfferDeliveryAddress, submitOfferDeliveryAddress, getOfferDeliveryAddressSuggestion,
   setDoneeCallPermission,
   type DonationOffer, type HandoverRecord, type OfferHandoverMethod,
@@ -140,6 +140,9 @@ export default function OfferHandoverHubPage() {
           // ISSUE_WINDOW_OPEN), so the same apply-then-reconcile applies.
           confirmDonor: async ({ quantity }) => {
             applyHandover(await confirmHandoverDonor(offerId, quantity));
+          },
+          verifyOtp: async (code) => {
+            applyHandover(await verifyHandoverOtp(offerId, code));
           },
           confirmDonee: async ({ otp: code, quantity, conditionRating }) => {
             applyHandover(await confirmHandoverDonee(offerId, {

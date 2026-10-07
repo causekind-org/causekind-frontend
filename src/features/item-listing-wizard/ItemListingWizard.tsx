@@ -88,7 +88,9 @@ export function ItemListingWizard({
   const isRtl = locale === "ar" || locale === "ur";
 
   const [model, setModel] = useState<WizardModel>(() => listing ? modelFromListing(listing) : emptyModel);
-  const [step, setStep] = useState<WizardStep>(initialStep ?? "photos");
+  // A draft saved on the removed location step resumes on Review instead.
+  const [step, setStep] = useState<WizardStep>(
+    initialStep === "location" ? "review" : (initialStep ?? "photos"));
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);

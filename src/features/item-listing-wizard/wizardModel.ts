@@ -9,8 +9,16 @@ import { fieldsFor } from "./wizardFields";
  * which is why they had already drifted.
  */
 
-export const WIZARD_STEPS = ["photos", "basics", "condition", "location", "review"] as const;
-export type WizardStep = (typeof WIZARD_STEPS)[number];
+/**
+ * Every step the wizard knows. "location" is kept so drafts and code that name it
+ * still type-check, but it is no longer shown (owner, 2026-10-06): a listing takes
+ * the donor's profile city and coordinates, which is what matching uses.
+ */
+export const ALL_WIZARD_STEPS = ["photos", "basics", "condition", "location", "review"] as const;
+export type WizardStep = (typeof ALL_WIZARD_STEPS)[number];
+
+/** The steps the donor actually walks through. */
+export const WIZARD_STEPS: readonly WizardStep[] = ["photos", "basics", "condition", "review"];
 
 export function stepIndex(step: WizardStep): number {
   return WIZARD_STEPS.indexOf(step);

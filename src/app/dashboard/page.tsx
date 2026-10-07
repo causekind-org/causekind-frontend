@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "@/components/AppLink";
+import { WithdrawFlowButton } from "@/components/matches/WithdrawFlowButton";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import Image from "next/image";
 import { toast } from "@/lib/toast";
@@ -20,6 +21,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
+import { DoneeMatchReviewCard } from "@/components/matches/DoneeMatchReviewCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isNgoRole } from "@/lib/isNgoRole";
@@ -1872,6 +1875,7 @@ function PastMatchesStrip({ matches, viewer = "DONEE", defaultOpen = false }: {
                     <TranslatedText text={matchItemLabel(m)} />
                   </p>
                   <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+                  <WithdrawFlowButton kind="match" id={m.id} role={viewer === "DONOR" ? "DONOR" : "DONEE"} className="!min-h-[28px] !px-2" />
                 </div>
                 <p className="mt-1 truncate text-2xs text-stone-400">
                   For: <TranslatedText text={m.requestTitle || (viewer === "DONOR" ? "a request" : "your request")} />
@@ -2207,6 +2211,17 @@ function DoneeDashboard({
 
         {/* ── Sections: offers, requests, matches — one open at a time ── */}
         <Tabs value={section} onValueChange={(v) => { if (isDoneeSection(v)) selectSection(v); }} className="space-y-4 sm:space-y-6">
+          {/* Items waiting for the donee's yes/no sit ABOVE the tab bar (owner,
+              2026-10-07): the donor's item — photos, description, condition. */}
+          {activeMatches.filter(m => m.status === "AWAITING_DONEE_CONFIRMATION").map(m => (
+            <DoneeMatchReviewCard
+              key={m.id}
+              match={m}
+              busy={matchActionLoading === m.id}
+              onAccept={() => handleDoneeAccept(m.id)}
+              onDecline={() => handleDoneeReject(m.id)}
+            />
+          ))}
           <TabsList
             aria-label="Dashboard sections"
             className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
@@ -2460,6 +2475,7 @@ function DoneeDashboard({
                             Open Handover Hub →
                           </Link>
                         )}
+                        <WithdrawFlowButton kind="offer" id={offer.id} role="DONEE" className="w-full" />
                         {isIssueWindow && (
                           <div className="space-y-1.5">
                             <ShortDeliveryNote offer={offer} />
@@ -2712,25 +2728,9 @@ function DoneeDashboard({
                             </div>
                           )}
                           {m.status === "AWAITING_DONEE_CONFIRMATION" && (
-                            <div className="flex gap-2 pt-1">
-                              <Button
-                                size="sm"
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg"
-                                disabled={matchActionLoading === m.id}
-                                onClick={() => handleDoneeAccept(m.id)}
-                              >
-                                {matchActionLoading === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3 mr-1" />Accept</>}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg"
-                                disabled={matchActionLoading === m.id}
-                                onClick={() => handleDoneeReject(m.id)}
-                              >
-                                {matchActionLoading === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><X className="w-3 h-3 mr-1" />Decline</>}
-                              </Button>
-                            </div>
+                            <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="w-full rounded-lg border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/5 px-3 py-2 text-left text-xs font-bold text-[var(--ck-role-accent)] hover:underline">
+                              Waiting for your answer: see the item at the top of the page
+                            </button>
                           )}
                           {HANDOVER_HUB_STATUSES.has(m.status) && (
                             <div className="flex gap-2 pt-1">
@@ -2745,6 +2745,7 @@ function DoneeDashboard({
                               </button>
                             </div>
                           )}
+                          <WithdrawFlowButton kind="match" id={m.id} role="DONEE" className="w-full" />
                         </div>
                       );
                     })}
@@ -2948,6 +2949,9 @@ export default function DashboardPage() {
       }).catch(() => { }),
       getMyItemListings().then(setItemListings).catch(() => setItemListings([])),
       getMyItemRequests().then(setItemRequests).catch(() => setItemRequests([])),
+      // Restored 2026-10-07: dropped by the merge resolution in e635861, so the
+      // Matches tab stayed at 0 until a live update happened to arrive.
+      getMyMatches().then(setMatches).catch(() => setMatches([])),
       Promise.all([
         getMyDonationOffers().catch(() => []),
         getMyNgoDriveOffers().catch(() => [])
@@ -3204,6 +3208,37 @@ export default function DashboardPage() {
                 onValueChange={(v) => { if (isDonorSection(v)) selectDonorSection(v); }}
                 className="space-y-4 sm:space-y-6"
               >
+                {/* Matches waiting on the donor sit ABOVE the tab bar (owner,
+                    2026-10-07), so they are answered from any tab. The decline
+                    reason form opens in place of the card. */}
+                {activeDonorMatches.filter(m => m.status === "DONOR_REVIEW").map((m) => (
+                  declineMatchId === m.id ? (
+                    <div key={m.id} className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                      <p className="text-sm font-black text-stone-900 dark:text-stone-100">
+                        Not available for &ldquo;<TranslatedText text={m.requestTitle || "this need"} />&rdquo;?
+                      </p>
+                      <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-sm border border-stone-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
+                      <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer select-none">
+                        <input type="checkbox" checked={declineConditionChanged} onChange={e => setDeclineConditionChanged(e.target.checked)} className="rounded border-stone-300" />
+                        The item&apos;s condition has changed since I listed it (pauses the listing)
+                      </label>
+                      <div className="flex gap-2">
+                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success("Match declined. We're finding the next best donor."); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to decline match"); } finally { setReviewLoading(null); } }} className="flex-1 h-11 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                          {reviewLoading === m.id ? "Declining..." : "Confirm decline"}
+                        </button>
+                        <button onClick={() => setDeclineMatchId(null)} className="h-11 px-5 rounded-full text-sm font-bold text-stone-600 border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <DonorMatchReviewCard
+                      key={m.id}
+                      match={m}
+                      busy={reviewLoading === m.id}
+                      onAccept={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success("Match accepted! Admin will review shortly."); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to accept match"); } finally { setReviewLoading(null); } }}
+                      onDecline={() => { setDeclineMatchId(m.id); setDeclineReason(""); setDeclineConditionChanged(false); }}
+                    />
+                  )
+                ))}
                 <TabsList
                   aria-label="Dashboard sections"
                   className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
@@ -3357,6 +3392,21 @@ export default function DashboardPage() {
                             const badge = getFulfilmentStatusBadge(m.status);
                             const isDonorReview = m.status === "DONOR_REVIEW";
                             const isDeclining = declineMatchId === m.id;
+                            // A match waiting on the donor is answered in the card above
+                            // the tab bar (2026-10-07); here it is only a pointer, so the
+                            // page never shows two sets of Accept / Decline buttons.
+                            if (isDonorReview) {
+                              return (
+                                <div key={m.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/5 p-3 text-sm">
+                                  <p className="font-bold text-stone-800 dark:text-stone-100">
+                                    &ldquo;<TranslatedText text={m.requestTitle || "A nearby need"} />&rdquo; is waiting for your answer
+                                  </p>
+                                  <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 text-xs font-black text-[var(--ck-role-accent)] hover:underline">
+                                    Answer at the top
+                                  </button>
+                                </div>
+                              );
+                            }
                             return (
                               <div key={m.id} className={`pt-3 sm:pt-4 first:pt-0 space-y-2 group p-2 rounded-xl transition-all ${isDonorReview ? "border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20" : "hover:bg-stone-50 dark:hover:bg-zinc-800/40"}`}>
                                 {isDonorReview && (
@@ -3442,6 +3492,7 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 )}
+                                <WithdrawFlowButton kind="match" id={m.id} role="DONOR" onChanged={refreshMatches} className="w-full" />
                                 {m.status === "COMPLETED" && (
                                   <Link href={`/certificate?matchId=${m.id}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
                                     <Award className="w-3.5 h-3.5" /> View Certificate
@@ -3644,6 +3695,7 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 )}
+                                <WithdrawFlowButton kind="match" id={m.id} role="DONEE" onChanged={refreshMatches} className="w-full" />
                               </div>
                             );
                           })}

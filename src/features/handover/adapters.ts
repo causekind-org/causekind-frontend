@@ -34,6 +34,9 @@ export const NGO_OFFER_METHODS: HandoverMethodOption[] = [
 
 export const MATCH_METHODS: HandoverMethodOption[] = [
   { value: "IN_PERSON",   label: "In person",  hint: "You meet and hand it over." },
+  // Added 2026-10-07 (owner). The match method is free text on the backend
+  // (ItemMatch.handoverMethod), so a new value needs no enum or DB change.
+  { value: "DONEE_PICKUP", label: "Donee will pick up", hint: "The recipient comes to collect it from you." },
   { value: "COURIER",     label: "Courier",    hint: "A courier moves it between you." },
   { value: "THIRD_PARTY", label: "Third party", hint: "Someone else carries it for you." },
 ];
@@ -111,6 +114,7 @@ export function adaptOffer(
       doneeConfirmedQty: confirmation?.doneeConfirmedQty ?? null,
       conditionRating: confirmation?.doneeConditionRating ?? null,
       partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
+      otpVerified: confirmation?.otpVerified ?? false,
     },
     methodOptions: OFFER_METHODS,
     certificateCode: null,
@@ -181,6 +185,7 @@ export function adaptMatch(
       conditionRating: match.doneeConditionRating,
       // Server-computed. Trusted over a local re-derivation because the server is
       // what the cancellation policy actually consults.
+      otpVerified: match.deliveryOtpVerified ?? false,
       partlyConfirmed: match.handoverPartlyConfirmed
         ?? ((match.donorConfirmedAt != null) !== (match.doneeConfirmedAt != null)),
     },
@@ -296,6 +301,8 @@ export function adaptNgoOffer(
       doneeConfirmedQty: confirmation?.ngoConfirmedQty ?? null,
       conditionRating: null, // No condition rating for NGO drives
       partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
+      // NGO drives keep their one-step flow (code entered with the receipt).
+      otpVerified: false,
     },
     methodOptions: NGO_OFFER_METHODS,
     certificateCode: null, // Handled differently if needed

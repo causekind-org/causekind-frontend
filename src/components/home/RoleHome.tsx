@@ -3,6 +3,7 @@ import { HeroSection } from "@/components/home/HeroSection";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
+import { CreditsSection } from "@/components/home/CreditsSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
@@ -32,13 +33,17 @@ export function RoleHome({
       <HeroSection />
       <WhoAreWeSection />
       {role === "donor" && <SupportGallery />}
-      <div className="ck-home-paper relative z-10">
-        <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
-      </div>
+      {/* The live needs board is for givers; a donee is shown no one else's needs. */}
+      {role === "donor" && (
+        <div className="ck-home-paper relative z-10">
+          <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+        </div>
+      )}
       <TrustSafetySection variant="desktop" />
       <FoundersNoteSection variant="desktop" />
       <GoogleReviewsSection />
       {role === "donor" && <DonorTwoDoors />}
+      <CreditsSection />
     </div>
   );
 }

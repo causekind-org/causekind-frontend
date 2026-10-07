@@ -39,6 +39,8 @@ export function HandoverHubShell({
     generateOtp: () => Promise<void>;
     confirmDonor: (p: DonorConfirmPayload) => Promise<void>;
     confirmDonee: (p: DoneeConfirmPayload) => Promise<void>;
+    /** Recipient enters the donor's code (offers and matches; not NGO drives). */
+    verifyOtp?: (otp: string) => Promise<void>;
     setCallPermission?: (next: boolean) => Promise<void>;
     /** Courier delivery address — ask (donor), answer and pre-fill (recipient). */
     deliveryAddress?: DeliveryAddressActions;
@@ -118,6 +120,7 @@ export function HandoverHubShell({
               onGenerateOtp={actions.generateOtp}
               onDonorConfirm={actions.confirmDonor}
               onDoneeConfirm={actions.confirmDonee}
+              onVerifyOtp={actions.verifyOtp}
               onOpenChat={openChat}
               onChanged={onChanged}
               deliveryActions={actions.deliveryAddress}
