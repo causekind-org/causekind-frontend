@@ -7,7 +7,7 @@ import { AUDIENCE_OPTIONS, type RequestAudience } from "@/lib/requestAudience";
 import AudienceIllustration from "./AudienceIllustration";
 
 /**
- * "Who would you like to help?" prompt for the guest board.
+ * "Who would you like to help?" prompt for the /requests directory.
  *
  * Purely presentational: the board owns the audience state and decides when
  * this opens. One tap on an option chooses and closes — there is no Continue

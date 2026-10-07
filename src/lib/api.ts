@@ -1174,45 +1174,6 @@ export type PublicItemRequest = {
   organizationName?: string | null;
 };
 
-export type PublicRequesterType = "PERSON" | "NGO";
-
-/** One page of the public board plus the totals it needs — see PublicRequestPageResponse.java. */
-export type PublicRequestPage = {
-  items: PublicItemRequest[];
-  total: number;
-  page: number;
-  size: number;
-  hasMore: boolean;
-  categoryCounts: Record<string, number>;
-  typeCounts?: Partial<Record<PublicRequesterType, number>>;
-};
-
-export type PublicRequestPageQuery = {
-  q?: string;
-  requesterType?: PublicRequesterType | null;
-  categories?: string[];
-  urgencies?: string[];
-  city?: string;
-  sort?: "newest" | "urgent" | "quantity";
-  /** Zero-based, as the API takes it. */
-  page?: number;
-  size?: number;
-};
-
-/** Server-side search, filter, sort and paging over the whole public board. */
-export function getPublicRequestPage(query: PublicRequestPageQuery = {}) {
-  const params = new URLSearchParams();
-  if (query.q?.trim()) params.set("q", query.q.trim());
-  if (query.requesterType) params.set("requesterType", query.requesterType);
-  query.categories?.forEach(c => params.append("categories", c));
-  query.urgencies?.forEach(u => params.append("urgencies", u));
-  if (query.city?.trim()) params.set("city", query.city.trim());
-  if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
-  params.set("page", String(query.page ?? 0));
-  params.set("size", String(query.size ?? 12));
-  return request<PublicRequestPage>(`/api/v1/item-requests/public/page?${params.toString()}`, { silent401: true });
-}
-
 /** One open public request; rejects (404) once it is no longer publicly open. */
 export function getPublicItemRequest(id: number) {
   return request<PublicItemRequest>(`/api/v1/item-requests/public/${id}`, { silent401: true });

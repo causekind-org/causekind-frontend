@@ -201,7 +201,7 @@ export default function RequestsClient({
   // No guest redirect. Browsing is public; only offering is authenticated.
   //
   // This used to be `router.replace("/login?redirect=/requests")`, which made
-  // the whole public board below unreachable — `PublicRequestsBoard` was
+  // the whole public board below unreachable — the guest branch was
   // already wired up at the guard, but the effect fired first and bounced every
   // logged-out visitor to login before it could render. It also used the
   // obsolete `redirect` parameter; login reads `next` and validates it through
@@ -247,7 +247,7 @@ export default function RequestsClient({
   const [selectedUrgencies,  setSelectedUrgencies]  = useState<string[]>([]);
   // Newest by default: nearest needs a location, and location is opt-in.
   const [sort, setSort]           = useState<ReqSortValue>("newest");
-  // Everyone / Donee / NGOs — the same `type` URL values as the guest board.
+  // Everyone / Donee / NGOs, kept in the `type` URL value.
   // A browsing filter only; nothing is saved (owner decision 2026-09-29).
   // Read in the initialisers (as selectedCategories already is): this branch
   // only renders after auth restoration, so nothing server-rendered depends
@@ -489,7 +489,7 @@ export default function RequestsClient({
     writeBrowseUrl({ type: next, page: 1 }, "replace");
   };
 
-  // "Who would you like to help?" — same dialog as the guest board, asked once
+  // "Who would you like to help?" — asked once
   // per visit (per mount) to anyone who lands on this directory. Donees and
   // NGOs have their own portals and never see it. Saves nothing; choosing just
   // sets the same audience filter as the toolbar tabs.

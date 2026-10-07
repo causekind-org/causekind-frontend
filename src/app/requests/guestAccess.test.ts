@@ -59,8 +59,8 @@ describe("/requests is public", () => {
   });
 
   it("gives a logged-out visitor the same directory as donors, fed by the public board", () => {
-    // One layout for guests and donors: no separate guest board, no login wall.
-    expect(PAGE).not.toMatch(/<PublicRequestsBoard/);
+    // One layout for guests and donors: no separate guest branch, no login wall.
+    expect(PAGE).not.toMatch(/if\s*\(!user\)\s*return\s*</);
     expect(PAGE).toContain("getPublicItemRequests()");
     expect(PAGE).toMatch(/canOffer=\{!user \|\| user\.role === "DONOR"\}/);
   });
