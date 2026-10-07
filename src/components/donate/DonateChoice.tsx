@@ -81,11 +81,12 @@ export function DonateChoice() {
     [router],
   );
 
-  // Logged-in donors pick between listing an item and answering a request
+  // Guests and donors pick between listing an item and answering a request
   // (DonateItemsChoiceModal). It opens only once this popup has finished
   // closing, so the two never stack and focus returns to the Donate button.
+  // Other roles keep going straight to /requests.
   const { user } = useAuth();
-  const isDonor = user?.role?.replace(/^ROLE_/, "") === "DONOR";
+  const choosesItems = !user || user.role?.replace(/^ROLE_/, "") === "DONOR";
   const afterClose = useRef<(() => void) | null>(null);
   const runAfterClose = useCallback(() => {
     const next = afterClose.current;
@@ -93,10 +94,10 @@ export function DonateChoice() {
     next?.();
   }, []);
   const goItems = useCallback(() => {
-    if (!isDonor) return go(IN_KIND_HREF);
+    if (!choosesItems) return go(IN_KIND_HREF);
     afterClose.current = openDonateItemsChoice;
     setOpen(false);
-  }, [isDonor, go]);
+  }, [choosesItems, go]);
 
   if (isPhone) {
     return (

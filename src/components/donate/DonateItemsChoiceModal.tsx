@@ -6,10 +6,14 @@ import { ArrowLeft, HandHeart, PackagePlus, XIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerClose, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { DesktopOption, openDonateChoice, useIsPhone } from "@/components/donate/DonateChoice";
+import { useAuth } from "@/hooks/useAuth";
+import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 /**
- * "How would you like to donate?" — what "Donate items" opens for a logged-in
- * donor: list something they have, or answer a live request.
+ * "How would you like to donate?" — what "Donate items" opens for guests and
+ * donors: list something they have, or answer a live request. A guest is sent
+ * to sign up first (role DONOR preselected, "Log in" offered there) and lands
+ * on the same destination afterwards through `?next=`.
  *
  * <p>Opened only by {@link DonateChoice}, once its own popup has finished
  * closing, so the two never stack. "Back" does the same in reverse. Same
@@ -63,12 +67,13 @@ export function DonateItemsChoiceModal() {
     return () => window.removeEventListener(OPEN_EVENT, onOpen);
   }, []);
 
+  const { user } = useAuth();
   const go = useCallback(
     (href: string) => {
       setOpen(false);
-      router.push(href);
+      router.push(user ? href : registerUrlPreserving(href));
     },
-    [router],
+    [router, user],
   );
 
   const back = useCallback(() => {

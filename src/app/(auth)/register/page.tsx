@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { resolvePostAuthDestination } from "@/lib/postAuthDestination";
+import { resolvePostAuthDestination, socialCompletionUrl } from "@/lib/postAuthDestination";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { Suspense } from "react";
 import Link from "@/components/AppLink";
@@ -213,6 +213,8 @@ function RegisterContent() {
   // Validation happens inside `resolvePostAuthDestination`; the raw value is
   // only ever passed through, never routed to.
   const rawNext = searchParams.get("next");
+  // "Log in" keeps the destination too, so an existing account lands there.
+  const loginHref = rawNext ? loginUrlFor(rawNext) : "/login";
   const goAfterAuth = (role: string | null, navigate: (p: string) => void) => {
     const { path, notice } = resolvePostAuthDestination(rawNext, role);
     if (notice) toast.error(notice);
@@ -341,7 +343,8 @@ function RegisterContent() {
         if (res.needsCompletion) {
           sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-          router.push("/register?social=google");
+          // Keep the destination through account completion, as login does.
+          router.push(socialCompletionUrl(rawNext));
         } else {
           setUser({ email: res.email, role: res.role, fullName: res.fullName });
           toast.success("Welcome back!");
@@ -1194,8 +1197,8 @@ function RegisterContent() {
         <p className="text-center text-sm text-stone-500 dark:text-stone-400">
           {t("haveAccount")}{" "}
           <a
-            href="/login"
-            onClick={(e) => { e.preventDefault(); router.push("/login"); }}
+            href={loginHref}
+            onClick={(e) => { e.preventDefault(); router.push(loginHref); }}
             className="font-semibold text-[var(--accent)] dark:text-[var(--accent-secondary)] hover:underline underline-offset-2 cursor-pointer"
           >
             {t("logIn")}
