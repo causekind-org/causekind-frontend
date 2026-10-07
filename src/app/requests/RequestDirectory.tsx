@@ -12,6 +12,8 @@ import type { ItemRequest } from "@/lib/api";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { AUDIENCE_OPTIONS, type AudienceUrlType } from "@/lib/requestAudience";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { LiveNeedCard, LiveNeedCardSkeleton } from "@/components/home/LiveNeedCard";
+import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 /**
  * The signed-in Category Directory: category rail (desktop) / chip row (phone)
@@ -57,7 +59,16 @@ type Props = {
   /** Only donor accounts may offer (DonationOfferService.resolveDonor). */
   canOffer: boolean;
   onOffer: (request: ItemRequest) => void;
+  /**
+   * Not signed in: needs render as Live Board cards ("Log in to offer this
+   * item"), and the card or its button leads to sign-up for that need's offer.
+   * Donors keep the directory cards.
+   */
+  guest?: boolean;
 };
+
+/** Guests' Live Board cards: 1 column on phones, 2 beside the rail, 3 on wide screens. */
+const GUEST_GRID = "grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3";
 
 const URGENCIES = [
   { value: "CRITICAL", label: "Critical" },
@@ -71,7 +82,7 @@ export function RequestDirectory(props: Props) {
     requests, total, counts, typeCounts, categories, toggleCategory, clearCategories,
     audience, setAudience, urgencies, toggleUrgency, search, setSearch, sort, setSort,
     location, onUseLocation, reset, loading, failed, onRetry, page, totalPages, onPage,
-    canOffer, onOffer,
+    canOffer, onOffer, guest = false,
   } = props;
 
   const allCount = Object.values(counts).reduce((a, b) => a + b, 0);
@@ -248,7 +259,11 @@ export function RequestDirectory(props: Props) {
             </div>
           </div>
 
-          {loading ? (
+          {loading && guest ? (
+            <ul aria-hidden="true" className={GUEST_GRID}>
+              {[0, 1, 2, 3, 4, 5].map(n => <li key={n} className="flex"><LiveNeedCardSkeleton /></li>)}
+            </ul>
+          ) : loading ? (
             <ul aria-hidden="true" className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {[0, 1, 2, 3, 4, 5].map(n => (
                 <li key={n} className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
@@ -279,6 +294,14 @@ export function RequestDirectory(props: Props) {
                   <h3 className="text-sm font-semibold">No open NGO requests right now.</h3>
                   <button type="button" onClick={() => setAudience("all")} className="mt-3 min-h-11 text-sm font-semibold text-[var(--ck-role-accent)] underline underline-offset-4">See all requests</button>
                 </>
+              ) : guest && (narrowing || audience !== "all") ? (
+                <>
+                  <h3 className="text-sm font-semibold">No needs match these filters</h3>
+                  <p className="mt-1 text-xs text-stone-500">Try another category, urgency or search term.</p>
+                  <button type="button" onClick={() => { reset(); setAudience("all"); }} className="mt-3 min-h-11 text-sm font-semibold text-[var(--ck-role-accent)] underline underline-offset-4">
+                    Clear filters
+                  </button>
+                </>
               ) : narrowing || audience !== "all" ? (
                 <>
                   <h3 className="text-sm font-semibold">No matching needs</h3>
@@ -296,9 +319,34 @@ export function RequestDirectory(props: Props) {
             </div>
           ) : (
             <>
-              <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {requests.map(r => <DirectoryCard key={r.id} request={r} canOffer={canOffer} onOffer={onOffer} />)}
-              </ul>
+              {guest ? (
+                <ul className={GUEST_GRID}>
+                  {requests.map(r => (
+                    <li key={r.id} className="flex">
+                      <LiveNeedCard
+                        className="w-full"
+                        need={{
+                          category: r.category,
+                          title: r.title,
+                          description: r.description,
+                          city: r.city,
+                          quantity: r.quantity,
+                          urgent: r.urgency === "CRITICAL" || r.isEmergency,
+                          byName: r.requesterType === "NGO" ? r.organizationName : r.doneeName || null,
+                        }}
+                        href={registerUrlPreserving(`/requests/${r.id}/offer`)}
+                        ctaLabel="Log in to offer this item"
+                        locked
+                        onCardClick={() => onOffer(r)}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {requests.map(r => <DirectoryCard key={r.id} request={r} canOffer={canOffer} onOffer={onOffer} />)}
+                </ul>
+              )}
 
               {totalPages > 1 && (
                 <nav aria-label="Pages of requests" className="mt-6 flex items-center justify-between gap-3">

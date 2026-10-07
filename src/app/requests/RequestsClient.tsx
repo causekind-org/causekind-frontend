@@ -394,13 +394,15 @@ export default function RequestsClient({
     const q = search.trim().toLowerCase();
     return requests.filter(r => {
       const mQ = !q || r.title.toLowerCase().includes(q) || (r.city ?? "").toLowerCase().includes(q)
-        || r.category.toLowerCase().includes(q) || (r.organizationName ?? "").toLowerCase().includes(q);
+        || r.category.toLowerCase().includes(q) || (r.organizationName ?? "").toLowerCase().includes(q)
+        // Guests also search the description (the donor search is unchanged).
+        || (!user && (r.description ?? "").toLowerCase().includes(q));
       // An emergency satisfies a Critical filter, matching the "Emergency" badge.
       const mU = selectedUrgencies.length === 0 || selectedUrgencies.includes(r.urgency)
         || (r.isEmergency && selectedUrgencies.includes("CRITICAL"));
       return mQ && mU;
     });
-  }, [requests, search, selectedUrgencies]);
+  }, [requests, search, selectedUrgencies, user]);
 
   const typeCounts = useMemo(() => {
     const inCats = baseFiltered.filter(r => selectedCategories.length === 0 || selectedCategories.includes(r.category));
@@ -688,6 +690,7 @@ export default function RequestsClient({
           onPage={goToPage}
           canOffer={!user || user.role === "DONOR"}
           onOffer={openDonateModal}
+          guest={!user}
         />
       </div>
 
