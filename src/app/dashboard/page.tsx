@@ -2119,6 +2119,16 @@ function DoneeDashboard({
   const activeOffers = incomingOffers.filter(o => !isPastOffer(o, now));
   const pastOffers = incomingOffers.filter(o => isPastOffer(o, now));
   const offersNeedYou = activeOffers.some(o => OFFER_NEEDS_DONEE.has(o.status));
+  // Owner, 2026-10-07: Your Requests holds requests not yet in a live flow (plus
+  // matches waiting on the donee's yes/no); Matches holds accepted matches and
+  // live offers; History holds the finished ones.
+  const awaitingDoneeMatches = activeMatches.filter(m => m.status === "AWAITING_DONEE_CONFIRMATION");
+  const flowMatches = activeMatches.filter(m => m.status !== "AWAITING_DONEE_CONFIRMATION");
+  const inFlowRequestIds = new Set(
+    [...flowMatches.map(m => m.requestId), ...activeOffers.map(o => o.requestId)]
+      .filter((id): id is number => id != null),
+  );
+  const notInFlow = (r: { id: number }) => !inFlowRequestIds.has(r.id);
   const matchesNeedYou = activeMatches.some(m => MATCH_NEEDS_DONEE.has(m.status));
   // Open on whatever is waiting on the donee; otherwise on their requests. Empty
   // until offers have loaded, so the tab doesn't jump once they arrive.
@@ -2211,27 +2221,16 @@ function DoneeDashboard({
 
         {/* ── Sections: offers, requests, matches — one open at a time ── */}
         <Tabs value={section} onValueChange={(v) => { if (isDoneeSection(v)) selectSection(v); }} className="space-y-4 sm:space-y-6">
-          {/* Items waiting for the donee's yes/no sit ABOVE the tab bar (owner,
-              2026-10-07): the donor's item — photos, description, condition. */}
-          {activeMatches.filter(m => m.status === "AWAITING_DONEE_CONFIRMATION").map(m => (
-            <DoneeMatchReviewCard
-              key={m.id}
-              match={m}
-              busy={matchActionLoading === m.id}
-              onAccept={() => handleDoneeAccept(m.id)}
-              onDecline={() => handleDoneeReject(m.id)}
-            />
-          ))}
           <TabsList
             aria-label="Dashboard sections"
             className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
           >
             <SectionTab value="requests" icon={Package} label="Your Requests" shortLabel="Requests"
-              count={visibleRequests.length} attention={false} tour="requests-list" role="donee" />
+              count={visibleRequests.filter(notInFlow).length} attention={awaitingDoneeMatches.length > 0} tour="requests-list" role="donee" />
             <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
-              count={activeMatches.length} attention={matchesNeedYou} tour="matches" role="donee" />
-            <SectionTab value="offers" icon={Heart} label="Offers Received" shortLabel="Offers"
-              count={activeOffers.length} attention={offersNeedYou} tour="offers" role="donee" />
+              count={flowMatches.length + activeOffers.length} attention={flowMatches.some(m => MATCH_NEEDS_DONEE.has(m.status)) || offersNeedYou} tour="matches" role="donee" />
+            <SectionTab value="offers" icon={Heart} label="History" shortLabel="History"
+              count={pastOffers.length + pastMatches.length} attention={false} tour="offers" role="donee" />
           </TabsList>
 
           {section === "" && (
@@ -2243,6 +2242,139 @@ function DoneeDashboard({
 
           {/* ── Incoming Donation Offers (Donor Flow 2) ── */}
           <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
+                {/* Finished offers — slim grouped history instead of full cards:
+                  ones that fell through, and donations completed over a week ago */}
+                {pastOffers.length > 0 && (
+                  <PastOffersStrip
+                    offers={pastOffers}
+                    activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
+                    defaultOpen
+                  />
+                )}
+            <DoneeMatchedDonationsSection
+              fulfilledRequests={fulfilledRequests}
+              matches={doneeMatches}
+              offers={incomingOffers}
+            />
+            {pastMatches.length > 0 && <PastMatchesStrip matches={pastMatches} defaultOpen />}
+          </TabsContent>
+
+          {/* Your requests — each one drawn as a journey down the pipeline */}
+          <TabsContent value="requests" className="mt-0">
+          {awaitingDoneeMatches.length > 0 && (
+          <div className="mb-5 space-y-4">
+          {/* Owner, 2026-10-07: items waiting for the donee's yes/no sit inside Your
+              Requests; once accepted the flow moves to Matches. */}
+          {awaitingDoneeMatches.map(m => (
+            <DoneeMatchReviewCard
+              key={m.id}
+              match={m}
+              busy={matchActionLoading === m.id}
+              onAccept={() => handleDoneeAccept(m.id)}
+              onDecline={() => handleDoneeReject(m.id)}
+            />
+          ))}
+          </div>
+          )}
+            <section>
+              <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
+                <div>
+                  <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
+                  <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Link href="/dashboard/history" className="text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 dark:border-zinc-700">
+                    <History className="w-3.5 h-3.5" /> History
+                  </Link>
+                  <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> New need
+                  </NewRequestLink>
+                </div>
+              </div>
+
+              {itemRequests.length === 0 ? (
+                <div className="py-8 sm:py-14 text-center space-y-3">
+                  <div className="w-11 sm:w-14 h-11 sm:h-14 bg-[#1e3a60]/10 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
+                    <Heart className="w-6 h-6 text-[#1e3a60]" />
+                  </div>
+                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
+                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</p>
+                  <NewRequestLink href="/requests/new">
+                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
+                  </NewRequestLink>
+                </div>
+              ) : (
+                <DashboardFilterChips
+                  label="Filter your requests"
+                  options={requestOptions}
+                  value={requestFilter}
+                  onChange={setRequestFilter}
+                  tone="donee"
+                  idPrefix="request-filter"
+                />
+              )}
+
+              {itemRequests.length === 0 ? null : requestFilter !== "all" ? (
+                filteredRequests.length === 0 ? (
+                  <div className="py-7 text-center space-y-2">
+                    <p className="text-sm text-stone-400">
+                      Nothing under &ldquo;{requestOptions.find(o => o.key === requestFilter)?.label}&rdquo; right now.
+                    </p>
+                    <button type="button" onClick={() => setRequestFilter("all")}
+                      className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">
+                      Show all requests
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <AnimatePresence initial={false}>
+                      {filteredRequests.map((r, i) => (
+                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )
+              ) : (
+                <div className="space-y-6 mt-4">
+                  {([
+                    ["Pending", requestGroups.pending.filter(notInFlow)],
+                    ["Partially Fulfilled", requestGroups.partial.filter(notInFlow)],
+                    ["Closed", requestGroups.closed],
+                  ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
+                    <div key={label}>
+                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
+                      <AnimatePresence initial={false}>
+                        {group.map((r, i) => (
+                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+
+                  {/* The per-delivery breakdown (who gave what, when) lives in History. */}
+                  {fulfilledRequests.length > 0 && (
+                    <Link href="/dashboard/history" className="flex items-center gap-2 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>See who delivered what for your fulfilled request{fulfilledRequests.length !== 1 ? "s" : ""} in History</span>
+                      <span className="ml-auto" aria-hidden>&rarr;</span>
+                    </Link>
+                  )}
+                </div>
+              )}
+            </section>
+          </TabsContent>
+
+          {/* Matches — live ones first, finished ones in the history below */}
+          <TabsContent value="matches" className="mt-0">
+            <section>
+              <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
+                <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
+                <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
+              </div>
+              <div className="pt-3.5 sm:pt-5">
+                {/* Live donation offers are flows in progress too (owner, 2026-10-07). */}
+                {activeOffers.length > 0 && (
+                <div className="mb-4">
             <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
               <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
@@ -2540,124 +2672,12 @@ function DoneeDashboard({
                     );
                   })}
 
-                {/* Finished offers — slim grouped history instead of full cards:
-                  ones that fell through, and donations completed over a week ago */}
-                {pastOffers.length > 0 && (
-                  <PastOffersStrip
-                    offers={pastOffers}
-                    activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
-                    defaultOpen={activeOffers.length === 0}
-                  />
-                )}
               </CardContent>
             </Card>
 
-            <DoneeMatchedDonationsSection
-              fulfilledRequests={fulfilledRequests}
-              matches={doneeMatches}
-              offers={incomingOffers}
-            />
-          </TabsContent>
-
-          {/* Your requests — each one drawn as a journey down the pipeline */}
-          <TabsContent value="requests" className="mt-0">
-            <section>
-              <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
-                <div>
-                  <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
-                  <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <Link href="/dashboard/history" className="text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 dark:border-zinc-700">
-                    <History className="w-3.5 h-3.5" /> History
-                  </Link>
-                  <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1">
-                    <Plus className="w-3.5 h-3.5" /> New need
-                  </NewRequestLink>
-                </div>
-              </div>
-
-              {itemRequests.length === 0 ? (
-                <div className="py-8 sm:py-14 text-center space-y-3">
-                  <div className="w-11 sm:w-14 h-11 sm:h-14 bg-[#1e3a60]/10 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
-                    <Heart className="w-6 h-6 text-[#1e3a60]" />
-                  </div>
-                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
-                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</p>
-                  <NewRequestLink href="/requests/new">
-                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
-                  </NewRequestLink>
-                </div>
-              ) : (
-                <DashboardFilterChips
-                  label="Filter your requests"
-                  options={requestOptions}
-                  value={requestFilter}
-                  onChange={setRequestFilter}
-                  tone="donee"
-                  idPrefix="request-filter"
-                />
-              )}
-
-              {itemRequests.length === 0 ? null : requestFilter !== "all" ? (
-                filteredRequests.length === 0 ? (
-                  <div className="py-7 text-center space-y-2">
-                    <p className="text-sm text-stone-400">
-                      Nothing under &ldquo;{requestOptions.find(o => o.key === requestFilter)?.label}&rdquo; right now.
-                    </p>
-                    <button type="button" onClick={() => setRequestFilter("all")}
-                      className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">
-                      Show all requests
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-4">
-                    <AnimatePresence initial={false}>
-                      {filteredRequests.map((r, i) => (
-                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )
-              ) : (
-                <div className="space-y-6 mt-4">
-                  {([
-                    ["Pending", requestGroups.pending],
-                    ["Partially Fulfilled", requestGroups.partial],
-                    ["Closed", requestGroups.closed],
-                  ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
-                    <div key={label}>
-                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
-                      <AnimatePresence initial={false}>
-                        {group.map((r, i) => (
-                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  ))}
-
-                  {/* The per-delivery breakdown (who gave what, when) lives in History. */}
-                  {fulfilledRequests.length > 0 && (
-                    <Link href="/dashboard/history" className="flex items-center gap-2 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
-                      <CheckCircle2 className="w-4 h-4 shrink-0" />
-                      <span>See who delivered what for your fulfilled request{fulfilledRequests.length !== 1 ? "s" : ""} in History</span>
-                      <span className="ml-auto" aria-hidden>&rarr;</span>
-                    </Link>
-                  )}
-                </div>
-              )}
-            </section>
-          </TabsContent>
-
-          {/* Matches — live ones first, finished ones in the history below */}
-          <TabsContent value="matches" className="mt-0">
-            <section>
-              <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
-                <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
-                <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
-              </div>
-              <div className="pt-3.5 sm:pt-5">
-                {activeMatches.length === 0 ? (
+                )}
+                {flowMatches.length === 0 && activeOffers.length === 0 ? (
                   /* Truthful empty state: the sweep only spins when the matching engine
                      is actually working (a request is verified and in the matching
                      phase). Drafts/pending requests get honest guidance instead. */
@@ -2698,7 +2718,7 @@ function DoneeDashboard({
                   </div>
                 ) : (
                   <div className="divide-y dark:divide-zinc-800 space-y-3">
-                    {activeMatches.map(m => {
+                    {flowMatches.map(m => {
                       const badge = getFulfilmentStatusBadge(m.status);
                       return (
                         <div key={m.id} className="pt-3 first:pt-0 space-y-2 group px-1 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all pb-1">
@@ -2727,11 +2747,6 @@ function DoneeDashboard({
                               </div>
                             </div>
                           )}
-                          {m.status === "AWAITING_DONEE_CONFIRMATION" && (
-                            <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="w-full rounded-lg border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/5 px-3 py-2 text-left text-xs font-bold text-[var(--ck-role-accent)] hover:underline">
-                              Waiting for your answer: see the item at the top of the page
-                            </button>
-                          )}
                           {HANDOVER_HUB_STATUSES.has(m.status) && (
                             <div className="flex gap-2 pt-1">
                               <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
@@ -2750,9 +2765,6 @@ function DoneeDashboard({
                       );
                     })}
                   </div>
-                )}
-                {pastMatches.length > 0 && (
-                  <PastMatchesStrip matches={pastMatches} defaultOpen={activeMatches.length === 0} />
                 )}
               </div>
             </section>
@@ -3023,6 +3035,13 @@ export default function DashboardPage() {
   // for the section's own history strip, exactly as on the donee side.
   const activeDonorMatches = donorMatches.filter(m => !MATCH_HISTORY_STATUSES.has(m.status));
   const pastDonorMatches = donorMatches.filter(m => MATCH_HISTORY_STATUSES.has(m.status));
+  // Owner, 2026-10-07: Inventory holds items not yet in a live flow (plus the
+  // matches waiting on the donor's yes/no); Matches holds accepted matches and
+  // live offers; History holds the finished ones. A withdrawn match releases the
+  // listing server-side, so the item drops back into Inventory by itself.
+  const reviewDonorMatches = activeDonorMatches.filter(m => m.status === "DONOR_REVIEW");
+  const flowDonorMatches = activeDonorMatches.filter(m => m.status !== "DONOR_REVIEW");
+  const inFlowListingIds = new Set(flowDonorMatches.map(m => m.listingId).filter((id): id is number => id != null));
   // Each listing's live matches — drives the "Matched" filter and the
   // matched-needs strip on its inventory row.
   const liveMatchesByListing = new Map<number, ItemMatch[]>();
@@ -3208,10 +3227,42 @@ export default function DashboardPage() {
                 onValueChange={(v) => { if (isDonorSection(v)) selectDonorSection(v); }}
                 className="space-y-4 sm:space-y-6"
               >
-                {/* Matches waiting on the donor sit ABOVE the tab bar (owner,
-                    2026-10-07), so they are answered from any tab. The decline
-                    reason form opens in place of the card. */}
-                {activeDonorMatches.filter(m => m.status === "DONOR_REVIEW").map((m) => (
+                <TabsList
+                  aria-label="Dashboard sections"
+                  className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
+                >
+                  <SectionTab value="items" icon={Package} label="Your Inventory" shortLabel="Inventory"
+                    count={visibleDonorListings.filter(l => !inFlowListingIds.has(l.id)).length} attention={donorItemsNeedYou || reviewDonorMatches.length > 0} tour="inventory" role="donor" />
+                  <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
+                    count={flowDonorMatches.length + liveDonorOffers.length} attention={donorOffersNeedYou} tour="matches" role="donor" />
+                  <SectionTab value="offers" icon={Heart} label="History" shortLabel="History"
+                    count={pastDonorMatches.length + donationOffers.filter(o => !isLiveDonorOffer(o)).length} attention={false} tour="offers" role="donor" />
+                </TabsList>
+
+                {/* Donor Flow 2 — Offer Tracker */}
+                <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
+                  <DonorOfferSection
+                    offers={donationOffers.filter(o => !isLiveDonorOffer(o))}
+                    onReconfirm={handleOfferReconfirm}
+                    onWithdraw={handleOfferWithdraw}
+                    onCancelled={handleOfferCancelled}
+                  />
+                  <MatchedDonationsSection
+                    fulfilledItems={donorListingGroups.fulfilled}
+                    matches={donorMatches}
+                  />
+                  {/* Completed, declined and cancelled matches. */}
+                  <PastMatchesStrip matches={pastDonorMatches} viewer="DONOR" defaultOpen />
+                </TabsContent>
+
+                {/* Your inventory — private, matched quietly */}
+                <TabsContent value="items" className="mt-0">
+                  {reviewDonorMatches.length > 0 && (
+                  <div className="mb-5 space-y-4">
+                {/* Owner, 2026-10-07: a match waiting on the donor is answered here, inside
+                    Your Inventory; once accepted the item moves to Matches. The
+                    decline reason form opens in place of the card. */}
+                {reviewDonorMatches.map((m) => (
                   declineMatchId === m.id ? (
                     <div key={m.id} className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
                       <p className="text-sm font-black text-stone-900 dark:text-stone-100">
@@ -3239,34 +3290,8 @@ export default function DashboardPage() {
                     />
                   )
                 ))}
-                <TabsList
-                  aria-label="Dashboard sections"
-                  className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
-                >
-                  <SectionTab value="items" icon={Package} label="Your Inventory" shortLabel="Inventory"
-                    count={visibleDonorListings.length} attention={donorItemsNeedYou} tour="inventory" role="donor" />
-                  <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
-                    count={activeDonorMatches.length} attention={donorMatchesNeedYou} tour="matches" role="donor" />
-                  <SectionTab value="offers" icon={Heart} label="Your Offers" shortLabel="Offers"
-                    count={liveDonorOffers.length} attention={donorOffersNeedYou} tour="offers" role="donor" />
-                </TabsList>
-
-                {/* Donor Flow 2 — Offer Tracker */}
-                <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
-                  <DonorOfferSection
-                    offers={donationOffers}
-                    onReconfirm={handleOfferReconfirm}
-                    onWithdraw={handleOfferWithdraw}
-                    onCancelled={handleOfferCancelled}
-                  />
-                  <MatchedDonationsSection
-                    fulfilledItems={donorListingGroups.fulfilled}
-                    matches={donorMatches}
-                  />
-                </TabsContent>
-
-                {/* Your inventory — private, matched quietly */}
-                <TabsContent value="items" className="mt-0">
+                  </div>
+                  )}
                   <section>
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/70 pb-3">
                       <div>
@@ -3304,7 +3329,7 @@ export default function DashboardPage() {
                         <div className="mt-4">
                           {inventoryFilter === "completed" && (
                             <p className="mb-3 text-2xs text-stone-400">
-                              Certificates for these are under Your Offers &rarr; Matched Donations.
+                              Certificates for these are under History &rarr; Matched Donations.
                             </p>
                           )}
                           <AnimatePresence initial={false}>
@@ -3324,7 +3349,7 @@ export default function DashboardPage() {
                         {([
                           ["Drafts", donorListingGroups.drafts],
                           ["Under Review", donorListingGroups.review],
-                          ["Live & Matching", donorListingGroups.live],
+                          ["Live & Matching", donorListingGroups.live.filter(l => !inFlowListingIds.has(l.id))],
                           ["Closed", donorListingGroups.closed],
                         ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
                           <div key={label}>
@@ -3347,7 +3372,16 @@ export default function DashboardPage() {
                       <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
                     </div>
                     <div className="pt-3.5 sm:pt-5 space-y-3 sm:space-y-4">
-                      {activeDonorMatches.length === 0 && pastDonorMatches.length === 0 ? (
+                      {/* Live offers to requests are donations in progress too. */}
+                      {liveDonorOffers.length > 0 && (
+                        <DonorOfferSection
+                          offers={liveDonorOffers}
+                          onReconfirm={handleOfferReconfirm}
+                          onWithdraw={handleOfferWithdraw}
+                          onCancelled={handleOfferCancelled}
+                        />
+                      )}
+                      {flowDonorMatches.length === 0 && liveDonorOffers.length === 0 ? (
                         /* Truthful empty state: the sweep only spins while a listing is
                            live and the engine is actually checking incoming needs. */
                         <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
@@ -3382,13 +3416,13 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
-                      ) : activeDonorMatches.length === 0 ? (
+                      ) : flowDonorMatches.length === 0 ? (
                         <p className="py-2 text-center text-xs text-stone-400">
-                          No live matches right now — your listed items stay in the matching engine.
+                          No accepted matches right now — your listed items stay in the matching engine.
                         </p>
                       ) : (
                         <div className="divide-y space-y-3 sm:space-y-4">
-                          {activeDonorMatches.map((m) => {
+                          {flowDonorMatches.map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             const isDonorReview = m.status === "DONOR_REVIEW";
                             const isDeclining = declineMatchId === m.id;
@@ -3504,13 +3538,6 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Delivered, declined and cancelled matches keep their
-                          record without competing with the live ones. */}
-                      <PastMatchesStrip
-                        matches={pastDonorMatches}
-                        viewer="DONOR"
-                        defaultOpen={activeDonorMatches.length === 0}
-                      />
                     </div>
                   </section>
                 </TabsContent>

@@ -90,7 +90,11 @@ function fromSaved(n: SavedNotification): AppNotification {
 
 function toTimestamp(iso: string | null | undefined): number {
   if (!iso) return 0;
-  const t = new Date(iso).getTime();
+  // The backend sends LocalDateTime with no zone, and the server clock is UTC
+  // (Cloud Run). Read zone-less stamps as UTC; parsed as local time they came out
+  // 5.5 hours old in India.
+  const zoned = /([zZ]|[+-]\d{2}:?\d{2})$/.test(iso) || !iso.includes("T");
+  const t = new Date(zoned ? iso : iso + "Z").getTime();
   return Number.isNaN(t) ? 0 : t;
 }
 

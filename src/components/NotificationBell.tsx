@@ -201,7 +201,7 @@ export function NotificationBell() {
         </div>
 
         {/* Content */}
-        <div className="max-h-[55vh] sm:max-h-[360px] overflow-y-auto py-1.5 sm:py-2">
+        <div data-lenis-prevent className="max-h-[55vh] sm:max-h-[360px] overflow-y-auto overscroll-contain py-1.5 sm:py-2">
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 sm:py-10 px-4 text-center">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center mb-2.5 sm:mb-3">

@@ -105,7 +105,7 @@ export function MatchActionDock() {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Link
-          href="/dashboard#matches"
+          href={isDonee ? "/dashboard#requests" : "/dashboard#items"}
           onClick={() => dismiss(waiting.id)}
           className="inline-flex h-11 items-center rounded-full border border-white/30 px-4 text-sm font-extrabold text-white hover:bg-white/10"
         >
