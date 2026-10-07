@@ -317,7 +317,7 @@ export function DonationOfferWizard({
   }, []);
 
   const photoApi = useOfferPhotos({
-    resolveOfferId,
+    resolveOfferId: ensureDraft,
     photos: model.photos,
     setPhotos,
     onUrlsChanged: onPhotoSetChanged,

@@ -70,7 +70,7 @@ function vm(over: Partial<HandoverViewModel> = {}): HandoverViewModel {
     confirmation: {
       donorConfirmedAt: null, donorConfirmedQty: null,
       doneeConfirmedAt: null, doneeConfirmedQty: null,
-      conditionRating: null, partlyConfirmed: false,
+      conditionRating: null, partlyConfirmed: false, otpVerified: false,
     },
     methodOptions: [], certificateCode: null, certificateHref: null,
     closed: false, completedAt: null, offeredQuantity: 1, delivery: null,
