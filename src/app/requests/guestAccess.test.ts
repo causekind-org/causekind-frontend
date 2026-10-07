@@ -58,11 +58,11 @@ describe("/requests is public", () => {
     expect(PAGE).not.toContain("redirect=");
   });
 
-  it("still renders the public board for a logged-out visitor", () => {
-    // Props deliberately unconstrained: the guard is about the board being
-    // reachable at all, and pinning the exact attribute list made it fail on
-    // `initialRequests` — a change that did not touch reachability.
-    expect(PAGE).toMatch(/if\s*\(!user\)\s*return\s*<PublicRequestsBoard[^>]*\/>/);
+  it("gives a logged-out visitor the same directory as donors, fed by the public board", () => {
+    // One layout for guests and donors: no separate guest board, no login wall.
+    expect(PAGE).not.toMatch(/<PublicRequestsBoard/);
+    expect(PAGE).toContain("getPublicItemRequests()");
+    expect(PAGE).toMatch(/canOffer=\{!user \|\| user\.role === "DONOR"\}/);
   });
 
   /**
@@ -95,10 +95,11 @@ describe("/requests is public", () => {
     expect(PAGE).toMatch(/initialPublicRequests/);
   });
 
-  it("builds any login URL through the validated helper", () => {
-    const rawLoginPushes = PAGE.match(/router\.(replace|push)\(\s*["'`]\/login/g) ?? [];
-    expect(rawLoginPushes).toEqual([]);
-    expect(PAGE).toContain("loginUrlFor(");
+  it("builds any auth URL through the validated helpers", () => {
+    const rawAuthPushes = PAGE.match(/router\.(replace|push)\(\s*["'`]\/(login|register)/g) ?? [];
+    expect(rawAuthPushes).toEqual([]);
+    // A guest offering an item signs up and returns to that need's offer.
+    expect(PAGE).toContain("registerUrlPreserving(`/requests/${req.id}/offer`)");
   });
 });
 

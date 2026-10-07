@@ -7,12 +7,11 @@ import { createPortal } from "react-dom";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
-import { getItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicRequestPage, type UserProfile } from "@/lib/api";
+import { getItemRequests, getPublicItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicItemRequest, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
-import PublicRequestsBoard from "@/components/PublicRequestsBoard";
 import { NgoDrivesRedirect } from "@/components/ngo-landing/NgoDrivesRedirect";
-import { loginUrlFor } from "@/lib/safeRedirect";
+import { registerUrlPreserving } from "@/lib/postAuthDestination";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/Reveal";
@@ -22,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
   ImagePlus, Loader2, MapPin, PackageOpen, Search, SearchX,
-  Sparkles, X, HandCoins, Package, Plus, ChevronDown,
+  Sparkles, X, HandCoins, Package, ChevronDown,
   ShieldCheck, Heart, SlidersHorizontal, ArrowRight,
   BookOpen, Stethoscope, Sprout, Users, Home, Activity,
   Armchair, Shirt, Smartphone, Dumbbell,
@@ -37,11 +36,11 @@ import { RequestDirectory, type LocationState } from "./RequestDirectory";
 /*
   Both of these are split out of the guest's download, not just deferred.
 
-  This module serves three different people from one file: a logged-out
-  visitor gets `PublicRequestsBoard` and nothing else, a donee gets the donee
-  portal, a donor gets the Category Directory. Statically imported, the donee
-  and NGO portals shipped to everyone — so the visitor who renders neither
-  still paid to parse both before the board could paint. (The donor board used
+  This module serves three different people from one file: guests and donors
+  get the Category Directory (guests read the public board, donors the
+  signed-in one), a donee gets the donee portal. Statically imported, the
+  donee and NGO portals shipped to everyone — so the visitor who renders
+  neither still paid to parse both before the board could paint. (The donor board used
   the gsap-driven MagicBento mosaic until 2026-09-29; it no longer loads here.)
 */
 const DoneeRequestsPage = dynamic(
@@ -65,6 +64,24 @@ function readUrlPage(): number {
   return Number.isInteger(n) && n > 1 ? n : 1;
 }
 
+/**
+ * A public-board need in the shape the directory renders. The public
+ * projection carries no location, owner id or status (by design), so those are
+ * empty; nothing a guest sees reads them.
+ */
+function fromPublic(p: PublicItemRequest): ItemRequest {
+  return {
+    id: p.id, title: p.title, category: p.category, quantity: p.quantity,
+    urgency: p.urgency, city: p.city, description: p.description,
+    createdAt: p.createdAt, imageUrl: p.imageUrl, isEmergency: p.emergency,
+    requesterType: p.requesterType, organizationName: p.organizationName ?? null,
+    doneeName: p.doneeFirstName ?? p.organizationName ?? "",
+    pincode: null, status: "OPEN", rejectionReason: null, doneeId: 0,
+    pickupRadiusKm: null, latitude: null, longitude: null,
+    verificationTier: null, emergencyNature: null, incidentDate: null, verificationDueAt: null,
+  };
+}
+
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371, dLat = ((lat2 - lat1) * Math.PI) / 180, dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a = Math.sin(dLat / 2) ** 2 + Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
@@ -73,29 +90,9 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 // ── Hero ──────────────────────────────────────────────────────────────────────
 
-function RequestsHero({
-  total,
-  critical,
-  catCounts,
-  selected,
-  onToggle,
-}: {
-  total: number;
-  critical: number;
-  catCounts: Record<string, number>;
-  selected: string[];
-  onToggle: (c: string) => void;
-}) {
+function RequestsHero() {
   const [mouse, setMouse] = useState({ x: 50, y: 40 });
   const [active, setActive] = useState(false);
-
-  // "List from here" hint — appears next to the CTA ~10s after landing, stays
-  // until dismissed.
-  const [showHint, setShowHint] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setShowHint(true), 10_000);
-    return () => clearTimeout(t);
-  }, []);
 
   return (
     <div
@@ -105,7 +102,7 @@ function RequestsHero({
       }}
       onMouseEnter={() => setActive(true)}
       onMouseLeave={() => setActive(false)}
-      className="relative w-full min-h-[380px] sm:min-h-[460px] overflow-hidden select-none"
+      className="relative w-full min-h-[300px] sm:min-h-[360px] lg:min-h-[400px] flex items-center overflow-hidden select-none"
       style={{ background: "linear-gradient(135deg, #1c0905 0%, #2a0f07 45%, #0f1d30 100%)" }}
     >
       {/* Mouse-tracking warm glow */}
@@ -135,11 +132,11 @@ function RequestsHero({
         <HandCoins className="h-40 w-40 text-white" />
       </div>
 
-      <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14 lg:py-20">
+      <div className="relative z-10 mx-auto w-full max-w-6xl px-4 sm:px-6 py-10 sm:py-14 lg:py-16">
         <div className="max-w-2xl">
 
           {/* ── Left: headline ── */}
-          <div className="space-y-7">
+          <div className="space-y-5 sm:space-y-6">
 
             {/* Live badge */}
             <div className="inline-flex items-center gap-2.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/35 rounded-full px-4 py-1.5 anim-up anim-d1">
@@ -163,91 +160,8 @@ function RequestsHero({
               Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.
             </p>
 
-            {/* Live stats */}
-            <div className="flex flex-wrap items-center gap-5 sm:gap-8 anim-up anim-d4">
-              <div>
-                <p className="text-xl sm:text-3xl font-black text-white tabular-nums">{total}</p>
-                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Active Needs</p>
-              </div>
-              {critical > 0 && (
-                <>
-                  <div className="w-px h-10 bg-white/10" />
-                  <div>
-                    <p className="text-xl sm:text-3xl font-black text-red-400 tabular-nums">{critical}</p>
-                    <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Urgent</p>
-                  </div>
-                </>
-              )}
-              <div className="hidden sm:block w-px h-10 bg-white/10" />
-              <div className="hidden sm:block">
-                <p className="text-xl sm:text-3xl font-black text-[var(--ck-role-highlight)]">0%</p>
-                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Platform Fees</p>
-              </div>
-            </div>
-
-            {/* Primary CTA — moved here from the category bar, with attention pulse */}
-            <div className="relative inline-block anim-up anim-d5">
-              <style>{`
-                @keyframes ck-cta-pulse {
-                  0%, 100% { box-shadow: 0 8px 28px rgba(176,74,21,0.45), 0 0 0 0 rgba(240,185,122,0.45); }
-                  50%      { box-shadow: 0 8px 28px rgba(176,74,21,0.45), 0 0 0 12px rgba(240,185,122,0); }
-                }
-                .ck-cta-list { animation: ck-cta-pulse 2.4s ease-out infinite; }
-                @keyframes ck-hint-pop {
-                  0%   { opacity: 0; transform: translateY(8px) scale(0.88); }
-                  60%  { opacity: 1; transform: translateY(-3px) scale(1.03); }
-                  100% { opacity: 1; transform: translateY(0) scale(1); }
-                }
-                .ck-cta-hint { animation: ck-hint-pop 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
-                @media (prefers-reduced-motion: reduce) {
-                  .ck-cta-list, .ck-cta-hint { animation: none; }
-                }
-              `}</style>
-
-              <Link
-                href="/items/new"
-                className="ck-cta-list inline-flex items-center gap-2 rounded-xl sm:rounded-2xl px-4 sm:px-7 py-3.5 text-sm font-extrabold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.97]"
-                style={{ background: "linear-gradient(135deg, var(--ck-role-accent) 0%, var(--ck-role-secondary) 100%)" }}
-              >
-                <Plus className="w-4 h-4" strokeWidth={3} />
-                List an Item
-              </Link>
-
-              {/* Sticky hint — pops in beside the button after 10s, dismissible */}
-              {showHint && (
-                /* Mobile places this ABOVE the button, not below it. The hero root
-                   is `overflow-hidden` (for the decorative w-96 blobs, which would
-                   otherwise cause horizontal scroll), so a hint hanging off the
-                   bottom edge on `top-full` was clipped mid-sentence and the
-                   sticky CategoryBar covered what was left. Above the button it
-                   stays inside the hero, so nothing can clip it. Desktop is
-                   unchanged — it sits beside the button, already well inside. */
-                <div className="ck-cta-hint absolute left-0 bottom-full mb-3 sm:bottom-auto sm:left-full sm:top-1/2 sm:mb-0 sm:ml-4 sm:-translate-y-1/2 z-20 w-60">
-                  <div className="relative rounded-xl sm:rounded-2xl border border-[var(--ck-role-highlight)]/40 bg-[#1c0905]/95 backdrop-blur-md px-4 py-3 shadow-xl shadow-black/40">
-                    {/* Arrow — points down at the button on mobile, left on desktop */}
-                    {/* Rotated square: the outlined corner is the one that points.
-                        Mobile shows bottom+right → the bottom corner points down at
-                        the button. Desktop drops the right edge for the left one →
-                        bottom+left, the corner that protrudes toward the button. */}
-                    <span className="absolute -bottom-1 left-8 h-2.5 w-2.5 rotate-45 border-b border-r border-[var(--ck-role-highlight)]/40 bg-[#1c0905] sm:bottom-auto sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-r-0 sm:border-l" />
-                    <button
-                      onClick={() => setShowHint(false)}
-                      aria-label="Dismiss hint"
-                      className="absolute top-2 right-2 text-white/30 hover:text-white/70 transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                    <p className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest mb-1">Got spare items?</p>
-                    <p className="text-white/80 text-xs leading-relaxed pr-3">
-                      List your item from here — books, clothes, electronics. Someone nearby needs it.
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Scroll cue */}
-            <div className="flex items-center gap-2 anim-up anim-d6">
+            <div className="flex items-center gap-2 pt-1 anim-up anim-d4">
               <span className="text-white/25 text-3xs font-bold uppercase tracking-widest">Browse needs below</span>
               <ChevronDown className="h-4 w-4 text-white/25 animate-bounce-slow" />
             </div>
@@ -261,16 +175,16 @@ function RequestsHero({
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function RequestsClient({
-  initialPublicPage = null,
+  initialPublicRequests = null,
 }: {
   /**
-   * Page one of the public board, already fetched on the server by src/app/requests/page.tsx.
+   * The open public board, already fetched on the server by src/app/requests/page.tsx.
    *
-   * Only the logged-out branch uses it — a donor's mosaic and a donee's portal
-   * both need authenticated, per-user data that a server render cannot obtain.
-   * Null when the server fetch failed; the board then fetches for itself.
+   * Only guests use it — a donor's directory and a donee's portal both need
+   * authenticated, per-user data that a server render cannot obtain. Null
+   * when the server fetch failed; the page then fetches it on the client.
    */
-  initialPublicPage?: PublicRequestPage | null;
+  initialPublicRequests?: PublicItemRequest[] | null;
 }) {
   const t        = useTranslations("requests");
   const { user, isLoading: authLoading, isRestoring } = useAuth();
@@ -420,16 +334,28 @@ export default function RequestsClient({
   // optional and only uses them to pre-sort. A sequence number drops a stale
   // response (e.g. the no-location load finishing after the located one).
   const loadSeq = useRef(0);
+  // Guests read the public board (no login): the server's seed first, then the
+  // same public endpoint on retry. It has no coordinates, so GPS is not sent.
   useEffect(() => {
-    if (!user || user.role === "DONEE") return;
+    if (isRestoring || user?.role === "DONEE") return;
     const seq = ++loadSeq.current;
+    if (!user && initialPublicRequests && retryTick === 0) {
+      setRequests(initialPublicRequests.map(fromPublic));
+      setLoadFailed(false);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setLoadFailed(false);
-    getItemRequests(undefined, gpsCoords?.lat, gpsCoords?.lng)
+    const load = user
+      ? getItemRequests(undefined, gpsCoords?.lat, gpsCoords?.lng)
+      : getPublicItemRequests().then(list => list.map(fromPublic));
+    load
       .then(res => { if (seq === loadSeq.current) setRequests(res); })
       .catch(() => { if (seq === loadSeq.current) setLoadFailed(true); })
       .finally(() => { if (seq === loadSeq.current) setLoading(false); });
-  }, [user?.id, user?.role, gpsCoords, retryTick]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRestoring, user?.id, user?.role, user ? gpsCoords : null, retryTick]);
 
   // Audience and page live in the URL (`type`, `page`); follow Back/Forward.
   useEffect(() => {
@@ -457,14 +383,6 @@ export default function RequestsClient({
   };
 
   // ── Derived counts ────────────────────────────────────────────────────────
-
-  const catCounts = useMemo(() => {
-    const c: Record<string, number> = {};
-    requests.forEach(r => { c[r.category] = (c[r.category] || 0) + 1; });
-    return c;
-  }, [requests]);
-
-  const criticalCount = useMemo(() => requests.filter(r => r.urgency === "CRITICAL").length, [requests]);
 
   // ── Filtered + sorted requests ────────────────────────────────────────────
 
@@ -575,7 +493,7 @@ export default function RequestsClient({
   // sets the same audience filter as the toolbar tabs.
   const [audienceDialogOpen, setAudienceDialogOpen] = useState(false);
   const audienceAsked = useRef(false);
-  const onDirectory = !!user && user.role !== "DONEE" && user.role !== "NGO" && user.role !== "NGO_PARTNER";
+  const onDirectory = !user || (user.role !== "DONEE" && user.role !== "NGO" && user.role !== "NGO_PARTNER");
   useEffect(() => {
     if (isRestoring || !onDirectory || audienceAsked.current) return;
     audienceAsked.current = true;
@@ -606,11 +524,9 @@ export default function RequestsClient({
   // ── Donate modal handlers ─────────────────────────────────────────────────
 
   function openDonateModal(req: ItemRequest) {
-    // Defence in depth: a guest never reaches this board (the guard returns
-    // PublicRequestsBoard first), but if that ever changes, losing the
-    // destination is the failure mode that is invisible in testing — the user
-    // logs in successfully and simply lands somewhere else.
-    if (!user) { router.push(loginUrlFor(`/requests/${req.id}/offer`)); return; }
+    // A guest signs up first (Donor preselected, "Log in" offered there) and
+    // comes back to this need's offer through `?next=`.
+    if (!user) { router.push(registerUrlPreserving(`/requests/${req.id}/offer`)); return; }
     router.push(`/requests/${req.id}/offer`);
   }
 
@@ -718,16 +634,14 @@ export default function RequestsClient({
     );
   }
 
-  // Logged-out visitors get the public board: the reduced-field endpoint, no GPS
-  // prompt, and every action routed through /login?next=. They used to be held
-  // on the spinner above forever, since `user` never arrives for a guest.
-  if (!user) return <PublicRequestsBoard initialPage={initialPublicPage} />;
+  // Guests get the same directory as donors, fed by the public board (see the
+  // load effect), with offering routed through sign-up.
 
   // Dedicated donee portal
-  if (user.role === "DONEE") return <DoneeRequestsPage />;
+  if (user?.role === "DONEE") return <DoneeRequestsPage />;
 
   // NGOs only have drives: send them to their live drives.
-  if (user.role === "NGO" || user.role === "NGO_PARTNER") return <NgoDrivesRedirect />;
+  if (user?.role === "NGO" || user?.role === "NGO_PARTNER") return <NgoDrivesRedirect />;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -738,13 +652,7 @@ export default function RequestsClient({
     <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
 
       {/* ── Hero (unchanged) ── */}
-      <RequestsHero
-        total={requests.length}
-        critical={criticalCount}
-        catCounts={catCounts}
-        selected={selectedCategories}
-        onToggle={toggleCategory}
-      />
+      <RequestsHero />
 
       {/* ── Category Directory ── */}
       <div id="request-directory" className="scroll-mt-20">
@@ -778,7 +686,7 @@ export default function RequestsClient({
           page={currentPage}
           totalPages={totalPages}
           onPage={goToPage}
-          canOffer={user.role === "DONOR"}
+          canOffer={!user || user.role === "DONOR"}
           onOffer={openDonateModal}
         />
       </div>

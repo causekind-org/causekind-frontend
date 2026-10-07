@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getPublicRequestPage } from "@/lib/api";
+import { getPublicItemRequests } from "@/lib/api";
 import RequestsClient from "./RequestsClient";
 
 // Server wrapper so this route can carry its own metadata — a "use client"
@@ -33,20 +33,21 @@ export const revalidate = 60;
  * That is the same reason the homepage uses this endpoint — see the note in
  * src/app/page.tsx.
  *
- * <p>Only page one of the unfiltered board is fetched here; a filtered or paged
- * URL is fetched by the client, which reads its state from the query string.
+ * <p>The whole open board is fetched (the same cached list the paged public
+ * endpoint is cut from): guests browse it in the same directory donors use,
+ * which searches, filters, sorts and pages on the client.
  *
  * <p>Failure is not fatal. A null seed puts the client back on exactly the
  * path it had before: mount, fetch, render. A dead backend must not blank a page
  * that also serves signed-in donors and donees.
  */
 export default async function Page() {
-  const initialPage = await getPublicRequestPage().catch((error: unknown) => {
+  const initialPublicRequests = await getPublicItemRequests().catch((error: unknown) => {
     if (process.env.NODE_ENV !== "production") {
-      console.warn("[requests] getPublicRequestPage failed; the client will retry:", error);
+      console.warn("[requests] getPublicItemRequests failed; the client will retry:", error);
     }
     return null;
   });
 
-  return <RequestsClient initialPublicPage={initialPage} />;
+  return <RequestsClient initialPublicRequests={initialPublicRequests} />;
 }
