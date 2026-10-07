@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, configure } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RegisterPage from "./page";
 import { registerNgo, ApiError } from "@/lib/api";
@@ -13,6 +13,9 @@ beforeEach(() => {
   mockSearchParams = new URLSearchParams();
 });
 
+
+// The NGO form is long; under a parallel run the default 1s wait is too tight.
+configure({ asyncUtilTimeout: 8000 });
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
@@ -73,6 +76,9 @@ vi.mock("@/lib/api", () => ({
     role: "NGO_PARTNER",
   }),
   initiateRegistration: vi.fn(),
+  readNgoPanCard: vi.fn().mockResolvedValue({ available: false }),
+  uploadSignupPanCard: vi.fn().mockResolvedValue({}),
+  ngoPanCheck: vi.fn().mockResolvedValue({ warnings: [] }),
   verifyRegistrationOtp: vi.fn(),
   resendRegistrationOtp: vi.fn(),
   googleAuth: vi.fn(),
@@ -118,7 +124,14 @@ beforeAll(() => {
   }
 });
 
-describe("RegisterPage - Lightweight NGO Signup", () => {
+
+/** The PAN-card signup fields every NGO signup now needs: structure, card, date of formation. */
+async function fillNgoExtras(user: ReturnType<typeof userEvent.setup>) {
+  await user.selectOptions(screen.getByLabelText(/Legal structure \*/i), "trust");
+  await user.upload(screen.getByLabelText(/Upload your PAN card \*/i), new File(["fake"], "pan.png", { type: "image/png" }));
+  fireEvent.change(screen.getByLabelText(/Date of formation \*/i), { target: { value: "2010-04-01" } });
+}
+describe("RegisterPage - Lightweight NGO Signup", { timeout: 60000 }, () => {
   it("renders NGO lightweight form when NGO role is selected", async () => {
     const user = userEvent.setup();
     render(<RegisterPage />);
@@ -155,6 +168,7 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     render(<RegisterPage />);
 
     await user.click(screen.getByRole("button", { name: /^NGO/i }));
+    await fillNgoExtras(user);
 
     const panInput = screen.getByLabelText(/PAN Number \*/i);
     await user.type(panInput, "INVALID123");
@@ -172,6 +186,7 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     render(<RegisterPage />);
 
     await user.click(screen.getByRole("button", { name: /^NGO/i }));
+    await fillNgoExtras(user);
 
     await user.type(screen.getByLabelText(/Organization Name \*/i), "Helping Hands Trust");
     await user.type(screen.getByLabelText(/Official Email Address \*/i), "contact@helpinghands.org");
@@ -201,12 +216,13 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     );
 
     expect(mockReplace).toHaveBeenCalledWith("/");
-  }, 15000);
+  }, 60000);
 
   async function fillAndSubmit() {
     const user = userEvent.setup();
     render(<RegisterPage />);
     await user.click(screen.getByRole("button", { name: /^NGO/i }));
+    await fillNgoExtras(user);
     await user.type(screen.getByLabelText(/Organization Name \*/i), "Helping Hands Trust");
     await user.type(screen.getByLabelText(/Official Email Address \*/i), "contact@helpinghands.org");
     await user.type(screen.getByLabelText(/Phone/i), "9876543210");
@@ -228,7 +244,7 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     expect(document.getElementById("email")?.getAttribute("aria-invalid")).toBe("true");
     expect(document.getElementById("phone")?.getAttribute("aria-invalid")).not.toBe("true");
     expect(mockReplace).not.toHaveBeenCalledWith("/");
-  }, 15000);
+  }, 60000);
 
   it("shows 'This phone number is already registered' next to the phone field", async () => {
     vi.mocked(registerNgo).mockRejectedValueOnce(new ApiError(400, "Phone number already registered", {
@@ -238,7 +254,7 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     await fillAndSubmit();
     await waitFor(() => expect(document.getElementById("phone-feedback")?.textContent).toContain("This phone number is already registered"), { timeout: 8000 });
     expect(document.getElementById("email")?.getAttribute("aria-invalid")).not.toBe("true");
-  }, 15000);
+  }, 60000);
 
   it("shows both messages when both are taken, and keeps what was typed", async () => {
     vi.mocked(registerNgo).mockRejectedValueOnce(new ApiError(400, "Email already registered", {
@@ -251,11 +267,11 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     await waitFor(() => expect(document.getElementById("phone-feedback")?.textContent).toContain("This phone number is already registered"), { timeout: 8000 });
     expect(document.getElementById("email-feedback")?.textContent).toContain("This email is already registered");
     expect(screen.getByLabelText(/Official Email Address \*/i)).toHaveValue("contact@helpinghands.org");
-  }, 15000);
+  }, 60000);
 
   it("an older message-only response still lands on the email field with the same wording", async () => {
     vi.mocked(registerNgo).mockRejectedValueOnce(new Error("Email already registered"));
     await fillAndSubmit();
     await waitFor(() => expect(document.getElementById("email-feedback")?.textContent).toContain("This email is already registered"), { timeout: 8000 });
-  }, 15000);
+  }, 60000);
 });

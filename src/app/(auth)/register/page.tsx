@@ -9,7 +9,11 @@ import Link from "@/components/AppLink";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useAuth } from "@/hooks/useAuth";
-import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, registerNgo, registerNgoWithGoogle, googleAuth, googleComplete, ApiError } from "@/lib/api";
+import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, registerNgo, registerNgoWithGoogle, googleAuth, googleComplete, ApiError, readNgoPanCard, uploadSignupPanCard, type NgoLegalStructureValue } from "@/lib/api";
+import {
+  NgoLegalStructureField, NgoPanCardUpload, NgoDateOfFormationField, CardNote, PanWarnings, usePanCheck,
+  panCardFileError, dateOfFormationError, NGO_SIGNUP_MESSAGES, PAN_FORMAT,
+} from "@/features/ngo-signup/NgoPanCardSignup";
 import { trackCompleteRegistration } from "@/lib/metaEvents";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
@@ -256,6 +260,14 @@ function RegisterContent() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [ngoPan, setNgoPan] = useState("");
   const [ngoWebsite, setNgoWebsite] = useState("");
+  // NGO PAN-card signup (NGO path only).
+  const [ngoStructure, setNgoStructure] = useState("");
+  const [ngoDate, setNgoDate] = useState("");
+  const [panCardFile, setPanCardFile] = useState<File | null>(null);
+  const [panCardReading, setPanCardReading] = useState(false);
+  /** What the card read (a null value = not legible); null until a card has been read. */
+  const [cardRead, setCardRead] = useState<{ name: string | null; date: string | null; pan: string | null } | null>(null);
+  const [ngoErrors, setNgoErrors] = useState<{ legalStructure?: string | null; panCard?: string | null; dateOfFormation?: string | null }>({});
 
   const [countryIso, setCountryIso] = useState("");
   const [stateIso, setStateIso] = useState("");
@@ -469,11 +481,106 @@ function RegisterContent() {
     }
   }, [isSocialFlow, router, rawNext]);
 
+  // Live PAN letter checks (NGO only); a hook, so it stays above the early return.
+  const isNgo = form.role === "NGO_PARTNER";
+  const panCheck = usePanCheck(isNgo, ngoPan, ngoStructure, form.fullName);
+
   if (user) return null;
 
   function set(field: string, value: string) {
     setForm(f => ({ ...f, [field]: value }));
     if (errors[field]) setErrors(e => ({ ...e, [field]: "" }));
+  }
+
+  /** Card note under a field: "read from card" while the value is still what was read, "couldn't read" while empty. */
+  function cardNote(read: string | null | undefined, current: string): "card" | "unreadable" | null {
+    if (!cardRead || read === undefined) return null;
+    if (read && current.trim() && current.trim().toUpperCase() === read.toUpperCase()) return "card";
+    if (read === null && !current.trim()) return "unreadable";
+    return null;
+  }
+
+  function sourceOf(read: string | null | undefined, current: string): "card" | "typed" {
+    return read && current.trim().toUpperCase() === read.toUpperCase() ? "card" : "typed";
+  }
+
+  /** Reads the PAN card and fills only the empty name / date / PAN fields. Nothing is stored. */
+  async function handlePanCardFile(file: File) {
+    const fileError = panCardFileError(file);
+    if (fileError) {
+      setNgoErrors(e => ({ ...e, panCard: fileError }));
+      return;
+    }
+    setPanCardFile(file);
+    setNgoErrors(e => ({ ...e, panCard: null }));
+    setPanCardReading(true);
+    try {
+      const res = await readNgoPanCard(file, ngoStructure || undefined);
+      if (!res.available) {
+        setCardRead({ name: null, date: null, pan: null });
+        return;
+      }
+      const name = res.organizationName?.trim() || null;
+      const date = res.dateOfFormation && dateOfFormationError(res.dateOfFormation) === null ? res.dateOfFormation : null;
+      const pan = res.panNumber && PAN_FORMAT.test(res.panNumber.toUpperCase()) ? res.panNumber.toUpperCase() : null;
+      setCardRead({ name, date, pan });
+      // Functional updates: whatever the user typed meanwhile is never overwritten.
+      if (name) {
+        setForm(f => (f.fullName.trim() ? f : { ...f, fullName: name }));
+        if (!form.fullName.trim()) v.onBlur("fullName", () => validateOrganizationName(name));
+      }
+      if (date) setNgoDate(d => d || date);
+      if (pan) {
+        setNgoPan(p => (p.trim() ? p : pan));
+        if (!ngoPan.trim()) v.onBlur("panNumber", () => validatePanNumber(pan));
+      }
+    } catch (err) {
+      setCardRead({ name: null, date: null, pan: null });
+      const msg = err instanceof Error ? err.message : "";
+      if (msg) toast.error(msg);
+    } finally {
+      setPanCardReading(false);
+    }
+  }
+
+  /** The NGO-only required fields. Returns the id of the first problem, in form order. */
+  function validateNgoExtras(): string | null {
+    const errs = {
+      legalStructure: ngoStructure ? null : NGO_SIGNUP_MESSAGES.structureRequired,
+      panCard: panCardFile ? null : NGO_SIGNUP_MESSAGES.panCardRequired,
+      dateOfFormation: dateOfFormationError(ngoDate),
+    };
+    setNgoErrors(errs);
+    if (errs.legalStructure) return "legalStructure";
+    if (errs.panCard) return "panCard";
+    if (errs.dateOfFormation) return "dateOfFormation";
+    return null;
+  }
+
+  /** After the account exists: the PAN card goes into the wizard's PAN slot. Never blocks the signup. */
+  async function attachPanCard() {
+    if (!panCardFile) return;
+    try {
+      await uploadSignupPanCard(panCardFile);
+    } catch {
+      toast.error("Your PAN card couldn't be saved. You can add it in the registration form.");
+    }
+  }
+
+  function ngoSignupExtras() {
+    const label = (opts: { value: string; label: string }[], value: string) => opts.find(o => o.value === value)?.label ?? "";
+    // City name only (buildCityString also appends the state and country codes).
+    const cityName = showCityFreeText ? cityFreeText : (label(cityOptions, cityValue) || cityValue);
+    const locationText = [cityName, label(stateOptions, stateIso), label(countryOptions, countryIso)]
+      .map(p => p.trim()).filter(Boolean).join(", ");
+    return {
+      legalStructure: ngoStructure as NgoLegalStructureValue,
+      dateOfFormation: ngoDate,
+      organizationNameSource: sourceOf(cardRead?.name, form.fullName),
+      dateOfFormationSource: sourceOf(cardRead?.date, ngoDate),
+      panNumberSource: sourceOf(cardRead?.pan, ngoPan),
+      locationText: locationText || undefined,
+    };
   }
 
   /**
@@ -517,7 +624,11 @@ function RegisterContent() {
     e.preventDefault();
     if (loading) return;
 
-    const firstInvalid = v.validateAll(validators);
+    const firstNgoInvalid = form.role === "NGO_PARTNER" ? validateNgoExtras() : null;
+    const firstValidatorInvalid = v.validateAll(validators);
+    // NGO structure and card sit above every other field; the date sits below the name.
+    const firstInvalid = firstNgoInvalid === "dateOfFormation" && firstValidatorInvalid === "fullName"
+      ? firstValidatorInvalid : (firstNgoInvalid ?? firstValidatorInvalid);
     if (firstInvalid) {
       const el = document.getElementById(firstInvalid);
       el?.focus();
@@ -542,6 +653,7 @@ function RegisterContent() {
           state: stateIso,
           city: cityStr,
           website: ngoWebsite.trim() || undefined,
+          ...ngoSignupExtras(),
         }).catch((err: unknown) => {
           if (err instanceof ApiError && err.status === 404) {
              throw new Error("GOOGLE_NGO_404");
@@ -556,6 +668,7 @@ function RegisterContent() {
         });
         sessionStorage.removeItem("ck_google_token");
         sessionStorage.removeItem("ck_google_profile");
+        await attachPanCard();
         setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName, phone: fullPhone });
         trackCompleteRegistration({ method: "google" });
         toast.success("NGO account created! Welcome to CauseKind.");
@@ -571,7 +684,9 @@ function RegisterContent() {
           city: cityStr,
           password: form.password,
           website: ngoWebsite.trim() || undefined,
+          ...ngoSignupExtras(),
         });
+        await attachPanCard();
         setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName, phone: fullPhone });
         trackCompleteRegistration({ method: "ngo" });
         toast.success("NGO account created! Welcome to CauseKind.");
@@ -714,6 +829,32 @@ function RegisterContent() {
     "--accent-secondary-40": "color-mix(in srgb, var(--accent-secondary) 40%, transparent)",
   } as React.CSSProperties;
 
+  // The name field is shared: donors and donees see it first, the NGO form after its structure and PAN card.
+  const nameField = (
+    <Reveal delay={100}>
+      <div className="space-y-1">
+        <Field
+          id="fullName"
+          label={form.role === "NGO_PARTNER" ? "Organization Name *" : t("fullName")}
+          placeholder={(ROLE_PLACEHOLDERS[form.role] ?? ROLE_PLACEHOLDERS.DONOR).fullName}
+          value={form.fullName}
+          onChange={val => {
+            set("fullName", val);
+            setFormError(null);
+            v.onChange("fullName", () => (form.role === "NGO_PARTNER" ? validateOrganizationName(val) : validateFullName(val)));
+          }}
+          onBlur={() => v.onBlur("fullName", validators.fullName)}
+          onCompositionStart={() => v.onCompositionStart("fullName")}
+          onCompositionEnd={() => v.onCompositionEnd("fullName", validators.fullName)}
+          // Google fills a person's name; an NGO still types its organization's name.
+          readOnly={isSocialFlow && !!form.fullName && form.role !== "NGO_PARTNER"}
+          autoComplete={form.role === "NGO_PARTNER" ? "organization" : "name"}
+          field={isSocialFlow && form.fullName && form.role !== "NGO_PARTNER" ? undefined : v.get("fullName")}
+        />
+      </div>
+    </Reveal>
+  );
+
   return (
     <div
       style={themeVars}
@@ -807,28 +948,54 @@ function RegisterContent() {
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4" noValidate>
         {/* Server errors that belong to no single field. Values are kept. */}
         <AuthFormAlert message={formError} />
-        <Reveal delay={100}>
-          <div className="space-y-1">
-            <Field
-              id="fullName"
-              label={form.role === "NGO_PARTNER" ? "Organization Name *" : t("fullName")}
-              placeholder={(ROLE_PLACEHOLDERS[form.role] ?? ROLE_PLACEHOLDERS.DONOR).fullName}
-              value={form.fullName}
-              onChange={val => {
-                set("fullName", val);
-                setFormError(null);
-                v.onChange("fullName", () => (form.role === "NGO_PARTNER" ? validateOrganizationName(val) : validateFullName(val)));
-              }}
-              onBlur={() => v.onBlur("fullName", validators.fullName)}
-              onCompositionStart={() => v.onCompositionStart("fullName")}
-              onCompositionEnd={() => v.onCompositionEnd("fullName", validators.fullName)}
-              // Google fills a person's name; an NGO still types its organization's name.
-              readOnly={isSocialFlow && !!form.fullName && form.role !== "NGO_PARTNER"}
-              autoComplete={form.role === "NGO_PARTNER" ? "organization" : "name"}
-              field={isSocialFlow && form.fullName && form.role !== "NGO_PARTNER" ? undefined : v.get("fullName")}
-            />
-          </div>
-        </Reveal>
+        {form.role === "NGO_PARTNER" ? (
+          <>
+            {/* NGO: 1) structure 2) PAN card 3) name 4) date of formation 5) PAN, then the shared fields. */}
+            <Reveal delay={60}>
+              <NgoLegalStructureField
+                value={ngoStructure}
+                onChange={val => { setNgoStructure(val); setNgoErrors(e => ({ ...e, legalStructure: null })); setFormError(null); }}
+                error={ngoErrors.legalStructure}
+                warnings={panCheck?.warnings}
+              />
+            </Reveal>
+            <Reveal delay={80}>
+              <NgoPanCardUpload file={panCardFile} onFile={handlePanCardFile} reading={panCardReading} error={ngoErrors.panCard} />
+            </Reveal>
+            {nameField}
+            <CardNote id="fullName-card-note" kind={cardNote(cardRead?.name, form.fullName)} />
+            <Reveal delay={120}>
+              <NgoDateOfFormationField
+                value={ngoDate}
+                onChange={val => { setNgoDate(val); setFormError(null); if (ngoErrors.dateOfFormation) setNgoErrors(e => ({ ...e, dateOfFormation: dateOfFormationError(val) })); }}
+                onBlur={() => { if (ngoDate) setNgoErrors(e => ({ ...e, dateOfFormation: dateOfFormationError(ngoDate) })); }}
+                error={ngoErrors.dateOfFormation}
+              />
+              <CardNote id="dateOfFormation-card-note" kind={cardNote(cardRead?.date, ngoDate)} />
+            </Reveal>
+            <Reveal delay={200}>
+              <div className="space-y-1">
+                <Field
+                  id="panNumber"
+                  label="PAN Number *"
+                  placeholder="AABCT1234C"
+                  value={ngoPan}
+                  onChange={val => {
+                    const upper = val.toUpperCase().slice(0, 10);
+                    setNgoPan(upper);
+                    setFormError(null);
+                    v.onChange("panNumber", () => validatePanNumber(upper));
+                  }}
+                  onBlur={() => v.onBlur("panNumber", () => validatePanNumber(ngoPan))}
+                  autoComplete="off"
+                  field={v.get("panNumber")}
+                />
+                <CardNote id="panNumber-card-note" kind={cardNote(cardRead?.pan, ngoPan)} />
+                <PanWarnings warnings={panCheck?.warnings} field="panNumber" />
+              </div>
+            </Reveal>
+          </>
+        ) : nameField}
 
         <Reveal delay={140}>
           <div className="space-y-1">
@@ -910,28 +1077,6 @@ function RegisterContent() {
           </div>
         </Reveal>
 
-        {/* PAN Number — required for NGO role */}
-        {form.role === "NGO_PARTNER" && (
-          <Reveal delay={200}>
-            <div className="space-y-1">
-              <Field
-                id="panNumber"
-                label="PAN Number *"
-                placeholder="AABCT1234C"
-                value={ngoPan}
-                onChange={val => {
-                  const upper = val.toUpperCase().slice(0, 10);
-                  setNgoPan(upper);
-                  setFormError(null);
-                  v.onChange("panNumber", () => validatePanNumber(upper));
-                }}
-                onBlur={() => v.onBlur("panNumber", () => validatePanNumber(ngoPan))}
-                autoComplete="off"
-                field={v.get("panNumber")}
-              />
-            </div>
-          </Reveal>
-        )}
 
         <Reveal delay={220}>
           {/* Location: Country → State → City */}

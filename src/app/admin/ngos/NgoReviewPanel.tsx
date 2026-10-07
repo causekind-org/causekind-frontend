@@ -6,6 +6,7 @@ import {
   type NgoReviewApplication, type NgoReviewDetail, type NgoReviewFile,
 } from "@/lib/api";
 import { correctionFieldLabel } from "@/features/ngo-registration/ngoRegistrationModel";
+import { NgoPanCheckBox } from "./NgoPanCheckBox";
 
 const field = "w-full rounded-lg border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
@@ -243,6 +244,7 @@ export function NgoReviewPanel({
                 "Account email verified": detail.application.verifiedAt ? new Date(detail.application.verifiedAt).toLocaleString() : "Pending",
               }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
             </dl>
+            <NgoPanCheckBox panCheck={detail.panCheck} />
             {detail.corrections && detail.corrections.items.length > 0 && (
               <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
                 <h3 className="font-bold">Corrections requested</h3>

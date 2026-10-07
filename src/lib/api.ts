@@ -326,7 +326,73 @@ export type NgoSignupData = {
   city?: string;
   password: string;
   website?: string;
+  /** Added with the PAN-card signup. */
+  legalStructure: NgoLegalStructureValue;
+  /** YYYY-MM-DD */
+  dateOfFormation: string;
+  organizationNameSource?: PanValueSource;
+  dateOfFormationSource?: PanValueSource;
+  panNumberSource?: PanValueSource;
+  /** City, state and country names, used to start the wizard's office address. */
+  locationText?: string;
 };
+
+export type NgoLegalStructureValue = "trust" | "society" | "section8";
+/** "card": read from the PAN card and left as read; "typed": entered or changed by the user. */
+export type PanValueSource = "card" | "typed";
+
+export type PanCheckWarning = { code: string; severity: "WARNING" | "DANGER"; field: string; message: string };
+/** The backend's NgoPanCheck.Result: the PAN letter checks (warnings, never blocking). */
+export type PanCheckResult = {
+  panNumber: string | null; validFormat: boolean; holderLetter: string | null; holderType: string | null;
+  legalStructure: string | null; expectedHolderLetter: string | null; structureMatches: boolean | null;
+  personalPan: boolean; nameLetter: string | null; nameLetterMatches: boolean | null;
+  warnings: PanCheckWarning[];
+};
+
+export type PanCardReadResult = {
+  /** false when the reader could not run at all; the user types the details. */
+  available: boolean;
+  organizationName?: string | null; dateOfFormation?: string | null; panNumber?: string | null;
+  panCheck?: PanCheckResult;
+};
+
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    if (typeof body?.message === "string" && body.message) return body.message;
+  } catch {}
+  return fallback;
+}
+
+/** NGO signup, before login: reads name, date of formation and PAN from the PAN card. Nothing is stored. */
+export async function readNgoPanCard(file: File, legalStructure?: string): Promise<PanCardReadResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  if (legalStructure) fd.append("legalStructure", legalStructure);
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-signup/read-pan-card`, { method: "POST", body: fd, credentials: "include" });
+  if (!res.ok) throw new Error(await errorMessage(res, "We couldn't read this card. Please type the details."));
+  return (await res.json()) as PanCardReadResult;
+}
+
+/** The shared PAN letter checks (backend NgoPanCheck), before login. */
+export function ngoPanCheck(data: { panNumber: string; legalStructure: string; organizationName: string }) {
+  return request<PanCheckResult>("/api/v1/ngo-signup/pan-check", { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Wizard: the same checks against the PAN this NGO gave at signup. */
+export function ngoWizardPanCheck(data: { legalStructure: string; organizationName: string }) {
+  return request<PanCheckResult>("/api/v1/ngo-registration/pan-check", { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Right after NGO signup: stores the PAN card through the NGO document upload and puts it in the wizard's PAN slot. */
+export async function uploadSignupPanCard(file: File): Promise<NgoDraftDto> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/signup-pan-card`, { method: "POST", body: fd, credentials: "include" });
+  if (!res.ok) throw new Error(await errorMessage(res, "Your PAN card couldn't be saved. You can add it in the registration form."));
+  return (await res.json()) as NgoDraftDto;
+}
 
 export function registerNgo(data: NgoSignupData) {
   return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
@@ -4717,6 +4783,11 @@ export type NgoReviewDetail = {
   decisions: { id: number; fromStatus: string; toStatus: string; changedByEmail: string; note: string; changedAt: string }[];
   current: boolean;
   corrections?: { summary: string; items: NgoCorrectionItem[] } | null;
+  /** PAN letter checks for the signup PAN; sources are "card" / "typed", or null when unknown. */
+  panCheck?: {
+    check: PanCheckResult; organizationNameSource: string | null;
+    dateOfFormationSource: string | null; panNumberSource: string | null;
+  } | null;
 };
 export function adminGetNgoApplications(status: string, page = 0) {
   const params = new URLSearchParams({ page: String(page) });
