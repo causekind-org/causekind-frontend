@@ -104,8 +104,26 @@ function BoxIcon({ size = 26 }: { size?: number }) {
   );
 }
 
-function HoverFlipCard({ title, desc, icon: Icon }: { title: string, desc: string, icon: any }) {
+/**
+ * "donor" is the main landing page's look and must stay byte-for-byte as it was.
+ * "donee" scopes the donee role tokens onto the section (see `data-ck-role-theme`
+ * in styles.css), so every `--ck-role-*` below resolves to navy in light mode and
+ * sky blue in dark mode without hardcoding either.
+ */
+export type WhoAreWeVariant = "donor" | "donee";
+
+function HoverFlipCard({ title, desc, icon: Icon, variant = "donor" }: { title: string, desc: string, icon: any, variant?: WhoAreWeVariant }) {
   const [isHovered, setIsHovered] = useState(false);
+  const badgeClass = variant === "donee"
+    ? "w-10 h-10 rounded-xl bg-[var(--ck-role-accent)] flex items-center justify-center mb-4"
+    : "w-10 h-10 rounded-xl bg-[#B5480F] flex items-center justify-center mb-4";
+  const badgeIconClass = variant === "donee" ? "w-5 h-5 text-[var(--ck-role-on-accent)]" : "w-5 h-5 text-white";
+  // The donor border resolves to a warm peach on the home page: an unlayered
+  // `* { border-color }` in styles.css beats every border utility. The donee
+  // edge is the role border token, marked important so it actually applies.
+  const faceClass = variant === "donee"
+    ? "bg-white dark:bg-zinc-900 border-[var(--ck-role-border)]!"
+    : "bg-white dark:bg-[#1C1410] border-stone-200 dark:border-stone-800";
   return (
     <div
       className="w-full h-full min-h-[160px] cursor-default"
@@ -123,9 +141,9 @@ function HoverFlipCard({ title, desc, icon: Icon }: { title: string, desc: strin
         background="transparent"
         shadow={false}
         front={
-          <div className="w-full h-full flex flex-col items-start text-left bg-white dark:bg-[#1C1410] rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-shadow">
-            <div className="w-10 h-10 rounded-xl bg-[#B5480F] flex items-center justify-center mb-4">
-              <Icon className="w-5 h-5 text-white" />
+          <div className={`w-full h-full flex flex-col items-start text-left rounded-2xl p-5 sm:p-6 border shadow-sm transition-shadow ${faceClass}`}>
+            <div className={badgeClass}>
+              <Icon className={badgeIconClass} />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">
               {title}
@@ -133,7 +151,7 @@ function HoverFlipCard({ title, desc, icon: Icon }: { title: string, desc: strin
           </div>
         }
         back={
-          <div className="w-full h-full flex flex-col items-start justify-center text-left bg-white dark:bg-[#1C1410] rounded-2xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm transition-shadow">
+          <div className={`w-full h-full flex flex-col items-start justify-center text-left rounded-2xl p-5 sm:p-6 border shadow-sm transition-shadow ${faceClass}`}>
             <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-snug">
               {desc}
             </p>
@@ -277,7 +295,8 @@ interface PlanetData {
   initialAngle: number; // in radians
 }
 
-export function WhoAreWeDesktop() {
+export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVariant } = {}) {
+  const isDonee = variant === "donee";
   const sectionRef = useRef<HTMLElement>(null);
   const giantLabelFillRef = useRef<HTMLDivElement>(null);
   const orbitContainerRef = useRef<HTMLDivElement>(null);
@@ -384,11 +403,19 @@ export function WhoAreWeDesktop() {
       ref={sectionRef}
       id="about-causekind"
       aria-label="About CauseKind"
+      data-ck-role-theme={isDonee ? "donee" : undefined}
       className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#F8F6F2] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
     >
       {/* Decorative ambient background subtle radial glows */}
       <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20" aria-hidden="true">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle,_rgba(181,72,15,0.18)_0%,_transparent_70%)] blur-3xl" />
+        {isDonee ? (
+          <div
+            className="absolute top-1/4 left-1/4 w-[500px] h-[500px] blur-3xl"
+            style={{ background: "radial-gradient(circle, rgba(var(--ck-role-shadow-rgb), 0.18) 0%, transparent 70%)" }}
+          />
+        ) : (
+          <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle,_rgba(181,72,15,0.18)_0%,_transparent_70%)] blur-3xl" />
+        )}
         <div className="absolute bottom-1/4 right-1/4 w-[550px] h-[550px] bg-[radial-gradient(circle,_rgba(127,176,232,0.18)_0%,_transparent_70%)] blur-3xl" />
       </div>
 
@@ -434,7 +461,7 @@ export function WhoAreWeDesktop() {
               {/* Primary Action Button */}
               <Link
                 href="/about"
-                className="inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full bg-[var(--ck-role-accent,#B5480F)] hover:bg-[var(--ck-role-hover,#C95413)] text-white font-extrabold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all duration-200 group active:scale-95"
+                className={`inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full bg-[var(--ck-role-accent,#B5480F)] hover:bg-[var(--ck-role-hover,#C95413)] ${isDonee ? "text-[var(--ck-role-on-accent)]" : "text-white"} font-extrabold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all duration-200 group active:scale-95`}
               >
                 <span>Know more</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
@@ -447,6 +474,7 @@ export function WhoAreWeDesktop() {
             {/* Card 1 */}
             <HoverFlipCard
               title="Direct Giving"
+              variant={variant}
               desc="Donors give items directly to people or NGOs nearby — no warehouses, no delays."
               icon={Gift}
             />
@@ -454,6 +482,7 @@ export function WhoAreWeDesktop() {
             {/* Card 2 */}
             <HoverFlipCard
               title="Verified & Safe"
+              variant={variant}
               desc="Every request is admin-reviewed, and every handover is confirmed with a one-time code."
               icon={ShieldCheck}
             />
@@ -461,6 +490,7 @@ export function WhoAreWeDesktop() {
             {/* Card 3 */}
             <HoverFlipCard
               title="Zero Cash, No Middlemen"
+              variant={variant}
               desc="Only in-kind items change hands — books, clothes, furniture, electronics, and more."
               icon={HeartHandshake}
             />
@@ -468,6 +498,7 @@ export function WhoAreWeDesktop() {
             {/* Card 4 */}
             <HoverFlipCard
               title="Local Matching"
+              variant={variant}
               desc="Donors and recipients are matched within 10km, so help reaches people nearby, fast."
               icon={MapPin}
             />
