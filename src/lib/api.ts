@@ -836,13 +836,6 @@ export type CreateListingPayload = {
   declarationsAccepted?: boolean;
 };
 
-export function createItemListing(data: CreateListingPayload) {
-  return request<ItemListing>("/api/v1/items", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
-
 export function adminGetItemListings(status?: string, opts?: AdminListOptions) {
   return request<ItemListing[]>(`/api/v1/admin/items${adminListQuery(status, opts)}`);
 }
