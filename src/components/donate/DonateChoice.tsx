@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, ChevronRight, HandCoins, Package } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, HandCoins, HandHeart, Package, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { DONATE_HREF } from "@/lib/donateScroll";
+import { useAuth } from "@/hooks/useAuth";
+import { openDonateItemsChoice } from "@/components/donate/DonateItemsChoiceModal";
 
 /**
  * "How would you like to give?" — the choice every Donate button opens.
@@ -35,7 +37,7 @@ export function openDonateChoice() {
   window.dispatchEvent(new Event(OPEN_EVENT));
 }
 
-function useIsPhone() {
+export function useIsPhone() {
   const [isPhone, setIsPhone] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -79,10 +81,27 @@ export function DonateChoice() {
     [router],
   );
 
+  // Logged-in donors pick between listing an item and answering a request
+  // (DonateItemsChoiceModal). It opens only once this popup has finished
+  // closing, so the two never stack and focus returns to the Donate button.
+  const { user } = useAuth();
+  const isDonor = user?.role?.replace(/^ROLE_/, "") === "DONOR";
+  const afterClose = useRef<(() => void) | null>(null);
+  const runAfterClose = useCallback(() => {
+    const next = afterClose.current;
+    afterClose.current = null;
+    next?.();
+  }, []);
+  const goItems = useCallback(() => {
+    if (!isDonor) return go(IN_KIND_HREF);
+    afterClose.current = openDonateItemsChoice;
+    setOpen(false);
+  }, [isDonor, go]);
+
   if (isPhone) {
     return (
       <Drawer open={open} onOpenChange={setOpen}>
-        <DrawerContent className="rounded-t-[26px] bg-white px-4 pb-7 pt-1 dark:bg-zinc-900">
+        <DrawerContent onCloseAutoFocus={runAfterClose} className="rounded-t-[26px] bg-white px-4 pb-7 pt-1 dark:bg-zinc-900">
           <div className="mt-3 flex flex-col gap-1">
             <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50">
               How would you like to give?
@@ -96,7 +115,7 @@ export function DonateChoice() {
               tone="items"
               title="Donate items"
               text="Clothes, books, furniture to a verified need. OTP handover + certificate."
-              onSelect={() => go(IN_KIND_HREF)}
+              onSelect={goItems}
             />
             <PhoneOption
               tone="money"
@@ -112,7 +131,7 @@ export function DonateChoice() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="max-w-[760px] gap-7 rounded-[28px] border-0 bg-white p-10 pb-7 shadow-2xl dark:bg-zinc-900">
+      <DialogContent onCloseAutoFocus={runAfterClose} className="max-w-[760px] gap-7 rounded-[28px] border-0 bg-white p-10 pb-7 shadow-2xl dark:bg-zinc-900">
         <div className="flex flex-col gap-2 pr-12">
           <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-brand-500">Donate</span>
           <DialogTitle className="text-[32px] font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
@@ -130,7 +149,7 @@ export function DonateChoice() {
             kicker="In-Kind donation"
             text="Give clothes, books, furniture or appliances directly to someone who has asked for them."
             points={["Matched to a verified need", "OTP-confirmed handover", "Certificate for every gift"]}
-            onSelect={() => go(IN_KIND_HREF)}
+            onSelect={goItems}
           />
           <DesktopOption
             tone="money"
@@ -161,14 +180,27 @@ const TONES = {
     button: "bg-ngo-700 group-hover:bg-ngo-800",
     Icon: HandCoins,
   },
+  // Donee navy, for answering a request (DonateItemsChoiceModal).
+  need: {
+    card: "bg-[#f5f8fd] hover:border-[#1e3a60] hover:shadow-[0_10px_28px_rgba(30,58,96,0.14)] dark:bg-white/[0.03] dark:hover:border-[#7fb0e8]",
+    icon: "bg-[#e3edf9] text-[#1e3a60] dark:bg-[#7fb0e8]/15 dark:text-[#7fb0e8]",
+    ink: "text-[#1e3a60] dark:text-[#7fb0e8]",
+    button: "bg-[#1e3a60] group-hover:bg-[#2d5a96]",
+    Icon: HandHeart,
+  },
 } as const;
 
-function DesktopOption({
-  tone, title, kicker, text, points, onSelect,
+export function DesktopOption({
+  tone, title, kicker, text, points, onSelect, icon, cta = title,
 }: {
   tone: keyof typeof TONES; title: string; kicker: string; text: string; points: string[]; onSelect: () => void;
+  /** Overrides the tone's icon. */
+  icon?: LucideIcon;
+  /** The button's label; defaults to the title. */
+  cta?: string;
 }) {
   const t = TONES[tone];
+  const Icon = icon ?? t.Icon;
   return (
     <button
       type="button"
@@ -176,7 +208,7 @@ function DesktopOption({
       className={`group flex flex-col gap-4 rounded-[22px] border-2 border-[#ece4da] p-6 text-left transition-[border-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0 dark:border-zinc-700 ${t.card}`}
     >
       <span className={`flex size-14 items-center justify-center rounded-2xl ${t.icon}`}>
-        <t.Icon className="size-7" strokeWidth={1.8} aria-hidden />
+        <Icon className="size-7" strokeWidth={1.8} aria-hidden />
       </span>
       <span className="flex flex-col gap-1.5">
         <span className="text-[21px] font-extrabold text-stone-900 dark:text-stone-50">{title}</span>
@@ -192,7 +224,7 @@ function DesktopOption({
         ))}
       </span>
       <span className={`mt-auto flex h-[50px] items-center justify-center gap-2 rounded-full text-base font-bold text-white transition-colors ${t.button}`}>
-        {title}
+        {cta}
         <ArrowRight className="size-[18px]" aria-hidden />
       </span>
     </button>

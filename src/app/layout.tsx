@@ -43,6 +43,7 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
 import { DeferredOverlays } from "@/components/DeferredOverlays";
 import { DonateChoice } from "@/components/donate/DonateChoice";
+import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -200,6 +201,8 @@ export default async function RootLayout({
                   <DeferredOverlays />
                   {/* Every Donate button opens this In-Kind / Money choice. */}
                   <DonateChoice />
+                  {/* Logged-in donors' next step after "Donate items". */}
+                  <DonateItemsChoiceModal />
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>
