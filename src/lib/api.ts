@@ -2376,6 +2376,71 @@ export function uploadOfferMedia(offerId: number, files: File[]) {
   });
 }
 
+// ── On-the-spot handover photos (2026-10-08) ─────────────────────────────────
+// After the recipient enters the code, either side takes a photo of the handover;
+// one is required before either can confirm. Up to three per handover.
+
+export type HandoverProofPhoto = {
+  id: number;
+  /** Short-lived presigned URL; null if it could not be issued. */
+  url: string | null;
+  uploaderRole: "DONOR" | "DONEE";
+  uploaderName: string | null;
+  device: string | null;
+  takenAt: string;
+};
+
+export type HandoverProofContext = "OFFER" | "MATCH";
+
+const proofPath = (type: HandoverProofContext, id: number) =>
+  `/api/v1/${type === "OFFER" ? "offers" : "matches"}/${id}/handover/proof-photos`;
+
+export function getHandoverProofs(type: HandoverProofContext, id: number) {
+  return request<HandoverProofPhoto[]>(proofPath(type, id));
+}
+
+export function uploadHandoverProof(type: HandoverProofContext, id: number, file: File, device: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("device", device);
+  return fetch(`${BASE_URL}${proofPath(type, id)}`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      if (res.status === 413) throw new Error("That photo is too large to upload. Please try again.");
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.message ?? "Couldn't upload the handover photo.");
+    }
+    return res.json() as Promise<HandoverProofPhoto[]>;
+  });
+}
+
+/** Admin Handover photo log: one row per handover that has a photo. */
+export type HandoverProofLogEntry = {
+  type: HandoverProofContext;
+  id: number;
+  itemTitle: string | null;
+  requestTitle: string | null;
+  donorName: string | null;
+  doneeName: string | null;
+  city: string | null;
+  status: string | null;
+  photoCount: number;
+  thumbUrl: string | null;
+  lastPhotoAt: string;
+};
+
+export function getHandoverProofLog(limit = 300) {
+  return request<HandoverProofLogEntry[]>(`/api/v1/admin/handover-proofs?limit=${limit}`);
+}
+
+/** Everything about one donation, in sections (shape varies by type). */
+export function getHandoverProofRecord(type: HandoverProofContext, id: number) {
+  return request<Record<string, unknown>>(`/api/v1/admin/handover-proofs/${type}/${id}`);
+}
+
 export function deleteOfferMedia(offerId: number, mediaId: number) {
   return request<void>(`/api/v1/offers/${offerId}/media/${mediaId}`, { method: "DELETE" });
 }

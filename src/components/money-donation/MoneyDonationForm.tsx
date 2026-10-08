@@ -299,7 +299,7 @@ export function MoneyDonationForm() {
       // 113px, so the heading came to rest underneath the navbar. --ck-nav-h is
       // the real height, published by Navbar from a ResizeObserver; the 7rem
       // fallback covers the frame before it is first written.
-      className="scroll-mt-[calc(var(--ck-nav-h,7rem)+1rem)] py-6 bg-[#fff9f2] dark:bg-[#1a0b04] focus:outline-none"
+      className="scroll-mt-[calc(var(--ck-nav-h,7rem)+1rem)] py-6 focus:outline-none"
     >
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-[78rem] flex-col gap-3">

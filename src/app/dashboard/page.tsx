@@ -1378,7 +1378,13 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
           <div className="space-y-3">
             <p className="text-3xs font-black uppercase tracking-wider text-stone-400">Completed</p>
             {completed.map(o => (
-              <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
+              <DoneRow
+                key={o.id}
+                title={o.requestTitle ?? "Donation"}
+                sub={["Completed", doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · ")}
+                thumb={o.media?.[0]?.mediaUrl}
+                href={`/certificate?offerId=${o.id}`}
+              />
             ))}
           </div>
         )}
@@ -1490,6 +1496,222 @@ function FulfilledListingCard({
   );
 }
 
+/**
+ * One finished donation as a single slim row (owner, 2026-10-08: History looked
+ * too big). Thumbnail, title, when, and a small Certificate link — the full
+ * all-green progress card said nothing a finished donation needs to say.
+ */
+function DoneRow({ title, sub, thumb, href, tag, photos }: {
+  title: string;
+  sub: string;
+  thumb?: string | null;
+  href?: string | null;
+  /** How the donation happened, e.g. "Your offer" or "Matched for you". */
+  tag?: string;
+  /** Every photo of the item; the thumbnail opens them (2026-10-08). */
+  photos?: string[];
+}) {
+  const all = (photos?.length ? photos : thumb ? [thumb] : []).filter(Boolean) as string[];
+  const [viewing, setViewing] = useState<number | null>(null);
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-stone-100 px-3 py-2 dark:border-zinc-800">
+      <button
+        type="button"
+        disabled={!all.length}
+        onClick={() => setViewing(0)}
+        aria-label={all.length ? `View ${all.length} photo${all.length === 1 ? "" : "s"} of ${title}` : undefined}
+        className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-stone-100 enabled:cursor-zoom-in dark:bg-zinc-800"
+      >
+        {all[0] ? (
+          <Image src={all[0]} alt="" fill sizes="36px" className="object-cover" unoptimized />
+        ) : (
+          <PackageCheck className="absolute inset-0 m-auto h-4 w-4 text-stone-400" aria-hidden />
+        )}
+        {all.length > 1 && (
+          <span className="absolute bottom-0 right-0 rounded-tl-md bg-black/60 px-1 text-[9px] font-bold leading-tight text-white">{all.length}</span>
+        )}
+      </button>
+      {viewing !== null && all[viewing] && (
+        <div
+          role="dialog" aria-modal="true" aria-label={`Photos of ${title}`}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setViewing(null)}
+          onKeyDown={e => {
+            if (e.key === "Escape") setViewing(null);
+            if (e.key === "ArrowRight") setViewing(v => v === null ? v : (v + 1) % all.length);
+            if (e.key === "ArrowLeft") setViewing(v => v === null ? v : (v - 1 + all.length) % all.length);
+          }}
+          tabIndex={-1}
+          ref={el => el?.focus()}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
+          <img src={all[viewing]} alt="" className="max-h-[85vh] max-w-[92vw] rounded-xl object-contain" onClick={e => e.stopPropagation()} />
+          <button type="button" onClick={() => setViewing(null)} aria-label="Close"
+            className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/25">✕</button>
+          {all.length > 1 && (
+            <>
+              <button type="button" aria-label="Previous photo"
+                onClick={e => { e.stopPropagation(); setViewing(v => v === null ? v : (v - 1 + all.length) % all.length); }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg font-bold text-white hover:bg-white/25">‹</button>
+              <button type="button" aria-label="Next photo"
+                onClick={e => { e.stopPropagation(); setViewing(v => v === null ? v : (v + 1) % all.length); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg font-bold text-white hover:bg-white/25">›</button>
+              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/80">{viewing + 1} / {all.length}</span>
+            </>
+          )}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="flex min-w-0 items-center gap-2 text-xs font-semibold text-stone-800 dark:text-stone-200">
+          <span className="truncate">{title}</span>
+          {tag && (
+            <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-3xs font-bold text-stone-500 dark:bg-zinc-800 dark:text-stone-400">{tag}</span>
+          )}
+        </p>
+        <p className="truncate text-2xs text-stone-400">{sub}</p>
+      </div>
+      {href && (
+        <Link href={href} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-bold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <Award className="h-3 w-3" aria-hidden /> Certificate
+        </Link>
+      )}
+    </div>
+  );
+}
+
+const doneDate = (iso?: string | null) => {
+  const ms = iso ? Date.parse(iso) : NaN;
+  return Number.isNaN(ms) ? "" : new Date(ms).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+
+/**
+ * The donor's History card (owner, 2026-10-08): finished offers and finished
+ * matches in ONE list, newest first, each tagged with how it happened. Offers
+ * that didn't go ahead sit underneath, collapsed.
+ */
+function DonorHistorySection({ offers, fulfilledItems, matches, onChanged }: {
+  offers: DonationOffer[];
+  fulfilledItems: ItemListing[];
+  matches: ItemMatch[];
+  onChanged: () => void;
+}) {
+  const closed = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status));
+  const rows = useMemo(() => {
+    const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => ({
+      key: `o${o.id}`,
+      at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
+      title: o.requestTitle ?? "Donation",
+      tag: "Your offer",
+      sub: ["Completed", doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · "),
+      thumb: o.media?.[0]?.mediaUrl ?? null,
+      photos: (o.media ?? []).map(m => m.mediaUrl),
+      href: `/certificate?offerId=${o.id}`,
+    }));
+    const fromMatches = fulfilledItems.map(item => {
+      const match = findMatchForListing(item, matches);
+      const when = getListingCompletionDate(item, match);
+      return {
+        key: `l${item.id}`,
+        at: Date.parse(when ?? "") || 0,
+        title: item.title,
+        tag: "Matched for you",
+        sub: ["Donated", doneDate(when), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · "),
+        thumb: item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null),
+        photos: item.photoUrls?.length ? item.photoUrls : (item.imageUrls ? item.imageUrls.split("|") : []),
+        href: isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null,
+      };
+    });
+    return [...fromOffers, ...fromMatches].sort((a, b) => b.at - a.at);
+  }, [offers, fulfilledItems, matches]);
+
+  return (
+    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
+      <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
+        <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+          <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation history
+        </CardTitle>
+        <p className="text-xs text-stone-400 mt-0.5">Everything you have given, newest first</p>
+      </CardHeader>
+      <CardContent className="space-y-2 pt-3 sm:pt-4">
+        {rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-stone-500">No completed donations yet.</p>
+        ) : (
+          rows.map(({ key, ...r }) => <DoneRow key={key} {...r} />)
+        )}
+        {closed.length > 0 && (
+          <details className="group pt-2">
+            <summary className="flex cursor-pointer items-center gap-1 text-3xs font-black uppercase tracking-wider text-stone-400">
+              <span className="inline-block transition-transform group-open:rotate-90">▶</span>
+              Didn&apos;t go ahead ({closed.length})
+            </summary>
+            <div className="mt-2 space-y-2">
+              {closed.map(o => <ClosedOfferCard key={o.id} offer={o} onChanged={onChanged} />)}
+            </div>
+          </details>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * The donee's History card (owner, 2026-10-08): everything received, from
+ * donors' offers and from matches, in ONE newest-first list, each tagged with
+ * how it came. A request filled twice shows twice, with what each delivered.
+ * The old split hid any request that also had a completed offer from the
+ * matched card, so a match-received item disappeared from history.
+ */
+function DoneeHistorySection({ offers, matches }: {
+  offers: DonationOffer[];
+  matches: ItemMatch[];
+}) {
+  const rows = useMemo(() => {
+    const fromOffers = offers.filter(o => o.status === "COMPLETED" || o.status === "ISSUE_WINDOW_OPEN").map(o => {
+      const qty = o.receivedQuantity ?? o.itemDetails?.quantity ?? null;
+      return {
+        key: `o${o.id}`,
+        at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
+        title: o.requestTitle || "Donation",
+        tag: "Donor's offer",
+        sub: ["Received", doneDate(o.closedAt ?? o.createdAt), qty != null ? `${qty} received` : "", `for “${o.requestTitle}”`].filter(Boolean).join(" · "),
+        thumb: o.media?.[0]?.mediaUrl ?? null,
+        photos: (o.media ?? []).map(m => m.mediaUrl),
+      };
+    });
+    const fromMatches = matches.filter(m => MATCH_RECEIVED_STATUSES.has(m.status)).map(m => {
+      const qty = m.doneeConfirmedQty ?? m.allocatedQuantity ?? null;
+      return {
+        key: `m${m.id}`,
+        at: Date.parse(m.doneeConfirmedAt ?? m.closedAt ?? m.createdAt ?? "") || 0,
+        title: m.listingTitle || m.requestTitle || "Donation",
+        tag: "Matched for you",
+        sub: ["Received", doneDate(m.doneeConfirmedAt ?? m.closedAt), qty != null ? `${qty} received` : "", m.requestTitle ? `for “${m.requestTitle}”` : ""].filter(Boolean).join(" · "),
+        thumb: m.listingPhotoUrls?.[0] ?? m.donorImages?.[0] ?? null,
+        photos: m.listingPhotoUrls?.length ? m.listingPhotoUrls : (m.donorImages ?? []),
+      };
+    });
+    return [...fromOffers, ...fromMatches].sort((a, b) => b.at - a.at);
+  }, [offers, matches]);
+
+  return (
+    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
+      <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
+        <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+          <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donations received
+        </CardTitle>
+        <p className="text-xs text-stone-400 mt-0.5">Everything you have received, newest first</p>
+      </CardHeader>
+      <CardContent className="space-y-2 pt-3 sm:pt-4">
+        {rows.length === 0
+          ? <p className="py-6 text-center text-sm text-stone-500">Nothing received yet.</p>
+          : rows.map(({ key, ...r }) => <DoneRow key={key} {...r} />)}
+      </CardContent>
+    </Card>
+  );
+}
+
 function MatchedDonationsSection({
   fulfilledItems,
   matches,
@@ -1533,8 +1755,14 @@ function MatchedDonationsSection({
           <p className="text-sm text-center py-6 text-stone-500">No fulfilled items yet.</p>
         ) : (
           <div className="space-y-3">
-            {sortedItemsWithMatches.slice(0, 1).map(({ item, match }) => (
-              <FulfilledListingCard key={item.id} listing={item} match={match} />
+            {sortedItemsWithMatches.slice(0, 5).map(({ item, match }) => (
+              <DoneRow
+                key={item.id}
+                title={item.title}
+                sub={["Donated", doneDate(getListingCompletionDate(item, match)), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · ")}
+                thumb={item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null)}
+                href={isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null}
+              />
             ))}
           </div>
         )}
@@ -1668,8 +1896,13 @@ function DoneeMatchedDonationsSection({
           <p className="text-sm text-center py-6 text-stone-500">No fulfilled items yet.</p>
         ) : (
           <div className="space-y-3">
-            {sortedItemsWithMatches.slice(0, 1).map(({ request, match }) => (
-              <FulfilledRequestMatchCard key={request.id} request={request} match={match} />
+            {sortedItemsWithMatches.slice(0, 5).map(({ request, match, completionTime }) => (
+              <DoneRow
+                key={request.id}
+                title={request.title}
+                sub={["Received", completionTime ? doneDate(new Date(completionTime).toISOString()) : "", match?.listingTitle ?? ""].filter(Boolean).join(" · ")}
+                thumb={request.imageUrl}
+              />
             ))}
           </div>
         )}
@@ -2244,19 +2477,17 @@ function DoneeDashboard({
           <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
                 {/* Finished offers — slim grouped history instead of full cards:
                   ones that fell through, and donations completed over a week ago */}
-                {pastOffers.length > 0 && (
-                  <PastOffersStrip
-                    offers={pastOffers}
-                    activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
-                    defaultOpen
-                  />
-                )}
-            <DoneeMatchedDonationsSection
-              fulfilledRequests={fulfilledRequests}
-              matches={doneeMatches}
-              offers={incomingOffers}
-            />
-            {pastMatches.length > 0 && <PastMatchesStrip matches={pastMatches} defaultOpen />}
+            <DoneeHistorySection offers={incomingOffers} matches={doneeMatches} />
+            {/* What didn't go ahead, collapsed underneath. */}
+            {pastOffers.some(o => o.status !== "COMPLETED") && (
+              <PastOffersStrip
+                offers={pastOffers.filter(o => o.status !== "COMPLETED")}
+                activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
+              />
+            )}
+            {pastMatches.some(m => !MATCH_RECEIVED_STATUSES.has(m.status)) && (
+              <PastMatchesStrip matches={pastMatches.filter(m => !MATCH_RECEIVED_STATUSES.has(m.status))} />
+            )}
           </TabsContent>
 
           {/* Your requests — each one drawn as a journey down the pipeline */}
@@ -3241,15 +3472,11 @@ export default function DashboardPage() {
 
                 {/* Donor Flow 2 — Offer Tracker */}
                 <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
-                  <DonorOfferSection
+                  <DonorHistorySection
                     offers={donationOffers.filter(o => !isLiveDonorOffer(o))}
-                    onReconfirm={handleOfferReconfirm}
-                    onWithdraw={handleOfferWithdraw}
-                    onCancelled={handleOfferCancelled}
-                  />
-                  <MatchedDonationsSection
                     fulfilledItems={donorListingGroups.fulfilled}
                     matches={donorMatches}
+                    onChanged={handleOfferCancelled}
                   />
                   {/* Completed, declined and cancelled matches. */}
                   <PastMatchesStrip matches={pastDonorMatches} viewer="DONOR" defaultOpen />

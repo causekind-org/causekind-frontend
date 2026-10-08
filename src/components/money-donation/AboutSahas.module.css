@@ -1,7 +1,7 @@
 .mobileIntro { display: none; }
 
 @media (max-width: 767px) {
-  .section { padding-block: 1.75rem; background: var(--surface-cream); }
+  .section { padding-block: 1.75rem; }
   .layout { gap: 1rem; }
   .eyebrow {
     padding: 0; margin-bottom: .875rem; border: 0; border-radius: 0;

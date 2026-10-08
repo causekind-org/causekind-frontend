@@ -41,6 +41,8 @@ export function HandoverHubShell({
     confirmDonee: (p: DoneeConfirmPayload) => Promise<void>;
     /** Recipient enters the donor's code (offers and matches; not NGO drives). */
     verifyOtp?: (otp: string) => Promise<void>;
+    /** On-the-spot handover photo (offers and matches). */
+    proof?: import("./HandoverProofSection").HandoverProofControls;
     setCallPermission?: (next: boolean) => Promise<void>;
     /** Courier delivery address — ask (donor), answer and pre-fill (recipient). */
     deliveryAddress?: DeliveryAddressActions;
@@ -121,6 +123,7 @@ export function HandoverHubShell({
               onDonorConfirm={actions.confirmDonor}
               onDoneeConfirm={actions.confirmDonee}
               onVerifyOtp={actions.verifyOtp}
+              proof={actions.proof}
               onOpenChat={openChat}
               onChanged={onChanged}
               deliveryActions={actions.deliveryAddress}
