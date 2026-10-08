@@ -17,6 +17,9 @@ const dancingScript = Dancing_Script({ weight: "700", subsets: ["latin"] });
 // can use it and the two documents finally look like the same thing.
 const playfair = Playfair_Display({ subsets: ["latin"] });
 
+/** The certificate's layout width; smaller screens scale it down. */
+const CERT_WIDTH = 960;
+
 export default function CertificatePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -25,6 +28,20 @@ export default function CertificatePage() {
   const certNumber = searchParams.get("certNumber");
   const type = searchParams.get("type");
   const printRef = useRef<HTMLDivElement>(null);
+  // The card is always laid out at its 960px desktop size and scaled down to
+  // fit narrower screens (2026-10-08): at phone width the fixed-size contents
+  // overflowed a 240px-tall card. The PDF snapshot drops the scale.
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [cardScale, setCardScale] = useState(1);
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const fit = () => setCardScale(Math.min(1, el.clientWidth / CERT_WIDTH));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
   const [cert, setCert] = useState<Certificate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,7 +98,10 @@ export default function CertificatePage() {
         scale: 3,
         useCORS: true,
         backgroundColor: "#f5f0e8",
-        onclone: (document, element) => normalizeCertificateColors(document, element),
+        onclone: (document, element) => {
+          element.style.transform = "none";
+          normalizeCertificateColors(document, element);
+        },
       });
 
       const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -159,7 +179,9 @@ export default function CertificatePage() {
             print-color-adjust: exact !important;
             color-adjust: exact !important;
           }
+          .cert-print-frame { height: auto !important; max-width: none !important; }
           .cert-print-card {
+            transform: none !important;
             width: 100vw !important; height: 100vh !important; max-width: none !important;
             box-shadow: none !important; page-break-inside: avoid; margin: 0 !important;
           }
@@ -184,12 +206,18 @@ export default function CertificatePage() {
 
       {/* Certificate — landscape A4 */}
       <div
+        ref={frameRef}
+        className="mx-auto cert-print-frame"
+        style={{ width: "100%", maxWidth: `${CERT_WIDTH}px`, height: `${(CERT_WIDTH * 1000 / 1414) * cardScale}px` }}
+      >
+      <div
         ref={printRef}
-        className="mx-auto cert-print-card"
+        className="cert-print-card"
         style={{
-          width: "100%",
-          maxWidth: "960px",
+          width: `${CERT_WIDTH}px`,
           aspectRatio: "1414 / 1000",
+          transform: cardScale < 1 ? `scale(${cardScale})` : undefined,
+          transformOrigin: "top left",
         }}
       >
         <div
@@ -359,6 +387,7 @@ export default function CertificatePage() {
             </div>
           )}
         </div>
+      </div>
       </div>
 
       {/* Verify info below (screen-only convenience — the QR above is what's printed) */}
