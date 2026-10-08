@@ -20,6 +20,7 @@ import { displayReason } from "@/lib/rejectionReason";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
+import { HandoverPhotoLog } from "../HandoverPhotoLog";
 import { NgoReviewPanel } from "../ngos/NgoReviewPanel";
 import { NgoDriveReviewPanel, NgoDriveOffersPanel, NgoDriveProofsPanel } from "../ngo-drives/NgoDriveAdminPanels";
 import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel";
@@ -33,10 +34,11 @@ import {
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
+  Camera,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -53,6 +55,7 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   matches: "MATCH_INTERVENE",
   offers: "OFFER_REVIEW",
   "match-history": "MATCH_INTERVENE",
+  "handover-photos": "MATCH_INTERVENE",
   "ai-logs": "LISTING_REVIEW",
   "user-journey": "USER_READ",
   analytics: "PAYMENT_REVIEW",
@@ -549,7 +552,7 @@ export default function AdminDashboardPage() {
   // own panel *and* the approval-queue feed underneath it, and put it on the
   // wrong side of the mobile nav split below.
   const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
-  const isReportTab = tab === "match-history" || tab === "ai-logs"
+  const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
     || tab === "user-journey" || tab === "analytics" || tab === "whatsapp";
 
   const TABS = [
@@ -575,6 +578,7 @@ export default function AdminDashboardPage() {
   // how "User Journey" ended up in one list and not the other.
   const REPORTS = [
     { key: "match-history" as TabKey, label: "Match History",     icon: Handshake,     color: "text-teal-400"   },
+    { key: "handover-photos" as TabKey, label: "Handover Photo Log", icon: Camera,      color: "text-amber-400"  },
     { key: "ai-logs"       as TabKey, label: "AI Screening Logs", icon: Bot,           color: "text-violet-400" },
     { key: "user-journey"  as TabKey, label: "User Journey",      icon: UserRound,     color: "text-sky-400"    },
     { key: "analytics"     as TabKey, label: "Analytics",         icon: TrendingUp,    color: "text-amber-400"  },
@@ -586,6 +590,7 @@ export default function AdminDashboardPage() {
     : tab === "drive-offers" ? "Drive Offers"
     : tab === "drive-proofs" ? "Distribution Proofs"
     : tab === "match-history" ? "Match History"
+    : tab === "handover-photos" ? "Handover Photo Log"
     : tab === "ai-logs" ? "AI Screening Logs"
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
@@ -600,6 +605,8 @@ export default function AdminDashboardPage() {
     ? `${driveOffersPending} donor offer${driveOffersPending !== 1 ? "s" : ""} to drives in handover · monitor only, the NGO accepts offers`
     : tab === "drive-proofs"
     ? `${driveProofsPending} distribution proof${driveProofsPending !== 1 ? "s" : ""} awaiting review · approval completes the drive`
+    : tab === "handover-photos"
+    ? "Every on-the-spot handover photo, with the full record of each donation"
     : tab === "match-history"
     ? `${allMatches.length} match${allMatches.length !== 1 ? "es" : ""} · complete lifecycle view`
     : tab === "user-journey"
@@ -1014,6 +1021,9 @@ export default function AdminDashboardPage() {
               </>
             )
           )}
+
+          {/* ── HANDOVER PHOTO LOG (2026-10-08) ── */}
+          {tab === "handover-photos" && <HandoverPhotoLog />}
 
           {/* ── MATCH HISTORY TAB ── */}
           {tab === "match-history" && (

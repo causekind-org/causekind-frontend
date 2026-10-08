@@ -13,6 +13,7 @@ import { detectLocationFromServer } from "@/app/actions/locations";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
 import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
+import { PhotoCaptureDialog, prefersNativeCamera } from "@/features/ngo-drives/components/PhotoCaptureDialog";
 import { DraftSaveStatus } from "@/features/wizard-kit/DraftSaveStatus";
 import { StepErrorSummary } from "@/features/wizard-kit/StepErrorSummary";
 import { StepCardStack } from "@/features/wizard-kit/StepCardStack";
@@ -265,6 +266,7 @@ export function DonationOfferWizard({
       invalidated = false;
     }
 
+    modelRef.current = next; // same reason as setPhotos below
     setModel(next);
     if (invalidated !== null) setDeclarationsInvalidated(invalidated);
     queueSave(next);
@@ -273,6 +275,11 @@ export function DonationOfferWizard({
   // ── Photos ────────────────────────────────────────────────────────────────
   const setPhotos = useCallback((updater: (prev: OfferModel["photos"]) => OfferModel["photos"]) => {
     const next = { ...modelRef.current, photos: updater(modelRef.current.photos) };
+    // Advance the ref now, not on the next render (2026-10-08). Adding a photo
+    // calls this twice back to back — add the tile, then mark it uploading —
+    // and the second call read the pre-add list and wrote it back, so the new
+    // photo vanished until a reload fetched it from the server.
+    modelRef.current = next;
     setModel(next);
     queueSaveNow(next);
   }, [queueSaveNow]);
@@ -314,6 +321,15 @@ export function DonationOfferWizard({
     // request even starts.
     screenTokenRef.current += 1;
     setScreening({ kind: "idle" });
+  }, []);
+
+  // Desktop browsers ignore <input capture> and open the file picker, so there
+  // "Take photo" opens the webcam instead (owner, 2026-10-08). Phones keep the
+  // native camera.
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const takePhoto = useCallback((openNativeCamera: () => void) => {
+    if (prefersNativeCamera()) openNativeCamera();
+    else setCameraOpen(true);
   }, []);
 
   const photoApi = useOfferPhotos({
@@ -611,6 +627,7 @@ export function DonationOfferWizard({
                           video={videoApi}
                           onPickVideo={file => void videoApi.upload(file)}
                           onRemoveVideo={() => void videoApi.remove()}
+                          onTakePhoto={takePhoto}
                         />
                       )}
                       {step === "purchasePlan" && (
@@ -761,6 +778,11 @@ export function DonationOfferWizard({
           />
         </div>
       </div>
+      <PhotoCaptureDialog
+        open={cameraOpen}
+        onCancel={() => setCameraOpen(false)}
+        onCaptured={file => { setCameraOpen(false); photoApi.addFiles([file]); }}
+      />
     </MotionConfig>
   );
 }

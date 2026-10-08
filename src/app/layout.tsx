@@ -45,6 +45,7 @@ import { DeferredOverlays } from "@/components/DeferredOverlays";
 import { DonateChoice } from "@/components/donate/DonateChoice";
 import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
 import { MatchActionDock } from "@/components/matches/MatchActionDock";
+import { CompletionCelebrationWatcher } from "@/components/handover/CompletionCelebrationWatcher";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -206,6 +207,7 @@ export default async function RootLayout({
                   <DonateItemsChoiceModal />
                   {/* Donor-only: a waiting match, once, until answered or closed. */}
                   <MatchActionDock />
+                  <CompletionCelebrationWatcher />
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>

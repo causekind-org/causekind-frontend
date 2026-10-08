@@ -17,9 +17,11 @@ import {
   requestMatchDeliveryAddress, submitMatchDeliveryAddress, getMatchDeliveryAddressSuggestion,
   type ItemMatch,
 } from "@/lib/api";
+import { getHandoverProofs, uploadHandoverProof, type HandoverProofPhoto } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import HandoverCelebration from "@/components/handover/HandoverCelebration";
+import { claimCelebration, MATCH_DONE } from "@/lib/celebration";
 import { adaptMatch } from "@/features/handover/adapters";
 import { HandoverHubShell } from "@/features/handover/HandoverHubShell";
 import { HandoverSkeleton } from "@/features/handover/HandoverSkeleton";
@@ -36,6 +38,14 @@ export default function MatchHandoverHubPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [otp, setOtp] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  // On-the-spot handover photos (2026-10-08): loaded with the page and on every
+  // live update, so a photo the other side takes shows up here by itself.
+  const [proofPhotos, setProofPhotos] = useState<HandoverProofPhoto[]>([]);
+  const loadProofs = useCallback(async () => {
+    if (!matchId) return;
+    try { setProofPhotos(await getHandoverProofs("MATCH", matchId)); } catch { /* not a participant yet, or offline */ }
+  }, [matchId]);
+  useEffect(() => { void loadProofs(); }, [loadProofs]);
 
   const fetchMatch = useCallback(async () => {
     if (!matchId) return;
@@ -58,17 +68,14 @@ export default function MatchHandoverHubPage() {
   useEntityUpdates(["MATCH"], (_latest, batch) => {
     if (!matchId || !batch.some((d) => d.entityId === matchId)) return;
     void reload();
+    void loadProofs();
   });
 
+  // Claimed per person, so donor and donee each see it once (2026-10-08).
   useEffect(() => {
-    if (match?.status !== "COMPLETED" && match?.status !== "FULFILLED") return;
-    const key = `ck_celebrated_MATCH_${matchId}`;
-    try {
-      if (localStorage.getItem(key)) return;
-      localStorage.setItem(key, "1");
-      setCelebrate(true);
-    } catch { /* private mode — never block the page */ }
-  }, [match?.status, matchId]);
+    if (!match || !MATCH_DONE.has(match.status)) return;
+    if (claimCelebration("MATCH", matchId, user?.email)) setCelebrate(true);
+  }, [match, matchId, user?.email]);
 
   if (loading || authLoading) return <HandoverSkeleton />;
   if (loadError) return <HandoverLoadError message={loadError} onRetry={() => { setLoading(true); void reload(); }} />;
@@ -111,6 +118,12 @@ export default function MatchHandoverHubPage() {
           },
           confirmDonor: async ({ quantity }) => {
             setMatch(await confirmMatchHandoverDonor(matchId, { quantityHandedOver: quantity }));
+          },
+          proof: {
+            photos: proofPhotos,
+            upload: async (file, device) => {
+              setProofPhotos(await uploadHandoverProof("MATCH", matchId, file, device));
+            },
           },
           verifyOtp: async (code) => {
             setMatch(await verifyMatchHandoverOtp(matchId, code));

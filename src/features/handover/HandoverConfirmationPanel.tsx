@@ -15,6 +15,7 @@ import {
   handoverSelectTrigger, handoverSelectItem,
 } from "./handoverStyles";
 import { Panel } from "./HandoverScheduleSummary";
+import { HandoverProofSection, type HandoverProofControls } from "./HandoverProofSection";
 export type DonorConfirmPayload = { quantity: number };
 export type DoneeConfirmPayload = { otp?: string; quantity: number; conditionRating: string };
 
@@ -37,7 +38,7 @@ const OTP_LOCKOUT_ATTEMPTS = 5;
  * afford to guess; this cannot.
  */
 export function HandoverConfirmationPanel({
-  vm, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, otp,
+  vm, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, otp, proof,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -49,6 +50,11 @@ export function HandoverConfirmationPanel({
    * verifies it -> each side confirms. NGO drives keep the one-step flow.
    */
   onVerifyOtp?: (otp: string) => Promise<void>;
+  /**
+   * The on-the-spot handover photo (2026-10-08). Present for offers and matches:
+   * after the code, either side takes it, and both confirmations wait for one.
+   */
+  proof?: HandoverProofControls;
 }) {
   const donor = vm.role === "DONOR";
   const alreadyConfirmed = donor
@@ -82,8 +88,8 @@ export function HandoverConfirmationPanel({
   }
 
   return donor
-    ? <DonorConfirm vm={vm} otp={otp} onGenerateOtp={onGenerateOtp} onConfirm={onDonorConfirm} stepped={onVerifyOtp != null} />
-    : <DoneeConfirm vm={vm} onConfirm={onDoneeConfirm} onVerifyOtp={onVerifyOtp} />;
+    ? <DonorConfirm vm={vm} otp={otp} onGenerateOtp={onGenerateOtp} onConfirm={onDonorConfirm} stepped={onVerifyOtp != null} proof={proof} />
+    : <DoneeConfirm vm={vm} onConfirm={onDoneeConfirm} onVerifyOtp={onVerifyOtp} proof={proof} />;
 }
 
 function DonorOtpSection({
@@ -178,15 +184,17 @@ function DonorOtpSection({
  * offer's quantity as the primary source (see HandoverService.confirmHandoverDonor),
  * so all this panel has to do is confirm, not collect.
  */
-function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped }: {
+function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped, proof }: {
   vm: HandoverViewModel;
   otp: string | null;
   onGenerateOtp: () => Promise<void>;
   onConfirm: (p: DonorConfirmPayload) => Promise<void>;
   /** Code must be verified by the recipient before the donor can confirm. */
   stepped: boolean;
+  proof?: HandoverProofControls;
 }) {
   const codeVerified = !stepped || vm.confirmation.otpVerified;
+  const photoTaken = !proof || proof.photos.length > 0;
   const [busy, setBusy] = useState<"otp" | "confirm" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -206,7 +214,9 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped }: {
         {codeVerified && stepped ? (
           <p className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm font-semibold text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300">
             <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            The recipient entered your code. You can confirm the handover now.
+            {proof && !photoTaken
+              ? "The recipient entered your code. Next, a handover photo."
+              : "The recipient entered your code. You can confirm the handover now."}
           </p>
         ) : (
           <DonorOtpSection
@@ -224,6 +234,8 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped }: {
           </p>
         )}
 
+        {codeVerified && proof && <HandoverProofSection proof={proof} viewerRole="DONOR" />}
+
         <div className="space-y-1.5 border-t border-stone-100 pt-4 dark:border-zinc-800">
           {offered != null && offered > 0 && (
             <p className="text-sm text-stone-600 dark:text-stone-300">
@@ -238,7 +250,7 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped }: {
           <p className="pt-1 text-xs text-stone-500 dark:text-stone-400">
             You can&apos;t undo this — it&apos;s the record of what was given.
           </p>
-          <Button onClick={confirm} disabled={busy !== null || !codeVerified} className={`${handoverPrimary} w-full`}>
+          <Button onClick={confirm} disabled={busy !== null || !codeVerified || !photoTaken} className={`${handoverPrimary} w-full`}>
             {busy === "confirm"
               ? <><Loader2 className="animate-spin" aria-hidden /> Recording</>
               : <><ShieldCheck aria-hidden /> I have donated the item</>}
@@ -252,11 +264,13 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped }: {
 
 // ── Donee ───────────────────────────────────────────────────────────────────
 
-function DoneeConfirm({ vm, onConfirm, onVerifyOtp }: {
+function DoneeConfirm({ vm, onConfirm, onVerifyOtp, proof }: {
   vm: HandoverViewModel;
   onConfirm: (p: DoneeConfirmPayload) => Promise<void>;
   onVerifyOtp?: (otp: string) => Promise<void>;
+  proof?: HandoverProofControls;
 }) {
+  const photoTaken = !proof || proof.photos.length > 0;
   const stepped = onVerifyOtp != null;
   const codeVerified = stepped && vm.confirmation.otpVerified;
   const [otp, setOtp] = useState("");
@@ -334,7 +348,7 @@ function DoneeConfirm({ vm, onConfirm, onVerifyOtp }: {
         {codeVerified ? (
           <p className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm font-semibold text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300">
             <Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            Code verified. Now confirm what you received.
+            {proof && !photoTaken ? "Code verified. Next, a handover photo." : "Code verified. Now confirm what you received."}
           </p>
         ) : (
         <div className="space-y-1.5">
@@ -384,6 +398,8 @@ function DoneeConfirm({ vm, onConfirm, onVerifyOtp }: {
           )}
         </div>
         )}
+
+        {codeVerified && proof && <HandoverProofSection proof={proof} viewerRole="DONEE" />}
 
         {/* Stepped flows: nothing below until the code is verified. */}
         {(!stepped || codeVerified) && (<>
@@ -477,7 +493,7 @@ function DoneeConfirm({ vm, onConfirm, onVerifyOtp }: {
         </p>
         <Button
           onClick={confirm}
-          disabled={!qtyValid || !photosValid || busy || (!codeVerified && (!otpComplete || lockedOut))}
+          disabled={!qtyValid || !photosValid || !photoTaken || busy || (!codeVerified && (!otpComplete || lockedOut))}
           className={`${handoverPrimary} w-full`}
         >
           {busy

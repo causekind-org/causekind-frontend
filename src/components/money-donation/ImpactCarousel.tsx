@@ -99,6 +99,8 @@ export function ImpactCarousel() {
   const pauseOnHover = true;
 
   const [slotCount, setSlotCount] = useState(() => Math.max(total, 12));
+  /** How far the outermost visible cards hang below the stage (2026-10-08). */
+  const [hang, setHang] = useState(0);
 
   const layoutRef = useRef({ radius: 900, cardWidth: 220, cardHeight: 330, step: 0.14, centerX: 0, centerY: 0, maxAngle: 1 });
   const currentRef = useRef(0);
@@ -162,6 +164,13 @@ export function ImpactCarousel() {
     const reach = Math.min(1, (width / 2 + cardWidth * 1.2) / radius);
     const maxAngle = Math.asin(reach) + 0.12;
     layoutRef.current = { radius, cardWidth, cardHeight, step, centerX, centerY, maxAngle };
+    // The cards sit on a circle, so the ones at the screen edges hang lowest.
+    // Reserve that drop below the stage so the whole fan shows (owner: do not
+    // cut the carousel off) rather than clipping it at the section edge.
+    const edge = Math.asin(Math.min(1, (width / 2) / radius));
+    const lowest = centerY - radius * Math.cos(edge)
+      + (cardHeight / 2) * Math.cos(edge) + (cardWidth / 2) * Math.sin(edge);
+    setHang(Math.max(0, Math.ceil(lowest - height)));
     const disc = discRef.current;
     if (disc) {
       disc.style.width = `${discRadius * 2}px`;
@@ -402,9 +411,9 @@ export function ImpactCarousel() {
 
   return (
     <section 
-      className="relative z-0 bg-background overflow-hidden py-5 lg:py-8" 
+      className="relative z-0 overflow-x-clip py-5 lg:py-8"
       id="stories"
-      style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
+      style={{ isolation: 'isolate', transform: 'translateZ(0)', paddingBottom: hang ? `${hang + 24}px` : undefined }}
     >
       {/* Header overlay */}
       <div className="relative z-10 pt-2 sm:pt-4 pb-2 sm:pb-3 text-center pointer-events-none">
@@ -452,7 +461,7 @@ export function ImpactCarousel() {
           <div
             ref={discRef}
             aria-hidden
-            className="pointer-events-none absolute -translate-x-1/2 rounded-full bg-background"
+            className="pointer-events-none absolute -translate-x-1/2 rounded-full bg-[#fffbf5] dark:bg-[#1a0b04]"
             style={{ boxShadow: 'none' }}
           />
 
