@@ -42,6 +42,8 @@ const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 };
 // Nothing known about the user's location: the whole of India.
 const INDIA_CENTER = { lat: 22.5, lng: 79.5 };
 const INDIA_ZOOM = 4;
+// Below this the world no longer fills the box and Google paints grey bands.
+const MIN_ZOOM = 4;
 const PIN_ZOOM = 16;
 
 /**
@@ -249,6 +251,8 @@ export function LocationPinPicker({
               defaultCenter={start}
               defaultZoom={startZoom}
               mapId={MAP_ID}
+              minZoom={MIN_ZOOM}
+              maxZoom={20}
               gestureHandling="cooperative"
               disableDefaultUI
               zoomControl

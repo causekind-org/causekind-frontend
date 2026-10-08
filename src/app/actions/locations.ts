@@ -60,6 +60,7 @@ export type GeocodeResult =
  * failure was undiagnosable from either the browser console or the server.
  */
 export async function detectLocationFromServer(lat: number, lng: number): Promise<GeocodeResult> {
+  await nominatimSlot();
   const url =
     `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}` +
     `&format=json&accept-language=en&addressdetails=1&email=support%40causekind.com`;
@@ -109,6 +110,7 @@ export async function geocodeAddressFromServer(query: {
   if (query.city) params.set("city", query.city);
   if (query.state) params.set("state", query.state);
   if (query.countryCode) params.set("countrycodes", query.countryCode.toLowerCase());
+  await nominatimSlot();
   try {
     const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
       headers: {
@@ -214,4 +216,47 @@ export async function profileCityCenterFromServer(
 
   const state = parsed.stateIso ? point(State.getStateByCodeAndCountry(parsed.stateIso, countryIso) ?? undefined) : null;
   return state ? { ...state, level: "state" } : null;
+}
+
+/**
+ * Nominatim's usage policy: at most one request per second. Every call from
+ * this module waits for its slot here (per server instance), on top of the
+ * debouncing the pickers already do.
+ */
+let nextNominatimSlot = 0;
+async function nominatimSlot() {
+  const now = Date.now();
+  const at = Math.max(now, nextNominatimSlot);
+  nextNominatimSlot = at + 1000;
+  if (at > now) await new Promise((r) => setTimeout(r, at - now));
+}
+
+/**
+ * Free-text place search for the location picker's search box ("Kothrud,
+ * Pune", "411038"). Submit-only by design: Nominatim's policy rules out
+ * as-you-type suggestions. India-biased, since that is where CauseKind runs.
+ */
+export async function searchPlaceFromServer(
+  q: string,
+): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
+  const query = q.trim().slice(0, 200);
+  if (!query) return { ok: false, reason: "no-address" };
+  const params = new URLSearchParams({ q: query, format: "json", limit: "1", countrycodes: "in", email: "support@causekind.com" });
+  await nominatimSlot();
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+      headers: {
+        "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
+        "Accept": "application/json",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
+    const rows = (await res.json()) as { lat: string; lon: string }[];
+    const first = rows?.[0];
+    if (!first) return { ok: false, reason: "no-address" };
+    return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
+  } catch {
+    return { ok: false, reason: "network" };
+  }
 }
