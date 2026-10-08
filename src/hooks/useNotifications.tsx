@@ -28,6 +28,11 @@ const SEEN_KEY  = "ck_notif_seen_v3";
 // once on load. The bell's saved list now comes from GET /api/v1/notifications.
 const STORE_PREFIX = "ck_notif_store_v1_";
 const POLL_MS   = 90_000;
+// A hidden tab drops its SSE stream after this long. An open stream is an
+// in-flight request, so the backend instance is billed and never scales to
+// zero; a forgotten background tab used to hold one up all day. The grace
+// period keeps quick tab switches from reconnecting.
+const SSE_HIDDEN_CLOSE_MS = 5 * 60_000;
 const MAX_NOTIFICATIONS = 10;
 const SSE_URL = `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080"}/api/v1/notifications/stream`;
 
@@ -389,10 +394,11 @@ function useNotificationState(): NotificationsContextValue {
 
     let es: EventSource | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
     let closed = false;
 
     function connect() {
-      if (closed) return;
+      if (closed || es) return;
       es = new EventSource(SSE_URL, { withCredentials: true });
 
       es.addEventListener("notification", (e: MessageEvent) => {
@@ -438,8 +444,8 @@ function useNotificationState(): NotificationsContextValue {
 
       es.onerror = () => {
         if (closed) return;
-        es?.close();
-        if (!retryTimer) {
+        disconnect();
+        if (!retryTimer && !document.hidden) {
           retryTimer = setTimeout(() => {
             retryTimer = null;
             connect();
@@ -448,14 +454,42 @@ function useNotificationState(): NotificationsContextValue {
       };
     }
 
-    connect();
+    function disconnect() {
+      es?.close();
+      es = null;
+    }
+
+    function onVisibilityChange() {
+      if (document.hidden) {
+        if (!hiddenTimer) {
+          hiddenTimer = setTimeout(() => {
+            hiddenTimer = null;
+            if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
+            disconnect();
+          }, SSE_HIDDEN_CLOSE_MS);
+        }
+        return;
+      }
+      if (hiddenTimer) { clearTimeout(hiddenTimer); hiddenTimer = null; }
+      if (!es) {
+        connect();
+        // Pushes sent while the stream was down are gone; catch the bell up.
+        refresh().catch(() => {});
+      }
+    }
+
+    if (!document.hidden) connect();
+    else onVisibilityChange();
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       closed = true;
-      es?.close();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      disconnect();
       if (retryTimer) clearTimeout(retryTimer);
+      if (hiddenTimer) clearTimeout(hiddenTimer);
     };
-  }, [isLoading, user, addNotification]);
+  }, [isLoading, user, addNotification, refresh]);
 
   useEffect(() => {
     function onListingSubmit() { refresh().catch(() => {}); }
