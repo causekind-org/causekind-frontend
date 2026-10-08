@@ -755,7 +755,6 @@ export function ItemListingWizard({
           </div>
 
           <WizardNavigation
-            avoidBottomChrome
             canGoBack={stepIndex(step) > 0}
             onBack={handleBack}
             onContinue={handleContinue}

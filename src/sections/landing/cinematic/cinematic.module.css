@@ -8,7 +8,7 @@
 
 .stage {
   position: relative;
-  height: 100svh;
+  height: calc(var(--ck-svh, 1svh) * 100);
   min-height: 560px;
   overflow: hidden;
   isolation: isolate;
@@ -33,17 +33,17 @@
   top: 0;
 }
 .track1 {
-  height: calc(max(100svh, 560px) + 100svh + 60svh + 720svh);
+  height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 100) + calc(var(--ck-svh, 1svh) * 60) + calc(var(--ck-svh, 1svh) * 720));
 }
 .track2 {
-  height: calc(max(100svh, 560px) + 640svh);
+  height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 640));
 }
 @media (orientation: portrait) {
   .track1 {
-    height: calc(max(100svh, 560px) + 100svh + 60svh + 560svh);
+    height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 100) + calc(var(--ck-svh, 1svh) * 60) + calc(var(--ck-svh, 1svh) * 560));
   }
   .track2 {
-    height: calc(max(100svh, 560px) + 520svh);
+    height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 520));
   }
 }
 /* Reduced motion: the chapters are stills, so there is nothing to scroll through. */

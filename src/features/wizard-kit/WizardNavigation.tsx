@@ -153,7 +153,7 @@ export function WizardNavigation({
   return (
     <div
       className={`sticky z-30 border-t border-stone-200 bg-[#faf8f5]/95 backdrop-blur
-                 py-3 dark:border-zinc-800 dark:bg-zinc-950/95
+                 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-zinc-950/95
                  ${avoidBottomChrome ? "bottom-[var(--ck-bottom-chrome)] lg:bottom-0" : "bottom-0"}`}
     >
       <div className="mx-auto flex max-w-[680px] items-center gap-2 px-4">
