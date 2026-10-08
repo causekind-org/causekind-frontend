@@ -754,7 +754,6 @@ export function DonationOfferWizard({
             submitting={submitting}
             submitted={submitted}
             savingExit={savingExit}
-            avoidBottomChrome
             // Corner clusters rather than a full-width bar. This route keeps the
             // global dock, so a slab here stacked a third band of chrome over
             // the form and collided with the dock's raised centre button.
