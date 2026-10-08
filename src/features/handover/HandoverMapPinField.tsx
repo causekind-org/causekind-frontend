@@ -71,7 +71,13 @@ export function HandoverMapPinField({ lat, lng, onChange, disabled }: {
 
   return (
     <div className="space-y-2">
-      <LocationPinPicker lat={lat} lng={lng} onChange={onChange} />
+      <LocationPinPicker
+        pin={hasPin ? { lat: lat as number, lng: lng as number } : null}
+        onPick={onChange}
+        showLocateButton
+        pinAtStart
+        hint="Drag the pin to your exact meeting spot"
+      />
       <button
         type="button"
         onClick={() => setExpanded(false)}

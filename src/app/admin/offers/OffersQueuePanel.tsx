@@ -557,7 +557,7 @@ export function OffersQueuePanel() {
                                 ["Condition", item.condition],
                                 ["Working Status", item.workingStatus],
                                 ["Brand / Model", [item.brand, item.model].filter(Boolean).join(" / ") || null],
-                                ["Approx. Age", item.approximateAge],
+                                ["Item age", item.approximateAge],
                                 ["Dimensions", item.dimensions],
                                 ["Weight", item.approximateWeight],
                                 ["Accessories", item.accessoriesIncluded],

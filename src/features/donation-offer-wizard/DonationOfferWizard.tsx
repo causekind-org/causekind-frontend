@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
@@ -75,6 +76,25 @@ const STEP_COUNT_WORD: Record<number, string> = { 4: "Four", 5: "Five" };
  * `createOffer` through the autosave queue's `ensureDraft`. Concurrent callers
  * share one POST.
  */
+/**
+ * The furthest step a saved draft shows the donor working on. Each step counts
+ * only for something the donor entered there — quantity is pre-filled from the
+ * request, so it never counts on its own.
+ */
+function evidencedStepIndex(m: OfferModel, steps: readonly OfferStep[]): number {
+  const touched: Partial<Record<OfferStep, boolean>> = {
+    photos: uploadedOfferPhotos(m.photos).length > 0,
+    purchasePlan: !!m.purchaseTimeline,
+    details: !!(m.approximateAge.trim() || m.accessoriesIncluded.trim() || m.specNotes.trim()),
+    condition: !!m.condition,
+    pickup: !!(m.pickupCity.trim() || m.pickupPincode.trim()),
+    review: m.declarationsConfirmed,
+  };
+  let last = 0;
+  steps.forEach((s, i) => { if (touched[s]) last = i; });
+  return last;
+}
+
 export function DonationOfferWizard({
   offerId, offer, flowType: flowTypeProp, createOffer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote,
   onSubmitted, onExit, onSaveExit,
@@ -138,8 +158,21 @@ export function DonationOfferWizard({
     can still never skip work that is left to do.
   */
   const stepKey = `ck-offer-step-${offerId ?? "new"}`;
+  // Furthest step the donor actually reached in this draft (see useFurthestStep).
+  const reachedKey = offerId != null ? `ck-offer-reached-${offerId}` : null;
   const [step, setStep] = useState<OfferStep>(() => {
-    const resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0];
+    let resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0];
+    // "First incomplete" skips a step whose fields are pre-filled (quantity comes
+    // from the request) even though the donor never saw it. When we know how far
+    // they really got, never reopen past that.
+    let reachedAt = -1;
+    try {
+      reachedAt = reachedKey ? steps.indexOf(localStorage.getItem(reachedKey) as OfferStep) : -1;
+    } catch { /* storage unavailable — fall back to the draft's own evidence */ }
+    // Opened where this browser has no record (another device, cleared storage):
+    // judge from what the donor actually entered, never from pre-filled values.
+    if (reachedAt < 0 && offer) reachedAt = evidencedStepIndex(offerModelFrom(offer), steps);
+    if (reachedAt > -1 && reachedAt < steps.indexOf(resume)) resume = steps[reachedAt];
     try {
       const saved = sessionStorage.getItem(stepKey) as OfferStep | null;
       if (saved && steps.includes(saved) && steps.indexOf(saved) <= steps.indexOf(resume)) return saved;
@@ -348,7 +381,7 @@ export function DonationOfferWizard({
   const videoApi = useOfferVideo(resolveOfferId);
 
   // Re-screen once uploads settle, keyed on the uploaded set.
-  const uploadedKey = uploadedOfferPhotos(model.photos).map(p => p.remoteUrl).join("|");
+  const uploadedKey = uploadedOfferPhotos(model.photos).map(p => p.mediaId ?? p.remoteUrl).join("|");
   const isUploading = model.photos.some(p => p.status === "uploading" || p.status === "pending");
   const screenedKeyRef = useRef<string | null>(null);
   useEffect(() => {
@@ -546,6 +579,7 @@ export function DonationOfferWizard({
         pickupPincode: pincode || prev.pickupPincode,
         pickupLocality: locality || prev.pickupLocality,
       };
+      modelRef.current = next;
       setModel(next);
       queueSave(next);
       setGps({ running: false, error: null });
@@ -574,14 +608,29 @@ export function DonationOfferWizard({
    * whole Zod schema and parsing the model. That was ~5 schema builds and 5
    * parses on EVERY render, which is what turned a re-render into a frozen page.
    */
-  const availability = useMemo(() => {
-    const out = {} as Record<OfferStep, StepAvailability>;
+  const stepValid = useMemo(() => {
+    const out = {} as Record<OfferStep, boolean>;
     for (const s of steps) {
-      const complete = Object.keys(validateOfferStep(s, model, flowType, stillNeededQuantity)).length === 0;
-      out[s] = { complete, canNavigate: complete };
+      out[s] = Object.keys(validateOfferStep(s, model, flowType, stillNeededQuantity)).length === 0;
     }
     return out;
   }, [model, steps, flowType, stillNeededQuantity]);
+
+  /*
+    Done = continued past AND still valid. Validity alone used to tick "Tell us
+    about the item" while the donor was on step 1, because its only required
+    field (quantity) is pre-filled from the request. Any step already reached
+    stays reachable from the rail, so the donor can go back and forward.
+  */
+  const reached = useFurthestStep(reachedKey, steps, step);
+  const availability = useMemo(() => {
+    const out = {} as Record<OfferStep, StepAvailability>;
+    steps.forEach((s, i) => {
+      const complete = i < reached && stepValid[s];
+      out[s] = { complete, canNavigate: complete || i <= reached };
+    });
+    return out;
+  }, [steps, stepValid, reached]);
 
   const isLast = step === "review";
 

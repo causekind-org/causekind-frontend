@@ -435,11 +435,11 @@ export default function RequestsClient({
     if (sort === "nearest") {
       const lat = nearOrigin?.lat, lon = nearOrigin?.lng;
       if (lat != null && lon != null) {
-        out = [...out].sort((a, b) => {
-          const dA = a.latitude != null && a.longitude != null ? haversineKm(lat, lon, a.latitude, a.longitude) : 99999;
-          const dB = b.latitude != null && b.longitude != null ? haversineKm(lat, lon, b.latitude, b.longitude) : 99999;
-          return dA - dB || tie(a, b);
-        });
+        // The server measures each need's distance from this donor (it never
+        // sends a donee's exact pin to a donor); coordinates only for admins.
+        const km = (r: ItemRequest) => r.distanceKm
+          ?? (r.latitude != null && r.longitude != null ? haversineKm(lat, lon, r.latitude, r.longitude) : 99999);
+        out = [...out].sort((a, b) => km(a) - km(b) || tie(a, b));
       } else {
         out = [...out].sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) || tie(a, b));
       }

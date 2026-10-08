@@ -35,7 +35,7 @@ export function DoneeMatchReviewCard({
   const details: [string, string | null | undefined][] = [
     ["Condition", match.listingCondition],
     ["Working", match.listingWorkingStatus ? match.listingWorkingStatus.replace(/_/g, " ").toLowerCase() : null],
-    ["Age", match.listingApproximateAge],
+    ["Item age", match.listingApproximateAge],
     ["Brand", match.listingBrand],
     ["Known defects", match.listingKnownDefects],
     ["Includes", match.listingAccessoriesIncluded],

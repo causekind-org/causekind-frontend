@@ -5,7 +5,9 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
-import { resolveLocationFromGPS, getDialCodes } from "@/app/actions/locations";
+import { getDialCodes } from "@/app/actions/locations";
+import { LocationPinPicker, type LatLng } from "@/components/LocationPinPicker";
+import { usePinAddress, type PinAddress } from "@/hooks/usePinAddress";
 import {
   getProfile,
   updateProfile,
@@ -253,7 +255,12 @@ export default function ProfilePage() {
   const [storyExpanded, setStoryExpanded] = useState(false);
 
   // GPS location
-  const [locStatus, setLocStatus] = useState<"idle" | "requesting" | "saved" | "error">("idle");
+  // "Set on map": an unsaved pin while the picker is open; Confirm saves it.
+  const [mapOpen, setMapOpen] = useState(false);
+  const [draftPin, setDraftPin] = useState<LatLng | null>(null);
+  const [draftAddress, setDraftAddress] = useState<PinAddress | null>(null);
+  const [savingPin, setSavingPin] = useState(false);
+  const pinAddress = usePinAddress();
 
   // Derived option lists (memoized to avoid re-building every render)
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
@@ -482,75 +489,39 @@ export default function ProfilePage() {
     return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
   }
 
-  function handleUseMyLocation() {
-    if (!navigator.geolocation) {
-      toast.error(t("errorNoGps"));
-      return;
+  function openMap() {
+    setDraftPin(profile?.latitude != null && profile?.longitude != null ? { lat: profile.latitude, lng: profile.longitude } : null);
+    setDraftAddress(null);
+    setMapOpen(true);
+  }
+
+  function pickOnMap(lat: number, lng: number) {
+    setDraftPin({ lat, lng });
+    setDraftAddress(null);
+    pinAddress.lookup(lat, lng, setDraftAddress);
+  }
+
+  /** Saves the pin as the profile location and fills country / state / city from it. */
+  async function confirmPin() {
+    if (!draftPin) return;
+    setSavingPin(true);
+    try {
+      const updated = await updateLocation(draftPin.lat, draftPin.lng);
+      setProfile(updated);
+      const a = draftAddress;
+      if (a?.countryIso) {
+        setCountryIso(a.countryIso);
+        setStateIso(a.stateIso ?? "");
+        if (a.city && a.cityListed) { setCityValue(a.city); setCityFreeText(""); setForceFreeTextCity(false); }
+        else if (a.city) { setCityValue(""); setCityFreeText(a.city); setForceFreeTextCity(true); }
+      }
+      setMapOpen(false);
+      toast.success(t("successLocationSaved"));
+    } catch {
+      toast.error(t("errorLocationFailed"));
+    } finally {
+      setSavingPin(false);
     }
-    setLocStatus("requesting");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const updated = await updateLocation(lat, lng);
-          setProfile(updated);
-          setLocStatus("saved");
-          toast.success(t("successLocationSaved"));
-
-          // Reverse-geocode to auto-fill the dropdown menus in UI
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
-            if (res.ok) {
-              const data = await res.json();
-              const address = data.address;
-              if (address) {
-                const countryCode = address.country_code?.toUpperCase();
-                const stateName = address.state;
-                const cityName = address.city || address.town || address.village || address.suburb;
-
-                if (countryCode) {
-                  setDialCountry(countryCode);
-                  setCountryIso(countryCode);
-                  const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
-                  
-                  if (resolvedState) {
-                    setStateIso(resolvedState);
-                    if (resolvedCity) {
-                      setCityValue(resolvedCity);
-                      setCityFreeText("");
-                      setForceFreeTextCity(false);
-                    } else if (cityName) {
-                      setCityValue("");
-                      setCityFreeText(cityName);
-                      setForceFreeTextCity(true);
-                    }
-                  } else {
-                    setStateIso("");
-                    setCityValue("");
-                    if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.error("Reverse geocoding failed", e);
-          }
-        } catch {
-          setLocStatus("error");
-          toast.error(t("errorLocationFailed"));
-        }
-      },
-      (err) => {
-        setLocStatus("error");
-        toast.error(
-          err.code === 1
-            ? t("errorLocationDenied")
-            : t("errorLocationUnavailable")
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -953,7 +924,7 @@ export default function ProfilePage() {
           dialog's own column layout (fixed header, scrolling body, pinned
           footer) apply to its children while the submit button stays a real
           form submit. */}
-      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+      <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (!open) setMapOpen(false); }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>
@@ -1133,19 +1104,54 @@ export default function ProfilePage() {
                             </div>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={handleUseMyLocation}
-                          disabled={locStatus === "requesting"}
-                          className={`shrink-0 flex items-center gap-1.5 rounded-lg ${acc.gpsBtn} px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60`}
-                        >
-                          {locStatus === "requesting" ? (
-                            <><Loader2 className="w-3 h-3 animate-spin" /> {t("getting")}</>
-                          ) : (
-                            <><Navigation className="w-3 h-3" /> {t("useGps")}</>
-                          )}
-                        </button>
+                        {!mapOpen && (
+                          <button
+                            type="button"
+                            onClick={openMap}
+                            className={`shrink-0 flex items-center gap-1.5 rounded-lg ${acc.gpsBtn} px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60`}
+                          >
+                            <MapPin className="w-3 h-3" /> {t("setOnMap")}
+                          </button>
+                        )}
                       </div>
+                      {mapOpen && (
+                        <div className="space-y-2 rounded-xl border border-stone-200 dark:border-zinc-800 p-2">
+                          <LocationPinPicker
+                            tone={isDonee ? "donee" : "donor"}
+                            pin={draftPin}
+                            fallbackCenter={profile?.latitude != null && profile?.longitude != null ? { lat: profile.latitude, lng: profile.longitude } : null}
+                            onPick={pickOnMap}
+                            height={220}
+                            hint={pinAddress.running ? null : undefined}
+                            unavailableNote={t("mapUnavailable")}
+                          />
+                          {pinAddress.running && (
+                            <p role="status" className="flex items-center gap-1.5 text-3xs font-semibold text-stone-500">
+                              <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> {t("lookingUpAddress")}
+                            </p>
+                          )}
+                          {pinAddress.error && !pinAddress.running && (
+                            <p role="alert" className="text-3xs font-semibold text-amber-700 dark:text-amber-300">{pinAddress.error}</p>
+                          )}
+                          <div className="flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setMapOpen(false)}
+                              className="rounded-lg border border-stone-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800"
+                            >
+                              {t("cancelPin")}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={confirmPin}
+                              disabled={!draftPin || savingPin || pinAddress.running}
+                              className={`flex items-center gap-1.5 rounded-lg ${acc.gpsBtn} px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-60`}
+                            >
+                              {savingPin && <Loader2 className="w-3 h-3 animate-spin" aria-hidden />} {t("confirmPin")}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       <p className="text-3xs text-stone-400 leading-relaxed">
                         {t("gpsPrivacyNote")}
                       </p>

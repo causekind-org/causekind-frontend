@@ -1669,7 +1669,7 @@ function ListingApprovalCard({
 
           {(l.approximateAge || l.workingStatus || l.dimensions || l.approximateWeight || l.locality || l.pincode) && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-stone-50 rounded-xl p-3">
-              {l.approximateAge    && <div><span className="text-stone-400">Age: </span><span className="font-semibold text-stone-700">{l.approximateAge}</span></div>}
+              {l.approximateAge    && <div><span className="text-stone-400">Item age: </span><span className="font-semibold text-stone-700">{l.approximateAge}</span></div>}
               {l.workingStatus     && <div><span className="text-stone-400">Working: </span><span className="font-semibold text-stone-700">{l.workingStatus.replace(/_/g, " ")}</span></div>}
               {l.dimensions        && <div><span className="text-stone-400">Size: </span><span className="font-semibold text-stone-700">{l.dimensions}</span></div>}
               {l.approximateWeight && <div><span className="text-stone-400">Weight: </span><span className="font-semibold text-stone-700">{l.approximateWeight}</span></div>}
@@ -1915,7 +1915,7 @@ function ListingDetailContent({ listing: l }: { listing: ItemListing }) {
             { label: "Condition", value: l.condition },
             { label: "Brand", value: l.brand },
             { label: "Model", value: l.model },
-            { label: "Age", value: l.approximateAge },
+            { label: "Item age", value: l.approximateAge },
             { label: "Working status", value: formatEnum(l.workingStatus) },
             { label: "Dimensions", value: l.dimensions },
             { label: "Weight", value: l.approximateWeight },
@@ -2072,7 +2072,7 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
                 { label: "Status", value: formatEnum(m.listingStatus) },
                 { label: "Brand", value: m.listingBrand },
                 { label: "Model", value: m.listingModel },
-                { label: "Age", value: m.listingApproximateAge },
+                { label: "Item age", value: m.listingApproximateAge },
                 { label: "Working status", value: formatEnum(m.listingWorkingStatus) },
                 { label: "Dimensions", value: m.listingDimensions },
                 { label: "Weight", value: m.listingApproximateWeight },

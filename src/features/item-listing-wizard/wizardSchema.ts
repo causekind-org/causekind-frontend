@@ -44,7 +44,7 @@ export const wizardSchema = z.object({
   brand: z.string().max(80, "Keep the brand under 80 characters"),
   model: z.string().max(80, "Keep the model under 80 characters"),
 
-  approximateAge: z.string().min(1, "Choose an approximate age"),
+  approximateAge: z.string().min(1, "Choose how old the item is"),
   condition: z.string().min(1, "Choose the condition"),
   workingStatus: z.string(),
   noDefects: z.boolean(),
@@ -56,15 +56,12 @@ export const wizardSchema = z.object({
     .min(30, "Describe the item in at least 30 characters")
     .max(2000, "Keep the description under 2000 characters"),
 
-  // Location is no longer asked for (the Confirm location step was removed
-  // 2026-10-06): it comes from the donor's profile, which has no PIN code. So none
-  // of these may be required, or a donor could be blocked at submit by a field
-  // they cannot see. The backend treats all of them as optional.
-  countryIso: z.string(),
-  stateIso: z.string(),
-  city: z.string().trim(),
+  // The "Item location" step (restored 2026-10-08) owns these again.
+  countryIso: z.string().min(1, "Choose a country"),
+  stateIso: z.string().min(1, "Choose a state or province"),
+  city: z.string().trim().min(1, "Choose a city"),
   locality: z.string().max(120, "Keep the locality under 120 characters"),
-  pincode: z.string().trim(),
+  pincode: z.string().trim().min(1, "Enter a PIN or postal code"),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
 
@@ -133,7 +130,7 @@ export const wizardSchema = z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["condition"], message: "Choose a condition from the list" });
     }
     if (v.approximateAge && !AGE_RANGES.includes(v.approximateAge)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: "Choose an age from the list" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: "Choose how old the item is from the list" });
     }
 
     // ── Working status: required only where the manifest asks for it ────────
@@ -162,6 +159,12 @@ export const wizardSchema = z.object({
       });
     }
 
+    // ── The map pin ─────────────────────────────────────────────────────────
+    // Coordinates come only from the pin (or, with no map, the typed address).
+    if (v.latitude == null || v.longitude == null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["latitude"], message: "Drop a pin on the map to continue" });
+    }
+
     // ── Postal code, per country ────────────────────────────────────────────
     if (v.pincode && !isValidPostalCode(v.pincode, v.countryIso)) {
       ctx.addIssue({
@@ -187,7 +190,7 @@ export const STEP_FIELDS: Record<WizardStep, readonly (keyof WizardValues)[]> = 
     "approximateAge", "condition", "workingStatus", "noDefects", "knownDefects",
     "accessoriesIncluded", "dimensions", "approximateWeight", "description",
   ],
-  location: ["countryIso", "stateIso", "city", "locality", "pincode"],
+  location: ["latitude", "countryIso", "stateIso", "city", "locality", "pincode"],
   review: ["declarationsConfirmed"],
 };
 

@@ -62,7 +62,7 @@ export function OfferDetailsStep({
           then stored against the offer. Dropped for that flow, exactly as
           `condition` already is. */}
       {!purchase && (
-      <WizardField label="Approximate age" hint="Optional — roughly how old is it?" error={errors.approximateAge}>
+      <WizardField label="How old is the item?" hint="Optional — roughly how long you've had it or used it." error={errors.approximateAge}>
         {({ id, describedBy, invalid }) => (
           <input
             id={id} name="approximateAge" type="text" value={model.approximateAge}

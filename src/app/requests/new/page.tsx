@@ -38,7 +38,8 @@ import {
 } from "lucide-react";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { useLocations } from "@/hooks/useLocations";
-import { resolveLocationFromGPS } from "@/app/actions/locations";
+import { LocationPinPicker } from "@/components/LocationPinPicker";
+import { usePinAddress } from "@/hooks/usePinAddress";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 import { compressImageIfNeeded } from "@/lib/imageCompression";
@@ -473,16 +474,20 @@ function NewRequestForm() {
   const [emergencyNature, setEmergencyNature] = useState("");
   const [incidentDate, setIncidentDate] = useState("");
 
-  // Location (GPS mandatory, same pattern as before)
+  // Location: a map pin is mandatory (the request's own pin is what matching uses).
   const [countryIso, setCountryIso] = useState("");
   const [stateIso, setStateIso] = useState("");
   const [cityValue, setCityValue] = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
   const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
   const [pincode, setPincode] = useState("");
-  const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [gpsBlocked, setGpsBlocked] = useState(false);
+  /** The donee's profile location: where the map starts when the request has no pin. */
+  const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapDown, setMapDown] = useState(false);
+  /** False while a ?draftId= draft is still loading, so the profile pin can't land first. */
+  const [resumeSettled, setResumeSettled] = useState(() => !searchParams.get("draftId"));
+  const pinAddress = usePinAddress();
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
@@ -546,10 +551,14 @@ function NewRequestForm() {
   useEffect(() => {
     if (!resumeDraftId || !user || ["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return;
     const idNum = Number(resumeDraftId);
-    if (!Number.isFinite(idNum)) return;
+    if (!Number.isFinite(idNum)) { setResumeSettled(true); return; }
+    // The URL gains ?draftId= once this form creates its draft (see ensureDraft);
+    // that draft is already on screen, so it must not be reloaded over the edits.
+    if (draftId === idNum) return;
     getMyItemRequests()
       .then((list) => {
         const r = list.find((x) => x.id === idNum);
+        setResumeSettled(true);
         if (!r || r.status !== "DRAFT") return;
         setDraftId(idNum);
         if (r.title && r.title !== "Draft") setTitle(r.title);
@@ -608,7 +617,7 @@ function NewRequestForm() {
           })
           .catch(() => {});
       })
-      .catch(() => {});
+      .catch(() => setResumeSettled(true));
   }, [resumeDraftId, user]);
 
   useEffect(() => {
@@ -626,51 +635,71 @@ function NewRequestForm() {
           router.push("/dashboard");
         }
         setUserPhone(p.phone ?? "");
+        if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
       })
       .catch(() => {});
   }, [user, authLoading, router, resumeDraftId]);
 
-  function handleGPSLocation() {
-    if (!navigator.geolocation) { toast.error("Your browser doesn't support GPS location"); setGpsBlocked(true); return; }
-    setGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        setGpsCoords({ lat, lng });
-        setGpsBlocked(false);
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
-          const data = await res.json();
-          const addr = data.address;
-          if (addr) {
-            const cc = addr.country_code?.toUpperCase();
-            if (cc) {
-              setCountryIso(cc);
-              // Nominatim reports smaller places under town/village/suburb, not city
-              // (e.g. Virar is a town) — use the same fallback chain everywhere.
-              const cityName = addr.city || addr.town || addr.village || addr.suburb || "";
-              const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, cityName);
-              if (sIso) {
-                setStateIso(sIso);
-                if (cVal) { setCityValue(cVal); setCityFreeText(""); setForceFreeTextCity(false); }
-                else { setCityValue(""); setCityFreeText(cityName); setForceFreeTextCity(true); }
-              } else if (cityName) {
-                setStateIso("");
-                setCityValue("");
-                setCityFreeText(cityName);
-                setForceFreeTextCity(true);
-              }
-              if (addr.postcode) setPincode(addr.postcode.replace(/\s/g, ""));
-            }
-          }
-          toast.success("Location updated");
-        } catch { toast.error("Could not resolve location details"); }
-        finally { setGpsLoading(false); }
-      },
-      () => { setGpsLoading(false); setGpsBlocked(true); toast.error("Location access denied. GPS is required to post a request."); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }
+  /**
+   * The donee placed or moved the pin. The address fields follow it (shared
+   * lookup); a field the lookup has nothing for keeps what was typed.
+   * `onlyEmpty` is for the pin we place from the profile, which must never
+   * overwrite anything.
+   */
+  const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
+    setGpsCoords({ lat, lng });
+    setFieldErrors((prev) => (prev.gps ? { ...prev, gps: "" } : prev));
+    pinAddress.lookup(lat, lng, (found) => {
+      const keep = (current: string) => !!opts?.onlyEmpty && !!current.trim();
+      if (found.countryIso && !keep(countryIsoRef.current)) setCountryIso(found.countryIso);
+      if (found.stateIso && !keep(stateIsoRef.current)) setStateIso(found.stateIso);
+      if (found.city && !keep(cityRef.current)) {
+        if (found.cityListed) { setCityValue(found.city); setCityFreeText(""); setForceFreeTextCity(false); }
+        else { setCityValue(""); setCityFreeText(found.city); setForceFreeTextCity(true); }
+      }
+      if (found.pincode && !keep(pincodeRef.current)) setPincode(found.pincode);
+    });
+  }, [pinAddress.lookup]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const countryIsoRef = useRef(countryIso); countryIsoRef.current = countryIso;
+  const stateIsoRef = useRef(stateIso); stateIsoRef.current = stateIso;
+  const cityRef = useRef(""); cityRef.current = showCityFreeText ? cityFreeText : cityValue;
+  const pincodeRef = useRef(pincode); pincodeRef.current = pincode;
+
+  // Once any draft has loaded: no saved pin → start on the profile location; a
+  // saved pin (drafts keep no country/state) → fill the blanks from it. Never
+  // overwrites anything the donee typed.
+  const pinSeeded = useRef(false);
+  useEffect(() => {
+    if (pinSeeded.current || mapDown || !resumeSettled) return;
+    if (gpsCoords) {
+      pinSeeded.current = true;
+      if (!countryIso) handlePin(gpsCoords.lat, gpsCoords.lng, { onlyEmpty: true });
+    } else if (profileCenter) {
+      pinSeeded.current = true;
+      handlePin(profileCenter.lat, profileCenter.lng, { onlyEmpty: true });
+    }
+  }, [profileCenter, gpsCoords, mapDown, resumeSettled, countryIso, handlePin]);
+
+  // No map: place the request from the typed address, else the profile location.
+  const stateName = stateOptions.find((o) => o.value === stateIso)?.label ?? "";
+  const typedCity = showCityFreeText ? cityFreeText : cityValue;
+  // Only after the address is edited: a pin that is already there (a resumed
+  // draft, or one placed before the map failed) stays until then.
+  const geocodedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (!mapDown) return;
+    const key = [pincode.trim(), typedCity.trim(), stateName, countryIso].join("|");
+    if (gpsCoords && (geocodedFor.current === null || geocodedFor.current === key)) { geocodedFor.current = key; return; }
+    const t = setTimeout(async () => {
+      const coords = await pinAddress.geocodeTyped(
+        { postalcode: pincode.trim(), city: typedCity.trim(), state: stateName, countryCode: countryIso },
+        profileCenter,
+      );
+      if (coords) { geocodedFor.current = key; setGpsCoords(coords); }
+    }, 1200);
+    return () => clearTimeout(t);
+  }, [mapDown, pincode, typedCity, stateName, countryIso, profileCenter, gpsCoords]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function buildCityString(): string {
     const c = showCityFreeText ? cityFreeText : cityValue;
@@ -698,6 +727,8 @@ function NewRequestForm() {
     if (draftId) return draftId;
     const d = await createItemRequestDraft();
     setDraftId(d.id);
+    // A reload now resumes this draft (pin included) instead of starting over.
+    router.replace(`/requests/new?draftId=${d.id}`, { scroll: false });
     return d.id;
   }
 
@@ -710,7 +741,9 @@ function NewRequestForm() {
       if (!description || description.length < 30) e.description = `Describe your need in at least 30 characters (currently ${description.length})`;
       const city = showCityFreeText ? cityFreeText : cityValue;
       if (!city) e.city = "City is required";
-      if (!gpsCoords) e.gps = "GPS location is required";
+      if (!gpsCoords) e.gps = mapDown
+        ? "We couldn't place this address — check the city and PIN code."
+        : "Drop a pin on the map to continue";
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
     if (s === 2 && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = "Describe the person you are requesting for";
@@ -1101,18 +1134,24 @@ function NewRequestForm() {
           <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-[var(--ck-role-accent)]" /> 4. Location Details
           </p>
-          {/* `data-field="gps"` is the summary link's target. There is no input
-              to focus for this error — GPS is a button plus derived state — so
-              the button itself is the only sensible landing point. */}
-          <button type="button" data-field="gps" onClick={() => handleGPSLocation()} disabled={gpsLoading}
-            aria-describedby={fieldErrors.gps ? "gps-error" : undefined}
-            aria-invalid={!!fieldErrors.gps}
-            className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline disabled:opacity-50 flex items-center gap-1">
-            {gpsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "📍"} {gpsLoading ? "Detecting…" : "Use GPS"}
-          </button>
         </div>
-        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">{gpsCoords ? "Location added. Use GPS only if you want to update it." : "Tap Use GPS when ready. Location is needed before submitting your request."}</p>
-        {gpsBlocked && <p role="status" className="mb-3 text-xs text-red-600 dark:text-red-400">Could not get your location. You can keep filling in the form and retry Use GPS before submitting. If permission was denied, enable location for this site in your browser settings first.</p>}
+        {/* `data-field="gps"` is the error summary's target: the map has no input
+            to focus, so this wrapper is the landing point. */}
+        <div data-field="gps" tabIndex={-1} aria-describedby={fieldErrors.gps ? "gps-error" : undefined} className="space-y-2 outline-none">
+          <LocationPinPicker
+            tone="donee" pin={gpsCoords} fallbackCenter={profileCenter}
+            onPick={(lat, lng) => handlePin(lat, lng)} onUnavailable={() => setMapDown(true)}
+            hint={pinAddress.running ? null : undefined}
+          />
+          {pinAddress.running && (
+            <p role="status" className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Looking up the address…
+            </p>
+          )}
+          {pinAddress.error && !pinAddress.running && (
+            <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">{pinAddress.error}</p>
+          )}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label htmlFor="country" className="text-xs text-stone-500 dark:text-stone-400">Country</label>

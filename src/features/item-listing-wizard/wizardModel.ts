@@ -10,18 +10,29 @@ import { fieldsFor } from "./wizardFields";
  */
 
 /**
- * Every step the wizard knows. "location" is kept so drafts and code that name it
- * still type-check, but it is no longer shown (owner, 2026-10-06): a listing takes
- * the donor's profile city and coordinates, which is what matching uses.
+ * Every step the wizard knows.
+ *
+ * <p>"location" was hidden on 2026-10-06 (the listing took the donor's profile
+ * city and coordinates) and is shown again from 2026-10-08 (team decision): the
+ * donor drops a pin on a map, and the listing's own pin coordinates are what
+ * matching uses for the 10 km radius. A listing with no pin still falls back to
+ * the donor's profile coordinates, so older listings match exactly as before.
  */
 export const ALL_WIZARD_STEPS = ["photos", "basics", "condition", "location", "review"] as const;
 export type WizardStep = (typeof ALL_WIZARD_STEPS)[number];
 
-/** The steps the donor actually walks through. */
-export const WIZARD_STEPS: readonly WizardStep[] = ["photos", "basics", "condition", "review"];
+/** The steps the donor walks through — the one source of every count shown. */
+export const WIZARD_STEPS: readonly WizardStep[] = ALL_WIZARD_STEPS;
 
+/** Zero-based position of a step; never negative, so no counter can read "Step 0". */
 export function stepIndex(step: WizardStep): number {
-  return WIZARD_STEPS.indexOf(step);
+  return Math.max(0, WIZARD_STEPS.indexOf(step));
+}
+
+const COUNT_WORDS = ["Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten"];
+/** "Five short steps…" — from the step list, so it can never disagree with the rail. */
+export function stepCountWord(): string {
+  return COUNT_WORDS[WIZARD_STEPS.length] ?? String(WIZARD_STEPS.length);
 }
 
 export type WizardMode = "create" | "draft" | "needs-info";

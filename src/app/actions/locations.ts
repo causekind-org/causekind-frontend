@@ -94,6 +94,42 @@ export async function detectLocationFromServer(lat: number, lng: number): Promis
   }
 }
 
+/**
+ * Forward-geocodes a typed address via Nominatim — the fallback when the map
+ * cannot load, so a listing still gets approximate coordinates. Same
+ * User-Agent rule and failure reasons as {@link detectLocationFromServer};
+ * callers debounce it (Nominatim allows about one request a second).
+ */
+export async function geocodeAddressFromServer(query: {
+  postalcode?: string; city?: string; state?: string; countryCode?: string;
+}): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
+  const params = new URLSearchParams({ format: "json", limit: "1", email: "support@causekind.com" });
+  if (query.postalcode) params.set("postalcode", query.postalcode);
+  if (query.city) params.set("city", query.city);
+  if (query.state) params.set("state", query.state);
+  if (query.countryCode) params.set("countrycodes", query.countryCode.toLowerCase());
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+      headers: {
+        "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
+        "Accept": "application/json",
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      console.warn(`[geocode] Nominatim search returned ${res.status} ${res.statusText}`);
+      return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
+    }
+    const rows = (await res.json()) as { lat: string; lon: string }[];
+    const first = rows?.[0];
+    if (!first) return { ok: false, reason: "no-address" };
+    return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
+  } catch (err) {
+    console.warn("[geocode] search failed:", err instanceof Error ? err.message : err);
+    return { ok: false, reason: "network" };
+  }
+}
+
 // Strip common administrative suffixes before comparing
 function normCity(s: string): string {
   return s
