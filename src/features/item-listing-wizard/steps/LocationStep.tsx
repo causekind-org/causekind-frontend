@@ -1,6 +1,6 @@
 "use client";
 
-import { LocationPicker, type PickedLocation } from "@/components/location/LocationPicker";
+import { LocationPicker, type LocationPickerHandle, type PickedLocation } from "@/components/location/LocationPicker";
 import type { MapStart } from "@/hooks/useProfileMapStart";
 import type { WizardModel } from "../wizardModel";
 
@@ -13,7 +13,7 @@ type LatLng = { lat: number; lng: number };
  * donor's saved profile coordinates.
  */
 export function LocationStep({
-  model, errors, profileCenter, mapStart, onChange,
+  model, errors, profileCenter, mapStart, onChange, controlRef,
 }: {
   model: WizardModel;
   errors: Record<string, string>;
@@ -22,6 +22,7 @@ export function LocationStep({
   /** Where the map starts when there is no pin (profile coordinates or City centre). */
   mapStart: MapStart | null;
   onChange: (loc: PickedLocation) => void;
+  controlRef?: React.Ref<LocationPickerHandle>;
 }) {
   const value: PickedLocation = {
     countryIso: model.countryIso, stateIso: model.stateIso, city: model.city,
@@ -30,7 +31,7 @@ export function LocationStep({
   };
   return (
     <LocationPicker
-      tone="donor" value={value} onChange={onChange} mapStart={mapStart} seedPin={profileCenter} pinField="latitude"
+      tone="donor" value={value} onChange={onChange} mapStart={mapStart} seedPin={profileCenter} pinField="latitude" controlRef={controlRef}
       errors={{
         countryIso: errors.countryIso, stateIso: errors.stateIso, city: errors.city,
         locality: errors.locality, pincode: errors.pincode, pin: errors.latitude || errors.longitude,

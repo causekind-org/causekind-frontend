@@ -26,6 +26,7 @@ export function WizardNavigation({
   submitted,
   savingExit,
   advancing,
+  advancingLabel = "Saving…",
   avoidBottomChrome = false,
   variant = "bar",
 }: {
@@ -39,6 +40,8 @@ export function WizardNavigation({
   submitted: boolean;
   savingExit: boolean;
   advancing?: boolean;
+  /** Text beside the spinner while `advancing`. */
+  advancingLabel?: string;
   /** Lift the sticky bar above CauseKind's floating mobile navigation dock. */
   avoidBottomChrome?: boolean;
   /**
@@ -84,7 +87,7 @@ export function WizardNavigation({
         </motion.span>
       ) : submitting || advancing ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {advancing ? "Saving…" : "Submitting…"}
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {advancing ? advancingLabel : "Submitting…"}
         </>
       ) : (
         <>

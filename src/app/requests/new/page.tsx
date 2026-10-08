@@ -39,7 +39,7 @@ import {
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { useLocations } from "@/hooks/useLocations";
 import { LocationPinPicker } from "@/components/LocationPinPicker";
-import { LocationPicker, type PickedLocation } from "@/components/location/LocationPicker";
+import { LocationPicker, type LocationPickerHandle, type PickedLocation } from "@/components/location/LocationPicker";
 import { EMPTY_LOCATION, encodeRequestCity, parseRequestCity } from "@/features/donee-request-wizard/requestLocation";
 import { isValidPostalCode } from "@/features/item-listing-wizard/wizardLocation";
 import { useProfileMapStart } from "@/hooks/useProfileMapStart";
@@ -480,6 +480,17 @@ function NewRequestForm() {
   // Location (step 2): the shared LocationPicker owns the GPS / search / pin /
   // typing sync. The pin is what gets saved and matched.
   const [loc, setLoc] = useState<PickedLocation>(EMPTY_LOCATION);
+  /** Always the latest location — saves run after awaiting the picker, past this render. */
+  const locRef = useRef(loc);
+  locRef.current = loc;
+  const locationRef = useRef<LocationPickerHandle>(null);
+  const [checkingLocation, setCheckingLocation] = useState(false);
+  /** On the location step: wait for any pending lookup. False = stay on the step. */
+  async function settleLocation(): Promise<boolean> {
+    if (step !== "location" || !locationRef.current) return true;
+    setCheckingLocation(true);
+    try { return await locationRef.current.flush(); } finally { setCheckingLocation(false); }
+  }
   const countryIso = loc.countryIso;
   /** The donee's profile location: where the map starts when the request has no pin. */
   const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
@@ -636,7 +647,7 @@ function NewRequestForm() {
 
   /** Locality rides in the city text (requests have no locality column). */
   function buildCityString(): string {
-    return encodeRequestCity(loc);
+    return encodeRequestCity(locRef.current);
   }
 
   const buildPayload = useCallback((): Partial<UpdateRequestPayload> => ({
@@ -645,10 +656,10 @@ function NewRequestForm() {
     quantity: quantity || undefined,
     urgency,
     city: buildCityString() || undefined,
-    pincode: loc.pincode.trim() || undefined,
+    pincode: locRef.current.pincode.trim() || undefined,
     description: description || undefined,
-    latitude: loc.lat ?? undefined,
-    longitude: loc.lng ?? undefined,
+    latitude: locRef.current.lat ?? undefined,
+    longitude: locRef.current.lng ?? undefined,
     isEmergency,
     emergencyNature: isEmergency ? emergencyNature || undefined : undefined,
     incidentDate: isEmergency ? incidentDate || undefined : undefined,
@@ -675,6 +686,7 @@ function NewRequestForm() {
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
     if (s === "location") {
+      const loc = locRef.current;
       if (!loc.countryIso) e.countryIso = "Choose a country";
       if (!loc.stateIso) e.stateIso = "Choose a state or province";
       if (!loc.city.trim()) e.city = "City is required";
@@ -702,6 +714,7 @@ function NewRequestForm() {
   }
 
   async function handleNext() {
+    if (!(await settleLocation())) return;
     if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
     setSaving(true);
     setSaveStatus("saving");
@@ -742,6 +755,7 @@ function NewRequestForm() {
    * this later".
    */
   async function handleSaveExit() {
+    if (!(await settleLocation())) return;
     setSavingExit(true);
     setSaveStatus("saving");
     try {
@@ -1340,7 +1354,9 @@ function NewRequestForm() {
                   {step === "location" && (
                     <LocationPicker
                       tone="donee" value={loc} pinField="gps"
+                      controlRef={locationRef}
                       onChange={(next) => {
+                        locRef.current = next;
                         setLoc(next);
                         setFieldErrors((prev) => {
                           const keys = ["countryIso", "stateIso", "city", "locality", "pincode", "gps"] as const;
@@ -1408,6 +1424,8 @@ function NewRequestForm() {
           onContinue={() => void (isLast ? handleSubmit() : handleNext())}
           onSaveExit={() => void handleSaveExit()}
           continueLabel={isLast ? "Submit for verification" : "Continue"}
+          advancing={checkingLocation}
+          advancingLabel="Checking location…"
           isLast={isLast}
           submitting={submitting}
           submitted={submitted}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
-import type { PickedLocation } from "@/components/location/LocationPicker";
+import type { LocationPickerHandle, PickedLocation } from "@/components/location/LocationPicker";
 import { useProfileMapStart } from "@/hooks/useProfileMapStart";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
@@ -497,7 +497,19 @@ export function ItemListingWizard({
     setStep(next);
   }, []);
 
-  const handleContinue = useCallback(() => {
+  const locationRef = useRef<LocationPickerHandle>(null);
+  const [checkingLocation, setCheckingLocation] = useState(false);
+  /** On the location step: wait for any pending lookup. False = stay on the step. */
+  const settleLocation = useCallback(async () => {
+    if (step !== "location" || !locationRef.current) return true;
+    setCheckingLocation(true);
+    try { return await locationRef.current.flush(); } finally { setCheckingLocation(false); }
+  }, [step]);
+
+  const handleContinue = useCallback(async () => {
+    if (!(await settleLocation())) return;
+    // modelRef: the lookup may have just moved the pin.
+    const model = modelRef.current;
     const stepErrors = validateStep(step, model);
     if (Object.keys(stepErrors).length) {
       setErrors(stepErrors);
@@ -519,7 +531,7 @@ export function ItemListingWizard({
       void handleSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, model, goTo, reduced]);
+  }, [step, goTo, reduced, settleLocation]);
 
   const handleBack = useCallback(() => {
     const idx = stepIndex(step);
@@ -527,12 +539,13 @@ export function ItemListingWizard({
   }, [step, goTo]);
 
   const handleSaveExit = useCallback(async () => {
+    if (!(await settleLocation())) return;
     setSavingExit(true);
-    const ok = await flush(model);
+    const ok = await flush(modelRef.current);
     setSavingExit(false);
     if (!ok) { toast.error("We couldn't save your draft. Check your connection and try again."); return; }
     router.push("/dashboard");
-  }, [flush, model, router]);
+  }, [flush, router, settleLocation]);
 
   const handleSubmit = useCallback(async () => {
     const allErrors = validateAll(model);
@@ -720,7 +733,7 @@ export function ItemListingWizard({
                   {step === "location" && (
                     <LocationStep
                       model={model} errors={errors} profileCenter={profileCenter} mapStart={mapStart}
-                      onChange={handleLocation}
+                      onChange={handleLocation} controlRef={locationRef}
                     />
                   )}
                   {step === "review" && (
@@ -745,9 +758,11 @@ export function ItemListingWizard({
           <WizardNavigation
             canGoBack={stepIndex(step) > 0}
             onBack={handleBack}
-            onContinue={handleContinue}
+            onContinue={() => void handleContinue()}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={continueLabel}
+            advancing={checkingLocation}
+            advancingLabel="Checking location…"
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { Loader2, LocateFixed, MapPin, Search, TriangleAlert } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { usePinAddress, type PinAddress } from "@/hooks/usePinAddress";
@@ -20,6 +20,15 @@ export type PickedLocation = {
   lng: number | null;
 };
 
+/**
+ * Lets a form wait for the picker before saving: `flush()` runs a pending
+ * typed-address lookup now and waits for any GPS / search / pin lookup in
+ * flight. False only when the latest lookup FAILED — the caller should then
+ * stay on the step (the picker already shows "drop the pin"). No pin at all is
+ * not a failure; the step's own validation handles that.
+ */
+export type LocationPickerHandle = { flush: () => Promise<boolean> };
+
 export type LocationErrors = Partial<Record<"countryIso" | "stateIso" | "city" | "locality" | "pincode" | "pin", string>>;
 
 type Field = "countryIso" | "stateIso" | "city" | "locality" | "pincode";
@@ -32,6 +41,7 @@ const TONE = {
 const GPS_FAILED = "We couldn't get your location. Search or drop the pin instead.";
 const NOT_FOUND = "We couldn't find that place. Try a nearby area or PIN code.";
 const PIN_MOVED = "Pin moved to this area. Drag it to the exact spot.";
+const DROP_PIN = "We couldn't place this address. Drop the pin on the map to continue.";
 
 /**
  * The location step shared by donor "List an item" (step 4) and donee
@@ -45,7 +55,7 @@ const PIN_MOVED = "Pin moved to this area. Drag it to the exact spot.";
  * also skips whichever field the user is typing in at that moment.
  */
 export function LocationPicker({
-  value, onChange, tone, errors = {}, mapStart, seedPin = null, ready = true, pinField = "pin",
+  value, onChange, tone, errors = {}, mapStart, seedPin = null, ready = true, pinField = "pin", controlRef,
 }: {
   value: PickedLocation;
   onChange: (next: PickedLocation) => void;
@@ -59,6 +69,7 @@ export function LocationPicker({
   ready?: boolean;
   /** The `data-field` the caller's error summary jumps to for a missing pin. */
   pinField?: string;
+  controlRef?: React.Ref<LocationPickerHandle>;
 }) {
   const t = TONE[tone];
   const { countries, states, cities } = useLocations(value.countryIso, value.stateIso);
@@ -95,6 +106,7 @@ export function LocationPicker({
 
   /** GPS, search, a tap/drag on the map, or the profile seed: set the pin, then fill the fields. */
   const placePin = useCallback((lat: number, lng: number, source: "gps" | "search" | "pin" | "seed") => {
+    lookupFailed.current = false;
     onChangeRef.current({ ...valueRef.current, lat, lng });
     setMessage(null);
     pinAddress.lookup(lat, lng, (found) => fill(found, source === "seed"));
@@ -119,6 +131,15 @@ export function LocationPicker({
   // ── typing: move the pin to the typed place (debounced; no reverse fill) ──
   const typedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const typedSeq = useRef(0);
+  /** The latest typed-address lookup found nothing: the pin no longer matches the fields. */
+  const lookupFailed = useRef(false);
+  /** In-flight GPS / search / typed lookups, for flush(). */
+  const inflight = useRef(new Set<Promise<unknown>>());
+  function track<T>(p: Promise<T>): Promise<T> {
+    inflight.current.add(p);
+    void p.finally(() => inflight.current.delete(p));
+    return p;
+  }
   const lastEdited = useRef<Field | null>(null);
   const stateName = (iso: string) => states.find((s) => s.value === iso)?.label ?? "";
   const geocodeTyped = useCallback(async () => {
@@ -137,10 +158,13 @@ export function LocationPicker({
     const res = geo.ok || !withLocality ? geo : await geocodeAddressFromServer({ ...base, city: cur.city.trim() });
     if (mine !== typedSeq.current) return;
     if (res.ok) {
+      lookupFailed.current = false;
       onChangeRef.current({ ...valueRef.current, lat: res.lat, lng: res.lng });
       setMessage({ kind: "note", text: PIN_MOVED });
-    } else if (valueRef.current.lat == null) {
-      setMessage({ kind: "error", text: "We couldn't place this address — check the city and PIN code, or drop the pin." });
+    } else {
+      // The pin no longer matches what was typed: Continue must not save it.
+      lookupFailed.current = true;
+      setMessage({ kind: "error", text: DROP_PIN });
     }
   }, [states]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -153,12 +177,12 @@ export function LocationPicker({
     valueRef.current = next;
     lastEdited.current = k;
     if (typedTimer.current) clearTimeout(typedTimer.current);
-    typedTimer.current = setTimeout(() => void geocodeTyped(), 800);
+    typedTimer.current = setTimeout(() => void track(geocodeTyped()), 800);
   }
   useEffect(() => () => { if (typedTimer.current) clearTimeout(typedTimer.current); }, []);
   const fieldProps = (k: Field) => ({
     onFocus: () => { focused.current = k; },
-    onBlur: () => { focused.current = null; if (typedTimer.current) void geocodeTyped(); },
+    onBlur: () => { focused.current = null; if (typedTimer.current) void track(geocodeTyped()); },
   });
 
   // ── GPS ──
@@ -166,11 +190,11 @@ export function LocationPicker({
     if (!("geolocation" in navigator)) { setMessage({ kind: "error", text: GPS_FAILED }); return; }
     setLocating(true);
     setMessage(null);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => { setLocating(false); placePin(pos.coords.latitude, pos.coords.longitude, "gps"); },
-      () => { setLocating(false); setMessage({ kind: "error", text: GPS_FAILED }); },
+    void track(new Promise<void>((done) => navigator.geolocation.getCurrentPosition(
+      (pos) => { setLocating(false); placePin(pos.coords.latitude, pos.coords.longitude, "gps"); done(); },
+      () => { setLocating(false); setMessage({ kind: "error", text: GPS_FAILED }); done(); },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-    );
+    )));
   }
 
   // ── search (submit only: Nominatim's policy rules out as-you-type) ──
@@ -183,12 +207,27 @@ export function LocationPicker({
     searchInput.current?.blur(); // closes the phone keyboard so the map is visible
     setSearching(true);
     setMessage(null);
-    const res = await searchPlaceFromServer(q);
+    const res = await track(searchPlaceFromServer(q));
     setSearching(false);
     if (!res.ok) { setMessage({ kind: "error", text: NOT_FOUND }); return; }
     placePin(res.lat, res.lng, "search");
     mapBox.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
+
+  useImperativeHandle(controlRef, () => ({
+    flush: async () => {
+      if (typedTimer.current) void track(geocodeTyped());
+      // A finished lookup can start another (a pin placed → address lookup).
+      while (inflight.current.size) await Promise.allSettled([...inflight.current]);
+      await pinAddress.whenIdle();
+      if (lookupFailed.current) {
+        setMessage({ kind: "error", text: DROP_PIN });
+        mapBox.current?.scrollIntoView({ block: "center" });
+        return false;
+      }
+      return true;
+    },
+  }), [geocodeTyped, pinAddress.whenIdle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const pin = value.lat != null && value.lng != null ? { lat: value.lat, lng: value.lng } : null;
   const busy = pinAddress.running;

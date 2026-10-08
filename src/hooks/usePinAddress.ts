@@ -33,12 +33,19 @@ export function usePinAddress() {
   const seq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  // Settles when the latest lookup has finished (superseded ones never settle it).
+  const idle = useRef<Promise<void> | null>(null);
+  const settleIdle = useRef<(() => void) | null>(null);
+  const settle = () => { settleIdle.current?.(); idle.current = null; settleIdle.current = null; };
+  /** Resolves once no reverse lookup is pending (immediately if none is). */
+  const whenIdle = useCallback(() => idle.current ?? Promise.resolve(), []);
 
   /** Look up the address at a pin; `onFound` gets whatever was found. */
   const lookup = useCallback((lat: number, lng: number, onFound: (a: PinAddress) => void) => {
     const mine = ++seq.current;
     if (timer.current) clearTimeout(timer.current);
     setState({ running: true, error: null });
+    if (!idle.current) idle.current = new Promise<void>((r) => { settleIdle.current = r; });
     timer.current = setTimeout(async () => {
       try {
         const geo = await detectLocationFromServer(lat, lng);
@@ -68,6 +75,8 @@ export function usePinAddress() {
         setState({ running: false, error: null });
       } catch {
         if (mine === seq.current) setState({ running: false, error: "We couldn't turn that spot into an address — please fill in the fields below." });
+      } finally {
+        if (mine === seq.current) settle();
       }
     }, 1000);
   }, []);
@@ -95,5 +104,5 @@ export function usePinAddress() {
     return coords;
   }, []);
 
-  return { ...state, lookup, geocodeTyped };
+  return { ...state, lookup, geocodeTyped, whenIdle };
 }
