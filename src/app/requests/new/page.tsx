@@ -34,8 +34,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Loader2, ChevronLeft, CheckCircle2, Circle, MapPin,
   Shield, Award, Lock, UploadCloud, X, FileCheck2, AlertTriangle, Trash2,
-  Camera, Upload, Info, House, Wallet, UsersRound, FileText, ArrowLeft, ArrowRight, Download,
+  Camera, Upload, Info, House, Wallet, UsersRound, FileText, ArrowLeft, ArrowRight, Download, LocateFixed,
 } from "lucide-react";
+import { useLocateMe } from "@/hooks/useLocateMe";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { useLocations } from "@/hooks/useLocations";
 import { LocationPinPicker } from "@/components/LocationPinPicker";
@@ -665,6 +666,8 @@ function NewRequestForm() {
       if (found.pincode && !keep(pincodeRef.current)) setPincode(found.pincode);
     });
   }, [pinAddress.lookup]); // eslint-disable-line react-hooks/exhaustive-deps
+  // "Use my location" (owner, 2026-10-08): the same pin path as a tap on the map.
+  const locateMe = useLocateMe(useCallback((lat: number, lng: number) => handlePin(lat, lng), [handlePin]));
 
   const countryIsoRef = useRef(countryIso); countryIsoRef.current = countryIso;
   const stateIsoRef = useRef(stateIso); stateIsoRef.current = stateIso;
@@ -1139,7 +1142,17 @@ function NewRequestForm() {
           <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
             <MapPin className="w-3.5 h-3.5 text-[var(--ck-role-accent)]" /> 4. Location Details
           </p>
+          <button
+            type="button"
+            onClick={locateMe.locate}
+            disabled={locateMe.locating}
+            className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-xl border border-[var(--ck-role-accent)]/40 bg-[var(--ck-role-soft)] px-3 text-xs font-bold text-[var(--ck-role-accent)] transition-colors hover:bg-[var(--ck-role-soft)]/70 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] sm:text-sm"
+          >
+            {locateMe.locating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <LocateFixed className="h-4 w-4" aria-hidden />}
+            {locateMe.locating ? "Finding you…" : "Use my location"}
+          </button>
         </div>
+        {locateMe.error && <p role="alert" className="text-2xs font-semibold text-red-600 dark:text-red-400">{locateMe.error}</p>}
         {/* `data-field="gps"` is the error summary's target: the map has no input
             to focus, so this wrapper is the landing point. */}
         <div data-field="gps" tabIndex={-1} aria-describedby={fieldErrors.gps ? "gps-error" : undefined} className="space-y-2 outline-none">
@@ -1218,7 +1231,6 @@ function NewRequestForm() {
 
   const step2 = (
     <div className="space-y-5">
-      <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-[#1e3a60] dark:border-slate-700 dark:bg-slate-900 dark:text-blue-200">Your household details and identity documents are ready in your profile. <button type="button" className="font-bold underline" onClick={async () => { try { const id = await ensureDraft(); await saveRequestVerificationDetails(id, verification); router.push(`/profile/need-details?next=${encodeURIComponent(`/requests/new?draftId=${id}`)}`); } catch { toast.error("Could not save your request. Please try again."); } }}>Review profile</button></div>
       <fieldset className="space-y-3"><legend className="text-sm font-bold">Who is this request for?</legend><div className="flex flex-wrap gap-4">{[{value:false,label:"Myself"},{value:true,label:"Someone else"}].map(o => <label key={o.label} className="flex items-center gap-2 text-sm"><input type="radio" name="beneficiary" checked={Boolean(verification.requestingForSomeoneElse) === o.value} onChange={() => setVerification(v => ({...v, requestingForSomeoneElse:o.value, beneficiaryDetails:"",reasonCannotBuy:"",detailedStory:""}))} />{o.label}</label>)}</div></fieldset>
       {verification.requestingForSomeoneElse && <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
         <WizardField label="Who is this item for, and what is their situation?" required error={fieldErrors.beneficiaryDetails}>{({id,describedBy,invalid}) => <Textarea id={id} name="beneficiaryDetails" aria-describedby={describedBy} aria-invalid={invalid} value={verification.beneficiaryDetails || ""} maxLength={500} onChange={e => setV("beneficiaryDetails",e.target.value)} />}</WizardField>

@@ -35,7 +35,7 @@ import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOf
 import Link from "@/components/AppLink";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
-  ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,
+  ShoppingBag, Loader2, Sparkles, type LucideIcon,
   Camera, ImagePlus, CheckCircle2, Eye, Info, ShieldAlert,
   Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
@@ -79,16 +79,7 @@ const FLOW_OPTIONS: {
     // "Receipt may be asked" was true while this was a plan. It is not now:
     // a photo of the item and a receipt are both required before handover.
     tags: ["Buy after approval", "Choose your timeline", "Photo + receipt required"],
-  },
-  {
-    type: "SIMILAR_ITEM",
-    title: "I have a similar item",
-    desc: "Your item may not exactly match the specs — the donee will review it.",
-    badge: null,
-    icon: Shuffle,
-    iconBg: "bg-purple-100 dark:bg-purple-950",
-    iconText: "text-purple-600 dark:text-purple-400",
-    tags: ["Alt spec allowed", "Donee reviews fit", "May need clarification"],
+    // Paused (owner, 2026-10-09): shown, not selectable.
     comingSoon: true,
   },
 ];
@@ -811,7 +802,7 @@ export default function OfferWizardPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
                   {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags, comingSoon }, i) => {
                     const isSelecting = loading && form.flowType === type;
 

@@ -7,7 +7,7 @@ import { useProfileMapStart } from "@/hooks/useProfileMapStart";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
-import { ArrowLeft, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Loader2, LocateFixed, TriangleAlert } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   analyzeListingImages, getProfile, submitItemListing,
@@ -489,6 +489,26 @@ export function ItemListingWizard({
     });
   }, [queueSave, lookupPin]);
 
+  // "Use my location" on the location step (owner, 2026-10-08): the device's
+  // position becomes the pin, and the address fields fill from it exactly as a
+  // tap on the map would (handlePin, overwriting).
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
+  const locateMe = useCallback(() => {
+    if (!("geolocation" in navigator)) { setLocateError("This browser can't share your location. Tap the map instead."); return; }
+    setLocating(true); setLocateError(null);
+    navigator.geolocation.getCurrentPosition(
+      pos => { setLocating(false); handlePin(pos.coords.latitude, pos.coords.longitude); },
+      err => {
+        setLocating(false);
+        setLocateError(err.code === err.PERMISSION_DENIED
+          ? "Location access is blocked. Allow it for this site in your browser, or tap the map."
+          : "We couldn't find your location. Tap the map instead.");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 },
+    );
+  }, [handlePin]);
+
   /** No map: place the item from the typed address, else the profile location. */
   const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }) => {
     const coords = await geocodeTyped(q, profileCenter);
@@ -661,7 +681,9 @@ export function ItemListingWizard({
           </div>
 
           <div ref={scrollRef} className="flex-1 px-4 py-5">
-            <div className="mx-auto w-full max-w-[680px]">
+            {/* The photo step takes the whole area beside the left bar on desktop
+                (owner, 2026-10-08, design option A); the other steps keep 680px. */}
+            <div className={`mx-auto w-full max-w-[680px] ${step === "photos" ? "lg:max-w-[1160px]" : ""}`}>
               <div className="mb-4 hidden items-center justify-between lg:flex">
                 <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
                   Step {stepIndex(step) + 1} of {WIZARD_STEPS.length}
@@ -697,6 +719,8 @@ export function ItemListingWizard({
                   <WizardBorderGlow />
 
                   <div className="ck-wizard-step-card-content">
+                  <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                   <h1
                     ref={headingRef}
                     tabIndex={-1}
@@ -706,6 +730,22 @@ export function ItemListingWizard({
                     {STEP_HEADINGS[step] ?? STEP_LABELS[step]}
                   </h1>
                   <p className="mb-2 mt-0.5 text-xs text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
+                  </div>
+                  {step === "location" && (
+                    <button
+                      type="button"
+                      onClick={locateMe}
+                      disabled={locating}
+                      className="inline-flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-xl border border-[var(--ck-role-accent)]/40 bg-[var(--ck-role-soft)] px-3 text-xs font-bold text-[var(--ck-role-accent)] transition-colors hover:bg-[var(--ck-role-soft)]/70 disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] sm:text-sm"
+                    >
+                      {locating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <LocateFixed className="h-4 w-4" aria-hidden />}
+                      {locating ? "Finding you…" : "Use my location"}
+                    </button>
+                  )}
+                  </div>
+                  {step === "location" && locateError && (
+                    <p role="alert" className="mb-2 text-2xs font-semibold text-red-600 dark:text-red-400">{locateError}</p>
+                  )}
 
                   <div className="mb-2 empty:hidden">
                     <StepErrorSummary errors={Object.fromEntries(Object.entries(errors).filter(([, v]) => v))} onFocusField={focusField} />
