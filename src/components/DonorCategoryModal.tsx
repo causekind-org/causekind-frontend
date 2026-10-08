@@ -320,6 +320,11 @@ useEffect(() => {
     RENDER
   ======================================================= */
 
+  /* The desktop picture grid leaves List Item out (rows keep it). */
+  const DESKTOP_CATEGORIES = CATEGORIES.filter(
+    ({ name }) => name !== "List Item"
+  );
+
   if (!show || !user || user.role !== "DONOR" ) {
     return null;
   }
@@ -752,6 +757,8 @@ useEffect(() => {
         }
 
         .ck-category-card:hover
+        .ck-hover-description,
+        .ck-category-card:focus-visible
         .ck-hover-description {
           max-height: 70px;
           opacity: 1;
@@ -851,9 +858,15 @@ useEffect(() => {
            SELECTED CARD
         ===================================================== */
 
+        /*
+          The rim lives here, not in Tailwind ring classes: this
+          box-shadow comes later and would replace a ring. Solid
+          orange edge + 2px rim, so a pick reads clearly over a photo.
+        */
         .ck-category-card-selected {
+          border-color: rgb(251, 146, 60);
           box-shadow:
-            0 0 0 1px rgba(224, 123, 58, 0.30),
+            0 0 0 2px rgba(251, 146, 60, 0.85),
             0 0 18px rgba(224, 123, 58, 0.20),
             0 16px 40px rgba(0,0,0,0.28);
         }
@@ -1289,13 +1302,21 @@ useEffect(() => {
           </header>
 
           {/* =================================================
-              CATEGORY ROWS — "Compact rows" layout (chosen 2026-10-06,
-              https://claude.ai/artifact/74jA6eACiZTRebTEGEH42y, option A)
+              CATEGORY ROWS (below lg) — "Compact rows" layout (chosen
+              2026-10-06, https://claude.ai/artifact/74jA6eACiZTRebTEGEH42y,
+              option A)
 
-              Two columns of slim rows on desktop, one on phones: a
-              small photo, the name, the one-line description (always
-              visible, no hover needed) and a tick. List Item navigates
-              instead of toggling, so it shows an arrow, not a tick.
+              One column of slim rows on phones, two from md: a small
+              photo, the name, the one-line description (always visible,
+              no hover needed) and a tick. List Item navigates instead of
+              toggling, so it shows an arrow, not a tick.
+
+              CATEGORY GRID (lg and up) — the picture cards: five per
+              row, a photo with the icon and name strip under it, the
+              description sliding in on hover or keyboard focus. No List
+              Item on desktop, so nine cards: a ten-track grid with each
+              card two tracks wide puts five on the first row and centres
+              the remaining four.
           ================================================= */}
 
           <main
@@ -1311,6 +1332,11 @@ useEffect(() => {
               overflow-y-auto
               py-3
               sm:py-4
+              lg:max-w-[1500px]
+              lg:flex-row
+              lg:items-center
+              lg:overflow-visible
+              lg:py-3
             "
           >
             <div
@@ -1318,6 +1344,7 @@ useEffect(() => {
                 grid
                 w-full
                 grid-cols-1
+                lg:hidden
                 gap-2
                 md:grid-cols-2
                 md:gap-x-4
@@ -1419,6 +1446,359 @@ useEffect(() => {
                   </button>
                 );
               })}
+            </div>
+
+            <div
+              className="
+                ck-category-grid
+                hidden
+                h-full
+                max-h-[calc(100dvh-180px)]
+                w-full
+                grid-cols-10
+                grid-rows-2
+                gap-3
+                lg:grid
+              "
+            >
+
+              {DESKTOP_CATEGORIES.map(
+                (
+                  {
+                    name,
+                    Icon,
+                    col,
+                    iconBg,
+                    blurb,
+                  },
+                  index
+                ) => {
+
+                  const isSelected =
+                    tempSelected.includes(name);
+
+                  const image =
+                    CATEGORY_IMAGES[name];
+
+                  /*
+                    Right-hand cards lean the opposite way: index 3–4
+                    of the first row of five, 7–8 of the second row
+                    of four (which is centred, so 5–6 sit left).
+                  */
+
+                  const tiltsRight =
+                    index < 5 ? index >= 3 : index >= 7;
+
+                  const rippleKey =
+                    rippleKeys[name] ?? 0;
+
+                  return (
+                    <button
+                      key={name}
+                      type="button"
+                      onClick={() =>
+                        selectCategory(name)
+                      }
+                      aria-pressed={isSelected}
+                      onMouseEnter={() => {
+                        setHoveredCategory(name);
+                      }}
+                      onMouseLeave={() => {
+                        setHoveredCategory(null);
+                      }}
+                      className={`
+                        ck-category-card
+                        group
+                        relative
+                        col-span-2
+                        ${index === 5 ? "col-start-2" : ""}
+                        focus-visible:outline-none
+                        focus-visible:ring-2
+                        focus-visible:ring-orange-400
+                        flex
+                        min-h-0
+                        min-w-0
+                        flex-col
+                        overflow-hidden
+                        rounded-2xl
+                        border
+                        text-left
+                        sm:rounded-[20px]
+
+                        ${
+                          tiltsRight
+                            ? "ck-tilt-right"
+                            : ""
+                        }
+
+                        ${
+                          isSelected
+                            ? "ck-category-card-selected"
+                            : "border-white/20"
+                        }
+
+                        ${
+                          isSelected
+                            ? "bg-white/[0.075]"
+                            : "bg-white/[0.035]"
+                        }
+                      `}
+                      style={{
+                        animationDelay:
+                          `${index * 0.035}s`,
+                      }}
+                    >
+
+                      {/* =================================================
+                          IMAGE AREA
+                      ================================================= */}
+
+                      <div
+                        className="
+                          ck-image-wrapper
+                          relative
+                          min-h-0
+                          flex-1
+                          overflow-hidden
+                          bg-[#17110e]
+                        "
+                      >
+
+                        {/* =================================================
+                            CATEGORY IMAGE
+
+                            IMPORTANT:
+                            List Item also uses its image now.
+
+                            The negative delay starts each photo
+                            mid-drift, so the grid is already in
+                            motion the moment it appears.
+                        ================================================= */}
+
+                        {image && (
+                          <img
+                            src={image}
+                            alt=""
+                            className="
+                              ck-category-image
+                              absolute
+                              inset-0
+                              h-full
+                              w-full
+                              object-cover
+                            "
+                            style={{
+                              animationDuration:
+                                `${13 + (index % 5) * 1.5}s`,
+                              animationDelay:
+                                `-${index * 1.7}s`,
+                            }}
+                            onError={(event) => {
+                              event.currentTarget.style.display =
+                                "none";
+                            }}
+                          />
+                        )}
+
+                        {/* =================================================
+                            IMAGE GRADIENT
+                        ================================================= */}
+
+                        <div
+                          className="
+                            pointer-events-none
+                            absolute
+                            inset-0
+                            bg-gradient-to-t
+                            from-black/60
+                            via-transparent
+                            to-black/10
+                          "
+                        />
+
+                        {/* =================================================
+                            SHINE SWEEP
+
+                            Staggered by index so the light
+                            travels across the board as a wave
+                            instead of ten cards flashing at once.
+                        ================================================= */}
+
+                        <span
+                          className="ck-shine"
+                          aria-hidden
+        
+                        />
+
+                        {/* =================================================
+                            SELECTION RIPPLE
+
+                            Skipped at count zero so it does not
+                            fire on cards restored from storage
+                            when the picker first opens.
+                        ================================================= */}
+
+                        {rippleKey > 0 && (
+                          <span
+                            key={rippleKey}
+                            className="ck-ripple"
+                            aria-hidden
+                          />
+                        )}
+
+                        {/* =================================================
+                            SELECTED CHECK
+                        ================================================= */}
+
+                        {isSelected && (
+                          <span
+                            className="
+                              ck-check-badge
+                              absolute
+                              right-2
+                              top-2
+                              z-20
+                              flex
+                              h-7
+                              w-7
+                              items-center
+                              justify-center
+                              rounded-full
+                              bg-amber-400
+                              text-black
+                              shadow-lg
+                              sm:right-2.5
+                              sm:top-2.5
+                              sm:h-8
+                              sm:w-8
+                            "
+                          >
+                            <Check
+                              className="h-4 w-4"
+                              strokeWidth={4}
+                            />
+                          </span>
+                        )}
+
+                      </div>
+
+                      {/* =================================================
+                          HOVER DESCRIPTION
+
+                          Appears directly UNDER the image
+                          when the card is hovered.
+                      ================================================= */}
+
+                      <div
+                        className="
+                          ck-hover-description
+                          shrink-0
+                          border-t
+                          border-white/[0.07]
+                          bg-[#17110e]
+                          px-3
+                          sm:px-3.5
+                        "
+                      >
+
+                        <p
+                          className={`
+                            ck-description-text
+                            py-2
+                            text-[13px]
+                            font-medium
+                            tracking-wide
+                            leading-[1.35]
+                            sm:py-2.5
+                            sm:text-[14px]
+                            sm:leading-[1.4]
+                            ${col}
+                          `}
+                        >
+                          {blurb}
+                        </p>
+
+                      </div>
+
+                      {/* =================================================
+                          CATEGORY NAME
+
+                          Icon + name only.
+                      ================================================= */}
+
+                      <div
+                        className="
+                          ck-category-name
+                          flex
+                          h-[48px]
+                          shrink-0
+                          items-center
+                          gap-2
+                          bg-[#17110e]
+                          px-3
+                          sm:h-[52px]
+                          sm:px-3.5
+                        "
+                      >
+
+                        {/* Icon */}
+
+                        <div
+                          className={`
+                            ck-category-icon
+                            ck-category-icon-box
+                            flex
+                            h-7
+                            w-7
+                            shrink-0
+                            items-center
+                            justify-center
+                            rounded-lg
+                            sm:h-[30px]
+                            sm:w-[30px]
+                            ${iconBg}
+                          `}
+                        >
+                          <Icon
+                            className={`
+                              h-3.5
+                              w-3.5
+                              sm:h-4
+                              sm:w-4
+                              ${col}
+                            `}
+                          />
+                        </div>
+
+                        {/* Name */}
+
+                        <span
+                          className={`
+                            min-w-0
+                            truncate
+                            text-[11px]
+                            font-medium
+                            tracking-wide
+                            sm:text-[13px]
+                            lg:text-[14px]
+
+                            ${
+                              isSelected
+                                ? col
+                                : "text-white"
+                            }
+                          `}
+                        >
+                          {name}
+                        </span>
+
+                      </div>
+
+                    </button>
+                  );
+                }
+              )}
+
             </div>
           </main>
 

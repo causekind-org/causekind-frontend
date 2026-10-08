@@ -254,6 +254,10 @@ export default function HomeClient({
 
   // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
   const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+  // Signed-in donors and donees: on desktop they get RoleHome instead of the
+  // guest page; on mobile they share the guest sections, minus the two that
+  // pitch signing up ("How it works" and the "Start in 60 seconds" CTA).
+  const isRoleHome = isDonorOrDonee && !isRestoring;
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -296,9 +300,11 @@ export default function HomeClient({
       <div className="hidden lg:block">
         <HowItWorksDesktop />
       </div>
-      <div className="lg:hidden">
-        <HowItWorksSection />
-      </div>
+      {!isRoleHome && (
+        <div className="lg:hidden">
+          <HowItWorksSection />
+        </div>
+      )}
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       {showLiveNeeds && (
@@ -606,10 +612,12 @@ export default function HomeClient({
           <CreditsSection />
         </div>
 
-        {/* SECTION 9 — FINAL CTA */}
-        <div className="-mx-5">
-          <FinalCtaComponent variant="mobile" card={!isGuest} />
-        </div>
+        {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
+        {!isRoleHome && (
+          <div className="-mx-5">
+            <FinalCtaComponent variant="mobile" card={!isGuest} />
+          </div>
+        )}
 
       </div>
     </div>

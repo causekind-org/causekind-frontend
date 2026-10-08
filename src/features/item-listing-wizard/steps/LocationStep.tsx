@@ -5,6 +5,7 @@ import { Loader2, TriangleAlert } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
 import { LocationPinPicker } from "@/components/LocationPinPicker";
+import type { MapStart } from "@/hooks/useProfileMapStart";
 import type { WizardModel } from "../wizardModel";
 
 type LatLng = { lat: number; lng: number };
@@ -21,12 +22,14 @@ type LatLng = { lat: number; lng: number };
  * geocoded for approximate coordinates (profile location as the last resort).
  */
 export function LocationStep({
-  model, errors, lookup, profileCenter, onChange, onPin, onGeocodeTyped,
+  model, errors, lookup, profileCenter, mapStart, onChange, onPin, onGeocodeTyped,
 }: {
   model: WizardModel;
   errors: Record<string, string>;
   lookup: { running: boolean; error: string | null };
   profileCenter: LatLng | null;
+  /** Where the map starts when there is no pin (profile coordinates or City centre). */
+  mapStart: MapStart | null;
   onChange: <K extends keyof WizardModel>(key: K, value: WizardModel[K]) => void;
   onPin: (lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => void;
   onGeocodeTyped: (q: { postalcode: string; city: string; state: string; countryCode: string }) => void;
@@ -68,7 +71,7 @@ export function LocationStep({
   return (
     <div className="space-y-2">
       <LocationPinPicker
-        tone="donor" pin={pin} fallbackCenter={profileCenter}
+        tone="donor" pin={pin} fallbackCenter={mapStart?.center ?? null} fallbackZoom={mapStart?.zoom}
         onPick={pick} onUnavailable={onUnavailable}
         hint={lookup.running ? null : undefined}
       />

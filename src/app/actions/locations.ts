@@ -1,6 +1,7 @@
 "use server";
 
 import { Country, State, City } from "country-state-city";
+import { parseCity } from "@/features/item-listing-wizard/wizardLocation";
 
 export async function getCountries() {
   return Country.getAllCountries().map((c) => ({
@@ -177,4 +178,40 @@ export async function resolveLocationFromGPS(countryCode: string, stateName: str
   }
 
   return { stateIso, cityValue };
+}
+
+/**
+ * Approximate centre of a profile's city, for where a map should *start* when
+ * the user has no saved coordinates. Never used as a pin or for matching.
+ *
+ * <p>The profile stores `"City, StateIso, CountryIso"` (older profiles: free
+ * text such as `"Pune"`, read as an Indian city). The city list this app
+ * already uses carries coordinates, so most lookups need no network; a city
+ * missing from the list is geocoded through Nominatim, and when the city
+ * cannot be placed at all the state's centre is used instead.
+ */
+export async function profileCityCenterFromServer(
+  raw: string | null,
+): Promise<{ lat: number; lng: number; level: "city" | "state" } | null> {
+  const parsed = parseCity(raw);
+  if (!parsed.city && !parsed.stateIso) return null;
+  const countryIso = parsed.countryIso || "IN";
+  const point = (o: { latitude?: string | null; longitude?: string | null } | undefined) => {
+    const lat = Number(o?.latitude), lng = Number(o?.longitude);
+    return o?.latitude && o?.longitude && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
+  };
+
+  if (parsed.city) {
+    const wanted = normCity(parsed.city);
+    const listed = (parsed.stateIso ? City.getCitiesOfState(countryIso, parsed.stateIso) : City.getCitiesOfCountry(countryIso)) ?? [];
+    const hit = point(listed.find((c) => c.name.toLowerCase() === parsed.city.toLowerCase()) ?? listed.find((c) => normCity(c.name) === wanted));
+    if (hit) return { ...hit, level: "city" };
+
+    const stateName = parsed.stateIso ? State.getStateByCodeAndCountry(parsed.stateIso, countryIso)?.name ?? "" : "";
+    const geo = await geocodeAddressFromServer({ city: parsed.city, state: stateName, countryCode: countryIso });
+    if (geo.ok) return { lat: geo.lat, lng: geo.lng, level: "city" };
+  }
+
+  const state = parsed.stateIso ? point(State.getStateByCodeAndCountry(parsed.stateIso, countryIso) ?? undefined) : null;
+  return state ? { ...state, level: "state" } : null;
 }

@@ -20,8 +20,8 @@ export type LookupState = { running: boolean; error: string | null };
 
 /**
  * Turns map pins into addresses, and (when there is no map) typed addresses
- * into coordinates. Shared by "List an item", "Request Support" and the
- * profile "Set on map", so they fill the same fields the same way.
+ * into coordinates. Shared by "List an item" and "Request Support", so they
+ * fill the same fields the same way.
  *
  * <p>Reverse lookups go through the existing server action (Nominatim, with the
  * User-Agent its policy requires), debounced to one per second of quiet — the
