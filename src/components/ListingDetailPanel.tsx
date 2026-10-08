@@ -459,7 +459,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
             <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Item Details</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Detail icon={Tag}      label="Condition"      value={listing.condition} />
-              <Detail icon={Layers}   label="Age"            value={listing.approximateAge} />
+              <Detail icon={Layers}   label="Item age"       value={listing.approximateAge} />
               <Detail icon={Wrench}   label="Working Status" value={listing.workingStatus?.replace(/_/g, " ")} />
               <Detail icon={Package}  label="Quantity"       value={String(listing.quantity)} />
               {listing.brand && <Detail icon={Tag}   label="Brand"  value={listing.brand} />}

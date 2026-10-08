@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -577,13 +578,19 @@ export function ItemListingWizard({
   }, [model, step, ensureDraft, flush, mode, router]);
 
   // ── Progress availability ─────────────────────────────────────────────────
+  // Done = continued past AND still valid; going back keeps later checks.
+  const reached = useFurthestStep(draft.draftId != null ? `ck-listing-reached-${draft.draftId}` : null, WIZARD_STEPS, step);
+  const stepValid = useMemo(() => {
+    const out = {} as Record<WizardStep, boolean>;
+    for (const s of WIZARD_STEPS) out[s] = Object.keys(validateStep(s, model)).length === 0;
+    return out;
+  }, [model]);
   const availability = useMemo(() => {
-    const current = stepIndex(step);
     const savedSnapshot = draft.isSnapshotSaved(model);
     const out = {} as Record<WizardStep, StepAvailability>;
     for (const s of WIZARD_STEPS) {
       const i = stepIndex(s);
-      const complete = i < current;
+      const complete = i < reached && stepValid[s];
       out[s] = {
         complete,
         // Only a completed step whose data the server has confirmed is safe to
@@ -592,7 +599,7 @@ export function ItemListingWizard({
       };
     }
     return out;
-  }, [step, model, draft]);
+  }, [reached, stepValid, model, draft]);
 
   // Focus the new step heading so keyboard and screen-reader users land in the
   // right place rather than at the top of the document.

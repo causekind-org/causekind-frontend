@@ -44,7 +44,7 @@ export const wizardSchema = z.object({
   brand: z.string().max(80, "Keep the brand under 80 characters"),
   model: z.string().max(80, "Keep the model under 80 characters"),
 
-  approximateAge: z.string().min(1, "Choose an approximate age"),
+  approximateAge: z.string().min(1, "Choose how old the item is"),
   condition: z.string().min(1, "Choose the condition"),
   workingStatus: z.string(),
   noDefects: z.boolean(),
@@ -133,7 +133,7 @@ export const wizardSchema = z.object({
       ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["condition"], message: "Choose a condition from the list" });
     }
     if (v.approximateAge && !AGE_RANGES.includes(v.approximateAge)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: "Choose an age from the list" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: "Choose how old the item is from the list" });
     }
 
     // ── Working status: required only where the manifest asks for it ────────
