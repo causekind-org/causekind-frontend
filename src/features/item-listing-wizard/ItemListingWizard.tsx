@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 import { usePinAddress } from "@/hooks/usePinAddress";
+import { useProfileMapStart } from "@/hooks/useProfileMapStart";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -102,6 +103,9 @@ export function ItemListingWizard({
   const [savingExit, setSavingExit] = useState(false);
   /** The donor's profile coordinates: where the map starts when the listing has no pin. */
   const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [profileCity, setProfileCity] = useState<string | null>(null);
+  /** Where the location map starts without a pin: profile coordinates, else the profile City's centre. */
+  const mapStart = useProfileMapStart(profileCenter, profileCity);
 
   const [aiRunning, setAiRunning] = useState(false);
   const [aiNote, setAiNote] = useState<string | null>(null);
@@ -424,6 +428,7 @@ export function ItemListingWizard({
       .then(p => {
         if (!isMounted) return;
         if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
+        setProfileCity(p.city);
         if (mode !== "create") return;
         setModel(prev => {
           // The profile stores city in the same flattened "City, StateIso,
@@ -731,7 +736,7 @@ export function ItemListingWizard({
                   )}
                   {step === "location" && (
                     <LocationStep
-                      model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
+                      model={model} errors={errors} lookup={lookup} profileCenter={profileCenter} mapStart={mapStart}
                       onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped}
                     />
                   )}

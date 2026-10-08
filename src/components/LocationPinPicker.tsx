@@ -19,8 +19,8 @@ declare global {
 }
 
 /**
- * The one map pin picker: donor "List an item" (step 4), the donee "Request
- * Support" form (step 1) and the profile "Set on map", plus the handover pin.
+ * The one map pin picker: donor "List an item" (step 4) and the donee
+ * "Request Support" form (step 1), plus the handover pin.
  *
  * <p>Tap the map to place the pin, drag it to adjust, zoom with the controls or
  * a pinch. `gestureHandling="cooperative"` keeps a one-finger swipe scrolling
@@ -37,10 +37,12 @@ export type LatLng = { lat: number; lng: number };
 /** Role colours for the pin: donor orange, donee navy. */
 export type PinTone = "donor" | "donee" | "neutral";
 
-// India-focused platform default — New Delhi — when nothing else is known.
+// The handover pin's starting spot (it always shows a pin): New Delhi.
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 };
+// Nothing known about the user's location: the whole of India.
+const INDIA_CENTER = { lat: 22.5, lng: 79.5 };
+const INDIA_ZOOM = 4;
 const PIN_ZOOM = 16;
-const AREA_ZOOM = 12;
 
 /**
  * AdvancedMarker needs a vector Map ID, and "DEMO_MAP_ID" is Google's *demo*
@@ -109,6 +111,29 @@ export function useGoogleMapsAuthFailure(onFailure: () => void) {
   }, []);
 }
 
+/**
+ * The start position can arrive after the map mounted (the profile city is
+ * looked up asynchronously). Move there once it does, unless a pin exists —
+ * a pin always wins over the start position.
+ */
+function FollowStart({ pin, center, zoom, mountedAt }: {
+  pin: LatLng | null; center: LatLng | null; zoom: number;
+  /** The start the map was created with (only the first value counts). */
+  mountedAt: string | null;
+}) {
+  const map = useMap();
+  const shown = useRef(mountedAt);
+  useEffect(() => {
+    if (!map || !center || pin) return;
+    const key = `${center.lat},${center.lng},${zoom}`;
+    if (key === shown.current) return;
+    shown.current = key;
+    map.panTo(center);
+    map.setZoom(zoom);
+  }, [map, pin, center, zoom]);
+  return null;
+}
+
 /** Pans to the pin when it moved from outside the map (not after a tap or drag). */
 function FollowPin({ pin, recenter }: { pin: LatLng | null; recenter: number }) {
   const map = useMap();
@@ -129,6 +154,8 @@ type LocationPinPickerProps = {
   onPick: (lat: number, lng: number) => void;
   /** Where to look while there is no pin (e.g. the profile location). */
   fallbackCenter?: LatLng | null;
+  /** Zoom for `fallbackCenter` (default: street level). */
+  fallbackZoom?: number;
   tone?: PinTone;
   /** Called once if the map cannot load, so the caller can fall back. */
   onUnavailable?: () => void;
@@ -139,13 +166,11 @@ type LocationPinPickerProps = {
   /** Text under the map; null hides it. */
   hint?: string | null;
   height?: number;
-  /** Replaces the default "map couldn't load" note (which points at the address fields). */
-  unavailableNote?: React.ReactNode;
 };
 
 export function LocationPinPicker({
-  pin, onPick, fallbackCenter = null, tone = "neutral", onUnavailable,
-  showLocateButton = false, pinAtStart = false, hint, height = 260, unavailableNote,
+  pin, onPick, fallbackCenter = null, fallbackZoom = PIN_ZOOM, tone = "neutral", onUnavailable,
+  showLocateButton = false, pinAtStart = false, hint, height = 260,
 }: LocationPinPickerProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [failed, setFailed] = useState(!apiKey);
@@ -192,7 +217,8 @@ export function LocationPinPicker({
   }
 
   const t = TONES[tone];
-  const start = pin ?? fallbackCenter ?? DEFAULT_CENTER;
+  const start = pin ?? fallbackCenter ?? (pinAtStart ? DEFAULT_CENTER : INDIA_CENTER);
+  const startZoom = pin || pinAtStart ? PIN_ZOOM : fallbackCenter ? fallbackZoom : INDIA_ZOOM;
   const shownPin = pin ?? (pinAtStart ? start : null);
   const mapUsable = !!apiKey && !failed;
   const hintText = hint === undefined
@@ -201,7 +227,7 @@ export function LocationPinPicker({
 
   return (
     <div className="space-y-2">
-      {!mapUsable ? <MapUnavailableNote>{unavailableNote}</MapUnavailableNote> : (
+      {!mapUsable ? <MapUnavailableNote /> : (
         <div className="overflow-hidden rounded-xl border border-stone-200 dark:border-zinc-800" style={{ height }}>
           <APIProvider
             apiKey={apiKey as string}
@@ -221,7 +247,7 @@ export function LocationPinPicker({
             <ApiStatusWatch onFailure={() => setFailed(true)} />
             <Map
               defaultCenter={start}
-              defaultZoom={pin || fallbackCenter || pinAtStart ? PIN_ZOOM : AREA_ZOOM}
+              defaultZoom={startZoom}
               mapId={MAP_ID}
               gestureHandling="cooperative"
               disableDefaultUI
@@ -247,6 +273,10 @@ export function LocationPinPicker({
                 </AdvancedMarker>
               )}
               <FollowPin pin={pin} recenter={recenter} />
+              <FollowStart
+                pin={pin} center={fallbackCenter} zoom={fallbackZoom}
+                mountedAt={!pin && fallbackCenter ? `${fallbackCenter.lat},${fallbackCenter.lng},${fallbackZoom}` : null}
+              />
             </Map>
           </APIProvider>
         </div>

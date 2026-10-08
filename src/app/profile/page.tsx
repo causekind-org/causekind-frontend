@@ -6,12 +6,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
 import { getDialCodes } from "@/app/actions/locations";
-import { LocationPinPicker, type LatLng } from "@/components/LocationPinPicker";
-import { usePinAddress, type PinAddress } from "@/hooks/usePinAddress";
 import {
   getProfile,
   updateProfile,
-  updateLocation,
   getMyDonations,
   getMyCampaigns,
   getMyItemRequests,
@@ -55,7 +52,6 @@ import {
   Award,
   BookOpen,
   Package,
-  Navigation,
   CheckCircle2,
   Gift,
   Handshake,
@@ -255,12 +251,6 @@ export default function ProfilePage() {
   const [storyExpanded, setStoryExpanded] = useState(false);
 
   // GPS location
-  // "Set on map": an unsaved pin while the picker is open; Confirm saves it.
-  const [mapOpen, setMapOpen] = useState(false);
-  const [draftPin, setDraftPin] = useState<LatLng | null>(null);
-  const [draftAddress, setDraftAddress] = useState<PinAddress | null>(null);
-  const [savingPin, setSavingPin] = useState(false);
-  const pinAddress = usePinAddress();
 
   // Derived option lists (memoized to avoid re-building every render)
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
@@ -489,41 +479,6 @@ export default function ProfilePage() {
     return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
   }
 
-  function openMap() {
-    setDraftPin(profile?.latitude != null && profile?.longitude != null ? { lat: profile.latitude, lng: profile.longitude } : null);
-    setDraftAddress(null);
-    setMapOpen(true);
-  }
-
-  function pickOnMap(lat: number, lng: number) {
-    setDraftPin({ lat, lng });
-    setDraftAddress(null);
-    pinAddress.lookup(lat, lng, setDraftAddress);
-  }
-
-  /** Saves the pin as the profile location and fills country / state / city from it. */
-  async function confirmPin() {
-    if (!draftPin) return;
-    setSavingPin(true);
-    try {
-      const updated = await updateLocation(draftPin.lat, draftPin.lng);
-      setProfile(updated);
-      const a = draftAddress;
-      if (a?.countryIso) {
-        setCountryIso(a.countryIso);
-        setStateIso(a.stateIso ?? "");
-        if (a.city && a.cityListed) { setCityValue(a.city); setCityFreeText(""); setForceFreeTextCity(false); }
-        else if (a.city) { setCityValue(""); setCityFreeText(a.city); setForceFreeTextCity(true); }
-      }
-      setMapOpen(false);
-      toast.success(t("successLocationSaved"));
-    } catch {
-      toast.error(t("errorLocationFailed"));
-    } finally {
-      setSavingPin(false);
-    }
-  }
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
 
@@ -624,7 +579,6 @@ export default function ProfilePage() {
         badge:     "bg-[#1e3a60] text-white shadow-lg shadow-[#1e3a60]/30",
         badgeRing: "border-[#1e3a60]/35",
         focusRing: "focus-visible:ring-[#1e3a60]/20",
-        gpsBtn:    "bg-[#1e3a60] hover:bg-[#162d4a]",
       }
     : {
         eyebrow:   "text-[#8B4513] dark:text-[#C17A3A]",
@@ -638,7 +592,6 @@ export default function ProfilePage() {
         badge:     "bg-[#C17A3A] text-white shadow-lg shadow-[#C17A3A]/30",
         badgeRing: "border-[#C17A3A]/35",
         focusRing: "focus-visible:ring-[#C17A3A]/20",
-        gpsBtn:    "bg-[var(--ck-role-accent)] hover:bg-[#943e11]",
       };
 
   const completedDonations = donations.filter((d) => d.status === "COMPLETED");
@@ -924,7 +877,7 @@ export default function ProfilePage() {
           dialog's own column layout (fixed header, scrolling body, pinned
           footer) apply to its children while the submit button stays a real
           form submit. */}
-      <Dialog open={settingsOpen} onOpenChange={(open) => { setSettingsOpen(open); if (!open) setMapOpen(false); }}>
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>
@@ -1075,86 +1028,6 @@ export default function ProfilePage() {
                           />
                         )}
                       </div>
-                    </div>
-
-                    {/* GPS Coordinates */}
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                        <Navigation className="w-3.5 h-3.5" /> {t("gpsLocation")}
-                      </Label>
-                      <div className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/20 p-3">
-                        <div className="flex-1 min-w-0">
-                          {profile?.latitude && profile?.longitude ? (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                              <div>
-                                <p className="text-xs font-bold text-stone-850 dark:text-white">{t("locationSaved")}</p>
-                                <p className="text-3xs text-stone-400">
-                                  {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-                              <div>
-                                <p className="text-xs font-bold text-stone-850 dark:text-white">{t("noGpsLocation")}</p>
-                                <p className="text-3xs text-stone-400">{t("gpsMatchingNote")}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        {!mapOpen && (
-                          <button
-                            type="button"
-                            onClick={openMap}
-                            className={`shrink-0 flex items-center gap-1.5 rounded-lg ${acc.gpsBtn} px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60`}
-                          >
-                            <MapPin className="w-3 h-3" /> {t("setOnMap")}
-                          </button>
-                        )}
-                      </div>
-                      {mapOpen && (
-                        <div className="space-y-2 rounded-xl border border-stone-200 dark:border-zinc-800 p-2">
-                          <LocationPinPicker
-                            tone={isDonee ? "donee" : "donor"}
-                            pin={draftPin}
-                            fallbackCenter={profile?.latitude != null && profile?.longitude != null ? { lat: profile.latitude, lng: profile.longitude } : null}
-                            onPick={pickOnMap}
-                            height={220}
-                            hint={pinAddress.running ? null : undefined}
-                            unavailableNote={t("mapUnavailable")}
-                          />
-                          {pinAddress.running && (
-                            <p role="status" className="flex items-center gap-1.5 text-3xs font-semibold text-stone-500">
-                              <Loader2 className="w-3 h-3 animate-spin" aria-hidden /> {t("lookingUpAddress")}
-                            </p>
-                          )}
-                          {pinAddress.error && !pinAddress.running && (
-                            <p role="alert" className="text-3xs font-semibold text-amber-700 dark:text-amber-300">{pinAddress.error}</p>
-                          )}
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setMapOpen(false)}
-                              className="rounded-lg border border-stone-200 dark:border-zinc-700 px-3 py-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800"
-                            >
-                              {t("cancelPin")}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={confirmPin}
-                              disabled={!draftPin || savingPin || pinAddress.running}
-                              className={`flex items-center gap-1.5 rounded-lg ${acc.gpsBtn} px-3 py-1.5 text-xs font-semibold text-white transition-colors disabled:opacity-60`}
-                            >
-                              {savingPin && <Loader2 className="w-3 h-3 animate-spin" aria-hidden />} {t("confirmPin")}
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                      <p className="text-3xs text-stone-400 leading-relaxed">
-                        {t("gpsPrivacyNote")}
-                      </p>
                     </div>
 
             </DialogBody>

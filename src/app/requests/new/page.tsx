@@ -40,6 +40,7 @@ import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { useLocations } from "@/hooks/useLocations";
 import { LocationPinPicker } from "@/components/LocationPinPicker";
 import { usePinAddress } from "@/hooks/usePinAddress";
+import { useProfileMapStart } from "@/hooks/useProfileMapStart";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 import { compressImageIfNeeded } from "@/lib/imageCompression";
@@ -484,6 +485,9 @@ function NewRequestForm() {
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   /** The donee's profile location: where the map starts when the request has no pin. */
   const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [profileCity, setProfileCity] = useState<string | null>(null);
+  /** Where the map starts without a pin: profile coordinates, else the profile City's centre. */
+  const mapStart = useProfileMapStart(profileCenter, profileCity);
   const [mapDown, setMapDown] = useState(false);
   /** False while a ?draftId= draft is still loading, so the profile pin can't land first. */
   const [resumeSettled, setResumeSettled] = useState(() => !searchParams.get("draftId"));
@@ -636,6 +640,7 @@ function NewRequestForm() {
         }
         setUserPhone(p.phone ?? "");
         if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
+        setProfileCity(p.city);
       })
       .catch(() => {});
   }, [user, authLoading, router, resumeDraftId]);
@@ -1139,7 +1144,7 @@ function NewRequestForm() {
             to focus, so this wrapper is the landing point. */}
         <div data-field="gps" tabIndex={-1} aria-describedby={fieldErrors.gps ? "gps-error" : undefined} className="space-y-2 outline-none">
           <LocationPinPicker
-            tone="donee" pin={gpsCoords} fallbackCenter={profileCenter}
+            tone="donee" pin={gpsCoords} fallbackCenter={mapStart?.center ?? null} fallbackZoom={mapStart?.zoom}
             onPick={(lat, lng) => handlePin(lat, lng)} onUnavailable={() => setMapDown(true)}
             hint={pinAddress.running ? null : undefined}
           />
