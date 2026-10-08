@@ -61,7 +61,7 @@ function MapUnavailable() {
  * case is caught by the `gm_authFailure` effect in the component below — if you
  * are tempted to delete one as redundant, they cover different failures.
  */
-function ApiStatusWatch({ onFailure }: { onFailure: () => void }) {
+export function ApiStatusWatch({ onFailure }: { onFailure: () => void }) {
   const status = useApiLoadingStatus();
   useEffect(() => {
     if (status === APILoadingStatus.AUTH_FAILURE || status === APILoadingStatus.FAILED) {
@@ -69,6 +69,26 @@ function ApiStatusWatch({ onFailure }: { onFailure: () => void }) {
     }
   }, [status, onFailure]);
   return null;
+}
+
+/**
+ * Calls `onFailure` when Google rejects the Maps key — the one failure
+ * {@link ApiStatusWatch} cannot see. Chained rather than replaced, and restored
+ * on unmount, so a second map on the same page does not disable the first's.
+ */
+export function useGoogleMapsAuthFailure(onFailure: () => void) {
+  const onFailureRef = useRef(onFailure);
+  onFailureRef.current = onFailure;
+  useEffect(() => {
+    const previous = window.gm_authFailure;
+    window.gm_authFailure = () => {
+      previous?.();
+      onFailureRef.current();
+    };
+    return () => {
+      window.gm_authFailure = previous;
+    };
+  }, []);
 }
 
 type LocationPinPickerProps = {
@@ -107,19 +127,8 @@ export default function LocationPinPicker({ lat, lng, onChange }: LocationPinPic
   const [apiFailed, setApiFailed] = useState(false);
 
   // The only thing that actually catches a rejected key — see ApiStatusWatch
-  // above for why the library's own status cannot. Chained rather than
-  // replaced, and restored on unmount, so a second picker mounted on the same
-  // page doesn't silently disable the first one's handler.
-  useEffect(() => {
-    const previous = window.gm_authFailure;
-    window.gm_authFailure = () => {
-      previous?.();
-      setApiFailed(true);
-    };
-    return () => {
-      window.gm_authFailure = previous;
-    };
-  }, []);
+  // above for why the library's own status cannot.
+  useGoogleMapsAuthFailure(() => setApiFailed(true));
 
   function useMyLocation() {
     if (!("geolocation" in navigator)) {

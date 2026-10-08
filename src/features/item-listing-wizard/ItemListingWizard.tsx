@@ -12,7 +12,7 @@ import {
   type ItemListing, type ListingImageAnalysis,
 } from "@/lib/api";
 import { trackListItem } from "@/lib/metaEvents";
-import { resolveLocationFromGPS, detectLocationFromServer } from "@/app/actions/locations";
+import { resolveLocationFromGPS, detectLocationFromServer, geocodeAddressFromServer } from "@/app/actions/locations";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
 import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
@@ -35,7 +35,7 @@ import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import { validateAll, validateStep, stepForField } from "./wizardSchema";
 import {
   WIZARD_STEPS, emptyModel, isSubcategoryValid, modelFromListing,
-  needsDimensions, needsWorkingStatus, normalizeWorkingStatus, stepIndex, uploadedUrls,
+  needsDimensions, needsWorkingStatus, normalizeWorkingStatus, stepCountWord, stepIndex, uploadedUrls,
   type WizardMode, type WizardModel, type WizardPhoto, type WizardStep,
 } from "./wizardModel";
 
@@ -43,15 +43,20 @@ const STEP_LABELS: Record<WizardStep, string> = {
   photos: "Show the item",
   basics: "Item basics",
   condition: "Condition & details",
-  location: "Confirm location",
+  location: "Item location",
   review: "Review & submit",
+};
+
+/** Card headings, where they differ from the rail label. */
+const STEP_HEADINGS: Partial<Record<WizardStep, string>> = {
+  location: "Where is the item?",
 };
 
 const STEP_INTROS: Record<WizardStep, string> = {
   photos: "A few good photos do most of the work.",
   basics: "What is it, and how many?",
   condition: "How is it doing, and what should a recipient know?",
-  location: "Where would a recipient collect it from?",
+  location: "We use this to match your item with needs within 10 km of you.",
   review: "One last look before it goes to our team.",
 };
 
@@ -89,15 +94,16 @@ export function ItemListingWizard({
   const isRtl = locale === "ar" || locale === "ur";
 
   const [model, setModel] = useState<WizardModel>(() => listing ? modelFromListing(listing) : emptyModel);
-  // A draft saved on the removed location step resumes on Review instead.
-  const [step, setStep] = useState<WizardStep>(
-    initialStep === "location" ? "review" : (initialStep ?? "photos"));
+  const [step, setStep] = useState<WizardStep>(initialStep ?? "photos");
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
-  const [gps, setGps] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
+  /** Address lookup for the map pin (reverse geocode) or typed address (fallback). */
+  const [lookup, setLookup] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
+  /** The donor's profile coordinates: where the map starts when the listing has no pin. */
+  const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
 
   const [aiRunning, setAiRunning] = useState(false);
   const [aiNote, setAiNote] = useState<string | null>(null);
@@ -414,11 +420,13 @@ export function ItemListingWizard({
   const prefilledRef = useRef(false);
   useEffect(() => {
     let isMounted = true;
-    if (prefilledRef.current || mode !== "create") return;
+    if (prefilledRef.current) return;
     prefilledRef.current = true;
     getProfile()
       .then(p => {
         if (!isMounted) return;
+        if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
+        if (mode !== "create") return;
         setModel(prev => {
           // The profile stores city in the same flattened "City, StateIso,
           // CountryIso" shape, so it is parsed rather than dropped into the city
@@ -443,61 +451,101 @@ export function ItemListingWizard({
     return () => { isMounted = false; };
   }, [mode]);
 
-  const handleGps = useCallback(() => {
-    if (!navigator.geolocation) {
-      setGps({ running: false, error: "This device can't share its location." });
-      return;
-    }
-    setGps({ running: true, error: null });
-    navigator.geolocation.getCurrentPosition(
-      async pos => {
-        try {
-          const geo = await detectLocationFromServer(pos.coords.latitude, pos.coords.longitude);
-          if (!geo.ok) {
-            // Distinguish "nothing is mapped there" from "the lookup service is
-            // unavailable" — they call for different things from the donor, and
-            // the old code showed one message for both.
-            setGps({
-              running: false,
-              error: geo.reason === "no-address"
-                ? "There's no street address at that spot."
-                : "The address lookup is unavailable right now.",
-            });
-            return;
-          }
-          const a = geo.address;
-          const countryIso = (a.country_code ?? "").toUpperCase() || model.countryIso;
-          const cityName = a.city ?? a.town ?? a.village ?? a.state_district ?? "";
-          const { stateIso, cityValue } = await resolveLocationFromGPS(countryIso, a.state ?? "", cityName);
+  // ── Item location: map pin → address ─────────────────────────────────────
+  /**
+   * The pin is the source of truth for coordinates; the address fields follow
+   * it. A lookup value replaces a field; a field the lookup has nothing for is
+   * left as the donor typed it. `onlyEmpty` is for pins we placed ourselves
+   * (the profile location), which must never overwrite anything.
+   *
+   * <p>Debounced to one lookup per second of quiet — Nominatim's usage policy —
+   * and sequence-guarded so a slow answer for an old pin cannot win.
+   */
+  const lookupSeq = useRef(0);
+  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
+    const placed = { ...modelRef.current, latitude: lat, longitude: lng };
+    modelRef.current = placed;
+    setModel(placed);
+    queueSave(placed);
+    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
 
-          setModel(prev => {
-            const next = {
-              ...prev,
-              countryIso: countryIso || prev.countryIso,
-              stateIso: stateIso || prev.stateIso,
-              city: cityValue || cityName || prev.city,
-              pincode: dirtyRef.current.has("pincode") ? prev.pincode : (a.postcode ?? prev.pincode),
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            };
-            queueSave(next);
-            return next;
+    const seq = ++lookupSeq.current;
+    if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    setLookup({ running: true, error: null });
+    lookupTimer.current = setTimeout(async () => {
+      try {
+        const geo = await detectLocationFromServer(lat, lng);
+        if (seq !== lookupSeq.current) return;
+        if (!geo.ok) {
+          setLookup({
+            running: false,
+            error: geo.reason === "no-address"
+              ? "We couldn't find an address at that spot — please fill in the fields below."
+              : "The address lookup is unavailable right now — please fill in the fields below.",
           });
-          setGps({ running: false, error: null });
-        } catch {
-          setGps({ running: false, error: "We couldn't turn that into an address." });
+          return;
         }
-      },
-      () => setGps({ running: false, error: "Location permission was denied." }),
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
-  }, [model.countryIso, queueSave]);
+        const a = geo.address;
+        const countryIso = (a.country_code ?? "").toUpperCase();
+        const cityName = a.city ?? a.town ?? a.village ?? a.state_district ?? "";
+        const { stateIso, cityValue } = await resolveLocationFromGPS(countryIso, a.state ?? "", cityName);
+        if (seq !== lookupSeq.current) return;
+        const found: Partial<WizardModel> = {
+          countryIso: countryIso || undefined,
+          stateIso: stateIso || undefined,
+          city: cityValue || cityName || undefined,
+          locality: a.suburb ?? a.neighbourhood ?? a.quarter ?? a.residential ?? a.city_district ?? undefined,
+          pincode: a.postcode ?? undefined,
+        };
+        const prev = modelRef.current;
+        const next = { ...prev };
+        (Object.keys(found) as (keyof typeof found)[]).forEach(k => {
+          const v = found[k];
+          if (!v) return;
+          if (opts?.onlyEmpty && String(prev[k] ?? "").trim()) return;
+          (next as Record<string, unknown>)[k] = v;
+        });
+        modelRef.current = next;
+        setModel(next);
+        queueSave(next);
+        setLookup({ running: false, error: null });
+      } catch {
+        if (seq === lookupSeq.current) setLookup({ running: false, error: "We couldn't turn that spot into an address — please fill in the fields below." });
+      }
+    }, 1000);
+  }, [queueSave]);
+
+  /**
+   * No map (it failed to load): place the item from the typed address instead,
+   * or, if that finds nothing, from the donor's profile coordinates.
+   */
+  const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }) => {
+    if (!q.city && !q.postalcode) return;
+    const seq = ++lookupSeq.current;
+    setLookup({ running: true, error: null });
+    const geo = await geocodeAddressFromServer(q);
+    if (seq !== lookupSeq.current) return;
+    const coords = geo.ok ? { lat: geo.lat, lng: geo.lng } : profileCenter;
+    if (coords) {
+      const next = { ...modelRef.current, latitude: coords.lat, longitude: coords.lng };
+      modelRef.current = next;
+      setModel(next);
+      queueSave(next);
+    }
+    setLookup({
+      running: false,
+      error: geo.ok ? null : coords
+        ? "We couldn't place that exact address, so we'll use your profile location."
+        : "We couldn't place that address — check the city and PIN code.",
+    });
+  }, [profileCenter, queueSave]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
   const focusField = useCallback((field: string) => {
     const target = stepForField(field);
     if (target !== step) { setDirection(-1); setStep(target); return; }
-    const el = document.querySelector<HTMLElement>(`[name="${field}"]`);
+    const el = document.querySelector<HTMLElement>(`[name="${field}"], [data-field="${field}"]`);
     el?.focus();
     el?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
   }, [step, reduced]);
@@ -632,7 +680,7 @@ export function ItemListingWizard({
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
               {mode === "needs-info" ? "Update your listing" : "List an item"}
             </h2>
-            <p className="mb-8 text-sm text-white/50">Five short steps. We save as you go.</p>
+            <p className="mb-8 text-sm text-white/50">{stepCountWord()} short steps. We save as you go.</p>
             <WizardProgressRail current={step} steps={WIZARD_STEPS} navLabel="Listing progress" labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
           <p className="text-2xs text-white/35">Your name and address stay private until a match is approved.</p>
@@ -697,7 +745,7 @@ export function ItemListingWizard({
                     className="text-base font-bold text-stone-900 outline-none sm:text-lg dark:text-stone-100"
                     style={{ fontFamily: "var(--font-source-serif-4), serif" }}
                   >
-                    {STEP_LABELS[step]}
+                    {STEP_HEADINGS[step] ?? STEP_LABELS[step]}
                   </h1>
                   <p className="mb-2 mt-0.5 text-xs text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
 
@@ -729,7 +777,10 @@ export function ItemListingWizard({
                     <ConditionDetailsStep model={model} errors={errors} aiFilled={aiFilled} uncertain={uncertain} onChange={setField} />
                   )}
                   {step === "location" && (
-                    <LocationStep model={model} errors={errors} gps={gps} onChange={setField} onUseGps={handleGps} onConfirm={handleContinue} />
+                    <LocationStep
+                      model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
+                      onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped}
+                    />
                   )}
                   {step === "review" && (
                     <ReviewSubmitStep

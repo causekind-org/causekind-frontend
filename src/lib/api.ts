@@ -1664,6 +1664,11 @@ export type ItemMatch = {
   listingApproximateWeight: string | null;
   listingLatitude: number | null;
   listingLongitude: number | null;
+  /**
+   * Item-to-need km as the matching engine measured it. Present before
+   * acceptance, when the exact coordinates above are withheld.
+   */
+  distanceKm?: number | null;
   listingCreatedAt: string | null;
   // Logistics
   handoverMethod: string | null;
