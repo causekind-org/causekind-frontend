@@ -1145,6 +1145,11 @@ export type ItemRequest = {
   requesterType?: "PERSON" | "NGO";
   /** Registered organisation name, NGO requests on the browse feed only. Not a verification claim. */
   organizationName?: string | null;
+  /**
+   * Distance in km from the viewing donor (board only). The board never sends a
+   * donor the donee's exact coordinates — those are null except for admins.
+   */
+  distanceKm?: number | null;
 };
 
 /**

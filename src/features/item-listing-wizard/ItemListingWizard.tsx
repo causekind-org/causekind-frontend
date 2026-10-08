@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
+import { usePinAddress } from "@/hooks/usePinAddress";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -12,7 +13,6 @@ import {
   type ItemListing, type ListingImageAnalysis,
 } from "@/lib/api";
 import { trackListItem } from "@/lib/metaEvents";
-import { resolveLocationFromGPS, detectLocationFromServer, geocodeAddressFromServer } from "@/app/actions/locations";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
 import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
@@ -100,8 +100,6 @@ export function ItemListingWizard({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
-  /** Address lookup for the map pin (reverse geocode) or typed address (fallback). */
-  const [lookup, setLookup] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
   /** The donor's profile coordinates: where the map starts when the listing has no pin. */
   const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
 
@@ -454,92 +452,47 @@ export function ItemListingWizard({
   // ── Item location: map pin → address ─────────────────────────────────────
   /**
    * The pin is the source of truth for coordinates; the address fields follow
-   * it. A lookup value replaces a field; a field the lookup has nothing for is
-   * left as the donor typed it. `onlyEmpty` is for pins we placed ourselves
-   * (the profile location), which must never overwrite anything.
-   *
-   * <p>Debounced to one lookup per second of quiet — Nominatim's usage policy —
-   * and sequence-guarded so a slow answer for an old pin cannot win.
+   * it (shared lookup: usePinAddress). A lookup value replaces a field; a field
+   * the lookup has nothing for is left as the donor typed it. `onlyEmpty` is
+   * for pins we placed ourselves (the profile location), which never overwrite.
    */
-  const lookupSeq = useRef(0);
-  const lookupTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pinAddress = usePinAddress();
+  const { lookup: lookupPin, geocodeTyped } = pinAddress;
+  const lookup = { running: pinAddress.running, error: pinAddress.error };
   const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
     const placed = { ...modelRef.current, latitude: lat, longitude: lng };
     modelRef.current = placed;
     setModel(placed);
     queueSave(placed);
     setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
-
-    const seq = ++lookupSeq.current;
-    if (lookupTimer.current) clearTimeout(lookupTimer.current);
-    setLookup({ running: true, error: null });
-    lookupTimer.current = setTimeout(async () => {
-      try {
-        const geo = await detectLocationFromServer(lat, lng);
-        if (seq !== lookupSeq.current) return;
-        if (!geo.ok) {
-          setLookup({
-            running: false,
-            error: geo.reason === "no-address"
-              ? "We couldn't find an address at that spot — please fill in the fields below."
-              : "The address lookup is unavailable right now — please fill in the fields below.",
-          });
-          return;
-        }
-        const a = geo.address;
-        const countryIso = (a.country_code ?? "").toUpperCase();
-        const cityName = a.city ?? a.town ?? a.village ?? a.state_district ?? "";
-        const { stateIso, cityValue } = await resolveLocationFromGPS(countryIso, a.state ?? "", cityName);
-        if (seq !== lookupSeq.current) return;
-        const found: Partial<WizardModel> = {
-          countryIso: countryIso || undefined,
-          stateIso: stateIso || undefined,
-          city: cityValue || cityName || undefined,
-          locality: a.suburb ?? a.neighbourhood ?? a.quarter ?? a.residential ?? a.city_district ?? undefined,
-          pincode: a.postcode ?? undefined,
-        };
-        const prev = modelRef.current;
-        const next = { ...prev };
-        (Object.keys(found) as (keyof typeof found)[]).forEach(k => {
-          const v = found[k];
-          if (!v) return;
-          if (opts?.onlyEmpty && String(prev[k] ?? "").trim()) return;
-          (next as Record<string, unknown>)[k] = v;
-        });
-        modelRef.current = next;
-        setModel(next);
-        queueSave(next);
-        setLookup({ running: false, error: null });
-      } catch {
-        if (seq === lookupSeq.current) setLookup({ running: false, error: "We couldn't turn that spot into an address — please fill in the fields below." });
-      }
-    }, 1000);
-  }, [queueSave]);
-
-  /**
-   * No map (it failed to load): place the item from the typed address instead,
-   * or, if that finds nothing, from the donor's profile coordinates.
-   */
-  const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }) => {
-    if (!q.city && !q.postalcode) return;
-    const seq = ++lookupSeq.current;
-    setLookup({ running: true, error: null });
-    const geo = await geocodeAddressFromServer(q);
-    if (seq !== lookupSeq.current) return;
-    const coords = geo.ok ? { lat: geo.lat, lng: geo.lng } : profileCenter;
-    if (coords) {
-      const next = { ...modelRef.current, latitude: coords.lat, longitude: coords.lng };
+    lookupPin(lat, lng, found => {
+      const prev = modelRef.current;
+      const next = { ...prev };
+      const fields = {
+        countryIso: found.countryIso, stateIso: found.stateIso, city: found.city,
+        locality: found.locality, pincode: found.pincode,
+      } as const;
+      (Object.keys(fields) as (keyof typeof fields)[]).forEach(k => {
+        const v = fields[k];
+        if (!v) return;
+        if (opts?.onlyEmpty && String(prev[k] ?? "").trim()) return;
+        next[k] = v;
+      });
       modelRef.current = next;
       setModel(next);
       queueSave(next);
-    }
-    setLookup({
-      running: false,
-      error: geo.ok ? null : coords
-        ? "We couldn't place that exact address, so we'll use your profile location."
-        : "We couldn't place that address — check the city and PIN code.",
     });
-  }, [profileCenter, queueSave]);
+  }, [queueSave, lookupPin]);
+
+  /** No map: place the item from the typed address, else the profile location. */
+  const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }) => {
+    const coords = await geocodeTyped(q, profileCenter);
+    if (!coords) return;
+    const next = { ...modelRef.current, latitude: coords.lat, longitude: coords.lng };
+    modelRef.current = next;
+    setModel(next);
+    queueSave(next);
+  }, [geocodeTyped, profileCenter, queueSave]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
   const focusField = useCallback((field: string) => {

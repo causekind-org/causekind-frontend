@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, MapPin, TriangleAlert } from "lucide-react";
+import { Loader2, TriangleAlert } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
-import { ListingLocationMap, MapUnavailableNote } from "../ListingLocationMap";
+import { LocationPinPicker } from "@/components/LocationPinPicker";
 import type { WizardModel } from "../wizardModel";
 
 type LatLng = { lat: number; lng: number };
@@ -37,20 +37,7 @@ export function LocationStep({
 
   const pin = model.latitude != null && model.longitude != null ? { lat: model.latitude, lng: model.longitude } : null;
 
-  // Follow the pin only when it moved from outside the map (profile, typed
-  // address) — a tap or drag already put the map where the donor wants it.
-  const picked = useRef<string | null>(null);
-  const [recenter, setRecenter] = useState(0);
-  useEffect(() => {
-    if (!pin) return;
-    const key = `${pin.lat},${pin.lng}`;
-    if (key !== picked.current) { picked.current = key; setRecenter(n => n + 1); }
-  }, [pin?.lat, pin?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const pick = useCallback((lat: number, lng: number) => {
-    picked.current = `${lat},${lng}`;
-    onPin(lat, lng);
-  }, [onPin]);
+  const pick = useCallback((lat: number, lng: number) => onPin(lat, lng), [onPin]);
 
   // On arrival: no pin yet → start on the profile location; a pin but an
   // incomplete address → fill the blanks from it. Never overwrites anything.
@@ -80,20 +67,13 @@ export function LocationStep({
 
   return (
     <div className="space-y-2">
-      {mapDown ? <MapUnavailableNote /> : (
-        <ListingLocationMap
-          pin={pin} fallbackCenter={profileCenter} recenter={recenter}
-          onPick={pick} onUnavailable={onUnavailable}
-        />
-      )}
+      <LocationPinPicker
+        tone="donor" pin={pin} fallbackCenter={profileCenter}
+        onPick={pick} onUnavailable={onUnavailable}
+        hint={lookup.running ? null : undefined}
+      />
 
       <div data-field="latitude" tabIndex={-1} className="space-y-1.5 outline-none">
-        {!mapDown && !lookup.running && (
-          <p className="flex items-center gap-1.5 text-2xs text-stone-500 dark:text-stone-400">
-            <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--ck-role-accent)]" aria-hidden />
-            Tap the map to drop the pin, then drag it to the exact spot.
-          </p>
-        )}
         {lookup.running && (
           <p role="status" className="flex items-center gap-1.5 text-2xs font-semibold text-stone-600 dark:text-stone-300">
             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Looking up the address…
