@@ -215,7 +215,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              placeholder="Type a message... (Enter to send)"
+              placeholder="Type a message"
               className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[var(--ck-role-accent)] placeholder:text-gray-400"
             />
             <button
