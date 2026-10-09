@@ -3,32 +3,45 @@
 import React from "react";
 import * as Accordion from "@radix-ui/react-accordion";
 import { Reveal } from "./motion/Reveal";
+import { useTranslations } from "next-intl";
 
 export function NgoFaqSection() {
+  const t = useTranslations("NgoLanding");
+  
   const faqs = [
     {
-      q: "How long does verification take?",
-      a: "Our team reviews applications within 24-48 business hours. If any documents are unclear, we will request changes, which you can track in your dashboard."
+      q: t("Faq.q1"),
+      a: t("Faq.a1")
     },
     {
-      q: "Is there any fee to join?",
-      a: "No. CauseKind is completely free for verified NGOs. We do not charge any commission or onboarding fees."
+      q: t("Faq.q2"),
+      a: t("Faq.a2")
     },
     {
-      q: "What items can I ask for?",
-      a: "You can request physical goods—blankets, books, medical supplies, food packets, etc. CauseKind does not facilitate direct monetary donations for drives."
-    },
-    {
-      q: "Who drops off the items?",
-      a: "Donors will securely hand over the items at your registered address or a designated drop-off point. You will exchange a secure OTP to verify the handover."
+      q: t("Faq.q3"),
+      a: t("Faq.a3")
     }
   ];
+
+  // Feature flagged slot for CommunityStories (off by default)
+  const SHOW_COMMUNITY_STORIES = false;
 
   return (
     <section className="py-24 bg-[#FBF9F4] dark:bg-[#09090b] relative">
       <div className="max-w-4xl mx-auto px-6">
+        
+        {SHOW_COMMUNITY_STORIES && (
+          <Reveal>
+            <div className="mb-24 text-center">
+              <h2 className="text-3xl font-serif font-bold text-stone-900 dark:text-stone-100">Community Stories</h2>
+              <p className="text-stone-600 dark:text-stone-400 mt-2">Hear from NGOs who have successfully verified and run drives.</p>
+              {/* <CommunityStories /> placeholder */}
+            </div>
+          </Reveal>
+        )}
+
         <Reveal>
-          <h2 className="text-4xl font-serif font-bold text-center mb-12">Frequently Asked Questions</h2>
+          <h2 className="text-4xl font-serif font-bold text-center mb-12">{t("Faq.title")}</h2>
         </Reveal>
         <Reveal delay={0.2}>
           <Accordion.Root type="single" collapsible className="w-full">

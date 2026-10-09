@@ -16,12 +16,15 @@ import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
-import { NgoHeroStateA } from "./NgoHeroStateA";
-import { NgoSoundFamiliar } from "./NgoSoundFamiliar";
-import { NgoJourneyPinned } from "./NgoJourneyPinned";
-import { NgoVerificationScan } from "./NgoVerificationScan";
-import { NgoVerificationFinale } from "./NgoVerificationFinale";
-import { NgoFaqSection } from "./NgoFaqSection";
+import dynamic from 'next/dynamic';
+
+const NgoHeroStateA = dynamic(() => import('./NgoHeroStateA').then(mod => mod.NgoHeroStateA));
+const NgoSoundFamiliar = dynamic(() => import('./NgoSoundFamiliar').then(mod => mod.NgoSoundFamiliar));
+const NgoJourneyPinned = dynamic(() => import('./NgoJourneyPinned').then(mod => mod.NgoJourneyPinned));
+const NgoVerificationScan = dynamic(() => import('./NgoVerificationScan').then(mod => mod.NgoVerificationScan));
+const NgoVerificationFinale = dynamic(() => import('./NgoVerificationFinale').then(mod => mod.NgoVerificationFinale));
+const NgoFaqSection = dynamic(() => import('./NgoFaqSection').then(mod => mod.NgoFaqSection));
+import { ScrollProgressRail } from "./motion/ScrollProgressRail";
 
 function NgoLandingRouter({ statusData }: { statusData: any }) {
   if (statusData.isVerified) {
@@ -43,6 +46,7 @@ function NgoLandingRouter({ statusData }: { statusData: any }) {
   // STATE A: Incomplete / Under Review / Changes Requested (Phase 2)
   return (
     <>
+      <ScrollProgressRail />
       <NgoHeroStateA 
         status={statusData.status} 
         stepNumber={statusData.stepNumber} 
