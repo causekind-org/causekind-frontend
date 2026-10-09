@@ -20,7 +20,9 @@ import {
   FileText,
   BadgeCheck,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  AlertCircle,
+  Lock
 } from "lucide-react";
 import type { NgoStatusData } from "./useNgoStatus";
 import { StartDriveLink } from "./StartDriveLink";
