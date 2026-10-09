@@ -688,11 +688,11 @@ function HideWithdrawnRequestButton({ requestId, onHidden }: { requestId: number
       label="Delete"
       busyLabel="Removing"
       icon={<Trash2 className="w-3 h-3 mr-1" />}
-      title="Delete this withdrawn request?"
+      title="Delete this request?"
       description="This request will be removed from your dashboard. CauseKind may retain its history for safety, support, and auditing."
       confirmLabel="Delete request"
       cancelLabel="Keep request"
-      successMessage="Withdrawn request removed."
+      successMessage="Request removed from your dashboard."
       errorMessage="Could not remove this request — please try again"
       onConfirm={async () => { await hideWithdrawnRequest(requestId); onHidden(); }}
     />
@@ -2386,7 +2386,7 @@ function DoneeDashboard({
         <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[var(--ck-role-highlight)]/6 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--ck-role-highlight)]/25 to-transparent" />
 
-        <div className="mx-auto max-w-5xl relative z-10">
+        <div className="mx-auto max-w-7xl relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-3 min-w-0">
               <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-bold uppercase tracking-wider">
@@ -2425,7 +2425,7 @@ function DoneeDashboard({
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 py-5 sm:py-8 space-y-4 sm:space-y-6">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-8 space-y-4 sm:space-y-6">
 
         {/* Anything support has asked this user for. Donees take the early return
             above and never reach the donor branch's copy of this card, so it has

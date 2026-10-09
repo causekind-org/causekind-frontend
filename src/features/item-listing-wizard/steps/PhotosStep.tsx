@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Camera, ImagePlus, Loader2, RefreshCw, Sparkles, Star, TriangleAlert, X } from "lucide-react";
+import { Camera, Check, ImagePlus, Loader2, Plus, RefreshCw, Sparkles, Star, TriangleAlert, X } from "lucide-react";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { ACCEPT_ATTR, MAX_PHOTOS, MIN_PHOTOS } from "../useListingPhotos";
 import { pressProps } from "@/features/wizard-kit/wizardMotion";
@@ -52,8 +52,14 @@ export function PhotosStep({
   const [cameraOpen, setCameraOpen] = useState(false);
   const atLimit = photos.length >= MAX_PHOTOS;
 
+  const empty = photos.length === 0;
+  const ringDeg = Math.min(1, approved / MIN_PHOTOS) * 360;
+
   return (
-    <div className="space-y-2">
+    // Design option A (owner, 2026-10-08): photos on the left, a progress ring and
+    // always-open tips on the right; one column on phones.
+    <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-6">
+    <div className="min-w-0 space-y-2">
       {/*
         Stacked, not side by side. As flex siblings the badge sat inside the
         paragraph's line box and the sentence read "…fill in the details for
@@ -72,7 +78,7 @@ export function PhotosStep({
         */}
         <p
           aria-live="polite"
-          className={`inline-block rounded-full px-2.5 py-1 text-2xs font-black uppercase tracking-wide ${
+          className={`inline-block lg:hidden rounded-full px-2.5 py-1 text-2xs font-black uppercase tracking-wide ${
             approved >= MIN_PHOTOS
               ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
               : "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-300"
@@ -86,7 +92,7 @@ export function PhotosStep({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className={`grid grid-cols-2 gap-2 ${empty ? "lg:hidden" : ""}`}>
         <motion.button
           type="button"
           onClick={() => setCameraOpen(true)}
@@ -128,7 +134,7 @@ export function PhotosStep({
         second photo is the one that decides whether a recipient can judge the
         item, so it is worth naming: an angle, a label, or the damage.
       */}
-      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:auto-rows-[150px] lg:gap-3">
           <AnimatePresence initial={false}>
             {photos.map((photo, i) => {
               // Local preview first: remoteUrl is "" until screening approves the photo.
@@ -144,7 +150,7 @@ export function PhotosStep({
                   transition={{ duration: 0.18 }}
                   className="relative overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800"
                 >
-                  <div className="aspect-square w-full">
+                  <div className="aspect-square w-full lg:aspect-auto lg:h-full">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     {src && <img src={src} alt={`Item photo ${i + 1}`} className="h-full w-full object-cover" />}
                   </div>
@@ -281,10 +287,39 @@ export function PhotosStep({
           */}
           {Array.from({ length: Math.max(0, MIN_PHOTOS - photos.length) }).map((_, idx) => {
             const slot = photos.length + idx;
+            if (slot === 0) {
+              return (
+                <li
+                  key="slot-0"
+                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-stone-300 bg-stone-50/60 p-2 text-center dark:border-zinc-700 dark:bg-zinc-900/40 lg:col-span-2 lg:row-span-2 lg:aspect-auto lg:gap-2 lg:rounded-2xl lg:border-2 lg:border-[var(--ck-role-accent)]/35 lg:bg-[var(--ck-role-soft)]/50 lg:p-4"
+                >
+                  <Camera className="hidden h-9 w-9 text-[var(--ck-role-accent)] lg:block" strokeWidth={1.5} aria-hidden />
+                  <span className="text-3xs font-black uppercase tracking-wide text-stone-500 dark:text-stone-400 lg:text-xs lg:text-[var(--ck-role-accent)]">
+                    {t("listingWizard.photo.slotMain")}
+                  </span>
+                  <span className="text-4xs leading-snug text-stone-400 dark:text-stone-500 lg:text-sm lg:text-stone-600">
+                    {t("listingWizard.photo.slotMainHint")}
+                  </span>
+                  <span className="mt-0.5 rounded-full bg-stone-200 px-1.5 py-0.5 text-5xs font-black uppercase text-stone-600 dark:bg-zinc-800 dark:text-stone-400 lg:hidden">
+                    {t("listingWizard.photo.slotRequired")}
+                  </span>
+                  <span className="hidden gap-2 lg:flex">
+                    <button type="button" onClick={() => setCameraOpen(true)} disabled={atLimit}
+                      className="flex min-h-[46px] items-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-5 text-sm font-bold text-white hover:brightness-110 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]">
+                      <Camera className="h-4 w-4" aria-hidden /> Take photo
+                    </button>
+                    <button type="button" onClick={() => fileRef.current?.click()} disabled={atLimit}
+                      className="flex min-h-[46px] items-center gap-2 rounded-xl border border-stone-300 bg-white px-5 text-sm font-bold text-stone-700 hover:bg-stone-50 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200">
+                      <ImagePlus className="h-4 w-4" aria-hidden /> Choose
+                    </button>
+                  </span>
+                </li>
+              );
+            }
             return (
               <li
                 key={`slot-${slot}`}
-                className="flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-stone-300 bg-stone-50/60 p-2 text-center dark:border-zinc-700 dark:bg-zinc-900/40"
+                className="flex aspect-square lg:aspect-auto lg:h-full flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-stone-300 bg-stone-50/60 p-2 text-center dark:border-zinc-700 dark:bg-zinc-900/40 lg:rounded-2xl lg:border-2"
               >
                 <span className="text-3xs font-black uppercase tracking-wide text-stone-500 dark:text-stone-400">
                   {t(slot === 0 ? "listingWizard.photo.slotMain" : "listingWizard.photo.slotSecond")}
@@ -298,6 +333,18 @@ export function PhotosStep({
               </li>
             );
           })}
+
+          {!atLimit && (
+            <li className="hidden lg:block">
+              <button type="button" onClick={() => fileRef.current?.click()}
+                className="flex aspect-square lg:aspect-auto h-auto lg:h-full w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/40 p-2 text-sm font-bold text-stone-500 hover:border-[var(--ck-role-accent)]/40 hover:text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-800 dark:bg-zinc-900/30">
+                <Plus className="h-5 w-5" aria-hidden />
+                {photos.length < MIN_PHOTOS
+                  ? `Up to ${MAX_PHOTOS - MIN_PHOTOS} more (optional)`
+                  : `Add more (${MAX_PHOTOS - photos.length} left)`}
+              </button>
+            </li>
+          )}
         </ul>
 
       {error && <p role="alert" className="text-2xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
@@ -368,7 +415,7 @@ export function PhotosStep({
         </div>
       )}
 
-      <details className="rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <details className="rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
         <summary className="cursor-pointer text-2xs font-bold text-stone-600 dark:text-stone-300">
           What makes a good photo?
         </summary>
@@ -395,6 +442,42 @@ export function PhotosStep({
         // opens the file picker, so a permission denial is never a dead end.
         onChoosePhoto={() => { setCameraOpen(false); fileRef.current?.click(); }}
       />
+    </div>
+
+    <aside className="hidden flex-col gap-5 self-start rounded-2xl bg-stone-50 p-5 dark:bg-zinc-900/60 lg:flex">
+      <div className="flex items-center gap-4">
+        <div
+          className="grid h-16 w-16 shrink-0 place-items-center rounded-full"
+          style={{ background: `conic-gradient(var(--ck-role-accent) ${ringDeg}deg, rgba(120,113,108,0.18) ${ringDeg}deg)` }}
+          aria-hidden
+        >
+          <span className="grid h-[52px] w-[52px] place-items-center rounded-full bg-stone-50 text-base font-black text-stone-800 dark:bg-zinc-900 dark:text-stone-100">
+            {Math.min(approved, MIN_PHOTOS)}/{MIN_PHOTOS}
+          </span>
+        </div>
+        <div>
+          <p className="text-base font-black text-stone-800 dark:text-stone-100">Photos approved</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">
+            {approved >= MIN_PHOTOS ? "Ready — you can continue." : `${MIN_PHOTOS} needed to continue`}
+          </p>
+        </div>
+      </div>
+      <div className="h-px bg-stone-200 dark:bg-zinc-800" />
+      <div className="space-y-3">
+        <p className="text-2xs font-black uppercase tracking-[0.12em] text-[var(--ck-role-accent)]">What makes a good photo</p>
+        {[
+          "Natural light, plain background.",
+          "One photo of the whole item, one of any damage.",
+          "Include labels or model numbers if there are any.",
+          "No people, faces or personal documents in frame.",
+        ].map(tip => (
+          <p key={tip} className="flex items-start gap-2 text-sm leading-snug text-stone-700 dark:text-stone-300">
+            <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" strokeWidth={2.5} aria-hidden />
+            {tip}
+          </p>
+        ))}
+      </div>
+    </aside>
     </div>
   );
 }

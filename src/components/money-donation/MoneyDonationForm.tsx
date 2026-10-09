@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -11,8 +11,21 @@ import {
   trackDonationPaymentSubmitted,
   trackDonationCompleted,
 } from '@/lib/clarityEvents';
-import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight } from 'lucide-react';
-import { initiateTrustDonation } from '@/lib/api';
+import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight, Camera, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { initiateTrustDonation, readPanCard, uploadTrustDonationPanPhoto } from '@/lib/api';
+import { PhotoCaptureDialog, prefersNativeCamera } from '@/features/ngo-drives/components/PhotoCaptureDialog';
+
+/**
+ * Does the name on the PAN card belong to the person filling in the form?
+ * Lenient on purpose (owner, 2026-10-08): case, order, middle names, initials
+ * and dots don't matter — one shared name part of 2+ letters is enough. A card
+ * with no name part in common blocks the donation.
+ */
+function panNameMatches(formName: string, cardName: string): boolean {
+  const parts = (s: string) => s.toUpperCase().replace(/[^A-Z\s]/g, ' ').split(/\s+/).filter((p) => p.length >= 2);
+  const card = new Set(parts(cardName));
+  return parts(formName).some((p) => card.has(p));
+}
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
 import { getDialCodes } from '@/app/actions/locations';
 import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
@@ -89,6 +102,16 @@ export function MoneyDonationForm() {
   const donorEmail = user?.email ?? '';
 
   const [submitting, setSubmitting] = useState(false);
+  // PAN card photo (2026-10-08): read by AI to fill the PAN, attached to the
+  // donation once it exists. Optional — typing the PAN still works.
+  const [panPhoto, setPanPhoto] = useState<File | null>(null);
+  const [panPreview, setPanPreview] = useState<string | null>(null);
+  const [panReading, setPanReading] = useState(false);
+  const [panNote, setPanNote] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
+  const [cardName, setCardName] = useState<string | null>(null);
+  const [panWebcam, setPanWebcam] = useState(false);
+  const panUploadRef = useRef<HTMLInputElement>(null);
+  const panCameraRef = useRef<HTMLInputElement>(null);
   const [amount, setAmount] = useState<number | ''>(1000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustom, setIsCustom] = useState(false);
@@ -151,8 +174,41 @@ export function MoneyDonationForm() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handlePanPhoto = async (file: File) => {
+    setPanPhoto(file);
+    setPanPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
+    setPanReading(true); setPanNote(null); setCardName(null);
+    try {
+      const r = await readPanCard(file);
+      if (!r.read || !r.panNumber) {
+        setPanNote({ tone: 'error', text: r.message ?? "We couldn't read this card. Please try a clearer photo or type your PAN." });
+        return;
+      }
+      setFormData((f) => ({ ...f, panNumber: r.panNumber! }));
+      setCardName(r.nameOnCard);
+      setPanNote({ tone: 'ok', text: `Read from your card: ${r.panNumber}${r.nameOnCard ? ` · ${r.nameOnCard}` : ''}. Please check it.` });
+    } catch (err) {
+      setPanNote({ tone: 'error', text: err instanceof Error ? err.message : "We couldn't read the card. Please type your PAN." });
+    } finally {
+      setPanReading(false);
+    }
+  };
+
+  const clearPanPhoto = () => {
+    setPanPhoto(null); setCardName(null); setPanNote(null);
+    setPanPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+  };
+
+  // The card's name vs the Full name field — shown as a note, and blocks the donation.
+  const panNameMismatch = !!cardName && formData.fullName.trim().length >= 2 && !panNameMatches(formData.fullName, cardName);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (panNameMismatch) {
+      toast.error(`The name on your PAN card (${cardName}) doesn't match the name you entered. Please correct it, or remove the card photo.`);
+      return;
+    }
 
     if (!donation || donation < 1) {
       toast.error('Please select or enter a valid donation amount.');
@@ -229,6 +285,12 @@ export function MoneyDonationForm() {
         panNumber: formData.panNumber,
         address: formData.address.trim() || undefined,
       });
+
+      // Attach the card photo now that the donation exists. Best-effort: the
+      // donation must not fail over the photo, the typed PAN is what counts.
+      if (panPhoto) {
+        uploadTrustDonationPanPhoto(order.donationId, panPhoto).catch(() => { /* optional */ });
+      }
 
       const rzp = new window.Razorpay({
         key: order.razorpayKeyId,
@@ -704,6 +766,47 @@ export function MoneyDonationForm() {
                         placeholder="Enter your 10-character PAN"
                         maxLength={10}
                       />
+                      {/* PAN card photo: upload or take one; AI fills the number. */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" disabled={panReading}
+                          onClick={() => panUploadRef.current?.click()}
+                          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-amber-200/80 bg-[#fffdfa] px-3 text-xs font-bold text-stone-700 hover:border-amber-400 disabled:opacity-50 dark:border-amber-800/60 dark:bg-[#221008] dark:text-amber-100">
+                          <Upload className="size-3.5" aria-hidden /> Upload PAN card
+                        </button>
+                        <button type="button" disabled={panReading}
+                          onClick={() => (prefersNativeCamera() ? panCameraRef.current?.click() : setPanWebcam(true))}
+                          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-amber-200/80 bg-[#fffdfa] px-3 text-xs font-bold text-stone-700 hover:border-amber-400 disabled:opacity-50 dark:border-amber-800/60 dark:bg-[#221008] dark:text-amber-100">
+                          <Camera className="size-3.5" aria-hidden /> Take a photo
+                        </button>
+                        {panPreview && (
+                          <span className="inline-flex items-center gap-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
+                            <img src={panPreview} alt="Your PAN card" className="h-10 w-16 rounded-md border border-amber-200 object-cover" />
+                            <button type="button" onClick={clearPanPhoto} className="min-h-10 px-1 text-xs font-semibold text-stone-500 underline hover:text-stone-700">Remove</button>
+                          </span>
+                        )}
+                      </div>
+                      <input ref={panUploadRef} type="file" accept="image/*" className="sr-only" aria-hidden tabIndex={-1}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) void handlePanPhoto(f); e.target.value = ''; }} />
+                      <input ref={panCameraRef} type="file" accept="image/*" capture="environment" className="sr-only" aria-hidden tabIndex={-1}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) void handlePanPhoto(f); e.target.value = ''; }} />
+                      <PhotoCaptureDialog open={panWebcam} onCancel={() => setPanWebcam(false)}
+                        onCaptured={(f) => { setPanWebcam(false); void handlePanPhoto(f); }} />
+                      {panReading && (
+                        <p role="status" className="flex items-center gap-1.5 text-xs text-stone-500"><Loader2 className="size-3.5 animate-spin" aria-hidden /> Reading your PAN card…</p>
+                      )}
+                      {panNote && !panReading && (
+                        <p role="status" className={`flex items-start gap-1.5 text-xs ${panNote.tone === 'ok' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {panNote.tone === 'ok' ? <Check className="mt-px size-3.5 shrink-0" aria-hidden /> : <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden />}
+                          {panNote.text}
+                        </p>
+                      )}
+                      {panNameMismatch && (
+                        <p role="alert" className="flex items-start gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400">
+                          <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden />
+                          The name on this card ({cardName}) doesn&apos;t match the name you entered. Fix your name above, or remove the card photo.
+                        </p>
+                      )}
                     </div>
                     {/* Spans both columns so it costs exactly one grid row.
                         Deliberately NOT required and deliberately a single line:

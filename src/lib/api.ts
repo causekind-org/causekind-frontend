@@ -615,6 +615,35 @@ export type TrustDonationPayload = {
  * be signed in the backend prefers their account's name and email over whatever
  * is passed here, so the receipt always names the account holder.
  */
+/** What the AI read off a PAN card photo (2026-10-08). Nothing is stored by this call. */
+export type PanRead = {
+  read: boolean;
+  panNumber: string | null;
+  nameOnCard: string | null;
+  confidence: number | null;
+  /** Plain-language reason when read is false. */
+  message: string | null;
+};
+
+export function readPanCard(file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${BASE_URL}/api/v1/donations/trust/pan-read`, { method: "POST", credentials: "include", body: fd })
+    .then(async (res) => {
+      if (res.status === 429) throw new Error("Too many tries — please wait a minute and try again.");
+      if (!res.ok) throw new Error("We couldn't read the card just now. Please type your PAN.");
+      return res.json() as Promise<PanRead>;
+    });
+}
+
+/** Attaches the PAN card photo to a trust donation once it exists (stored privately). */
+export function uploadTrustDonationPanPhoto(donationId: number, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${BASE_URL}/api/v1/donations/trust/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
+    .then((res) => { if (!res.ok) throw new Error("PAN photo upload failed"); });
+}
+
 export function initiateTrustDonation(payload: TrustDonationPayload) {
   return request<DonationOrder>("/api/v1/donations/trust", {
     method: "POST",

@@ -239,6 +239,9 @@ export default function HomeClient({
   const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
   // The live needs board is for givers; a donee is shown no one else's needs.
   const showLiveNeeds = roleStr !== "DONEE";
+  // Guests get Prachi's split "choose your path" CTA (6a6cc53); signed-in viewers
+  // the dark card. Restored 2026-10-08 — a merge on 10-07 dropped this switch.
+  const isGuest = !user;
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -443,7 +446,7 @@ export default function HomeClient({
         <CreditsSection />
 
         {/* SECTION 9 — FINAL CTA */}
-        <FinalCtaComponent variant="desktop" />
+        <FinalCtaComponent variant="desktop" card={!isGuest} />
       </div>
       </div>
       )}
@@ -612,7 +615,7 @@ export default function HomeClient({
         {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
         {!isRoleHome && (
           <div className="-mx-5">
-            <FinalCtaComponent variant="mobile" />
+            <FinalCtaComponent variant="mobile" card={!isGuest} />
           </div>
         )}
 

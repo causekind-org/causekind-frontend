@@ -657,7 +657,9 @@ export function ItemListingWizard({
           </div>
 
           <div ref={scrollRef} className="flex-1 px-4 py-5">
-            <div className="mx-auto w-full max-w-[680px]">
+            {/* The photo step takes the whole area beside the left bar on desktop
+                (owner, 2026-10-08, design option A); the other steps keep 680px. */}
+            <div className={`mx-auto w-full max-w-[680px] ${step === "photos" ? "lg:max-w-[1160px]" : ""}`}>
               <div className="mb-4 hidden items-center justify-between lg:flex">
                 <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
                   Step {stepIndex(step) + 1} of {WIZARD_STEPS.length}
@@ -693,6 +695,8 @@ export function ItemListingWizard({
                   <WizardBorderGlow />
 
                   <div className="ck-wizard-step-card-content">
+                  <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                   <h1
                     ref={headingRef}
                     tabIndex={-1}
@@ -702,6 +706,8 @@ export function ItemListingWizard({
                     {STEP_HEADINGS[step] ?? STEP_LABELS[step]}
                   </h1>
                   <p className="mb-2 mt-0.5 text-xs text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
+                  </div>
+                  </div>
 
                   <div className="mb-2 empty:hidden">
                     <StepErrorSummary errors={Object.fromEntries(Object.entries(errors).filter(([, v]) => v))} onFocusField={focusField} />

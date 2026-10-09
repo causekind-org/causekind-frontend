@@ -444,10 +444,10 @@ export function LiveNeedsSection({
             </div>
             <div>
               <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200">
-                Have gently-used goods at home?
+                Have something you no longer use?
               </p>
               <p className="text-3xs sm:text-xs text-stone-500 dark:text-stone-400">
-                Browse our complete live request directory or post an offer directly.
+                See what people near you need, and give it to someone who will use it.
               </p>
             </div>
           </div>
@@ -456,7 +456,7 @@ export function LiveNeedsSection({
             href="/requests"
             className="inline-flex items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 lg:min-h-12 lg:px-7 text-xs uppercase tracking-wider transition-all lg:duration-500 lg:ease-[cubic-bezier(0.32,0.72,0,1)] shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 lg:active:scale-[0.98] shrink-0"
           >
-            <span>See all open requests</span>
+            <span>See all needs</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

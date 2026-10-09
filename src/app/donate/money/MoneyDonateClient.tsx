@@ -1,6 +1,5 @@
 "use client";
 
-import { MoneyHero } from "@/components/money-donation/MoneyHero";
 import { MoneyFlowStory } from "@/components/money-donation/MoneyFlowStory";
 import { MoneyDonationForm } from "@/components/money-donation/MoneyDonationForm";
 import { AboutSahas } from "@/components/money-donation/AboutSahas";
@@ -20,7 +19,7 @@ export default function MoneyDonateClient() {
       <Suspense fallback={null}>
         <DonateScrollOnArrival />
       </Suspense>
-      <MoneyHero />
+
       
       {/* "See Sahas in Action" — the impact videos, second on the page at
           Sushil's request: proof of the work lands immediately after the hero,
@@ -33,8 +32,10 @@ export default function MoneyDonateClient() {
           the files in public/videos is the fix, not moving the section. */}
       {/* Owner, 2026-10-08: Hero, About Sahas, carousel, form, flow story —
           one continuous block on the page background, no Trust section. */}
-      <AboutSahas />
+      {/* Owner, 2026-10-08: the impact carousel is the hero now (it carries the
+          old hero's wording); About Sahas follows it. */}
       <ImpactCarousel />
+      <AboutSahas />
       <MoneyDonationForm />
       <MoneyFlowStory />
     </div>
