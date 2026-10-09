@@ -54,7 +54,7 @@ import { ListingDetailPanel } from "@/components/ListingDetailPanel";
 import MatchChatPopup from "@/components/MatchChatPopup";
 import { OfferJourney, donorJourneyIndex, buildDonorJourney } from "@/components/OfferJourney";
 import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
-import { findMatchForListing, isCompletedMatch, MATCHED_DONATION_STAGES, getListingCompletionDate } from "@/lib/matchedDonations";
+import { findMatchForListing, isCompletedMatch, getListingCompletionDate } from "@/lib/matchedDonations";
 import { formatMatchProximity } from "@/lib/matchDistance";
 import {
   filterInventory, inventoryFilterOptions, filterRequests, requestFilterOptions,
@@ -1410,91 +1410,6 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
   );
 }
 
-function FulfilledListingCard({
-  listing,
-  match,
-}: {
-  listing: ItemListing;
-  match: ItemMatch | null;
-}) {
-  // photoUrls holds approved photo rows; the legacy tail is "|"-joined, not ",".
-  const thumbnailUrl = listing.photoUrls?.[0] || listing.imageUrl || (listing.imageUrls ? listing.imageUrls.split("|")[0] : null);
-  const hasCertificate = isCompletedMatch(match);
-
-  return (
-    <div className="rounded-xl sm:rounded-2xl border border-stone-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 sm:p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              Fulfilled
-            </span>
-          </div>
-          <p className="font-semibold text-sm text-stone-900 dark:text-stone-100 truncate">
-            {listing.title}
-          </p>
-          <p className="text-xs text-stone-500 mt-0.5">
-            {listing.category}{listing.city ? ` · ${listing.city}` : ""}
-          </p>
-        </div>
-        {thumbnailUrl && (
-          <div className="relative h-10 sm:h-12 w-10 sm:w-12 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-            <Image src={thumbnailUrl} alt="" fill sizes="48px" className="object-cover" unoptimized />
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2 pt-1">
-        {/* Compact progress bar */}
-        <div className="flex gap-0.5">
-          {MATCHED_DONATION_STAGES.map((_, i) => (
-            <div
-              key={i}
-              className="h-1.5 flex-1 rounded-full bg-green-500 transition-all"
-            />
-          ))}
-        </div>
-        {/* Stage labels row */}
-        <div className="flex">
-          {MATCHED_DONATION_STAGES.map((label, i) => (
-            <div key={i} className="flex-1 min-w-0">
-              <div className="text-4xs font-semibold leading-tight truncate text-center text-green-600 dark:text-green-400">
-                ✓ {label}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Current stage explanation info box */}
-        <div className="rounded-xl p-3 space-y-2 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700">
-          <div className="flex items-start gap-2">
-            <span className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-4xs font-black text-white bg-[var(--ck-role-accent)]">
-              5
-            </span>
-            <div>
-              <p className="text-3xs font-bold text-[var(--ck-role-accent)] uppercase tracking-wide">
-                Now · Complete
-              </p>
-              <p className="text-xs text-stone-600 dark:text-stone-300">
-                The donation was successfully completed.
-              </p>
-            </div>
-          </div>
-        </div>
-        {/* View Certificate button */}
-        {hasCertificate && match && (
-          <Link
-            href={`/certificate?matchId=${match.id}`}
-            className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-green-600 hover:bg-green-700 text-white py-2.5 text-center text-xs font-semibold transition-colors"
-          >
-            <Award className="w-3.5 h-3.5" /> View Certificate
-          </Link>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /**
  * One finished donation as a single slim row (owner, 2026-10-08: History looked
@@ -1712,204 +1627,9 @@ function DoneeHistorySection({ offers, matches }: {
   );
 }
 
-function MatchedDonationsSection({
-  fulfilledItems,
-  matches,
-}: {
-  fulfilledItems: ItemListing[];
-  matches: ItemMatch[];
-}) {
-  const sortedItemsWithMatches = useMemo(() => {
-    return fulfilledItems
-      .map((item) => ({
-        item,
-        match: findMatchForListing(item, matches),
-      }))
-      .sort((a, b) => {
-        const timeA = new Date(getListingCompletionDate(a.item, a.match)).getTime();
-        const timeB = new Date(getListingCompletionDate(b.item, b.match)).getTime();
-        return timeB - timeA;
-      });
-  }, [fulfilledItems, matches]);
 
-  return (
-    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
-      <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
-        <div>
-          <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-            <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Matched Donations
-          </CardTitle>
-          <p className="text-xs text-stone-400 mt-0.5">
-            Your listed items that were matched and donated
-          </p>
-        </div>
-        {sortedItemsWithMatches.length >= 2 && (
-          <Link href="/offers/matched">
-            <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
-          </Link>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-        {sortedItemsWithMatches.length === 0 ? (
-          <p className="text-sm text-center py-6 text-stone-500">No fulfilled items yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {sortedItemsWithMatches.slice(0, 5).map(({ item, match }) => (
-              <DoneRow
-                key={item.id}
-                title={item.title}
-                sub={["Donated", doneDate(getListingCompletionDate(item, match)), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · ")}
-                thumb={item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null)}
-                href={isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null}
-              />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
-const DONEE_MATCHED_STAGES = ["Posted", "Verified", "Matched", "Received"];
 
-function FulfilledRequestMatchCard({
-  request,
-}: {
-  request: ItemRequest;
-  match: ItemMatch | null;
-}) {
-  const thumbnailUrl = request.imageUrl;
-
-  return (
-    <div className="rounded-xl sm:rounded-2xl border border-stone-100 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 sm:p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-400 dark:border-green-800">
-              <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
-              Fulfilled
-            </span>
-          </div>
-          <p className="font-semibold text-sm text-stone-900 dark:text-stone-100 truncate">
-            {request.title}
-          </p>
-          <p className="text-xs text-stone-500 mt-0.5">
-            {request.category}{request.city ? ` · ${request.city}` : ""}
-          </p>
-        </div>
-        {thumbnailUrl && (
-          <div className="relative h-10 sm:h-12 w-10 sm:w-12 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-            <Image src={thumbnailUrl} alt="" fill sizes="48px" className="object-cover" unoptimized />
-          </div>
-        )}
-      </div>
-
-      <div className="space-y-2 pt-1">
-        {/* Compact progress bar */}
-        <div className="flex gap-0.5">
-          {DONEE_MATCHED_STAGES.map((_, i) => (
-            <div
-              key={i}
-              className="h-1.5 flex-1 rounded-full bg-green-500 transition-all"
-            />
-          ))}
-        </div>
-        {/* Stage labels row */}
-        <div className="flex">
-          {DONEE_MATCHED_STAGES.map((label, i) => (
-            <div key={i} className="flex-1 min-w-0">
-              <div className="text-4xs font-semibold leading-tight truncate text-center text-green-600 dark:text-green-400">
-                ✓ {label}
-              </div>
-            </div>
-          ))}
-        </div>
-        {/* Current stage explanation info box */}
-        <div className="rounded-xl p-3 space-y-2 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700">
-          <div className="flex items-start gap-2">
-            <span className="mt-0.5 flex-shrink-0 h-4 w-4 rounded-full flex items-center justify-center text-4xs font-black text-white bg-[var(--ck-role-accent)]">
-              4
-            </span>
-            <div>
-              <p className="text-3xs font-bold text-[var(--ck-role-accent)] uppercase tracking-wide">
-                Now · Complete
-              </p>
-              <p className="text-xs text-stone-600 dark:text-stone-300">
-                The donation is complete. Thank you for using CauseKind!
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DoneeMatchedDonationsSection({
-  fulfilledRequests,
-  matches,
-  offers,
-}: {
-  fulfilledRequests: ItemRequest[];
-  matches: ItemMatch[];
-  offers: DonationOffer[];
-}) {
-  const sortedItemsWithMatches = useMemo(() => {
-    return fulfilledRequests
-      .filter(r => {
-        const hasCompletedMatch = matches.some(m => m.requestId === r.id && (m.status === "COMPLETED" || m.status === "FULFILLED"));
-        const hasCompletedOffer = offers.some(o => o.requestId === r.id && o.status === "COMPLETED");
-        return hasCompletedMatch && !hasCompletedOffer;
-      })
-      .map(r => {
-        const match = matches.find(m => m.requestId === r.id && (m.status === "COMPLETED" || m.status === "FULFILLED")) || null;
-        const completionTime = match
-          ? (match.doneeConfirmedAt ? new Date(match.doneeConfirmedAt).getTime() : match.closedAt ? new Date(match.closedAt).getTime() : new Date(match.createdAt).getTime())
-          : new Date(r.createdAt).getTime();
-        return { request: r, match, completionTime: isNaN(completionTime) ? 0 : completionTime };
-      })
-      .sort((a, b) => b.completionTime - a.completionTime);
-  }, [fulfilledRequests, matches, offers]);
-
-  return (
-    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
-      <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
-        <div>
-          <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-            <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Matched Donations Received
-          </CardTitle>
-          <p className="text-xs text-stone-400 mt-0.5">
-            Your requests that were fulfilled through a match
-          </p>
-        </div>
-        {sortedItemsWithMatches.length >= 2 && (
-          <Link href="/dashboard/history">
-            <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
-          </Link>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-3 sm:space-y-4 pt-3 sm:pt-4">
-        {sortedItemsWithMatches.length === 0 ? (
-          <p className="text-sm text-center py-6 text-stone-500">No fulfilled items yet.</p>
-        ) : (
-          <div className="space-y-3">
-            {sortedItemsWithMatches.slice(0, 5).map(({ request, match, completionTime }) => (
-              <DoneRow
-                key={request.id}
-                title={request.title}
-                sub={["Received", completionTime ? doneDate(new Date(completionTime).toISOString()) : "", match?.listingTitle ?? ""].filter(Boolean).join(" · ")}
-                thumb={request.imageUrl}
-              />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Dedicated Donee Dashboard — shown instead of the donor layout for DONEE role
@@ -2366,7 +2086,12 @@ function DoneeDashboard({
   // Open on whatever is waiting on the donee; otherwise on their requests. Empty
   // until offers have loaded, so the tab doesn't jump once they arrive.
   const section: DoneeSection | "" = chosenSection
-    ?? (!offersLoaded ? "" : offersNeedYou ? "offers" : matchesNeedYou ? "matches" : "requests");
+    // Since the 2026-10-07 tabs: live offers sit in Matches, and a match waiting
+    // on the donee's yes/no sits in Your Requests ("offers" is now History).
+    ?? (!offersLoaded ? ""
+      : awaitingDoneeMatches.length > 0 ? "requests"
+        : offersNeedYou || matchesNeedYou ? "matches"
+          : "requests");
   // True only when the backend matching engine is actually working on something:
   // a request past admin verification, in the matching phase.
   const hasRequestInMatching = itemRequests.some(r =>
@@ -3304,10 +3029,12 @@ export default function DashboardPage() {
   // Open on whatever is waiting; then on offers for a donor with no inventory
   // yet, since landing them on an empty ledger hides the work they have in play.
   const donorSection: DonorSection = chosenDonorSection
-    ?? (donorOffersNeedYou ? "offers"
-      : donorMatchesNeedYou ? "matches"
+    // Since the 2026-10-07 tabs: a match waiting on the donor is answered in
+    // Inventory, live offers sit in Matches, and "offers" is now History.
+    ?? (reviewDonorMatches.length > 0 ? "items"
+      : donorOffersNeedYou || donorMatchesNeedYou ? "matches"
         : donorItemsNeedYou ? "items"
-          : itemListings.length === 0 && donationOffers.length > 0 ? "offers"
+          : itemListings.length === 0 && liveDonorOffers.length > 0 ? "matches"
             : "items");
 
   if (isLoading) {
