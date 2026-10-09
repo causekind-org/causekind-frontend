@@ -94,14 +94,14 @@ const TRUST_STATS = [
  * way to one IntersectionObserver reveal — the numbers are shown as they are
  * rather than counted up, which on a phone meant a React render every frame.
  */
-function TrustSafetyMobile() {
+function TrustSafetyMobile({ seamless = false }: { seamless?: boolean }) {
   const ref = useRevealOnce<HTMLElement>();
   return (
     <section
       ref={ref}
       id="trust"
       aria-label="Trust and Safety"
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] border-t border-stone-200/80 dark:border-stone-800/80 px-5`}
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-stone-200/80 dark:border-stone-800/80 "}px-5`}
     >
       <div data-reveal-item style={stagger(0)} className={m.eyebrow}>
         Trust &amp; safety
@@ -174,16 +174,19 @@ function TrustSafetyMobile() {
 export function TrustSafetySection({
   variant = "desktop",
   tone = "donor",
+  seamless = false,
 }: {
   variant?: "desktop" | "mobile";
   /** "donee" swaps in the donee page's larger pill; nothing else changes. */
   tone?: "donor" | "donee";
+  /** No line between this and the neighbouring sections (the donee page). */
+  seamless?: boolean;
 }) {
   if (variant === "desktop") return <TrustSafetyFull variant="desktop" tone={tone} />;
   return (
     <>
       <div className="md:hidden">
-        <TrustSafetyMobile />
+        <TrustSafetyMobile seamless={seamless} />
       </div>
       <div className="hidden md:block">
         <TrustSafetyFull variant="mobile" tone={tone} />
