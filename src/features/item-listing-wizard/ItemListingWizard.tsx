@@ -681,9 +681,10 @@ export function ItemListingWizard({
           </div>
 
           <div ref={scrollRef} className="flex-1 px-4 py-5">
-            {/* The photo step takes the whole area beside the left bar on desktop
-                (owner, 2026-10-08, design option A); the other steps keep 680px. */}
-            <div className={`mx-auto w-full max-w-[680px] ${step === "photos" ? "lg:max-w-[1160px]" : ""}`}>
+            {/* Every step takes the whole area beside the left bar on desktop
+                (owner, 2026-10-09; the photo step
+                alone did this since 2026-10-08, design option A). */}
+            <div className="mx-auto w-full max-w-[680px] lg:max-w-[1160px]">
               <div className="mb-4 hidden items-center justify-between lg:flex">
                 <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
                   Step {stepIndex(step) + 1} of {WIZARD_STEPS.length}
