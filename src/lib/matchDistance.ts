@@ -30,10 +30,14 @@ type DistanceFields = Pick<
   ItemMatch,
   | "listingLatitude" | "listingLongitude" | "donorLatitude" | "donorLongitude"
   | "requestLatitude" | "requestLongitude" | "doneeLatitude" | "doneeLongitude"
+  | "distanceKm"
 >;
 
 /** Straight-line km between item and need, or null when either side has no coordinates. */
 export function matchDistanceKm(m: Partial<DistanceFields>): number | null {
+  // The server's own measurement — the only one available before acceptance,
+  // when exact coordinates are withheld from both sides.
+  if (m.distanceKm != null) return m.distanceKm;
   const item = pt(m.listingLatitude, m.listingLongitude) ?? pt(m.donorLatitude, m.donorLongitude);
   const need = pt(m.requestLatitude, m.requestLongitude) ?? pt(m.doneeLatitude, m.doneeLongitude);
   if (!item || !need) return null;

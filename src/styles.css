@@ -4772,3 +4772,29 @@ div:has(.searchable-select-open) {
     transform: translate(0.25rem, -1px) scale(1.05);
   }
 }
+
+/* Donate Money hero: ripples of impact (2026-10-08). Rings spread out from
+   behind the headline, one after another. Stills under reduced motion. */
+@keyframes ck-ripple {
+  0%   { transform: translate(-50%, -50%) scale(0.15); opacity: 0; }
+  15%  { opacity: 0.55; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+.ck-ripple {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: min(1500px, 160vw);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  border: 2px solid #e3a37a;
+  animation: ck-ripple 9s cubic-bezier(.2, .6, .3, 1) infinite;
+}
+.ck-ripple-2 { animation-delay: -3s; }
+.ck-ripple-3 { animation-delay: -6s; }
+.dark .ck-ripple { border-color: rgba(224, 123, 58, 0.45); }
+@media (prefers-reduced-motion: reduce) {
+  .ck-ripple { animation: none; opacity: 0.22; transform: translate(-50%, -50%) scale(0.5); }
+  .ck-ripple-2 { transform: translate(-50%, -50%) scale(0.7); }
+  .ck-ripple-3 { transform: translate(-50%, -50%) scale(0.9); }
+}

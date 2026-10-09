@@ -184,7 +184,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
  * Match equivalent of CancelOfferDialog. Separate because the endpoints differ;
  * identical in shape and copy so the two flows feel like one product.
  */
-function CancelMatchDialog({ matchId, role, option, open, onOpenChange, onCancelled }: {
+export function CancelMatchDialog({ matchId, role, option, open, onOpenChange, onCancelled }: {
   matchId: number;
   role: HandoverRole;
   option: CancellationOption;

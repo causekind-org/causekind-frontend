@@ -167,7 +167,7 @@ export function offerSnapshotKey(model: OfferModel, opts: OfferSerializerOptions
     // Photos are uploaded through their own endpoint, not this PATCH, but a
     // change to the set still has to invalidate the snapshot — otherwise adding
     // a photo would leave the draft looking "Saved" when Review had changed.
-    model.photos.filter(p => p.status === "uploaded").map(p => p.remoteUrl),
+    model.photos.filter(p => p.status === "uploaded").map(p => p.mediaId ?? p.remoteUrl),
   ]);
 }
 
@@ -180,7 +180,7 @@ export function offerSnapshotKey(model: OfferModel, opts: OfferSerializerOptions
  */
 export function offerMaterialDigest(model: OfferModel): string {
   return JSON.stringify([
-    model.photos.filter(p => p.status === "uploaded").map(p => p.remoteUrl),
+    model.photos.filter(p => p.status === "uploaded").map(p => p.mediaId ?? p.remoteUrl),
     // The purchase plan is material: it is the substance of what the donee is
     // being asked to accept, so changing it after ticking the declarations has
     // to void them exactly as changing the item would.

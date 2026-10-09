@@ -31,7 +31,7 @@ function vm(role: "DONOR" | "DONEE", delivery: Partial<HandoverDelivery> = {}): 
     },
     confirmation: {
       donorConfirmedAt: null, donorConfirmedQty: null, doneeConfirmedAt: null,
-      doneeConfirmedQty: null, conditionRating: null, partlyConfirmed: false,
+      doneeConfirmedQty: null, conditionRating: null, partlyConfirmed: false, otpVerified: false,
     },
     methodOptions: [], certificateCode: null, certificateHref: null, closed: false,
     offeredQuantity: 5, delivery: { ...noDelivery, ...delivery },

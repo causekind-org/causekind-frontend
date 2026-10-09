@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { WizardPhotoImage } from "@/features/wizard-kit/WizardPhotoImage";
 import { DeclarationsBlock } from "@/features/wizard-kit/DeclarationsBlock";
 import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
 import type { CompatibilityCheck } from "@/lib/api";
@@ -67,7 +67,7 @@ export function OfferReviewStep({
             <ul className="flex gap-2 overflow-x-auto">
               {photos.map((p, i) => (
                 <li key={p.id} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-stone-200 dark:border-zinc-800">
-                  <Image src={p.remoteUrl as string} alt={`Photo ${i + 1}`} fill sizes="64px" className="object-cover" unoptimized />
+                  <WizardPhotoImage src={p.remoteUrl as string} alt={`Photo ${i + 1}`} className="object-cover" />
                 </li>
               ))}
             </ul>
@@ -81,7 +81,7 @@ export function OfferReviewStep({
         {/* Age is not collected on a purchase offer, so it must not be summarised
             on one either — a review row for a field the donor was never shown
             invites them to "correct" something the form will not accept. */}
-        {!purchase && <ReviewRow label="Approximate age" value={model.approximateAge} />}
+        {!purchase && <ReviewRow label="Item age" value={model.approximateAge} />}
         <ReviewRow
           label={purchase ? "Comes with" : "Accessories"}
           value={model.accessoriesIncluded}

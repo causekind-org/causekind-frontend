@@ -256,7 +256,7 @@ export function NgoDriveOffersPanel() {
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             {Object.entries({
               Offering: `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}`,
-              Condition: label(o.condition), Age: o.approximateAge, "Known defects": o.knownDefects,
+              Condition: label(o.condition), "Item age": o.approximateAge, "Known defects": o.knownDefects,
               Handover: label(o.handoverMethod), "Donor city": o.donorCity,
               Compatibility: label(o.compatibilityIndicator), "Notes for NGO": o.notesForNgo,
             }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}

@@ -38,7 +38,8 @@ import {
 } from "lucide-react";
 import { CameraCaptureDialog } from "@/components/CameraCaptureDialog";
 import { useLocations } from "@/hooks/useLocations";
-import { resolveLocationFromGPS } from "@/app/actions/locations";
+import { LocationPinPicker } from "@/components/LocationPinPicker";
+import { usePinAddress } from "@/hooks/usePinAddress";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 import { compressImageIfNeeded } from "@/lib/imageCompression";
@@ -213,11 +214,13 @@ const DECLARATIONS = [
 // which quote the failed checklist items). Order matters: document terms first
 // ("situation photos", "reference letter" are documents), then people/story
 // terms (step 2), else the need details themselves (step 1).
-function stepForRejection(reason: string): number {
+function stepForRejection(reason: string): DoneeRequestStep {
   const r = reason.toLowerCase();
-  if (/residence|selfie|photo|document|upload|bpl|proof|letter|blurry|unclear|unreadable|id card/.test(r)) return 3;
-  if (/contact|referr|doctor|hospital|story|income|household|family|dependent|alternate|situation|age|housing/.test(r)) return 2;
-  return 1;
+  // Evidence and request context share one step.
+  if (/residence|selfie|photo|document|upload|bpl|proof|letter|blurry|unclear|unreadable|id card/.test(r)) return "household-situation";
+  if (/contact|referr|doctor|hospital|story|income|household|family|dependent|alternate|situation|age|housing/.test(r)) return "household-situation";
+  if (/location|address|pin ?code|pincode|city|map/.test(r)) return "location";
+  return "need-details";
 }
 
 // ── Field wrapper ─────────────────────────────────────────────────────────────
@@ -473,16 +476,24 @@ function NewRequestForm() {
   const [emergencyNature, setEmergencyNature] = useState("");
   const [incidentDate, setIncidentDate] = useState("");
 
-  // Location (GPS mandatory, same pattern as before)
+  // Location: a map pin is mandatory (the request's own pin is what matching uses).
   const [countryIso, setCountryIso] = useState("");
   const [stateIso, setStateIso] = useState("");
   const [cityValue, setCityValue] = useState("");
   const [cityFreeText, setCityFreeText] = useState("");
   const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
   const [pincode, setPincode] = useState("");
-  const [gpsLoading, setGpsLoading] = useState(false);
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [gpsBlocked, setGpsBlocked] = useState(false);
+  /** The latest typed address could not be placed: the pin no longer matches the fields. */
+  const [typedFailed, setTypedFailed] = useState(false);
+  /** Continue / Save & exit on the location step is waiting for a lookup. */
+  const [checkingLocation, setCheckingLocation] = useState(false);
+  /** The donee's profile location: where the map starts when the request has no pin. */
+  const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapDown, setMapDown] = useState(false);
+  /** False while a ?draftId= draft is still loading, so the profile pin can't land first. */
+  const [resumeSettled, setResumeSettled] = useState(() => !searchParams.get("draftId"));
+  const pinAddress = usePinAddress();
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const noStateOptions = countryIso !== "" && stateOptions.length === 0;
   const noCityOptions = stateIso !== "" && cityOptions.length === 0;
@@ -546,10 +557,14 @@ function NewRequestForm() {
   useEffect(() => {
     if (!resumeDraftId || !user || ["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return;
     const idNum = Number(resumeDraftId);
-    if (!Number.isFinite(idNum)) return;
+    if (!Number.isFinite(idNum)) { setResumeSettled(true); return; }
+    // The URL gains ?draftId= once this form creates its draft (see ensureDraft);
+    // that draft is already on screen, so it must not be reloaded over the edits.
+    if (draftId === idNum) return;
     getMyItemRequests()
       .then((list) => {
         const r = list.find((x) => x.id === idNum);
+        setResumeSettled(true);
         if (!r || r.status !== "DRAFT") return;
         setDraftId(idNum);
         if (r.title && r.title !== "Draft") setTitle(r.title);
@@ -571,7 +586,7 @@ function NewRequestForm() {
           setRejectionNote(r.rejectionReason);
           // Jump straight to the step the rejection points at — everything else
           // is prefilled and already saved server-side; Back still works.
-          setStep(stepForRejection(r.rejectionReason) === 1 ? "need-details" : "household-situation");
+          setStep(stepForRejection(r.rejectionReason));
         }
         getMyVerificationDocuments(idNum)
           .then((docs) => {
@@ -608,7 +623,7 @@ function NewRequestForm() {
           })
           .catch(() => {});
       })
-      .catch(() => {});
+      .catch(() => setResumeSettled(true));
   }, [resumeDraftId, user]);
 
   useEffect(() => {
@@ -626,50 +641,101 @@ function NewRequestForm() {
           router.push("/dashboard");
         }
         setUserPhone(p.phone ?? "");
+        if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
       })
       .catch(() => {});
   }, [user, authLoading, router, resumeDraftId]);
 
-  function handleGPSLocation() {
-    if (!navigator.geolocation) { toast.error("Your browser doesn't support GPS location"); setGpsBlocked(true); return; }
-    setGpsLoading(true);
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const lat = pos.coords.latitude, lng = pos.coords.longitude;
-        setGpsCoords({ lat, lng });
-        setGpsBlocked(false);
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
-          const data = await res.json();
-          const addr = data.address;
-          if (addr) {
-            const cc = addr.country_code?.toUpperCase();
-            if (cc) {
-              setCountryIso(cc);
-              // Nominatim reports smaller places under town/village/suburb, not city
-              // (e.g. Virar is a town) — use the same fallback chain everywhere.
-              const cityName = addr.city || addr.town || addr.village || addr.suburb || "";
-              const { stateIso: sIso, cityValue: cVal } = await resolveLocationFromGPS(cc, addr.state, cityName);
-              if (sIso) {
-                setStateIso(sIso);
-                if (cVal) { setCityValue(cVal); setCityFreeText(""); setForceFreeTextCity(false); }
-                else { setCityValue(""); setCityFreeText(cityName); setForceFreeTextCity(true); }
-              } else if (cityName) {
-                setStateIso("");
-                setCityValue("");
-                setCityFreeText(cityName);
-                setForceFreeTextCity(true);
-              }
-              if (addr.postcode) setPincode(addr.postcode.replace(/\s/g, ""));
-            }
-          }
-          toast.success("Location updated");
-        } catch { toast.error("Could not resolve location details"); }
-        finally { setGpsLoading(false); }
-      },
-      () => { setGpsLoading(false); setGpsBlocked(true); toast.error("Location access denied. GPS is required to post a request."); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+  /**
+   * The donee placed or moved the pin. The address fields follow it (shared
+   * lookup); a field the lookup has nothing for keeps what was typed.
+   * `onlyEmpty` is for the pin we place from the profile, which must never
+   * overwrite anything.
+   */
+  const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
+    setGpsCoords({ lat, lng });
+    setTypedFailed(false);
+    setFieldErrors((prev) => (prev.gps ? { ...prev, gps: "" } : prev));
+    pinAddress.lookup(lat, lng, (found) => {
+      const keep = (current: string) => !!opts?.onlyEmpty && !!current.trim();
+      if (found.countryIso && !keep(countryIsoRef.current)) setCountryIso(found.countryIso);
+      if (found.stateIso && !keep(stateIsoRef.current)) setStateIso(found.stateIso);
+      if (found.city && !keep(cityRef.current)) {
+        if (found.cityListed) { setCityValue(found.city); setCityFreeText(""); setForceFreeTextCity(false); }
+        else { setCityValue(""); setCityFreeText(found.city); setForceFreeTextCity(true); }
+      }
+      if (found.pincode && !keep(pincodeRef.current)) setPincode(found.pincode);
+    });
+  }, [pinAddress.lookup]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const countryIsoRef = useRef(countryIso); countryIsoRef.current = countryIso;
+  const stateIsoRef = useRef(stateIso); stateIsoRef.current = stateIso;
+  const cityRef = useRef(""); cityRef.current = showCityFreeText ? cityFreeText : cityValue;
+  const pincodeRef = useRef(pincode); pincodeRef.current = pincode;
+
+  // A resumed draft's saved pin (drafts keep no country/state) fills the blanks
+  // once the draft has loaded. With no pin, nothing is dropped: the map opens on
+  // the profile location and the donee places the pin. The profile location is
+  // no longer shown or edited anywhere, so a silent pin there could be stale.
+  const pinSeeded = useRef(false);
+  useEffect(() => {
+    if (pinSeeded.current || mapDown || !resumeSettled || !gpsCoords) return;
+    pinSeeded.current = true;
+    if (!countryIso) handlePin(gpsCoords.lat, gpsCoords.lng, { onlyEmpty: true });
+  }, [gpsCoords, mapDown, resumeSettled, countryIso, handlePin]);
+
+  // Typed address → pin. `addressTyped` counts only the donee's own edits to
+  // the address fields; what a pin lookup fills in never touches it, so a pin
+  // can't re-trigger itself. With no map, an address that can't be placed
+  // falls back to the profile location; with a map the pin stays put.
+  const stateName = stateOptions.find((o) => o.value === stateIso)?.label ?? "";
+  const typedCity = showCityFreeText ? cityFreeText : cityValue;
+  const [addressTyped, setAddressTyped] = useState(0);
+  const typedAddress = () => setAddressTyped((n) => n + 1);
+  const typedPending = useRef(false);
+  const typedInFlight = useRef<Promise<boolean> | null>(null);
+  // Re-assigned every render, so a run always reads what was typed last.
+  const runTypedRef = useRef<() => Promise<boolean>>(async () => true);
+  runTypedRef.current = () => {
+    typedPending.current = false;
+    // Nothing to place yet (e.g. the state changed and cleared the city): not a failure.
+    if (!typedCity.trim() && !pincode.trim()) { setTypedFailed(false); return Promise.resolve(true); }
+    const run = (async () => {
+      const coords = await pinAddress.geocodeTyped(
+        { postalcode: pincode.trim(), city: typedCity.trim(), state: stateName, countryCode: countryIso },
+        mapDown ? profileCenter : null,
+      );
+      if (!coords) return false;
+      setGpsCoords(coords);
+      setFieldErrors((prev) => (prev.gps ? { ...prev, gps: "" } : prev));
+      return true;
+    })();
+    typedInFlight.current = run;
+    void run.then((ok) => {
+      if (typedInFlight.current !== run) return;
+      typedInFlight.current = null;
+      setTypedFailed(!ok && !mapDown);
+    });
+    return run;
+  };
+  useEffect(() => {
+    if (addressTyped === 0) return;
+    typedPending.current = true;
+    const t = setTimeout(() => { if (typedPending.current) void runTypedRef.current(); }, 1200);
+    return () => clearTimeout(t);
+  }, [addressTyped]);
+
+  /**
+   * Before leaving the location step: run a typed address still waiting for
+   * its debounce, then wait for any lookup in flight. False = the latest typed
+   * address could not be placed, so the donee stays on the step.
+   */
+  async function flushLocation(): Promise<boolean> {
+    let ok = true;
+    if (typedPending.current) ok = await runTypedRef.current();
+    else if (typedInFlight.current) ok = await typedInFlight.current;
+    await pinAddress.whenIdle();
+    return ok || mapDown;
   }
 
   function buildCityString(): string {
@@ -698,23 +764,29 @@ function NewRequestForm() {
     if (draftId) return draftId;
     const d = await createItemRequestDraft();
     setDraftId(d.id);
+    // A reload now resumes this draft (pin included) instead of starting over.
+    router.replace(`/requests/new?draftId=${d.id}`, { scroll: false });
     return d.id;
   }
 
-  function validateStep(s: number): boolean {
+  function validateStep(s: DoneeRequestStep): boolean {
     const e: Record<string, string> = {};
-    if (s === 1) {
+    if (s === "need-details") {
       if (!title.trim()) e.title = "Title is required";
       if (!category) e.category = "Category is required";
       if (!quantity || quantity < 1) e.quantity = "Quantity must be at least 1";
       if (!description || description.length < 30) e.description = `Describe your need in at least 30 characters (currently ${description.length})`;
-      const city = showCityFreeText ? cityFreeText : cityValue;
-      if (!city) e.city = "City is required";
-      if (!gpsCoords) e.gps = "GPS location is required";
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
-    if (s === 2 && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = "Describe the person you are requesting for";
-    if (s === 2) {
+    if (s === "location") {
+      const city = showCityFreeText ? cityFreeText : cityValue;
+      if (!city) e.city = "City is required";
+      if (!gpsCoords) e.gps = mapDown
+        ? "We couldn't place this address — check the city and PIN code."
+        : "Place the pin — search, use your current location, or tap the map";
+    }
+    if (s === "household-situation" && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = "Describe the person you are requesting for";
+    if (s === "household-situation") {
       const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !REUSABLE_PROFILE_DOCS.includes(t) && !isDocComplete(t));
       if (missing.length > 0) {
         // Call out an unscreened photo specifically — "1 document still missing"
@@ -725,20 +797,47 @@ function NewRequestForm() {
           : `${missing.length} required document(s) still missing`;
       }
     }
-    if (s === 4) {
+    if (s === "declarations") {
       if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted";
     }
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   }
 
+  /** Steps whose fields live on the request itself (saved by the draft PATCH). */
+  const savesRequestDraft = step === "need-details" || step === "location";
+
+  // Leaving the location step waits for the lookups first, then proceeds on the
+  // next render, so the save reads the pin and fields the lookups just set.
+  const [proceedAfterFlush, setProceedAfterFlush] = useState<null | "next" | "exit">(null);
+  async function settleLocationThen(then: "next" | "exit") {
+    setCheckingLocation(true);
+    try {
+      if (!(await flushLocation())) { toast.error("Please fix the highlighted fields"); return; }
+      setProceedAfterFlush(then);
+    } finally {
+      setCheckingLocation(false);
+    }
+  }
+  useEffect(() => {
+    if (!proceedAfterFlush) return;
+    const then = proceedAfterFlush;
+    setProceedAfterFlush(null);
+    void (then === "next" ? proceedNext() : proceedSaveExit());
+  }, [proceedAfterFlush]); // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleNext() {
-    if (!validateStep(stepNumber(step))) { toast.error("Please fix the highlighted fields"); return; }
+    if (step === "location") return settleLocationThen("next");
+    return proceedNext();
+  }
+
+  async function proceedNext() {
+    if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
     setSaving(true);
     setSaveStatus("saving");
     try {
       const id = await ensureDraft();
-      if (step === "need-details") {
+      if (savesRequestDraft) {
         await updateItemRequestDraft(id, buildPayload());
       }
       if (step === "household-situation") {
@@ -773,11 +872,16 @@ function NewRequestForm() {
    * this later".
    */
   async function handleSaveExit() {
+    if (step === "location") return settleLocationThen("exit");
+    return proceedSaveExit();
+  }
+
+  async function proceedSaveExit() {
     setSavingExit(true);
     setSaveStatus("saving");
     try {
       const id = await ensureDraft();
-      if (step === "need-details") await updateItemRequestDraft(id, buildPayload());
+      if (savesRequestDraft) await updateItemRequestDraft(id, buildPayload());
       if (step === "household-situation") await saveRequestVerificationDetails(id, verification);
       setSaveStatus("saved");
       router.push("/dashboard");
@@ -794,7 +898,7 @@ function NewRequestForm() {
     setSaveStatus("saving");
     try {
       const id = await ensureDraft();
-      if (step === "need-details") await updateItemRequestDraft(id, buildPayload());
+      if (savesRequestDraft) await updateItemRequestDraft(id, buildPayload());
       if (step === "household-situation") await saveRequestVerificationDetails(id, verification);
       setSaveStatus("saved");
     } catch {
@@ -944,7 +1048,7 @@ function NewRequestForm() {
   }
 
   async function handleSubmit() {
-    if (!validateStep(3)) { toast.error("Please fix the highlighted fields"); return; }
+    if (!validateStep("declarations")) { toast.error("Please fix the highlighted fields"); return; }
     if (!draftId) return;
     setSubmitting(true);
     try {
@@ -1095,36 +1199,49 @@ function NewRequestForm() {
         )}
       </div>
           </section>
-          <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-label="Location details">
-            <div className="space-y-3 sm:space-y-4">
-        <div className="flex items-center justify-between">
-          <p className="text-xs font-black text-stone-500 uppercase tracking-widest flex items-center gap-1.5">
-            <MapPin className="w-3.5 h-3.5 text-[var(--ck-role-accent)]" /> 4. Location Details
-          </p>
-          {/* `data-field="gps"` is the summary link's target. There is no input
-              to focus for this error — GPS is a button plus derived state — so
-              the button itself is the only sensible landing point. */}
-          <button type="button" data-field="gps" onClick={() => handleGPSLocation()} disabled={gpsLoading}
-            aria-describedby={fieldErrors.gps ? "gps-error" : undefined}
-            aria-invalid={!!fieldErrors.gps}
-            className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline disabled:opacity-50 flex items-center gap-1">
-            {gpsLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : "📍"} {gpsLoading ? "Detecting…" : "Use GPS"}
-          </button>
         </div>
-        <p className="mb-2 text-xs text-stone-500 dark:text-stone-400">{gpsCoords ? "Location added. Use GPS only if you want to update it." : "Tap Use GPS when ready. Location is needed before submitting your request."}</p>
-        {gpsBlocked && <p role="status" className="mb-3 text-xs text-red-600 dark:text-red-400">Could not get your location. You can keep filling in the form and retry Use GPS before submitting. If permission was denied, enable location for this site in your browser settings first.</p>}
+      </div>
+    </div>
+  );
+
+  // ── Step 2: Location ──────────────────────────────────────────────────────
+  // Search, "Use my current location" and the map all move the pin and fill
+  // the fields (handlePin); typing the address moves the pin (typedAddress).
+  const stepLocation = (
+    <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-label="Location details">
+      <div className="space-y-4">
+        {/* `data-field="gps"` is the error summary's target: the map has no input
+            to focus, so this wrapper is the landing point. */}
+        <div data-field="gps" tabIndex={-1} aria-describedby={fieldErrors.gps ? "gps-error" : undefined} className="space-y-2 outline-none">
+          <LocationPinPicker
+            tone="donee" pin={gpsCoords} fallbackCenter={profileCenter}
+            onPick={(lat, lng) => handlePin(lat, lng)} onUnavailable={() => setMapDown(true)}
+            showSearch showLocateButton height={300}
+            hint={pinAddress.running ? null : undefined}
+          />
+          {pinAddress.running && (
+            <p role="status" className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Looking up the address…
+            </p>
+          )}
+          {pinAddress.error && !pinAddress.running && (
+            <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">{pinAddress.error}</p>
+          )}
+          {fieldErrors.gps && <p id="gps-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.gps}</p>}
+          {typedFailed && !fieldErrors.gps && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">We couldn&apos;t place this address. Drop the pin on the map to continue.</p>}
+        </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label htmlFor="country" className="text-xs text-stone-500 dark:text-stone-400">Country</label>
             <SearchableSelect id="country" options={countryOptions} value={countryIso}
-              onChange={(iso) => { setCountryIso(iso); setStateIso(""); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); }}
+              onChange={(iso) => { setCountryIso(iso); setStateIso(""); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); typedAddress(); }}
               placeholder="Select country" searchPlaceholder="Search…" />
           </div>
           <div className="space-y-1">
             <label htmlFor="state" className="text-xs text-stone-500 dark:text-stone-400">State</label>
             {noStateOptions ? <p className="text-xs text-stone-400 italic py-2">No states listed</p> : (
               <SearchableSelect id="state" options={stateOptions} value={stateIso}
-                onChange={(iso) => { setStateIso(iso); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); }}
+                onChange={(iso) => { setStateIso(iso); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); typedAddress(); }}
                 placeholder="Select state" disabled={!countryIso} searchPlaceholder="Search…" />
             )}
           </div>
@@ -1137,7 +1254,7 @@ function NewRequestForm() {
               <Input id="city" placeholder="Enter city" data-field="city" value={cityFreeText}
                 aria-describedby={fieldErrors.city ? "city-error" : undefined}
                 aria-invalid={!!fieldErrors.city}
-                onChange={(e) => setCityFreeText(e.target.value)}
+                onChange={(e) => { setCityFreeText(e.target.value); typedAddress(); }}
                 className={fieldErrors.city ? "border-[var(--ck-role-accent)]" : ""} />
             ) : (
               // SearchableSelect takes a fixed prop list with no rest spread, so
@@ -1145,36 +1262,27 @@ function NewRequestForm() {
               // programmatically focusable — focus() and scrollIntoView both
               // work, and it stays out of the Tab order.
               <div data-field="city" tabIndex={-1} className="outline-none">
-                <SearchableSelect id="city" options={cityOptions} value={cityValue} onChange={setCityValue}
+                <SearchableSelect id="city" options={cityOptions} value={cityValue} onChange={(v) => { setCityValue(v); typedAddress(); }}
                   placeholder="Select city" disabled={!stateIso && !noStateOptions} searchPlaceholder="Search…" />
               </div>
             )}
           </div>
-        <WizardField label="PIN Code">
-          {({ id, describedBy }) => (
-            <Input id={id} name="pincode" aria-describedby={describedBy} placeholder="e.g. 411001"
-              value={pincode} onChange={(e) => setPincode(e.target.value)} maxLength={10} className="h-11 w-full" />
-          )}
-        </WizardField>
+          <WizardField label="PIN Code">
+            {({ id, describedBy }) => (
+              <Input id={id} name="pincode" aria-describedby={describedBy} placeholder="e.g. 411001"
+                value={pincode} onChange={(e) => { setPincode(e.target.value); typedAddress(); }} maxLength={10} className="h-11 w-full" />
+            )}
+          </WizardField>
         </div>
         {fieldErrors.city && <p id="city-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.city}</p>}
-        {/* The GPS error had no display at all — validateStep could set it and
-            the donee would only see "Please fix the highlighted fields" with
-            nothing highlighted. */}
-        {fieldErrors.gps && <p id="gps-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.gps}</p>}
-
       </div>
-          </section>
-        </div>
-      </div>
-    </div>
+    </section>
   );
 
-  const isDetailsLayout = step === "need-details" || step === "household-situation";
+  const isDetailsLayout = step === "need-details" || step === "location" || step === "household-situation";
 
   const step2 = (
     <div className="space-y-5">
-      <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-[#1e3a60] dark:border-slate-700 dark:bg-slate-900 dark:text-blue-200">Your household details and identity documents are ready in your profile. <button type="button" className="font-bold underline" onClick={async () => { try { const id = await ensureDraft(); await saveRequestVerificationDetails(id, verification); router.push(`/profile/need-details?next=${encodeURIComponent(`/requests/new?draftId=${id}`)}`); } catch { toast.error("Could not save your request. Please try again."); } }}>Review profile</button></div>
       <fieldset className="space-y-3"><legend className="text-sm font-bold">Who is this request for?</legend><div className="flex flex-wrap gap-4">{[{value:false,label:"Myself"},{value:true,label:"Someone else"}].map(o => <label key={o.label} className="flex items-center gap-2 text-sm"><input type="radio" name="beneficiary" checked={Boolean(verification.requestingForSomeoneElse) === o.value} onChange={() => setVerification(v => ({...v, requestingForSomeoneElse:o.value, beneficiaryDetails:"",reasonCannotBuy:"",detailedStory:""}))} />{o.label}</label>)}</div></fieldset>
       {verification.requestingForSomeoneElse && <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
         <WizardField label="Who is this item for, and what is their situation?" required error={fieldErrors.beneficiaryDetails}>{({id,describedBy,invalid}) => <Textarea id={id} name="beneficiaryDetails" aria-describedby={describedBy} aria-invalid={invalid} value={verification.beneficiaryDetails || ""} maxLength={500} onChange={e => setV("beneficiaryDetails",e.target.value)} />}</WizardField>
@@ -1428,7 +1536,7 @@ function NewRequestForm() {
                     {step === "household-situation" ? "Request context & evidence" : STEP_LABELS[step]}
                     {step === "household-situation" && <span className="ml-3 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-1 align-middle text-[10px] font-semibold text-[#1e3a60] dark:border-slate-700 dark:bg-slate-800 dark:text-blue-200">{TIER_LABELS[tier]}</span>}
                   </h2>
-                  <p className="mb-6 mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{step === "household-situation" ? "Step 2 of 3 · Only details about this request" : STEP_INTROS[step]}</p>
+                  <p className="mb-6 mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{step === "household-situation" ? `Step ${stepNumber(step)} of ${DONEE_REQUEST_STEPS.length} · Only details about this request` : STEP_INTROS[step]}</p>
 
                   <div className="mb-3 empty:hidden">
                     <StepErrorSummary
@@ -1438,6 +1546,7 @@ function NewRequestForm() {
                   </div>
 
                   {step === "need-details" && step1}
+                  {step === "location" && stepLocation}
                   {step === "household-situation" && <div className="space-y-6">{step2}{step3}</div>}
                   {step === "review" && (
                     <DoneeReviewStep
@@ -1478,12 +1587,12 @@ function NewRequestForm() {
               <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-[#1e3a60] px-5 text-xs font-bold text-white transition-colors hover:bg-[#2d5a96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50">{saving ? "Saving…" : "Continue to Step 2 →"}</button>
             </div>
           </div>
-        ) : step === "household-situation" ? (
+        ) : step === "location" || step === "household-situation" ? (
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10">
-            <button type="button" onClick={handleBack} disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 1</button>
+            <button type="button" onClick={handleBack} disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step {stepNumber(step) - 1}</button>
             <div className="flex flex-wrap gap-2">
 
-              <button type="button" onClick={() => void handleNext()} disabled={saving || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => void handleNext()} disabled={saving || checkingLocation || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{checkingLocation ? "Checking location…" : saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
             </div>
           </div>
         ) : <WizardNavigation

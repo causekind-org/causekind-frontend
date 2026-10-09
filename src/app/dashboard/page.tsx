@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "@/components/AppLink";
+import { WithdrawFlowButton } from "@/components/matches/WithdrawFlowButton";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import Image from "next/image";
 import { toast } from "@/lib/toast";
@@ -20,6 +21,8 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
+import { DoneeMatchReviewCard } from "@/components/matches/DoneeMatchReviewCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isNgoRole } from "@/lib/isNgoRole";
@@ -685,11 +688,11 @@ function HideWithdrawnRequestButton({ requestId, onHidden }: { requestId: number
       label="Delete"
       busyLabel="Removing"
       icon={<Trash2 className="w-3 h-3 mr-1" />}
-      title="Delete this withdrawn request?"
+      title="Delete this request?"
       description="This request will be removed from your dashboard. CauseKind may retain its history for safety, support, and auditing."
       confirmLabel="Delete request"
       cancelLabel="Keep request"
-      successMessage="Withdrawn request removed."
+      successMessage="Request removed from your dashboard."
       errorMessage="Could not remove this request — please try again"
       onConfirm={async () => { await hideWithdrawnRequest(requestId); onHidden(); }}
     />
@@ -1375,7 +1378,13 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
           <div className="space-y-3">
             <p className="text-3xs font-black uppercase tracking-wider text-stone-400">Completed</p>
             {completed.map(o => (
-              <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
+              <DoneRow
+                key={o.id}
+                title={o.requestTitle ?? "Donation"}
+                sub={["Completed", doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · ")}
+                thumb={o.media?.[0]?.mediaUrl}
+                href={`/certificate?offerId=${o.id}`}
+              />
             ))}
           </div>
         )}
@@ -1487,6 +1496,222 @@ function FulfilledListingCard({
   );
 }
 
+/**
+ * One finished donation as a single slim row (owner, 2026-10-08: History looked
+ * too big). Thumbnail, title, when, and a small Certificate link — the full
+ * all-green progress card said nothing a finished donation needs to say.
+ */
+function DoneRow({ title, sub, thumb, href, tag, photos }: {
+  title: string;
+  sub: string;
+  thumb?: string | null;
+  href?: string | null;
+  /** How the donation happened, e.g. "Your offer" or "Matched for you". */
+  tag?: string;
+  /** Every photo of the item; the thumbnail opens them (2026-10-08). */
+  photos?: string[];
+}) {
+  const all = (photos?.length ? photos : thumb ? [thumb] : []).filter(Boolean) as string[];
+  const [viewing, setViewing] = useState<number | null>(null);
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-stone-100 px-3 py-2 dark:border-zinc-800">
+      <button
+        type="button"
+        disabled={!all.length}
+        onClick={() => setViewing(0)}
+        aria-label={all.length ? `View ${all.length} photo${all.length === 1 ? "" : "s"} of ${title}` : undefined}
+        className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-stone-100 enabled:cursor-zoom-in dark:bg-zinc-800"
+      >
+        {all[0] ? (
+          <Image src={all[0]} alt="" fill sizes="36px" className="object-cover" unoptimized />
+        ) : (
+          <PackageCheck className="absolute inset-0 m-auto h-4 w-4 text-stone-400" aria-hidden />
+        )}
+        {all.length > 1 && (
+          <span className="absolute bottom-0 right-0 rounded-tl-md bg-black/60 px-1 text-[9px] font-bold leading-tight text-white">{all.length}</span>
+        )}
+      </button>
+      {viewing !== null && all[viewing] && (
+        <div
+          role="dialog" aria-modal="true" aria-label={`Photos of ${title}`}
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setViewing(null)}
+          onKeyDown={e => {
+            if (e.key === "Escape") setViewing(null);
+            if (e.key === "ArrowRight") setViewing(v => v === null ? v : (v + 1) % all.length);
+            if (e.key === "ArrowLeft") setViewing(v => v === null ? v : (v - 1 + all.length) % all.length);
+          }}
+          tabIndex={-1}
+          ref={el => el?.focus()}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
+          <img src={all[viewing]} alt="" className="max-h-[85vh] max-w-[92vw] rounded-xl object-contain" onClick={e => e.stopPropagation()} />
+          <button type="button" onClick={() => setViewing(null)} aria-label="Close"
+            className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/25">✕</button>
+          {all.length > 1 && (
+            <>
+              <button type="button" aria-label="Previous photo"
+                onClick={e => { e.stopPropagation(); setViewing(v => v === null ? v : (v - 1 + all.length) % all.length); }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg font-bold text-white hover:bg-white/25">‹</button>
+              <button type="button" aria-label="Next photo"
+                onClick={e => { e.stopPropagation(); setViewing(v => v === null ? v : (v + 1) % all.length); }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg font-bold text-white hover:bg-white/25">›</button>
+              <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/80">{viewing + 1} / {all.length}</span>
+            </>
+          )}
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="flex min-w-0 items-center gap-2 text-xs font-semibold text-stone-800 dark:text-stone-200">
+          <span className="truncate">{title}</span>
+          {tag && (
+            <span className="shrink-0 rounded-full bg-stone-100 px-2 py-0.5 text-3xs font-bold text-stone-500 dark:bg-zinc-800 dark:text-stone-400">{tag}</span>
+          )}
+        </p>
+        <p className="truncate text-2xs text-stone-400">{sub}</p>
+      </div>
+      {href && (
+        <Link href={href} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-bold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400">
+          <Award className="h-3 w-3" aria-hidden /> Certificate
+        </Link>
+      )}
+    </div>
+  );
+}
+
+const doneDate = (iso?: string | null) => {
+  const ms = iso ? Date.parse(iso) : NaN;
+  return Number.isNaN(ms) ? "" : new Date(ms).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+
+/**
+ * The donor's History card (owner, 2026-10-08): finished offers and finished
+ * matches in ONE list, newest first, each tagged with how it happened. Offers
+ * that didn't go ahead sit underneath, collapsed.
+ */
+function DonorHistorySection({ offers, fulfilledItems, matches, onChanged }: {
+  offers: DonationOffer[];
+  fulfilledItems: ItemListing[];
+  matches: ItemMatch[];
+  onChanged: () => void;
+}) {
+  const closed = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status));
+  const rows = useMemo(() => {
+    const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => ({
+      key: `o${o.id}`,
+      at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
+      title: o.requestTitle ?? "Donation",
+      tag: "Your offer",
+      sub: ["Completed", doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · "),
+      thumb: o.media?.[0]?.mediaUrl ?? null,
+      photos: (o.media ?? []).map(m => m.mediaUrl),
+      href: `/certificate?offerId=${o.id}`,
+    }));
+    const fromMatches = fulfilledItems.map(item => {
+      const match = findMatchForListing(item, matches);
+      const when = getListingCompletionDate(item, match);
+      return {
+        key: `l${item.id}`,
+        at: Date.parse(when ?? "") || 0,
+        title: item.title,
+        tag: "Matched for you",
+        sub: ["Donated", doneDate(when), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · "),
+        thumb: item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null),
+        photos: item.photoUrls?.length ? item.photoUrls : (item.imageUrls ? item.imageUrls.split("|") : []),
+        href: isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null,
+      };
+    });
+    return [...fromOffers, ...fromMatches].sort((a, b) => b.at - a.at);
+  }, [offers, fulfilledItems, matches]);
+
+  return (
+    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
+      <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
+        <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+          <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation history
+        </CardTitle>
+        <p className="text-xs text-stone-400 mt-0.5">Everything you have given, newest first</p>
+      </CardHeader>
+      <CardContent className="space-y-2 pt-3 sm:pt-4">
+        {rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-stone-500">No completed donations yet.</p>
+        ) : (
+          rows.map(({ key, ...r }) => <DoneRow key={key} {...r} />)
+        )}
+        {closed.length > 0 && (
+          <details className="group pt-2">
+            <summary className="flex cursor-pointer items-center gap-1 text-3xs font-black uppercase tracking-wider text-stone-400">
+              <span className="inline-block transition-transform group-open:rotate-90">▶</span>
+              Didn&apos;t go ahead ({closed.length})
+            </summary>
+            <div className="mt-2 space-y-2">
+              {closed.map(o => <ClosedOfferCard key={o.id} offer={o} onChanged={onChanged} />)}
+            </div>
+          </details>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * The donee's History card (owner, 2026-10-08): everything received, from
+ * donors' offers and from matches, in ONE newest-first list, each tagged with
+ * how it came. A request filled twice shows twice, with what each delivered.
+ * The old split hid any request that also had a completed offer from the
+ * matched card, so a match-received item disappeared from history.
+ */
+function DoneeHistorySection({ offers, matches }: {
+  offers: DonationOffer[];
+  matches: ItemMatch[];
+}) {
+  const rows = useMemo(() => {
+    const fromOffers = offers.filter(o => o.status === "COMPLETED" || o.status === "ISSUE_WINDOW_OPEN").map(o => {
+      const qty = o.receivedQuantity ?? o.itemDetails?.quantity ?? null;
+      return {
+        key: `o${o.id}`,
+        at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
+        title: o.requestTitle || "Donation",
+        tag: "Donor's offer",
+        sub: ["Received", doneDate(o.closedAt ?? o.createdAt), qty != null ? `${qty} received` : "", `for “${o.requestTitle}”`].filter(Boolean).join(" · "),
+        thumb: o.media?.[0]?.mediaUrl ?? null,
+        photos: (o.media ?? []).map(m => m.mediaUrl),
+      };
+    });
+    const fromMatches = matches.filter(m => MATCH_RECEIVED_STATUSES.has(m.status)).map(m => {
+      const qty = m.doneeConfirmedQty ?? m.allocatedQuantity ?? null;
+      return {
+        key: `m${m.id}`,
+        at: Date.parse(m.doneeConfirmedAt ?? m.closedAt ?? m.createdAt ?? "") || 0,
+        title: m.listingTitle || m.requestTitle || "Donation",
+        tag: "Matched for you",
+        sub: ["Received", doneDate(m.doneeConfirmedAt ?? m.closedAt), qty != null ? `${qty} received` : "", m.requestTitle ? `for “${m.requestTitle}”` : ""].filter(Boolean).join(" · "),
+        thumb: m.listingPhotoUrls?.[0] ?? m.donorImages?.[0] ?? null,
+        photos: m.listingPhotoUrls?.length ? m.listingPhotoUrls : (m.donorImages ?? []),
+      };
+    });
+    return [...fromOffers, ...fromMatches].sort((a, b) => b.at - a.at);
+  }, [offers, matches]);
+
+  return (
+    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
+      <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
+        <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+          <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donations received
+        </CardTitle>
+        <p className="text-xs text-stone-400 mt-0.5">Everything you have received, newest first</p>
+      </CardHeader>
+      <CardContent className="space-y-2 pt-3 sm:pt-4">
+        {rows.length === 0
+          ? <p className="py-6 text-center text-sm text-stone-500">Nothing received yet.</p>
+          : rows.map(({ key, ...r }) => <DoneRow key={key} {...r} />)}
+      </CardContent>
+    </Card>
+  );
+}
+
 function MatchedDonationsSection({
   fulfilledItems,
   matches,
@@ -1530,8 +1755,14 @@ function MatchedDonationsSection({
           <p className="text-sm text-center py-6 text-stone-500">No fulfilled items yet.</p>
         ) : (
           <div className="space-y-3">
-            {sortedItemsWithMatches.slice(0, 1).map(({ item, match }) => (
-              <FulfilledListingCard key={item.id} listing={item} match={match} />
+            {sortedItemsWithMatches.slice(0, 5).map(({ item, match }) => (
+              <DoneRow
+                key={item.id}
+                title={item.title}
+                sub={["Donated", doneDate(getListingCompletionDate(item, match)), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · ")}
+                thumb={item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null)}
+                href={isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null}
+              />
             ))}
           </div>
         )}
@@ -1665,8 +1896,13 @@ function DoneeMatchedDonationsSection({
           <p className="text-sm text-center py-6 text-stone-500">No fulfilled items yet.</p>
         ) : (
           <div className="space-y-3">
-            {sortedItemsWithMatches.slice(0, 1).map(({ request, match }) => (
-              <FulfilledRequestMatchCard key={request.id} request={request} match={match} />
+            {sortedItemsWithMatches.slice(0, 5).map(({ request, match, completionTime }) => (
+              <DoneRow
+                key={request.id}
+                title={request.title}
+                sub={["Received", completionTime ? doneDate(new Date(completionTime).toISOString()) : "", match?.listingTitle ?? ""].filter(Boolean).join(" · ")}
+                thumb={request.imageUrl}
+              />
             ))}
           </div>
         )}
@@ -1872,6 +2108,7 @@ function PastMatchesStrip({ matches, viewer = "DONEE", defaultOpen = false }: {
                     <TranslatedText text={matchItemLabel(m)} />
                   </p>
                   <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+                  <WithdrawFlowButton kind="match" id={m.id} role={viewer === "DONOR" ? "DONOR" : "DONEE"} className="!min-h-[28px] !px-2" />
                 </div>
                 <p className="mt-1 truncate text-2xs text-stone-400">
                   For: <TranslatedText text={m.requestTitle || (viewer === "DONOR" ? "a request" : "your request")} />
@@ -2115,6 +2352,16 @@ function DoneeDashboard({
   const activeOffers = incomingOffers.filter(o => !isPastOffer(o, now));
   const pastOffers = incomingOffers.filter(o => isPastOffer(o, now));
   const offersNeedYou = activeOffers.some(o => OFFER_NEEDS_DONEE.has(o.status));
+  // Owner, 2026-10-07: Your Requests holds requests not yet in a live flow (plus
+  // matches waiting on the donee's yes/no); Matches holds accepted matches and
+  // live offers; History holds the finished ones.
+  const awaitingDoneeMatches = activeMatches.filter(m => m.status === "AWAITING_DONEE_CONFIRMATION");
+  const flowMatches = activeMatches.filter(m => m.status !== "AWAITING_DONEE_CONFIRMATION");
+  const inFlowRequestIds = new Set(
+    [...flowMatches.map(m => m.requestId), ...activeOffers.map(o => o.requestId)]
+      .filter((id): id is number => id != null),
+  );
+  const notInFlow = (r: { id: number }) => !inFlowRequestIds.has(r.id);
   const matchesNeedYou = activeMatches.some(m => MATCH_NEEDS_DONEE.has(m.status));
   // Open on whatever is waiting on the donee; otherwise on their requests. Empty
   // until offers have loaded, so the tab doesn't jump once they arrive.
@@ -2139,7 +2386,7 @@ function DoneeDashboard({
         <div className="pointer-events-none absolute -top-20 right-0 w-96 h-96 rounded-full bg-[var(--ck-role-highlight)]/6 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--ck-role-highlight)]/25 to-transparent" />
 
-        <div className="mx-auto max-w-5xl relative z-10">
+        <div className="mx-auto max-w-7xl relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-3 min-w-0">
               <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-bold uppercase tracking-wider">
@@ -2178,7 +2425,7 @@ function DoneeDashboard({
         </div>
       </div>
 
-      <div className="mx-auto max-w-5xl px-4 py-5 sm:py-8 space-y-4 sm:space-y-6">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:py-8 space-y-4 sm:space-y-6">
 
         {/* Anything support has asked this user for. Donees take the early return
             above and never reach the donor branch's copy of this card, so it has
@@ -2212,11 +2459,11 @@ function DoneeDashboard({
             className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
           >
             <SectionTab value="requests" icon={Package} label="Your Requests" shortLabel="Requests"
-              count={visibleRequests.length} attention={false} tour="requests-list" role="donee" />
+              count={visibleRequests.filter(notInFlow).length} attention={awaitingDoneeMatches.length > 0} tour="requests-list" role="donee" />
             <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
-              count={activeMatches.length} attention={matchesNeedYou} tour="matches" role="donee" />
-            <SectionTab value="offers" icon={Heart} label="Offers Received" shortLabel="Offers"
-              count={activeOffers.length} attention={offersNeedYou} tour="offers" role="donee" />
+              count={flowMatches.length + activeOffers.length} attention={flowMatches.some(m => MATCH_NEEDS_DONEE.has(m.status)) || offersNeedYou} tour="matches" role="donee" />
+            <SectionTab value="offers" icon={Heart} label="History" shortLabel="History"
+              count={pastOffers.length + pastMatches.length} attention={false} tour="offers" role="donee" />
           </TabsList>
 
           {section === "" && (
@@ -2228,6 +2475,137 @@ function DoneeDashboard({
 
           {/* ── Incoming Donation Offers (Donor Flow 2) ── */}
           <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
+                {/* Finished offers — slim grouped history instead of full cards:
+                  ones that fell through, and donations completed over a week ago */}
+            <DoneeHistorySection offers={incomingOffers} matches={doneeMatches} />
+            {/* What didn't go ahead, collapsed underneath. */}
+            {pastOffers.some(o => o.status !== "COMPLETED") && (
+              <PastOffersStrip
+                offers={pastOffers.filter(o => o.status !== "COMPLETED")}
+                activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
+              />
+            )}
+            {pastMatches.some(m => !MATCH_RECEIVED_STATUSES.has(m.status)) && (
+              <PastMatchesStrip matches={pastMatches.filter(m => !MATCH_RECEIVED_STATUSES.has(m.status))} />
+            )}
+          </TabsContent>
+
+          {/* Your requests — each one drawn as a journey down the pipeline */}
+          <TabsContent value="requests" className="mt-0">
+          {awaitingDoneeMatches.length > 0 && (
+          <div className="mb-5 space-y-4">
+          {/* Owner, 2026-10-07: items waiting for the donee's yes/no sit inside Your
+              Requests; once accepted the flow moves to Matches. */}
+          {awaitingDoneeMatches.map(m => (
+            <DoneeMatchReviewCard
+              key={m.id}
+              match={m}
+              busy={matchActionLoading === m.id}
+              onAccept={() => handleDoneeAccept(m.id)}
+              onDecline={() => handleDoneeReject(m.id)}
+            />
+          ))}
+          </div>
+          )}
+            <section>
+              <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
+                <div>
+                  <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
+                  <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Link href="/dashboard/history" className="text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 dark:border-zinc-700">
+                    <History className="w-3.5 h-3.5" /> History
+                  </Link>
+                  <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1">
+                    <Plus className="w-3.5 h-3.5" /> New need
+                  </NewRequestLink>
+                </div>
+              </div>
+
+              {itemRequests.length === 0 ? (
+                <div className="py-8 sm:py-14 text-center space-y-3">
+                  <div className="w-11 sm:w-14 h-11 sm:h-14 bg-[#1e3a60]/10 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
+                    <Heart className="w-6 h-6 text-[#1e3a60]" />
+                  </div>
+                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
+                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</p>
+                  <NewRequestLink href="/requests/new">
+                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
+                  </NewRequestLink>
+                </div>
+              ) : (
+                <DashboardFilterChips
+                  label="Filter your requests"
+                  options={requestOptions}
+                  value={requestFilter}
+                  onChange={setRequestFilter}
+                  tone="donee"
+                  idPrefix="request-filter"
+                />
+              )}
+
+              {itemRequests.length === 0 ? null : requestFilter !== "all" ? (
+                filteredRequests.length === 0 ? (
+                  <div className="py-7 text-center space-y-2">
+                    <p className="text-sm text-stone-400">
+                      Nothing under &ldquo;{requestOptions.find(o => o.key === requestFilter)?.label}&rdquo; right now.
+                    </p>
+                    <button type="button" onClick={() => setRequestFilter("all")}
+                      className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">
+                      Show all requests
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4">
+                    <AnimatePresence initial={false}>
+                      {filteredRequests.map((r, i) => (
+                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )
+              ) : (
+                <div className="space-y-6 mt-4">
+                  {([
+                    ["Pending", requestGroups.pending.filter(notInFlow)],
+                    ["Partially Fulfilled", requestGroups.partial.filter(notInFlow)],
+                    ["Closed", requestGroups.closed],
+                  ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
+                    <div key={label}>
+                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
+                      <AnimatePresence initial={false}>
+                        {group.map((r, i) => (
+                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+
+                  {/* The per-delivery breakdown (who gave what, when) lives in History. */}
+                  {fulfilledRequests.length > 0 && (
+                    <Link href="/dashboard/history" className="flex items-center gap-2 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
+                      <CheckCircle2 className="w-4 h-4 shrink-0" />
+                      <span>See who delivered what for your fulfilled request{fulfilledRequests.length !== 1 ? "s" : ""} in History</span>
+                      <span className="ml-auto" aria-hidden>&rarr;</span>
+                    </Link>
+                  )}
+                </div>
+              )}
+            </section>
+          </TabsContent>
+
+          {/* Matches — live ones first, finished ones in the history below */}
+          <TabsContent value="matches" className="mt-0">
+            <section>
+              <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
+                <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
+                <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
+              </div>
+              <div className="pt-3.5 sm:pt-5">
+                {/* Live donation offers are flows in progress too (owner, 2026-10-07). */}
+                {activeOffers.length > 0 && (
+                <div className="mb-4">
             <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
               <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
               <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
@@ -2460,6 +2838,7 @@ function DoneeDashboard({
                             Open Handover Hub →
                           </Link>
                         )}
+                        <WithdrawFlowButton kind="offer" id={offer.id} role="DONEE" className="w-full" />
                         {isIssueWindow && (
                           <div className="space-y-1.5">
                             <ShortDeliveryNote offer={offer} />
@@ -2524,124 +2903,12 @@ function DoneeDashboard({
                     );
                   })}
 
-                {/* Finished offers — slim grouped history instead of full cards:
-                  ones that fell through, and donations completed over a week ago */}
-                {pastOffers.length > 0 && (
-                  <PastOffersStrip
-                    offers={pastOffers}
-                    activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
-                    defaultOpen={activeOffers.length === 0}
-                  />
-                )}
               </CardContent>
             </Card>
 
-            <DoneeMatchedDonationsSection
-              fulfilledRequests={fulfilledRequests}
-              matches={doneeMatches}
-              offers={incomingOffers}
-            />
-          </TabsContent>
-
-          {/* Your requests — each one drawn as a journey down the pipeline */}
-          <TabsContent value="requests" className="mt-0">
-            <section>
-              <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
-                <div>
-                  <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
-                  <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <Link href="/dashboard/history" className="text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 dark:border-zinc-700">
-                    <History className="w-3.5 h-3.5" /> History
-                  </Link>
-                  <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1">
-                    <Plus className="w-3.5 h-3.5" /> New need
-                  </NewRequestLink>
-                </div>
-              </div>
-
-              {itemRequests.length === 0 ? (
-                <div className="py-8 sm:py-14 text-center space-y-3">
-                  <div className="w-11 sm:w-14 h-11 sm:h-14 bg-[#1e3a60]/10 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
-                    <Heart className="w-6 h-6 text-[#1e3a60]" />
-                  </div>
-                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
-                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</p>
-                  <NewRequestLink href="/requests/new">
-                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
-                  </NewRequestLink>
-                </div>
-              ) : (
-                <DashboardFilterChips
-                  label="Filter your requests"
-                  options={requestOptions}
-                  value={requestFilter}
-                  onChange={setRequestFilter}
-                  tone="donee"
-                  idPrefix="request-filter"
-                />
-              )}
-
-              {itemRequests.length === 0 ? null : requestFilter !== "all" ? (
-                filteredRequests.length === 0 ? (
-                  <div className="py-7 text-center space-y-2">
-                    <p className="text-sm text-stone-400">
-                      Nothing under &ldquo;{requestOptions.find(o => o.key === requestFilter)?.label}&rdquo; right now.
-                    </p>
-                    <button type="button" onClick={() => setRequestFilter("all")}
-                      className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">
-                      Show all requests
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-4">
-                    <AnimatePresence initial={false}>
-                      {filteredRequests.map((r, i) => (
-                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
-                      ))}
-                    </AnimatePresence>
-                  </div>
-                )
-              ) : (
-                <div className="space-y-6 mt-4">
-                  {([
-                    ["Pending", requestGroups.pending],
-                    ["Partially Fulfilled", requestGroups.partial],
-                    ["Closed", requestGroups.closed],
-                  ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
-                    <div key={label}>
-                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
-                      <AnimatePresence initial={false}>
-                        {group.map((r, i) => (
-                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
-                        ))}
-                      </AnimatePresence>
-                    </div>
-                  ))}
-
-                  {/* The per-delivery breakdown (who gave what, when) lives in History. */}
-                  {fulfilledRequests.length > 0 && (
-                    <Link href="/dashboard/history" className="flex items-center gap-2 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
-                      <CheckCircle2 className="w-4 h-4 shrink-0" />
-                      <span>See who delivered what for your fulfilled request{fulfilledRequests.length !== 1 ? "s" : ""} in History</span>
-                      <span className="ml-auto" aria-hidden>&rarr;</span>
-                    </Link>
-                  )}
-                </div>
-              )}
-            </section>
-          </TabsContent>
-
-          {/* Matches — live ones first, finished ones in the history below */}
-          <TabsContent value="matches" className="mt-0">
-            <section>
-              <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
-                <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
-                <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
-              </div>
-              <div className="pt-3.5 sm:pt-5">
-                {activeMatches.length === 0 ? (
+                )}
+                {flowMatches.length === 0 && activeOffers.length === 0 ? (
                   /* Truthful empty state: the sweep only spins when the matching engine
                      is actually working (a request is verified and in the matching
                      phase). Drafts/pending requests get honest guidance instead. */
@@ -2682,7 +2949,7 @@ function DoneeDashboard({
                   </div>
                 ) : (
                   <div className="divide-y dark:divide-zinc-800 space-y-3">
-                    {activeMatches.map(m => {
+                    {flowMatches.map(m => {
                       const badge = getFulfilmentStatusBadge(m.status);
                       return (
                         <div key={m.id} className="pt-3 first:pt-0 space-y-2 group px-1 rounded-xl hover:bg-stone-50 dark:hover:bg-zinc-800/40 transition-all pb-1">
@@ -2711,27 +2978,6 @@ function DoneeDashboard({
                               </div>
                             </div>
                           )}
-                          {m.status === "AWAITING_DONEE_CONFIRMATION" && (
-                            <div className="flex gap-2 pt-1">
-                              <Button
-                                size="sm"
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg"
-                                disabled={matchActionLoading === m.id}
-                                onClick={() => handleDoneeAccept(m.id)}
-                              >
-                                {matchActionLoading === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Check className="w-3 h-3 mr-1" />Accept</>}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1 border-red-300 text-red-600 hover:bg-red-50 text-xs font-bold rounded-lg"
-                                disabled={matchActionLoading === m.id}
-                                onClick={() => handleDoneeReject(m.id)}
-                              >
-                                {matchActionLoading === m.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><X className="w-3 h-3 mr-1" />Decline</>}
-                              </Button>
-                            </div>
-                          )}
                           {HANDOVER_HUB_STATUSES.has(m.status) && (
                             <div className="flex gap-2 pt-1">
                               <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
@@ -2745,13 +2991,11 @@ function DoneeDashboard({
                               </button>
                             </div>
                           )}
+                          <WithdrawFlowButton kind="match" id={m.id} role="DONEE" className="w-full" />
                         </div>
                       );
                     })}
                   </div>
-                )}
-                {pastMatches.length > 0 && (
-                  <PastMatchesStrip matches={pastMatches} defaultOpen={activeMatches.length === 0} />
                 )}
               </div>
             </section>
@@ -2948,6 +3192,9 @@ export default function DashboardPage() {
       }).catch(() => { }),
       getMyItemListings().then(setItemListings).catch(() => setItemListings([])),
       getMyItemRequests().then(setItemRequests).catch(() => setItemRequests([])),
+      // Restored 2026-10-07: dropped by the merge resolution in e635861, so the
+      // Matches tab stayed at 0 until a live update happened to arrive.
+      getMyMatches().then(setMatches).catch(() => setMatches([])),
       Promise.all([
         getMyDonationOffers().catch(() => []),
         getMyNgoDriveOffers().catch(() => [])
@@ -3019,6 +3266,13 @@ export default function DashboardPage() {
   // for the section's own history strip, exactly as on the donee side.
   const activeDonorMatches = donorMatches.filter(m => !MATCH_HISTORY_STATUSES.has(m.status));
   const pastDonorMatches = donorMatches.filter(m => MATCH_HISTORY_STATUSES.has(m.status));
+  // Owner, 2026-10-07: Inventory holds items not yet in a live flow (plus the
+  // matches waiting on the donor's yes/no); Matches holds accepted matches and
+  // live offers; History holds the finished ones. A withdrawn match releases the
+  // listing server-side, so the item drops back into Inventory by itself.
+  const reviewDonorMatches = activeDonorMatches.filter(m => m.status === "DONOR_REVIEW");
+  const flowDonorMatches = activeDonorMatches.filter(m => m.status !== "DONOR_REVIEW");
+  const inFlowListingIds = new Set(flowDonorMatches.map(m => m.listingId).filter((id): id is number => id != null));
   // Each listing's live matches — drives the "Matched" filter and the
   // matched-needs strip on its inventory row.
   const liveMatchesByListing = new Map<number, ItemMatch[]>();
@@ -3209,29 +3463,62 @@ export default function DashboardPage() {
                   className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
                 >
                   <SectionTab value="items" icon={Package} label="Your Inventory" shortLabel="Inventory"
-                    count={visibleDonorListings.length} attention={donorItemsNeedYou} tour="inventory" role="donor" />
+                    count={visibleDonorListings.filter(l => !inFlowListingIds.has(l.id)).length} attention={donorItemsNeedYou || reviewDonorMatches.length > 0} tour="inventory" role="donor" />
                   <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
-                    count={activeDonorMatches.length} attention={donorMatchesNeedYou} tour="matches" role="donor" />
-                  <SectionTab value="offers" icon={Heart} label="Your Offers" shortLabel="Offers"
-                    count={liveDonorOffers.length} attention={donorOffersNeedYou} tour="offers" role="donor" />
+                    count={flowDonorMatches.length + liveDonorOffers.length} attention={donorOffersNeedYou} tour="matches" role="donor" />
+                  <SectionTab value="offers" icon={Heart} label="History" shortLabel="History"
+                    count={pastDonorMatches.length + donationOffers.filter(o => !isLiveDonorOffer(o)).length} attention={false} tour="offers" role="donor" />
                 </TabsList>
 
                 {/* Donor Flow 2 — Offer Tracker */}
                 <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
-                  <DonorOfferSection
-                    offers={donationOffers}
-                    onReconfirm={handleOfferReconfirm}
-                    onWithdraw={handleOfferWithdraw}
-                    onCancelled={handleOfferCancelled}
-                  />
-                  <MatchedDonationsSection
+                  <DonorHistorySection
+                    offers={donationOffers.filter(o => !isLiveDonorOffer(o))}
                     fulfilledItems={donorListingGroups.fulfilled}
                     matches={donorMatches}
+                    onChanged={handleOfferCancelled}
                   />
+                  {/* Completed, declined and cancelled matches. */}
+                  <PastMatchesStrip matches={pastDonorMatches} viewer="DONOR" defaultOpen />
                 </TabsContent>
 
                 {/* Your inventory — private, matched quietly */}
                 <TabsContent value="items" className="mt-0">
+                  {reviewDonorMatches.length > 0 && (
+                  <div className="mb-5 space-y-4">
+                {/* Owner, 2026-10-07: a match waiting on the donor is answered here, inside
+                    Your Inventory; once accepted the item moves to Matches. The
+                    decline reason form opens in place of the card. */}
+                {reviewDonorMatches.map((m) => (
+                  declineMatchId === m.id ? (
+                    <div key={m.id} className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                      <p className="text-sm font-black text-stone-900 dark:text-stone-100">
+                        Not available for &ldquo;<TranslatedText text={m.requestTitle || "this need"} />&rdquo;?
+                      </p>
+                      <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-sm border border-stone-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
+                      <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer select-none">
+                        <input type="checkbox" checked={declineConditionChanged} onChange={e => setDeclineConditionChanged(e.target.checked)} className="rounded border-stone-300" />
+                        The item&apos;s condition has changed since I listed it (pauses the listing)
+                      </label>
+                      <div className="flex gap-2">
+                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success("Match declined. We're finding the next best donor."); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to decline match"); } finally { setReviewLoading(null); } }} className="flex-1 h-11 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                          {reviewLoading === m.id ? "Declining..." : "Confirm decline"}
+                        </button>
+                        <button onClick={() => setDeclineMatchId(null)} className="h-11 px-5 rounded-full text-sm font-bold text-stone-600 border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <DonorMatchReviewCard
+                      key={m.id}
+                      match={m}
+                      busy={reviewLoading === m.id}
+                      onAccept={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success("Match accepted! Admin will review shortly."); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to accept match"); } finally { setReviewLoading(null); } }}
+                      onDecline={() => { setDeclineMatchId(m.id); setDeclineReason(""); setDeclineConditionChanged(false); }}
+                    />
+                  )
+                ))}
+                  </div>
+                  )}
                   <section>
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/70 pb-3">
                       <div>
@@ -3269,7 +3556,7 @@ export default function DashboardPage() {
                         <div className="mt-4">
                           {inventoryFilter === "completed" && (
                             <p className="mb-3 text-2xs text-stone-400">
-                              Certificates for these are under Your Offers &rarr; Matched Donations.
+                              Certificates for these are under History &rarr; Matched Donations.
                             </p>
                           )}
                           <AnimatePresence initial={false}>
@@ -3289,7 +3576,7 @@ export default function DashboardPage() {
                         {([
                           ["Drafts", donorListingGroups.drafts],
                           ["Under Review", donorListingGroups.review],
-                          ["Live & Matching", donorListingGroups.live],
+                          ["Live & Matching", donorListingGroups.live.filter(l => !inFlowListingIds.has(l.id))],
                           ["Closed", donorListingGroups.closed],
                         ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
                           <div key={label}>
@@ -3312,7 +3599,16 @@ export default function DashboardPage() {
                       <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
                     </div>
                     <div className="pt-3.5 sm:pt-5 space-y-3 sm:space-y-4">
-                      {activeDonorMatches.length === 0 && pastDonorMatches.length === 0 ? (
+                      {/* Live offers to requests are donations in progress too. */}
+                      {liveDonorOffers.length > 0 && (
+                        <DonorOfferSection
+                          offers={liveDonorOffers}
+                          onReconfirm={handleOfferReconfirm}
+                          onWithdraw={handleOfferWithdraw}
+                          onCancelled={handleOfferCancelled}
+                        />
+                      )}
+                      {flowDonorMatches.length === 0 && liveDonorOffers.length === 0 ? (
                         /* Truthful empty state: the sweep only spins while a listing is
                            live and the engine is actually checking incoming needs. */
                         <div className="py-7 sm:py-12 text-center space-y-3 sm:space-y-4">
@@ -3347,16 +3643,31 @@ export default function DashboardPage() {
                             </div>
                           )}
                         </div>
-                      ) : activeDonorMatches.length === 0 ? (
+                      ) : flowDonorMatches.length === 0 ? (
                         <p className="py-2 text-center text-xs text-stone-400">
-                          No live matches right now — your listed items stay in the matching engine.
+                          No accepted matches right now — your listed items stay in the matching engine.
                         </p>
                       ) : (
                         <div className="divide-y space-y-3 sm:space-y-4">
-                          {activeDonorMatches.map((m) => {
+                          {flowDonorMatches.map((m) => {
                             const badge = getFulfilmentStatusBadge(m.status);
                             const isDonorReview = m.status === "DONOR_REVIEW";
                             const isDeclining = declineMatchId === m.id;
+                            // A match waiting on the donor is answered in the card above
+                            // the tab bar (2026-10-07); here it is only a pointer, so the
+                            // page never shows two sets of Accept / Decline buttons.
+                            if (isDonorReview) {
+                              return (
+                                <div key={m.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/5 p-3 text-sm">
+                                  <p className="font-bold text-stone-800 dark:text-stone-100">
+                                    &ldquo;<TranslatedText text={m.requestTitle || "A nearby need"} />&rdquo; is waiting for your answer
+                                  </p>
+                                  <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 text-xs font-black text-[var(--ck-role-accent)] hover:underline">
+                                    Answer at the top
+                                  </button>
+                                </div>
+                              );
+                            }
                             return (
                               <div key={m.id} className={`pt-3 sm:pt-4 first:pt-0 space-y-2 group p-2 rounded-xl transition-all ${isDonorReview ? "border-2 border-amber-400 bg-amber-50 dark:bg-amber-950/20" : "hover:bg-stone-50 dark:hover:bg-zinc-800/40"}`}>
                                 {isDonorReview && (
@@ -3442,6 +3753,7 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 )}
+                                <WithdrawFlowButton kind="match" id={m.id} role="DONOR" onChanged={refreshMatches} className="w-full" />
                                 {m.status === "COMPLETED" && (
                                   <Link href={`/certificate?matchId=${m.id}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
                                     <Award className="w-3.5 h-3.5" /> View Certificate
@@ -3453,13 +3765,6 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Delivered, declined and cancelled matches keep their
-                          record without competing with the live ones. */}
-                      <PastMatchesStrip
-                        matches={pastDonorMatches}
-                        viewer="DONOR"
-                        defaultOpen={activeDonorMatches.length === 0}
-                      />
                     </div>
                   </section>
                 </TabsContent>
@@ -3644,6 +3949,7 @@ export default function DashboardPage() {
                                     </button>
                                   </div>
                                 )}
+                                <WithdrawFlowButton kind="match" id={m.id} role="DONEE" onChanged={refreshMatches} className="w-full" />
                               </div>
                             );
                           })}

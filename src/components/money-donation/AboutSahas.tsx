@@ -28,7 +28,7 @@ export function AboutSahas() {
   ];
 
   return (
-    <section id="about-sahas" className={`${styles.section} ck-below-nav py-12 lg:py-16 bg-[#fff8f0] dark:bg-[#1b0c05] flex items-center`}>
+    <section id="about-sahas" className={`${styles.section} py-12 lg:py-16 flex items-center`}>
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className={`${styles.layout} flex flex-col lg:flex-row gap-12 lg:gap-20`}>
           

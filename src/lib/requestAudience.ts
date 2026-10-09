@@ -1,5 +1,5 @@
 /**
- * Whose requests a visitor wants to browse on the guest board — a filter for
+ * Whose requests a visitor wants to browse on /requests — a filter for
  * this visit, NOT an account role. Choosing "NGOs" registers nobody as an NGO,
  * and nothing here touches roleTheme, the session or storage. Per the owner
  * (2026-09-29) nothing is saved: the dialog asks on every visit.

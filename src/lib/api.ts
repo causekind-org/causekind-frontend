@@ -683,6 +683,35 @@ export type TrustDonationPayload = {
  * be signed in the backend prefers their account's name and email over whatever
  * is passed here, so the receipt always names the account holder.
  */
+/** What the AI read off a PAN card photo (2026-10-08). Nothing is stored by this call. */
+export type PanRead = {
+  read: boolean;
+  panNumber: string | null;
+  nameOnCard: string | null;
+  confidence: number | null;
+  /** Plain-language reason when read is false. */
+  message: string | null;
+};
+
+export function readPanCard(file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${BASE_URL}/api/v1/donations/trust/pan-read`, { method: "POST", credentials: "include", body: fd })
+    .then(async (res) => {
+      if (res.status === 429) throw new Error("Too many tries — please wait a minute and try again.");
+      if (!res.ok) throw new Error("We couldn't read the card just now. Please type your PAN.");
+      return res.json() as Promise<PanRead>;
+    });
+}
+
+/** Attaches the PAN card photo to a trust donation once it exists (stored privately). */
+export function uploadTrustDonationPanPhoto(donationId: number, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${BASE_URL}/api/v1/donations/trust/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
+    .then((res) => { if (!res.ok) throw new Error("PAN photo upload failed"); });
+}
+
 export function initiateTrustDonation(payload: TrustDonationPayload) {
   return request<DonationOrder>("/api/v1/donations/trust", {
     method: "POST",
@@ -903,13 +932,6 @@ export type CreateListingPayload = {
   policyVersion?: string;
   declarationsAccepted?: boolean;
 };
-
-export function createItemListing(data: CreateListingPayload) {
-  return request<ItemListing>("/api/v1/items", {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-}
 
 export function adminGetItemListings(status?: string, opts?: AdminListOptions) {
   return request<ItemListing[]>(`/api/v1/admin/items${adminListQuery(status, opts)}`);
@@ -1169,10 +1191,16 @@ export type ListingImageAnalysis = {
 };
 
 /** Sends already-uploaded S3 photo URLs to Claude vision for listing-field suggestions. */
+/**
+ * Photo autofill. Its own 3-minute timeout: the model reasons over up to five
+ * photos before answering (often 20–60s), and the default 20s request timeout
+ * aborted it client-side, which read as "Photo analysis failed".
+ */
 export function analyzeListingImages(imageUrls: string[]) {
   return request<ListingImageAnalysis>(`/api/v1/items/analyze-images`, {
     method: "POST",
     body: JSON.stringify({ imageUrls }),
+    signal: AbortSignal.timeout(180_000),
   });
 }
 
@@ -1214,6 +1242,11 @@ export type ItemRequest = {
   requesterType?: "PERSON" | "NGO";
   /** Registered organisation name, NGO requests on the browse feed only. Not a verification claim. */
   organizationName?: string | null;
+  /**
+   * Distance in km from the viewing donor (board only). The board never sends a
+   * donor the donee's exact coordinates — those are null except for admins.
+   */
+  distanceKm?: number | null;
 };
 
 /**
@@ -1241,45 +1274,6 @@ export type PublicItemRequest = {
   /** Registered organisation name; NGO requests only, and not a verification claim. */
   organizationName?: string | null;
 };
-
-export type PublicRequesterType = "PERSON" | "NGO";
-
-/** One page of the public board plus the totals it needs — see PublicRequestPageResponse.java. */
-export type PublicRequestPage = {
-  items: PublicItemRequest[];
-  total: number;
-  page: number;
-  size: number;
-  hasMore: boolean;
-  categoryCounts: Record<string, number>;
-  typeCounts?: Partial<Record<PublicRequesterType, number>>;
-};
-
-export type PublicRequestPageQuery = {
-  q?: string;
-  requesterType?: PublicRequesterType | null;
-  categories?: string[];
-  urgencies?: string[];
-  city?: string;
-  sort?: "newest" | "urgent" | "quantity";
-  /** Zero-based, as the API takes it. */
-  page?: number;
-  size?: number;
-};
-
-/** Server-side search, filter, sort and paging over the whole public board. */
-export function getPublicRequestPage(query: PublicRequestPageQuery = {}) {
-  const params = new URLSearchParams();
-  if (query.q?.trim()) params.set("q", query.q.trim());
-  if (query.requesterType) params.set("requesterType", query.requesterType);
-  query.categories?.forEach(c => params.append("categories", c));
-  query.urgencies?.forEach(u => params.append("urgencies", u));
-  if (query.city?.trim()) params.set("city", query.city.trim());
-  if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
-  params.set("page", String(query.page ?? 0));
-  params.set("size", String(query.size ?? 12));
-  return request<PublicRequestPage>(`/api/v1/item-requests/public/page?${params.toString()}`, { silent401: true });
-}
 
 /** One open public request; rejects (404) once it is no longer publicly open. */
 export function getPublicItemRequest(id: number) {
@@ -1772,6 +1766,11 @@ export type ItemMatch = {
   listingApproximateWeight: string | null;
   listingLatitude: number | null;
   listingLongitude: number | null;
+  /**
+   * Item-to-need km as the matching engine measured it. Present before
+   * acceptance, when the exact coordinates above are withheld.
+   */
+  distanceKm?: number | null;
   listingCreatedAt: string | null;
   // Logistics
   handoverMethod: string | null;
@@ -1912,6 +1911,14 @@ export function confirmMatchHandoverDonor(id: number, data: {
   return request<ItemMatch>(`/api/v1/matches/${id}/handover/confirm-donor`, {
     method: "POST",
     body: JSON.stringify(data),
+  });
+}
+
+/** Step 2 of a match handover: the recipient enters the donor's code (unlocks both confirmations). */
+export function verifyMatchHandoverOtp(id: number, otp: string) {
+  return request<ItemMatch>(`/api/v1/matches/${id}/handover/verify-otp`, {
+    method: "POST",
+    body: JSON.stringify({ otp }),
   });
 }
 
@@ -2466,6 +2473,71 @@ export function uploadOfferMedia(offerId: number, files: File[]) {
   });
 }
 
+// ── On-the-spot handover photos (2026-10-08) ─────────────────────────────────
+// After the recipient enters the code, either side takes a photo of the handover;
+// one is required before either can confirm. Up to three per handover.
+
+export type HandoverProofPhoto = {
+  id: number;
+  /** Short-lived presigned URL; null if it could not be issued. */
+  url: string | null;
+  uploaderRole: "DONOR" | "DONEE";
+  uploaderName: string | null;
+  device: string | null;
+  takenAt: string;
+};
+
+export type HandoverProofContext = "OFFER" | "MATCH";
+
+const proofPath = (type: HandoverProofContext, id: number) =>
+  `/api/v1/${type === "OFFER" ? "offers" : "matches"}/${id}/handover/proof-photos`;
+
+export function getHandoverProofs(type: HandoverProofContext, id: number) {
+  return request<HandoverProofPhoto[]>(proofPath(type, id));
+}
+
+export function uploadHandoverProof(type: HandoverProofContext, id: number, file: File, device: string) {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("device", device);
+  return fetch(`${BASE_URL}${proofPath(type, id)}`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      if (res.status === 413) throw new Error("That photo is too large to upload. Please try again.");
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body?.message ?? "Couldn't upload the handover photo.");
+    }
+    return res.json() as Promise<HandoverProofPhoto[]>;
+  });
+}
+
+/** Admin Handover photo log: one row per handover that has a photo. */
+export type HandoverProofLogEntry = {
+  type: HandoverProofContext;
+  id: number;
+  itemTitle: string | null;
+  requestTitle: string | null;
+  donorName: string | null;
+  doneeName: string | null;
+  city: string | null;
+  status: string | null;
+  photoCount: number;
+  thumbUrl: string | null;
+  lastPhotoAt: string;
+};
+
+export function getHandoverProofLog(limit = 300) {
+  return request<HandoverProofLogEntry[]>(`/api/v1/admin/handover-proofs?limit=${limit}`);
+}
+
+/** Everything about one donation, in sections (shape varies by type). */
+export function getHandoverProofRecord(type: HandoverProofContext, id: number) {
+  return request<Record<string, unknown>>(`/api/v1/admin/handover-proofs/${type}/${id}`);
+}
+
 export function deleteOfferMedia(offerId: number, mediaId: number) {
   return request<void>(`/api/v1/offers/${offerId}/media/${mediaId}`, { method: "DELETE" });
 }
@@ -2819,6 +2891,14 @@ export function confirmHandoverDonor(offerId: number, quantityHandedOver: number
   });
 }
 
+/** Step 2 of an offer handover: the recipient enters the donor's code (unlocks both confirmations). */
+export function verifyHandoverOtp(offerId: number, otp: string) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/verify-otp`, {
+    method: "POST",
+    body: JSON.stringify({ otp }),
+  });
+}
+
 export function confirmHandoverDonee(offerId: number, data: {
   otp?: string; quantityReceived: number;
   conditionRating?: string; conditionNotes?: string; verificationMethod?: string;
@@ -3061,6 +3141,29 @@ export function analyzeItemImage(image: File): Promise<{ description: string }> 
     if (!res.ok) throw new Error("Image analysis failed");
     return res.json() as Promise<{ description: string }>;
   });
+}
+
+/** A saved bell notification (V36). `id` matches the live stream's "n-<id>". */
+export type SavedNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  createdAt: string;
+  read: boolean;
+};
+
+export function getMyNotifications() {
+  return request<SavedNotification[]>("/api/v1/notifications", { silent401: true });
+}
+
+export function markNotificationRead(id: string) {
+  return request<{ read: boolean }>(`/api/v1/notifications/${id.replace(/^n-/, "")}/read`, { method: "POST" });
+}
+
+export function markAllNotificationsRead() {
+  return request<{ updated: number }>("/api/v1/notifications/read-all", { method: "POST" });
 }
 
 export function getMyMatches() {
@@ -4742,7 +4845,6 @@ export function getDoneeNeedProfile() { return request<DoneeNeedProfile>("/api/v
 export function saveDoneeNeedProfile(details: Partial<RequestVerification>) {
   return request<DoneeNeedProfile>("/api/v1/users/me/need-profile", { method: "PUT", body: JSON.stringify(details) });
 }
-export function importPreviousNeedProfile() { return request<DoneeNeedProfile>("/api/v1/users/me/need-profile/import-previous", {method: "POST"}); }
 export function deleteNeedProfileDocument(id: number) { return request<void>(`/api/v1/users/me/need-profile/documents/${id}`, {method: "DELETE"}); }
 export async function uploadNeedProfileDocument(docType: VerificationDocumentType, file: File): Promise<VerificationDocument> {
   const body = new FormData(); body.append("docType",docType); body.append("file",file);

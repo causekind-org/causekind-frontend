@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
-import Image from "next/image";
+import { WizardPhotoImage } from "@/features/wizard-kit/WizardPhotoImage";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Camera, ImagePlus, Loader2, RefreshCw, ShieldAlert, Sparkles, X } from "lucide-react";
 import { pressProps, revealVariants } from "@/features/wizard-kit/wizardMotion";
@@ -122,8 +122,8 @@ export function OfferPhotosStep({
             return (
               <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-900">
                 {src && (
-                  <Image src={src} alt="" fill sizes="(max-width: 640px) 50vw, 200px"
-                    className={`object-cover ${p.status === "uploaded" ? "" : "opacity-60"}`} unoptimized />
+                  <WizardPhotoImage src={src} alt={`Photo ${i + 1}`}
+                    className={`object-cover ${p.status === "uploaded" ? "" : "opacity-60"}`} />
                 )}
 
                 {i === 0 && p.status === "uploaded" && (

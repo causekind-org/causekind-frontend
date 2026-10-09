@@ -49,6 +49,7 @@ export function RoleHome({
       <FoundersNoteSection variant="desktop" />
       <GoogleReviewsSection />
       <DonorTwoDoors />
+      <CreditsSection />
     </div>
   );
 }

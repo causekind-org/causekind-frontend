@@ -11,6 +11,7 @@ import { NgoProblemSolutionSection } from "./NgoProblemSolutionSection";
 import { NgoTransparencySection } from "./NgoTransparencySection";
 import { NgoTrustSection } from "./NgoTrustSection";
 import { NgoHowItWorksSection } from "./NgoHowItWorksSection";
+import { CreditsSection } from "@/components/home/CreditsSection";
 import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -33,6 +34,8 @@ function NgoLandingRouter({ statusData }: { statusData: any }) {
         <NgoTransparencySection />
         <NgoTrustSection />
         <NgoHowItWorksSection />
+        {/* The people behind CauseKind: same credit as the public home page (from staging). */}
+        <CreditsSection />
       </>
     );
   }

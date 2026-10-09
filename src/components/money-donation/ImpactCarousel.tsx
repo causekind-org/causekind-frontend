@@ -2,7 +2,8 @@
 
 import React, { useRef, useEffect, useCallback, useLayoutEffect, useState, useSyncExternalStore } from 'react';
 import { gsap } from 'gsap';
-import { PlayCircle } from 'lucide-react';
+import Image from 'next/image';
+import { DONATE_FORM_ID, scrollToSection } from '@/lib/donateScroll';
 
 /* ── video sources ──
    Each clip has a matching poster frame in /videos/posters, generated from the
@@ -99,6 +100,8 @@ export function ImpactCarousel() {
   const pauseOnHover = true;
 
   const [slotCount, setSlotCount] = useState(() => Math.max(total, 12));
+  /** How far the outermost visible cards hang below the stage (2026-10-08). */
+  const [hang, setHang] = useState(0);
 
   const layoutRef = useRef({ radius: 900, cardWidth: 220, cardHeight: 330, step: 0.14, centerX: 0, centerY: 0, maxAngle: 1 });
   const currentRef = useRef(0);
@@ -162,6 +165,13 @@ export function ImpactCarousel() {
     const reach = Math.min(1, (width / 2 + cardWidth * 1.2) / radius);
     const maxAngle = Math.asin(reach) + 0.12;
     layoutRef.current = { radius, cardWidth, cardHeight, step, centerX, centerY, maxAngle };
+    // The cards sit on a circle, so the ones at the screen edges hang lowest.
+    // Reserve that drop below the stage so the whole fan shows (owner: do not
+    // cut the carousel off) rather than clipping it at the section edge.
+    const edge = Math.asin(Math.min(1, (width / 2) / radius));
+    const lowest = centerY - radius * Math.cos(edge)
+      + (cardHeight / 2) * Math.cos(edge) + (cardWidth / 2) * Math.sin(edge);
+    setHang(Math.max(0, Math.ceil(lowest - height)));
     const disc = discRef.current;
     if (disc) {
       disc.style.width = `${discRadius * 2}px`;
@@ -402,24 +412,44 @@ export function ImpactCarousel() {
 
   return (
     <section 
-      className="relative z-0 bg-background overflow-hidden py-5 lg:py-8" 
+      className="relative z-0 overflow-x-clip ck-below-nav pb-5 pt-8 lg:pb-8 lg:pt-12"
       id="stories"
-      style={{ isolation: 'isolate', transform: 'translateZ(0)' }}
+      style={{ isolation: 'isolate', transform: 'translateZ(0)', paddingBottom: hang ? `${hang + 24}px` : undefined }}
     >
-      {/* Header overlay */}
-      <div className="relative z-10 pt-2 sm:pt-4 pb-2 sm:pb-3 text-center pointer-events-none">
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <PlayCircle className="w-4 h-4 text-brand-600" />
-          <span className="text-sm font-bold text-brand-600 tracking-widest uppercase">
-            See Sahas in Action
-          </span>
+      {/* The page's hero (owner, 2026-10-08): the old MoneyHero's wording over
+          the impact carousel, which replaces the photo slideshow as the first
+          thing on the page. */}
+      <div className="relative z-10 flex flex-col items-center px-4 pb-2 text-center sm:pb-3">
+        {/* Ripples of impact (owner, 2026-10-08): rings spreading out from behind
+            the headline. Decorative; stills under reduced motion (styles.css). */}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 -top-8 bottom-0 -z-10 overflow-hidden">
+          <span className="ck-ripple" />
+          <span className="ck-ripple ck-ripple-2" />
+          <span className="ck-ripple ck-ripple-3" />
         </div>
-        <h2 className="text-2xl sm:text-4xl font-extrabold text-foreground mb-2 sm:mb-3 tracking-tight">
-          Real stories. Real change.
-        </h2>
-        <p className="text-sm sm:text-base lg:text-lg text-stone-600 dark:text-stone-400 leading-relaxed max-w-2xl mx-auto px-4">
-          Our field medical camps, skill workshops, and educational programs work alongside communities across high-need rural India.
+        <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-brand-500/30 bg-brand-50 py-1.5 pl-2 pr-4 text-[0.625rem] font-bold uppercase tracking-widest text-brand-700 sm:mb-6 sm:py-2 sm:pr-5 sm:text-xs dark:bg-brand-900/60 dark:text-brand-200">
+          <Image
+            src="/images/money-donation/sahas-logo-transparent.png"
+            alt="Sahas Logo"
+            width={28}
+            height={28}
+            className="object-contain"
+          />
+          An initiative of Sahas Charitable Trust
+        </div>
+        <h1 className="mb-4 text-4xl font-extrabold leading-[1.05] tracking-tight text-foreground sm:mb-6 sm:text-6xl lg:text-7xl">
+          Fund real impact. <br className="hidden sm:block" /> Shape better futures.
+        </h1>
+        <p className="mx-auto mb-6 max-w-2xl text-base leading-relaxed text-stone-600 sm:mb-8 sm:text-xl dark:text-stone-300">
+          This is the official CauseKind donation portal. 100% of your contribution goes directly to the trust to fund education, healthcare, and vital social welfare initiatives.
         </p>
+        <button
+          type="button"
+          onClick={() => scrollToSection(DONATE_FORM_ID)}
+          className="inline-flex cursor-pointer items-center justify-center rounded-full bg-brand-600 px-8 py-4 text-base font-bold text-white shadow-[0_12px_30px_-10px_rgba(176,74,21,0.6)] transition-all duration-300 hover:scale-105 hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 active:scale-[0.98] motion-reduce:hover:scale-100 sm:px-10 sm:py-5 sm:text-lg"
+        >
+          Donate Now
+        </button>
       </div>
 
       {/* Carousel */}
@@ -452,7 +482,7 @@ export function ImpactCarousel() {
           <div
             ref={discRef}
             aria-hidden
-            className="pointer-events-none absolute -translate-x-1/2 rounded-full bg-background"
+            className="pointer-events-none absolute -translate-x-1/2 rounded-full bg-[#fffbf5] dark:bg-[#1a0b04]"
             style={{ boxShadow: 'none' }}
           />
 

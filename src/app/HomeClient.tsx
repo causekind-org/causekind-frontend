@@ -239,14 +239,9 @@ export default function HomeClient({
   const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
   // The live needs board is for givers; a donee is shown no one else's needs.
   const showLiveNeeds = roleStr !== "DONEE";
-  // Donees get their own landing tree at every width (see RoleHome's DoneeHome).
-  const showDoneeHome = roleStr === "DONEE" && !isRestoring;
-  // No one signed in. The guest page shows the closing CTA without its card,
-  // below "The people behind CauseKind"; signed-in viewers of this shared tree
-  // (donors under 1024px, other roles) keep the card and the original order.
+  // Guests get Prachi's split "choose your path" CTA (6a6cc53); signed-in viewers
+  // the dark card. Restored 2026-10-08 — a merge on 10-07 dropped this switch.
   const isGuest = !user;
-  // Donors get the main page's About (flip cards) at every width.
-  const isDonor = roleStr === "DONOR";
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -258,7 +253,11 @@ export default function HomeClient({
   }, []);
 
   // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
-  const showGuestDesktopTree = (isRestoring || !isDonorOrDonee || !isDesktop) && !showDoneeHome;
+  const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+  // Signed-in donors and donees: on desktop they get RoleHome instead of the
+  // guest page; on mobile they share the guest sections, minus the two that
+  // pitch signing up ("How it works" and the "Start in 60 seconds" CTA).
+  const isRoleHome = isDonorOrDonee && !isRestoring;
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -288,18 +287,12 @@ export default function HomeClient({
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      {isDonor ? (
+      <div className="hidden lg:block">
         <WhoAreWeDesktop />
-      ) : (
-        <>
-          <div className="hidden lg:block">
-            <WhoAreWeDesktop />
-          </div>
-          <div className="lg:hidden">
-            <WhoAreWeSection />
-          </div>
-        </>
-      )}
+      </div>
+      <div className="lg:hidden">
+        <WhoAreWeSection />
+      </div>
 
       <SupportGallery />
 
@@ -307,9 +300,11 @@ export default function HomeClient({
       <div className="hidden lg:block">
         <HowItWorksDesktop />
       </div>
-      <div className="lg:hidden">
-        <HowItWorksSection />
-      </div>
+      {!isRoleHome && (
+        <div className="lg:hidden">
+          <HowItWorksSection />
+        </div>
+      )}
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       {showLiveNeeds && (
@@ -447,41 +442,22 @@ export default function HomeClient({
         )}
 
 
-        {/* SECTION 8/9 — FINAL CTA and THE PEOPLE BEHIND CAUSEKIND. Guests see
-            the partners first, then the CTA without its card. */}
-        {isGuest ? (
-          <>
-            <CreditsSection />
-            <FinalCtaComponent variant="desktop" card={false} />
-          </>
-        ) : (
-          <>
-            <FinalCtaComponent variant="desktop" />
-            <CreditsSection />
-          </>
-        )}
+        {/* SECTION 8 — THE PEOPLE BEHIND CAUSEKIND */}
+        <CreditsSection />
+
+        {/* SECTION 9 — FINAL CTA */}
+        <FinalCtaComponent variant="desktop" card={!isGuest} />
       </div>
       </div>
       )}
 
       {/* ROLE HOME FOR DESKTOP */}
-      {roleStr === "DONOR" && !isRestoring && isDesktop && (
+      {isDonorOrDonee && !isRestoring && isDesktop && (
         <div className="max-lg:hidden w-full">
           <RoleHome 
-            role="donor" 
+            role={roleStr?.toLowerCase() as "donor" | "donee"} 
             initialPublicRequests={initialPublicRequests} 
             stats={stats} 
-          />
-        </div>
-      )}
-
-      {/* DONEE HOME — every width. Phones keep the hero they had (the
-          cinematic film when it is on); desktop keeps the plain hero. */}
-      {showDoneeHome && (
-        <div className="w-full">
-          <RoleHome
-            role="donee"
-            hero={isDesktop ? <HeroComponent /> : FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
           />
         </div>
       )}
@@ -514,7 +490,6 @@ export default function HomeClient({
       {/* Below 768px every section pads itself (`.ck-m-section`, with room for
           the bottom dock), so the column's own 44px gap and top pad drop out
           there rather than stacking on top of it. */}
-      {!showDoneeHome && (
       <div className="lg:hidden relative min-h-screen px-5 flex flex-col gap-11 max-md:gap-0 overflow-x-clip pt-11 max-md:pt-0 bg-[#fbf9f4] dark:bg-zinc-950">
 
         {/* Mobile stats ticker — Dark mode fix: bg stays terracotta, text white.
@@ -632,30 +607,19 @@ export default function HomeClient({
           />
         )}
 
-        {/* SECTION 8/9 — FINAL CTA and THE PEOPLE BEHIND CAUSEKIND (guests:
-            partners first, CTA without its card). */}
-        {isGuest ? (
-          <>
-            <div className="-mx-5">
-              <CreditsSection />
-            </div>
-            <div className="-mx-5">
-              <FinalCtaComponent variant="mobile" card={false} />
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="-mx-5">
-              <FinalCtaComponent variant="mobile" />
-            </div>
-            <div className="-mx-5">
-              <CreditsSection />
-            </div>
-          </>
+        {/* SECTION 8 — THE PEOPLE BEHIND CAUSEKIND */}
+        <div className="-mx-5">
+          <CreditsSection />
+        </div>
+
+        {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
+        {!isRoleHome && (
+          <div className="-mx-5">
+            <FinalCtaComponent variant="mobile" card={!isGuest} />
+          </div>
         )}
 
       </div>
-      )}
     </div>
   );
 }

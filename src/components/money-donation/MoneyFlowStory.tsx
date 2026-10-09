@@ -178,7 +178,7 @@ export function MoneyFlowStory() {
   const bgX = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
 
   return (
-    <section ref={containerRef} className="relative ck-below-nav py-8 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
+    <section ref={containerRef} className="relative py-8 sm:py-14 lg:py-16 overflow-hidden flex flex-col justify-center">
 
       {/* Decorative background blobs */}
       <motion.div

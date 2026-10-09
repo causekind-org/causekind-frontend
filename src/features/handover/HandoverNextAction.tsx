@@ -20,7 +20,7 @@ import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmP
  * transition so the change is noticed without being animated at.
  */
 export function HandoverNextAction({
-  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat, onChanged, deliveryActions,
+  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat, onChanged, deliveryActions,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -28,6 +28,8 @@ export function HandoverNextAction({
   onGenerateOtp: () => Promise<void>;
   onDonorConfirm: (p: DonorConfirmPayload) => Promise<void>;
   onDoneeConfirm: (p: DoneeConfirmPayload) => Promise<void>;
+  onVerifyOtp?: (otp: string) => Promise<void>;
+  proof?: import("./HandoverProofSection").HandoverProofControls;
   onOpenChat?: () => void;
   onChanged: () => void;
   /** Absent on a flow that can't take a delivery address. */
@@ -92,6 +94,8 @@ export function HandoverNextAction({
             onGenerateOtp={onGenerateOtp}
             onDonorConfirm={onDonorConfirm}
             onDoneeConfirm={onDoneeConfirm}
+              onVerifyOtp={onVerifyOtp}
+              proof={proof}
             onOpenChat={onOpenChat}
           />
         )}
@@ -125,12 +129,14 @@ export function HandoverNextAction({
   );
 }
 
-function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat }: {
+function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat }: {
   vm: HandoverViewModel;
   otp: string | null;
   onGenerateOtp: () => Promise<void>;
   onDonorConfirm: (p: DonorConfirmPayload) => Promise<void>;
   onDoneeConfirm: (p: DoneeConfirmPayload) => Promise<void>;
+  onVerifyOtp?: (otp: string) => Promise<void>;
+  proof?: import("./HandoverProofSection").HandoverProofControls;
   onOpenChat?: () => void;
 }) {
   const donor = vm.role === "DONOR";
@@ -150,6 +156,8 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
               onGenerateOtp={onGenerateOtp}
               onDonorConfirm={onDonorConfirm}
               onDoneeConfirm={onDoneeConfirm}
+              onVerifyOtp={onVerifyOtp}
+              proof={proof}
             />
           </div>
         )}
@@ -166,6 +174,8 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
         onGenerateOtp={onGenerateOtp}
         onDonorConfirm={onDonorConfirm}
         onDoneeConfirm={onDoneeConfirm}
+              onVerifyOtp={onVerifyOtp}
+              proof={proof}
       />
     </div>
   );

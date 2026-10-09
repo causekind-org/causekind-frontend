@@ -320,6 +320,11 @@ useEffect(() => {
     RENDER
   ======================================================= */
 
+  /* The desktop picture grid leaves List Item out (rows keep it). */
+  const DESKTOP_CATEGORIES = CATEGORIES.filter(
+    ({ name }) => name !== "List Item"
+  );
+
   if (!show || !user || user.role !== "DONOR" ) {
     return null;
   }
@@ -752,6 +757,8 @@ useEffect(() => {
         }
 
         .ck-category-card:hover
+        .ck-hover-description,
+        .ck-category-card:focus-visible
         .ck-hover-description {
           max-height: 70px;
           opacity: 1;
@@ -851,9 +858,15 @@ useEffect(() => {
            SELECTED CARD
         ===================================================== */
 
+        /*
+          The rim lives here, not in Tailwind ring classes: this
+          box-shadow comes later and would replace a ring. Solid
+          orange edge + 2px rim, so a pick reads clearly over a photo.
+        */
         .ck-category-card-selected {
+          border-color: rgb(251, 146, 60);
           box-shadow:
-            0 0 0 1px rgba(224, 123, 58, 0.30),
+            0 0 0 2px rgba(251, 146, 60, 0.85),
             0 0 18px rgba(224, 123, 58, 0.20),
             0 16px 40px rgba(0,0,0,0.28);
         }
@@ -1289,7 +1302,21 @@ useEffect(() => {
           </header>
 
           {/* =================================================
-              CATEGORY GRID
+              CATEGORY ROWS (below lg) — "Compact rows" layout (chosen
+              2026-10-06, https://claude.ai/artifact/74jA6eACiZTRebTEGEH42y,
+              option A)
+
+              One column of slim rows on phones, two from md: a small
+              photo, the name, the one-line description (always visible,
+              no hover needed) and a tick. List Item navigates instead of
+              toggling, so it shows an arrow, not a tick.
+
+              CATEGORY GRID (lg and up) — the picture cards: five per
+              row, a photo with the icon and name strip under it, the
+              description sliding in on hover or keyboard focus. No List
+              Item on desktop, so nine cards: a ten-track grid with each
+              card two tracks wide puts five on the first row and centres
+              the remaining four.
           ================================================= */}
 
           <main
@@ -1298,44 +1325,150 @@ useEffect(() => {
               flex
               min-h-0
               w-full
-              max-w-[1500px]
+              max-w-[1100px]
               flex-1
-              items-center
+              flex-col
               justify-center
-              py-2
-              sm:py-3
+              overflow-y-auto
+              py-3
+              sm:py-4
+              lg:max-w-[1500px]
+              lg:flex-row
+              lg:items-center
+              lg:overflow-visible
+              lg:py-3
             "
           >
+            <div
+              className="
+                grid
+                w-full
+                grid-cols-1
+                lg:hidden
+                gap-2
+                md:grid-cols-2
+                md:gap-x-4
+                md:gap-y-3
+              "
+            >
+              {CATEGORIES.map(({ name, Icon, col, iconBg, border, ring, blurb }) => {
+                const isSelected = tempSelected.includes(name);
+                const isListItem = name === "List Item";
+                const image = CATEGORY_IMAGES[name];
+
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => selectCategory(name)}
+                    aria-pressed={isListItem ? undefined : isSelected}
+                    className={`
+                      group
+                      flex
+                      min-w-0
+                      items-center
+                      gap-3
+                      rounded-2xl
+                      border
+                      p-2
+                      pr-3
+                      text-left
+                      transition-colors
+                      duration-200
+                      focus-visible:outline-none
+                      focus-visible:ring-2
+                      focus-visible:ring-orange-400
+                      sm:gap-4
+                      sm:p-2.5
+                      sm:pr-4
+                      ${isListItem ? "border-dashed" : ""}
+                      ${
+                        isSelected
+                          ? `${border} ring-1 ${ring} bg-white/[0.08]`
+                          : "border-white/10 bg-white/[0.035] hover:border-white/25 hover:bg-white/[0.06]"
+                      }
+                    `}
+                  >
+                    <span className="relative h-12 w-16 shrink-0 overflow-hidden rounded-xl bg-[#17110e] sm:h-[72px] sm:w-24">
+                      {image && (
+                        <img
+                          src={image}
+                          alt=""
+                          className="h-full w-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.style.display = "none";
+                          }}
+                        />
+                      )}
+                    </span>
+
+                    <span className="flex min-w-0 flex-1 flex-col gap-1">
+                      <span className="flex items-center gap-2">
+                        <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${iconBg}`}>
+                          <Icon className={`h-3.5 w-3.5 ${col}`} />
+                        </span>
+                        <span className={`truncate text-[15px] font-bold sm:text-[17px] ${isSelected ? col : "text-white"}`}>
+                          {name}
+                        </span>
+                      </span>
+                      <span className="line-clamp-2 text-[12.5px] leading-snug text-stone-300 sm:line-clamp-1 sm:text-[13px]">
+                        {blurb}
+                      </span>
+                    </span>
+
+                    {isListItem ? (
+                      <ArrowRight
+                        className="h-5 w-5 shrink-0 text-orange-300 transition-transform duration-200 group-hover:translate-x-0.5"
+                        aria-hidden
+                      />
+                    ) : (
+                      <span
+                        aria-hidden
+                        className={`
+                          flex
+                          h-7
+                          w-7
+                          shrink-0
+                          items-center
+                          justify-center
+                          rounded-full
+                          transition-colors
+                          ${
+                            isSelected
+                              ? "bg-amber-400 text-black"
+                              : "border-[1.5px] border-white/30 text-transparent"
+                          }
+                        `}
+                      >
+                        <Check className="h-4 w-4" strokeWidth={4} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
 
             <div
               className="
                 ck-category-grid
-                grid
+                hidden
                 h-full
                 max-h-[calc(100dvh-180px)]
                 w-full
-                grid-cols-2
-                grid-rows-5
-                gap-2
-                sm:grid-cols-3
-                sm:grid-rows-4
-                sm:gap-2.5
-                lg:grid-cols-5
-                lg:grid-rows-2
-                lg:gap-3
+                grid-cols-10
+                grid-rows-2
+                gap-3
+                lg:grid
               "
             >
 
-              {CATEGORIES.map(
+              {DESKTOP_CATEGORIES.map(
                 (
                   {
                     name,
                     Icon,
                     col,
                     iconBg,
-                    border,
-                    ring,
-                    badge,
                     blurb,
                   },
                   index
@@ -1344,23 +1477,17 @@ useEffect(() => {
                   const isSelected =
                     tempSelected.includes(name);
 
-                  const isHovered =
-                    hoveredCategory === name;
-
-                  const isListItem =
-                    name === "List Item";
-
                   const image =
                     CATEGORY_IMAGES[name];
 
                   /*
-                    Right-hand columns lean the opposite way.
-                    Five columns on desktop, so index 3 and 4 of
-                    each row of five sit right of centre.
+                    Right-hand cards lean the opposite way: index 3–4
+                    of the first row of five, 7–8 of the second row
+                    of four (which is centred, so 5–6 sit left).
                   */
 
                   const tiltsRight =
-                    index % 5 >= 3;
+                    index < 5 ? index >= 3 : index >= 7;
 
                   const rippleKey =
                     rippleKeys[name] ?? 0;
@@ -1372,6 +1499,7 @@ useEffect(() => {
                       onClick={() =>
                         selectCategory(name)
                       }
+                      aria-pressed={isSelected}
                       onMouseEnter={() => {
                         setHoveredCategory(name);
                       }}
@@ -1382,6 +1510,11 @@ useEffect(() => {
                         ck-category-card
                         group
                         relative
+                        col-span-2
+                        ${index === 5 ? "col-start-2" : ""}
+                        focus-visible:outline-none
+                        focus-visible:ring-2
+                        focus-visible:ring-orange-400
                         flex
                         min-h-0
                         min-w-0
@@ -1400,7 +1533,7 @@ useEffect(() => {
 
                         ${
                           isSelected
-                            ? `${border} ring-1 ${ring} ck-category-card-selected`
+                            ? "ck-category-card-selected"
                             : "border-white/20"
                         }
 
@@ -1445,7 +1578,7 @@ useEffect(() => {
                         {image && (
                           <img
                             src={image}
-                            alt={name}
+                            alt=""
                             className="
                               ck-category-image
                               absolute
@@ -1667,7 +1800,6 @@ useEffect(() => {
               )}
 
             </div>
-
           </main>
 
           {/* =================================================

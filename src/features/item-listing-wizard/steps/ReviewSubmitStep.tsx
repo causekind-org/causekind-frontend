@@ -126,7 +126,7 @@ export function ReviewSubmitStep({
       </ReviewSection>
 
       <ReviewSection title="Condition & details" onEdit={() => onJump("condition")}>
-        <ReviewRow label="Approximate age" value={model.approximateAge} />
+        <ReviewRow label="Item age" value={model.approximateAge} />
         <ReviewRow label="Condition" value={model.condition} />
         {fields.visible("workingStatus") && <ReviewRow label={fields.label("workingStatus")} value={model.workingStatus} />}
         <ReviewRow label="Known defects" value={model.noDefects ? "No known defects" : model.knownDefects} />
