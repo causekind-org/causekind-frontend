@@ -6,6 +6,9 @@ import { LEGAL_STRUCTURES } from "@/features/ngo-registration/ngoRegistrationMod
 import { ngoPanCheck, ngoWizardPanCheck, type PanCheckResult, type PanCheckWarning } from "@/lib/api";
 
 /**
+ * PAN card feature: kept but not used yet; will be moved to another place later.
+ * Nothing renders these components now.
+ *
  * NGO-only signup fields for the PAN-card signup: legal structure, the PAN card upload,
  * the date of formation, the "read from your card" notes and the PAN letter warnings.
  * Donor and donee signup never render any of this.

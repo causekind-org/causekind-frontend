@@ -9,6 +9,7 @@ const check = (over: Partial<PanCheckResult>): PanCheckResult => ({
   warnings: [], ...over,
 });
 
+// PAN card feature: kept but not used yet; will be moved to another place later (component tested directly).
 describe("Admin PAN check box", () => {
   it("shows PAN, holder type vs structure, 5th letter and where values came from", () => {
     render(<NgoPanCheckBox panCheck={{ check: check({}), organizationNameSource: "card", dateOfFormationSource: "typed", panNumberSource: "card" }} />);

@@ -326,10 +326,10 @@ export type NgoSignupData = {
   city?: string;
   password: string;
   website?: string;
-  /** Added with the PAN-card signup. */
-  legalStructure: NgoLegalStructureValue;
+  // PAN card feature: kept but not used yet; will be moved to another place later. The register page sends none of these.
+  legalStructure?: NgoLegalStructureValue;
   /** YYYY-MM-DD */
-  dateOfFormation: string;
+  dateOfFormation?: string;
   organizationNameSource?: PanValueSource;
   dateOfFormationSource?: PanValueSource;
   panNumberSource?: PanValueSource;
@@ -337,6 +337,8 @@ export type NgoSignupData = {
   locationText?: string;
 };
 
+// ── PAN card feature: kept but not used yet; will be moved to another place later.
+// Types and calls below are not used by any page; their backend endpoints are not registered.
 export type NgoLegalStructureValue = "trust" | "society" | "section8";
 /** "card": read from the PAN card and left as read; "typed": entered or changed by the user. */
 export type PanValueSource = "card" | "typed";
@@ -4783,7 +4785,7 @@ export type NgoReviewDetail = {
   decisions: { id: number; fromStatus: string; toStatus: string; changedByEmail: string; note: string; changedAt: string }[];
   current: boolean;
   corrections?: { summary: string; items: NgoCorrectionItem[] } | null;
-  /** PAN letter checks for the signup PAN; sources are "card" / "typed", or null when unknown. */
+  /** PAN card feature: kept but not used yet; will be moved to another place later. Always null for now. */
   panCheck?: {
     check: PanCheckResult; organizationNameSource: string | null;
     dateOfFormationSource: string | null; panNumberSource: string | null;

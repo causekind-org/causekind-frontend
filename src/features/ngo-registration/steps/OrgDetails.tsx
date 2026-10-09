@@ -8,9 +8,7 @@ import {
   type NGOFormState,
   getNgoStillNeededItems,
   fieldText,
-  IS_NGO_DEMO_MODE,
 } from "@/features/ngo-registration/ngoRegistrationModel";
-import { PanWarnings, useWizardPanCheck } from "@/features/ngo-signup/NgoPanCardSignup";
 import { LegalStructureCard } from "@/features/ngo-registration/components/LegalStructureCard";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
@@ -28,8 +26,6 @@ interface OrgDetailsProps {
 /** Step 1 — Organization Details */
 export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: OrgDetailsProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  // Same PAN letter check as signup, against the signup PAN: warns when the structure doesn't match it.
-  const panCheck = useWizardPanCheck(!IS_NGO_DEMO_MODE, data.legalStructure, fieldText(data.organizationName));
 
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -120,7 +116,6 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
             ))}
           </div>
           {field("legalStructure")}
-          <PanWarnings warnings={panCheck?.warnings} field="legalStructure" />
         </div>
 
         {/* Registration Number */}

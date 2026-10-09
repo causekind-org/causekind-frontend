@@ -9,6 +9,9 @@ function sourceLabel(source: string | null) {
 }
 
 /**
+ * PAN card feature: kept but not used yet; will be moved to another place later.
+ * Not rendered by the review panel now.
+ *
  * The "PAN check" box in the NGO application review: the signup PAN, its holder type
  * (4th letter) against the chosen structure, its 5th letter against the organization
  * name, and whether the values were read from the card or typed. Red for a personal PAN

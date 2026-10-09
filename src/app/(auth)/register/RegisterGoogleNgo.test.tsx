@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor, configure } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RegisterPage from "./page";
 import { ApiError, registerNgo, registerNgoWithGoogle, googleComplete } from "@/lib/api";
@@ -20,9 +20,6 @@ beforeEach(() => {
 
 // One stable router, like Next's: the Google flow's effect depends on it.
 const mockRouter = { push: mockPush, replace: mockReplace };
-
-// The NGO form is long; under a parallel run the default 1s wait is too tight.
-configure({ asyncUtilTimeout: 8000 });
 vi.mock("next/navigation", () => ({
   useRouter: () => mockRouter,
   useSearchParams: () => mockSearchParams,
@@ -73,9 +70,6 @@ vi.mock("@/lib/api", async (orig) => ({
   registerNgo: vi.fn(),
   registerNgoWithGoogle: vi.fn().mockResolvedValue({ token: null, userId: 42, email: "hope@gmail.com", role: "NGO_PARTNER", fullName: "Hope Welfare Trust" }),
   initiateRegistration: vi.fn(),
-  readNgoPanCard: vi.fn().mockResolvedValue({ available: false }),
-  uploadSignupPanCard: vi.fn().mockResolvedValue({}),
-  ngoPanCheck: vi.fn().mockResolvedValue({ warnings: [] }),
   verifyRegistrationOtp: vi.fn(),
   resendRegistrationOtp: vi.fn(),
   googleAuth: vi.fn(),
@@ -135,14 +129,7 @@ async function fillCity() {
 }
 
 // Each test types through the whole form; the 5s default is tight under a parallel run.
-
-/** The PAN-card signup fields every NGO signup now needs: structure, card, date of formation. */
-async function fillNgoExtras(user: ReturnType<typeof userEvent.setup>) {
-  await user.selectOptions(screen.getByLabelText(/Legal structure \*/i), "trust");
-  await user.upload(screen.getByLabelText(/Upload your PAN card \*/i), new File(["fake"], "pan.png", { type: "image/png" }));
-  fireEvent.change(screen.getByLabelText(/Date of formation \*/i), { target: { value: "2010-04-01" } });
-}
-describe("Register with Google", { timeout: 90000 }, () => {
+describe("Register with Google", { timeout: 30000 }, () => {
   beforeEach(() => { vi.mocked(registerNgo).mockClear(); vi.mocked(registerNgoWithGoogle).mockClear(); vi.mocked(googleComplete).mockClear(); });
 
   it("NGO: no password field, Google email read-only, sends the Google NGO request", async () => {
@@ -150,7 +137,6 @@ describe("Register with Google", { timeout: 90000 }, () => {
     const user = userEvent.setup();
     render(<RegisterPage />);
     await user.click(screen.getByRole("button", { name: /^NGO/i }));
-    await fillNgoExtras(user);
     expect(screen.queryByLabelText(/^Password/i)).toBeNull();
     const email = screen.getByLabelText(/Official Email Address \*/i) as HTMLInputElement;
     expect(email.value).toBe("hope@gmail.com");
@@ -181,7 +167,6 @@ describe("Register with Google", { timeout: 90000 }, () => {
     const user = userEvent.setup();
     render(<RegisterPage />);
     await user.click(screen.getByRole("button", { name: /^NGO/i }));
-    await fillNgoExtras(user);
     const org = screen.getByLabelText(/Organization Name \*/i);
     await user.clear(org);
     await user.type(org, "Hope Welfare Trust");
@@ -197,7 +182,6 @@ describe("Register with Google", { timeout: 90000 }, () => {
     const user = userEvent.setup();
     render(<RegisterPage />);
     await user.click(screen.getByRole("button", { name: /^NGO/i }));
-    await fillNgoExtras(user);
     const org = screen.getByLabelText(/Organization Name \*/i);
     await user.clear(org);
     await user.type(org, "Hope Welfare Trust");
