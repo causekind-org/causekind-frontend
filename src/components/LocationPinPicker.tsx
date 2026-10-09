@@ -85,7 +85,11 @@ type Suggestion = { id: string; main: string; secondary: string; prediction: goo
  * biased to the current pin (else India); nothing is restricted, because
  * listings and requests can be outside India.
  */
-function PlaceSearchBox({ near, onPlace }: { near: LatLng; onPlace: (lat: number, lng: number) => void }) {
+function PlaceSearchBox({ near, onPlace, onBusy }: {
+  near: LatLng; onPlace: (lat: number, lng: number) => void;
+  /** True while a chosen result is being fetched (before onPlace). */
+  onBusy?: (busy: boolean) => void;
+}) {
   const places = useMapsLibrary("places");
   const listId = useId();
   const [query, setQuery] = useState("");
@@ -93,6 +97,9 @@ function PlaceSearchBox({ near, onPlace }: { near: LatLng; onPlace: (lat: number
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const [busy, setBusy] = useState(false);
+  const onBusyRef = useRef(onBusy);
+  onBusyRef.current = onBusy;
+  useEffect(() => { onBusyRef.current?.(busy); }, [busy]);
   const [error, setError] = useState<string | null>(null);
   const token = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   const seq = useRef(0);
@@ -319,6 +326,12 @@ type LocationPinPickerProps = {
   showLocateButton?: boolean;
   /** A place search box above the map; the map pans to the chosen place. */
   showSearch?: boolean;
+  /**
+   * True while the picker itself is working toward a new pin: finding the
+   * device location, or fetching a chosen search result. The form holds
+   * Continue meanwhile (its own address lookup is tracked separately).
+   */
+  onBusyChange?: (busy: boolean) => void;
   /** Show a pin at the start position even before one is placed (handover). */
   pinAtStart?: boolean;
   /** Text under the map; null hides it. */
@@ -330,11 +343,16 @@ type LocationPinPickerProps = {
 
 export function LocationPinPicker({
   pin, onPick, fallbackCenter = null, fallbackZoom = PIN_ZOOM, tone = "neutral", onUnavailable,
-  showLocateButton = false, showSearch = false, pinAtStart = false, hint, height = 260, unavailableNote,
+  showLocateButton = false, showSearch = false, onBusyChange, pinAtStart = false, hint, height = 260, unavailableNote,
 }: LocationPinPickerProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [failed, setFailed] = useState(!apiKey);
   const [locating, setLocating] = useState(false);
+  const [searchBusy, setSearchBusy] = useState(false);
+  const onBusyChangeRef = useRef(onBusyChange);
+  onBusyChangeRef.current = onBusyChange;
+  const pickerBusy = locating || searchBusy;
+  useEffect(() => { onBusyChangeRef.current?.(pickerBusy); }, [pickerBusy]);
   useGoogleMapsAuthFailure(() => setFailed(true));
   const onUnavailableRef = useRef(onUnavailable);
   onUnavailableRef.current = onUnavailable;
@@ -427,7 +445,7 @@ export function LocationPinPicker({
             <ApiStatusWatch onFailure={() => setFailed(true)} />
             {(showSearch || locateOnTop) && (
               <div className="mb-2 flex flex-wrap items-start gap-2">
-                {showSearch && <PlaceSearchBox near={start} onPlace={(lat, lng) => onPick(lat, lng)} />}
+                {showSearch && <PlaceSearchBox near={start} onPlace={(lat, lng) => onPick(lat, lng)} onBusy={setSearchBusy} />}
                 {locateOnTop && locateButton}
               </div>
             )}

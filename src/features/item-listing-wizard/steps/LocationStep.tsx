@@ -36,7 +36,7 @@ export type LocationStepHandle = { flush: () => Promise<boolean> };
 const TYPED_NOT_PLACED = "We couldn't place this address. Drop the pin on the map to continue.";
 
 export function LocationStep({
-  model, errors, lookup, profileCenter, onChange, onPin, onGeocodeTyped, controlRef,
+  model, errors, lookup, profileCenter, onChange, onPin, onGeocodeTyped, controlRef, onBusyChange,
 }: {
   model: WizardModel;
   errors: Record<string, string>;
@@ -47,6 +47,12 @@ export function LocationStep({
   /** Resolves true when the typed address was placed. */
   onGeocodeTyped: (q: { postalcode: string; city: string; state: string; countryCode: string }, useProfileFallback: boolean) => Promise<boolean> | void;
   controlRef?: React.Ref<LocationStepHandle>;
+  /**
+   * True from the moment a new location is being worked out (current
+   * location, a chosen search result, a pin's address lookup, a typed
+   * address) until its fields are filled. The wizard holds Continue meanwhile.
+   */
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const { countries, states, cities } = useLocations(model.countryIso, model.stateIso);
   const [mapDown, setMapDown] = useState(false);
@@ -69,9 +75,12 @@ export function LocationStep({
   // lookup fills arrive through onPin, never through here, so a pin can't
   // re-trigger itself.
   const [typed, setTyped] = useState(0);
+  /** A typed address is waiting for its debounce or its lookup. */
+  const [typedBusy, setTypedBusy] = useState(false);
   const edit = useCallback(<K extends keyof WizardModel>(key: K, value: WizardModel[K]) => {
     onChange(key, value);
     setTyped(n => n + 1);
+    setTypedBusy(true);
   }, [onChange]);
   const stateName = states.find(s => s.value === model.stateIso)?.label ?? "";
   // Read at run time, so a flush uses what was typed last, not what was there
@@ -85,7 +94,7 @@ export function LocationStep({
     typedPending.current = false;
     const { model: m, stateName: st, mapDown: down } = latest.current;
     // Nothing to place yet (e.g. the state changed and cleared the city): not a failure.
-    if (!m.city.trim() && !m.pincode.trim()) { setTypedFailed(false); return Promise.resolve(true); }
+    if (!m.city.trim() && !m.pincode.trim()) { setTypedFailed(false); setTypedBusy(false); return Promise.resolve(true); }
     const run = Promise.resolve(onGeocodeTyped({
       postalcode: m.pincode.trim(), city: m.city.trim(), state: st, countryCode: m.countryIso,
     }, down)).then(placed => placed !== false);
@@ -94,6 +103,7 @@ export function LocationStep({
       if (typedInFlight.current !== run) return;
       typedInFlight.current = null;
       setTypedFailed(!ok);
+      setTypedBusy(false);
     });
     return run;
   }, [onGeocodeTyped]);
@@ -114,8 +124,24 @@ export function LocationStep({
     },
   }), [runTyped, lookup.whenIdle]);
 
-  // A pin placed on the map, by search or by location clears a failed typed lookup.
-  const pickClearing = useCallback((lat: number, lng: number) => { setTypedFailed(false); pick(lat, lng); }, [pick]);
+  // A pin placed on the map, by search or by location wins over a typed
+  // address: it cancels one still waiting (or in flight, whose result is then
+  // ignored) and clears a failed one.
+  const pickClearing = useCallback((lat: number, lng: number) => {
+    typedPending.current = false;
+    typedInFlight.current = null;
+    setTypedFailed(false);
+    setTypedBusy(false);
+    pick(lat, lng);
+  }, [pick]);
+
+  const [pickerBusy, setPickerBusy] = useState(false);
+  const busy = pickerBusy || lookup.running || typedBusy;
+  const onBusyChangeRef = useRef(onBusyChange);
+  onBusyChangeRef.current = onBusyChange;
+  useEffect(() => { onBusyChangeRef.current?.(busy); }, [busy]);
+  // Leaving the step must not leave the wizard holding Continue.
+  useEffect(() => () => { onBusyChangeRef.current?.(false); }, []);
 
   const pinError = errors.latitude || errors.longitude || (typedFailed && !mapDown ? TYPED_NOT_PLACED : "");
 
@@ -123,7 +149,7 @@ export function LocationStep({
     <div className="space-y-2">
       <LocationPinPicker
         tone="donor" pin={pin} fallbackCenter={profileCenter}
-        onPick={pickClearing} onUnavailable={onUnavailable}
+        onPick={pickClearing} onUnavailable={onUnavailable} onBusyChange={setPickerBusy}
         showSearch showLocateButton
         hint={lookup.running ? null : undefined}
       />

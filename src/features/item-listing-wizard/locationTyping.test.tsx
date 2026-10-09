@@ -9,13 +9,14 @@ function Harness(props: {
   onGeocodeTyped: (q: { postalcode: string; city: string; state: string; countryCode: string }, fb: boolean) => Promise<boolean> | void;
   onPin?: (lat: number, lng: number) => void;
   controlRef?: React.Ref<LocationStepHandle>;
+  onBusyChange?: (busy: boolean) => void;
 }) {
   const [model, setModel] = useState<WizardModel>({ ...emptyModel, countryIso: "IN", stateIso: "MH" });
   return (
     <LocationStep
       model={model} errors={{}} lookup={{ running: false, error: null, whenIdle: async () => {} }} profileCenter={null}
       onChange={(k, v) => setModel(m => ({ ...m, [k]: v }))} onPin={props.onPin ?? (() => {})}
-      onGeocodeTyped={props.onGeocodeTyped} controlRef={props.controlRef}
+      onGeocodeTyped={props.onGeocodeTyped} controlRef={props.controlRef} onBusyChange={props.onBusyChange}
     />
   );
 }
@@ -82,5 +83,29 @@ describe("List an item step 4: typed address and pin", () => {
     expect(ok).toBe(false);
     act(() => { vi.advanceTimersByTime(2000); });
     expect(onGeocodeTyped).toHaveBeenCalledTimes(1);
+  });
+
+  it("holds Continue (busy) from typing until the typed address is placed", async () => {
+    const onBusyChange = vi.fn();
+    const onGeocodeTyped = vi.fn(async () => true);
+    render(<Harness onGeocodeTyped={onGeocodeTyped} onBusyChange={onBusyChange} />);
+    fireEvent.change(document.querySelector("input[name=pincode]")!, { target: { value: "400050" } });
+    expect(onBusyChange).toHaveBeenLastCalledWith(true);
+    await act(async () => { await vi.advanceTimersByTimeAsync(1300); });
+    expect(onGeocodeTyped).toHaveBeenCalledTimes(1);
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
+  });
+
+  it("a pin from the map cancels a typed address that is still waiting", async () => {
+    const onBusyChange = vi.fn();
+    const onGeocodeTyped = vi.fn(async () => true);
+    const onPin = vi.fn();
+    render(<Harness onGeocodeTyped={onGeocodeTyped} onPin={onPin} onBusyChange={onBusyChange} />);
+    fireEvent.change(document.querySelector("input[name=pincode]")!, { target: { value: "400050" } });
+    fireEvent.click(screen.getByText("tap map"));
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    expect(onPin).toHaveBeenCalledWith(19.07, 72.87);
+    expect(onGeocodeTyped).not.toHaveBeenCalled();
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
   });
 });

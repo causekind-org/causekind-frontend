@@ -488,6 +488,10 @@ function NewRequestForm() {
   const [typedFailed, setTypedFailed] = useState(false);
   /** Continue / Save & exit on the location step is waiting for a lookup. */
   const [checkingLocation, setCheckingLocation] = useState(false);
+  /** The map is finding the device location or fetching a chosen search result. */
+  const [pickerBusy, setPickerBusy] = useState(false);
+  /** A typed address is waiting for its debounce or its lookup. */
+  const [typedBusy, setTypedBusy] = useState(false);
   /** The donee's profile location: where the map starts when the request has no pin. */
   const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
   const [mapDown, setMapDown] = useState(false);
@@ -655,6 +659,11 @@ function NewRequestForm() {
    * overwrite anything.
    */
   const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
+    // A pin wins over a typed address: cancel one still waiting, and ignore
+    // one in flight.
+    typedPending.current = false;
+    typedInFlight.current = null;
+    setTypedBusy(false);
     setGpsCoords({ lat, lng });
     setTypedFailed(false);
     setFieldErrors((prev) => (prev.gps ? { ...prev, gps: "" } : prev));
@@ -709,7 +718,7 @@ function NewRequestForm() {
   const stateName = stateOptions.find((o) => o.value === stateIso)?.label ?? "";
   const typedCity = showCityFreeText ? cityFreeText : cityValue;
   const [addressTyped, setAddressTyped] = useState(0);
-  const typedAddress = () => setAddressTyped((n) => n + 1);
+  const typedAddress = () => { setAddressTyped((n) => n + 1); setTypedBusy(true); };
   const typedPending = useRef(false);
   const typedInFlight = useRef<Promise<boolean> | null>(null);
   // Re-assigned every render, so a run always reads what was typed last.
@@ -717,7 +726,7 @@ function NewRequestForm() {
   runTypedRef.current = () => {
     typedPending.current = false;
     // Nothing to place yet (e.g. the state changed and cleared the city): not a failure.
-    if (!typedCity.trim() && !pincode.trim()) { setTypedFailed(false); return Promise.resolve(true); }
+    if (!typedCity.trim() && !pincode.trim()) { setTypedFailed(false); setTypedBusy(false); return Promise.resolve(true); }
     const run = (async () => {
       const coords = await pinAddress.geocodeTyped(
         { postalcode: pincode.trim(), city: typedCity.trim(), state: stateName, countryCode: countryIso },
@@ -733,6 +742,7 @@ function NewRequestForm() {
       if (typedInFlight.current !== run) return;
       typedInFlight.current = null;
       setTypedFailed(!ok && !mapDown);
+      setTypedBusy(false);
     });
     return run;
   };
@@ -853,7 +863,11 @@ function NewRequestForm() {
     void (then === "next" ? proceedNext() : proceedSaveExit());
   }, [proceedAfterFlush]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** The location step is working out a new location: Continue is held until its fields are filled. */
+  const locationBusy = step === "location" && (pickerBusy || pinAddress.running || typedBusy);
+
   async function handleNext() {
+    if (locationBusy) return;
     if (step === "location") return settleLocationThen("next");
     return proceedNext();
   }
@@ -1243,7 +1257,7 @@ function NewRequestForm() {
         <div data-field="gps" tabIndex={-1} aria-describedby={fieldErrors.gps ? "gps-error" : undefined} className="space-y-2 outline-none">
           <LocationPinPicker
             tone="donee" pin={gpsCoords} fallbackCenter={profileCenter}
-            onPick={(lat, lng) => handlePin(lat, lng)} onUnavailable={() => setMapDown(true)}
+            onPick={(lat, lng) => handlePin(lat, lng)} onUnavailable={() => setMapDown(true)} onBusyChange={setPickerBusy}
             showSearch showLocateButton height={300}
             hint={pinAddress.running ? null : undefined}
           />
@@ -1626,7 +1640,7 @@ function NewRequestForm() {
             <button type="button" onClick={handleBack} disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step {stepNumber(step) - 1}</button>
             <div className="flex flex-wrap gap-2">
 
-              <button type="button" onClick={() => void handleNext()} disabled={saving || checkingLocation || (step === "household-situation" && docsBusy) || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{checkingLocation ? "Checking location…" : step === "household-situation" && docsBusy ? "Checking document…" : saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => void handleNext()} disabled={saving || checkingLocation || locationBusy || (step === "household-situation" && docsBusy) || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{checkingLocation || locationBusy ? "Checking location…" : step === "household-situation" && docsBusy ? "Checking document…" : saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
             </div>
           </div>
         ) : <WizardNavigation

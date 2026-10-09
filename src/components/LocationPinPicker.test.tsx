@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { LocationPinPicker } from "./LocationPinPicker";
@@ -124,5 +124,19 @@ describe("LocationPinPicker", () => {
     render(<LocationPinPicker pin={null} onPick={onPick} tone="donor" showSearch showLocateButton />);
     await userEvent.click(screen.getByRole("button", { name: /use my current location/i }));
     expect(onPick).toHaveBeenLastCalledWith(28.61, 77.21);
+  });
+
+  it("reports busy while finding the current location", async () => {
+    vi.stubEnv("NEXT_PUBLIC_GOOGLE_MAPS_API_KEY", "test-key");
+    let finish: ((p: GeolocationPosition) => void) | null = null;
+    vi.spyOn(navigator.geolocation, "getCurrentPosition").mockImplementation((ok: PositionCallback) => { finish = ok; });
+    const onBusyChange = vi.fn();
+    const onPick = vi.fn();
+    render(<LocationPinPicker pin={null} onPick={onPick} tone="donee" showSearch showLocateButton onBusyChange={onBusyChange} />);
+    await userEvent.click(screen.getByRole("button", { name: /use my current location/i }));
+    expect(onBusyChange).toHaveBeenLastCalledWith(true);
+    act(() => finish!({ coords: { latitude: 1, longitude: 2 } } as GeolocationPosition));
+    expect(onPick).toHaveBeenLastCalledWith(1, 2);
+    expect(onBusyChange).toHaveBeenLastCalledWith(false);
   });
 });

@@ -539,6 +539,9 @@ export function ItemListingWizard({
     : null;
 
   const locationRef = useRef<LocationStepHandle>(null);
+  /** Step 4 is working out a new location (GPS, search, pin lookup, typed address). */
+  const [locationBusy, setLocationBusy] = useState(false);
+  const locationHeld = step === "location" && locationBusy;
   const [checkingLocation, setCheckingLocation] = useState(false);
   /** On the location step: wait for any pending lookup. False = stay on the step. */
   const settleLocation = useCallback(async () => {
@@ -548,7 +551,7 @@ export function ItemListingWizard({
   }, [step]);
 
   const handleContinue = useCallback(async () => {
-    if (photosBusy) return;
+    if (photosBusy || locationHeld) return;
     if (!(await settleLocation())) return;
     // modelRef: the lookup may have just moved the pin.
     const model = modelRef.current;
@@ -573,7 +576,7 @@ export function ItemListingWizard({
       void handleSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, goTo, reduced, settleLocation, photosBusy]);
+  }, [step, goTo, reduced, settleLocation, photosBusy, locationHeld]);
 
   const handleBack = useCallback(() => {
     const idx = stepIndex(step);
@@ -783,6 +786,7 @@ export function ItemListingWizard({
                     <LocationStep
                       model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
                       onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped} controlRef={locationRef}
+                      onBusyChange={setLocationBusy}
                     />
                   )}
                   {step === "review" && (
@@ -810,8 +814,8 @@ export function ItemListingWizard({
             onContinue={() => void handleContinue()}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={continueLabel}
-            advancing={checkingLocation || !!photosBusy}
-            advancingLabel={checkingLocation ? "Checking location…" : photosBusy ?? undefined}
+            advancing={checkingLocation || locationHeld || !!photosBusy}
+            advancingLabel={checkingLocation || locationHeld ? "Checking location…" : photosBusy ?? undefined}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}
