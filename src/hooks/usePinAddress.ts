@@ -91,6 +91,10 @@ export function usePinAddress() {
   ): Promise<{ lat: number; lng: number } | null> => {
     if (!q.city && !q.postalcode) return null;
     const mine = ++seq.current;
+    // This supersedes any pin lookup still waiting: it will never settle
+    // `whenIdle` itself (it sees a newer seq), so release it here.
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    settle();
     setState({ running: true, error: null });
     const geo = await geocodeAddressFromServer(q);
     if (mine !== seq.current) return null;

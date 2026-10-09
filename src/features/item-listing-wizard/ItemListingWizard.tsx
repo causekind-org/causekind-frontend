@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
-import type { LocationPickerHandle, PickedLocation } from "@/components/location/LocationPicker";
-import { useProfileMapStart } from "@/hooks/useProfileMapStart";
+import { usePinAddress } from "@/hooks/usePinAddress";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -25,7 +24,7 @@ import { PhotosStep } from "./steps/PhotosStep";
 import { useOfferVideo, LISTING_VIDEO_ENDPOINTS } from "@/features/donation-offer-wizard/useOfferVideo";
 import { BasicsStep } from "./steps/BasicsStep";
 import { ConditionDetailsStep } from "./steps/ConditionDetailsStep";
-import { LocationStep } from "./steps/LocationStep";
+import { LocationStep, type LocationStepHandle } from "./steps/LocationStep";
 import { ReviewSubmitStep } from "./steps/ReviewSubmitStep";
 import { useListingDraft } from "./useListingDraft";
 import { useListingPhotos } from "./useListingPhotos";
@@ -103,9 +102,6 @@ export function ItemListingWizard({
   const [savingExit, setSavingExit] = useState(false);
   /** The donor's profile coordinates: where the map starts when the listing has no pin. */
   const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
-  const [profileCity, setProfileCity] = useState<string | null>(null);
-  /** Where the location map starts without a pin: profile coordinates, else the profile City's centre. */
-  const mapStart = useProfileMapStart(profileCenter, profileCity);
 
   const [aiRunning, setAiRunning] = useState(false);
   const [aiNote, setAiNote] = useState<string | null>(null);
@@ -428,7 +424,6 @@ export function ItemListingWizard({
       .then(p => {
         if (!isMounted) return;
         if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
-        setProfileCity(p.city);
         if (mode !== "create") return;
         setModel(prev => {
           // The profile stores city in the same flattened "City, StateIso,
@@ -443,8 +438,8 @@ export function ItemListingWizard({
             countryIso: dirtyRef.current.has("countryIso") ? prev.countryIso : (parsed.countryIso || prev.countryIso),
             stateIso: dirtyRef.current.has("stateIso") ? prev.stateIso : (prev.stateIso || parsed.stateIso),
             city: dirtyRef.current.has("city") ? prev.city : (prev.city || parsed.city),
-            latitude: prev.latitude ?? p.latitude ?? undefined,
-            longitude: prev.longitude ?? p.longitude ?? undefined,
+            // No coordinates from the profile: the donor places this listing's
+            // pin on step 4 (the map only opens on the profile location).
           };
           modelRef.current = next;
           return next;
@@ -454,33 +449,57 @@ export function ItemListingWizard({
     return () => { isMounted = false; };
   }, [mode]);
 
-  // ── Item location ─────────────────────────────────────────────────────────
+  // ── Item location: map pin → address ─────────────────────────────────────
   /**
-   * The shared LocationPicker owns the GPS / search / pin / typing sync and
-   * hands back the whole location; this applies it and saves. The pin
-   * (latitude/longitude) is what matching uses.
+   * The pin is the source of truth for coordinates; the address fields follow
+   * it (shared lookup: usePinAddress). A lookup value replaces a field; a field
+   * the lookup has nothing for is left as the donor typed it. `onlyEmpty` is
+   * for pins we placed ourselves (the profile location), which never overwrite.
    */
-  const handleLocation = useCallback((loc: PickedLocation) => {
-    const prev = modelRef.current;
-    const next: WizardModel = {
-      ...prev,
-      countryIso: loc.countryIso, stateIso: loc.stateIso, city: loc.city,
-      locality: loc.locality, pincode: loc.pincode,
-      latitude: loc.lat ?? undefined, longitude: loc.lng ?? undefined,
-    };
-    (["countryIso", "stateIso", "city", "locality", "pincode"] as const).forEach(k => {
-      if (next[k] !== prev[k]) dirtyRef.current.add(k);
+  const pinAddress = usePinAddress();
+  const { lookup: lookupPin, geocodeTyped } = pinAddress;
+  const lookup = { running: pinAddress.running, error: pinAddress.error, whenIdle: pinAddress.whenIdle };
+  const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
+    const placed = { ...modelRef.current, latitude: lat, longitude: lng };
+    modelRef.current = placed;
+    setModel(placed);
+    queueSave(placed);
+    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
+    lookupPin(lat, lng, found => {
+      const prev = modelRef.current;
+      const next = { ...prev };
+      const fields = {
+        countryIso: found.countryIso, stateIso: found.stateIso, city: found.city,
+        locality: found.locality, pincode: found.pincode,
+      } as const;
+      (Object.keys(fields) as (keyof typeof fields)[]).forEach(k => {
+        const v = fields[k];
+        if (!v) return;
+        if (opts?.onlyEmpty && String(prev[k] ?? "").trim()) return;
+        next[k] = v;
+      });
+      modelRef.current = next;
+      setModel(next);
+      queueSave(next);
     });
+  }, [queueSave, lookupPin]);
+
+  /**
+   * The donor typed an address: move the pin to it. Only with no map does an
+   * address that can't be placed fall back to the profile location; with a map
+   * the pin stays where it is and the donor places it.
+   */
+  const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }, useProfileFallback: boolean) => {
+    const coords = await geocodeTyped(q, useProfileFallback ? profileCenter : null);
+    if (!coords) return false;
+    const next = { ...modelRef.current, latitude: coords.lat, longitude: coords.lng };
     modelRef.current = next;
     setModel(next);
     queueSave(next);
-    setErrors(e => {
-      const cleared = { ...e };
-      (["countryIso", "stateIso", "city", "locality", "pincode"] as const).forEach(k => { if (next[k] !== prev[k]) cleared[k] = ""; });
-      if (next.latitude != null) { cleared.latitude = ""; cleared.longitude = ""; }
-      return cleared;
-    });
-  }, [queueSave]);
+    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
+    return true;
+  }, [geocodeTyped, profileCenter, queueSave]);
+
 
   // ── Navigation ────────────────────────────────────────────────────────────
   const focusField = useCallback((field: string) => {
@@ -497,7 +516,7 @@ export function ItemListingWizard({
     setStep(next);
   }, []);
 
-  const locationRef = useRef<LocationPickerHandle>(null);
+  const locationRef = useRef<LocationStepHandle>(null);
   const [checkingLocation, setCheckingLocation] = useState(false);
   /** On the location step: wait for any pending lookup. False = stay on the step. */
   const settleLocation = useCallback(async () => {
@@ -738,8 +757,8 @@ export function ItemListingWizard({
                   )}
                   {step === "location" && (
                     <LocationStep
-                      model={model} errors={errors} profileCenter={profileCenter} mapStart={mapStart}
-                      onChange={handleLocation} controlRef={locationRef}
+                      model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
+                      onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped} controlRef={locationRef}
                     />
                   )}
                   {step === "review" && (

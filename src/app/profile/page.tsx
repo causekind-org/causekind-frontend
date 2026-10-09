@@ -250,8 +250,6 @@ export default function ProfilePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
 
-  // GPS location
-
   // Derived option lists (memoized to avoid re-building every render)
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 10;

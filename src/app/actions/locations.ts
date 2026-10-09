@@ -1,7 +1,6 @@
 "use server";
 
 import { Country, State, City } from "country-state-city";
-import { parseCity } from "@/features/item-listing-wizard/wizardLocation";
 
 export async function getCountries() {
   return Country.getAllCountries().map((c) => ({
@@ -183,42 +182,6 @@ export async function resolveLocationFromGPS(countryCode: string, stateName: str
 }
 
 /**
- * Approximate centre of a profile's city, for where a map should *start* when
- * the user has no saved coordinates. Never used as a pin or for matching.
- *
- * <p>The profile stores `"City, StateIso, CountryIso"` (older profiles: free
- * text such as `"Pune"`, read as an Indian city). The city list this app
- * already uses carries coordinates, so most lookups need no network; a city
- * missing from the list is geocoded through Nominatim, and when the city
- * cannot be placed at all the state's centre is used instead.
- */
-export async function profileCityCenterFromServer(
-  raw: string | null,
-): Promise<{ lat: number; lng: number; level: "city" | "state" } | null> {
-  const parsed = parseCity(raw);
-  if (!parsed.city && !parsed.stateIso) return null;
-  const countryIso = parsed.countryIso || "IN";
-  const point = (o: { latitude?: string | null; longitude?: string | null } | undefined) => {
-    const lat = Number(o?.latitude), lng = Number(o?.longitude);
-    return o?.latitude && o?.longitude && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
-  };
-
-  if (parsed.city) {
-    const wanted = normCity(parsed.city);
-    const listed = (parsed.stateIso ? City.getCitiesOfState(countryIso, parsed.stateIso) : City.getCitiesOfCountry(countryIso)) ?? [];
-    const hit = point(listed.find((c) => c.name.toLowerCase() === parsed.city.toLowerCase()) ?? listed.find((c) => normCity(c.name) === wanted));
-    if (hit) return { ...hit, level: "city" };
-
-    const stateName = parsed.stateIso ? State.getStateByCodeAndCountry(parsed.stateIso, countryIso)?.name ?? "" : "";
-    const geo = await geocodeAddressFromServer({ city: parsed.city, state: stateName, countryCode: countryIso });
-    if (geo.ok) return { lat: geo.lat, lng: geo.lng, level: "city" };
-  }
-
-  const state = parsed.stateIso ? point(State.getStateByCodeAndCountry(parsed.stateIso, countryIso) ?? undefined) : null;
-  return state ? { ...state, level: "state" } : null;
-}
-
-/**
  * Nominatim's usage policy: at most one request per second. Every call from
  * this module waits for its slot here (per server instance), on top of the
  * debouncing the pickers already do.
@@ -229,34 +192,4 @@ async function nominatimSlot() {
   const at = Math.max(now, nextNominatimSlot);
   nextNominatimSlot = at + 1000;
   if (at > now) await new Promise((r) => setTimeout(r, at - now));
-}
-
-/**
- * Free-text place search for the location picker's search box ("Kothrud,
- * Pune", "411038"). Submit-only by design: Nominatim's policy rules out
- * as-you-type suggestions. India-biased, since that is where CauseKind runs.
- */
-export async function searchPlaceFromServer(
-  q: string,
-): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
-  const query = q.trim().slice(0, 200);
-  if (!query) return { ok: false, reason: "no-address" };
-  const params = new URLSearchParams({ q: query, format: "json", limit: "1", countrycodes: "in", email: "support@causekind.com" });
-  await nominatimSlot();
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-      headers: {
-        "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
-        "Accept": "application/json",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
-    const rows = (await res.json()) as { lat: string; lon: string }[];
-    const first = rows?.[0];
-    if (!first) return { ok: false, reason: "no-address" };
-    return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
-  } catch {
-    return { ok: false, reason: "network" };
-  }
 }

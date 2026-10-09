@@ -1,4 +1,4 @@
-/** The request stages (location is its own step); reusable household facts and identity documents live in the profile. */
+/** Request stages; reusable household facts and identity documents live in the profile. */
 
 export const DONEE_REQUEST_STEPS = [
   "need-details",
@@ -20,7 +20,7 @@ export const STEP_LABELS: Record<DoneeRequestStep, string> = {
 
 export const STEP_INTROS: Record<DoneeRequestStep, string> = {
   "need-details": "What do you need, and why?",
-  "location": "This location will be used to match your request with donors within 10 km.",
+  "location": "Where should the item reach you? We look for donors within 10 km of this pin.",
   "household-situation": "Tell us who needs the item and add evidence specific to this request",
   "review": "Review your request details before submitting",
   "declarations": "Final confirmation",

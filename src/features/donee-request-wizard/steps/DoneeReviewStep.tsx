@@ -47,7 +47,8 @@ export function DoneeReviewStep({
       </ReviewSection>
 
       <ReviewSection title="Location" onEdit={() => onEdit("location")}>
-        <ReviewRow label="Location" value={[city, pincode].filter(Boolean).join(" - ") || "Not specified"} />
+        <ReviewRow label="City" value={city || "Not specified"} />
+        <ReviewRow label="PIN code" value={pincode || "Not specified"} />
       </ReviewSection>
 
       {isEmergency && (
