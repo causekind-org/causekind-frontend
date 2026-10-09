@@ -112,7 +112,7 @@ describe("LocationPinPicker", () => {
     await userEvent.type(screen.getByRole("combobox", { name: /search for a place/i }), "Bandra");
     const option = await screen.findByRole("option", { name: /Bandra West/ });
     await userEvent.click(option);
-    await vi.waitFor(() => expect(onPick).toHaveBeenLastCalledWith(19.06, 72.83));
+    await vi.waitFor(() => expect(onPick).toHaveBeenLastCalledWith(19.06, 72.83, { label: "Bandra West, Mumbai, Maharashtra" }));
     expect(places.fetch).toHaveBeenCalledWith(expect.objectContaining({ input: "Bandra" }));
   });
 

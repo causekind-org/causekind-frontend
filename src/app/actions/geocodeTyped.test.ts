@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { geocodeAddressFromServer } from "./locations";
+import { geocodeAddressFromServer, geocodeFreeTextFromServer } from "./locations";
 
 /** What each Nominatim call asked for, as plain params. */
 function calls(fetchMock: ReturnType<typeof vi.fn>) {
@@ -46,5 +46,21 @@ describe("geocodeAddressFromServer", () => {
     const r = await geocodeAddressFromServer({ postalcode: "400068", city: "Mumbai", state: "Maharashtra", countryCode: "IN" });
     expect(r).toEqual({ ok: false, reason: "rate-limited" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  }, 10_000);
+});
+
+describe("geocodeFreeTextFromServer (handover address)", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("drops the building part on a miss and lands on the street or area", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(miss)              // "Flat 4, Sai Krupa, Link Road, Kandivali East"
+      .mockResolvedValueOnce(hit(19.2, 72.86)); // "Sai Krupa, Link Road, Kandivali East"
+    vi.stubGlobal("fetch", fetchMock);
+    const r = await geocodeFreeTextFromServer("Flat 4, Sai Krupa, Link Road, Kandivali East");
+    expect(r).toEqual({ ok: true, lat: 19.2, lng: 72.86 });
+    const c = calls(fetchMock);
+    expect(c[0]).toMatchObject({ q: "Flat 4, Sai Krupa, Link Road, Kandivali East", countrycodes: "in" });
+    expect(c[1]).toMatchObject({ q: "Sai Krupa, Link Road, Kandivali East" });
   }, 10_000);
 });

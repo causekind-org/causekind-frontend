@@ -146,6 +146,47 @@ export async function geocodeAddressFromServer(query: {
   return { ok: false, reason: last };
 }
 
+/**
+ * Coordinates for a free-text address, as typed into the handover form ("Flat
+ * 4, Sai Krupa, Link Road, Kandivali East, Mumbai"). Nominatim rarely knows the
+ * building, so on a miss the first comma part is dropped and the rest retried
+ * ("Sai Krupa, Link Road, …", then "Link Road, …"), up to three tries, which
+ * lands on the street or area instead of failing. India-biased like the rest.
+ */
+export async function geocodeFreeTextFromServer(
+  text: string,
+): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
+  let parts = text.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return { ok: false, reason: "no-address" };
+  let last: GeocodeFailure = "no-address";
+  for (let tries = 0; tries < 3 && parts.length > 0; tries++) {
+    const params = new URLSearchParams({
+      q: parts.join(", ").slice(0, 200), format: "json", limit: "1", countrycodes: "in", email: "support@causekind.com",
+    });
+    await nominatimSlot();
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        headers: {
+          "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
+          "Accept": "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
+      const rows = (await res.json()) as { lat: string; lon: string }[];
+      if (rows?.[0]) return { ok: true, lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
+      last = "no-address";
+    } catch (err) {
+      console.warn("[geocode] free-text search failed:", err instanceof Error ? err.message : err);
+      last = "network";
+    }
+    // A single part left that matched nothing: nothing shorter to try.
+    if (parts.length === 1) break;
+    parts = parts.slice(1);
+  }
+  return { ok: false, reason: last };
+}
+
 // Strip common administrative suffixes before comparing
 function normCity(s: string): string {
   return s

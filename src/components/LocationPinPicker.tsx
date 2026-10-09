@@ -86,7 +86,7 @@ type Suggestion = { id: string; main: string; secondary: string; prediction: goo
  * listings and requests can be outside India.
  */
 function PlaceSearchBox({ near, onPlace, onBusy }: {
-  near: LatLng; onPlace: (lat: number, lng: number) => void;
+  near: LatLng; onPlace: (lat: number, lng: number, label: string) => void;
   /** True while a chosen result is being fetched (before onPlace). */
   onBusy?: (busy: boolean) => void;
 }) {
@@ -137,14 +137,15 @@ function PlaceSearchBox({ near, onPlace, onBusy }: {
 
   async function choose(s: Suggestion) {
     setOpen(false);
-    setQuery([s.main, s.secondary].filter(Boolean).join(", "));
+    const label = [s.main, s.secondary].filter(Boolean).join(", ");
+    setQuery(label);
     setBusy(true);
     try {
       const place = s.prediction.toPlace();
       await place.fetchFields({ fields: ["location"] });
       token.current = null; // the session ends with the fetch
       const loc = place.location;
-      if (loc) onPlace(loc.lat(), loc.lng());
+      if (loc) onPlace(loc.lat(), loc.lng(), label);
       else setError("We couldn't place that result — try another, or tap the map.");
     } catch (e) {
       console.warn("Place details failed:", e);
@@ -313,8 +314,11 @@ function FollowPin({ pin, recenter }: { pin: LatLng | null; recenter: number }) 
 type LocationPinPickerProps = {
   /** The current pin; null until one is placed. */
   pin: LatLng | null;
-  /** Called with the new position after a tap or a drag. */
-  onPick: (lat: number, lng: number) => void;
+  /**
+   * Called with the new position after a tap, a drag, current location or a
+   * search. A search also passes the chosen place's name as `label`.
+   */
+  onPick: (lat: number, lng: number, meta?: { label?: string }) => void;
   /** Where to look while there is no pin (e.g. the profile location). */
   fallbackCenter?: LatLng | null;
   /** Zoom for `fallbackCenter` (default: street level). */
@@ -445,7 +449,7 @@ export function LocationPinPicker({
             <ApiStatusWatch onFailure={() => setFailed(true)} />
             {(showSearch || locateOnTop) && (
               <div className="mb-2 flex flex-wrap items-start gap-2">
-                {showSearch && <PlaceSearchBox near={start} onPlace={(lat, lng) => onPick(lat, lng)} onBusy={setSearchBusy} />}
+                {showSearch && <PlaceSearchBox near={start} onPlace={(lat, lng, label) => onPick(lat, lng, { label })} onBusy={setSearchBusy} />}
                 {locateOnTop && locateButton}
               </div>
             )}
