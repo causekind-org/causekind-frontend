@@ -14,19 +14,21 @@ export function useLocations(countryIso: string, stateIso: string) {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    setStates([]);
     if (countryIso) {
-      getStates(countryIso).then(setStates);
-    } else {
-      setStates([]);
+      getStates(countryIso).then(options => { if (!cancelled) setStates(options); });
     }
+    return () => { cancelled = true; };
   }, [countryIso]);
 
   useEffect(() => {
+    let cancelled = false;
+    setCities([]);
     if (countryIso && stateIso) {
-      getCities(countryIso, stateIso).then(setCities);
-    } else {
-      setCities([]);
+      getCities(countryIso, stateIso).then(options => { if (!cancelled) setCities(options); });
     }
+    return () => { cancelled = true; };
   }, [countryIso, stateIso]);
 
   return { countries, states, cities, dialCodes };
