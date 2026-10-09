@@ -20,9 +20,13 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
+import { ListingDetailsPanel } from "@/components/listings/ListingDetailsPanel";
+import { RequestDetailsPanel } from "@/components/requests/RequestDetailsPanel";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
+import { DonorMatchReviewInline } from "@/components/matches/DonorMatchReviewInline";
 import { DoneeMatchReviewCard } from "@/components/matches/DoneeMatchReviewCard";
+import { DoneeMatchReviewInline } from "@/components/matches/DoneeMatchReviewInline";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { isNgoRole } from "@/lib/isNgoRole";
@@ -85,59 +89,17 @@ function getInitials(name: string | null | undefined): string {
 
 
 // Listing status journey — ordered steps a listing goes through
-const LISTING_JOURNEY_STATIONS = ["Listed", "Verified", "Matching", "Matched", "Donated"];
 
 function listingJourneyStage(status: string): { stage: number; state: "active" | "done" | "broken" } {
   if (status === "DRAFT") return { stage: 0, state: "active" };
   if (status === "SUBMITTED") return { stage: 0, state: "done" };
   if (["AI_SCREENING", "NEEDS_INFORMATION", "MANUAL_REVIEW"].includes(status)) return { stage: 1, state: "active" };
   if (["ELIGIBLE_FOR_MATCHING", "AVAILABLE", "PAUSED"].includes(status)) return { stage: 2, state: "active" };
-  if (["SOFT_RESERVED", "MATCHED", "PARTIALLY_DONATED"].includes(status)) return { stage: 3, state: "active" };
+  if (["SOFT_RESERVED", "RESERVED", "MATCHED", "PARTIALLY_DONATED"].includes(status)) return { stage: 3, state: "active" };
   if (["DONATED", "FULFILLED"].includes(status)) return { stage: 4, state: "done" };
   if (status === "REJECTED") return { stage: 1, state: "broken" };
   if (["EXPIRED", "WITHDRAWN"].includes(status)) return { stage: 2, state: "broken" };
   return { stage: 0, state: "active" };
-}
-
-function ListingJourneyRail({ status }: { status: string }) {
-  const { stage, state } = listingJourneyStage(status);
-  const stations = LISTING_JOURNEY_STATIONS;
-
-  return (
-    <div className="flex items-start mt-4 max-w-md">
-      {stations.map((label, i) => {
-        const reached = i < stage || (i === stage && state === "done");
-        const current = i === stage && state !== "done";
-        const brokenHere = current && state === "broken";
-        const isLast = i === stations.length - 1;
-
-        return (
-          <div key={label} className="flex items-start flex-1 last:flex-none">
-            <div className="flex flex-col items-center gap-1.5 shrink-0">
-              <span className={`relative flex items-center justify-center w-3.5 h-3.5 rounded-full border-2 transition-colors ${brokenHere ? "border-red-500 bg-red-500" :
-                reached ? (isLast ? "border-emerald-500 bg-emerald-500" : "border-[var(--ck-role-accent)] bg-[var(--ck-role-accent)]") :
-                  current ? "border-[var(--ck-role-accent)] bg-white dark:bg-zinc-900" :
-                    "border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"}`}>
-                {current && !brokenHere && (
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-accent)]/40 animate-ping motion-reduce:hidden" />
-                )}
-                {brokenHere && <X className="w-2 h-2 text-white" strokeWidth={4} />}
-              </span>
-              <span className={`text-4xs font-bold uppercase tracking-wider ${brokenHere ? "text-red-500" :
-                (reached && isLast) ? "text-emerald-600 dark:text-emerald-400" :
-                  reached || current ? "text-stone-600 dark:text-stone-300" :
-                    "text-stone-300 dark:text-zinc-600"}`}>
-                {label}
-              </span>
-            </div>
-            {!isLast && (
-              <div className={`flex-1 h-[2px] mx-1.5 mt-1.5 rounded-full ${i < stage ? "bg-[var(--ck-role-accent)]" : "bg-stone-200 dark:bg-zinc-800"}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
 }
 
 function getListingStatusBadge(status: string) {
@@ -298,6 +260,7 @@ function DonorListingRow({
   onSelect,
   listingMatches = [],
   onOpenMatches,
+  review,
 }: {
   listing: ItemListing;
   index: number;
@@ -310,11 +273,15 @@ function DonorListingRow({
   listingMatches?: ItemMatch[];
   /** Jump to the Matches tab, where accept/decline actually happens. */
   onOpenMatches?: () => void;
+  /** A match waiting on the donor, answered inside the card's Matched step. */
+  review?: React.ReactNode;
 }) {
   const badge = getListingStatusBadge(l.status);
   const isDraft = l.status === "DRAFT";
   const needsInfo = l.status === "NEEDS_INFORMATION";
   const isLive = l.status === "ELIGIBLE_FOR_MATCHING" || l.status === "AVAILABLE";
+  // A match being answered in the card's Matched step is not listed again in the strip.
+  const stripMatches = review ? listingMatches.filter(m => m.status !== "DONOR_REVIEW") : listingMatches;
 
   return (
     <motion.div
@@ -403,16 +370,14 @@ function DonorListingRow({
         </div>
       </div>
 
-      <ListingJourneyRail status={l.status} />
-
-      {listingMatches.length > 0 ? (
+      {stripMatches.length > 0 ? (
         <div className="mt-3.5 rounded-xl border border-[var(--ck-role-accent)]/20 bg-gradient-to-br from-[var(--ck-role-accent)]/[0.06] to-transparent p-2.5 sm:p-3 dark:border-[var(--ck-role-accent)]/30 dark:from-[var(--ck-role-accent)]/10">
           <p className="flex items-center gap-1.5 text-3xs font-black uppercase tracking-[0.18em] text-[var(--ck-role-accent)]">
             <Handshake className="w-3.5 h-3.5" />
-            Matched to {listingMatches.length} nearby need{listingMatches.length > 1 ? "s" : ""}
+            Matched to {stripMatches.length} nearby need{stripMatches.length > 1 ? "s" : ""}
           </p>
           <ul className="mt-2 divide-y divide-stone-200/70 dark:divide-zinc-800">
-            {listingMatches.map((m) => {
+            {stripMatches.map((m) => {
               const stage = donorMatchStage(m.status);
               const proximity = formatMatchProximity(m);
               const urgent = m.requestUrgency === "CRITICAL" || m.requestUrgency === "HIGH";
@@ -460,7 +425,7 @@ function DonorListingRow({
             })}
           </ul>
         </div>
-      ) : isLive ? (
+      ) : isLive && !review ? (
         <p className="mt-3 flex items-center gap-2 text-2xs text-stone-400 dark:text-stone-500">
           <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden>
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--ck-role-accent)]/60 motion-reduce:hidden" />
@@ -498,6 +463,9 @@ function DonorListingRow({
             : "This listing wasn't approved. Open it for details."}
         </div>
       )}
+
+      {/* Always open (owner, 2026-10-09): no Show details toggle. */}
+      {!isDraft && <ListingDetailsPanel listing={l} {...listingJourneyStage(l.status)} review={review} />}
     </motion.div>
   );
 }
@@ -722,7 +690,6 @@ function DeleteDraftButton({ requestId, onDeleted }: { requestId: number; onDele
 /* The donee pipeline, drawn: every request travels Posted -> Verified -> Matched ->
    Received. The rail pulses at the current station and breaks (red) where a
    rejection or expiry stopped it — the structure IS the status explanation. */
-const JOURNEY_STATIONS = ["Posted", "Verified", "Matched", "Received"];
 
 function journeyStage(status: string, fulfilment: RequestFulfilment): { stage: number; state: "draft" | "active" | "done" | "broken" } {
   const { isPartiallyFulfilled } = fulfilment;
@@ -742,47 +709,7 @@ function journeyStage(status: string, fulfilment: RequestFulfilment): { stage: n
   return { stage: 2, state: "active" }; // all matching-phase statuses
 }
 
-function JourneyRail({ status, fulfilment }: { status: string; fulfilment: RequestFulfilment }) {
-  const { stage, state } = journeyStage(status, fulfilment);
-  const stations = fulfilment.isPartiallyFulfilled
-    ? ["Posted", "Verified", "Matched", "Partial", "Received"]
-    : JOURNEY_STATIONS;
-
-  return (
-    <div className="flex items-start mt-4 max-w-md">
-      {stations.map((label, i) => {
-        const reached = i < stage || (i === stage && state === "done");
-        const current = i === stage && state !== "done";
-        const brokenHere = current && state === "broken";
-        const isLast = i === stations.length - 1;
-
-        return (
-          <div key={label} className="flex items-start flex-1 last:flex-none">
-            <div className="flex flex-col items-center gap-1.5 shrink-0">
-              <span className={`relative flex items-center justify-center w-3.5 h-3.5 rounded-full border-2 transition-colors ${brokenHere ? "border-red-500 bg-red-500" :
-                reached ? (isLast ? "border-emerald-500 bg-emerald-500" : "border-[#1e3a60] bg-[#1e3a60] dark:border-blue-400 dark:bg-blue-400") :
-                  current ? "border-[#1e3a60] dark:border-blue-400 bg-white dark:bg-zinc-900" :
-                    "border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"}`}>
-                {current && !brokenHere && (
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#1e3a60]/40 dark:bg-blue-400/40 animate-ping motion-reduce:hidden" />
-                )}
-                {brokenHere && <X className="w-2 h-2 text-white" strokeWidth={4} />}
-              </span>
-              <span className={`text-4xs font-bold uppercase tracking-wider ${brokenHere ? "text-red-500" : reached || current ? "text-stone-600 dark:text-stone-300" : "text-stone-300 dark:text-zinc-600"}`}>
-                {label}
-              </span>
-            </div>
-            {!isLast && (
-              <div className={`flex-1 h-[2px] mx-1.5 mt-1.5 rounded-full ${i < stage ? "bg-[#1e3a60] dark:bg-blue-400" : "bg-stone-200 dark:bg-zinc-800"}`} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequest; index: number; onCancelled: () => void }) {
+function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: ItemRequest; index: number; onCancelled: () => void; review?: React.ReactNode }) {
   const fulfilment = getRequestFulfilment(r);
   // "Partially fulfilled" and "Remaining" both promise more is on the way, which
   // is only true while the request is open. A withdrawn or expired one keeps its
@@ -843,12 +770,16 @@ function DoneeRequestRow({ request: r, index, onCancelled }: { request: ItemRequ
           {canHideWithdrawnRequest(r.status) && <HideWithdrawnRequestButton requestId={r.id} onHidden={onCancelled} />}
         </div>
       </div>
-      <JourneyRail status={r.status} fulfilment={fulfilment} />
       {r.status === "REJECTED" && r.rejectionReason && (
         <p className="text-2xs text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{displayReason(r.rejectionReason)}</p>
       )}
       {r.status === "DRAFT" && (
         <p className="text-2xs text-stone-400 mt-2.5">Saved as a draft &mdash; continue where you left off and submit when ready.</p>
+      )}
+      {/* Always open, like the donor's listing card (owner, 2026-10-09). */}
+      {r.status !== "DRAFT" && (
+        <RequestDetailsPanel request={r} {...journeyStage(r.status, fulfilment)}
+          partial={fulfilment.isPartiallyFulfilled} fulfilled={fulfilment.fulfilled} requested={fulfilment.requested} review={review} />
       )}
     </motion.div>
   );
@@ -1500,44 +1431,56 @@ const doneDate = (iso?: string | null) => {
 };
 
 /**
- * The donor's History card (owner, 2026-10-08): finished offers and finished
- * matches in ONE list, newest first, each tagged with how it happened. Offers
- * that didn't go ahead sit underneath, collapsed.
+ * The donor's History card (owner, 2026-10-09): ONE newest-first list of
+ * everything that has ended — donated offers and matches, and every offer or
+ * match that didn't go ahead (cancelled, withdrawn, declined, not approved,
+ * failed), each with its status and reason. Replaces the separate "Didn't go
+ * ahead" fold and the Match history strip.
  */
-function DonorHistorySection({ offers, fulfilledItems, matches, onChanged }: {
+function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onChanged }: {
   offers: DonationOffer[];
   fulfilledItems: ItemListing[];
   matches: ItemMatch[];
+  /** Matches that have ended, delivered or not. */
+  pastMatches: ItemMatch[];
   onChanged: () => void;
 }) {
-  const closed = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status));
-  const rows = useMemo(() => {
+  const entries = useMemo(() => {
     const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => ({
       key: `o${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
-      title: o.requestTitle ?? "Donation",
-      tag: "Your offer",
-      sub: ["Completed", doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · "),
-      thumb: o.media?.[0]?.mediaUrl ?? null,
-      photos: (o.media ?? []).map(m => m.mediaUrl),
-      href: `/certificate?offerId=${o.id}`,
+      node: <DoneRow title={o.requestTitle ?? "Donation"} tag="Donated · your offer"
+        sub={[doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · ")}
+        thumb={o.media?.[0]?.mediaUrl ?? null} photos={(o.media ?? []).map(m => m.mediaUrl)}
+        href={`/certificate?offerId=${o.id}`} />,
     }));
-    const fromMatches = fulfilledItems.map(item => {
+    const listedIds = new Set(fulfilledItems.map(i => i.id));
+    const fromItems = fulfilledItems.map(item => {
       const match = findMatchForListing(item, matches);
       const when = getListingCompletionDate(item, match);
       return {
         key: `l${item.id}`,
         at: Date.parse(when ?? "") || 0,
-        title: item.title,
-        tag: "Matched for you",
-        sub: ["Donated", doneDate(when), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · "),
-        thumb: item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null),
-        photos: item.photoUrls?.length ? item.photoUrls : (item.imageUrls ? item.imageUrls.split("|") : []),
-        href: isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null,
+        node: <DoneRow title={item.title} tag="Donated · matched"
+          sub={[doneDate(when), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · ")}
+          thumb={item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null)}
+          photos={item.photoUrls?.length ? item.photoUrls : (item.imageUrls ? item.imageUrls.split("|") : [])}
+          href={isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null} />,
       };
     });
-    return [...fromOffers, ...fromMatches].sort((a, b) => b.at - a.at);
-  }, [offers, fulfilledItems, matches]);
+    const fromClosedOffers = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED").map(o => ({
+      key: `c${o.id}`,
+      at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
+      node: <ClosedOfferCard offer={o} onChanged={onChanged} />,
+    }));
+    // A delivered match whose listing already has its own row above is not repeated.
+    const fromMatches = pastMatches.filter(m => !(m.listingId != null && listedIds.has(m.listingId))).map(m => ({
+      key: `m${m.id}`,
+      at: matchEndedAt(m),
+      node: <PastMatchRow m={m} viewer="DONOR" />,
+    }));
+    return [...fromOffers, ...fromItems, ...fromClosedOffers, ...fromMatches].sort((a, b) => b.at - a.at);
+  }, [offers, fulfilledItems, matches, pastMatches, onChanged]);
 
   return (
     <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
@@ -1546,24 +1489,13 @@ function DonorHistorySection({ offers, fulfilledItems, matches, onChanged }: {
         <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
           <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation history
         </CardTitle>
-        <p className="text-xs text-stone-400 mt-0.5">Everything you have given, newest first</p>
+        <p className="text-xs text-stone-400 mt-0.5">Everything that has ended — donated, cancelled, withdrawn or declined — newest first</p>
       </CardHeader>
       <CardContent className="space-y-2 pt-3 sm:pt-4">
-        {rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-stone-500">No completed donations yet.</p>
+        {entries.length === 0 ? (
+          <p className="py-6 text-center text-sm text-stone-500">Nothing here yet.</p>
         ) : (
-          rows.map(({ key, ...r }) => <DoneRow key={key} {...r} />)
-        )}
-        {closed.length > 0 && (
-          <details className="group pt-2">
-            <summary className="flex cursor-pointer items-center gap-1 text-3xs font-black uppercase tracking-wider text-stone-400">
-              <span className="inline-block transition-transform group-open:rotate-90">▶</span>
-              Didn&apos;t go ahead ({closed.length})
-            </summary>
-            <div className="mt-2 space-y-2">
-              {closed.map(o => <ClosedOfferCard key={o.id} offer={o} onChanged={onChanged} />)}
-            </div>
-          </details>
+          entries.map(e => <div key={e.key}>{e.node}</div>)
         )}
       </CardContent>
     </Card>
@@ -1577,9 +1509,13 @@ function DonorHistorySection({ offers, fulfilledItems, matches, onChanged }: {
  * The old split hid any request that also had a completed offer from the
  * matched card, so a match-received item disappeared from history.
  */
-function DoneeHistorySection({ offers, matches }: {
+function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClosed }: {
   offers: DonationOffer[];
   matches: ItemMatch[];
+  /** Offers to the donee that didn't go ahead (not completed). */
+  onlyOffersClosed: DonationOffer[];
+  /** Matches that ended without delivery. */
+  onlyMatchesClosed: ItemMatch[];
 }) {
   const rows = useMemo(() => {
     const fromOffers = offers.filter(o => o.status === "COMPLETED" || o.status === "ISSUE_WINDOW_OPEN").map(o => {
@@ -1606,8 +1542,11 @@ function DoneeHistorySection({ offers, matches }: {
         photos: m.listingPhotoUrls?.length ? m.listingPhotoUrls : (m.donorImages ?? []),
       };
     });
-    return [...fromOffers, ...fromMatches].sort((a, b) => b.at - a.at);
-  }, [offers, matches]);
+    const received = [...fromOffers, ...fromMatches].map(({ key, at, ...r }) => ({ key, at, node: <DoneRow {...r} /> }));
+    const closedOffers = onlyOffersClosed.map(o => ({ key: `c${o.id}`, at: offerEndedAt(o), node: <PastOfferRow o={o} /> }));
+    const closedMatches = onlyMatchesClosed.map(m => ({ key: `x${m.id}`, at: matchEndedAt(m), node: <PastMatchRow m={m} viewer="DONEE" /> }));
+    return [...received, ...closedOffers, ...closedMatches].sort((a, b) => b.at - a.at);
+  }, [offers, matches, onlyOffersClosed, onlyMatchesClosed]);
 
   return (
     <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
@@ -1616,12 +1555,12 @@ function DoneeHistorySection({ offers, matches }: {
         <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
           <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donations received
         </CardTitle>
-        <p className="text-xs text-stone-400 mt-0.5">Everything you have received, newest first</p>
+        <p className="text-xs text-stone-400 mt-0.5">Everything received, and every offer or match that didn&apos;t go ahead, newest first</p>
       </CardHeader>
       <CardContent className="space-y-2 pt-3 sm:pt-4">
         {rows.length === 0
-          ? <p className="py-6 text-center text-sm text-stone-500">Nothing received yet.</p>
-          : rows.map(({ key, ...r }) => <DoneRow key={key} {...r} />)}
+          ? <p className="py-6 text-center text-sm text-stone-500">Nothing here yet.</p>
+          : rows.map(e => <div key={e.key}>{e.node}</div>)}
       </CardContent>
     </Card>
   );
@@ -1689,87 +1628,20 @@ function ShortDeliveryNote({ offer }: { offer: DonationOffer }) {
   );
 }
 
-/* The collapsible "history" row both the Offers and Matches tabs end with. */
-function HistoryToggle({ label, count, open, onToggle }: {
-  label: string; count: number; open: boolean; onToggle: () => void;
-}) {
+/** One offer to the donee that didn't go ahead, as a history row. */
+function PastOfferRow({ o }: { o: DonationOffer }) {
+  const { label, tone } = pastOfferLabel(o.status);
+  const reason = o.rejectionReason ? (o.displayRejectionReason ?? displayReason(o.rejectionReason)) : null;
   return (
-    <button
-      onClick={onToggle}
-      aria-expanded={open}
-      className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-xs font-semibold text-stone-400 transition-colors hover:bg-stone-50 hover:text-stone-600 dark:hover:bg-zinc-800 dark:hover:text-stone-300"
-    >
-      <History className="h-3.5 w-3.5" />
-      {label} ({count})
-      <ChevronDown className={`ml-auto h-3.5 w-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
-    </button>
-  );
-}
-
-function PastOffersStrip({ offers, activeRequestIds, defaultOpen = false }: {
-  offers: DonationOffer[];
-  activeRequestIds: Set<number>;
-  /** Open straight away when there is nothing live above it to look at. */
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  // Group by request, most recently finished first within each group
-  const groups = new Map<number, DonationOffer[]>();
-  for (const o of [...offers].sort((a, b) => offerEndedAt(b) - offerEndedAt(a))) {
-    const g = groups.get(o.requestId);
-    if (g) g.push(o); else groups.set(o.requestId, [o]);
-  }
-  // The "stays open to other donors" note is for offers that fell through, not
-  // for donations that were delivered.
-  const someRequestStillOpen = offers.some(o => o.status !== "COMPLETED" && !activeRequestIds.has(o.requestId));
-
-  return (
-    <div className="border-t border-stone-100 dark:border-zinc-800 pt-3">
-      <HistoryToggle label="Offer history" count={offers.length} open={open} onToggle={() => setOpen(v => !v)} />
-
-      {open && (
-        <div className="mt-2 space-y-3">
-          {[...groups.entries()].map(([requestId, group]) => (
-            <div key={requestId} className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
-              <div className="flex items-center gap-2">
-                <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">{group[0].requestTitle}</p>
-                {group.length > 1 && (
-                  <span className="flex-shrink-0 text-3xs font-semibold text-stone-400">{group.length} offers</span>
-                )}
-              </div>
-              <div className="mt-1.5 space-y-1">
-                {group.map(o => {
-                  const { label, tone } = pastOfferLabel(o.status);
-                  return (
-                    <div key={o.id} className="flex items-baseline gap-2 text-xs">
-                      <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
-                      <span className="flex-shrink-0 text-3xs text-stone-400">{shortDate(offerEndedAt(o))}</span>
-                      {o.status === "COMPLETED" && o.itemDetails && (
-                        <span className="min-w-0 truncate text-stone-500 dark:text-stone-400">
-                          {offerDeliveredQuantity(o)}× from {o.donorName || "a donor"}
-                        </span>
-                      )}
-                      {o.rejectionReason && (
-                        <span className="min-w-0 truncate text-stone-400 dark:text-stone-500"
-                          title={o.displayRejectionReason ?? displayReason(o.rejectionReason)}>
-                          {o.displayRejectionReason ?? displayReason(o.rejectionReason)}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-          {someRequestStillOpen && (
-            <p className="px-2 text-2xs leading-relaxed text-stone-400">
-              These requests remain open to other donors — you&apos;ll be notified the moment a new offer arrives.{" "}
-              <Link href="/requests" className="font-semibold text-[var(--ck-role-accent)] hover:underline">Browse donors offering to help →</Link>
-            </p>
-          )}
-        </div>
-      )}
+    <div className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">{o.requestTitle}</p>
+        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+      </div>
+      <p className="mt-1 truncate text-2xs text-stone-400">
+        Offer{o.donorName ? <> from {o.donorName}</> : null} &middot; {shortDate(offerEndedAt(o))}
+      </p>
+      {reason && <p className="mt-1 line-clamp-2 text-2xs text-stone-400 dark:text-stone-500" title={reason}>{reason}</p>}
     </div>
   );
 }
@@ -1802,47 +1674,27 @@ function pastMatchLabel(status: string, viewer: MatchViewer): { label: string; t
 const matchEndedAt = (m: ItemMatch) =>
   new Date((MATCH_RECEIVED_STATUSES.has(m.status) ? m.doneeConfirmedAt : null) ?? m.closedAt ?? m.createdAt).getTime();
 
-function PastMatchesStrip({ matches, viewer = "DONEE", defaultOpen = false }: {
-  matches: ItemMatch[];
-  viewer?: MatchViewer;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  const sorted = [...matches].sort((a, b) => matchEndedAt(b) - matchEndedAt(a));
-
-  // Nothing finished yet — a "Match history (0)" toggle is just noise.
-  if (matches.length === 0) return null;
-
+/** One finished match as a history row: what, for whom, when, how it ended, why. */
+function PastMatchRow({ m, viewer }: { m: ItemMatch; viewer: MatchViewer }) {
+  const { label, tone } = pastMatchLabel(m.status, viewer);
+  const received = MATCH_RECEIVED_STATUSES.has(m.status) ? (m.doneeConfirmedQty ?? m.allocatedQuantity) : null;
   return (
-    <div className="border-t border-stone-100 dark:border-zinc-800 pt-3 mt-4">
-      <HistoryToggle label="Match history" count={matches.length} open={open} onToggle={() => setOpen(v => !v)} />
-      {open && (
-        <div className="mt-2 space-y-2">
-          {sorted.map(m => {
-            const { label, tone } = pastMatchLabel(m.status, viewer);
-            const received = MATCH_RECEIVED_STATUSES.has(m.status) ? (m.doneeConfirmedQty ?? m.allocatedQuantity) : null;
-            return (
-              <div key={m.id} className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
-                <div className="flex items-center gap-2">
-                  <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">
-                    <TranslatedText text={matchItemLabel(m)} />
-                  </p>
-                  <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
-                  <WithdrawFlowButton kind="match" id={m.id} role={viewer === "DONOR" ? "DONOR" : "DONEE"} className="!min-h-[28px] !px-2" />
-                </div>
-                <p className="mt-1 truncate text-2xs text-stone-400">
-                  For: <TranslatedText text={m.requestTitle || (viewer === "DONOR" ? "a request" : "your request")} />
-                  {(viewer === "DONOR" ? m.doneeName : m.donorName) && <> &middot; {viewer === "DONOR" ? m.doneeName : m.donorName}</>}
-                  {" "}&middot; {shortDate(matchEndedAt(m))}
-                  {received != null && received > 0 && <> &middot; {received} {viewer === "DONOR" ? "delivered" : "received"}</>}
-                </p>
-                {m.rejectionReason && !MATCH_RECEIVED_STATUSES.has(m.status) && (
-                  <p className="mt-1 line-clamp-2 text-2xs text-stone-400 dark:text-stone-500">{displayReason(m.rejectionReason)}</p>
-                )}
-              </div>
-            );
-          })}
-        </div>
+    <div className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
+      <div className="flex items-center gap-2">
+        <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">
+          <TranslatedText text={matchItemLabel(m)} />
+        </p>
+        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+        <WithdrawFlowButton kind="match" id={m.id} role={viewer === "DONOR" ? "DONOR" : "DONEE"} className="!min-h-[28px] !px-2" />
+      </div>
+      <p className="mt-1 truncate text-2xs text-stone-400">
+        For: <TranslatedText text={m.requestTitle || (viewer === "DONOR" ? "a request" : "your request")} />
+        {(viewer === "DONOR" ? m.doneeName : m.donorName) && <> &middot; {viewer === "DONOR" ? m.doneeName : m.donorName}</>}
+        {" "}&middot; {shortDate(matchEndedAt(m))}
+        {received != null && received > 0 && <> &middot; {received} {viewer === "DONOR" ? "delivered" : "received"}</>}
+      </p>
+      {m.rejectionReason && !MATCH_RECEIVED_STATUSES.has(m.status) && (
+        <p className="mt-1 line-clamp-2 text-2xs text-stone-400 dark:text-stone-500">{displayReason(m.rejectionReason)}</p>
       )}
     </div>
   );
@@ -2076,6 +1928,15 @@ function DoneeDashboard({
   // matches waiting on the donee's yes/no); Matches holds accepted matches and
   // live offers; History holds the finished ones.
   const awaitingDoneeMatches = activeMatches.filter(m => m.status === "AWAITING_DONEE_CONFIRMATION");
+  // Owner, 2026-10-09: an item waiting on the donee is answered inside its request's
+  // card, in the Matched step; only one whose request is not listed keeps the full card.
+  const reviewByRequest = new Map(awaitingDoneeMatches.filter(m => m.requestId != null).map(m => [m.requestId as number, m]));
+  const orphanDoneeReviews = awaitingDoneeMatches.filter(m => m.requestId == null || !itemRequests.some(r => r.id === m.requestId));
+  const doneeReviewFor = (requestId: number) => {
+    const m = reviewByRequest.get(requestId);
+    return m ? <DoneeMatchReviewInline key={m.id} match={m} busy={matchActionLoading === m.id}
+      onAccept={() => handleDoneeAccept(m.id)} onDecline={() => handleDoneeReject(m.id)} /> : undefined;
+  };
   const flowMatches = activeMatches.filter(m => m.status !== "AWAITING_DONEE_CONFIRMATION");
   const inFlowRequestIds = new Set(
     [...flowMatches.map(m => m.requestId), ...activeOffers.map(o => o.requestId)]
@@ -2202,26 +2063,19 @@ function DoneeDashboard({
           <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
                 {/* Finished offers — slim grouped history instead of full cards:
                   ones that fell through, and donations completed over a week ago */}
-            <DoneeHistorySection offers={incomingOffers} matches={doneeMatches} />
-            {/* What didn't go ahead, collapsed underneath. */}
-            {pastOffers.some(o => o.status !== "COMPLETED") && (
-              <PastOffersStrip
-                offers={pastOffers.filter(o => o.status !== "COMPLETED")}
-                activeRequestIds={new Set(activeOffers.map(o => o.requestId))}
-              />
-            )}
-            {pastMatches.some(m => !MATCH_RECEIVED_STATUSES.has(m.status)) && (
-              <PastMatchesStrip matches={pastMatches.filter(m => !MATCH_RECEIVED_STATUSES.has(m.status))} />
-            )}
+            {/* One list (owner, 2026-10-09): received, plus every offer or match that didn't go ahead. */}
+            <DoneeHistorySection offers={incomingOffers} matches={doneeMatches}
+              onlyOffersClosed={pastOffers.filter(o => o.status !== "COMPLETED")}
+              onlyMatchesClosed={pastMatches.filter(m => !MATCH_RECEIVED_STATUSES.has(m.status))} />
           </TabsContent>
 
           {/* Your requests — each one drawn as a journey down the pipeline */}
           <TabsContent value="requests" className="mt-0">
-          {awaitingDoneeMatches.length > 0 && (
+          {orphanDoneeReviews.length > 0 && (
           <div className="mb-5 space-y-4">
           {/* Owner, 2026-10-07: items waiting for the donee's yes/no sit inside Your
               Requests; once accepted the flow moves to Matches. */}
-          {awaitingDoneeMatches.map(m => (
+          {orphanDoneeReviews.map(m => (
             <DoneeMatchReviewCard
               key={m.id}
               match={m}
@@ -2285,7 +2139,7 @@ function DoneeDashboard({
                   <div className="mt-4">
                     <AnimatePresence initial={false}>
                       {filteredRequests.map((r, i) => (
-                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} />
                       ))}
                     </AnimatePresence>
                   </div>
@@ -2301,7 +2155,7 @@ function DoneeDashboard({
                       <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
                       <AnimatePresence initial={false}>
                         {group.map((r, i) => (
-                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} />
+                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} />
                         ))}
                       </AnimatePresence>
                     </div>
@@ -3008,6 +2862,43 @@ export default function DashboardPage() {
   const liveMatchListingIds = new Set(liveMatchesByListing.keys());
   const inventoryOptions = inventoryFilterOptions(itemListings, liveMatchListingIds);
   const filteredInventory = filterInventory(itemListings, inventoryFilter, liveMatchListingIds);
+  // A match waiting on the donor (DONOR_REVIEW). Inline = inside the listing's
+  // card, in its Matched step (owner, 2026-10-09, design B); otherwise the full
+  // card. The decline reason form opens in place of either.
+  const renderDonorReview = (m: ItemMatch, inline: boolean) => {
+    const Review = inline ? DonorMatchReviewInline : DonorMatchReviewCard;
+    return (
+                  declineMatchId === m.id ? (
+                    <div key={m.id} className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+                      <p className="text-sm font-black text-stone-900 dark:text-stone-100">
+                        Not available for &ldquo;<TranslatedText text={m.requestTitle || "this need"} />&rdquo;?
+                      </p>
+                      <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-sm border border-stone-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
+                      <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer select-none">
+                        <input type="checkbox" checked={declineConditionChanged} onChange={e => setDeclineConditionChanged(e.target.checked)} className="rounded border-stone-300" />
+                        The item&apos;s condition has changed since I listed it (pauses the listing)
+                      </label>
+                      <div className="flex gap-2">
+                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success("Match declined. We're finding the next best donor."); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to decline match"); } finally { setReviewLoading(null); } }} className="flex-1 h-11 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                          {reviewLoading === m.id ? "Declining..." : "Confirm decline"}
+                        </button>
+                        <button onClick={() => setDeclineMatchId(null)} className="h-11 px-5 rounded-full text-sm font-bold text-stone-600 border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800">Cancel</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Review
+                      key={m.id}
+                      match={m}
+                      busy={reviewLoading === m.id}
+                      onAccept={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success("Match accepted! Admin will review shortly."); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to accept match"); } finally { setReviewLoading(null); } }}
+                      onDecline={() => { setDeclineMatchId(m.id); setDeclineReason(""); setDeclineConditionChanged(false); }}
+                    />
+                  )
+    );
+  };
+  const reviewByListing = new Map(reviewDonorMatches.filter(m => m.listingId != null).map(m => [m.listingId as number, m]));
+  // Matches whose listing is not on the inventory list keep the full card above it.
+  const orphanReviews = reviewDonorMatches.filter(m => m.listingId == null || !itemListings.some(l => l.id === m.listingId));
   const renderListingRow = (l: ItemListing, i: number) => (
     <DonorListingRow
       key={l.id}
@@ -3020,6 +2911,7 @@ export default function DashboardPage() {
       onSelect={setSelectedListing}
       listingMatches={liveMatchesByListing.get(l.id)}
       onOpenMatches={() => selectDonorSection("matches")}
+      review={reviewByListing.has(l.id) ? renderDonorReview(reviewByListing.get(l.id) as ItemMatch, true) : undefined}
     />
   );
   const liveDonorOffers = donationOffers.filter(isLiveDonorOffer);
@@ -3203,47 +3095,19 @@ export default function DashboardPage() {
                     offers={donationOffers.filter(o => !isLiveDonorOffer(o))}
                     fulfilledItems={donorListingGroups.fulfilled}
                     matches={donorMatches}
+                    pastMatches={pastDonorMatches}
                     onChanged={handleOfferCancelled}
                   />
-                  {/* Completed, declined and cancelled matches. */}
-                  <PastMatchesStrip matches={pastDonorMatches} viewer="DONOR" defaultOpen />
                 </TabsContent>
 
                 {/* Your inventory — private, matched quietly */}
                 <TabsContent value="items" className="mt-0">
-                  {reviewDonorMatches.length > 0 && (
+                  {orphanReviews.length > 0 && (
                   <div className="mb-5 space-y-4">
                 {/* Owner, 2026-10-07: a match waiting on the donor is answered here, inside
                     Your Inventory; once accepted the item moves to Matches. The
                     decline reason form opens in place of the card. */}
-                {reviewDonorMatches.map((m) => (
-                  declineMatchId === m.id ? (
-                    <div key={m.id} className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-                      <p className="text-sm font-black text-stone-900 dark:text-stone-100">
-                        Not available for &ldquo;<TranslatedText text={m.requestTitle || "this need"} />&rdquo;?
-                      </p>
-                      <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-sm border border-stone-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
-                      <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer select-none">
-                        <input type="checkbox" checked={declineConditionChanged} onChange={e => setDeclineConditionChanged(e.target.checked)} className="rounded border-stone-300" />
-                        The item&apos;s condition has changed since I listed it (pauses the listing)
-                      </label>
-                      <div className="flex gap-2">
-                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success("Match declined. We're finding the next best donor."); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to decline match"); } finally { setReviewLoading(null); } }} className="flex-1 h-11 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold transition-colors">
-                          {reviewLoading === m.id ? "Declining..." : "Confirm decline"}
-                        </button>
-                        <button onClick={() => setDeclineMatchId(null)} className="h-11 px-5 rounded-full text-sm font-bold text-stone-600 border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800">Cancel</button>
-                      </div>
-                    </div>
-                  ) : (
-                    <DonorMatchReviewCard
-                      key={m.id}
-                      match={m}
-                      busy={reviewLoading === m.id}
-                      onAccept={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success("Match accepted! Admin will review shortly."); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to accept match"); } finally { setReviewLoading(null); } }}
-                      onDecline={() => { setDeclineMatchId(m.id); setDeclineReason(""); setDeclineConditionChanged(false); }}
-                    />
-                  )
-                ))}
+                {orphanReviews.map((m) => renderDonorReview(m, false))}
                   </div>
                   )}
                   <section>

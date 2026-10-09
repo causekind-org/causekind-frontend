@@ -771,6 +771,20 @@ export function getItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}`);
 }
 
+/** One status change on the donee's own request, oldest first. */
+export type RequestActivityEntry = { fromStatus: string; toStatus: string; changedAt: string };
+
+export function getRequestActivity(id: number) {
+  return request<RequestActivityEntry[]>(`/api/v1/item-requests/${id}/activity`);
+}
+
+/** One status change on the donor's own listing, oldest first. */
+export type ListingActivityEntry = { fromStatus: string; toStatus: string; changedAt: string };
+
+export function getListingActivity(id: number) {
+  return request<ListingActivityEntry[]>(`/api/v1/items/${id}/activity`);
+}
+
 // ── Spec flow: Draft → Update → Submit ──────────────────────────────────────
 
 export function createItemListingDraft() {

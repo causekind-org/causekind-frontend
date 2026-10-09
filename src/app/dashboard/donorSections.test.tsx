@@ -304,7 +304,6 @@ describe("donor match history", () => {
 
     await userEvent.click(await tab(/History/));
     await openTab(/History/);
-    expect(screen.getByRole("button", { name: /Match history \(2\)/ })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Listed laptop 22")).toBeInTheDocument();
     // Donor-side wording: they delivered it, and the counterpart is the donee.
     expect(screen.getByText("Delivered")).toBeInTheDocument();

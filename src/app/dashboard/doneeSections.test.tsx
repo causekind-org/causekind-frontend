@@ -168,8 +168,7 @@ describe("match history", () => {
     // Received: a row in Donations received, with what came.
     expect(screen.getByText("Listed laptop 22")).toBeInTheDocument();
     expect(screen.getByText(/4 received/)).toBeInTheDocument();
-    // Didn't go ahead: collapsed underneath.
-    await userEvent.click(screen.getByRole("button", { name: /Match history \(1\)/ }));
+    // Didn't go ahead: in the same list (2026-10-09), no toggle.
     expect(screen.getByText("Donor declined")).toBeInTheDocument();
   });
 
