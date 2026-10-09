@@ -5,40 +5,37 @@ import { useSearchParams } from "next/navigation";
 import { useNgoStatus } from "./useNgoStatus";
 import { SmoothScrollProvider } from "./motion/SmoothScrollProvider";
 
-import { NgoHeroSection } from "./NgoHeroSection";
-import { NgoGlanceStrip } from "./NgoGlanceStrip";
-import { NgoProblemSolutionSection } from "./NgoProblemSolutionSection";
-import { NgoTransparencySection } from "./NgoTransparencySection";
-import { NgoTrustSection } from "./NgoTrustSection";
-import { NgoHowItWorksSection } from "./NgoHowItWorksSection";
-import { CreditsSection } from "@/components/home/CreditsSection";
-import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
 import { Skeleton } from "@/components/ui/skeleton";
 
 
 import dynamic from 'next/dynamic';
 
-const NgoHeroStateA = dynamic(() => import('./NgoHeroStateA').then(mod => mod.NgoHeroStateA));
-const NgoSoundFamiliar = dynamic(() => import('./NgoSoundFamiliar').then(mod => mod.NgoSoundFamiliar));
-const NgoJourneyPinned = dynamic(() => import('./NgoJourneyPinned').then(mod => mod.NgoJourneyPinned));
-const NgoVerificationScan = dynamic(() => import('./NgoVerificationScan').then(mod => mod.NgoVerificationScan));
-const NgoVerificationFinale = dynamic(() => import('./NgoVerificationFinale').then(mod => mod.NgoVerificationFinale));
-const NgoFaqSection = dynamic(() => import('./NgoFaqSection').then(mod => mod.NgoFaqSection));
+const NgoHeroStateA = dynamic(() => import('./NgoHeroStateA').then(mod => mod.NgoHeroStateA), { loading: () => <div className="min-h-screen" /> });
+const NgoSoundFamiliar = dynamic(() => import('./NgoSoundFamiliar').then(mod => mod.NgoSoundFamiliar), { loading: () => <div className="min-h-screen" /> });
+const NgoJourneyPinned = dynamic(() => import('./NgoJourneyPinned').then(mod => mod.NgoJourneyPinned), { loading: () => <div className="min-h-screen" /> });
+const NgoVerificationScan = dynamic(() => import('./NgoVerificationScan').then(mod => mod.NgoVerificationScan), { loading: () => <div className="min-h-screen" /> });
+const NgoVerificationFinale = dynamic(() => import('./NgoVerificationFinale').then(mod => mod.NgoVerificationFinale), { loading: () => <div className="min-h-[60vh]" /> });
+const NgoFaqSection = dynamic(() => import('./NgoFaqSection').then(mod => mod.NgoFaqSection), { loading: () => <div className="min-h-[50vh]" /> });
+const NgoHeroStateB = dynamic(() => import('./NgoHeroStateB').then(mod => mod.NgoHeroStateB), { loading: () => <div className="min-h-[70vh]" /> });
+const NgoVerifiedBadgeMoment = dynamic(() => import('./NgoVerifiedBadgeMoment').then(mod => mod.NgoVerifiedBadgeMoment), { ssr: false });
+const NgoEducationDrawer = dynamic(() => import('./NgoEducationDrawer').then(mod => mod.NgoEducationDrawer), { loading: () => <div className="min-h-[20vh]" /> });
 import { ScrollProgressRail } from "./motion/ScrollProgressRail";
 
 function NgoLandingRouter({ statusData }: { statusData: any }) {
   if (statusData.isVerified) {
-    // STATE B: Verified NGO (Phase 3) - For now, still rendering existing components
+    // STATE B: Verified NGO (Phase 3)
+    const stateBLabels = [
+      { text: "Mission Control", top: "0%" },
+      { text: "Overview", top: "50%" },
+      { text: "Education", top: "95%" }
+    ];
+
     return (
       <>
-        <NgoVerifiedWelcomeModal />
-        <NgoHeroSection />
-        <NgoGlanceStrip />
-        <NgoTransparencySection />
-        <NgoTrustSection />
-        <NgoHowItWorksSection />
-        {/* The people behind CauseKind: same credit as the public home page (from staging). */}
-        <CreditsSection />
+        <NgoVerifiedBadgeMoment />
+        <ScrollProgressRail labels={stateBLabels} />
+        <NgoHeroStateB />
+        <NgoEducationDrawer />
       </>
     );
   }
@@ -89,14 +86,43 @@ function DevPreviewWrapper() {
       else if (devState.includes("REJECTED")) nextStatus = "REJECTED" as any;
       else if (devState.includes("INCOMPLETE")) nextStatus = "INCOMPLETE" as any;
 
+      let mockOverview = { ...realStatus.overview } as any;
+      if (isVerified) {
+        mockOverview = {
+          activeRequests: devState === "verified_active" ? 1 : 0,
+          itemsPledged: devState === "verified_active" ? 24 : 0,
+          dropoffsToConfirm: devState === "verified_active" ? 3 : 0,
+          photosDue: devState === "verified_photos_due" ? 1 : 0,
+          photosDueRequestName: "Winter Blanket Drive",
+          verifiedDeliveries: 0,
+          handovers: [],
+          canStartDrive: devState === "verified_empty",
+          blockingDriveTitle: devState === "verified_empty" ? "" : "Winter Blanket Drive",
+          blockingDriveStatus: "active"
+        };
+      }
+
       setStatus({
         ...realStatus,
         status: nextStatus,
         isVerified,
         isPhotosDue: devState === "verified_photos_due",
-        canStartDrive: devState !== "verified_locked",
+        canStartDrive: devState === "verified_empty",
         isLoading: false,
         error: null,
+        overview: isVerified ? mockOverview : realStatus.overview,
+        photosDue: mockOverview?.photosDue ?? 0,
+        activeRequests: mockOverview?.activeRequests ?? 0,
+        dropoffsToConfirm: mockOverview?.dropoffsToConfirm ?? 0,
+        itemsPledged: mockOverview?.itemsPledged ?? 0,
+        blockingDriveTitle: mockOverview?.blockingDriveTitle ?? "",
+        lockReason: isVerified 
+          ? (devState === "verified_empty" 
+             ? "" 
+             : devState === "verified_photos_due" 
+               ? "Upload handover photos for Winter Blanket Drive before starting another drive." 
+               : "Available after your current drive \"Winter Blanket Drive\" is completed and its photos are approved.")
+          : realStatus.lockReason,
       });
     } else {
       setStatus(realStatus);

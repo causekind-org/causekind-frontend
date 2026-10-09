@@ -37,7 +37,7 @@ const newTranslations = {
     "chapter1": "Post your Drive",
     "desc1": "List exactly what you need. A clean card is generated.",
     "chapter2": "Local Donors Notified",
-    "desc2": "Donors within 10km are pinged on the map.",
+    "desc2": "Donors within a radius are pinged on the map.",
     "chapter3": "Secure Handover",
     "desc3": "Donors drop off items. You share a secure OTP.",
     "chapter4": "Upload Proof",
@@ -50,9 +50,9 @@ const newTranslations = {
     "title": "What we check at every step",
     "subtitle": "Our multi-step verification process ensures that only genuine, registered NGOs can connect with givers. We manually review every document.",
     "item1": "Trust Deed / Registration Certificate",
-    "item2": "Valid 12A / 80G Certificates",
-    "item3": "Identity of the Authorized Person",
-    "item4": "Recent Bank Statements",
+    "item2": "Valid Identity of Authorized Person",
+    "item3": "Organization PAN Card",
+    "item4": "Office Premises Verification",
     "aiScreening": "AI Screening",
     "aiScreeningDesc": "Highlights critical text and extracts dates",
     "legalChecks": "Legal Checks",
@@ -67,11 +67,11 @@ const newTranslations = {
   "Finale": {
     "title": "Get verified. Post. Deliver.",
     "checklistTitle": "Documents to keep ready",
-    "timeEstimate": "Takes about 15 minutes",
+    "timeEstimate": "Takes about 15 minutes TODO(owner-confirm)",
     "check1": "Registration Certificate",
-    "check2": "12A / 80G",
-    "check3": "Bank Details",
-    "check4": "Authorized ID",
+    "check2": "Trust Deed, MOA or Incorporation Certificate",
+    "check3": "Organization PAN Card",
+    "check4": "Authorization Letter (if you are a representative)",
     "support": "Need help? Contact NGO Support",
     "continuePill": "Continue Step {step}",
     "completePill": "Complete your profile"
@@ -79,11 +79,11 @@ const newTranslations = {
   "Faq": {
     "title": "Frequently Asked Questions",
     "q1": "Why can an application be sent back?",
-    "a1": "Applications are often sent back if uploaded documents are blurry, expired, or if the name on the bank account does not perfectly match the registered NGO name. You will receive specific feedback on what needs to be fixed.",
+    "a1": "Applications are sent back if uploaded documents are blurry, expired, or if details don't match the registered NGO name. You will receive specific feedback on what needs to be fixed.",
     "q2": "How long does verification take?",
-    "a2": "Our team manually reviews every application. Depending on volume, this typically takes 2-3 business days.",
-    "q3": "What is the 10km radius rule?",
-    "a3": "To ensure efficient and safe handovers, our platform prioritizes connecting you with local donors who live or work within 10km of your registered drop-off location."
+    "a2": "Our team manually reviews every application to ensure authenticity. You will be notified via email once the review is complete.",
+    "q3": "What items can I ask for?",
+    "a3": "You can request physical goods like blankets, books, medical supplies, food packets, etc. CauseKind does not facilitate direct monetary donations for drives."
   }
 };
 
@@ -99,10 +99,9 @@ for (const file of files) {
       content.NgoLanding = {};
     }
     
-    // Merge without overwriting existing NgoLanding keys unless we need to
     content.NgoLanding = { ...content.NgoLanding, ...newTranslations };
     
-    fs.writeFileSync(filePath, JSON.stringify(content, null, 2));
+    fs.writeFileSync(filePath, JSON.stringify(content, null, 2) + '\n');
     console.log(`Updated ${file}`);
   }
 }

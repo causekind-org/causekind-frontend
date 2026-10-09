@@ -9,19 +9,22 @@ import { useTranslations } from "next-intl";
 interface ScrollProgressRailProps {
   className?: string;
   targetRef?: React.RefObject<Element | null>;
+  labels?: { text: string; top: string }[];
 }
 
-export function ScrollProgressRail({ className, targetRef }: ScrollProgressRailProps) {
+export function ScrollProgressRail({ className, targetRef, labels: customLabels }: ScrollProgressRailProps) {
   const barRef = useRef<HTMLDivElement>(null);
   const t = useTranslations("NgoLanding");
 
-  const labels = [
+  const defaultLabels = [
     { text: "Intro", top: "0%" },
     { text: "The Problem", top: "25%" },
     { text: "The Journey", top: "50%" },
     { text: "Verification", top: "75%" },
     { text: "Ready", top: "95%" },
   ];
+  
+  const labels = customLabels || defaultLabels;
 
   useGsapScene(barRef, (ctx, mm) => {
     mm.add("(min-width: 768px) and (prefers-reduced-motion: no-preference)", () => {

@@ -94,9 +94,9 @@ export function NgoVerificationFinale({ status, wizardHref }: NgoVerificationFin
         {/* Small support strip */}
         <div className="flex items-center justify-center gap-2 text-stone-500 dark:text-stone-400">
           <LifeBuoy className="w-4 h-4" />
-          <Link href="#todo" className="text-sm font-medium hover:text-[var(--color-ngo-600)] transition-colors hover:underline">
+          <span className="text-sm font-medium">
             {t("Finale.support")}
-          </Link>
+          </span>
         </div>
 
       </div>
