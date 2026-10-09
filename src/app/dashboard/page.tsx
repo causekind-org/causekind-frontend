@@ -2366,7 +2366,12 @@ function DoneeDashboard({
   // Open on whatever is waiting on the donee; otherwise on their requests. Empty
   // until offers have loaded, so the tab doesn't jump once they arrive.
   const section: DoneeSection | "" = chosenSection
-    ?? (!offersLoaded ? "" : offersNeedYou ? "offers" : matchesNeedYou ? "matches" : "requests");
+    // Since the 2026-10-07 tabs: live offers sit in Matches, and a match waiting
+    // on the donee's yes/no sits in Your Requests ("offers" is now History).
+    ?? (!offersLoaded ? ""
+      : awaitingDoneeMatches.length > 0 ? "requests"
+        : offersNeedYou || matchesNeedYou ? "matches"
+          : "requests");
   // True only when the backend matching engine is actually working on something:
   // a request past admin verification, in the matching phase.
   const hasRequestInMatching = itemRequests.some(r =>
@@ -3304,10 +3309,12 @@ export default function DashboardPage() {
   // Open on whatever is waiting; then on offers for a donor with no inventory
   // yet, since landing them on an empty ledger hides the work they have in play.
   const donorSection: DonorSection = chosenDonorSection
-    ?? (donorOffersNeedYou ? "offers"
-      : donorMatchesNeedYou ? "matches"
+    // Since the 2026-10-07 tabs: a match waiting on the donor is answered in
+    // Inventory, live offers sit in Matches, and "offers" is now History.
+    ?? (reviewDonorMatches.length > 0 ? "items"
+      : donorOffersNeedYou || donorMatchesNeedYou ? "matches"
         : donorItemsNeedYou ? "items"
-          : itemListings.length === 0 && donationOffers.length > 0 ? "offers"
+          : itemListings.length === 0 && liveDonorOffers.length > 0 ? "matches"
             : "items");
 
   if (isLoading) {

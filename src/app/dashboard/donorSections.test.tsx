@@ -40,6 +40,8 @@ vi.mock("@/lib/api", async (importOriginal) => ({
   getMyDonationOffers: mocks.offers,
   getMyItemRequests: () => Promise.resolve([]),
   getOffersForMyRequests: () => Promise.resolve([]),
+  getMatchCancellationOptions: () => Promise.resolve({ allowed: false, outcome: "NONE", actionLabel: null }),
+  getOfferCancellationOptions: () => Promise.resolve({ allowed: false, outcome: "NONE", actionLabel: null }),
 }));
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -85,17 +87,23 @@ const INVENTORY_BLURB = /Only our matching engine sees these/;
 const MATCHES_BLURB = /Verified needs your items can fulfil/;
 const OFFERS_BLURB = /Offers you made to fulfil specific requests/;
 
+/*
+ * Tabs since 2026-10-07: Your Inventory (items not yet in a live flow, plus the
+ * matches waiting on the donor's yes/no) · Matches (accepted matches and live
+ * offers) · History (finished offers and matches). The hash key for History is
+ * still "offers".
+ */
 describe("donor dashboard sections", () => {
-  it("opens on Your Offers when an offer is waiting on the donor", async () => {
+  it("opens on Matches when an offer is waiting on the donor", async () => {
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     mocks.offers.mockResolvedValue([offer(11, "DONOR_RECONFIRMATION_REQUIRED")]);
     render(<DashboardPage />);
 
-    await openTab(/Your Offers/);
+    await openTab(/Matches/);
+    // The live offer is shown inside Matches.
     expect(screen.getByText(OFFERS_BLURB)).toBeInTheDocument();
-    // Only the open section is on the page.
+    expect(screen.getByText(MATCHES_BLURB)).toBeInTheDocument();
     expect(screen.queryByText(INVENTORY_BLURB)).toBeNull();
-    expect(screen.queryByText(MATCHES_BLURB)).toBeNull();
   });
 
   it("opens on Your Inventory when nothing is waiting", async () => {
@@ -108,12 +116,21 @@ describe("donor dashboard sections", () => {
     expect(screen.queryByText(OFFERS_BLURB)).toBeNull();
   });
 
-  it("opens on Your Offers for a donor with offers but nothing listed yet", async () => {
+  it("opens on Matches for a donor with live offers but nothing listed yet", async () => {
     // An empty inventory ledger would hide the work they already have in play.
     mocks.offers.mockResolvedValue([offer(11, "HANDOVER_IN_PROGRESS")]);
     render(<DashboardPage />);
 
-    await openTab(/Your Offers/);
+    await openTab(/Matches/);
+  });
+
+  it("opens on Your Inventory when a match is waiting on the donor's answer", async () => {
+    mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
+    mocks.matches.mockResolvedValue([match(21, "DONOR_REVIEW")]);
+    render(<DashboardPage />);
+
+    await openTab(/Your Inventory/);
+    expect(screen.getByRole("button", { name: /I still have it/i })).toBeInTheDocument();
   });
 
   it("switching tabs shows only that section and remembers it in the URL", async () => {
@@ -129,14 +146,13 @@ describe("donor dashboard sections", () => {
   });
 
   it("opens the section named in the URL hash", async () => {
-    window.history.replaceState(null, "", "/dashboard#matches");
-    // An offer awaiting the donor does not override the link.
+    window.history.replaceState(null, "", "/dashboard#offers");
+    // A waiting offer does not override the link; #offers is History.
     mocks.offers.mockResolvedValue([offer(11, "DONOR_RECONFIRMATION_REQUIRED")]);
     render(<DashboardPage />);
 
-    await openTab(/Matches/);
-    expect(screen.getByText(MATCHES_BLURB)).toBeInTheDocument();
-    expect(await tab(/Your Offers/)).toHaveAttribute("aria-selected", "false");
+    await openTab(/History/);
+    expect(await tab(/Matches/)).toHaveAttribute("aria-selected", "false");
   });
 
   it("counts only live items on each tab and flags the ones waiting on the donor", async () => {
@@ -145,17 +161,18 @@ describe("donor dashboard sections", () => {
     mocks.matches.mockResolvedValue([match(21, "DONOR_REVIEW"), match(22, "COMPLETED")]);
     render(<DashboardPage />);
 
-    const offersTab = await openTab(/Your Offers/);
-    expect(within(offersTab).getByText("1")).toBeInTheDocument(); // the withdrawn one is history
-    expect(offersTab).toHaveTextContent(/needs your attention/);
+    // The match waiting on the donor is answered in Inventory, so that is where it opens.
+    const itemsTab = await openTab(/Your Inventory/);
+    expect(within(itemsTab).getByText("2")).toBeInTheDocument();
+    expect(itemsTab).toHaveTextContent(/needs your attention/);
 
     const matchesTab = await tab(/Matches/);
-    expect(within(matchesTab).getByText("1")).toBeInTheDocument(); // the completed one is history
+    expect(within(matchesTab).getByText("1")).toBeInTheDocument(); // the live offer
     expect(matchesTab).toHaveTextContent(/needs your attention/);
 
-    const itemsTab = await tab(/Your Inventory/);
-    expect(within(itemsTab).getByText("2")).toBeInTheDocument();
-    expect(itemsTab).toHaveTextContent(/needs your attention/); // a listing needs more information
+    const historyTab = await tab(/History/);
+    expect(within(historyTab).getByText("2")).toBeInTheDocument(); // withdrawn offer + completed match
+    expect(historyTab).not.toHaveTextContent(/needs your attention/);
   });
 
   it("does not flag a tab when nothing on it is waiting", async () => {
@@ -167,16 +184,15 @@ describe("donor dashboard sections", () => {
     expect(await tab(/Matches/)).not.toHaveTextContent(/needs your attention/);
   });
 
-  it("keeps the offers tab usable when the donor has made no offers", async () => {
-    // It used to render nothing at all, which as a tab is a blank panel.
+  it("keeps the History tab usable when there is no history yet", async () => {
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     render(<DashboardPage />);
     await openTab(/Your Inventory/);
-    await userEvent.click(await tab(/Your Offers/));
+    await userEvent.click(await tab(/History/));
 
-    await openTab(/Your Offers/);
-    expect(screen.getByText(/You haven't offered anything yet/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Browse needs/ })).toHaveAttribute("href", "/requests");
+    await openTab(/History/);
+    expect(screen.getByText("Donation history")).toBeInTheDocument();
+    expect(screen.getByText("No completed donations yet.")).toBeInTheDocument();
   });
 });
 
@@ -217,28 +233,22 @@ describe("inventory filters", () => {
 
 describe("which matches are this donor's", () => {
   it("keeps a namesake's match off the donor's tab", async () => {
-    // getMyMatches returns both sides' matches and the dashboard splits them.
-    // Splitting on donorName put another Ravi Kumar's match here — with a
-    // "Confirm Donation" button on it — while this user is only its recipient.
+    // getMyMatches returns both sides' matches and the dashboard splits them by id.
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     mocks.matches.mockResolvedValue([
       match(21, "DONOR_REVIEW", { donorId: 404, donorName: DONOR, doneeId: DONOR_ID, doneeName: DONOR }),
     ]);
     render(<DashboardPage />);
     await openTab(/Your Inventory/);
+    // Not this donor's to answer.
+    expect(screen.queryByRole("button", { name: /I still have it/i })).toBeNull();
 
     const matchesTab = await tab(/Matches/);
     expect(within(matchesTab).getByText("0")).toBeInTheDocument();
     expect(matchesTab).not.toHaveTextContent(/needs your attention/);
-
-    await userEvent.click(matchesTab);
-    await openTab(/Matches/);
-    expect(screen.queryByText(/Listed laptop 21/)).toBeNull();
-    expect(screen.queryByRole("button", { name: /Confirm Donation/i })).toBeNull();
   });
 
   it("does not claim a match whose names are all missing", async () => {
-    // Two nulls used to compare equal, so a nameless match landed on both tabs.
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     mocks.profile.mockResolvedValue({ id: DONOR_ID, fullName: null, role: "DONOR", city: "Virar" });
     mocks.matches.mockResolvedValue([
@@ -251,8 +261,8 @@ describe("which matches are this donor's", () => {
   });
 
   it("names the item on a direct donation, which has no listing to name", async () => {
-    // DONATE_TO_REQUEST matches carry no listing at all, so listingTitle is
-    // null and the row used to read "Matched with item:" and then stop.
+    // DONATE_TO_REQUEST matches carry no listing, so listingTitle is null; the
+    // card waiting on the donor names the item from its description instead.
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     mocks.matches.mockResolvedValue([
       match(21, "DONOR_REVIEW", {
@@ -261,15 +271,14 @@ describe("which matches are this donor's", () => {
       }),
     ]);
     render(<DashboardPage />);
-    await userEvent.click(await tab(/Matches/));
-    await openTab(/Matches/);
+    await openTab(/Your Inventory/);
 
-    expect(screen.getByText(/Two Dell laptops, 8GB RAM, charger included/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Two Dell laptops, 8GB RAM, charger included/).length).toBeGreaterThan(0);
   });
 
-  it("still shows the donor their own match", async () => {
+  it("still shows the donor their own accepted match", async () => {
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
-    mocks.matches.mockResolvedValue([match(21, "DONOR_REVIEW")]);
+    mocks.matches.mockResolvedValue([match(21, "PICKUP_SCHEDULED")]);
     render(<DashboardPage />);
 
     const matchesTab = await tab(/Matches/);
@@ -278,7 +287,7 @@ describe("which matches are this donor's", () => {
 });
 
 describe("donor match history", () => {
-  it("moves finished matches out of the live list into the Matches tab's history", async () => {
+  it("keeps live matches in Matches and finished ones in History", async () => {
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     mocks.matches.mockResolvedValue([
       match(21, "PICKUP_SCHEDULED"),
@@ -291,9 +300,11 @@ describe("donor match history", () => {
     await openTab(/Matches/);
 
     expect(screen.getByText(/Listed laptop 21/)).toBeInTheDocument();
-    expect(screen.queryByText("Listed laptop 22")).toBeNull(); // collapsed until asked for
+    expect(screen.queryByText("Listed laptop 22")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: /Match history \(2\)/ }));
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
+    expect(screen.getByRole("button", { name: /Match history \(2\)/ })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Listed laptop 22")).toBeInTheDocument();
     // Donor-side wording: they delivered it, and the counterpart is the donee.
     expect(screen.getByText("Delivered")).toBeInTheDocument();
@@ -301,7 +312,7 @@ describe("donor match history", () => {
     expect(screen.getByText("You declined")).toBeInTheDocument();
   });
 
-  it("opens the history straight away when there are no live matches", async () => {
+  it("shows the honest empty state in Matches when nothing is live", async () => {
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     mocks.matches.mockResolvedValue([match(22, "COMPLETED", { allocatedQuantity: 4 })]);
     render(<DashboardPage />);
@@ -309,15 +320,14 @@ describe("donor match history", () => {
     await userEvent.click(await tab(/Matches/));
     await openTab(/Matches/);
 
-    expect(screen.getByRole("button", { name: /Match history \(1\)/ })).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText("Listed laptop 22")).toBeInTheDocument();
-    // The sweeping "nothing to match yet" animation would be a lie here.
-    expect(screen.getByText(/No live matches right now/)).toBeInTheDocument();
+    // A live listing is being checked, so the scanning state is true here.
+    expect(screen.getByText(/Scanning incoming needs/)).toBeInTheDocument();
+    expect(screen.queryByText("Listed laptop 22")).toBeNull();
   });
 });
 
-describe("matched donations & fulfilled inventory", () => {
-  it("excludes fulfilled listings from inventory tab count and renders in matched donations", async () => {
+describe("donation history & fulfilled inventory", () => {
+  it("excludes fulfilled listings from inventory and lists them in Donation history", async () => {
     mocks.listings.mockResolvedValue([
       listing(1, "AVAILABLE"),
       listing(2, "FULFILLED", { title: "Fulfilled Study Earbuds" }),
@@ -327,79 +337,49 @@ describe("matched donations & fulfilled inventory", () => {
     ]);
     render(<DashboardPage />);
 
-    // Inventory tab count shows only 1 (excludes FULFILLED)
     const itemsTab = await openTab(/Your Inventory/);
     expect(within(itemsTab).getByText("1")).toBeInTheDocument();
     expect(screen.getByText("Listed laptop 1")).toBeInTheDocument();
-    // Fulfilled group not rendered in inventory tab
     expect(screen.queryByText("Fulfilled Study Earbuds")).toBeNull();
 
-    // Switch to Offers tab
-    await userEvent.click(await tab(/Your Offers/));
-    await openTab(/Your Offers/);
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
 
-    // Matched Donations panel is visible
-    expect(screen.getByText("Matched Donations")).toBeInTheDocument();
-    expect(screen.getByText("Your listed items that were matched and donated")).toBeInTheDocument();
-    expect(screen.getByText("Fulfilled Study Earbuds")).toBeInTheDocument();
-    expect(screen.getByText("Fulfilled")).toBeInTheDocument();
-    expect(screen.getByText("Now · Complete")).toBeInTheDocument();
-    expect(screen.getByText(/The donation was successfully completed/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /View Certificate/i })).toHaveAttribute("href", "/certificate?matchId=50");
-    // With only 1 fulfilled item, no View all link
-    expect(screen.queryByRole("link", { name: /View all/i })).toBeNull();
+    expect(screen.getByText("Donation history")).toBeInTheDocument();
+    expect(screen.getAllByText("Fulfilled Study Earbuds").length).toBeGreaterThan(0);
+    expect(screen.getByText("Matched for you")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Certificate/i })).toHaveAttribute("href", "/certificate?matchId=50");
   });
 
-  it("shows only the most recent card and renders View all when there are 2+ fulfilled items", async () => {
+  it("lists every finished donation, newest first", async () => {
     mocks.listings.mockResolvedValue([
-      listing(1, "FULFILLED", { title: "Older Earbuds", createdAt: new Date(Date.now() - 10 * 86400000).toISOString() }),
-      listing(2, "FULFILLED", { title: "Newer Earbuds", createdAt: new Date(Date.now() - 1 * 86400000).toISOString() }),
+      listing(1, "FULFILLED", { title: "Older Earbuds", createdAt: iso(10 * DAY) }),
+      listing(2, "FULFILLED", { title: "Newer Earbuds", createdAt: iso(1 * DAY) }),
     ]);
     mocks.matches.mockResolvedValue([
-      match(101, "COMPLETED", { listingId: 1, completedAt: new Date(Date.now() - 10 * 86400000).toISOString() }),
-      match(102, "COMPLETED", { listingId: 2, completedAt: new Date(Date.now() - 1 * 86400000).toISOString() }),
+      match(101, "COMPLETED", { listingId: 1, doneeConfirmedAt: iso(10 * DAY) }),
+      match(102, "COMPLETED", { listingId: 2, doneeConfirmedAt: iso(1 * DAY) }),
     ]);
     render(<DashboardPage />);
 
-    await userEvent.click(await tab(/Your Offers/));
-    await openTab(/Your Offers/);
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
 
-    // Only the newest item is rendered on the dashboard preview
-    expect(screen.getByText("Newer Earbuds")).toBeInTheDocument();
-    expect(screen.queryByText("Older Earbuds")).toBeNull();
-
-    // View all button appears linking to /offers/matched
-    const viewAllLink = screen.getByRole("link", { name: /View all/i });
-    expect(viewAllLink).toHaveAttribute("href", "/offers/matched");
+    const newer = screen.getAllByText("Newer Earbuds")[0];
+    const older = screen.getAllByText("Older Earbuds")[0];
+    expect(newer.compareDocumentPosition(older) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("does NOT match by title if listingId is different or missing", async () => {
-    mocks.listings.mockResolvedValue([
-      listing(99, "FULFILLED", { title: "earbuds" }),
-    ]);
-    // Match has same title "earbuds" but a different listingId
-    mocks.matches.mockResolvedValue([
-      match(200, "COMPLETED", { listingId: 88, listingTitle: "earbuds" }),
-    ]);
+    mocks.listings.mockResolvedValue([listing(99, "FULFILLED", { title: "earbuds" })]);
+    mocks.matches.mockResolvedValue([match(200, "COMPLETED", { listingId: 88, listingTitle: "earbuds" })]);
     render(<DashboardPage />);
 
-    await userEvent.click(await tab(/Your Offers/));
-    await openTab(/Your Offers/);
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
 
-    expect(screen.getByText("earbuds")).toBeInTheDocument();
-    // No certificate button because listingId 99 !== 88
-    expect(screen.queryByRole("link", { name: /View Certificate/i })).toBeNull();
-  });
-
-  it("shows empty state in matched donations when there are no fulfilled items", async () => {
-    mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
-    render(<DashboardPage />);
-
-    await userEvent.click(await tab(/Your Offers/));
-    await openTab(/Your Offers/);
-
-    expect(screen.getByText("Matched Donations")).toBeInTheDocument();
-    expect(screen.getByText("No fulfilled items yet.")).toBeInTheDocument();
+    expect(screen.getAllByText("earbuds").length).toBeGreaterThan(0);
+    // No certificate for the listing: listingId 99 is not the match's 88.
+    expect(screen.queryByRole("link", { name: /Certificate/i })).toBeNull();
   });
 });
-
