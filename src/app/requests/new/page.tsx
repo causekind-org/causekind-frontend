@@ -483,6 +483,8 @@ function NewRequestForm() {
   const [cityFreeText, setCityFreeText] = useState("");
   const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
   const [pincode, setPincode] = useState("");
+  /** Optional; saved at the front of the request's city text ("Locality, City, ST, CC"). */
+  const [locality, setLocality] = useState("");
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   /** The latest typed address could not be placed: the pin no longer matches the fields. */
   const [typedFailed, setTypedFailed] = useState(false);
@@ -583,7 +585,18 @@ function NewRequestForm() {
           setGpsCoords({ lat: r.latitude, lng: r.longitude });
         }
         if (r.city) {
-          setCityFreeText(r.city);
+          // Saved as "[Locality, ]City, ST, CC". Older requests may hold just a
+          // city, which then stays whole in the free-text box.
+          const parts = r.city.split(",").map((p) => p.trim()).filter(Boolean);
+          const n = parts.length;
+          if (n >= 3 && /^[A-Z]{2}$/.test(parts[n - 1])) {
+            setCountryIso(parts[n - 1]);
+            setStateIso(parts[n - 2]);
+            setCityFreeText(parts[n - 3]);
+            if (n > 3) setLocality(parts.slice(0, n - 3).join(", "));
+          } else {
+            setCityFreeText(r.city);
+          }
           setForceFreeTextCity(true);
         }
         setIsEmergency(r.isEmergency);
@@ -678,6 +691,7 @@ function NewRequestForm() {
           else { setCityValue(""); setCityFreeText(found.city); setForceFreeTextCity(true); }
         }
         if (found.pincode && !pincodeRef.current.trim()) setPincode(found.pincode);
+        if (found.locality && !localityRef.current.trim()) setLocality(found.locality);
         return;
       }
       // A new spot: a field the lookup could not find is cleared, never left
@@ -688,10 +702,11 @@ function NewRequestForm() {
       else if (found.cityListed) { setCityValue(found.city); setCityFreeText(""); setForceFreeTextCity(false); }
       else { setCityValue(""); setCityFreeText(found.city); setForceFreeTextCity(true); }
       setPincode(found.pincode ?? "");
+      setLocality(found.locality ?? "");
     }, () => {
       // Nothing found at the new spot: the old address no longer applies.
       if (opts?.onlyEmpty) return;
-      setCountryIso(""); setStateIso(""); clearCity(); setPincode("");
+      setCountryIso(""); setStateIso(""); clearCity(); setPincode(""); setLocality("");
     });
   }, [pinAddress.lookup]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -699,6 +714,7 @@ function NewRequestForm() {
   const stateIsoRef = useRef(stateIso); stateIsoRef.current = stateIso;
   const cityRef = useRef(""); cityRef.current = showCityFreeText ? cityFreeText : cityValue;
   const pincodeRef = useRef(pincode); pincodeRef.current = pincode;
+  const localityRef = useRef(locality); localityRef.current = locality;
 
   // A resumed draft's saved pin (drafts keep no country/state) fills the blanks
   // once the draft has loaded. With no pin, nothing is dropped: the map opens on
@@ -768,7 +784,8 @@ function NewRequestForm() {
 
   function buildCityString(): string {
     const c = showCityFreeText ? cityFreeText : cityValue;
-    return [c, stateIso, countryIso].filter(Boolean).join(", ");
+    // Commas inside the locality would shift the parts when the draft is read back.
+    return [locality.replace(/,/g, " ").trim(), c, stateIso, countryIso].filter(Boolean).join(", ");
   }
 
   const buildPayload = useCallback((): Partial<UpdateRequestPayload> => ({
@@ -785,7 +802,7 @@ function NewRequestForm() {
     emergencyNature: isEmergency ? emergencyNature || undefined : undefined,
     incidentDate: isEmergency ? incidentDate || undefined : undefined,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [title, category, quantity, urgency, pincode, description, gpsCoords, isEmergency, emergencyNature, incidentDate, cityValue, cityFreeText, stateIso, countryIso, showCityFreeText]);
+  }), [title, category, quantity, urgency, pincode, description, gpsCoords, isEmergency, emergencyNature, incidentDate, cityValue, cityFreeText, stateIso, countryIso, showCityFreeText, locality]);
 
   async function ensureDraft(): Promise<number> {
     if (!profileGateUnsupported && !needProfile?.complete) throw new Error("Complete your Donee profile before starting a request");
@@ -1274,7 +1291,7 @@ function NewRequestForm() {
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label htmlFor="country" className="text-xs text-stone-500 dark:text-stone-400">Country</label>
+            <label htmlFor="country" className="text-xs font-bold text-stone-700 dark:text-stone-200">Country<span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> (required)</span></label>
             <div data-field="countryIso" tabIndex={-1} className="outline-none">
             <SearchableSelect id="country" options={countryOptions} value={countryIso}
               onChange={(iso) => { setCountryIso(iso); setStateIso(""); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); typedAddress(); }}
@@ -1283,7 +1300,7 @@ function NewRequestForm() {
             {fieldErrors.countryIso && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.countryIso}</p>}
           </div>
           <div className="space-y-1">
-            <label htmlFor="state" className="text-xs text-stone-500 dark:text-stone-400">State</label>
+            <label htmlFor="state" className="text-xs font-bold text-stone-700 dark:text-stone-200">State<span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> (required)</span></label>
             {noStateOptions ? <p className="text-xs text-stone-400 italic py-2">No states listed</p> : (
               <div data-field="stateIso" tabIndex={-1} className="outline-none">
               <SearchableSelect id="state" options={stateOptions} value={stateIso}
@@ -1294,7 +1311,7 @@ function NewRequestForm() {
             {fieldErrors.stateIso && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.stateIso}</p>}
           </div>
           <div className="space-y-1">
-            <label htmlFor="city" className="text-xs text-stone-500 dark:text-stone-400">City</label>
+            <label htmlFor="city" className="text-xs font-bold text-stone-700 dark:text-stone-200">City<span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> (required)</span></label>
             {/* Both branches carry data-field="city": which one renders depends
                 on whether the country has a city list, and the summary link has
                 to work either way. */}
@@ -1314,7 +1331,14 @@ function NewRequestForm() {
                   placeholder="Select city" disabled={!stateIso && !noStateOptions} searchPlaceholder="Search…" />
               </div>
             )}
+            {fieldErrors.city && <p id="city-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.city}</p>}
           </div>
+          <WizardField label="Locality" hint="Optional — area or neighbourhood">
+            {({ id, describedBy }) => (
+              <Input id={id} name="locality" aria-describedby={describedBy} placeholder="e.g. Kandivali East"
+                value={locality} onChange={(e) => setLocality(e.target.value)} maxLength={80} className="h-11 w-full" />
+            )}
+          </WizardField>
           <WizardField label="PIN Code" required error={fieldErrors.pincode}>
             {({ id, describedBy, invalid }) => (
               <Input id={id} name="pincode" aria-describedby={describedBy} aria-invalid={invalid} placeholder="e.g. 411001"
@@ -1322,7 +1346,6 @@ function NewRequestForm() {
             )}
           </WizardField>
         </div>
-        {fieldErrors.city && <p id="city-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.city}</p>}
       </div>
     </section>
   );
@@ -1607,6 +1630,7 @@ function NewRequestForm() {
                       emergencyNature={emergencyNature}
                       incidentDate={incidentDate}
                       city={showCityFreeText ? cityFreeText : cityValue}
+                      locality={locality}
                       pincode={pincode}
                       verification={verification}
                       uploadedDocs={uploadedDocs}
