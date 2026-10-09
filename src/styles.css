@@ -2787,10 +2787,11 @@ body.mobile-menu-open {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ── Stacking context z-index fix for searchable selects inside Reveal/grid ── */
-div:has(.searchable-select-open) {
-  z-index: 99 !important;
-  position: relative !important;
+/* Raise only the select's immediate field container. Matching every ancestor
+   also changed fixed dialog content to relative/z-99, beneath its z-100 overlay. */
+div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .searchable-select-open) {
+  z-index: 99;
+  position: relative;
 }
 
 /* ── Reading Tools and Font/Theme Modes (from globals.css) ── */

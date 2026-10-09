@@ -2,8 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
-import type { LocationPickerHandle, PickedLocation } from "@/components/location/LocationPicker";
-import { useProfileMapStart } from "@/hooks/useProfileMapStart";
+import { usePinAddress } from "@/hooks/usePinAddress";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -25,7 +24,7 @@ import { PhotosStep } from "./steps/PhotosStep";
 import { useOfferVideo, LISTING_VIDEO_ENDPOINTS } from "@/features/donation-offer-wizard/useOfferVideo";
 import { BasicsStep } from "./steps/BasicsStep";
 import { ConditionDetailsStep } from "./steps/ConditionDetailsStep";
-import { LocationStep } from "./steps/LocationStep";
+import { LocationStep, type LocationStepHandle } from "./steps/LocationStep";
 import { ReviewSubmitStep } from "./steps/ReviewSubmitStep";
 import { useListingDraft } from "./useListingDraft";
 import { useListingPhotos } from "./useListingPhotos";
@@ -103,9 +102,6 @@ export function ItemListingWizard({
   const [savingExit, setSavingExit] = useState(false);
   /** The donor's profile coordinates: where the map starts when the listing has no pin. */
   const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
-  const [profileCity, setProfileCity] = useState<string | null>(null);
-  /** Where the location map starts without a pin: profile coordinates, else the profile City's centre. */
-  const mapStart = useProfileMapStart(profileCenter, profileCity);
 
   const [aiRunning, setAiRunning] = useState(false);
   const [aiNote, setAiNote] = useState<string | null>(null);
@@ -428,7 +424,6 @@ export function ItemListingWizard({
       .then(p => {
         if (!isMounted) return;
         if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
-        setProfileCity(p.city);
         if (mode !== "create") return;
         setModel(prev => {
           // The profile stores city in the same flattened "City, StateIso,
@@ -443,8 +438,8 @@ export function ItemListingWizard({
             countryIso: dirtyRef.current.has("countryIso") ? prev.countryIso : (parsed.countryIso || prev.countryIso),
             stateIso: dirtyRef.current.has("stateIso") ? prev.stateIso : (prev.stateIso || parsed.stateIso),
             city: dirtyRef.current.has("city") ? prev.city : (prev.city || parsed.city),
-            latitude: prev.latitude ?? p.latitude ?? undefined,
-            longitude: prev.longitude ?? p.longitude ?? undefined,
+            // No coordinates from the profile: the donor places this listing's
+            // pin on step 4 (the map only opens on the profile location).
           };
           modelRef.current = next;
           return next;
@@ -454,33 +449,66 @@ export function ItemListingWizard({
     return () => { isMounted = false; };
   }, [mode]);
 
-  // ── Item location ─────────────────────────────────────────────────────────
+  // ── Item location: map pin → address ─────────────────────────────────────
   /**
-   * The shared LocationPicker owns the GPS / search / pin / typing sync and
-   * hands back the whole location; this applies it and saves. The pin
-   * (latitude/longitude) is what matching uses.
+   * The pin is the source of truth for coordinates; the address fields follow
+   * it (shared lookup: usePinAddress). A lookup value replaces a field; a field
+   * the lookup has nothing for is left as the donor typed it. `onlyEmpty` is
+   * for pins we placed ourselves (the profile location), which never overwrite.
    */
-  const handleLocation = useCallback((loc: PickedLocation) => {
-    const prev = modelRef.current;
-    const next: WizardModel = {
-      ...prev,
-      countryIso: loc.countryIso, stateIso: loc.stateIso, city: loc.city,
-      locality: loc.locality, pincode: loc.pincode,
-      latitude: loc.lat ?? undefined, longitude: loc.lng ?? undefined,
-    };
-    (["countryIso", "stateIso", "city", "locality", "pincode"] as const).forEach(k => {
-      if (next[k] !== prev[k]) dirtyRef.current.add(k);
+  const pinAddress = usePinAddress();
+  const { lookup: lookupPin, geocodeTyped } = pinAddress;
+  const lookup = { running: pinAddress.running, error: pinAddress.error, whenIdle: pinAddress.whenIdle };
+  const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
+    const placed = { ...modelRef.current, latitude: lat, longitude: lng };
+    modelRef.current = placed;
+    setModel(placed);
+    queueSave(placed);
+    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
+    lookupPin(lat, lng, found => {
+      const prev = modelRef.current;
+      const next = { ...prev };
+      const fields = {
+        countryIso: found.countryIso, stateIso: found.stateIso, city: found.city,
+        locality: found.locality, pincode: found.pincode,
+      } as const;
+      (Object.keys(fields) as (keyof typeof fields)[]).forEach(k => {
+        const v = fields[k];
+        // Filling the blanks of a resumed draft: never touch what is there.
+        if (opts?.onlyEmpty) { if (v && !String(prev[k] ?? "").trim()) next[k] = v; return; }
+        // A new spot: a field the lookup could not find is cleared, never left
+        // describing the previous spot.
+        next[k] = v ?? "";
+      });
+      modelRef.current = next;
+      setModel(next);
+      queueSave(next);
+    }, () => {
+      // Nothing found at the new spot: the old address no longer applies.
+      if (opts?.onlyEmpty) return;
+      const next = { ...modelRef.current, countryIso: "", stateIso: "", city: "", locality: "", pincode: "" };
+      modelRef.current = next;
+      setModel(next);
+      queueSave(next);
     });
+  }, [queueSave, lookupPin]);
+
+  /**
+   * The donor typed an address: move the pin to it. Only with no map does an
+   * address that can't be placed fall back to the profile location; with a map
+   * the pin stays where it is and the donor places it.
+   */
+  const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }, useProfileFallback: boolean) => {
+    const coords = await geocodeTyped(q, useProfileFallback ? profileCenter : null);
+    if (!coords) return false;
+    const next = { ...modelRef.current, latitude: coords.lat, longitude: coords.lng };
     modelRef.current = next;
     setModel(next);
     queueSave(next);
-    setErrors(e => {
-      const cleared = { ...e };
-      (["countryIso", "stateIso", "city", "locality", "pincode"] as const).forEach(k => { if (next[k] !== prev[k]) cleared[k] = ""; });
-      if (next.latitude != null) { cleared.latitude = ""; cleared.longitude = ""; }
-      return cleared;
-    });
-  }, [queueSave]);
+    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
+    return true;
+  }, [geocodeTyped, profileCenter, queueSave]);
+
 
   // ── Navigation ────────────────────────────────────────────────────────────
   const focusField = useCallback((field: string) => {
@@ -497,7 +525,23 @@ export function ItemListingWizard({
     setStep(next);
   }, []);
 
-  const locationRef = useRef<LocationPickerHandle>(null);
+  /**
+   * Continue waits on the photos step while the photos are still uploading,
+   * being screened, or being read by the AI (including the short pause before
+   * the read starts), so the donor never moves on with details the AI is about
+   * to fill in, or with photos that have no verdict yet.
+   */
+  const analysisDue = mode === "create" && uploadedCount >= 1 && !isUploading && analysedKeyRef.current !== uploadedKey;
+  const photosBusy: string | null = step !== "photos" ? null
+    : isUploading ? "Uploading photos…"
+    : photoApi.screening ? "Checking photos…"
+    : aiRunning || analysisDue ? "Reading your photos…"
+    : null;
+
+  const locationRef = useRef<LocationStepHandle>(null);
+  /** Step 4 is working out a new location (GPS, search, pin lookup, typed address). */
+  const [locationBusy, setLocationBusy] = useState(false);
+  const locationHeld = step === "location" && locationBusy;
   const [checkingLocation, setCheckingLocation] = useState(false);
   /** On the location step: wait for any pending lookup. False = stay on the step. */
   const settleLocation = useCallback(async () => {
@@ -507,6 +551,7 @@ export function ItemListingWizard({
   }, [step]);
 
   const handleContinue = useCallback(async () => {
+    if (photosBusy || locationHeld) return;
     if (!(await settleLocation())) return;
     // modelRef: the lookup may have just moved the pin.
     const model = modelRef.current;
@@ -528,10 +573,12 @@ export function ItemListingWizard({
       // flow awaited the network and then a 380ms timer before moving.
       goTo(WIZARD_STEPS[idx + 1], 1);
     } else {
-      void handleSubmit();
+      // Through the ref: this callback is not rebuilt when the model changes,
+      // and a captured handleSubmit validated the model as it was on arrival at
+      // review (declarations unticked), so ticking them never took effect.
+      void handleSubmitRef.current();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, goTo, reduced, settleLocation]);
+  }, [step, goTo, reduced, settleLocation, photosBusy, locationHeld]);
 
   const handleBack = useCallback(() => {
     const idx = stepIndex(step);
@@ -548,6 +595,8 @@ export function ItemListingWizard({
   }, [flush, router, settleLocation]);
 
   const handleSubmit = useCallback(async () => {
+    // The live model, not a render's copy: Submit can arrive through handleContinue.
+    const model = modelRef.current;
     const allErrors = validateAll(model);
     if (Object.keys(allErrors).length) {
       setErrors(allErrors);
@@ -577,7 +626,9 @@ export function ItemListingWizard({
     } finally {
       setSubmitting(false);
     }
-  }, [model, step, ensureDraft, flush, mode, router]);
+  }, [step, ensureDraft, flush, mode, router]);
+  const handleSubmitRef = useRef(handleSubmit);
+  handleSubmitRef.current = handleSubmit;
 
   // ── Progress availability ─────────────────────────────────────────────────
   // Done = continued past AND still valid; going back keeps later checks.
@@ -610,6 +661,7 @@ export function ItemListingWizard({
   }, [step]);
 
   const isLast = step === "review";
+
   const continueLabel = isLast
     ? (mode === "needs-info" ? "Resubmit for review" : "Submit for review")
     : "Continue";
@@ -738,8 +790,9 @@ export function ItemListingWizard({
                   )}
                   {step === "location" && (
                     <LocationStep
-                      model={model} errors={errors} profileCenter={profileCenter} mapStart={mapStart}
-                      onChange={handleLocation} controlRef={locationRef}
+                      model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
+                      onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped} controlRef={locationRef}
+                      onBusyChange={setLocationBusy}
                     />
                   )}
                   {step === "review" && (
@@ -767,8 +820,8 @@ export function ItemListingWizard({
             onContinue={() => void handleContinue()}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={continueLabel}
-            advancing={checkingLocation}
-            advancingLabel="Checking location…"
+            advancing={checkingLocation || locationHeld || !!photosBusy}
+            advancingLabel={checkingLocation || locationHeld ? "Checking location…" : photosBusy ?? undefined}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

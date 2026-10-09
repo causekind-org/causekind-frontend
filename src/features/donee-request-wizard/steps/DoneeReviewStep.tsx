@@ -14,6 +14,7 @@ export function DoneeReviewStep({
   emergencyNature,
   incidentDate,
   city,
+  locality,
   pincode,
   verification,
   uploadedDocs,
@@ -28,6 +29,8 @@ export function DoneeReviewStep({
   emergencyNature: string;
   incidentDate: string;
   city: string;
+  /** Optional area or neighbourhood. */
+  locality?: string;
   pincode: string;
   verification: Partial<RequestVerification>;
   uploadedDocs: Map<VerificationDocumentType, VerificationDocument>;
@@ -47,7 +50,9 @@ export function DoneeReviewStep({
       </ReviewSection>
 
       <ReviewSection title="Location" onEdit={() => onEdit("location")}>
-        <ReviewRow label="Location" value={[city, pincode].filter(Boolean).join(" - ") || "Not specified"} />
+        <ReviewRow label="City" value={city || "Not specified"} />
+        {locality?.trim() && <ReviewRow label="Locality" value={locality} />}
+        <ReviewRow label="PIN code" value={pincode || "Not specified"} />
       </ReviewSection>
 
       {isEmergency && (

@@ -78,7 +78,7 @@ export function MatchActionDock() {
   }, [waiting, dismiss, user?.role]);
 
   if (!waiting) return null;
-  const item = waiting.listingTitle || "your item";
+  const item = waiting.listingTitle || waiting.donorItemDescription || "your item";
   const need = waiting.requestTitle || "a nearby need";
   const km = waiting.scoreDistanceKm;
   const isDonee = user?.role === "DONEE";

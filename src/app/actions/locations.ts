@@ -1,7 +1,6 @@
 "use server";
 
 import { Country, State, City } from "country-state-city";
-import { parseCity } from "@/features/item-listing-wizard/wizardLocation";
 
 export async function getCountries() {
   return Country.getAllCountries().map((c) => ({
@@ -97,40 +96,95 @@ export async function detectLocationFromServer(lat: number, lng: number): Promis
 }
 
 /**
- * Forward-geocodes a typed address via Nominatim — the fallback when the map
- * cannot load, so a listing still gets approximate coordinates. Same
- * User-Agent rule and failure reasons as {@link detectLocationFromServer};
- * callers debounce it (Nominatim allows about one request a second).
+ * Coordinates for a typed address (country / state / city / PIN).
+ *
+ * <p>Nominatim's structured search requires EVERY field it is given to match,
+ * and our city list carries names OpenStreetMap does not use as cities (e.g.
+ * "Mumbai Suburban" is a district there). So PIN 400068 + "Mumbai Suburban" +
+ * Maharashtra found nothing, while PIN 400068 alone finds Kandivali East. The
+ * query is therefore tried from most to least reliable, stopping at the first
+ * hit: the PIN code alone, then city + state, then the same as free text. Same
+ * User-Agent rule and failure reasons as {@link detectLocationFromServer}.
  */
 export async function geocodeAddressFromServer(query: {
   postalcode?: string; city?: string; state?: string; countryCode?: string;
 }): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
-  const params = new URLSearchParams({ format: "json", limit: "1", email: "support@causekind.com" });
-  if (query.postalcode) params.set("postalcode", query.postalcode);
-  if (query.city) params.set("city", query.city);
-  if (query.state) params.set("state", query.state);
-  if (query.countryCode) params.set("countrycodes", query.countryCode.toLowerCase());
-  await nominatimSlot();
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-      headers: {
-        "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
-        "Accept": "application/json",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) {
-      console.warn(`[geocode] Nominatim search returned ${res.status} ${res.statusText}`);
-      return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
-    }
-    const rows = (await res.json()) as { lat: string; lon: string }[];
-    const first = rows?.[0];
-    if (!first) return { ok: false, reason: "no-address" };
-    return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
-  } catch (err) {
-    console.warn("[geocode] search failed:", err instanceof Error ? err.message : err);
-    return { ok: false, reason: "network" };
+  const country = query.countryCode?.toLowerCase();
+  const attempts: Record<string, string>[] = [];
+  if (query.postalcode) attempts.push({ postalcode: query.postalcode });
+  if (query.city) {
+    attempts.push({ city: query.city, ...(query.state ? { state: query.state } : {}) });
+    attempts.push({ q: [query.city, query.state].filter(Boolean).join(", ") });
   }
+  let last: GeocodeFailure = "no-address";
+  for (const attempt of attempts) {
+    const params = new URLSearchParams({ format: "json", limit: "1", email: "support@causekind.com", ...attempt });
+    if (country) params.set("countrycodes", country);
+    await nominatimSlot();
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        headers: {
+          "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
+          "Accept": "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) {
+        console.warn(`[geocode] Nominatim search returned ${res.status} ${res.statusText}`);
+        // Refused or rate-limited: another attempt now would only make it worse.
+        return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
+      }
+      const rows = (await res.json()) as { lat: string; lon: string }[];
+      const first = rows?.[0];
+      if (first) return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
+      last = "no-address";
+    } catch (err) {
+      console.warn("[geocode] search failed:", err instanceof Error ? err.message : err);
+      last = "network";
+    }
+  }
+  return { ok: false, reason: last };
+}
+
+/**
+ * Coordinates for a free-text address, as typed into the handover form ("Flat
+ * 4, Sai Krupa, Link Road, Kandivali East, Mumbai"). Nominatim rarely knows the
+ * building, so on a miss the first comma part is dropped and the rest retried
+ * ("Sai Krupa, Link Road, …", then "Link Road, …"), up to three tries, which
+ * lands on the street or area instead of failing. India-biased like the rest.
+ */
+export async function geocodeFreeTextFromServer(
+  text: string,
+): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
+  let parts = text.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return { ok: false, reason: "no-address" };
+  let last: GeocodeFailure = "no-address";
+  for (let tries = 0; tries < 3 && parts.length > 0; tries++) {
+    const params = new URLSearchParams({
+      q: parts.join(", ").slice(0, 200), format: "json", limit: "1", countrycodes: "in", email: "support@causekind.com",
+    });
+    await nominatimSlot();
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        headers: {
+          "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
+          "Accept": "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
+      const rows = (await res.json()) as { lat: string; lon: string }[];
+      if (rows?.[0]) return { ok: true, lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
+      last = "no-address";
+    } catch (err) {
+      console.warn("[geocode] free-text search failed:", err instanceof Error ? err.message : err);
+      last = "network";
+    }
+    // A single part left that matched nothing: nothing shorter to try.
+    if (parts.length === 1) break;
+    parts = parts.slice(1);
+  }
+  return { ok: false, reason: last };
 }
 
 // Strip common administrative suffixes before comparing
@@ -183,42 +237,6 @@ export async function resolveLocationFromGPS(countryCode: string, stateName: str
 }
 
 /**
- * Approximate centre of a profile's city, for where a map should *start* when
- * the user has no saved coordinates. Never used as a pin or for matching.
- *
- * <p>The profile stores `"City, StateIso, CountryIso"` (older profiles: free
- * text such as `"Pune"`, read as an Indian city). The city list this app
- * already uses carries coordinates, so most lookups need no network; a city
- * missing from the list is geocoded through Nominatim, and when the city
- * cannot be placed at all the state's centre is used instead.
- */
-export async function profileCityCenterFromServer(
-  raw: string | null,
-): Promise<{ lat: number; lng: number; level: "city" | "state" } | null> {
-  const parsed = parseCity(raw);
-  if (!parsed.city && !parsed.stateIso) return null;
-  const countryIso = parsed.countryIso || "IN";
-  const point = (o: { latitude?: string | null; longitude?: string | null } | undefined) => {
-    const lat = Number(o?.latitude), lng = Number(o?.longitude);
-    return o?.latitude && o?.longitude && Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : null;
-  };
-
-  if (parsed.city) {
-    const wanted = normCity(parsed.city);
-    const listed = (parsed.stateIso ? City.getCitiesOfState(countryIso, parsed.stateIso) : City.getCitiesOfCountry(countryIso)) ?? [];
-    const hit = point(listed.find((c) => c.name.toLowerCase() === parsed.city.toLowerCase()) ?? listed.find((c) => normCity(c.name) === wanted));
-    if (hit) return { ...hit, level: "city" };
-
-    const stateName = parsed.stateIso ? State.getStateByCodeAndCountry(parsed.stateIso, countryIso)?.name ?? "" : "";
-    const geo = await geocodeAddressFromServer({ city: parsed.city, state: stateName, countryCode: countryIso });
-    if (geo.ok) return { lat: geo.lat, lng: geo.lng, level: "city" };
-  }
-
-  const state = parsed.stateIso ? point(State.getStateByCodeAndCountry(parsed.stateIso, countryIso) ?? undefined) : null;
-  return state ? { ...state, level: "state" } : null;
-}
-
-/**
  * Nominatim's usage policy: at most one request per second. Every call from
  * this module waits for its slot here (per server instance), on top of the
  * debouncing the pickers already do.
@@ -229,34 +247,4 @@ async function nominatimSlot() {
   const at = Math.max(now, nextNominatimSlot);
   nextNominatimSlot = at + 1000;
   if (at > now) await new Promise((r) => setTimeout(r, at - now));
-}
-
-/**
- * Free-text place search for the location picker's search box ("Kothrud,
- * Pune", "411038"). Submit-only by design: Nominatim's policy rules out
- * as-you-type suggestions. India-biased, since that is where CauseKind runs.
- */
-export async function searchPlaceFromServer(
-  q: string,
-): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
-  const query = q.trim().slice(0, 200);
-  if (!query) return { ok: false, reason: "no-address" };
-  const params = new URLSearchParams({ q: query, format: "json", limit: "1", countrycodes: "in", email: "support@causekind.com" });
-  await nominatimSlot();
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-      headers: {
-        "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
-        "Accept": "application/json",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
-    const rows = (await res.json()) as { lat: string; lon: string }[];
-    const first = rows?.[0];
-    if (!first) return { ok: false, reason: "no-address" };
-    return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
-  } catch {
-    return { ok: false, reason: "network" };
-  }
 }

@@ -250,8 +250,6 @@ export default function ProfilePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
 
-  // GPS location
-
   // Derived option lists (memoized to avoid re-building every render)
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 10;
@@ -940,6 +938,7 @@ export default function ProfilePage() {
                       <div className="flex gap-2">
                         <div className="w-[96px] sm:w-[120px] shrink-0">
                           <SearchableSelect
+                            direction="up"
                             options={dialCodeOptions}
                             value={dialCountry}
                             onChange={(iso) => {
@@ -973,6 +972,7 @@ export default function ProfilePage() {
                       <div className="space-y-1">
                         <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
                         <SearchableSelect
+                          direction="up"
                           id="country"
                           options={countryOptions}
                           value={countryIso}
@@ -990,6 +990,7 @@ export default function ProfilePage() {
                           </p>
                         ) : (
                           <SearchableSelect
+                            direction="up"
                             id="state"
                             options={stateOptions}
                             value={stateIso}
@@ -1017,6 +1018,7 @@ export default function ProfilePage() {
                           </div>
                         ) : (
                           <SearchableSelect
+                            direction="up"
                             id="city"
                             options={cityOptions}
                             value={cityValue}

@@ -239,6 +239,25 @@ export function mapsHref(lat: number, lng: number): string {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
 
+/** Google Maps directions from wherever the viewer is to the pin. */
+export function directionsHref(lat: number, lng: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+}
+
+/**
+ * A small static map image of the pin (Maps Static API, same browser key as the
+ * map), or null without a key. Callers hide the image if it fails to load.
+ */
+export function staticMapSrc(lat: number, lng: number): string | null {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  const p = new URLSearchParams({
+    center: `${lat},${lng}`, zoom: "16", size: "640x240", scale: "2",
+    markers: `color:0xb04a15|${lat},${lng}`, key,
+  });
+  return `https://maps.googleapis.com/maps/api/staticmap?${p.toString()}`;
+}
+
 // ── NGO OFFER ───────────────────────────────────────────────────────────────
 
 export function adaptNgoOffer(
