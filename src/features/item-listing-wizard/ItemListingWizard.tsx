@@ -573,9 +573,11 @@ export function ItemListingWizard({
       // flow awaited the network and then a 380ms timer before moving.
       goTo(WIZARD_STEPS[idx + 1], 1);
     } else {
-      void handleSubmit();
+      // Through the ref: this callback is not rebuilt when the model changes,
+      // and a captured handleSubmit validated the model as it was on arrival at
+      // review (declarations unticked), so ticking them never took effect.
+      void handleSubmitRef.current();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, goTo, reduced, settleLocation, photosBusy, locationHeld]);
 
   const handleBack = useCallback(() => {
@@ -593,6 +595,8 @@ export function ItemListingWizard({
   }, [flush, router, settleLocation]);
 
   const handleSubmit = useCallback(async () => {
+    // The live model, not a render's copy: Submit can arrive through handleContinue.
+    const model = modelRef.current;
     const allErrors = validateAll(model);
     if (Object.keys(allErrors).length) {
       setErrors(allErrors);
@@ -622,7 +626,9 @@ export function ItemListingWizard({
     } finally {
       setSubmitting(false);
     }
-  }, [model, step, ensureDraft, flush, mode, router]);
+  }, [step, ensureDraft, flush, mode, router]);
+  const handleSubmitRef = useRef(handleSubmit);
+  handleSubmitRef.current = handleSubmit;
 
   // ── Progress availability ─────────────────────────────────────────────────
   // Done = continued past AND still valid; going back keeps later checks.
