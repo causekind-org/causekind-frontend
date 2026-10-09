@@ -14,7 +14,51 @@ import { NgoHowItWorksSection } from "./NgoHowItWorksSection";
 import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function DevPreviewWrapper({ children }: { children: React.ReactNode }) {
+
+import { NgoHeroStateA } from "./NgoHeroStateA";
+import { NgoSoundFamiliar } from "./NgoSoundFamiliar";
+import { NgoJourneyPinned } from "./NgoJourneyPinned";
+import { NgoVerificationScan } from "./NgoVerificationScan";
+import { NgoVerificationFinale } from "./NgoVerificationFinale";
+import { NgoFaqSection } from "./NgoFaqSection";
+
+function NgoLandingRouter({ statusData }: { statusData: any }) {
+  if (statusData.isVerified) {
+    // STATE B: Verified NGO (Phase 3) - For now, still rendering existing components
+    return (
+      <>
+        <NgoVerifiedWelcomeModal />
+        <NgoHeroSection />
+        <NgoGlanceStrip />
+        <NgoTransparencySection />
+        <NgoTrustSection />
+        <NgoHowItWorksSection />
+      </>
+    );
+  }
+
+  // STATE A: Incomplete / Under Review / Changes Requested (Phase 2)
+  return (
+    <>
+      <NgoHeroStateA 
+        status={statusData.status} 
+        stepNumber={statusData.stepNumber} 
+        totalSteps={statusData.totalSteps} 
+        wizardHref={statusData.wizardHref} 
+      />
+      <NgoSoundFamiliar />
+      <NgoJourneyPinned />
+      <NgoVerificationScan />
+      <NgoVerificationFinale 
+        status={statusData.status} 
+        wizardHref={statusData.wizardHref} 
+      />
+      <NgoFaqSection />
+    </>
+  );
+}
+
+function DevPreviewWrapper() {
   // Use a query parameter to override the state for dev preview ONLY
   const searchParams = useSearchParams();
   const devState = searchParams?.get("devState");
@@ -76,11 +120,10 @@ function DevPreviewWrapper({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Phase 1: Keep the existing UI rendering through the new router for now
   return (
     <SmoothScrollProvider>
       <div className="ck-ngo-landing-page min-h-screen bg-[#FBF9F4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 transition-colors duration-300 overflow-x-clip">
-        {children}
+        <NgoLandingRouter statusData={status} />
       </div>
     </SmoothScrollProvider>
   );
@@ -89,15 +132,7 @@ function DevPreviewWrapper({ children }: { children: React.ReactNode }) {
 export function NgoLandingView() {
   return (
     <Suspense fallback={null}>
-      <DevPreviewWrapper>
-        <NgoVerifiedWelcomeModal />
-        <NgoHeroSection />
-        <NgoGlanceStrip />
-        <NgoProblemSolutionSection />
-        <NgoTransparencySection />
-        <NgoTrustSection />
-        <NgoHowItWorksSection />
-      </DevPreviewWrapper>
+      <DevPreviewWrapper />
     </Suspense>
   );
 }
