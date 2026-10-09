@@ -40,8 +40,12 @@ export function usePinAddress() {
   /** Resolves once no reverse lookup is pending (immediately if none is). */
   const whenIdle = useCallback(() => idle.current ?? Promise.resolve(), []);
 
-  /** Look up the address at a pin; `onFound` gets whatever was found. */
-  const lookup = useCallback((lat: number, lng: number, onFound: (a: PinAddress) => void) => {
+  /**
+   * Look up the address at a pin; `onFound` gets whatever was found (absent
+   * fields were not found). `onNotFound` runs when nothing came back at all,
+   * so the caller can clear the address that described the old spot.
+   */
+  const lookup = useCallback((lat: number, lng: number, onFound: (a: PinAddress) => void, onNotFound?: () => void) => {
     const mine = ++seq.current;
     if (timer.current) clearTimeout(timer.current);
     setState({ running: true, error: null });
@@ -51,6 +55,7 @@ export function usePinAddress() {
         const geo = await detectLocationFromServer(lat, lng);
         if (mine !== seq.current) return;
         if (!geo.ok) {
+          onNotFound?.();
           setState({
             running: false,
             error: geo.reason === "no-address"
@@ -74,7 +79,10 @@ export function usePinAddress() {
         });
         setState({ running: false, error: null });
       } catch {
-        if (mine === seq.current) setState({ running: false, error: "We couldn't turn that spot into an address — please fill in the fields below." });
+        if (mine === seq.current) {
+          onNotFound?.();
+          setState({ running: false, error: "We couldn't turn that spot into an address — please fill in the fields below." });
+        }
       } finally {
         if (mine === seq.current) settle();
       }

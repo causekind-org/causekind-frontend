@@ -542,6 +542,8 @@ function NewRequestForm() {
   const [uploadedDocs, setUploadedDocs] = useState<Map<VerificationDocumentType, VerificationDocument>>(new Map());
   const [uploadingDoc, setUploadingDoc] = useState<VerificationDocumentType | null>(null);
   const [docScreening, setDocScreening] = useState<Map<VerificationDocumentType, DocScreening>>(new Map());
+  /** A document is uploading or its AI check is running: the evidence step holds Continue until it finishes. */
+  const docsBusy = uploadingDoc !== null || [...docScreening.values()].some((d) => d.status === "checking");
 
   // Step 4
   const [declarations, setDeclarations] = useState<boolean[]>(new Array(DECLARATIONS.length).fill(false));
@@ -656,15 +658,31 @@ function NewRequestForm() {
     setGpsCoords({ lat, lng });
     setTypedFailed(false);
     setFieldErrors((prev) => (prev.gps ? { ...prev, gps: "" } : prev));
+    const clearCity = () => { setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); };
     pinAddress.lookup(lat, lng, (found) => {
-      const keep = (current: string) => !!opts?.onlyEmpty && !!current.trim();
-      if (found.countryIso && !keep(countryIsoRef.current)) setCountryIso(found.countryIso);
-      if (found.stateIso && !keep(stateIsoRef.current)) setStateIso(found.stateIso);
-      if (found.city && !keep(cityRef.current)) {
-        if (found.cityListed) { setCityValue(found.city); setCityFreeText(""); setForceFreeTextCity(false); }
-        else { setCityValue(""); setCityFreeText(found.city); setForceFreeTextCity(true); }
+      if (opts?.onlyEmpty) {
+        // Filling the blanks of a resumed draft: never touch what is there.
+        if (found.countryIso && !countryIsoRef.current.trim()) setCountryIso(found.countryIso);
+        if (found.stateIso && !stateIsoRef.current.trim()) setStateIso(found.stateIso);
+        if (found.city && !cityRef.current.trim()) {
+          if (found.cityListed) { setCityValue(found.city); setCityFreeText(""); setForceFreeTextCity(false); }
+          else { setCityValue(""); setCityFreeText(found.city); setForceFreeTextCity(true); }
+        }
+        if (found.pincode && !pincodeRef.current.trim()) setPincode(found.pincode);
+        return;
       }
-      if (found.pincode && !keep(pincodeRef.current)) setPincode(found.pincode);
+      // A new spot: a field the lookup could not find is cleared, never left
+      // describing the previous spot.
+      setCountryIso(found.countryIso ?? "");
+      setStateIso(found.stateIso ?? "");
+      if (!found.city) clearCity();
+      else if (found.cityListed) { setCityValue(found.city); setCityFreeText(""); setForceFreeTextCity(false); }
+      else { setCityValue(""); setCityFreeText(found.city); setForceFreeTextCity(true); }
+      setPincode(found.pincode ?? "");
+    }, () => {
+      // Nothing found at the new spot: the old address no longer applies.
+      if (opts?.onlyEmpty) return;
+      setCountryIso(""); setStateIso(""); clearCity(); setPincode("");
     });
   }, [pinAddress.lookup]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -779,8 +797,17 @@ function NewRequestForm() {
       if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
     }
     if (s === "location") {
+      // The whole location is required, not only the pin: a spot the lookup
+      // could not describe leaves blanks that the donee fills in.
       const city = showCityFreeText ? cityFreeText : cityValue;
-      if (!city) e.city = "City is required";
+      if (!countryIso) e.countryIso = "Choose a country";
+      if (!stateIso && !noStateOptions) e.stateIso = "Choose a state";
+      if (!city.trim()) e.city = "City is required";
+      const pin = pincode.trim();
+      if (!pin) e.pincode = countryIso === "IN" ? "Enter the PIN code" : "Enter the postal code";
+      else if (countryIso === "IN" ? !/^\d{6}$/.test(pin) : !/^[A-Za-z0-9 -]{3,10}$/.test(pin)) {
+        e.pincode = countryIso === "IN" ? "PIN code must be 6 digits" : "Enter a valid postal code";
+      }
       if (!gpsCoords) e.gps = mapDown
         ? "We couldn't place this address — check the city and PIN code."
         : "Place the pin — search, use your current location, or tap the map";
@@ -832,6 +859,7 @@ function NewRequestForm() {
   }
 
   async function proceedNext() {
+    if (step === "household-situation" && docsBusy) return;
     if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
     setSaving(true);
     setSaveStatus("saving");
@@ -1233,17 +1261,23 @@ function NewRequestForm() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label htmlFor="country" className="text-xs text-stone-500 dark:text-stone-400">Country</label>
+            <div data-field="countryIso" tabIndex={-1} className="outline-none">
             <SearchableSelect id="country" options={countryOptions} value={countryIso}
               onChange={(iso) => { setCountryIso(iso); setStateIso(""); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); typedAddress(); }}
               placeholder="Select country" searchPlaceholder="Search…" />
+            </div>
+            {fieldErrors.countryIso && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.countryIso}</p>}
           </div>
           <div className="space-y-1">
             <label htmlFor="state" className="text-xs text-stone-500 dark:text-stone-400">State</label>
             {noStateOptions ? <p className="text-xs text-stone-400 italic py-2">No states listed</p> : (
+              <div data-field="stateIso" tabIndex={-1} className="outline-none">
               <SearchableSelect id="state" options={stateOptions} value={stateIso}
                 onChange={(iso) => { setStateIso(iso); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); typedAddress(); }}
                 placeholder="Select state" disabled={!countryIso} searchPlaceholder="Search…" />
+              </div>
             )}
+            {fieldErrors.stateIso && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.stateIso}</p>}
           </div>
           <div className="space-y-1">
             <label htmlFor="city" className="text-xs text-stone-500 dark:text-stone-400">City</label>
@@ -1267,9 +1301,9 @@ function NewRequestForm() {
               </div>
             )}
           </div>
-          <WizardField label="PIN Code">
-            {({ id, describedBy }) => (
-              <Input id={id} name="pincode" aria-describedby={describedBy} placeholder="e.g. 411001"
+          <WizardField label="PIN Code" required error={fieldErrors.pincode}>
+            {({ id, describedBy, invalid }) => (
+              <Input id={id} name="pincode" aria-describedby={describedBy} aria-invalid={invalid} placeholder="e.g. 411001"
                 value={pincode} onChange={(e) => { setPincode(e.target.value); typedAddress(); }} maxLength={10} className="h-11 w-full" />
             )}
           </WizardField>
@@ -1592,7 +1626,7 @@ function NewRequestForm() {
             <button type="button" onClick={handleBack} disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step {stepNumber(step) - 1}</button>
             <div className="flex flex-wrap gap-2">
 
-              <button type="button" onClick={() => void handleNext()} disabled={saving || checkingLocation || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{checkingLocation ? "Checking location…" : saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => void handleNext()} disabled={saving || checkingLocation || (step === "household-situation" && docsBusy) || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{checkingLocation ? "Checking location…" : step === "household-situation" && docsBusy ? "Checking document…" : saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
             </div>
           </div>
         ) : <WizardNavigation
