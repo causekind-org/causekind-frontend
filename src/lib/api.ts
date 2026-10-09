@@ -4777,7 +4777,6 @@ export function getDoneeNeedProfile() { return request<DoneeNeedProfile>("/api/v
 export function saveDoneeNeedProfile(details: Partial<RequestVerification>) {
   return request<DoneeNeedProfile>("/api/v1/users/me/need-profile", { method: "PUT", body: JSON.stringify(details) });
 }
-export function importPreviousNeedProfile() { return request<DoneeNeedProfile>("/api/v1/users/me/need-profile/import-previous", {method: "POST"}); }
 export function deleteNeedProfileDocument(id: number) { return request<void>(`/api/v1/users/me/need-profile/documents/${id}`, {method: "DELETE"}); }
 export async function uploadNeedProfileDocument(docType: VerificationDocumentType, file: File): Promise<VerificationDocument> {
   const body = new FormData(); body.append("docType",docType); body.append("file",file);

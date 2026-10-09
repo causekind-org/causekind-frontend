@@ -48,3 +48,55 @@ export function progressOf(missing: string[]) {
     pct: Math.round((done / NEED_PROFILE_CHECKLIST_TOTAL) * 100),
   };
 }
+
+/**
+ * The household / financial items of the readiness checklist, in the backend's
+ * order. MIRRORS `DoneeProfileService.missing()` in causekind-backend
+ * (src/main/java/com/causekind/backend/service/DoneeProfileService.java) —
+ * the labels must match its strings exactly, and if a rule changes there it
+ * has to change here.
+ */
+export const PROFILE_FIELD_ITEMS = [
+  "People in home", "Dependents", "Age", "Housing type",
+  "Monthly household income", "Income source", "Financial situation",
+] as const;
+
+/** Name, phone, city: edited on the basic profile, so only the server knows them. */
+const ACCOUNT_ITEMS = ["Full name", "Phone number", "City in your basic profile"];
+
+type ProfileFieldValues = {
+  householdSize?: number | string | null; dependents?: number | string | null; age?: number | string | null;
+  housingType?: string | null; monthlyIncome?: number | string | null;
+  incomeSource?: string | null; reasonCannotBuy?: string | null;
+};
+
+/** Which profile-field items are still missing for these (unsaved) form values. */
+export function profileFieldsMissing(d: ProfileFieldValues): string[] {
+  const num = (v: unknown) => (v === null || v === undefined || String(v).trim() === "" ? null : Number(v));
+  const blank = (v: unknown) => v === null || v === undefined || String(v).trim() === "";
+  const out: string[] = [];
+  const household = num(d.householdSize), dependents = num(d.dependents), age = num(d.age), income = num(d.monthlyIncome);
+  if (household === null || !(household >= 1)) out.push("People in home");
+  if (dependents === null || !(dependents >= 0)) out.push("Dependents");
+  if (age === null || !(age >= 1)) out.push("Age");
+  if (!d.housingType) out.push("Housing type");
+  if (income === null || !Number.isFinite(income) || income < 0) out.push("Monthly household income");
+  if (blank(d.incomeSource)) out.push("Income source");
+  if (blank(d.reasonCannotBuy)) out.push("Financial situation");
+  return out;
+}
+
+/**
+ * The readiness checklist as it stands right now: the profile fields judged
+ * from the live form values, the account items and documents from the server's
+ * last answer (documents change only through an upload, which re-fetches it).
+ * Same order as the server's list.
+ */
+export function liveNeedProfileMissing(details: ProfileFieldValues, serverMissing: string[]): string[] {
+  const fieldItems: readonly string[] = PROFILE_FIELD_ITEMS;
+  return [
+    ...serverMissing.filter((m) => ACCOUNT_ITEMS.includes(m)),
+    ...profileFieldsMissing(details),
+    ...serverMissing.filter((m) => !ACCOUNT_ITEMS.includes(m) && !fieldItems.includes(m)),
+  ];
+}
