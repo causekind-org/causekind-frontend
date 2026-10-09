@@ -84,12 +84,12 @@ export default function AudienceDialog({
         }}
         // Three doors (2026-10-08): nearly the whole screen, dark, each choice a
         // tall panel in its role colour. Phones stack the doors.
-        className={`${doorBody.className} h-[min(820px,calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom)))] w-[calc(100%-1.5rem)] max-w-[1240px] gap-0 overflow-y-auto rounded-none border-0 bg-transparent p-0 text-white shadow-none`}
+        className={`${doorBody.className} sm:flex sm:flex-col h-[min(820px,calc(100vh-2rem))] supports-[height:100dvh]:h-[min(820px,calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom)))] sm:[@media(max-height:560px)]:h-auto sm:[@media(max-height:560px)]:max-h-[calc(100dvh-1rem)] w-[calc(100%-1.5rem)] max-w-[1240px] gap-0 overflow-y-auto rounded-none border-0 bg-transparent p-0 text-white shadow-none`}
       >
-        <div className="flex items-start justify-between gap-4 px-5 pb-4 pt-6 sm:px-10 sm:pb-6 sm:pt-9">
-          <div className="flex min-w-0 flex-col gap-1.5 sm:gap-2.5">
+        <div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-4 pt-6 sm:px-10 sm:pb-6 sm:pt-9 sm:[@media(max-height:760px)]:pb-3 sm:[@media(max-height:760px)]:pt-5">
+          <div className="flex min-w-0 flex-col gap-1.5 sm:gap-2.5 sm:[@media(max-height:760px)]:gap-1.5">
             <p className="hidden text-xs font-bold uppercase tracking-[0.22em] text-[#e8a77c] sm:block">Step into a door</p>
-            <DialogTitle className={`${doorDisplay.className} text-[1.9rem] font-extrabold leading-none tracking-tight text-white sm:text-[3.4rem]`}>
+            <DialogTitle className={`${doorDisplay.className} text-[1.9rem] font-extrabold leading-none tracking-tight text-white sm:text-[3.4rem] sm:[@media(max-height:760px)]:text-[2.6rem]`}>
               Who would you like to help?
             </DialogTitle>
             <DialogDescription className="text-sm text-[#cbb8aa] sm:text-base">
@@ -104,7 +104,7 @@ export default function AudienceDialog({
           </DialogClose>
         </div>
 
-        <div role="group" aria-label="Whose requests to show" className="flex min-h-0 flex-1 flex-col gap-2.5 px-4 sm:flex-row sm:gap-3.5 sm:px-10">
+        <div role="group" aria-label="Whose requests to show" className="flex min-h-0 flex-1 flex-col gap-2.5 px-4 sm:flex-row sm:gap-3.5 sm:px-10 sm:[@media(max-height:560px)]:flex-none">
           {AUDIENCE_OPTIONS.map(o => {
             const selected = o.value === current;
             const door = DOOR_COPY[o.value];
@@ -115,7 +115,7 @@ export default function AudienceDialog({
                 aria-pressed={selected}
                 onClick={() => choose(o.value)}
                 style={{ backgroundImage: `linear-gradient(165deg, ${o.light.accent} 0%, ${door.deep} 100%)` }}
-                className={`group relative flex min-h-[132px] min-w-0 items-center gap-4 rounded-[22px] border-2 p-4 text-start text-white transition-[flex-grow,filter,box-shadow] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 motion-reduce:transition-none sm:flex-col sm:items-start sm:gap-5 sm:rounded-[28px] sm:p-7 sm:hover:grow-[1.35] ${
+                className={`group relative flex min-h-[132px] min-w-0 items-center gap-4 rounded-[22px] border-2 p-4 text-start text-white transition-[flex-grow,filter,box-shadow] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/70 motion-reduce:transition-none sm:min-h-0 sm:flex-col sm:items-start sm:gap-5 sm:rounded-[28px] sm:p-7 sm:hover:grow-[1.35] sm:[@media(max-height:760px)]:gap-3 sm:[@media(max-height:760px)]:p-5 ${
                   selected
                     ? "grow-[1.6] border-white/90 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.7)] sm:grow-[1.7]"
                     : "grow border-transparent brightness-[0.7] saturate-[0.7] hover:brightness-95 hover:saturate-100"
@@ -126,16 +126,16 @@ export default function AudienceDialog({
                   <Tick on={selected} accent={o.light.accent} />
                 </span>
 
-                <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white sm:size-auto sm:flex-1 sm:self-stretch sm:bg-transparent">
-                  <span className="block w-10 sm:w-[min(200px,26vh)]">
+                <span aria-hidden="true" className="flex size-16 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-white sm:size-auto sm:min-h-0 sm:flex-1 sm:shrink sm:self-stretch sm:bg-transparent sm:[@media(max-height:560px)]:h-[84px] sm:[@media(max-height:560px)]:flex-none">
+                  <span className="block w-10 sm:h-full sm:max-h-[160px] sm:w-auto sm:aspect-[190/150]">
                     <DoorDrawing audience={o.value} />
                   </span>
                 </span>
 
-                <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none sm:gap-2">
-                  <span className={`${doorDisplay.className} text-[1.6rem] font-extrabold leading-none sm:text-[2.5rem]`}>{door.title}</span>
-                  <span className="text-[15px] leading-snug text-white/85 sm:max-w-[300px] sm:text-lg">{door.body}</span>
-                  <span className="mt-2 hidden items-center gap-2 text-[15px] font-bold sm:inline-flex">
+                <span className="flex min-w-0 flex-1 flex-col gap-1 sm:flex-none sm:shrink-0 sm:gap-2 sm:[@media(max-height:760px)]:gap-1.5">
+                  <span className={`${doorDisplay.className} text-[1.6rem] font-extrabold leading-none sm:text-[2.5rem] sm:[@media(max-height:760px)]:text-[2rem]`}>{door.title}</span>
+                  <span className="text-[15px] leading-snug text-white/85 sm:max-w-[300px] sm:text-lg sm:[@media(max-height:760px)]:text-base">{door.body}</span>
+                  <span className="mt-2 hidden items-center gap-2 text-[15px] font-bold sm:inline-flex sm:[@media(max-height:760px)]:mt-1">
                     {door.cta} <ArrowRight className="size-4" aria-hidden />
                   </span>
                 </span>
@@ -147,7 +147,7 @@ export default function AudienceDialog({
           })}
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 text-xs text-[#a8968a] sm:px-10 sm:pb-7 sm:text-sm">
+        <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 text-xs text-[#a8968a] sm:px-10 sm:pb-7 sm:text-sm sm:[@media(max-height:760px)]:pb-4 sm:[@media(max-height:760px)]:pt-3">
           <span>Every request is verified before it shows. Nothing is shared until you choose to give.</span>
         </div>
       </DialogContent>
@@ -173,7 +173,7 @@ function Tick({ on, accent }: { on: boolean; accent: string }) {
  * door's title and text say what it is.
  */
 function DoorDrawing({ audience }: { audience: RequestAudience }) {
-  const common = { viewBox: "0 0 190 150", fill: "none", stroke: "currentColor", strokeWidth: 3, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, className: "h-auto w-full", "aria-hidden": true };
+  const common = { viewBox: "0 0 190 150", fill: "none", stroke: "currentColor", strokeWidth: 3, strokeLinecap: "round" as const, strokeLinejoin: "round" as const, className: "h-auto w-full sm:h-full", "aria-hidden": true };
   if (audience === "donee") {
     return (
       <svg {...common}>
