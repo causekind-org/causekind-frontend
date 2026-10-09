@@ -119,7 +119,9 @@ function PlaceSearchBox({ near, onPlace }: { near: LatLng; onPlace: (lat: number
         }));
         setActive(-1);
         setError(null);
-      } catch {
+      } catch (e) {
+        // The usual cause is the Maps key: Places API (New) not enabled on its project.
+        console.warn("Place search failed:", e);
         if (mine === seq.current) { setItems([]); setError("Search isn't available right now — tap the map or fill in the address instead."); }
       }
     }, 250);
@@ -137,7 +139,8 @@ function PlaceSearchBox({ near, onPlace }: { near: LatLng; onPlace: (lat: number
       const loc = place.location;
       if (loc) onPlace(loc.lat(), loc.lng());
       else setError("We couldn't place that result — try another, or tap the map.");
-    } catch {
+    } catch (e) {
+      console.warn("Place details failed:", e);
       setError("We couldn't place that result — try another, or tap the map.");
     } finally {
       setBusy(false);
@@ -154,7 +157,10 @@ function PlaceSearchBox({ near, onPlace }: { near: LatLng; onPlace: (lat: number
 
   const showList = open && items.length > 0;
   return (
-    <div className="relative min-w-0 flex-1">
+    // The icons are centred on the input's own box; the error line sits outside
+    // it, so showing an error can't push them down.
+    <div className="min-w-0 flex-1">
+      <div className="relative">
       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden />
       <input
         type="text"
@@ -202,6 +208,7 @@ function PlaceSearchBox({ near, onPlace }: { near: LatLng; onPlace: (lat: number
           ))}
         </ul>
       )}
+      </div>
       {error && <p role="alert" className="mt-1 text-2xs font-semibold text-amber-700 dark:text-amber-300">{error}</p>}
     </div>
   );
