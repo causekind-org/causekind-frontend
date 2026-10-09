@@ -1270,7 +1270,7 @@ function NewRequestForm() {
             <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">{pinAddress.error}</p>
           )}
           {fieldErrors.gps && <p id="gps-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.gps}</p>}
-          {typedFailed && !fieldErrors.gps && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">We couldn&apos;t place this address. Drop the pin on the map to continue.</p>}
+          {typedFailed && !fieldErrors.gps && !pinAddress.error && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">We couldn&apos;t place this address. Drop the pin on the map to continue.</p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">

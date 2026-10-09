@@ -96,40 +96,54 @@ export async function detectLocationFromServer(lat: number, lng: number): Promis
 }
 
 /**
- * Forward-geocodes a typed address via Nominatim — the fallback when the map
- * cannot load, so a listing still gets approximate coordinates. Same
- * User-Agent rule and failure reasons as {@link detectLocationFromServer};
- * callers debounce it (Nominatim allows about one request a second).
+ * Coordinates for a typed address (country / state / city / PIN).
+ *
+ * <p>Nominatim's structured search requires EVERY field it is given to match,
+ * and our city list carries names OpenStreetMap does not use as cities (e.g.
+ * "Mumbai Suburban" is a district there). So PIN 400068 + "Mumbai Suburban" +
+ * Maharashtra found nothing, while PIN 400068 alone finds Kandivali East. The
+ * query is therefore tried from most to least reliable, stopping at the first
+ * hit: the PIN code alone, then city + state, then the same as free text. Same
+ * User-Agent rule and failure reasons as {@link detectLocationFromServer}.
  */
 export async function geocodeAddressFromServer(query: {
   postalcode?: string; city?: string; state?: string; countryCode?: string;
 }): Promise<{ ok: true; lat: number; lng: number } | { ok: false; reason: GeocodeFailure }> {
-  const params = new URLSearchParams({ format: "json", limit: "1", email: "support@causekind.com" });
-  if (query.postalcode) params.set("postalcode", query.postalcode);
-  if (query.city) params.set("city", query.city);
-  if (query.state) params.set("state", query.state);
-  if (query.countryCode) params.set("countrycodes", query.countryCode.toLowerCase());
-  await nominatimSlot();
-  try {
-    const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-      headers: {
-        "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
-        "Accept": "application/json",
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) {
-      console.warn(`[geocode] Nominatim search returned ${res.status} ${res.statusText}`);
-      return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
-    }
-    const rows = (await res.json()) as { lat: string; lon: string }[];
-    const first = rows?.[0];
-    if (!first) return { ok: false, reason: "no-address" };
-    return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
-  } catch (err) {
-    console.warn("[geocode] search failed:", err instanceof Error ? err.message : err);
-    return { ok: false, reason: "network" };
+  const country = query.countryCode?.toLowerCase();
+  const attempts: Record<string, string>[] = [];
+  if (query.postalcode) attempts.push({ postalcode: query.postalcode });
+  if (query.city) {
+    attempts.push({ city: query.city, ...(query.state ? { state: query.state } : {}) });
+    attempts.push({ q: [query.city, query.state].filter(Boolean).join(", ") });
   }
+  let last: GeocodeFailure = "no-address";
+  for (const attempt of attempts) {
+    const params = new URLSearchParams({ format: "json", limit: "1", email: "support@causekind.com", ...attempt });
+    if (country) params.set("countrycodes", country);
+    await nominatimSlot();
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+        headers: {
+          "User-Agent": "CauseKind/1.0 (+https://causekind.com; support@causekind.com)",
+          "Accept": "application/json",
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!res.ok) {
+        console.warn(`[geocode] Nominatim search returned ${res.status} ${res.statusText}`);
+        // Refused or rate-limited: another attempt now would only make it worse.
+        return { ok: false, reason: res.status === 429 ? "rate-limited" : "refused" };
+      }
+      const rows = (await res.json()) as { lat: string; lon: string }[];
+      const first = rows?.[0];
+      if (first) return { ok: true, lat: Number(first.lat), lng: Number(first.lon) };
+      last = "no-address";
+    } catch (err) {
+      console.warn("[geocode] search failed:", err instanceof Error ? err.message : err);
+      last = "network";
+    }
+  }
+  return { ok: false, reason: last };
 }
 
 // Strip common administrative suffixes before comparing

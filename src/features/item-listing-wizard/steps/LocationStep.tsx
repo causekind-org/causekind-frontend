@@ -143,7 +143,8 @@ export function LocationStep({
   // Leaving the step must not leave the wizard holding Continue.
   useEffect(() => () => { onBusyChangeRef.current?.(false); }, []);
 
-  const pinError = errors.latitude || errors.longitude || (typedFailed && !mapDown ? TYPED_NOT_PLACED : "");
+  // The lookup box above already says it could not place the address; repeat it only when it is gone.
+  const pinError = errors.latitude || errors.longitude || (typedFailed && !mapDown && !lookup.error ? TYPED_NOT_PLACED : "");
 
   return (
     <div className="space-y-2">
