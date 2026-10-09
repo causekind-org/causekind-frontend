@@ -114,7 +114,6 @@ export interface NgoStatusData {
   driveLockReason: string;
   hasShownWelcome: boolean;
   markWelcomeShown: () => void;
-  resetWelcomeShown: () => void;
   documents: Record<string, any>;
   isError: boolean;
 }
@@ -186,10 +185,6 @@ export function useNgoStatus(): NgoStatusData {
     try { localStorage.setItem(`ngo-verified-welcome-shown-${userIdentifier}`, "true"); } catch {}
     setHasShownWelcome(true);
   }, [userIdentifier]);
-  const resetWelcomeShown = useCallback(() => {
-    try { localStorage.removeItem(`ngo-verified-welcome-shown-${userIdentifier}`); } catch {}
-    setHasShownWelcome(false);
-  }, [userIdentifier]);
 
   const isVerified = !isLoading && !error && status === "verified";
   const isPhotosDue = (overview?.photosDue ?? 0) > 0;
@@ -209,7 +204,7 @@ export function useNgoStatus(): NgoStatusData {
     activeRequests: overview?.activeRequests ?? 0, itemsPledged: overview?.itemsPledged ?? 0,
     dropoffsToConfirm: overview?.dropoffsToConfirm ?? 0, photosDue: overview?.photosDue ?? 0,
     photosDueRequestName: overview?.photosDueRequestName ?? "", isVerified, isPhotosDue,
-    canPostRequest, lockReason, canStartDrive, blockingDriveTitle, driveLockReason, hasShownWelcome, markWelcomeShown, resetWelcomeShown,
+    canPostRequest, lockReason, canStartDrive, blockingDriveTitle, driveLockReason, hasShownWelcome, markWelcomeShown,
     documents, isError: !!error,
   };
 }

@@ -9,7 +9,14 @@ import { CountUp } from "./motion/CountUp";
 
 export function NgoHeroStateB() {
   const status = useNgoStatus();
-  const { ngoName, resetWelcomeShown, overview } = status;
+  const { ngoName, overview } = status;
+
+  const resetWelcomeShown = () => {
+    try { localStorage.removeItem(`ngo-verified-welcome-shown-undefined`); } catch {}
+    // Need a page reload to trigger it again since we removed the state from useNgoStatus.
+    // In dev it works for preview
+    window.location.reload();
+  };
 
   return (
     <section className="relative pt-32 pb-16 px-6 max-w-6xl mx-auto min-h-[70vh] flex flex-col justify-center">

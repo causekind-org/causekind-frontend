@@ -50,7 +50,6 @@ describe("NgoRequestsDropdown", () => {
       lockReason: "Available once CauseKind verifies your NGO.",
       hasShownWelcome: true,
       markWelcomeShown: vi.fn(),
-      resetWelcomeShown: vi.fn(),
       isError: false,
     });
 
@@ -94,7 +93,6 @@ describe("NgoRequestsDropdown", () => {
       lockReason: "",
       hasShownWelcome: true,
       markWelcomeShown: vi.fn(),
-      resetWelcomeShown: vi.fn(),
       isError: false,
     });
 

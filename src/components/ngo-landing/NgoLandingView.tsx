@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useNgoStatus } from "./useNgoStatus";
 import { SmoothScrollProvider } from "./motion/SmoothScrollProvider";
@@ -69,10 +69,7 @@ function DevPreviewWrapper() {
   
   // Real hook data
   const realStatus = useNgoStatus();
-  const [status, setStatus] = useState(realStatus);
-
-  useEffect(() => {
-    // Only in development and if devState is provided
+  const status = useMemo(() => {
     if (process.env.NODE_ENV === "development" && devState) {
       const isVerified = devState.startsWith("verified");
       
@@ -102,7 +99,7 @@ function DevPreviewWrapper() {
         };
       }
 
-      setStatus({
+      return {
         ...realStatus,
         status: nextStatus,
         isVerified,
@@ -123,11 +120,32 @@ function DevPreviewWrapper() {
                ? "Upload handover photos for Winter Blanket Drive before starting another drive." 
                : "Available after your current drive \"Winter Blanket Drive\" is completed and its photos are approved.")
           : realStatus.lockReason,
-      });
-    } else {
-      setStatus(realStatus);
+      };
     }
-  }, [devState, realStatus]);
+    return realStatus;
+  }, [
+    devState, 
+    realStatus.status, 
+    realStatus.overview, 
+    realStatus.lockReason,
+    realStatus.isVerified,
+    realStatus.isLoading,
+    realStatus.error,
+    realStatus.ngoName,
+    realStatus.stepNumber,
+    realStatus.totalSteps,
+    realStatus.nextIncompleteStep,
+    realStatus.wizardHref,
+    realStatus.isPhotosDue,
+    realStatus.canPostRequest,
+    realStatus.canStartDrive,
+    realStatus.blockingDriveTitle,
+    realStatus.driveLockReason,
+    realStatus.hasShownWelcome,
+    realStatus.markWelcomeShown,
+    realStatus.documents,
+    realStatus.isError
+  ]);
 
   if (status.isLoading) {
     return (

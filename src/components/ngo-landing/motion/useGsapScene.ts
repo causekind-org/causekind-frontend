@@ -10,14 +10,14 @@ export function useGsapScene(
   useEffect(() => {
     if (!ref.current) return;
 
-    const mm = gsap.matchMedia();
-    const ctx = gsap.context(() => {
+    const ctx = gsap.context(() => {}, ref);
+    ctx.add(() => {
+      const mm = gsap.matchMedia();
       setup(ctx, mm);
-    }, ref);
+    });
 
     return () => {
       ctx.revert();
-      mm.revert();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref, ...dependencies]);
