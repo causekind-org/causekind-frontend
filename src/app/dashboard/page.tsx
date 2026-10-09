@@ -20,7 +20,6 @@ import {
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
-import { ListingDetailsPanel } from "@/components/listings/ListingDetailsPanel";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
 import { DoneeMatchReviewCard } from "@/components/matches/DoneeMatchReviewCard";
@@ -86,17 +85,59 @@ function getInitials(name: string | null | undefined): string {
 
 
 // Listing status journey — ordered steps a listing goes through
+const LISTING_JOURNEY_STATIONS = ["Listed", "Verified", "Matching", "Matched", "Donated"];
 
 function listingJourneyStage(status: string): { stage: number; state: "active" | "done" | "broken" } {
   if (status === "DRAFT") return { stage: 0, state: "active" };
   if (status === "SUBMITTED") return { stage: 0, state: "done" };
   if (["AI_SCREENING", "NEEDS_INFORMATION", "MANUAL_REVIEW"].includes(status)) return { stage: 1, state: "active" };
   if (["ELIGIBLE_FOR_MATCHING", "AVAILABLE", "PAUSED"].includes(status)) return { stage: 2, state: "active" };
-  if (["SOFT_RESERVED", "RESERVED", "MATCHED", "PARTIALLY_DONATED"].includes(status)) return { stage: 3, state: "active" };
+  if (["SOFT_RESERVED", "MATCHED", "PARTIALLY_DONATED"].includes(status)) return { stage: 3, state: "active" };
   if (["DONATED", "FULFILLED"].includes(status)) return { stage: 4, state: "done" };
   if (status === "REJECTED") return { stage: 1, state: "broken" };
   if (["EXPIRED", "WITHDRAWN"].includes(status)) return { stage: 2, state: "broken" };
   return { stage: 0, state: "active" };
+}
+
+function ListingJourneyRail({ status }: { status: string }) {
+  const { stage, state } = listingJourneyStage(status);
+  const stations = LISTING_JOURNEY_STATIONS;
+
+  return (
+    <div className="flex items-start mt-4 max-w-md">
+      {stations.map((label, i) => {
+        const reached = i < stage || (i === stage && state === "done");
+        const current = i === stage && state !== "done";
+        const brokenHere = current && state === "broken";
+        const isLast = i === stations.length - 1;
+
+        return (
+          <div key={label} className="flex items-start flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-1.5 shrink-0">
+              <span className={`relative flex items-center justify-center w-3.5 h-3.5 rounded-full border-2 transition-colors ${brokenHere ? "border-red-500 bg-red-500" :
+                reached ? (isLast ? "border-emerald-500 bg-emerald-500" : "border-[var(--ck-role-accent)] bg-[var(--ck-role-accent)]") :
+                  current ? "border-[var(--ck-role-accent)] bg-white dark:bg-zinc-900" :
+                    "border-stone-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"}`}>
+                {current && !brokenHere && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-accent)]/40 animate-ping motion-reduce:hidden" />
+                )}
+                {brokenHere && <X className="w-2 h-2 text-white" strokeWidth={4} />}
+              </span>
+              <span className={`text-4xs font-bold uppercase tracking-wider ${brokenHere ? "text-red-500" :
+                (reached && isLast) ? "text-emerald-600 dark:text-emerald-400" :
+                  reached || current ? "text-stone-600 dark:text-stone-300" :
+                    "text-stone-300 dark:text-zinc-600"}`}>
+                {label}
+              </span>
+            </div>
+            {!isLast && (
+              <div className={`flex-1 h-[2px] mx-1.5 mt-1.5 rounded-full ${i < stage ? "bg-[var(--ck-role-accent)]" : "bg-stone-200 dark:bg-zinc-800"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 function getListingStatusBadge(status: string) {
@@ -362,6 +403,8 @@ function DonorListingRow({
         </div>
       </div>
 
+      <ListingJourneyRail status={l.status} />
+
       {listingMatches.length > 0 ? (
         <div className="mt-3.5 rounded-xl border border-[var(--ck-role-accent)]/20 bg-gradient-to-br from-[var(--ck-role-accent)]/[0.06] to-transparent p-2.5 sm:p-3 dark:border-[var(--ck-role-accent)]/30 dark:from-[var(--ck-role-accent)]/10">
           <p className="flex items-center gap-1.5 text-3xs font-black uppercase tracking-[0.18em] text-[var(--ck-role-accent)]">
@@ -455,9 +498,6 @@ function DonorListingRow({
             : "This listing wasn't approved. Open it for details."}
         </div>
       )}
-
-      {/* Always open (owner, 2026-10-09): no Show details toggle. */}
-      {!isDraft && <ListingDetailsPanel listing={l} {...listingJourneyStage(l.status)} />}
     </motion.div>
   );
 }

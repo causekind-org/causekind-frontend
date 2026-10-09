@@ -5,11 +5,10 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
-import { getDialCodes, getCities, detectLocationFromServer, resolveLocationFromGPS } from "@/app/actions/locations";
+import { getDialCodes } from "@/app/actions/locations";
 import {
   getProfile,
   updateProfile,
-  updateLocation,
   getMyDonations,
   getMyCampaigns,
   getMyItemRequests,
@@ -251,12 +250,6 @@ export default function ProfilePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
 
-  // GPS is collected only from the settings button and persisted on Save.
-  const [locating, setLocating] = useState(false);
-  const [gpsCoordinates, setGpsCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [gpsMessage, setGpsMessage] = useState("");
-  const gpsRequest = useRef(0);
-
   // Derived option lists (memoized to avoid re-building every render)
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 10;
@@ -311,7 +304,7 @@ export default function ProfilePage() {
       getMyMatches().catch((): ItemMatch[] => { activityFailed = true; return []; }),
       getDialCodes(),
     ])
-      .then(async ([detectedCountry, p, d, c, req, listings, matches, serverDialCodes]) => {
+      .then(([detectedCountry, p, d, c, req, listings, matches, serverDialCodes]) => {
         setProfile(p);
         setDonations(d);
         setCampaigns(c);
@@ -346,10 +339,7 @@ export default function ProfilePage() {
             setCountryIso(cCountry || detectedCountry);
             setStateIso(cState || "");
             if (cCity) {
-              const listedCities = await getCities(cCountry || detectedCountry, cState);
               setCityValue(cCity);
-              setCityFreeText(cCity);
-              setForceFreeTextCity(!listedCities.some(option => option.value === cCity));
             } else {
               setCityFreeText(cCity);
             }
@@ -359,7 +349,6 @@ export default function ProfilePage() {
           } else {
             setCountryIso(detectedCountry);
             setCityFreeText(p.city);
-            setForceFreeTextCity(true);
           }
         } else {
           setCountryIso(detectedCountry);
@@ -463,72 +452,6 @@ export default function ProfilePage() {
     [user?.email]
   );
 
-  function clearPendingGps() {
-    setGpsCoordinates(null);
-    setGpsMessage("");
-  }
-
-  function handleSettingsOpenChange(open: boolean) {
-    setSettingsOpen(open);
-    if (!open) {
-      gpsRequest.current += 1;
-      setLocating(false);
-      clearPendingGps();
-    }
-  }
-
-  async function handleUseGps() {
-    if (locating || saving) return;
-    if (!navigator.geolocation) {
-      toast.error("Your browser does not support GPS location. Please select your location manually.");
-      return;
-    }
-    const requestId = ++gpsRequest.current;
-    setLocating(true);
-    setGpsMessage("");
-    try {
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true, timeout: 15000, maximumAge: 0,
-        });
-      });
-      if (requestId !== gpsRequest.current) return;
-      const { latitude, longitude } = position.coords;
-      const result = await detectLocationFromServer(latitude, longitude);
-      if (requestId !== gpsRequest.current) return;
-      if (!result.ok) {
-        setGpsCoordinates({ latitude, longitude });
-        setGpsMessage("GPS captured. We couldn't find the address. Select your country, state and city, then save your profile.");
-        return;
-      }
-      const address = result.address;
-      const country = (address.country_code || "").toUpperCase();
-      const city = address.city || address.town || address.village || address.municipality || address.county || "";
-      const resolved = await resolveLocationFromGPS(country, address.state || "", city);
-      if (requestId !== gpsRequest.current) return;
-      setGpsCoordinates({ latitude, longitude });
-      if (country) {
-        setCountryIso(country);
-        setStateIso(resolved.stateIso);
-        setCityValue(resolved.cityValue);
-        setCityFreeText(city);
-        setForceFreeTextCity(!resolved.cityValue);
-      }
-      setGpsMessage(country && city && (resolved.stateIso || !address.state)
-        ? "Location detected. Save Profile Changes to save it."
-        : "GPS captured. Check your country, state and city before saving your profile.");
-    } catch (error) {
-      if (requestId !== gpsRequest.current) return;
-      const code = (error as GeolocationPositionError).code;
-      toast.error(code === 1
-        ? "Location permission was denied. Allow location access in your browser or select your location manually."
-        : code === 3 ? "GPS timed out. Please try again."
-        : "We couldn't detect your location. Please try again or select it manually.");
-    } finally {
-      if (requestId === gpsRequest.current) setLocating(false);
-    }
-  }
-
   // Country change: reset state + city
   function handleCountryChange(iso: string) {
     setCountryIso(iso);
@@ -556,7 +479,6 @@ export default function ProfilePage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
-    if (locating || saving) return;
 
     const rawPhone = phoneNumber.replace(/\D/g, "");
     const dialCode = getDialCode(dialCountry, dialCodeOptions);
@@ -590,16 +512,6 @@ export default function ProfilePage() {
         city: cityStr,
       });
       setProfile(updated);
-      if (gpsCoordinates) {
-        try {
-          const located = await updateLocation(gpsCoordinates.latitude, gpsCoordinates.longitude);
-          setProfile(located);
-          clearPendingGps();
-        } catch (error) {
-          toast.error("Profile details saved, but GPS coordinates could not be saved. Please press Save Profile Changes to retry.");
-          return;
-        }
-      }
       toast.success(t("successProfileUpdated"));
       setSettingsOpen(false);
     } catch (err) {
@@ -963,7 +875,7 @@ export default function ProfilePage() {
           dialog's own column layout (fixed header, scrolling body, pinned
           footer) apply to its children while the submit button stays a real
           form submit. */}
-      <Dialog open={settingsOpen} onOpenChange={handleSettingsOpenChange}>
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle className={`text-3xs font-black uppercase tracking-[0.24em] ${acc.eyebrow}`}>
@@ -1026,7 +938,6 @@ export default function ProfilePage() {
                       <div className="flex gap-2">
                         <div className="w-[96px] sm:w-[120px] shrink-0">
                           <SearchableSelect
-                            direction="up"
                             options={dialCodeOptions}
                             value={dialCountry}
                             onChange={(iso) => {
@@ -1055,27 +966,15 @@ export default function ProfilePage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-xs font-bold uppercase tracking-wider text-stone-400">Location</p>
-                      <Button type="button" variant="outline" onClick={() => void handleUseGps()}
-                        disabled={locating || saving} className="min-h-11 rounded-xl gap-2">
-                        {locating ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <MapPin className="size-4" aria-hidden />}
-                        {locating ? "Detecting location…" : "Use GPS"}
-                      </Button>
-                    </div>
-                    {gpsMessage && <p role="status" className="text-xs text-stone-500 dark:text-stone-400">{gpsMessage}</p>}
-
                     {/* Location Selection */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                       <div className="space-y-1">
                         <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
                         <SearchableSelect
-                            direction="up"
                           id="country"
                           options={countryOptions}
                           value={countryIso}
                           onChange={handleCountryChange}
-                          disabled={locating || saving}
                           placeholder={t("selectCountry")}
                           searchPlaceholder="Search country…"
                         />
@@ -1089,14 +988,13 @@ export default function ProfilePage() {
                           </p>
                         ) : (
                           <SearchableSelect
-                            direction="up"
                             id="state"
                             options={stateOptions}
                             value={stateIso}
                             onChange={handleStateChange}
                             placeholder={t("selectState")}
                             disabledPlaceholder={t("selectCountryFirst")}
-                            disabled={!countryIso || locating || saving}
+                            disabled={!countryIso}
                             searchPlaceholder="Search state…"
                           />
                         )}
@@ -1113,19 +1011,17 @@ export default function ProfilePage() {
                               placeholder={t("enterCity")}
                               value={cityFreeText}
                               onChange={(e) => setCityFreeText(e.target.value)}
-                              disabled={locating || saving}
                             />
                           </div>
                         ) : (
                           <SearchableSelect
-                            direction="up"
                             id="city"
                             options={cityOptions}
                             value={cityValue}
                             onChange={setCityValue}
                             placeholder={t("selectCity")}
                             disabledPlaceholder={t("selectStateFirst")}
-                            disabled={!stateIso || locating || saving}
+                            disabled={!stateIso}
                             searchPlaceholder="Search city…"
                           />
                         )}
@@ -1140,7 +1036,7 @@ export default function ProfilePage() {
                   type="button"
                   variant="outline"
                   className="rounded-xl py-4 font-bold text-sm"
-                  disabled={saving || locating}
+                  disabled={saving}
                 >
                   {tCommon("cancel")}
                 </Button>
@@ -1148,7 +1044,7 @@ export default function ProfilePage() {
               <Button
                 type="submit"
                 className={`${acc.solidBtn} text-white rounded-xl py-4 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors`}
-                disabled={saving || locating}
+                disabled={saving}
               >
                 {saving ? (
                   <>
