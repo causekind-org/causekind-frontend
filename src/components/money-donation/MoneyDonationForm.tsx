@@ -11,7 +11,7 @@ import {
   trackDonationPaymentSubmitted,
   trackDonationCompleted,
 } from '@/lib/clarityEvents';
-import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight, Camera, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight, Camera, Upload, Loader2, AlertCircle, FileText } from 'lucide-react';
 import { initiateTrustDonation, readPanCard, uploadTrustDonationPanPhoto } from '@/lib/api';
 import { PhotoCaptureDialog, prefersNativeCamera } from '@/features/ngo-drives/components/PhotoCaptureDialog';
 
@@ -106,6 +106,9 @@ export function MoneyDonationForm() {
   // donation once it exists. Optional — typing the PAN still works.
   const [panPhoto, setPanPhoto] = useState<File | null>(null);
   const [panPreview, setPanPreview] = useState<string | null>(null);
+  // The browser can't draw every file the PAN reader accepts (PDF, TIFF, HEIC):
+  // those show a named file tile instead of a broken image (owner, 2026-10-10).
+  const [panPreviewFailed, setPanPreviewFailed] = useState(false);
   const [panReading, setPanReading] = useState(false);
   const [panNote, setPanNote] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
   const [cardName, setCardName] = useState<string | null>(null);
@@ -176,6 +179,7 @@ export function MoneyDonationForm() {
 
   const handlePanPhoto = async (file: File) => {
     setPanPhoto(file);
+    setPanPreviewFailed(file.type === 'application/pdf');
     setPanPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
     setPanReading(true); setPanNote(null); setCardName(null);
     try {
@@ -195,7 +199,7 @@ export function MoneyDonationForm() {
   };
 
   const clearPanPhoto = () => {
-    setPanPhoto(null); setCardName(null); setPanNote(null);
+    setPanPhoto(null); setCardName(null); setPanNote(null); setPanPreviewFailed(false);
     setPanPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
   };
 
@@ -780,8 +784,21 @@ export function MoneyDonationForm() {
                         </button>
                         {panPreview && (
                           <span className="inline-flex items-center gap-2">
-                            {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
-                            <img src={panPreview} alt="Your PAN card" className="h-10 w-16 rounded-md border border-amber-200 object-cover" />
+                            {/* Opens the chosen file in a new tab, PDF or image. */}
+                            <a href={panPreview} target="_blank" rel="noopener noreferrer"
+                              aria-label={`Open ${panPhoto?.name ?? 'your PAN card'}`} title={panPhoto?.name}
+                              className="inline-flex min-h-10 items-center rounded-md hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500">
+                              {panPreviewFailed ? (
+                                <span className="inline-flex h-10 max-w-[10rem] items-center gap-1.5 rounded-md border border-amber-200 bg-[#fffdfa] px-2 text-xs font-semibold text-stone-700 dark:border-amber-800/60 dark:bg-[#221008] dark:text-amber-100">
+                                  <FileText className="size-4 shrink-0" aria-hidden />
+                                  <span className="truncate">{panPhoto?.name ?? 'PAN card'}</span>
+                                </span>
+                              ) : (
+                                /* eslint-disable-next-line @next/next/no-img-element -- local preview */
+                                <img src={panPreview} alt="Your PAN card" onError={() => setPanPreviewFailed(true)}
+                                  className="h-10 w-16 rounded-md border border-amber-200 object-cover" />
+                              )}
+                            </a>
                             <button type="button" onClick={clearPanPhoto} className="min-h-10 px-1 text-xs font-semibold text-stone-500 underline hover:text-stone-700">Remove</button>
                           </span>
                         )}
