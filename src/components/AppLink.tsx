@@ -10,10 +10,13 @@ import type { ComponentProps } from "react";
  * routes per visit, which is what exhausted the free plan's 1M Edge Requests
  * in September 2026.
  *
- * Only the routes below keep Next's default prefetch. An explicit `prefetch`
- * prop still wins, so a call site can opt in or out deliberately.
+ * No route keeps Next's default prefetch any more. Until 2026-10-10 four did
+ * (/donate/money, /register, /login, /requests), and Vercel showed them rendering
+ * 4-7x more often than the homepage was visited: ~40% of all function CPU, which
+ * pushed the free plan's 4h Fluid CPU to its limit. An explicit `prefetch` prop
+ * still wins, so a call site can opt in deliberately.
  */
-const PREFETCH_PATHS = new Set(["/donate/money", "/register", "/login", "/requests"]);
+const PREFETCH_PATHS = new Set<string>();
 
 type Props = ComponentProps<typeof NextLink>;
 

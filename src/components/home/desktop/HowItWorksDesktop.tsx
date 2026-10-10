@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { motion, AnimatePresence, useInView, useReducedMotion } from "framer-motion";
 import {
@@ -131,8 +132,9 @@ const TABS: TabConfig[] = [
     roleBgSoft: HOME_ROLE_COLORS.ngo.softBg,
     roleBorder: HOME_ROLE_COLORS.ngo.border,
     roleGlow: HOME_ROLE_COLORS.ngo.glow,
-    buttonText: "Register your NGO",
-    buttonHref: LANDING_ROUTES.ngoRegister,
+    buttonText: FEATURES.ngoRegistration ? "Register your NGO" : "NGO registration · Coming soon",
+    // Empty while NGO signup is off: the button renders as "Coming soon", not a link.
+    buttonHref: FEATURES.ngoRegistration ? LANDING_ROUTES.ngoRegister : "",
     steps: [
       {
         number: "01",
@@ -557,7 +559,7 @@ export function HowItWorksDesktop() {
             key={`cta-${activeTab}`}
             transition={{ duration: 0.25, delay: 0.1 }}
           >
-            <Link
+            {currentTabConfig.buttonHref ? <Link
               href={pressedHref || currentTabConfig.buttonHref}
               onPointerDown={() => handlePointerDownJoin(currentTabConfig.buttonHref)}
               onClick={handleJoinClick}
@@ -574,7 +576,12 @@ export function HowItWorksDesktop() {
                 <span>{currentTabConfig.buttonText}</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </motion.button>
-            </Link>
+            </Link> : <span aria-disabled="true"
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white opacity-70 cursor-not-allowed"
+                style={{ backgroundColor: currentTabConfig.roleColor }}
+              >
+                {currentTabConfig.buttonText}
+              </span>}
           </motion.div>
         </div>
       </div>
