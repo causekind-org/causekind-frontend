@@ -61,20 +61,29 @@ export function NavratriHero() {
         className="ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] text-[#100c06] pb-3 sm:pb-4 lg:pb-0"
       >
         <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full">
-          <div className="ck-lead-hero-stage relative flex min-w-0 flex-col lg:grid lg:grid-cols-[1fr_1fr] lg:aspect-[2752/1536] lg:min-h-[400px] lg:max-h-[calc(100vh-100px)] overflow-hidden bg-[#fdfaf5]">
+          <div className="ck-lead-hero-stage relative flex min-w-0 flex-col lg:flex-row lg:items-center lg:h-[calc(100vh-var(--ck-nav-h,4.25rem)-110px)] lg:min-h-[440px] lg:max-h-[560px] overflow-hidden bg-[#fdfaf5]">
             
             {/* Background Image (Absolute on Desktop, block on Mobile) */}
-            <div className="absolute inset-0 z-0 hidden lg:block overflow-hidden bg-[#fdfaf5]">
-              <picture>
-                <source media="(max-width: 1279px)" srcSet="/images/navratri-hero-1280.webp" />
-                <Image
-                  src="/images/navratri-hero-1920.webp"
-                  alt="Illustration of a woman and a man dancing garba with dandiya sticks"
-                  fill
-                  priority
-                  className="object-cover object-[right_center]"
-                />
-              </picture>
+            <div className="absolute inset-0 z-0 hidden lg:flex justify-end overflow-hidden bg-[#fdfaf5]">
+              <div 
+                className="relative h-full w-auto" 
+                style={{ 
+                  WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 120px)", 
+                  maskImage: "linear-gradient(to right, transparent 0%, black 120px)" 
+                }}
+              >
+                <picture>
+                  <source media="(max-width: 1279px)" srcSet="/images/navratri-hero-1280.webp" />
+                  <Image
+                    src="/images/navratri-hero-1920.webp"
+                    alt="Illustration of a woman and a man dancing garba with dandiya sticks"
+                    width={2752}
+                    height={1536}
+                    priority
+                    className="h-full w-auto object-contain object-right"
+                  />
+                </picture>
+              </div>
             </div>
 
             {/* Mobile Image (Visible only below LG) */}
@@ -93,7 +102,7 @@ export function NavratriHero() {
             </div>
 
             {/* Text Content */}
-            <div className="ck-hero-copy relative z-10 flex min-w-0 flex-col pt-8 pb-4 px-6 sm:px-8 lg:mt-0 lg:justify-center lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(3.5rem,8vw,10rem)] lg:pr-[clamp(1rem,2vw,2rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)] order-1 lg:max-w-[32rem]">
+            <div className="ck-hero-copy relative z-10 flex min-w-0 flex-col pt-8 pb-4 px-6 sm:px-8 lg:mt-0 lg:justify-center lg:px-0 lg:pb-0 lg:pl-[clamp(3.5rem,8vw,8rem)] lg:pr-[1rem] lg:pt-0 order-1 lg:w-full lg:max-w-[34rem] xl:max-w-[40rem]">
               
               <div className="hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
