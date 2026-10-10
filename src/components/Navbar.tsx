@@ -1433,7 +1433,10 @@ export function SiteHeader() {
 export function SiteFooter() {
   const t = useTranslations("footer");
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isRestoring } = useAuth();
+  // Sign-up links are for guests only, and stay hidden until the login state is
+  // known so a signed-in visitor never sees them flash.
+  const showSignUpLinks = !isRestoring && !user;
   const isWizard =
     pathname === "/items/new" ||
     (pathname?.startsWith("/items/") && pathname?.endsWith("/edit")) ||
@@ -1508,9 +1511,9 @@ export function SiteFooter() {
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
           <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             {[
-              { href: "/register", l: t("createAccount") },
+              ...(showSignUpLinks ? [{ href: "/register", l: t("createAccount") }] : []),
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
-              { href: "/register?role=NGO", l: "Register your NGO" },
+              ...(showSignUpLinks ? [{ href: "/register?role=NGO", l: "Register your NGO" }] : []),
               { href: "/give-safely", l: "Safety guidelines" },
               ...(FEATURES.money && !isNgoAccount ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
               { href: "/faq", l: t("helpFaq") },
