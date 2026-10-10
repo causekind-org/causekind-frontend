@@ -1,6 +1,7 @@
 "use client";
 
-import Image, { getImageProps } from "next/image";
+import { useEffect, useRef } from "react";
+import Image from "next/image";
 import { Anton } from "next/font/google";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -29,39 +30,82 @@ const NAVRATRI_COPY = {
 };
 
 /**
- * The Navratri illustration: one <picture>, so a phone fetches only the square
- * mobile crop and a desktop only the wide dancers layer — never both. No
- * preload (a preload has no media query, so phones would fetch the desktop file
- * too); fetchPriority keeps it first in line instead. The desktop's left floral
- * border is a CSS background inside a desktop media query (styles.css), so it
- * is never requested below lg either.
+ * Festive accents floating around the dancers: marigold petals and diya
+ * sparkles, drawn here rather than shipped as images. Positions are percent of
+ * the dancers' own box, so they can never drift over the copy. Desktop only.
+ */
+const NAVRATRI_ACCENTS = [
+  { kind: "petal", top: "6%", left: "8%", size: 14, rotate: -24, delay: 0 },
+  { kind: "spark", top: "18%", left: "-3%", size: 12, rotate: 0, delay: 0.6 },
+  { kind: "petal", top: "44%", left: "-5%", size: 12, rotate: 38, delay: 1.3 },
+  { kind: "spark", top: "3%", left: "62%", size: 10, rotate: 0, delay: 2.1 },
+  { kind: "petal", top: "30%", left: "97%", size: 13, rotate: 112, delay: 0.9 },
+  { kind: "spark", top: "60%", left: "100%", size: 11, rotate: 0, delay: 1.8 },
+  { kind: "petal", top: "74%", left: "3%", size: 11, rotate: -70, delay: 2.6 },
+] as const;
+
+function NavratriAccent({ kind, size }: { kind: "petal" | "spark"; size: number }) {
+  return kind === "petal" ? (
+    <svg viewBox="0 0 20 28" width={size} height={size * 1.4}>
+      <path d="M10 1C15 7 18 13 17 18c-1 5-4 8-7 9-3-1-6-4-7-9C2 13 5 7 10 1Z" fill="#f28c1b" />
+      <path d="M10 5c2 5 2 13 0 19" stroke="#ffd27a" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 20 20" width={size} height={size}>
+      <path d="M10 0c1 6 4 9 10 10-6 1-9 4-10 10-1-6-4-9-10-10C6 9 9 6 10 0Z" fill="#f5b52e" />
+    </svg>
+  );
+}
+
+/**
+ * The Navratri illustration. Layered: the floral borders and cream are the
+ * stage's own background (CSS, desktop only, with the slow drift), and the
+ * dancers are a transparent cut-out in front of them — sized from the room the
+ * copy leaves, so they grow as large as the hero allows without touching the
+ * buttons (styles.css, "Navratri hero"). One image for every width: next/image
+ * serves phones a small rendition from the srcset, and there is no preload, so
+ * a phone never fetches a desktop-sized file. Loops pause while the hero is
+ * off screen.
  */
 function NavratriArt() {
-  const common = { alt: NAVRATRI_COPY.alt, fetchPriority: "high" as const, loading: "eager" as const };
-  const {
-    props: { srcSet: desktopSrcSet, sizes: desktopSizes },
-  } = getImageProps({
-    ...common,
-    src: "/images/navratri-hero-desktop.webp",
-    width: 1542,
-    height: 1536,
-    sizes: "(min-width: 1024px) 50vw",
-  });
-  const { props: mobileProps } = getImageProps({
-    ...common,
-    src: "/images/navratri-hero-mobile.webp",
-    width: 1100,
-    height: 1105,
-    sizes: "(max-width: 1023px) min(100vw, 34rem)",
-  });
+  const artRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const art = artRef.current;
+    if (!art || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) delete art.dataset.offscreen;
+      else art.dataset.offscreen = "";
+    });
+    io.observe(art);
+    return () => io.disconnect();
+  }, []);
 
   return (
-    <div className="ck-navratri-art">
-      <picture>
-        <source media="(min-width: 1024px)" srcSet={desktopSrcSet} sizes={desktopSizes} />
-        {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in mobileProps */}
-        <img {...mobileProps} className="ck-navratri-art-image" />
-      </picture>
+    <div ref={artRef} className="ck-navratri-art">
+      <div className="ck-navratri-figure">
+        <Image
+          src="/images/navratri-hero-dancers.webp"
+          alt={NAVRATRI_COPY.alt}
+          width={1290}
+          height={1280}
+          loading="eager"
+          fetchPriority="high"
+          sizes="(min-width: 1024px) 48vw, min(100vw, 40rem)"
+          className="ck-navratri-dancers"
+        />
+        <span className="ck-navratri-accents" aria-hidden>
+          {NAVRATRI_ACCENTS.map((a, i) => (
+            <span
+              key={i}
+              className="ck-navratri-accent"
+              style={{ top: a.top, left: a.left, rotate: `${a.rotate}deg`, animationDelay: `${a.delay}s` }}
+            >
+              <NavratriAccent kind={a.kind} size={a.size} />
+            </span>
+          ))}
+        </span>
+      </div>
     </div>
   );
 }

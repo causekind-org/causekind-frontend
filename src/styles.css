@@ -4910,24 +4910,34 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   .ck-navratri-art {
     position: relative;
     width: 100%;
-    max-width: 34rem;
+    max-width: 40rem;
     margin-inline: auto;
+    padding: 0.5rem 1rem 1.25rem;
   }
-  .ck-navratri-art-image {
+  /* Phones and tablets: the dancers fill the image area's width; only the
+     gentle zoom runs here — no sway, petals or entrance. */
+  .ck-navratri-dancers {
     display: block;
     width: 100%;
     height: auto;
-    max-height: 62svh;
+    max-height: 70svh;
     object-fit: contain;
+    animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
   }
+  .ck-navratri-accents { display: none; }
 }
 
 @media (min-width: 1024px) {
-  /* The photo's frame had the stage cream only under the copy; here the whole
-     stage, gutters included, is the illustration. */
+  /* A little taller than the photo hero, still leaving the category bar on
+     the first screen at 1366x657. */
+  .ck-hero-navratri .ck-lead-hero-stage {
+    min-height: clamp(25rem, calc(100svh - max(var(--ck-nav-h, 0px), 5.5rem) - clamp(6rem, 18svh - 2rem, 9.5rem)), 68rem);
+  }
   .ck-hero-navratri .ck-hero-copy {
     padding-left: clamp(3rem, 6vw, 7rem);
   }
+  /* The whole stage, gutters included, is the illustration: cream, the two
+     floral borders (with the slow drift), then the dancers in front. */
   .ck-navratri-art {
     position: absolute;
     z-index: 0;
@@ -4937,24 +4947,85 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
     right: calc(-1 * var(--ck-hero-side-gutter, 0px));
     overflow: hidden;
     pointer-events: none;
-    background: #faf1e4 url("/images/navratri-hero-border-left.webp") no-repeat left top / auto 100%;
+    background: #faf1e4;
+    container-type: size;
   }
-  .ck-navratri-art-image {
+  .ck-navratri-art::before {
+    content: "";
     position: absolute;
-    top: 0;
-    right: 0;
-    width: auto;
-    height: 100%;
-    /* Never into the copy's column: on a tall, narrow window the dancers
-       shrink (contain) rather than slide left under the text. */
-    max-width: 56%;
-    object-fit: contain;
-    object-position: right center;
-    transform-origin: 100% 50%;
+    inset: 0;
+    background:
+      url("/images/navratri-hero-border-left.webp") no-repeat left top / auto 100%,
+      url("/images/navratri-hero-border-right.webp") no-repeat right top / auto 100%;
     animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
+  }
+  .ck-navratri-art::after { z-index: 2; }
+  /*
+    The dancers take the room the copy leaves. --L is where the widest copy
+    line (the guest's three buttons, ~40rem) ends plus a comfortable gap;
+    --R the width from there to the right border's inner edge; --H the stage
+    height between the top and the category bar that overlaps its foot. They
+    grow to fit whichever runs out first, so they are as large as the hero
+    allows and are never cropped, never under the copy.
+  */
+  .ck-navratri-figure {
+    --L: calc(var(--ck-hero-side-gutter, 0px) + clamp(3rem, 6vw, 7rem) + 42rem);
+    --R: calc(100cqw - var(--L) - clamp(1.5rem, 3.5vw, 4rem));
+    --B: calc(clamp(1.75rem, 3.7vh, 2.75rem) + 0.5rem);
+    --H: calc(100cqh - var(--B) - 3cqh);
+    --W: min(var(--R), var(--H) * 1.008);
+    position: absolute;
+    z-index: 1;
+    bottom: var(--B);
+    left: calc(var(--L) + (var(--R) - var(--W)) * 0.25);
+    width: var(--W);
+    aspect-ratio: 1290 / 1280;
+    animation: ck-navratri-enter 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ck-navratri-dancers {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform-origin: 50% 100%;
+    animation: ck-navratri-sway 6s ease-in-out infinite alternate;
+  }
+  .ck-navratri-accents {
+    position: absolute;
+    inset: 0;
+  }
+  .ck-navratri-accent {
+    position: absolute;
+    line-height: 0;
+    opacity: 0.9;
+    animation: ck-navratri-float 4s ease-in-out infinite alternate;
   }
 }
 
+@keyframes ck-navratri-enter {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ck-navratri-sway {
+  from { transform: translate3d(0, 0, 0) rotate(-0.45deg); }
+  to { transform: translate3d(0, -5px, 0) rotate(0.45deg); }
+}
+@keyframes ck-navratri-float {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -7px, 0); }
+}
+
+/* Off screen (the film has the page): every Navratri loop holds still. */
+.ck-navratri-art[data-offscreen]::before,
+.ck-navratri-art[data-offscreen] .ck-navratri-dancers,
+.ck-navratri-art[data-offscreen] .ck-navratri-accent {
+  animation-play-state: paused;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .ck-navratri-art-image { animation: none; }
+  .ck-navratri-art::before,
+  .ck-navratri-figure,
+  .ck-navratri-dancers,
+  .ck-navratri-accent {
+    animation: none;
+  }
 }
