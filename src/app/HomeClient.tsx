@@ -62,8 +62,6 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
-import { NavratriHero } from "@/components/home/NavratriHero";
-import { isNavratriCampaignActive } from "@/lib/navratri";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
@@ -224,8 +222,7 @@ export default function HomeClient({
   // campaign is on.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
-  const navratri = isNavratriCampaignActive();
-  const HeroComponent = navratri ? NavratriHero : HeroSection;
+  const HeroComponent = HeroSection;
   const LiveNeedsComponent = LiveNeedsSection;
   const FinalCtaComponent = FinalCtaSection;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { Anton } from "next/font/google";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -12,11 +12,59 @@ import { useTranslations } from "next-intl";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { TrustBand } from "@/components/home/TrustBand";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavratriCampaign } from "@/hooks/useNavratriCampaign";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
 const mobileDisplay = Anton({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-hero-mobile" });
 const HERO_FOREGROUND = "/images/causekind-hero-foreground.png";
+
+/** Navratri hero copy (11–20 Oct 2026, see src/lib/navratri.ts). Same for every role. */
+const NAVRATRI_COPY = {
+  headlineTop: "This Navratri,",
+  headlineAccent: "Let Kindness Shine.",
+  subtext:
+    "Celebrate the spirit of giving. Connect with someone nearby and make this festive season brighter through meaningful donations.",
+  alt: "Illustration of a woman and a man dancing garba with dandiya sticks",
+};
+
+/**
+ * The Navratri illustration: one <picture>, so a phone fetches only the square
+ * mobile crop and a desktop only the wide dancers layer — never both. No
+ * preload (a preload has no media query, so phones would fetch the desktop file
+ * too); fetchPriority keeps it first in line instead. The desktop's left floral
+ * border is a CSS background inside a desktop media query (styles.css), so it
+ * is never requested below lg either.
+ */
+function NavratriArt() {
+  const common = { alt: NAVRATRI_COPY.alt, fetchPriority: "high" as const, loading: "eager" as const };
+  const {
+    props: { srcSet: desktopSrcSet, sizes: desktopSizes },
+  } = getImageProps({
+    ...common,
+    src: "/images/navratri-hero-desktop.webp",
+    width: 1542,
+    height: 1536,
+    sizes: "(min-width: 1024px) 50vw",
+  });
+  const { props: mobileProps } = getImageProps({
+    ...common,
+    src: "/images/navratri-hero-mobile.webp",
+    width: 1100,
+    height: 1105,
+    sizes: "(max-width: 1023px) min(100vw, 34rem)",
+  });
+
+  return (
+    <div className="ck-navratri-art">
+      <picture>
+        <source media="(min-width: 1024px)" srcSet={desktopSrcSet} sizes={desktopSizes} />
+        {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in mobileProps */}
+        <img {...mobileProps} className="ck-navratri-art-image" />
+      </picture>
+    </div>
+  );
+}
 
 /**
  * Keep the reference's primary orange CTA useful for every auth state. During
@@ -179,6 +227,10 @@ export function HeroSection() {
   const t = useTranslations("hero");
   const primaryAction = usePrimaryAction();
   const { user, isRestoring } = useAuth();
+  const navratri = useNavratriCampaign();
+  const headlineTop = navratri ? NAVRATRI_COPY.headlineTop : t("headlineTop");
+  const headlineAccent = navratri ? NAVRATRI_COPY.headlineAccent : t("headlineAccent");
+  const subtext = navratri ? NAVRATRI_COPY.subtext : t("subtext");
 
   return (
     <MotionConfig reducedMotion="user">
@@ -186,7 +238,7 @@ export function HeroSection() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className="ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
+        className={`${navratri ? "ck-hero-navratri " : ""}ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
 
@@ -209,10 +261,10 @@ export function HeroSection() {
           <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[var(--surface-cream)] dark:lg:bg-[var(--surface-cream)]">
             {/* Heaviest at the foot where the copy lands, lifted again at the
                 top so the header stays legible over a bright frame. */}
-            <div
+            {!navratri && <div
               className="pointer-events-none absolute inset-0 z-[6] bg-[linear-gradient(to_top,rgba(20,14,9,0.93)_0%,rgba(20,14,9,0.66)_38%,rgba(20,14,9,0.12)_70%,rgba(20,14,9,0.38)_100%)] lg:hidden"
               aria-hidden
-            />
+            />}
 
             <div className="ck-hero-copy relative z-10 mt-auto flex min-w-0 flex-col px-5 pb-[calc(var(--ck-bottom-chrome,5rem)+1rem)] pt-10 sm:px-7 lg:mt-0 lg:justify-center lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(0.75rem,1.2vw,1.75rem)] lg:pr-[clamp(3rem,6vw,8rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)]">
               {/* The flanking rules here and the heart divider below are
@@ -220,7 +272,7 @@ export function HeroSection() {
                   of an 844px screen and say nothing. */}
               {/* Desktop eyebrow is a microscopic pill (high-end pass,
                   2026-10-05) — it replaced the flanking-rule treatment. */}
-              <div className="hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex dark:bg-white/5 dark:text-[var(--ck-home-highlight,#f29a65)] dark:ring-white/10">
+              <div className="ck-hero-eyebrow hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex dark:bg-white/5 dark:text-[var(--ck-home-highlight,#f29a65)] dark:ring-white/10">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
                 <p className="text-[0.65rem] font-medium uppercase tracking-[0.2em]">
                   {t("eyebrow")}
@@ -241,14 +293,14 @@ export function HeroSection() {
               >
                 {/* Mobile copy wraps naturally with the bundled condensed font;
                     desktop retains the existing two-line composition. */}
-                <span className="block lg:whitespace-nowrap">{t("headlineTop")}</span>
-                <span className="block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
-                  {t("headlineAccent")}
+                <span className="block lg:whitespace-nowrap">{headlineTop}</span>
+                <span className="ck-hero-headline-accent block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
+                  {headlineAccent}
                 </span>
               </h1>
 
-              <p className="mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
-                {t("subtext")}
+              <p className="ck-hero-subtext mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
+                {subtext}
               </p>
 
               <div data-guest={!user && !isRestoring ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
@@ -296,7 +348,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
+            {navratri ? <NavratriArt /> : <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
                 <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
@@ -325,7 +377,7 @@ export function HeroSection() {
                 />
               </div>
               <ConnectionPins />
-            </div>
+            </div>}
 
             {/* Melts the hero's bottom edge into the section below it, so the
                 photograph and the cream read as one surface rather than two
@@ -337,7 +389,7 @@ export function HeroSection() {
                 hero's own opaque layers. A real element can be proven to be on
                 top. Its height keeps it clear of the trust band — see the note
                 in styles.css for why that matters. */}
-            <div className="ck-hero-seam-fade pointer-events-none absolute inset-x-0 bottom-0 z-20 lg:hidden" aria-hidden />
+            {!navratri && <div className="ck-hero-seam-fade pointer-events-none absolute inset-x-0 bottom-0 z-20 lg:hidden" aria-hidden />}
           </div>
 
           <div className="ck-hero-category-rail relative z-30 -mt-3 lg:-mt-[clamp(1.75rem,3.7vh,2.75rem)]">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { isNavratriCampaignActive } from "@/lib/navratri";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
@@ -374,7 +375,8 @@ export function SiteHeader() {
   // Elevate-on-scroll: flat at the top of the page, soft shadow fades in once
   // content scrolls beneath the bar (same pattern as the admin panel header).
   const [scrolled, setScrolled] = useState(false);
-  const [overMobileHero, setOverMobileHero] = useState(pathname === "/");
+  // The light Navratri hero (src/lib/navratri.ts) keeps the normal cream bar.
+  const [overMobileHero, setOverMobileHero] = useState(pathname === "/" && !isNavratriCampaignActive());
   useEffect(() => {
     if (pathname !== "/") { setOverMobileHero(false); return; }
     const mobile = window.matchMedia("(max-width: 1023px)");
@@ -392,7 +394,7 @@ export function SiteHeader() {
         mounted.disconnect();
       }
       const bounds = hero?.getBoundingClientRect();
-      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0);
+      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0 && !hero?.closest(".ck-hero-navratri"));
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
