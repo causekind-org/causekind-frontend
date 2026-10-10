@@ -1513,13 +1513,18 @@ export function SiteFooter() {
             {[
               ...(showSignUpLinks ? [{ href: "/register", l: t("createAccount") }] : []),
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
-              ...(showSignUpLinks ? [{ href: "/register?role=NGO", l: "Register your NGO" }] : []),
+              // NGO signup off (production): shown, but as "coming soon" text, not a link.
+              ...(showSignUpLinks ? [FEATURES.ngoRegistration
+                ? { href: "/register?role=NGO", l: "Register your NGO" }
+                : { href: "", l: "Register your NGO · Coming soon" }] : []),
               { href: "/give-safely", l: "Safety guidelines" },
               ...(FEATURES.money && !isNgoAccount ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
               { href: "/faq", l: t("helpFaq") },
               { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (
-              <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
+              <li key={l}>{href
+                ? <Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link>
+                : <span aria-disabled="true" className="cursor-default text-stone-500">{l}</span>}</li>
             ))}
             <li>
               <button

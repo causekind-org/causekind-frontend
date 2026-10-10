@@ -9,10 +9,9 @@
 // Temporarily switched off; the component and GradualBlur are untouched and
 // still mounted in layout.tsx, so flipping this back to `true` restores the band
 // exactly as it was.
-// `ngoRegistration` controls whether the NGO role option is visible and selectable
-// in the login/signup flow UI. Temporarily switched off to keep the UI focused on
-// the core Donor/Donee flows. All NGO code and routes
-// remain intact — flip back to `true` to re-enable NGO self-registration in the UI.
+// `ngoRegistration`: NGO self-signup. Off unless NEXT_PUBLIC_NGO_ENABLED="true"
+// (owner, 2026-10-10): production shows every NGO sign-up button as "Coming soon"
+// and the backend refuses NGO signup (app.ngo.signup-enabled); staging turns both on.
 //
 // `cinematicLanding` is the scroll-driven film hidden under the home hero ("One
 // small thing can become a big thing" → "It finds its person"; see
@@ -27,6 +26,6 @@ export const FEATURES: {
 } = {
   money: false,
   bottomBlur: false,
-  ngoRegistration: true,
+  ngoRegistration: process.env.NEXT_PUBLIC_NGO_ENABLED === "true",
   cinematicLanding: true,
 };
