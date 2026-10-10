@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import { Anton } from "next/font/google";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -57,6 +57,38 @@ function NavratriAccent({ kind, size }: { kind: "petal" | "spark"; size: number 
   );
 }
 
+/** A 1x1 transparent GIF: the <picture> source for the breakpoint that must not fetch. */
+const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+/**
+ * The phone and tablet Navratri ground: the portrait illustration in the normal
+ * mobile hero's own photo shell, so the scrim, the seam fade, the transparent
+ * header and every button style are the photo hero's, untouched. Hidden from
+ * lg, where NavratriArt takes over, and the blank source keeps a desktop from
+ * fetching it.
+ */
+function NavratriMobilePhoto() {
+  const { props } = getImageProps({
+    src: "/images/navratri-hero-mobile.webp",
+    alt: NAVRATRI_COPY.alt,
+    fill: true,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "(max-width: 1023px) 100vw, 1px",
+  });
+  return (
+    <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:hidden">
+      <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[#2a0f14]">
+        <picture>
+          <source media="(min-width: 1024px)" srcSet={BLANK_PIXEL} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in props */}
+          <img {...props} className="ck-hero-photo-image ck-navratri-mobile-photo object-cover" />
+        </picture>
+      </div>
+    </div>
+  );
+}
+
 /**
  * The Navratri illustration. Layered: the floral borders and cream are the
  * stage's own background (CSS, desktop only, with the slow drift), and the
@@ -69,6 +101,15 @@ function NavratriAccent({ kind, size }: { kind: "petal" | "spark"; size: number 
  */
 function NavratriArt() {
   const artRef = useRef<HTMLDivElement>(null);
+  const { props: desktopProps } = getImageProps({
+    src: "/images/navratri-hero-dancers.webp",
+    alt: NAVRATRI_COPY.alt,
+    width: 1290,
+    height: 1280,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "(min-width: 1024px) 48vw, 1px",
+  });
 
   useEffect(() => {
     const art = artRef.current;
@@ -84,16 +125,14 @@ function NavratriArt() {
   return (
     <div ref={artRef} className="ck-navratri-art">
       <div className="ck-navratri-figure">
-        <Image
-          src="/images/navratri-hero-dancers.webp"
-          alt={NAVRATRI_COPY.alt}
-          width={1290}
-          height={1280}
-          loading="eager"
-          fetchPriority="high"
-          sizes="(min-width: 1024px) 48vw, min(100vw, 40rem)"
-          className="ck-navratri-dancers"
-        />
+        <picture>
+          {/* Below lg this layer is hidden and the portrait photo is the hero
+              (NavratriMobilePhoto); the blank source keeps phones from
+              fetching the desktop cut-out at all. */}
+          <source media="(max-width: 1023px)" srcSet={BLANK_PIXEL} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in desktopProps */}
+          <img {...desktopProps} className="ck-navratri-dancers" />
+        </picture>
         <span className="ck-navratri-accents" aria-hidden>
           {NAVRATRI_ACCENTS.map((a, i) => (
             <span
@@ -305,10 +344,10 @@ export function HeroSection() {
           <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[var(--surface-cream)] dark:lg:bg-[var(--surface-cream)]">
             {/* Heaviest at the foot where the copy lands, lifted again at the
                 top so the header stays legible over a bright frame. */}
-            {!navratri && <div
+            <div
               className="pointer-events-none absolute inset-0 z-[6] bg-[linear-gradient(to_top,rgba(20,14,9,0.93)_0%,rgba(20,14,9,0.66)_38%,rgba(20,14,9,0.12)_70%,rgba(20,14,9,0.38)_100%)] lg:hidden"
               aria-hidden
-            />}
+            />
 
             <div className="ck-hero-copy relative z-10 mt-auto flex min-w-0 flex-col px-5 pb-[calc(var(--ck-bottom-chrome,5rem)+1rem)] pt-10 sm:px-7 lg:mt-0 lg:justify-center lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(0.75rem,1.2vw,1.75rem)] lg:pr-[clamp(3rem,6vw,8rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)]">
               {/* The flanking rules here and the heart divider below are
@@ -392,7 +431,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            {navratri ? <NavratriArt /> : <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
+            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
                 <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
@@ -433,7 +472,7 @@ export function HeroSection() {
                 hero's own opaque layers. A real element can be proven to be on
                 top. Its height keeps it clear of the trust band — see the note
                 in styles.css for why that matters. */}
-            {!navratri && <div className="ck-hero-seam-fade pointer-events-none absolute inset-x-0 bottom-0 z-20 lg:hidden" aria-hidden />}
+            <div className="ck-hero-seam-fade pointer-events-none absolute inset-x-0 bottom-0 z-20 lg:hidden" aria-hidden />
           </div>
 
           <div className="ck-hero-category-rail relative z-30 -mt-3 lg:-mt-[clamp(1.75rem,3.7vh,2.75rem)]">

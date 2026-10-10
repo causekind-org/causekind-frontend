@@ -2621,6 +2621,24 @@ body.mobile-menu-open {
     is what put these two back into a stack.
   */
   .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-action-arrow { display: none; }
+  /*
+    Signed-in primary ("List an item" / "Request an item"): filled like the
+    guest's "Sign up now". The rule above this block strips the fill from every
+    primary below lg and only the guest rule put it back, so a signed-in donor
+    or donee got a bare text link. Fixed colours rather than --ck-home-accent:
+    in dark mode that token lifts to a pale tint that white type can't sit on.
+  */
+  .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta {
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+    background: #b04a15;
+    color: #fff6ed;
+    font-weight: 800;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  }
+  .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta:hover { background: #963c0d; }
+  [data-ck-role-theme="donee"] .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta { background: #1e3a60; }
+  [data-ck-role-theme="donee"] .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta:hover { background: #2d5a96; }
   .ck-showcase-hero .ck-hero-photo-image { animation: none; transform: none; object-position: 50% top; }
   .ck-showcase-hero .ck-hero-category-rail { display: none; }
   .ck-mobile-hero-trust {
@@ -4801,130 +4819,85 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
 }
 
 /* ── Navratri hero (11–20 Oct 2026; src/lib/navratri.ts) ──────────────────────
-   HeroSection with the garba illustration in place of the handover photo. A
-   light, cream island in every theme: the illustration is light, so the copy
-   stays dark and the role colours keep their light-mode values even in dark
-   mode. Below lg the copy sits on cream with the illustration beneath it
-   (stacked on tablets too); from lg the illustration spans the full hero width
+   HeroSection with the garba illustration in place of the handover photo.
+   Below lg it is the normal mobile photo hero with a portrait illustration.
+   From lg it is a light, cream island in every theme: the illustration is
+   light, so the copy stays dark and the role colours keep their light-mode
+   values even in dark mode, and the illustration spans the full hero width
    — the left floral border pinned to the left edge, the dancers and the right
    border to the right, the same cream (#faf1e4) between — so the dancers are
    never cropped whatever the hero's aspect ratio. Unlayered, so it outranks
    the Tailwind utilities on the shared markup. */
-.ck-hero-navratri .ck-lead-hero-stage {
-  background: #faf1e4;
-  color-scheme: light;
-}
-.dark .ck-hero-navratri .ck-lead-hero-stage {
-  --ck-role-accent: #b04a15;
-  --ck-role-hover: #c45520;
-  --ck-role-highlight: #f0b97a;
-  --ck-role-on-accent: #ffffff;
-  --ck-role-ring: #b04a15;
-  --ck-role-shadow-rgb: 176, 74, 21;
-  --ck-home-accent: #b04a15;
-  --ck-home-ink: #b04a15;
-  --ck-home-hover: #c45520;
-  --ck-home-highlight: #f0b97a;
-  --ck-home-shadow-rgb: 176, 74, 21;
-}
-.dark[data-ck-role-theme="donee"] .ck-hero-navratri .ck-lead-hero-stage {
-  --ck-role-accent: #1e3a60;
-  --ck-role-hover: #2d5a96;
-  --ck-role-highlight: #7fb0e8;
-  --ck-role-ring: #2d5a96;
-  --ck-role-shadow-rgb: 30, 58, 96;
-  --ck-home-accent: #1e3a60;
-  --ck-home-ink: #1e3a60;
-  --ck-home-hover: #2d5a96;
-  --ck-home-highlight: #7fb0e8;
-  --ck-home-shadow-rgb: 30, 58, 96;
-}
-.dark .ck-hero-navratri .ck-lead-hero-stage .ck-donate-cta {
-  --ck-donate-acc: var(--ck-role-accent);
-  --ck-donate-hov: var(--ck-role-hover);
-  --ck-donate-on: #ffffff;
-}
-.ck-hero-navratri .ck-hero-headline { color: #100c06; }
-.ck-hero-navratri .ck-hero-headline .ck-hero-headline-accent { color: var(--ck-home-ink, #c54805); }
-.ck-hero-navratri .ck-hero-subtext { color: #34322f; }
-.ck-hero-navratri .ck-hero-eyebrow {
-  background: color-mix(in srgb, var(--ck-home-accent, #b04a15) 7%, transparent);
-  color: var(--ck-home-ink, #c54805);
-  --tw-ring-color: color-mix(in srgb, var(--ck-home-accent, #b04a15) 15%, transparent);
-}
-.ck-hero-navratri .ck-hero-secondary-cta { color: var(--ck-home-ink, #b04a15); }
-
-/* The illustration's foot melts into the page colour below, so the cream ends
-   softly on the dark sections in dark mode (and invisibly in light mode). */
-.ck-navratri-art::after {
-  content: "";
-  position: absolute;
-  inset: auto 0 0;
-  height: 9%;
-  pointer-events: none;
-  background: linear-gradient(to bottom, transparent, var(--surface-cream));
-}
-
-@media (max-width: 1023px) {
-  /* Below the sticky bar, not under it: there is no photo to run up behind it. */
-  .ck-hero-navratri.ck-showcase-hero { margin-top: 0; }
-  .ck-hero-navratri .ck-lead-hero-stage { min-height: 0; }
-  .ck-hero-navratri .ck-hero-copy {
-    margin-top: 0;
-    padding-top: 1.75rem;
-    padding-bottom: 0.5rem;
+/* Desktop only: the cream island with dark copy. Below lg the Navratri hero is
+   the normal photo hero (dark ground, white copy) with the portrait image. */
+@media (min-width: 1024px) {
+  .ck-hero-navratri .ck-lead-hero-stage {
+    background: #faf1e4;
+    color-scheme: light;
   }
-  .ck-hero-navratri .ck-mobile-hero-badge {
-    border-color: color-mix(in srgb, var(--ck-home-accent, #b04a15) 22%, transparent);
+  .dark .ck-hero-navratri .ck-lead-hero-stage {
+    --ck-role-accent: #b04a15;
+    --ck-role-hover: #c45520;
+    --ck-role-highlight: #f0b97a;
+    --ck-role-on-accent: #ffffff;
+    --ck-role-ring: #b04a15;
+    --ck-role-shadow-rgb: 176, 74, 21;
+    --ck-home-accent: #b04a15;
+    --ck-home-ink: #b04a15;
+    --ck-home-hover: #c45520;
+    --ck-home-highlight: #f0b97a;
+    --ck-home-shadow-rgb: 176, 74, 21;
+  }
+  .dark[data-ck-role-theme="donee"] .ck-hero-navratri .ck-lead-hero-stage {
+    --ck-role-accent: #1e3a60;
+    --ck-role-hover: #2d5a96;
+    --ck-role-highlight: #7fb0e8;
+    --ck-role-ring: #2d5a96;
+    --ck-role-shadow-rgb: 30, 58, 96;
+    --ck-home-accent: #1e3a60;
+    --ck-home-ink: #1e3a60;
+    --ck-home-hover: #2d5a96;
+    --ck-home-highlight: #7fb0e8;
+    --ck-home-shadow-rgb: 30, 58, 96;
+  }
+  .dark .ck-hero-navratri .ck-lead-hero-stage .ck-donate-cta {
+    --ck-donate-acc: var(--ck-role-accent);
+    --ck-donate-hov: var(--ck-role-hover);
+    --ck-donate-on: #ffffff;
+  }
+  .ck-hero-navratri .ck-hero-headline { color: #100c06; }
+  .ck-hero-navratri .ck-hero-headline .ck-hero-headline-accent { color: var(--ck-home-ink, #c54805); }
+  .ck-hero-navratri .ck-hero-subtext { color: #34322f; }
+  .ck-hero-navratri .ck-hero-eyebrow {
     background: color-mix(in srgb, var(--ck-home-accent, #b04a15) 7%, transparent);
-    box-shadow: none;
     color: var(--ck-home-ink, #c54805);
-    backdrop-filter: none;
+    --tw-ring-color: color-mix(in srgb, var(--ck-home-accent, #b04a15) 15%, transparent);
   }
-  .ck-hero-navratri .ck-hero-headline { text-shadow: none; }
-  .ck-hero-navratri .ck-hero-secondary-cta {
-    background: rgb(255 255 255 / 0.55);
-    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ck-home-accent, #b04a15) 55%, transparent);
-    backdrop-filter: none;
-  }
-  .ck-hero-navratri .ck-hero-secondary-cta:hover {
-    background: rgb(255 255 255 / 0.8);
-    box-shadow: inset 0 0 0 1.5px var(--ck-home-accent, #b04a15);
-  }
-  .ck-hero-navratri .ck-hero-primary-cta { color: var(--ck-home-ink, #b04a15); }
-  .ck-hero-navratri .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta { color: #fff6ed; }
-  .ck-hero-navratri .ck-hero-signup-prompt { color: #5b524b; }
-  .ck-hero-navratri .ck-mobile-hero-trust {
-    border-color: color-mix(in srgb, var(--ck-home-accent, #b04a15) 14%, transparent);
-    background: rgb(255 255 255 / 0.5);
-    box-shadow: none;
-    backdrop-filter: none;
-  }
-  .ck-hero-navratri .ck-mobile-hero-trust li { border-color: color-mix(in srgb, var(--ck-home-accent, #b04a15) 18%, transparent); }
-  .ck-hero-navratri .ck-mobile-hero-trust li > span {
-    background: color-mix(in srgb, var(--ck-home-accent, #b04a15) 10%, transparent);
-    color: var(--ck-home-ink, #c54805);
-  }
-  .ck-hero-navratri .ck-mobile-hero-trust li p:first-child { color: #211b17; }
+  .ck-hero-navratri .ck-hero-secondary-cta { color: var(--ck-home-ink, #b04a15); }
 
-  .ck-navratri-art {
-    position: relative;
-    width: 100%;
-    max-width: 40rem;
-    margin-inline: auto;
-    padding: 0.5rem 1rem 1.25rem;
+  /* The illustration's foot melts into the page colour below, so the cream ends
+     softly on the dark sections in dark mode (and invisibly in light mode). */
+  .ck-navratri-art::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 9%;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--surface-cream));
   }
-  /* Phones and tablets: the dancers fill the image area's width; only the
-     gentle zoom runs here — no sway, petals or entrance. */
-  .ck-navratri-dancers {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 70svh;
-    object-fit: contain;
+}
+
+/* Phones and tablets: the normal mobile photo hero, with the portrait
+   illustration as its photo. Both dancers are in the image's top half, so it
+   is pinned to the top and only nudged sideways to keep them both in frame
+   on narrow screens. Only the slow zoom runs here. */
+@media (max-width: 1023px) {
+  .ck-navratri-art { display: none; }
+  .ck-showcase-hero .ck-navratri-mobile-photo {
+    object-position: 58% top;
+    transform-origin: 50% 25%;
     animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
   }
-  .ck-navratri-accents { display: none; }
 }
 
 @media (min-width: 1024px) {
@@ -5080,6 +5053,7 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .ck-navratri-mobile-photo,
   .ck-navratri-art::before,
   .ck-navratri-figure,
   .ck-navratri-dancers,
