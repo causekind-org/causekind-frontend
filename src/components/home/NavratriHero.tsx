@@ -58,52 +58,42 @@ export function NavratriHero() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className="ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] text-[#100c06] pb-3 sm:pb-4 lg:pb-0"
+        className="ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] text-[#100c06] px-3 pb-3 pt-3 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
       >
-        <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full">
-          <div className="ck-lead-hero-stage relative flex min-w-0 flex-col lg:flex-row lg:items-center lg:h-[calc(100vh-var(--ck-nav-h,4.25rem)-110px)] lg:min-h-[440px] lg:max-h-[560px] overflow-hidden bg-[#fdfaf5]">
-            
+        <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full max-w-[1920px]">
+          <div className="ck-lead-hero-stage relative flex min-w-0 flex-col lg:grid lg:grid-cols-2 lg:min-h-[clamp(32rem,85vh,48rem)] overflow-hidden rounded-3xl lg:rounded-[2rem] bg-[#fdfaf5] lg:bg-[var(--surface-cream)]">
+
             {/* Background Image (Absolute on Desktop, block on Mobile) */}
-            <div className="absolute inset-0 z-0 hidden lg:flex justify-end overflow-hidden bg-[#fdfaf5]">
-              <div 
-                className="relative h-full w-auto" 
-                style={{ 
-                  WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 120px)", 
-                  maskImage: "linear-gradient(to right, transparent 0%, black 120px)" 
-                }}
-              >
-                <picture>
-                  <source media="(max-width: 1279px)" srcSet="/images/navratri-hero-1280.webp" />
-                  <Image
-                    src="/images/navratri-hero-1920.webp"
-                    alt="Illustration of a woman and a man dancing garba with dandiya sticks"
-                    width={2752}
-                    height={1536}
-                    priority
-                    className="h-full w-auto object-contain object-right"
-                  />
-                </picture>
-              </div>
+            <div className="absolute inset-0 z-0 hidden lg:block overflow-hidden bg-[#fdfaf5]">
+              <picture>
+                <source media="(max-width: 1279px)" srcSet="/images/navratri-hero-1280.webp" />
+                <Image
+                  src="/images/navratri-hero-1920.webp"
+                  alt="Illustration of a woman and a man dancing garba with dandiya sticks"
+                  fill
+                  priority
+                  className="object-cover object-right"
+                />
+              </picture>
             </div>
 
             {/* Mobile Image (Visible only below LG) */}
-            <div className="relative z-0 w-full lg:hidden order-2 mt-4 bg-[#fdfaf5]">
+            <div className="relative z-0 w-full h-[60vw] max-h-[400px] min-h-[300px] lg:hidden order-2 mt-4 rounded-2xl overflow-hidden">
               <picture>
                 <source media="(max-width: 767px)" srcSet="/images/navratri-hero-800.webp" />
                 <Image
                   src="/images/navratri-hero-1280.webp"
                   alt="Illustration of a woman and a man dancing garba with dandiya sticks"
-                  width={1280}
-                  height={714}
+                  fill
                   priority
-                  className="w-full h-auto object-contain"
+                  className="object-cover object-[center_20%]"
                 />
               </picture>
             </div>
 
             {/* Text Content */}
-            <div className="ck-hero-copy relative z-10 flex min-w-0 flex-col pt-8 pb-4 px-6 sm:px-8 lg:mt-0 lg:justify-center lg:px-0 lg:pb-0 lg:pl-[clamp(3.5rem,8vw,8rem)] lg:pr-[1rem] lg:pt-0 order-1 lg:w-full lg:max-w-[34rem] xl:max-w-[40rem]">
-              
+            <div className="ck-hero-copy relative z-10 flex min-w-0 flex-col pt-8 pb-4 px-5 sm:px-7 lg:mt-0 lg:justify-center lg:px-0 lg:pb-[clamp(2.6rem,5vh,5.5rem)] lg:pl-[clamp(2rem,4vw,5rem)] lg:pr-[clamp(2rem,3vw,4rem)] lg:pt-[clamp(1.2rem,2.4vh,2.5rem)] order-1">
+
               <div className="hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
                 <p className="text-[0.65rem] font-medium uppercase tracking-[0.2em]">
@@ -153,14 +143,14 @@ export function NavratriHero() {
                 )}
 
                 {user?.role !== "DONEE" && (
-                <Link
-                  href="/requests"
-                  className="ck-hero-secondary-cta group relative isolate order-1 inline-flex min-h-14 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#fdf5ed] px-5 text-[0.95rem] font-extrabold leading-tight text-[#1a130d] shadow-none lg:order-2 lg:min-h-12 lg:bg-transparent lg:px-2 lg:text-[0.56rem] lg:uppercase lg:tracking-[0.02em] lg:text-[var(--ck-home-ink,#b04a15)] lg:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.82),0_10px_22px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 lg:text-xs lg:tracking-[0.04em]"
-                >
-                  <UsersRound className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
-                  <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
-                  <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
-                </Link>
+                  <Link
+                    href="/requests"
+                    className="ck-hero-secondary-cta group relative isolate order-1 inline-flex min-h-14 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#fdf5ed] px-5 text-[0.95rem] font-extrabold leading-tight text-[#1a130d] shadow-none lg:order-2 lg:min-h-12 lg:bg-transparent lg:px-2 lg:text-[0.56rem] lg:uppercase lg:tracking-[0.02em] lg:text-[var(--ck-home-ink,#b04a15)] lg:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.82),0_10px_22px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 lg:text-xs lg:tracking-[0.04em]"
+                  >
+                    <UsersRound className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
+                    <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
+                    <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
+                  </Link>
                 )}
 
                 <DonateNowButton
@@ -172,7 +162,7 @@ export function NavratriHero() {
                 <TrustBand />
               </div>
             </div>
-            
+
           </div>
 
           <div className="ck-hero-category-rail relative z-30 -mt-3 lg:-mt-[clamp(1.75rem,3.7vh,2.75rem)]">
