@@ -98,6 +98,7 @@ const DRIVE_VIDEO_ENDPOINTS: Omit<VideoEndpoints, "current"> = {
 };
 
 const STEP_LABELS: Record<OfferStep, string> = {
+  location: "Check your location",
   photos: "Show the item",
   details: "Tell us about the item",
   purchasePlan: "What you'll buy",
@@ -107,6 +108,7 @@ const STEP_LABELS: Record<OfferStep, string> = {
 };
 
 const STEP_INTROS: Record<OfferStep, string> = {
+  location: "",
   photos: "A few good photos do most of the work.",
   details: "What are you giving, and how much of it?",
   purchasePlan: "Tell the recipient what you plan to buy, and how soon.",

@@ -10,7 +10,6 @@ import {
   analyzeOfferImages, checkOfferCompatibility, saveFlowBCommitment, submitOffer,
   updateOfferItemDetails, type CompatibilityCheck, type DonationOffer,
 } from "@/lib/api";
-import { detectLocationFromServer } from "@/app/actions/locations";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
 import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
@@ -27,7 +26,7 @@ import { GuidedPurchaseLayout } from "./GuidedPurchaseLayout";
 import { OfferPurchasePlanStep } from "./steps/OfferPurchasePlanStep";
 import { OfferDetailsStep } from "./steps/OfferDetailsStep";
 import { OfferConditionStep, type CompatState } from "./steps/OfferConditionStep";
-import { OfferPickupStep } from "./steps/OfferPickupStep";
+import { OfferLocationStep, type OfferLocationStatus } from "./steps/OfferLocationStep";
 import { OfferReviewStep } from "./steps/OfferReviewStep";
 import { useOfferPhotos } from "./useOfferPhotos";
 import { useOfferVideo } from "./useOfferVideo";
@@ -42,6 +41,7 @@ import {
 import { offerStepForField, validateOfferAll, validateOfferStep } from "./offerSchema";
 
 const STEP_LABELS: Record<OfferStep, string> = {
+  location: "Check your location",
   photos: "Show the item",
   purchasePlan: "What you'll buy",
   details: "Tell us about the item",
@@ -51,6 +51,7 @@ const STEP_LABELS: Record<OfferStep, string> = {
 };
 
 const STEP_INTROS: Record<OfferStep, string> = {
+  location: "We check that you are close enough to the person who needs this.",
   photos: "A few good photos do most of the work.",
   purchasePlan: "Tell the recipient what you plan to buy, and how soon.",
   details: "What are you giving, and how much of it?",
@@ -87,7 +88,7 @@ function evidencedStepIndex(m: OfferModel, steps: readonly OfferStep[]): number 
     purchasePlan: !!m.purchaseTimeline,
     details: !!(m.approximateAge.trim() || m.accessoriesIncluded.trim() || m.specNotes.trim()),
     condition: !!m.condition,
-    pickup: !!(m.pickupCity.trim() || m.pickupPincode.trim()),
+    location: m.latitude != null && m.longitude != null,
     review: m.declarationsConfirmed,
   };
   let last = 0;
@@ -96,9 +97,11 @@ function evidencedStepIndex(m: OfferModel, steps: readonly OfferStep[]): number 
 }
 
 export function DonationOfferWizard({
-  offerId, offer, flowType: flowTypeProp, createOffer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote,
+  offerId, requestId, offer, flowType: flowTypeProp, createOffer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote,
   onSubmitted, onExit, onSaveExit,
 }: {
+  /** The request being offered on; step 1 checks the donor's distance to it. */
+  requestId: number;
   /** Null for a fresh offer: the draft does not exist until the first save. */
   offerId: number | null;
   /** The flow the donor picked; used when there is no offer yet. */
@@ -161,7 +164,7 @@ export function DonationOfferWizard({
   // Furthest step the donor actually reached in this draft (see useFurthestStep).
   const reachedKey = offerId != null ? `ck-offer-reached-${offerId}` : null;
   const [step, setStep] = useState<OfferStep>(() => {
-    let resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0];
+    let resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType, { location: true }) : steps[0];
     // "First incomplete" skips a step whose fields are pre-filled (quantity comes
     // from the request) even though the donor never saw it. When we know how far
     // they really got, never reopen past that.
@@ -188,7 +191,8 @@ export function DonationOfferWizard({
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [gps, setGps] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
+  /** Step 1's state, so Continue waits for the distance check and the donor's answer. */
+  const [locationStatus, setLocationStatus] = useState<OfferLocationStatus>({ busy: false, needsConsent: false, ready: false });
 
   const [screening, setScreening] = useState<ScreeningState>({ kind: "idle" });
   const [compat, setCompat] = useState<CompatibilityCheck | null>(null);
@@ -472,6 +476,14 @@ export function DonationOfferWizard({
   const photosBlocked = !purchase && screening.kind === "prohibited";
 
   const handleContinue = useCallback(async () => {
+    if (step === "location") {
+      if (locationStatus.busy) return;
+      if (locationStatus.needsConsent) {
+        setErrors({ donorDropOffAvailable: "Answer the question above to continue." });
+        focusField("donorDropOffAvailable");
+        return;
+      }
+    }
     const stepErrors = validateOfferStep(step, model, flowType, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
@@ -480,6 +492,10 @@ export function DonationOfferWizard({
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors);
       focusField(Object.keys(stepErrors)[0]);
+      return;
+    }
+    if (step === "location" && !locationStatus.ready) {
+      setErrors({ latitude: "We need to check your location before you continue." });
       return;
     }
 
@@ -498,7 +514,7 @@ export function DonationOfferWizard({
       }
       goTo(steps[idx + 1], 1);
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField, steps, flowType, stillNeededQuantity]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, steps, flowType, stillNeededQuantity, locationStatus]);
 
   /** Synchronous guard. Disabled UI alone loses the race on a double tap. */
   const submitLockRef = useRef(false);
@@ -557,37 +573,6 @@ export function DonationOfferWizard({
       setSavingExit(false);
     }
   }, [flush, model, onExit, onSaveExit]);
-
-  const handleUseMyLocation = useCallback(async () => {
-    setGps({ running: true, error: null });
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10_000 }));
-      const resolved = await detectLocationFromServer(pos.coords.latitude, pos.coords.longitude);
-      if (!resolved.ok) throw new Error(resolved.reason);
-      const address = resolved.address;
-      const city = address.city || address.town || address.village || address.state_district || "";
-      const locality = address.suburb || address.neighbourhood || address.road || "";
-      const pincode = address.postcode || "";
-      // Pure setModel, then the save — same rule as setField above.
-      const prev = modelRef.current;
-      const next: OfferModel = {
-        ...prev,
-        latitude: pos.coords.latitude,
-        longitude: pos.coords.longitude,
-        pickupCity: city || prev.pickupCity,
-        pickupPincode: pincode || prev.pickupPincode,
-        pickupLocality: locality || prev.pickupLocality,
-      };
-      modelRef.current = next;
-      setModel(next);
-      queueSave(next);
-      setGps({ running: false, error: null });
-    } catch {
-      // Never blocking — the fields below are the real input.
-      setGps({ running: false, error: "We couldn't find your location. Please type your city below." });
-    }
-  }, [queueSave]);
 
   // ── Step availability ─────────────────────────────────────────────────────
   /**
@@ -695,10 +680,10 @@ export function DonationOfferWizard({
                       {step === "condition" && (
                         <OfferConditionStep model={model} errors={errors} onChange={setField} compat={compatState} />
                       )}
-                      {step === "pickup" && (
-                        <OfferPickupStep
-                          model={model} errors={errors} onChange={setField}
-                          gps={gps} onUseMyLocation={() => void handleUseMyLocation()}
+                      {step === "location" && (
+                        <OfferLocationStep
+                          requestId={requestId} model={model} errors={errors} onChange={setField}
+                          onDecline={onExit} onStatusChange={setLocationStatus}
                         />
                       )}
                       {step === "review" && (
@@ -816,6 +801,8 @@ export function DonationOfferWizard({
             onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={isLast ? "Submit donation offer" : "Continue"}
+            advancing={step === "location" && locationStatus.busy}
+            advancingLabel="Checking location…"
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

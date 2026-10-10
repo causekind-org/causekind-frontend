@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { configure, fireEvent, render, waitFor } from "@testing-library/react";
+import { configure, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 configure({ asyncUtilTimeout: 5000 });
 
@@ -19,8 +19,34 @@ vi.mock("@/app/actions/locations", () => ({ detectLocationFromServer: vi.fn() })
 vi.mock("next-intl", () => ({ useLocale: () => "en", useTranslations: () => (k: string) => k }));
 vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), loading: vi.fn(() => "t"), dismiss: vi.fn() }) }));
 vi.mock("@/lib/imageCompression", () => ({ compressDisplayPhoto: async (f: File) => f }));
+// Step 1 (location) stands in as already done: it reports a pickup city and a
+// pin, inside the radius, so Continue goes straight on to the photos step.
+vi.mock("./steps/OfferLocationStep", async () => {
+  const React = await import("react");
+  return {
+    OfferLocationStep: ({ onChange, onStatusChange }: {
+      onChange: (k: string, v: unknown) => void;
+      onStatusChange: (s: { busy: boolean; needsConsent: boolean; ready: boolean }) => void;
+    }) => {
+      React.useEffect(() => {
+        onChange("latitude", 18.52); onChange("longitude", 73.85); onChange("pickupCity", "Pune");
+        onStatusChange({ busy: false, needsConsent: false, ready: true });
+      }, []); // eslint-disable-line react-hooks/exhaustive-deps
+      return React.createElement("p", null, "location step");
+    },
+  };
+});
 
 import { DonationOfferWizard } from "./DonationOfferWizard";
+
+/** A resumed draft can reopen on step 1; press Continue past it when it does. */
+async function pastLocation(container: HTMLElement) {
+  await waitFor(() => expect(screen.queryByText("location step") ?? container.querySelector('input[type="file"]')).toBeTruthy());
+  if (screen.queryByText("location step")) {
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await waitFor(() => expect(container.querySelectorAll('input[type="file"]').length).toBeGreaterThan(1));
+  }
+}
 
 const created = { id: 41, requestId: 7, flowType: "DIRECT_DONATION", status: "DRAFT", media: [] };
 
@@ -36,9 +62,13 @@ describe("offer photo preview", () => {
     const { container } = render(
       <DonationOfferWizard offerId={null} offer={null} flowType={"DIRECT_DONATION" as never} createOffer={createOffer}
         requestTitle="Pens" requestedQuantity={2} stillNeededQuantity={2} adminNote={null}
-        onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()} />,
+        onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()} requestId={7} />,
     );
 
+    // A new offer opens on the location step; move on to the photos.
+    await screen.findByText("location step");
+    fireEvent.click(screen.getByRole("button", { name: /continue/i }));
+    await waitFor(() => expect(container.querySelectorAll('input[type="file"]').length).toBeGreaterThan(1));
     const inputs = container.querySelectorAll('input[type="file"]');
     const gallery = inputs[1] as HTMLInputElement;
     const file = new File([new Uint8Array([255, 216, 255])], "a.jpg", { type: "image/jpeg" });
@@ -52,15 +82,16 @@ describe("offer photo preview", () => {
   it("keeps the picked photo visible on a resumed draft", async () => {
     globalThis.URL.createObjectURL = vi.fn(() => "blob:preview");
     globalThis.URL.revokeObjectURL = vi.fn();
-    const resumed = { ...created, itemDetails: { title: "Pens", description: "Blue pens", quantity: 2, category: "EDUCATION" } };
+    const resumed = { ...created, itemDetails: { title: "Pens", description: "Blue pens", quantity: 2, category: "EDUCATION", pickupCity: "Pune", latitude: 18.52, longitude: 73.85 } };
     api.updateOfferItemDetails.mockResolvedValue(resumed);
     api.uploadOfferMedia.mockResolvedValue({ ...resumed, media: [{ id: 3, mediaUrl: "https://cdn.test/a.jpg", mediaType: "IMAGE", status: "PENDING", sortOrder: 0 }] });
     api.analyzeOfferImages.mockResolvedValue({ aiAvailable: false });
     const { container } = render(
       <DonationOfferWizard offerId={41} offer={resumed as never} createOffer={vi.fn(async () => resumed as never)}
         requestTitle="Pens" requestedQuantity={2} stillNeededQuantity={2} adminNote={null}
-        onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()} />,
+        onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()} requestId={7} />,
     );
+    await pastLocation(container);
     await waitFor(() => expect(container.querySelectorAll('input[type="file"]').length).toBeGreaterThan(1));
     const gallery = container.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     fireEvent.change(gallery, { target: { files: [new File([new Uint8Array([255, 216, 255])], "a.jpg", { type: "image/jpeg" })] } });
@@ -72,15 +103,16 @@ describe("offer photo preview", () => {
     globalThis.URL.createObjectURL = vi.fn(() => "blob:preview2");
     globalThis.URL.revokeObjectURL = vi.fn();
     const m1 = { id: 1, mediaUrl: "https://cdn.test/1.jpg", mediaType: "IMAGE", status: "APPROVED", sortOrder: 0 };
-    const resumed = { ...created, media: [m1], itemDetails: { title: "Pens", description: "Blue pens", quantity: 2, category: "EDUCATION" } };
+    const resumed = { ...created, media: [m1], itemDetails: { title: "Pens", description: "Blue pens", quantity: 2, category: "EDUCATION", pickupCity: "Pune", latitude: 18.52, longitude: 73.85 } };
     api.updateOfferItemDetails.mockResolvedValue(resumed);
     api.uploadOfferMedia.mockResolvedValue({ ...resumed, media: [m1, { id: 2, mediaUrl: "https://cdn.test/2.jpg", mediaType: "IMAGE", status: "PENDING", sortOrder: 1 }] });
     api.analyzeOfferImages.mockResolvedValue({ aiAvailable: false });
     const { container } = render(
       <DonationOfferWizard offerId={41} offer={resumed as never} createOffer={vi.fn(async () => resumed as never)}
         requestTitle="Pens" requestedQuantity={2} stillNeededQuantity={2} adminNote={null}
-        onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()} />,
+        onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()} requestId={7} />,
     );
+    await pastLocation(container);
     await waitFor(() => expect(container.querySelectorAll("li.aspect-square").length).toBe(1));
     const gallery = container.querySelectorAll('input[type="file"]')[1] as HTMLInputElement;
     fireEvent.change(gallery, { target: { files: [new File([new Uint8Array([255, 216, 255])], "b.jpg", { type: "image/jpeg" })] } });

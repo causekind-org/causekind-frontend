@@ -2368,6 +2368,25 @@ export function getAnonymizedRequest(requestId: number) {
   return request<AnonymizedRequest>(`/api/v1/item-requests/${requestId}/anonymized`);
 }
 
+/**
+ * How far the donor is from a request (offer wizard step 1). Whole km, whether
+ * it is inside the matching radius, the request's area as words, and the area's
+ * centre to ~1 km. Never the donee's exact location.
+ */
+export type DonorDistanceCheck = {
+  located: boolean;
+  distanceKm: number | null;
+  radiusKm: number;
+  withinRadius: boolean;
+  area: string | null;
+  approxLatitude: number | null;
+  approxLongitude: number | null;
+};
+
+export function checkDonorDistance(requestId: number, lat: number, lng: number) {
+  return request<DonorDistanceCheck>(`/api/v1/item-requests/${requestId}/distance-check?lat=${lat}&lng=${lng}`);
+}
+
 export function getQuantityAllocation(requestId: number) {
   return request<QuantityAllocation>(`/api/v1/item-requests/${requestId}/quantity-allocation`);
 }

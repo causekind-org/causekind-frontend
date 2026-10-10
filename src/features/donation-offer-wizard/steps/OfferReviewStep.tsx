@@ -5,7 +5,7 @@ import { DeclarationsBlock } from "@/features/wizard-kit/DeclarationsBlock";
 import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
 import type { CompatibilityCheck } from "@/lib/api";
 import {
-  DELIVERY_PAYERS, OFFER_GROUP_TITLES, declarationGroupsFor,
+  OFFER_GROUP_TITLES, declarationGroupsFor,
   isPurchaseFlow, purchaseTimelineLabel, uploadedOfferPhotos,
   type OfferModel, type OfferStep,
 } from "../offerModel";
@@ -34,7 +34,6 @@ export function OfferReviewStep({
   video?: React.ReactNode;
 }) {
   const photos = uploadedOfferPhotos(model.photos);
-  const payer = DELIVERY_PAYERS.find(p => p.value === model.deliveryCostBornBy);
   // Every section's Edit jumps to a step. Rendering the photos or condition
   // section on a purchase offer would hand the donor a link to a step this
   // flow does not have — a dead end, not just an empty row.
@@ -106,12 +105,13 @@ export function OfferReviewStep({
         </ReviewSection>
       )}
 
-      {!hidePickup && <ReviewSection title="Pickup & delivery" onEdit={() => onEdit("pickup")}>
+      {!hidePickup && <ReviewSection title="Your location" onEdit={() => onEdit("location")}>
         <ReviewRow label="City" value={model.pickupCity} />
-        <ReviewRow label="Pincode" value={model.pickupPincode} />
         <ReviewRow label="Locality" value={model.pickupLocality} />
-        <ReviewRow label="Drop-off" value={model.donorDropOffAvailable ? "I'll drop it off" : "Needs collection"} />
-        {!model.donorDropOffAvailable && <ReviewRow label="Delivery paid by" value={payer?.label ?? model.deliveryCostBornBy} />}
+        <ReviewRow label="PIN code" value={model.pickupPincode} />
+        <ReviewRow label="Handover" value={model.donorDropOffAvailable
+          ? "You'll take it to the recipient's area if they can't come"
+          : "Within 10 km of the recipient"} />
       </ReviewSection>}
 
       <DeclarationsBlock

@@ -613,6 +613,7 @@ export default function OfferWizardPage() {
       >
         <DonationOfferWizard
           offerId={offer?.id ?? null}
+          requestId={requestId}
           offer={offer}
           flowType={(offer?.flowType ?? form.flowType) as DonationOffer["flowType"]}
           createOffer={createOfferLazily}
