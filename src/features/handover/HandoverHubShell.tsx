@@ -39,6 +39,10 @@ export function HandoverHubShell({
     generateOtp: () => Promise<void>;
     confirmDonor: (p: DonorConfirmPayload) => Promise<void>;
     confirmDonee: (p: DoneeConfirmPayload) => Promise<void>;
+    /** Recipient enters the donor's code (offers and matches; not NGO drives). */
+    verifyOtp?: (otp: string) => Promise<void>;
+    /** On-the-spot handover photo (offers and matches). */
+    proof?: import("./HandoverProofSection").HandoverProofControls;
     setCallPermission?: (next: boolean) => Promise<void>;
     /** Courier delivery address — ask (donor), answer and pre-fill (recipient). */
     deliveryAddress?: DeliveryAddressActions;
@@ -61,7 +65,9 @@ export function HandoverHubShell({
     const desktop = typeof window !== "undefined"
       && window.matchMedia("(min-width: 1024px)").matches;
     if (desktop) {
-      document.getElementById("handover-chat")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const chat = document.getElementById("handover-chat");
+      chat?.scrollIntoView({ behavior: "smooth", block: "start" });
+      chat?.querySelector<HTMLTextAreaElement>("textarea")?.focus({ preventScroll: true });
       return;
     }
     setChatOpen(true);
@@ -118,6 +124,8 @@ export function HandoverHubShell({
               onGenerateOtp={actions.generateOtp}
               onDonorConfirm={actions.confirmDonor}
               onDoneeConfirm={actions.confirmDonee}
+              onVerifyOtp={actions.verifyOtp}
+              proof={actions.proof}
               onOpenChat={openChat}
               onChanged={onChanged}
               deliveryActions={actions.deliveryAddress}
@@ -133,6 +141,12 @@ export function HandoverHubShell({
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
             </div>
 
+            {/* Desktop: the conversation gets the main column's full width,
+                right under the next step. Phones use the floating chat button. */}
+            <div id="handover-chat" className="hidden scroll-mt-4 lg:block">
+              <HandoverChatPanel vm={vm} currentUserEmail={userEmail} />
+            </div>
+
             {/* Unframed below-the-fold sections, separated by dividers rather than
                 more cards — nesting panels inside panels was the old hub's habit. */}
             <HandoverSafetyActions vm={vm} onChanged={onChanged} />
@@ -144,9 +158,6 @@ export function HandoverHubShell({
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
             </div>
             <HandoverContactPanel vm={vm} onTogglePermission={actions.setCallPermission} />
-            <div id="handover-chat" className="hidden lg:block">
-              <HandoverChatPanel vm={vm} currentUserEmail={userEmail} />
-            </div>
           </aside>
         </div>
       </div>

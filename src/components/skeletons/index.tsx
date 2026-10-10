@@ -32,8 +32,8 @@ function Region({ label, children }: { label: string; children: React.ReactNode 
 
 /**
  * Card grid — needs board, listings, campaigns.
- * Mirrors `grid gap-3 sm:grid-cols-2 lg:grid-cols-3` as used by
- * `PublicRequestsBoard` and the category boards.
+ * Mirrors `grid gap-3 sm:grid-cols-2 lg:grid-cols-3` as used by the
+ * category boards.
  */
 export function CardGridSkeleton({ count = 6, label = "Loading" }: { count?: number; label?: string }) {
   return (
@@ -64,9 +64,8 @@ export function CardGridSkeleton({ count = 6, label = "Loading" }: { count?: num
 /**
  * Single-column editorial cards — the guest needs board below 768px.
  *
- * Mirrors the phone layout in `PublicRequestsBoard.module.css`: 3px corners,
- * 16px padding, serif-title line, two description lines, metadata and a
- * divided action row. No image block — the real cards have none.
+ * 3px corners, 16px padding, serif-title line, two description lines,
+ * metadata and a divided action row. No image block.
  */
 export function EditorialListSkeleton({ count = 4, label = "Loading" }: { count?: number; label?: string }) {
   return (

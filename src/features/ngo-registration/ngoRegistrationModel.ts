@@ -356,12 +356,69 @@ export function calculateNgoProgress(data: NGOFormState): CalculatedNgoProgress 
   };
 }
 
-export function prefillNgoFormWithUser(form: NGOFormState, user: any | null): NGOFormState {
+/**
+ * Fills the organization name, mobile and official email from the signup account
+ * (NGO signups store the organization name as the account's full name). Only empty
+ * fields are filled, so nothing the NGO typed is replaced; fields in {@code skip}
+ * (items a reviewer flagged for correction) are left as they are.
+ */
+export function prefillNgoFormWithUser(
+  form: NGOFormState,
+  user: { fullName?: string | null; phone?: string | null; email?: string | null } | null | undefined,
+  skip: Iterable<string> = [],
+): NGOFormState {
   if (!user) return form;
+  const skipped = new Set(skip);
+  const fill = (key: "organizationName" | "mobileNumber" | "officialEmail", value: string | null | undefined) =>
+    skipped.has(key) || fieldText(form[key]) ? form[key] : fieldText(value);
   return {
     ...form,
-    organizationName: form.organizationName || user.fullName || "",
-    mobileNumber: form.mobileNumber || user.phone || "",
-    officialEmail: form.officialEmail || user.email || "",
+    organizationName: fill("organizationName", user.fullName),
+    mobileNumber: fill("mobileNumber", user.phone),
+    officialEmail: fill("officialEmail", user.email),
   };
+}
+
+// ── Per-item corrections ───────────────────────────────────────────────────────
+
+const CORRECTION_FIELD_LABELS: Record<string, string> = {
+  organizationName: "Organization name",
+  legalStructure: "Legal structure",
+  registrationNumber: "Registration number",
+  registeredOfficeAddress: "Registered office address",
+  yearOfEstablishment: "Year of establishment",
+  representativeName: "Representative name",
+  designation: "Designation",
+  mobileNumber: "Mobile number",
+  officialEmail: "Official email",
+  authorizationLetter: "Authorization letter",
+  logo: "Organization logo",
+  officePhoto: "Office photo",
+};
+
+/** Readable name of a correction item key ("documents.trust-deed" → "Registered Trust Deed"). */
+export function correctionFieldLabel(field: string): string {
+  if (CORRECTION_FIELD_LABELS[field]) return CORRECTION_FIELD_LABELS[field];
+  if (field.startsWith("activityPhotos.")) return `Activity photo ${Number(field.slice(15)) + 1}`;
+  if (field.startsWith("documents.")) {
+    const id = field.slice(10);
+    return [...TRUST_DOCS, ...SOCIETY_DOCS, ...SECTION8_DOCS].find((d) => d.id === id)?.label ?? id;
+  }
+  return field;
+}
+
+/** The wizard step that holds a correction item. */
+export function correctionFieldStep(field: string): NGOStep {
+  if (["organizationName", "legalStructure", "registrationNumber", "registeredOfficeAddress", "yearOfEstablishment"].includes(field))
+    return "org-details";
+  if (field.startsWith("documents.")) return "legal-documents";
+  if (["representativeName", "designation", "mobileNumber", "officialEmail", "authorizationLetter"].includes(field))
+    return "authorized-rep";
+  return "org-photos";
+}
+
+/** The first step (in wizard order) that has a flagged item, or null when nothing is flagged. */
+export function firstCorrectionStep(fields: Iterable<string>): NGOStep | null {
+  const steps = new Set([...fields].map(correctionFieldStep));
+  return NGO_STEPS.find((s) => steps.has(s)) ?? null;
 }

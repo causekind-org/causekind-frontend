@@ -14,7 +14,7 @@ const ISSUE_TYPES = [
   { value: "OTHER", label: "Other" },
 ];
 
-export default function ReportIssuePage() {
+export default function ReportProblemPage() {
   const params = useParams();
   const router = useRouter();
   const offerId = Number(params.id);
@@ -30,7 +30,29 @@ export default function ReportIssuePage() {
     getDonationOffer(offerId).then(setOffer).catch(() => {});
   }, [offerId]);
 
+  const isWindowClosed = Boolean(
+    offer &&
+      (() => {
+        if (!offer.windowExpiresAt) {
+          // If status is completed and completedAt is >48h ago
+          if (offer.status === "COMPLETED" && offer.closedAt) {
+            const time = new Date(offer.closedAt).getTime();
+            return !isNaN(time) && Date.now() - time > 48 * 60 * 60 * 1000;
+          }
+          return false;
+        }
+        const raw = offer.windowExpiresAt.trim();
+        const iso = raw.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : `${raw}Z`;
+        const expiryTime = new Date(iso).getTime();
+        return !isNaN(expiryTime) && Date.now() >= expiryTime;
+      })()
+  );
+
   async function handleSubmit() {
+    if (isWindowClosed) {
+      setError("The 48-hour reporting window has closed.");
+      return;
+    }
     if (!issueType) { setError("Please select an issue type"); return; }
     if (description.trim().length < 20) { setError("Please describe the issue in at least 20 characters"); return; }
     setSubmitting(true); setError(null);
@@ -50,7 +72,7 @@ export default function ReportIssuePage() {
       <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950 p-3 sm:p-4">
         <div className="max-w-sm w-full rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950 text-lg sm:text-2xl">!</div>
-          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Issue Reported</h2>
+          <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Problem Reported</h2>
           <p className="mt-2 text-sm text-gray-500">Our team will review your report and reach out within 24 hours.</p>
           <button onClick={() => router.push("/offers")} className="mt-6 rounded-xl bg-[#b04a15] px-4 sm:px-6 py-2.5 text-sm font-semibold text-white">
             Back to Offers
@@ -65,13 +87,19 @@ export default function ReportIssuePage() {
       <div className="mx-auto max-w-lg px-4 pt-5 sm:pt-8 space-y-4 sm:space-y-5">
         <div>
           <button onClick={() => router.back()} className="mb-2 text-sm text-gray-400 hover:text-gray-600">← Back</button>
-          <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100">Report an Issue</h1>
+          <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-gray-100">Report a problem</h1>
           {offer && <p className="text-sm text-gray-500">{offer.requestTitle}</p>}
         </div>
 
-        <div className="rounded-xl sm:rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
-          This is not a return process. You can only report: wrong item, undisclosed damage, missing accessories, unsafe item, money demanded, or inappropriate behaviour.
-        </div>
+        {isWindowClosed ? (
+          <div className="rounded-xl sm:rounded-2xl bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 px-4 py-3 text-sm text-stone-600 dark:text-stone-300">
+            The 48-hour reporting window has closed.
+          </div>
+        ) : (
+          <div className="rounded-xl sm:rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-4 py-3 text-sm text-amber-700 dark:text-amber-400">
+            This is not a return process. You can only report: wrong item, undisclosed damage, missing accessories, unsafe item, money demanded, or inappropriate behaviour.
+          </div>
+        )}
 
         {error && (
           <div className="rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 px-4 py-3 text-sm text-red-700 dark:text-red-400">{error}</div>
@@ -84,8 +112,9 @@ export default function ReportIssuePage() {
               {ISSUE_TYPES.map(({ value, label }) => (
                 <label key={value} className={`flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${
                   issueType === value ? "border-[#b04a15] bg-orange-50 dark:bg-orange-950/30" : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
-                }`}>
+                } ${isWindowClosed ? "opacity-50 cursor-not-allowed" : ""}`}>
                   <input type="radio" name="issueType" value={value} checked={issueType === value}
+                    disabled={isWindowClosed}
                     onChange={() => setIssueType(value)} className="text-[#b04a15]" />
                   <span className="text-sm text-gray-700 dark:text-gray-300">{label}</span>
                 </label>
@@ -94,20 +123,21 @@ export default function ReportIssuePage() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Describe the issue *</label>
+            <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">Describe the problem *</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              disabled={isWindowClosed}
               rows={4}
               placeholder="Please describe exactly what happened..."
-              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#b04a15] resize-none"
+              className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[#b04a15] resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <p className="mt-1 text-xs text-gray-400">{description.length} / 500 characters</p>
           </div>
 
-          <button onClick={handleSubmit} disabled={submitting}
-            className="w-full rounded-xl bg-[#b04a15] py-3 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors disabled:opacity-50">
-            {submitting ? "Submitting..." : "Submit Issue Report"}
+          <button onClick={handleSubmit} disabled={submitting || isWindowClosed}
+            className="w-full rounded-xl bg-[#b04a15] py-3 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            {submitting ? "Submitting..." : "Report a problem"}
           </button>
         </div>
       </div>

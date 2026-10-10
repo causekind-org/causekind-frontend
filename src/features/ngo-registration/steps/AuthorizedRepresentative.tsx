@@ -13,16 +13,19 @@ import { uploadNgoDocument } from "@/lib/api";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
+import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 
 interface AuthorizedRepresentativeProps {
   data: NGOFormState;
   onChange: (patch: Partial<NGOFormState>) => void;
   onBack: () => void;
   onContinue: () => void;
+  /** Items a reviewer asked to fix, with their notes (shown next to each). */
+  corrections?: NgoCorrections;
 }
 
 /** Step 3 — Authorized Representative */
-export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }: AuthorizedRepresentativeProps) {
+export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, corrections }: AuthorizedRepresentativeProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate(): boolean {
@@ -43,9 +46,14 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
   }
 
   function err(key: string) {
-    return errors[key] ? (
-      <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
-    ) : null;
+    return (
+      <>
+        {errors[key] ? (
+          <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
+        ) : null}
+        <CorrectionNote note={corrections?.[key]} />
+      </>
+    );
   }
 
   return (
@@ -73,7 +81,6 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
             id="rep-name"
             type="text"
             autoComplete="name"
-            placeholder="e.g. Priya Sharma"
             value={data.representativeName}
             aria-invalid={!!errors.representativeName}
             onChange={(e) => { onChange({ representativeName: e.target.value }); if (errors.representativeName) setErrors((p) => ({ ...p, representativeName: "" })); }}
@@ -112,7 +119,6 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
             type="tel"
             inputMode="tel"
             autoComplete="tel"
-            placeholder="+91 98765 43210"
             value={data.mobileNumber}
             aria-invalid={!!errors.mobileNumber}
             onChange={(e) => { onChange({ mobileNumber: e.target.value }); if (errors.mobileNumber) setErrors((p) => ({ ...p, mobileNumber: "" })); }}
@@ -130,7 +136,6 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
             id="rep-email"
             type="email"
             autoComplete="email"
-            placeholder="priya@helpinghands.org"
             value={data.officialEmail}
             aria-invalid={!!errors.officialEmail}
             onChange={(e) => { onChange({ officialEmail: e.target.value }); if (errors.officialEmail) setErrors((p) => ({ ...p, officialEmail: "" })); }}
@@ -158,6 +163,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue }:
             onUpload={(file) => onChange({ authorizationLetter: file })}
             onRemove={() => onChange({ authorizationLetter: null })}
           />
+          <CorrectionNote note={corrections?.authorizationLetter} />
         </div>
       </div>
 

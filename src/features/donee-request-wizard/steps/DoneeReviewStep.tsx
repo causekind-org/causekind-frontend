@@ -14,6 +14,7 @@ export function DoneeReviewStep({
   emergencyNature,
   incidentDate,
   city,
+  locality,
   pincode,
   verification,
   uploadedDocs,
@@ -28,6 +29,8 @@ export function DoneeReviewStep({
   emergencyNature: string;
   incidentDate: string;
   city: string;
+  /** Optional area or neighbourhood. */
+  locality?: string;
   pincode: string;
   verification: Partial<RequestVerification>;
   uploadedDocs: Map<VerificationDocumentType, VerificationDocument>;
@@ -40,11 +43,16 @@ export function DoneeReviewStep({
         <ReviewRow label="Category" value={category || "Not specified"} />
         <ReviewRow label="Quantity" value={quantity} />
         <ReviewRow label="Urgency" value={urgency || "NORMAL"} />
-        <ReviewRow label="Location" value={[city, pincode].filter(Boolean).join(" - ") || "Not specified"} />
         <div className="py-2 border-t border-stone-100 dark:border-zinc-800/50 mt-2">
           <p className="text-xs text-stone-500 mb-1">Description</p>
-          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line">{description || "No description provided"}</p>
+          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{description || "No description provided"}</p>
         </div>
+      </ReviewSection>
+
+      <ReviewSection title="Location" onEdit={() => onEdit("location")}>
+        <ReviewRow label="City" value={city || "Not specified"} />
+        {locality?.trim() && <ReviewRow label="Locality" value={locality} />}
+        <ReviewRow label="PIN code" value={pincode || "Not specified"} />
       </ReviewSection>
 
       {isEmergency && (
@@ -61,7 +69,7 @@ export function DoneeReviewStep({
         )}
         <div className="py-2 border-t border-stone-100 dark:border-zinc-800/50 mt-2">
           <p className="text-xs text-stone-500 mb-1">Why they cannot buy this item</p>
-          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line">{verification.reasonCannotBuy || "Not provided"}</p>
+          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{verification.reasonCannotBuy || "Not provided"}</p>
         </div>
       </ReviewSection>
 

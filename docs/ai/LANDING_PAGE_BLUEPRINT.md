@@ -113,9 +113,9 @@ Section order below = render order in `HomeClient.tsx`.
 ## 8. Trust & safety
 - **Current purpose:** "Built on trust, for everyone." — for donors / donees / NGOs, stats (100% admin-verified listings, 10 km, ₹0 fees, zero middlemen). No shield graphic, no handover note (removed 2026-09-26).
 - **Component / file:** `TrustSafetySection` (`variant` desktop|mobile) — `src/components/home/TrustSafetySection.tsx` (id `trust`); phone view `TrustSafetyMobile` inside the same file.
-- **Animations:** desktop/tablet GSAP (cards dealt, check pops, counters via React state, "Zero" typewriter); phone: IO reveal, `SnapCarousel`, static stats.
-- **Responsive:** ≥768 3-column cards (md) + 4-stat row; <768 swipe cards + 4-up stat row.
-- **SAFE files:** `TrustSafetySection.tsx`.
+- **Animations:** desktop/tablet GSAP (cards dealt, check pops, counters via React state, "Zero" typewriter); phone: IO reveal, CSS-sticky stacking deck, static stats.
+- **Responsive:** ≥768 3-column cards (md) + 4-stat row; <768 scroll-stacking deck (cards pile into a coloured tab index) + 2×2 stat ticket (2026-09-28).
+- **SAFE files:** `TrustSafetySection.tsx`, `TrustSafetyMobile.module.css`.
 - **DO NOT TOUCH:** global list. Stats are product facts — do not change numbers without the user.
 - **FUTURE DESIGN SPECIFICATION:** Not specified yet.
 
@@ -123,8 +123,8 @@ Section order below = render order in `HomeClient.tsx`.
 - **Current purpose:** "Why we built CauseKind — Neighbours helping neighbours." Founder letter.
 - **Component / file:** `FoundersNoteSection` (`variant`) — `src/components/home/FoundersNoteSection.tsx` (id `founders-note`); data in `FOUNDER` (`lib/landingConstants.ts`).
 - **Status:** `FOUNDER.isPlaceholder = true` → **renders null in production**, shows in development (no badge).
-- **Animations:** desktop/tablet GSAP clip-path photo wipe, quote pop, text stagger, SVG signature draw; phone IO reveal (letterhead layout).
-- **SAFE files:** `FoundersNoteSection.tsx`; `FOUNDER` values only when the user supplies real details.
+- **Animations:** desktop/tablet GSAP clip-path photo wipe, quote pop, text stagger, SVG signature draw; phone (2026-09-28) = a letter: taped photo print beside the heading, folded sheet on an envelope, route doodle + signature "ink" wipes, stamp + postmark — IO reveals (section, doodle, sign-off).
+- **SAFE files:** `FoundersNoteSection.tsx`, `FoundersNoteMobile.module.css`; `FOUNDER` values only when the user supplies real details.
 - **DO NOT TOUCH:** global list.
 - **FUTURE DESIGN SPECIFICATION:** Not specified yet.
 

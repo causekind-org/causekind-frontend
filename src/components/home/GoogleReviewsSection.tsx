@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
-import { getReviews, GoogleReviewsData, GoogleReview } from "@/data/googleReviews";
+import { getReviews, GoogleReviewsData, GoogleReview, SAMPLE_REVIEWS } from "@/data/googleReviews";
+import { isPlaceholderPreviewHost } from "@/lib/placeholderPreview";
 
 export function GoogleReviewsSection() {
   const [data, setData] = useState<GoogleReviewsData | null>(null);
@@ -13,7 +14,8 @@ export function GoogleReviewsSection() {
     let mounted = true;
     const controller = new AbortController();
     getReviews(controller.signal).then((res) => {
-      if (mounted) setData(res);
+      // Staging/dev only: fall back to sample reviews when the live Google API is not configured
+      if (mounted) setData(res ?? (isPlaceholderPreviewHost() ? SAMPLE_REVIEWS : null));
     });
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -195,7 +197,7 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
         <div className="flex flex-col">
           {review.authorUrl ? <a href={review.authorUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-stone-900 dark:text-stone-100 hover:underline">{review.name}</a> : <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{review.name}</span>}
           <span className="text-xs text-stone-500 dark:text-stone-400">{review.date}</span>
-          {review.reviewUrl && <a href={review.reviewUrl} target="_blank" rel="noopener noreferrer" className="text-xs underline text-stone-600 dark:text-stone-300">View review on Google Maps</a>}
+          {review.reviewUrl && <a href={review.reviewUrl} target="_blank" rel="noopener noreferrer" aria-label={`View ${review.name}'s review on Google Maps (opens in a new tab)`} className="text-xs underline text-stone-600 dark:text-stone-300">View Review</a>}
         </div>
       </div>
     </div>

@@ -62,13 +62,17 @@ export const describeOfferRejection = describeRejectionFor(LIMITS);
 export { LIMITS as OFFER_PHOTO_LIMITS };
 
 export function useOfferPhotos(options: {
-  offerId: number | null;
+  /**
+   * The offer's id, creating the draft on first call if it does not exist yet
+   * (the draft is no longer created when the donor merely picks a flow type).
+   */
+  resolveOfferId: () => Promise<number>;
   photos: WizardPhoto[];
   setPhotos: (updater: (prev: WizardPhoto[]) => WizardPhoto[]) => void;
   onUrlsChanged?: () => void;
   onRejected?: (message: string) => void;
 }) {
-  const { offerId, photos, setPhotos, onUrlsChanged, onRejected } = options;
+  const { resolveOfferId, photos, setPhotos, onUrlsChanged, onRejected } = options;
 
   /** Media ids the client already accounts for, so a diff can spot the new one. */
   const knownIdsRef = useRef<Set<number>>(new Set());
@@ -78,9 +82,8 @@ export function useOfferPhotos(options: {
   const chainRef = useRef<Promise<unknown>>(Promise.resolve());
 
   const upload = useCallback(async (file: File) => {
-    if (offerId == null) throw new Error("No offer draft yet");
-
     const run = async () => {
+      const offerId = await resolveOfferId();
       // Same shrink the listing wizard applies: an offer photo is the same kind
       // of gallery shot, and was going up whole. Never throws — an undecodable
       // file is uploaded as-is and judged by the server.
@@ -98,13 +101,14 @@ export function useOfferPhotos(options: {
     const next = chainRef.current.then(run, run);
     chainRef.current = next.catch(() => undefined);
     return next;
-  }, [offerId]);
+  }, [resolveOfferId]);
 
   const removeRemote = useCallback(async (photo: WizardPhoto) => {
-    if (offerId == null || photo.mediaId == null) return;
-    await deleteOfferMedia(offerId, photo.mediaId);
+    // A photo with a server id implies the draft already exists.
+    if (photo.mediaId == null) return;
+    await deleteOfferMedia(await resolveOfferId(), photo.mediaId);
     knownIdsRef.current.delete(photo.mediaId);
-  }, [offerId]);
+  }, [resolveOfferId]);
 
   return useWizardPhotos({
     photos, setPhotos, limits: LIMITS, upload, removeRemote,

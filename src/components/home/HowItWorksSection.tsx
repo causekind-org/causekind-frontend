@@ -314,6 +314,8 @@ function MobileStepCard({ step }: { step: StepData }) {
 
 /** How long each role stays up on phones before the carousel moves on. */
 const AUTO_ADVANCE_MS = 2000;
+/** Desktop shows four cards of text per role: give them time to be read. */
+const AUTO_ADVANCE_DESKTOP_MS = 2000;
 
 export function HowItWorksSection() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -324,11 +326,19 @@ export function HowItWorksSection() {
   const [activeTab, setActiveTab] = useState<RoleTab>("donor");
   const [hasScrolledIn, setHasScrolledIn] = useState(false);
 
-  // Phones only: the roles advance on their own while the section is on
-  // screen, until the reader picks a role or swipes — then it is theirs.
+  // The roles advance on their own while the section is on screen (every 2s on
+  // phones, 2s on desktop, paused while the mouse rests on the tabs or cards), until
+  // the reader picks a role or swipes — then it is theirs.
   const onScreen = useInView(sectionRef, { amount: 0.35 });
   const [isPhone, setIsPhone] = useState(false);
   const [userDriven, setUserDriven] = useState(false);
+  // Only the tabs and cards pause it: the section fills the screen, so pausing on
+  // the whole section kept desktop permanently paused under a resting mouse.
+  const [hovering, setHovering] = useState(false);
+  const pauseOnHover = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse") setHovering(true);
+  };
+  const resumeOnLeave = () => setHovering(false);
   const touchRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
@@ -339,16 +349,17 @@ export function HowItWorksSection() {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  const autoplay = isPhone && onScreen && !reduceMotion && !userDriven;
+  const autoplay = onScreen && !reduceMotion && !userDriven && !hovering;
+  const advanceMs = isPhone ? AUTO_ADVANCE_MS : AUTO_ADVANCE_DESKTOP_MS;
   const activeIndex = TABS.findIndex((t) => t.id === activeTab);
 
   useEffect(() => {
     if (!autoplay) return;
     const id = window.setTimeout(() => {
       setActiveTab(TABS[(activeIndex + 1) % TABS.length].id);
-    }, AUTO_ADVANCE_MS);
+    }, advanceMs);
     return () => window.clearTimeout(id);
-  }, [autoplay, activeIndex]);
+  }, [autoplay, activeIndex, advanceMs]);
 
   const selectTab = (id: RoleTab) => {
     setUserDriven(true);
@@ -460,6 +471,8 @@ export function HowItWorksSection() {
           <div
             ref={tabListRef}
             role="tablist"
+            onPointerEnter={pauseOnHover}
+            onPointerLeave={resumeOnLeave}
             aria-label="User role journey selector"
             onKeyDown={handleKeyDown}
             className="inline-flex p-1 rounded-full bg-stone-200/70 dark:bg-stone-900/90 border border-stone-300/60 dark:border-stone-800 shadow-inner max-w-full overflow-x-auto scrollbar-none"
@@ -504,7 +517,7 @@ export function HowItWorksSection() {
                 key={i === activeIndex && autoplay ? `run-${activeTab}` : "idle"}
                 className={mStyles.fill}
                 data-s={i === activeIndex ? (autoplay ? "run" : "on") : "off"}
-                style={{ ["--dur" as string]: `${AUTO_ADVANCE_MS}ms` } as React.CSSProperties}
+                style={{ ["--dur" as string]: `${advanceMs}ms` } as React.CSSProperties}
               />
             </span>
           ))}
@@ -513,6 +526,8 @@ export function HowItWorksSection() {
         {/* Steps Grid with Connecting Path */}
         <div
           role="tabpanel"
+          onPointerEnter={pauseOnHover}
+          onPointerLeave={resumeOnLeave}
           id={`tabpanel-${activeTab}`}
           aria-labelledby={`tab-${activeTab}`}
           className="relative w-full"

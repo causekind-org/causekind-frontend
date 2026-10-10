@@ -74,6 +74,11 @@ export type HandoverConfirmationState = {
   conditionRating: string | null;
   /** Server-computed where available. Never guessed from status. */
   partlyConfirmed: boolean;
+  /**
+   * The recipient has entered the donor's handover code (2026-10-07). Both
+   * "I have donated the item" and "I have received the item" wait for it.
+   */
+  otpVerified: boolean;
 };
 
 export type HandoverParticipant = {
@@ -181,9 +186,49 @@ function deliveryStepCopy(vm: HandoverViewModel): { title: string; body: string 
            body: "This is coming by courier. Tell the donor where to deliver it and a number the courier can call." };
 }
 
-/** Window (in hours) after match completion during which participants can report an issue. */
-export const REPORT_ISSUE_WINDOW_HOURS = 3;
+/** Window (in hours) after handover dual confirmation during which participants can report an issue. */
+export const REPORT_ISSUE_WINDOW_HOURS = 48;
 export const REPORT_ISSUE_WINDOW_MS = REPORT_ISSUE_WINDOW_HOURS * 60 * 60 * 1000;
+
+/**
+ * Calculates when the 48-hour problem reporting window expires.
+ * Window starts at the later of donorConfirmedAt and doneeConfirmedAt.
+ * Returns null if both confirmations are not present.
+ */
+export function getIssueWindowExpiry(
+  confirmation?: { donorConfirmedAt?: string | null; doneeConfirmedAt?: string | null } | null,
+  completedAt?: string | null
+): Date | null {
+  if (confirmation?.donorConfirmedAt && confirmation?.doneeConfirmedAt) {
+    const rawDonor = confirmation.donorConfirmedAt.trim();
+    const isoDonor = rawDonor.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(rawDonor) ? rawDonor : `${rawDonor}Z`;
+    const rawDonee = confirmation.doneeConfirmedAt.trim();
+    const isoDonee = rawDonee.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(rawDonee) ? rawDonee : `${rawDonee}Z`;
+    const tDonor = new Date(isoDonor).getTime();
+    const tDonee = new Date(isoDonee).getTime();
+    if (!isNaN(tDonor) && !isNaN(tDonee)) {
+      return new Date(Math.max(tDonor, tDonee) + REPORT_ISSUE_WINDOW_MS);
+    }
+  }
+  if (completedAt) {
+    const raw = completedAt.trim();
+    const iso = raw.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : `${raw}Z`;
+    const time = new Date(iso).getTime();
+    if (!isNaN(time)) {
+      return new Date(time + REPORT_ISSUE_WINDOW_MS);
+    }
+  }
+  return null;
+}
+
+export function isIssueWindowClosed(
+  confirmation?: { donorConfirmedAt?: string | null; doneeConfirmedAt?: string | null } | null,
+  completedAt?: string | null
+): boolean {
+  const expiry = getIssueWindowExpiry(confirmation, completedAt);
+  if (!expiry) return true;
+  return Date.now() >= expiry.getTime();
+}
 
 // ── Journey rail ────────────────────────────────────────────────────────────
 

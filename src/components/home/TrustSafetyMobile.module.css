@@ -1,0 +1,291 @@
+/* Trust & safety — phone view (< 768px) only. Rendered by TrustSafetyMobile;
+   the tablet/desktop layouts do not use this file.
+
+   The three role cards are a deck that stacks on scroll: each card is CSS
+   sticky one tab-row lower than the one before, so as the page moves they
+   slide over one another and leave a coloured index of tabs at the top — then
+   gather into one card and leave together. No script, no scroll listener; the
+   browser does the stacking on its own scroll. The numbers below are one
+   ticket with a tear line. Only transform and opacity ever transition. */
+
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-sg-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #b5480f;
+}
+.eyebrow::before {
+  content: "";
+  width: 1.25rem;
+  height: 2px;
+  border-radius: 9999px;
+  background: currentColor;
+}
+
+.title {
+  margin-top: 0.5rem;
+  font-size: 1.875rem;
+  line-height: 1.08;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #1c1410;
+}
+.title em {
+  font-family: var(--font-sg-serif), Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  font-variation-settings: "SOFT" 100;
+  color: #b5480f;
+}
+
+.lede {
+  margin-top: 0.625rem;
+  max-width: 34ch;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: #57534e;
+}
+
+/* ── The deck ───────────────────────────────────────────────────────────────
+   --step is a card's tab row: the part of it that stays visible once the next
+   card has slid over. Rows are 1fr so every card is as tall as the tallest —
+   a shorter card underneath would otherwise peek out below the pile. */
+.stack {
+  --step: 3rem;
+  --top: calc(var(--ck-nav-h, 3.5rem) + 0.75rem);
+  display: grid;
+  grid-auto-rows: 1fr;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-bottom: 0.75rem;
+  list-style: none;
+}
+
+.slot {
+  position: sticky;
+  top: calc(var(--top) + var(--k, 0) * var(--step));
+  display: flex;
+}
+
+.card {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 1.25rem;
+  background: #fff;
+  border: 1px solid rgb(214 205 196 / 0.9);
+  /* The upward shadow is what makes a card read as lying over the one below. */
+  box-shadow:
+    0 -14px 30px -20px rgb(28 20 16 / 0.5),
+    0 1px 2px rgb(28 20 16 / 0.06);
+}
+
+.head {
+  height: var(--step);
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0 1rem;
+  color: #fff;
+  background-color: var(--role);
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.055) 0 6px,
+    transparent 6px 12px
+  );
+}
+.headIcon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.2);
+}
+.headLabel {
+  font-family: var(--font-sg-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+}
+.headNum {
+  margin-left: auto;
+  font-family: var(--font-sg-serif), Georgia, serif;
+  font-style: italic;
+  font-size: 1.5rem;
+  line-height: 1;
+  opacity: 0.92;
+}
+
+.body {
+  flex: 1 1 auto;
+  padding: 1rem 1rem 0;
+}
+.cardTitle {
+  font-family: var(--font-sg-serif), Georgia, serif;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: #1c1410;
+}
+
+.points {
+  margin-top: 0.875rem;
+  display: grid;
+  gap: 0.625rem;
+  list-style: none;
+}
+.point {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #57534e;
+}
+.check {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex: none;
+  margin-top: 0.0625rem;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  color: var(--role);
+  background: color-mix(in srgb, var(--role) 13%, transparent);
+}
+
+.foot {
+  margin: 1rem 1rem 0;
+  padding: 0.625rem 0 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px dashed rgb(168 162 158 / 0.45);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #57534e;
+}
+.footLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+.footLabel svg {
+  color: var(--role);
+}
+.footIndex {
+  font-family: var(--font-sg-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+}
+
+/* ── The ticket ─────────────────────────────────────────────────────────────
+   Four figures in a 2×2 with dashed rules; two notches cut on the tear line.
+   The mask would also clip a box-shadow, so the outline is a drop-shadow on
+   the wrapper (painted once — nothing here animates after the reveal). */
+.ticketWrap {
+  margin-top: 1rem;
+  filter: drop-shadow(0 0 0.5px rgb(28 20 16 / 0.28)) drop-shadow(0 8px 14px rgb(28 20 16 / 0.08));
+}
+.ticket {
+  --notch: 0.625rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 1rem;
+  background: #fffdf8;
+  -webkit-mask:
+    radial-gradient(circle at 0 50%, #0000 var(--notch), #000 calc(var(--notch) + 0.5px)) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, #0000 var(--notch), #000 calc(var(--notch) + 0.5px)) 100% 0 / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle at 0 50%, #0000 var(--notch), #000 calc(var(--notch) + 0.5px)) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle at 100% 50%, #0000 var(--notch), #000 calc(var(--notch) + 0.5px)) 100% 0 / 51% 100% no-repeat;
+}
+.cell {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 0.3rem;
+  padding: 0.95rem 0.875rem 0.9rem 1.125rem;
+}
+.cell:nth-child(odd) {
+  border-right: 1px dashed rgb(168 162 158 / 0.5);
+}
+.cell:nth-child(-n + 2) {
+  border-bottom: 1px dashed rgb(168 162 158 / 0.5);
+}
+.value {
+  font-size: 1.625rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.label {
+  font-family: var(--font-sg-mono), ui-monospace, monospace;
+  font-size: 0.625rem;
+  line-height: 1.35;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #78716c;
+}
+
+/* ── Dark ──────────────────────────────────────────────────────────────── */
+:global(.dark) .eyebrow {
+  color: #f4a25b;
+}
+:global(.dark) .title {
+  color: #f5f5f4;
+}
+:global(.dark) .title em {
+  color: #f4a25b;
+}
+:global(.dark) .lede,
+:global(.dark) .point,
+:global(.dark) .foot {
+  color: #d6d3d1;
+}
+:global(.dark) .card {
+  background: #181411;
+  border-color: #292524;
+  box-shadow:
+    0 -14px 30px -18px rgb(0 0 0 / 0.8),
+    0 1px 2px rgb(0 0 0 / 0.3);
+}
+:global(.dark) .cardTitle {
+  color: #f5f5f4;
+}
+:global(.dark) .check {
+  background: color-mix(in srgb, var(--role) 26%, transparent);
+  color: color-mix(in srgb, var(--role) 45%, #fff);
+}
+:global(.dark) .footLabel svg {
+  color: color-mix(in srgb, var(--role) 45%, #fff);
+}
+:global(.dark) .foot {
+  border-top-color: rgb(87 83 78 / 0.6);
+}
+:global(.dark) .ticketWrap {
+  filter: drop-shadow(0 0 0.5px rgb(255 255 255 / 0.18));
+}
+:global(.dark) .ticket {
+  background: #14100e;
+}
+:global(.dark) .cell {
+  border-color: rgb(87 83 78 / 0.6);
+}
+:global(.dark) .label {
+  color: #a8a29e;
+}

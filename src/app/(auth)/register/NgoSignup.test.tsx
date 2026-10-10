@@ -2,7 +2,7 @@ import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RegisterPage from "./page";
-import { registerNgo } from "@/lib/api";
+import { registerNgo, ApiError } from "@/lib/api";
 
 const mockPush = vi.fn();
 const mockReplace = vi.fn();
@@ -62,6 +62,10 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 vi.mock("@/lib/api", () => ({
+  ApiError: class ApiError extends Error {
+    status: number; data?: unknown;
+    constructor(status: number, message: string, data?: unknown) { super(message); this.status = status; this.data = data; }
+  },
   registerNgo: vi.fn().mockResolvedValue({
     token: null,
     userId: 42,
@@ -197,5 +201,61 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     );
 
     expect(mockReplace).toHaveBeenCalledWith("/");
+  }, 15000);
+
+  async function fillAndSubmit() {
+    const user = userEvent.setup();
+    render(<RegisterPage />);
+    await user.click(screen.getByRole("button", { name: /^NGO/i }));
+    await user.type(screen.getByLabelText(/Organization Name \*/i), "Helping Hands Trust");
+    await user.type(screen.getByLabelText(/Official Email Address \*/i), "contact@helpinghands.org");
+    await user.type(screen.getByLabelText(/Phone/i), "9876543210");
+    await user.type(screen.getByLabelText(/PAN Number \*/i), "AABCT1234C");
+    await user.type(screen.getByLabelText(/^Password/i), "Password@123");
+    const cityInput = await screen.findByPlaceholderText("Enter city");
+    fireEvent.change(cityInput, { target: { value: "Mumbai" } });
+    fireEvent.blur(cityInput);
+    await user.click(screen.getByRole("button", { name: /Create NGO Account/i }));
+  }
+
+  it("shows 'This email is already registered' next to the email field", async () => {
+    vi.mocked(registerNgo).mockRejectedValueOnce(new ApiError(400, "Email already registered", {
+      message: "Email already registered",
+      fieldErrors: [{ field: "officialEmail", code: "ALREADY_REGISTERED", message: "This email is already registered" }],
+    }));
+    await fillAndSubmit();
+    await waitFor(() => expect(document.getElementById("email-feedback")?.textContent).toContain("This email is already registered"), { timeout: 8000 });
+    expect(document.getElementById("email")?.getAttribute("aria-invalid")).toBe("true");
+    expect(document.getElementById("phone")?.getAttribute("aria-invalid")).not.toBe("true");
+    expect(mockReplace).not.toHaveBeenCalledWith("/");
+  }, 15000);
+
+  it("shows 'This phone number is already registered' next to the phone field", async () => {
+    vi.mocked(registerNgo).mockRejectedValueOnce(new ApiError(400, "Phone number already registered", {
+      message: "Phone number already registered",
+      fieldErrors: [{ field: "phoneNumber", code: "ALREADY_REGISTERED", message: "This phone number is already registered" }],
+    }));
+    await fillAndSubmit();
+    await waitFor(() => expect(document.getElementById("phone-feedback")?.textContent).toContain("This phone number is already registered"), { timeout: 8000 });
+    expect(document.getElementById("email")?.getAttribute("aria-invalid")).not.toBe("true");
+  }, 15000);
+
+  it("shows both messages when both are taken, and keeps what was typed", async () => {
+    vi.mocked(registerNgo).mockRejectedValueOnce(new ApiError(400, "Email already registered", {
+      fieldErrors: [
+        { field: "officialEmail", code: "ALREADY_REGISTERED", message: "This email is already registered" },
+        { field: "phoneNumber", code: "ALREADY_REGISTERED", message: "This phone number is already registered" },
+      ],
+    }));
+    await fillAndSubmit();
+    await waitFor(() => expect(document.getElementById("phone-feedback")?.textContent).toContain("This phone number is already registered"), { timeout: 8000 });
+    expect(document.getElementById("email-feedback")?.textContent).toContain("This email is already registered");
+    expect(screen.getByLabelText(/Official Email Address \*/i)).toHaveValue("contact@helpinghands.org");
+  }, 15000);
+
+  it("an older message-only response still lands on the email field with the same wording", async () => {
+    vi.mocked(registerNgo).mockRejectedValueOnce(new Error("Email already registered"));
+    await fillAndSubmit();
+    await waitFor(() => expect(document.getElementById("email-feedback")?.textContent).toContain("This email is already registered"), { timeout: 8000 });
   }, 15000);
 });

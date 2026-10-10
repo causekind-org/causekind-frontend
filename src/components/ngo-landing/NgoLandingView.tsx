@@ -1,9 +1,19 @@
 "use client";
 
 import { Suspense } from "react";
+<<<<<<< HEAD
 import { useNgoStatus } from "./useNgoStatus";
 import { PreApprovalLanding } from "./PreApprovalLanding";
 import { PostApprovalLanding } from "./PostApprovalLanding";
+=======
+import { NgoHeroSection } from "./NgoHeroSection";
+import { NgoGlanceStrip } from "./NgoGlanceStrip";
+import { NgoProblemSolutionSection } from "./NgoProblemSolutionSection";
+import { NgoTransparencySection } from "./NgoTransparencySection";
+import { NgoTrustSection } from "./NgoTrustSection";
+import { NgoHowItWorksSection } from "./NgoHowItWorksSection";
+import { CreditsSection } from "@/components/home/CreditsSection";
+>>>>>>> 6236176efb2bab4b3d717ec1b7e48a3522b01626
 import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
 import { AlertCircle } from "lucide-react";
 
@@ -42,11 +52,37 @@ function NgoLandingViewContent() {
     <div className="ck-ngo-landing-page min-h-screen bg-[#FAF8F3] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 transition-colors duration-300 overflow-x-clip">
       {status.isVerified && <NgoVerifiedWelcomeModal />}
 
+<<<<<<< HEAD
       {status.isVerified ? (
         <PostApprovalLanding status={status} />
       ) : (
         <PreApprovalLanding status={status} />
       )}
+=======
+      {/* SECTION 1 — HERO (Contains Image Wall, Category Pill Bar, and Restyled Trust Card) */}
+      <NgoHeroSection />
+
+      {/* "YOUR NGO AT A GLANCE" STRIP (verified ONLY, directly under hero) */}
+      <NgoGlanceStrip />
+
+      {/* SECTION 2 — PROBLEM / SOLUTION (before verification ONLY) */}
+      <NgoProblemSolutionSection />
+
+      {/* SECTION 3 — TRANSPARENCY (Gift Journey Tracker + Live Stats + Live Ticker + What Great Proof Looks Like) */}
+      <NgoTransparencySection />
+
+      {/* SECTION 4 — TRUST (Trust Grid before verification + Dynamic Scorecard) */}
+      <NgoTrustSection />
+
+      {/* SECTION 5 — HOW IT WORKS (For NGOs and trusts / True Focus headline + 3 Step Cards + CTA) */}
+      <NgoHowItWorksSection />
+
+      {/* The people behind CauseKind: same credit as the public home page. */}
+      <CreditsSection />
+
+      {/* SECTION 6 — COMMUNITY REVIEWS (Trusted by Givers and NGOs Marquee - last section before footer) */}
+      {/* Publish testimonials only when sourced and approved for use. */}
+>>>>>>> 6236176efb2bab4b3d717ec1b7e48a3522b01626
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import { WizardPhotoImage } from "@/features/wizard-kit/WizardPhotoImage";
 import { DeclarationsBlock } from "@/features/wizard-kit/DeclarationsBlock";
 import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
 import type { CompatibilityCheck } from "@/lib/api";
@@ -12,6 +12,7 @@ import {
 
 export function OfferReviewStep({
   model, errors, requestTitle, compat, declarationsInvalidated, onChange, onEdit, flowType, declarationGroups,
+  hidePickup = false, photoGallery, video,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
@@ -22,6 +23,15 @@ export function OfferReviewStep({
   onEdit: (step: OfferStep) => void;
   flowType?: string | null;
   declarationGroups?: readonly any[];
+  /** Optional. Leaves out the Pickup & delivery section (a flow without that step). */
+  hidePickup?: boolean;
+  /**
+   * Optional. Renders the photos (and the video, if any) with this instead of the
+   * small thumbnail strip. Without it the strip is shown as before.
+   */
+  photoGallery?: (photos: { id: string; url: string }[]) => React.ReactNode;
+  /** Optional. A short description of the item video, shown in the Photos section. */
+  video?: React.ReactNode;
 }) {
   const photos = uploadedOfferPhotos(model.photos);
   const payer = DELIVERY_PAYERS.find(p => p.value === model.deliveryCostBornBy);
@@ -51,15 +61,18 @@ export function OfferReviewStep({
         <ReviewSection title="Photos" onEdit={() => onEdit("photos")}>
           {photos.length === 0 ? (
             <p className="text-2xs text-stone-400">No photos yet</p>
+          ) : photoGallery ? (
+            photoGallery(photos.map(p => ({ id: p.id, url: p.remoteUrl as string })))
           ) : (
             <ul className="flex gap-2 overflow-x-auto">
               {photos.map((p, i) => (
                 <li key={p.id} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-stone-200 dark:border-zinc-800">
-                  <Image src={p.remoteUrl as string} alt={`Photo ${i + 1}`} fill sizes="64px" className="object-cover" unoptimized />
+                  <WizardPhotoImage src={p.remoteUrl as string} alt={`Photo ${i + 1}`} className="object-cover" />
                 </li>
               ))}
             </ul>
           )}
+          {video}
         </ReviewSection>
       )}
 
@@ -68,7 +81,7 @@ export function OfferReviewStep({
         {/* Age is not collected on a purchase offer, so it must not be summarised
             on one either — a review row for a field the donor was never shown
             invites them to "correct" something the form will not accept. */}
-        {!purchase && <ReviewRow label="Approximate age" value={model.approximateAge} />}
+        {!purchase && <ReviewRow label="Item age" value={model.approximateAge} />}
         <ReviewRow
           label={purchase ? "Comes with" : "Accessories"}
           value={model.accessoriesIncluded}
@@ -93,13 +106,13 @@ export function OfferReviewStep({
         </ReviewSection>
       )}
 
-      <ReviewSection title="Pickup & delivery" onEdit={() => onEdit("pickup")}>
+      {!hidePickup && <ReviewSection title="Pickup & delivery" onEdit={() => onEdit("pickup")}>
         <ReviewRow label="City" value={model.pickupCity} />
         <ReviewRow label="Pincode" value={model.pickupPincode} />
         <ReviewRow label="Locality" value={model.pickupLocality} />
         <ReviewRow label="Drop-off" value={model.donorDropOffAvailable ? "I'll drop it off" : "Needs collection"} />
         {!model.donorDropOffAvailable && <ReviewRow label="Delivery paid by" value={payer?.label ?? model.deliveryCostBornBy} />}
-      </ReviewSection>
+      </ReviewSection>}
 
       <DeclarationsBlock
         groups={declarationGroups ?? declarationGroupsFor(flowType)}

@@ -89,7 +89,7 @@ function offerDetails(d: Extract<Delivery, { kind: "offer" }>, h: HandoverRecord
     item: [
       { label: "Condition", value: i?.condition },
       { label: "Working status", value: i?.workingStatus },
-      { label: "Approximate age", value: i?.approximateAge },
+      { label: "Item age", value: i?.approximateAge },
       { label: "Brand / model", value: [i?.brand, i?.model].filter(Boolean).join(" ") || null },
       { label: "Accessories", value: i?.accessoriesIncluded },
       { label: "Known defects", value: i?.knownDefects },
@@ -131,7 +131,7 @@ function matchDetails(d: Extract<Delivery, { kind: "match" }>): Details {
       { label: "Item", value: m.listingTitle },
       { label: "Condition", value: m.listingCondition },
       { label: "Working status", value: m.listingWorkingStatus },
-      { label: "Approximate age", value: m.listingApproximateAge },
+      { label: "Item age", value: m.listingApproximateAge },
       { label: "Brand / model", value: [m.listingBrand, m.listingModel].filter(Boolean).join(" ") || null },
       { label: "Accessories", value: m.listingAccessoriesIncluded },
       { label: "Known defects", value: m.listingKnownDefects },

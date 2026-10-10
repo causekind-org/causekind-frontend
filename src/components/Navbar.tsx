@@ -25,6 +25,7 @@ import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
+import { openDonateChoice } from "@/components/donate/DonateChoice";
 import { DONATE_HREF } from "@/lib/donateScroll";
 import { isNgoRole } from "@/lib/isNgoRole";
 import { toast } from "@/lib/toast";
@@ -59,6 +60,9 @@ const logoLetterVariants = {
   hidden:  { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0 },
 };
+
+/** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
+const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
@@ -636,6 +640,27 @@ export function SiteHeader() {
     window.addEventListener("focus", refresh);
     return () => { active = false; window.removeEventListener("ngo-application-submitted", refresh); window.removeEventListener("focus", refresh); };
   }, [isNgo, user, pathname]);
+  // NGO only: the "NGO Approved" pill shows for two minutes after the NGO first sees its
+  // approval (first-seen time kept per account in localStorage), then never again.
+  const [ngoApprovedPillExpired, setNgoApprovedPillExpired] = useState(false);
+  const ngoAccountKey = user ? String(user.id ?? user.userId ?? user.email ?? "") : "";
+  useEffect(() => {
+    setNgoApprovedPillExpired(false);
+    if (!isNgo || ngoApplicationState !== "APPROVED" || !ngoAccountKey) return;
+    const key = `ck_ngo_approved_seen_${ngoAccountKey}`;
+    let firstSeen = Date.now();
+    try {
+      const stored = Number(localStorage.getItem(key));
+      if (Number.isFinite(stored) && stored > 0) firstSeen = stored;
+      else localStorage.setItem(key, String(firstSeen));
+    } catch {
+      // Storage unavailable: show the pill for this visit's two minutes only.
+    }
+    const remaining = firstSeen + NGO_APPROVED_PILL_MS - Date.now();
+    if (remaining <= 0) { setNgoApprovedPillExpired(true); return; }
+    const timer = setTimeout(() => setNgoApprovedPillExpired(true), remaining);
+    return () => clearTimeout(timer);
+  }, [isNgo, ngoApplicationState, ngoAccountKey]);
   const ngoApplicationLabel = ngoApplicationState === "APPROVED" ? "NGO Approved"
     : ngoApplicationState === "UNDER_REVIEW" ? "Application Under Review"
     : ngoApplicationState === "PENDING_VERIFICATION" ? "Verify Application Email"
@@ -652,7 +677,8 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    { href: "/requests", label: t("nav.donate") },
+    // Donees ask, they do not give: the same slot reads "Requests" for them.
+    { href: "/requests", label: user?.role === "DONEE" ? t("mobileNav.requests") : t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -675,7 +701,7 @@ export function SiteHeader() {
    * locales already carry them and nothing degrades to English.
    */
   const mobileNavLinks = navLinks.flatMap((link) =>
-    link.href === "/requests"
+    link.href === "/requests" && user?.role !== "DONEE"
       ? [
           // Same constant the button uses, so the drawer lands on the donation
           // form too rather than at the top of the page.
@@ -1045,7 +1071,7 @@ export function SiteHeader() {
               <DonateNowButton size="sm" label="Donate" showArrow={false} />
             )}
 
-            {isNgoDashboard && (
+            {isNgoDashboard && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
               <Link href="/profile/ngo-details">
                 <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
                   {ngoApplicationLabel}
@@ -1331,6 +1357,8 @@ export function SiteHeader() {
             link: l.href,
             ariaLabel: l.label,
             active: isActive(l.href.split("?")[0]),
+            // Donate opens the In-Kind / Money choice; the menu closes itself.
+            ...(l.href === DONATE_HREF ? { onClick: openDonateChoice } : {}),
           })),
           ...(user
             ? [
@@ -1425,7 +1453,7 @@ export function SiteFooter() {
     ...(user && !isNgoAccount ? [{ href: "/requests", l: t("inkindRequests") }] : []),
   ];
   return (
-    <footer className="bg-[#120c04] text-stone-250" id="footer">
+    <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
       {/* items-start stops the short columns stretching; the row-span on Get
           support (below) is what actually compacts this on mobile. */}
       <div className={`mx-auto grid max-w-7xl items-start gap-x-4 gap-y-5 sm:gap-y-6 px-4 py-6 sm:px-6 sm:py-8 text-sm grid-cols-2 ${giveBackLinks.length > 0 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>

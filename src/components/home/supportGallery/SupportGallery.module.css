@@ -66,6 +66,8 @@
   margin: 0 auto;
   aspect-ratio: 16 / 10;
   container-type: inline-size;
+  /* Own stacking context: the lifted print (z 60) and card (z 70) must not paint over the sticky navbar (z-50). */
+  isolation: isolate;
   --px: 0;
   --py: 0;
   --sy: 0;

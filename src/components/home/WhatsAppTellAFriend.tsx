@@ -62,7 +62,8 @@ export function WhatsAppTellAFriendButton({
   variant = "outline",
 }: {
   className?: string;
-  variant?: "outline" | "green";
+  /** "outline" is for dark surfaces, "outline-light" for the light page. */
+  variant?: "outline" | "outline-light" | "green";
 }) {
   const [bursting, setBursting] = useState(false);
 
@@ -92,7 +93,11 @@ export function WhatsAppTellAFriendButton({
         className={`group relative inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-[13px] tracking-wide transition-all duration-200 active:scale-95 cursor-pointer ${
           isGreen
             ? "bg-[#25D366] hover:bg-[#20bd5a] text-white shadow-md shadow-[#25D366]/20"
-            : "border border-stone-600/70 hover:border-stone-400 bg-stone-900/60 hover:bg-stone-800/90 text-stone-200 hover:text-white shadow-xs backdrop-blur-xs"
+            : variant === "outline-light"
+              // Border colours are important: an unlayered `* { border-color }`
+              // in styles.css otherwise wins over every border utility.
+              ? "border border-stone-300! hover:border-stone-500! dark:border-stone-700! dark:hover:border-stone-500! bg-white hover:bg-stone-50 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-stone-800 hover:text-stone-900 dark:text-stone-200 dark:hover:text-white shadow-xs"
+              : "border border-stone-600/70 hover:border-stone-400 bg-stone-900/60 hover:bg-stone-800/90 text-stone-200 hover:text-white shadow-xs backdrop-blur-xs"
         } ${className}`}
       >
         {/* Pulsing WhatsApp icon */}

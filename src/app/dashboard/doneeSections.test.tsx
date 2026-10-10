@@ -30,7 +30,10 @@ vi.mock("@/components/NewRequestLink", () => ({
   NewRequestLink: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) =>
     <a href={href} className={className}>{children}</a>,
 }));
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api")>()),
+  getMatchCancellationOptions: () => Promise.resolve({ allowed: false, outcome: "NONE", actionLabel: null }),
+  getOfferCancellationOptions: () => Promise.resolve({ allowed: false, outcome: "NONE", actionLabel: null }),
   getMyProfile: mocks.profile,
   getMyItemRequests: mocks.requests,
   getMyMatches: mocks.matches,
@@ -81,12 +84,17 @@ const tab = (name: RegExp) => screen.findByRole("tab", { name });
 /** Waits for the tab to be the open one — the default is only chosen once offers have loaded. */
 const openTab = (name: RegExp) => screen.findByRole("tab", { name, selected: true });
 
+/*
+ * Tabs since 2026-10-07: Your Requests (requests not yet in a live flow, plus
+ * matches waiting on the donee's yes/no) · Matches (accepted matches and live
+ * offers) · History (finished offers and matches). History's hash is "offers".
+ */
 describe("donee dashboard sections", () => {
-  it("opens on Offers when an offer is waiting for the donee's review", async () => {
+  it("opens on Matches when an offer is waiting for the donee's review", async () => {
     mocks.incomingOffers.mockResolvedValue([offer(11, "PENDING_DONEE_REVIEW")]);
     render(<DashboardPage />);
 
-    await openTab(/Offers Received/);
+    await openTab(/Matches/);
     expect(screen.getByRole("button", { name: "Accept Offer" })).toBeInTheDocument();
     // Only the open section is on the page.
     expect(screen.queryByText("Every need travels the same road: posted, verified, matched, received.")).toBeNull();
@@ -112,14 +120,13 @@ describe("donee dashboard sections", () => {
   });
 
   it("opens the section named in the URL hash", async () => {
-    window.history.replaceState(null, "", "/dashboard#matches");
+    window.history.replaceState(null, "", "/dashboard#offers");
     mocks.incomingOffers.mockResolvedValue([offer(11, "PENDING_DONEE_REVIEW")]);
     render(<DashboardPage />);
 
-    await openTab(/Matches/);
-    // Offers still load — and an offer awaiting review does not override the link.
-    await screen.findByText("Donors whose items matched your requests.");
-    expect(await tab(/Offers Received/)).toHaveAttribute("aria-selected", "false");
+    // #offers is History; an offer awaiting review does not override the link.
+    await openTab(/History/);
+    expect(await tab(/Matches/)).toHaveAttribute("aria-selected", "false");
   });
 
   it("counts only live items on each tab and flags the ones waiting on the donee", async () => {
@@ -127,18 +134,22 @@ describe("donee dashboard sections", () => {
     mocks.matches.mockResolvedValue([match(21, "AWAITING_DONEE_CONFIRMATION"), match(22, "FULFILLED")]);
     render(<DashboardPage />);
 
-    const offersTab = await openTab(/Offers Received/);
-    expect(within(offersTab).getByText("1")).toBeInTheDocument();
-    expect(offersTab).toHaveTextContent(/needs your attention/);
+    // The match waiting on the donee's yes/no is answered in Your Requests.
+    const requestsTab = await openTab(/Your Requests/);
+    expect(requestsTab).toHaveTextContent(/needs your attention/);
+
     const matchesTab = await tab(/Matches/);
-    expect(within(matchesTab).getByText("1")).toBeInTheDocument();
+    expect(within(matchesTab).getByText("1")).toBeInTheDocument(); // the live offer
     expect(matchesTab).toHaveTextContent(/needs your attention/);
-    expect(await tab(/Your Requests/)).not.toHaveTextContent(/needs your attention/);
+
+    const historyTab = await tab(/History/);
+    expect(within(historyTab).getByText("2")).toBeInTheDocument(); // withdrawn offer + fulfilled match
+    expect(historyTab).not.toHaveTextContent(/needs your attention/);
   });
 });
 
 describe("match history", () => {
-  it("moves finished matches out of the live list into the Matches tab's history", async () => {
+  it("keeps live matches in Matches and puts finished ones in History", async () => {
     mocks.matches.mockResolvedValue([
       match(21, "PICKUP_SCHEDULED"),
       match(22, "FULFILLED", { doneeConfirmedQty: 4, doneeConfirmedAt: iso(2 * DAY) }),
@@ -150,31 +161,31 @@ describe("match history", () => {
     await openTab(/Matches/);
 
     expect(screen.getByText("Listed laptop 21")).toBeInTheDocument();
-    expect(screen.queryByText("Listed laptop 22")).toBeNull(); // collapsed until asked for
+    expect(screen.queryByText("Listed laptop 22")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: /Match history \(2\)/ }));
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
+    // Received: a row in Donations received, with what came.
     expect(screen.getByText("Listed laptop 22")).toBeInTheDocument();
-    expect(screen.getByText("Received")).toBeInTheDocument();
     expect(screen.getByText(/4 received/)).toBeInTheDocument();
+    // Didn't go ahead: in the same list (2026-10-09), no toggle.
     expect(screen.getByText("Donor declined")).toBeInTheDocument();
   });
 
-  it("opens the history straight away when there are no live matches", async () => {
+  it("lists a received match in History straight away", async () => {
     mocks.matches.mockResolvedValue([match(22, "COMPLETED", { allocatedQuantity: 4 })]);
     render(<DashboardPage />);
     await openTab(/Your Requests/);
-    await userEvent.click(await tab(/Matches/));
-    await openTab(/Matches/);
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
 
-    expect(screen.getByRole("button", { name: /Match history \(1\)/ })).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByText("Donations received")).toBeInTheDocument();
     expect(screen.getByText("Listed laptop 22")).toBeInTheDocument();
   });
 });
 
 describe("your requests", () => {
-  it("lists every request the donee posted, fulfilled ones included", async () => {
-    // A fulfilled request used to leave this tab for the History page, which
-    // read to donees as their requests having vanished.
+  it("lists pending and closed requests, excludes fulfilled ones, and shows history link", async () => {
     mocks.requests.mockResolvedValue([
       request,
       { ...request, id: 2, title: "Books for a study centre", quantity: 20, fulfilledQuantity: 20, status: "FULFILLED" },
@@ -185,28 +196,49 @@ describe("your requests", () => {
     await openTab(/Your Requests/);
 
     expect(screen.getByText("Laptops for a computer class")).toBeInTheDocument();
-    expect(screen.getByText("Fulfilled", { selector: "h4" })).toBeInTheDocument();
-    expect(screen.getByText("Books for a study centre")).toBeInTheDocument();
-    expect(screen.getByText("School bags")).toBeInTheDocument();
-    expect(screen.getByText("20 / 20")).toBeInTheDocument();
+    expect(screen.queryByText("Fulfilled", { selector: "h4" })).toBeNull();
+    expect(screen.queryByText("Books for a study centre")).toBeNull();
+    expect(screen.queryByText("School bags")).toBeNull();
     expect(screen.getByRole("link", { name: /See who delivered what/ })).toHaveAttribute("href", "/dashboard/history");
   });
 });
 
-describe("offer history", () => {
-  it("keeps a recent completed donation live, and files an older one under history", async () => {
+describe("offer history and donations received", () => {
+  it("keeps a recent completed donation live in Matches, and lists both in History", async () => {
     mocks.incomingOffers.mockResolvedValue([
-      offer(31, "COMPLETED", { closedAt: iso(2 * DAY) }),
+      offer(31, "COMPLETED", { closedAt: iso(1 * DAY) }),
       offer(32, "COMPLETED", { closedAt: iso(30 * DAY), donorName: "Meera" }),
     ]);
     render(<DashboardPage />);
     await openTab(/Your Requests/);
-    await userEvent.click(await tab(/Offers Received/));
-    await openTab(/Offers Received/);
+    await userEvent.click(await tab(/Matches/));
+    await openTab(/Matches/);
 
-    // The recent one keeps its "Report an issue" window on the live list.
-    expect(screen.getByRole("link", { name: "Report an issue" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: /Offer history \(1\)/ }));
-    expect(screen.getByText(/6× from Meera/)).toBeInTheDocument();
+    // The recent one keeps its "Report a problem" window on the live list.
+    expect(screen.getByRole("link", { name: "Report a problem" })).toBeInTheDocument();
+
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
+    expect(screen.getAllByText("Donor's offer")).toHaveLength(2);
+  });
+
+  it("lists match-received donations in Donations received", async () => {
+    mocks.requests.mockResolvedValue([
+      { ...request, id: 22, title: "Earbuds for study", quantity: 1, fulfilledQuantity: 1, status: "FULFILLED" },
+      { ...request, id: 20, title: "Books for school", quantity: 2, fulfilledQuantity: 2, status: "FULFILLED" },
+    ]);
+    mocks.matches.mockResolvedValue([
+      match(8, "COMPLETED", { requestId: 22, allocatedQuantity: 1, doneeConfirmedAt: iso(2 * DAY) }),
+      match(6, "COMPLETED", { requestId: 20, allocatedQuantity: 2, doneeConfirmedAt: iso(10 * DAY) }),
+    ]);
+    render(<DashboardPage />);
+    await openTab(/Your Requests/);
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
+
+    expect(screen.getByText("Donations received")).toBeInTheDocument();
+    expect(screen.getByText("Listed laptop 8")).toBeInTheDocument();
+    expect(screen.getByText("Listed laptop 6")).toBeInTheDocument();
+    expect(screen.getAllByText("Matched for you")).toHaveLength(2);
   });
 });

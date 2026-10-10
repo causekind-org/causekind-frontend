@@ -835,8 +835,19 @@ function VerificationFormGrid({ v, isEmergency }: { v: NonNullable<AdminRequestV
     ["Detailed story", v.detailedStory],
     ["Maps pin", v.mapsPin],
   ];
-  const populated = rows.filter(([, val]) => val !== null && val !== undefined && val !== "");
-  if (populated.length === 0) return null;
+  // The donee profile's optional questions read "Not provided" when left blank
+  // (owner, 2026-10-06), so a skipped answer is visibly skipped rather than a
+  // missing row. Blanks are stored as blanks; this is display only. Every other
+  // empty row is still hidden (retired fields such as "Medical condition").
+  const SHOW_WHEN_BLANK = new Set([
+    "Gender", "Address landmark", "Beneficiary", "Supporting institution", "Landlord contact",
+    "Referrer", "Alt. contact", "Detailed story", "Maps pin",
+  ]);
+  const isBlank = (val: unknown) => val === null || val === undefined || String(val).trim() === "";
+  if (rows.every(([, val]) => isBlank(val))) return null;
+  const populated = rows
+    .filter(([label, val]) => !isBlank(val) || SHOW_WHEN_BLANK.has(label as string))
+    .map(([label, val]) => [label, isBlank(val) ? "Not provided" : val] as const);
 
   return (
     <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700">

@@ -34,6 +34,9 @@ export const NGO_OFFER_METHODS: HandoverMethodOption[] = [
 
 export const MATCH_METHODS: HandoverMethodOption[] = [
   { value: "IN_PERSON",   label: "In person",  hint: "You meet and hand it over." },
+  // Added 2026-10-07 (owner). The match method is free text on the backend
+  // (ItemMatch.handoverMethod), so a new value needs no enum or DB change.
+  { value: "DONEE_PICKUP", label: "Donee will pick up", hint: "The recipient comes to collect it from you." },
   { value: "COURIER",     label: "Courier",    hint: "A courier moves it between you." },
   { value: "THIRD_PARTY", label: "Third party", hint: "Someone else carries it for you." },
 ];
@@ -111,6 +114,7 @@ export function adaptOffer(
       doneeConfirmedQty: confirmation?.doneeConfirmedQty ?? null,
       conditionRating: confirmation?.doneeConditionRating ?? null,
       partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
+      otpVerified: confirmation?.otpVerified ?? false,
     },
     methodOptions: OFFER_METHODS,
     certificateCode: null,
@@ -153,7 +157,7 @@ export function adaptMatch(
     state,
     rawStatus: match.status,
     title,
-    imageUrl: match.donorImages?.[0] ?? match.listingImageUrl ?? null,
+    imageUrl: match.donorImages?.[0] ?? match.listingPhotoUrls?.[0] ?? match.listingImageUrl ?? null,
     transactionCode: `CK-M${String(match.id).padStart(5, "0")}`,
     counterpart: role === "DONOR"
       ? { name: match.doneeName, phone: match.doneeContact }
@@ -181,6 +185,7 @@ export function adaptMatch(
       conditionRating: match.doneeConditionRating,
       // Server-computed. Trusted over a local re-derivation because the server is
       // what the cancellation policy actually consults.
+      otpVerified: match.deliveryOtpVerified ?? false,
       partlyConfirmed: match.handoverPartlyConfirmed
         ?? ((match.donorConfirmedAt != null) !== (match.doneeConfirmedAt != null)),
     },
@@ -232,6 +237,25 @@ export function hasCoordinates(lat: number | null, lng: number | null): boolean 
 
 export function mapsHref(lat: number, lng: number): string {
   return `https://www.google.com/maps?q=${lat},${lng}`;
+}
+
+/** Google Maps directions from wherever the viewer is to the pin. */
+export function directionsHref(lat: number, lng: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+}
+
+/**
+ * A small static map image of the pin (Maps Static API, same browser key as the
+ * map), or null without a key. Callers hide the image if it fails to load.
+ */
+export function staticMapSrc(lat: number, lng: number): string | null {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  const p = new URLSearchParams({
+    center: `${lat},${lng}`, zoom: "16", size: "640x240", scale: "2",
+    markers: `color:0xb04a15|${lat},${lng}`, key,
+  });
+  return `https://maps.googleapis.com/maps/api/staticmap?${p.toString()}`;
 }
 
 // ── NGO OFFER ───────────────────────────────────────────────────────────────
@@ -296,6 +320,8 @@ export function adaptNgoOffer(
       doneeConfirmedQty: confirmation?.ngoConfirmedQty ?? null,
       conditionRating: null, // No condition rating for NGO drives
       partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
+      // NGO drives keep their one-step flow (code entered with the receipt).
+      otpVerified: false,
     },
     methodOptions: NGO_OFFER_METHODS,
     certificateCode: null, // Handled differently if needed

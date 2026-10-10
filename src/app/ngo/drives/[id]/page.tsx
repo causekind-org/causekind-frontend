@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
 import { DriveQuantityBar } from "@/features/ngo-drives/components/DriveQuantityBar";
 import { errorMessage, isNotFound } from "@/features/ngo-drives/driveGiveState";
+import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
 
 type Tab = "review" | "handovers" | "proof" | "close";
 const CLOSED_OFFER = new Set(["NGO_DECLINED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "ENDED", "DRAFT"]);
@@ -156,9 +157,9 @@ export default function NgoDriveManagePage() {
     ["Category", drive.category],
     ["Item", drive.itemName],
     ["Quantity", `${drive.quantityNeeded} ${humanize(drive.unit)}`],
-    ["Condition", humanize(drive.itemCondition)],
+    ["Condition accepted", [driveConditionLabel(drive.itemCondition), driveConditionRule(drive.itemCondition)].filter(Boolean).join(" · ")],
     ["Urgency", humanize(drive.urgency)],
-    ["Beneficiaries", `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
+    ["People who will benefit", `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
     ["Needed by", drive.neededBy ? new Date(drive.neededBy).toLocaleDateString() : ""],
     ["Handover days & hours", `${days}${drive.availableFrom ? `, ${drive.availableFrom}–${drive.availableTo}` : ""}`],
     ["Contact", `${drive.contactName ?? ""}${drive.contactPhone ? ` · ${drive.contactPhone}` : ""}`],
@@ -246,9 +247,16 @@ export default function NgoDriveManagePage() {
                       {offer.notesForNgo && <p className="mt-2 rounded border border-amber-100 bg-white/60 p-2 text-xs text-stone-600 dark:border-amber-900/30 dark:bg-black/20 dark:text-stone-300">&ldquo;{offer.notesForNgo}&rdquo;</p>}
                       {offer.media && offer.media.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-2">
-                          {offer.media.map((m) => (
+                          {offer.media.filter((m) => m.mediaType !== "VIDEO").map((m) => (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img key={m.mediaUrl} src={m.mediaUrl} alt="Offered item" className="h-16 w-16 rounded-lg object-cover" />
+                            <img key={m.id ?? m.mediaUrl} src={m.mediaUrl} alt="Offered item" className="h-16 w-16 rounded-lg object-cover" />
+                          ))}
+                          {/* The donor's optional item video, once screened (short-lived URL). */}
+                          {offer.media.filter((m) => m.mediaType === "VIDEO").map((m) => m.playbackUrl ? (
+                            <video key={m.id} controls preload="metadata" src={m.playbackUrl} aria-label="Donor's item video"
+                              className="h-32 w-56 rounded-lg bg-black object-contain" />
+                          ) : (
+                            <span key={m.id} className="self-center text-xs text-stone-500">Video being checked</span>
                           ))}
                         </div>
                       )}

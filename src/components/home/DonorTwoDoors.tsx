@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { DONATE_HREF } from "@/lib/donateScroll";
 
 /**
  * "Ready to help?" — the logged-in donor home's closing choice between giving
@@ -32,9 +33,9 @@ export function DonorTwoDoors() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
-          {/* Door 1 — give an item */}
+          {/* Door 1 — list an item (owner, 2026-10-08: was "Give an item" → /requests) */}
           <Link
-            href="/requests"
+            href="/items/new"
             className="group relative flex min-h-[248px] flex-col justify-between gap-[18px] overflow-hidden rounded-[22px] p-6 text-white no-underline transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF6F1] motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:focus-visible:ring-offset-[#0E0C0A] md:min-h-[320px] md:rounded-[28px] md:p-10"
             style={{ background: accent, ["--tw-ring-color" as string]: accent }}
           >
@@ -56,16 +57,16 @@ export function DonorTwoDoors() {
             <span className="text-xs font-semibold uppercase tracking-[0.14em] md:text-[13px]">Items</span>
             <span className="flex flex-col gap-[18px] md:flex-row md:items-end md:justify-between md:gap-6">
               <span className="flex flex-col gap-1.5 md:gap-2.5">
-                <span className="text-[28px] font-extrabold leading-[1.05] tracking-[-0.02em] md:text-[40px]">Give an item</span>
+                <span className="text-[28px] font-extrabold leading-[1.05] tracking-[-0.02em] md:text-[40px]">List an item</span>
                 <span className="max-w-[360px] text-[15px] leading-normal text-white/90 md:text-[17px]">
-                  Give things you don&apos;t use to someone near you.
+                  Add something you don&apos;t use. We&apos;ll match it with someone near you.
                 </span>
               </span>
               <span
                 className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-full bg-white px-5 text-[15px] font-semibold md:h-[52px] md:self-auto md:px-[22px]"
                 style={{ color: accent }}
               >
-                See requests
+                List an item
                 <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none md:size-[18px]" aria-hidden="true" />
               </span>
             </span>
@@ -73,7 +74,10 @@ export function DonorTwoDoors() {
 
           {/* Door 2 — give money */}
           <Link
-            href="/donate/money"
+            // Land on the donation form, not the top of the page. The page's
+            // arrival handler owns the scroll, as for every DonateNowButton.
+            href={DONATE_HREF}
+            scroll={false}
             className="group relative flex min-h-[248px] flex-col justify-between gap-[18px] overflow-hidden rounded-[22px] border-[1.5px] border-[#EAD9CB] bg-white p-6 text-stone-900 no-underline transition-transform duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF6F1] motion-reduce:transition-none motion-reduce:hover:translate-y-0 dark:border-zinc-700 dark:bg-zinc-900 dark:text-white dark:focus-visible:ring-offset-[#0E0C0A] md:min-h-[320px] md:rounded-[28px] md:p-10"
             style={{ ["--tw-ring-color" as string]: accent }}
           >

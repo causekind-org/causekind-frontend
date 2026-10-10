@@ -177,6 +177,39 @@ describe("Register with Google", { timeout: 30000 }, () => {
     await waitFor(() => expect(document.getElementById("phone")?.getAttribute("aria-invalid")).toBe("true"));
   });
 
+  async function submitGoogleNgo() {
+    googleSession();
+    const user = userEvent.setup();
+    render(<RegisterPage />);
+    await user.click(screen.getByRole("button", { name: /^NGO/i }));
+    const org = screen.getByLabelText(/Organization Name \*/i);
+    await user.clear(org);
+    await user.type(org, "Hope Welfare Trust");
+    await user.type(screen.getByLabelText(/Phone/i), "9876543210");
+    await user.type(screen.getByLabelText(/PAN Number \*/i), "AABCT1234C");
+    await fillCity();
+    await user.click(screen.getByRole("button", { name: /^complete$/i }));
+  }
+
+  it("NGO: an already-registered Google email says so next to the (read-only) email", async () => {
+    vi.mocked(registerNgoWithGoogle).mockRejectedValueOnce(new ApiError(400, "Email already registered", {
+      message: "Email already registered",
+      fieldErrors: [{ field: "email", code: "ALREADY_REGISTERED", message: "This email is already registered" }],
+    }));
+    await submitGoogleNgo();
+    await waitFor(() => expect(document.getElementById("email-feedback")?.textContent).toContain("This email is already registered"));
+    expect(mockReplace).not.toHaveBeenCalledWith("/");
+  });
+
+  it("NGO: an already-registered phone says 'This phone number is already registered'", async () => {
+    vi.mocked(registerNgoWithGoogle).mockRejectedValueOnce(new ApiError(400, "Phone number already registered", {
+      message: "Phone number already registered",
+      fieldErrors: [{ field: "phoneNumber", code: "ALREADY_REGISTERED", message: "This phone number is already registered" }],
+    }));
+    await submitGoogleNgo();
+    await waitFor(() => expect(document.getElementById("phone-feedback")?.textContent).toContain("This phone number is already registered"));
+  });
+
   it("donor: unchanged, still completes with googleComplete and never the NGO call", async () => {
     googleSession();
     sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: "jane@gmail.com", fullName: "Jane Doe" }));

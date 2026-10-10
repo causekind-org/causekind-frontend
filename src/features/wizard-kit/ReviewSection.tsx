@@ -44,7 +44,7 @@ export function ReviewRow({ label, value }: { label: string; value: React.ReactN
   return (
     <div className="flex items-baseline justify-between gap-3">
       <dt className="shrink-0 text-2xs text-stone-500 dark:text-stone-400">{label}</dt>
-      <dd className={`min-w-0 text-right text-2xs font-semibold ${empty ? "text-stone-300 dark:text-zinc-600" : "text-stone-800 dark:text-stone-100"}`}>
+      <dd className={`min-w-0 wrap-anywhere text-right text-2xs font-semibold ${empty ? "text-stone-300 dark:text-zinc-600" : "text-stone-800 dark:text-stone-100"}`}>
         {empty ? "—" : value}
       </dd>
     </div>

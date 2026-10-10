@@ -12,6 +12,7 @@ import { NgoDriveOfferWizard } from "@/features/ngo-drives/components/NgoDriveOf
 import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
 import { errorMessage, giveState, isNotFound, stillNeeded } from "@/features/ngo-drives/driveGiveState";
 import { PageSkeleton } from "@/components/skeletons";
+import { driveAcceptedConditions } from "@/features/ngo-drives/driveConditions";
 
 type View =
   | { kind: "loading" }
@@ -143,6 +144,7 @@ export default function DriveGivePage() {
         driveId={drive.id}
         ngoName={drive.ngoOrganizationName || "Verified NGO"}
         driveUnit={drive.unit}
+        acceptedConditions={drive.acceptedConditions?.length ? drive.acceptedConditions : driveAcceptedConditions(drive.condition)}
         initialQuantityReceived={drive.quantityReceived}
         initialQuantityPledged={drive.quantityPledged}
         requestTitle={drive.title}

@@ -18,11 +18,8 @@ export type DriveOfferPatch = {
   knownDefects: string;
   notesForNgo: string;
   matchesRequirements: boolean;
-  /** DROP_OFF (donor brings the items) or NGO_PICKUP (the NGO collects them). */
-  handoverMethod: "DROP_OFF" | "NGO_PICKUP";
-  pickupCity: string;
-  pickupLocality: string;
-  pickupPincode: string;
+  // No handoverMethod or pickup address: the give form has no Pickup step. The donor
+  // chooses drop-off or NGO pickup, and the pickup address, on the handover page.
 };
 
 export function serializeDriveOffer(model: OfferModel, opts: { maxQuantity?: number | null }): DriveOfferPatch {
@@ -39,10 +36,6 @@ export function serializeDriveOffer(model: OfferModel, opts: { maxQuantity?: num
     notesForNgo: [model.accessoriesIncluded.trim(), model.specNotes.trim()].filter(Boolean).join("\n"),
     // The Review declaration covers "the item matches what the drive asks for".
     matchesRequirements: model.declarationsConfirmed,
-    handoverMethod: model.donorDropOffAvailable ? "DROP_OFF" : "NGO_PICKUP",
-    pickupCity: model.pickupCity.trim(),
-    pickupLocality: model.pickupLocality.trim(),
-    pickupPincode: model.pickupPincode.trim(),
   };
 }
 
@@ -79,8 +72,6 @@ export function driveOfferMaterialDigest(model: OfferModel): string {
     model.photos.filter(p => p.status === "uploaded").map(p => p.remoteUrl),
     model.quantity, model.approximateAge, model.accessoriesIncluded, model.specNotes,
     model.condition, model.hasKnownDefects, model.knownDefects,
-    model.pickupCity, model.pickupPincode, model.pickupLocality,
-    model.donorDropOffAvailable,
   ]);
 }
 

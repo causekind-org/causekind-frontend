@@ -54,7 +54,6 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
-  PhoneCall,
   Download,
   ArrowRight,
   AlertCircle,
@@ -137,6 +136,63 @@ function splitPhone(
 
 function avatarKey(email: string) {
   return `ck_profile_image_${email}`;
+}
+
+
+/** Heading and subtitle of the application card, from the real status. */
+function applicationHeading(status: string | undefined): { title: string; subtitle: string } {
+  switch (status) {
+    case "APPROVED": return { title: "Application approved", subtitle: "Your NGO is verified. You can start drives." };
+    case "PENDING_VERIFICATION": return { title: "Verify your email", subtitle: "Enter the code we emailed you to finish submitting your application." };
+    case "NEEDS_INFORMATION": return { title: "Changes requested", subtitle: "Our team asked you to fix a few items. Update them and submit again." };
+    case "REJECTED": return { title: "Application not approved", subtitle: "Your application was not approved. See the reason below." };
+    default: return { title: "Application submitted", subtitle: "Your application is with our team for review." };
+  }
+}
+
+type StepState = "done" | "active" | "action" | "failed" | "waiting" | "unreached";
+type ApplicationStep = { title: string; body: string; state: StepState; badge?: string; link?: { href: string; label: string } };
+
+const STEP_STYLES: Record<StepState, { box: string; dot: string; badge: string }> = {
+  done: { box: "border-green-200 bg-green-50/50 dark:border-green-900/30 dark:bg-green-950/10", dot: "bg-green-500 text-white", badge: "bg-green-200 text-green-800 dark:bg-green-900/60 dark:text-green-300" },
+  active: { box: "border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10", dot: "bg-amber-500 text-white", badge: "bg-amber-200 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300" },
+  action: { box: "border-sky-200 bg-sky-50/60 dark:border-sky-900/40 dark:bg-sky-950/20", dot: "bg-sky-600 text-white", badge: "bg-sky-200 text-sky-800 dark:bg-sky-900/60 dark:text-sky-300" },
+  failed: { box: "border-red-200 bg-red-50/60 dark:border-red-900/40 dark:bg-red-950/20", dot: "bg-red-600 text-white", badge: "bg-red-200 text-red-800 dark:bg-red-900/60 dark:text-red-300" },
+  waiting: { box: "border-stone-200 bg-stone-50/40 opacity-80 dark:border-zinc-800 dark:bg-zinc-900/30", dot: "border border-stone-300 bg-white text-stone-400 dark:border-zinc-700 dark:bg-zinc-800", badge: "bg-stone-200 text-stone-600 dark:bg-zinc-800 dark:text-stone-300" },
+  unreached: { box: "border-stone-200 bg-stone-50/40 opacity-60 dark:border-zinc-800 dark:bg-zinc-900/30", dot: "border border-stone-300 bg-white text-stone-400 dark:border-zinc-700 dark:bg-zinc-800", badge: "bg-stone-200 text-stone-600 dark:bg-zinc-800 dark:text-stone-300" },
+};
+
+/** The three verification steps, each following the application's real status. */
+export function applicationSteps(app: Pick<NgoApplicationStatusResponse, "status" | "rejectionReason" | "needsInformationDetails">): ApplicationStep[] {
+  const status = app.status;
+  const logged: ApplicationStep = status === "PENDING_VERIFICATION"
+    ? { title: "Application & Documents Logged", state: "active", badge: "In progress",
+        body: "Verify your email: enter the code we emailed you to finish submitting.",
+        link: { href: "/profile/ngo-details", label: "Verify your email" } }
+    : { title: "Application & Documents Logged", state: "done",
+        body: "Your registration details, documents and authorized representative info have been securely recorded." };
+
+  const reviewTitle = "Legal Document & Compliance Review";
+  const review: ApplicationStep =
+    status === "APPROVED" ? { title: reviewTitle, state: "done", body: "Your documents and registration details were reviewed and approved." }
+    : status === "UNDER_REVIEW" ? { title: reviewTitle, state: "active", badge: "In progress",
+        body: "Our compliance team validates your registration number, PAN and constitution documents within 2–3 business days." }
+    : status === "NEEDS_INFORMATION" ? { title: reviewTitle, state: "action", badge: "Action needed",
+        body: app.needsInformationDetails || "Our team asked you to fix a few items.",
+        link: { href: "/profile/ngo-details", label: "Fix the requested items" } }
+    : status === "REJECTED" ? { title: reviewTitle, state: "failed", badge: "Not approved",
+        body: app.rejectionReason || "Your application was not approved." }
+    : { title: reviewTitle, state: "waiting", body: "Starts once your email is verified." };
+
+  const badgeTitle = "Verified NGO Partner Badge & Active Platform Access";
+  const access: ApplicationStep =
+    status === "APPROVED" ? { title: badgeTitle, state: "done", badge: "Done",
+        body: "Your verified profile is live. You can start drives and receive in-kind donations." }
+    : status === "REJECTED" ? { title: badgeTitle, state: "unreached", badge: "Not reached",
+        body: "Available only to approved organizations." }
+    : { title: badgeTitle, state: "waiting", body: "Upon approval, your verified profile goes live to receive in-kind donations and run verified drives." };
+
+  return [logged, review, access];
 }
 
 export function NgoProfileView() {
@@ -569,6 +625,25 @@ export function NgoProfileView() {
     }
   }
 
+  // The card follows the server's status: re-read it when the tab regains focus or the
+  // wizard reports a submission, so an approval shows without a reload.
+  useEffect(() => {
+    if (!user || IS_NGO_DEMO_MODE) return;
+    let active = true;
+    const refresh = () => {
+      getMyNgoApplication()
+        .then((app) => { if (active && app && (app.applicationId || app.status)) setApplication(app); })
+        .catch(() => {});
+    };
+    window.addEventListener("focus", refresh);
+    window.addEventListener("ngo-application-submitted", refresh);
+    return () => {
+      active = false;
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("ngo-application-submitted", refresh);
+    };
+  }, [user]);
+
   if (authLoading || loading) {
     return (
       <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen flex items-center justify-center">
@@ -807,10 +882,10 @@ export function NgoProfileView() {
                 </div>
                 <div>
                   <h2 className="text-lg sm:text-2xl font-black text-stone-900 dark:text-stone-100">
-                    Application Submitted
+                    {applicationHeading(application.status).title}
                   </h2>
                   <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400">
-                    Your legal partner registration has been submitted and is currently being processed.
+                    {applicationHeading(application.status).subtitle}
                   </p>
                 </div>
               </div>
@@ -882,81 +957,47 @@ export function NgoProfileView() {
               </div>
             </div>
 
-            {application.status === "REJECTED" && application.rejectionReason && (
-              <div className="p-4 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50/70 dark:bg-red-950/20 text-xs text-red-700 dark:text-red-300">
-                <span className="font-bold block mb-0.5">Rejection Reason:</span>
-                {application.rejectionReason}
-              </div>
-            )}
-
             {/* Next steps timeline */}
             <div className="space-y-3 pt-1">
               <h3 className="text-xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 Verification Process & Next Steps
               </h3>
 
-              <div className="space-y-2.5">
-                <div className="flex items-start gap-3 rounded-xl border border-green-200 bg-green-50/50 dark:border-green-900/30 dark:bg-green-950/10 p-3.5">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-500 text-white">
-                    <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                      1. Application & Documents Logged
-                    </p>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      Your registration details, 80G/12A or Trust/Society certificates, and authorized representative info have been securely recorded.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/50 dark:border-amber-900/30 dark:bg-amber-950/10 p-3.5">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white animate-pulse">
-                    <Clock className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  </span>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                        2. Legal Document & Compliance Review
-                      </p>
-                      <span className="rounded bg-amber-200 dark:bg-amber-900/60 px-1.5 py-0.2 text-4xs font-black uppercase text-amber-800 dark:text-amber-300">
-                        In Progress
-                      </span>
+              <ol className="space-y-2.5" aria-label="Application steps">
+                {applicationSteps(application).map((step, i) => (
+                  <li
+                    key={step.title}
+                    data-testid="application-step"
+                    data-state={step.state}
+                    className={`flex items-start gap-3 rounded-xl border p-3.5 ${STEP_STYLES[step.state].box}`}
+                  >
+                    <span className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${STEP_STYLES[step.state].dot}`}>
+                      {step.state === "done" ? <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                        : step.state === "failed" ? <AlertCircle className="h-3.5 w-3.5" />
+                        : step.state === "active" || step.state === "action" ? <Clock className="h-3.5 w-3.5" strokeWidth={2.5} />
+                        : <span className="text-3xs font-black">{i + 1}</span>}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                          {i + 1}. {step.title}
+                        </p>
+                        {step.badge && (
+                          <span className={`rounded px-1.5 py-0.5 text-4xs font-black uppercase ${STEP_STYLES[step.state].badge}`}>
+                            {step.badge}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5 whitespace-pre-wrap">{step.body}</p>
+                      {step.link && (
+                        <Link href={step.link.href} className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-ngo-700 hover:underline dark:text-ngo-300">
+                          {step.link.label} <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      )}
                     </div>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      Our compliance team validates your registration number, PAN, and constitution documents within 2–3 business days.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/40 dark:border-zinc-800 dark:bg-zinc-900/30 p-3.5 opacity-80">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-white dark:border-zinc-700 dark:bg-zinc-800 text-stone-400">
-                    <PhoneCall className="h-3 w-3" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                      3. Representative Verification Call
-                    </p>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      A team member may reach out to your authorized representative for a brief introductory call.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50/40 dark:border-zinc-800 dark:bg-zinc-900/30 p-3.5 opacity-80">
-                  <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-white dark:border-zinc-700 dark:bg-zinc-800 text-stone-400">
-                    <Sparkles className="h-3 w-3" />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                      4. Verified NGO Partner Badge & Active Platform Access
-                    </p>
-                    <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                      Upon approval, your public verified profile goes live to receive in-kind donations and run verified drives.
-                    </p>
-                  </div>
-                </div>
-              </div>
+                  </li>
+                ))}
+              </ol>
             </div>
 
             {/* Action Buttons */}
@@ -970,12 +1011,14 @@ export function NgoProfileView() {
                 Download Application Summary (PDF)
               </button>
 
-              <Link
-                href="/profile/ngo-details"
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-stone-50 dark:hover:bg-zinc-800 px-5 py-3 text-xs font-bold text-stone-700 dark:text-stone-300 transition-colors shadow-sm"
-              >
-                View / Edit Submission Details
-              </Link>
+              {application.status !== "APPROVED" && (
+                <Link
+                  href="/profile/ngo-details"
+                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-stone-50 dark:hover:bg-zinc-800 px-5 py-3 text-xs font-bold text-stone-700 dark:text-stone-300 transition-colors shadow-sm"
+                >
+                  View / Edit Submission Details
+                </Link>
+              )}
 
               <Link
                 href="/"

@@ -3,11 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useInView, useReducedMotion } from "framer-motion";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
-  MapPin,
-  Lock,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -18,10 +16,10 @@ import {
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { getNgoDrives, type PlatformStats, type PublicItemRequest, type PublicNgoDrive } from "@/lib/api";
-import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import LetterSwap from "@/components/LetterSwap";
+import { LiveNeedCard } from "@/components/home/LiveNeedCard";
 
 /**
  * How many needs the homepage grid shows before handing off to /requests.
@@ -204,9 +202,13 @@ export function LiveNeedsSection({
         {/* ── Section Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
+            <p className="mb-5 hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ck-home-ink,#b04a15)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:inline-flex dark:bg-white/5 dark:text-[var(--ck-home-ink,#e07b3a)] dark:ring-white/10">
+              <span className="size-1.5 rounded-full bg-current" aria-hidden />
+              Live board
+            </p>
             <h2
               id="live-needs-heading"
-              className="text-2xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"
+              className="text-[1.625rem] lg:text-6xl font-semibold [font-family:var(--font-source-serif-4),Georgia,serif] tracking-[-0.03em] lg:tracking-[-0.035em] text-stone-900 dark:text-stone-50 leading-[1.12] lg:leading-[1.02]"
             >
               {/* Two runs, not one: the accent half has to keep its own colour,
                   and LetterSwap emits a single coloured span. */}
@@ -353,7 +355,6 @@ export function LiveNeedsSection({
             tabIndex={-1}
           >
             {displayedNeeds.map((need, idx) => {
-              const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
               const isDonor = role === "DONOR";
               const isDonee = role === "DONEE";
@@ -363,105 +364,28 @@ export function LiveNeedsSection({
                 : isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
-                <motion.article
+                <LiveNeedCard
                   key={isDrive ? `drive-${need.ngoDriveId}` : `request-${need.id}`}
-                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : undefined}
-                  transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] }}
-                  className="flex flex-col rounded-[1.25rem] bg-white dark:bg-zinc-900/95 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 p-4 lg:p-6 lg:bg-white/95 lg:border-stone-200/90 lg:shadow-sm lg:shadow-[var(--ck-home-deep,#431407)]/5 dark:lg:shadow-black/20"
-                >
-                  <div className="grow">
-                    {/* Top Bar: Category Pill & Urgent Tag */}
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-3xs font-extrabold uppercase tracking-wider ${
-                          visual?.iconBg ?? "bg-stone-100"
-                        } ${visual?.text ?? "text-stone-700"}`}
-                      >
-                        <AnimatedCategoryIcon category={need.category} iconClassName="w-3.5 h-3.5" />
-                        {need.category}
-                      </span>
-
-                      {isDrive && (
-                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                          NGO drive
-                        </span>
-                      )}
-
-                      {isUrgent && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-red-600 dark:text-red-400">
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                          Urgent
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Title — a third of the row is narrower than the old
-                        980px stage, so the display size comes down with it. */}
-                    <h3 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-50 leading-snug text-pretty">
-                      <TranslatedText text={need.title} />
-                    </h3>
-
-                    {/* Description snippet if available */}
-                    {need.description && (
-                      <p className="mt-2 text-sm text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
-                        <TranslatedText text={need.description} />
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Card Meta & CTA. The block above grows, so every footer in
-                      the row sits on the same line however long a title wraps. */}
-                  <div className="mt-5 pt-4 border-t border-stone-100 dark:border-zinc-800/80 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-                      <div className="flex items-center gap-1.5 truncate font-semibold">
-                        <MapPin className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
-                        <span className="truncate">
-                          <TranslatedText text={need.city} />
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 font-medium">
-                        <span>
-                          Qty:{" "}
-                          <strong className="text-stone-800 dark:text-stone-200 font-bold">
-                            {need.quantity}
-                          </strong>
-                        </span>
-                        {isDrive && need.ngoName && (
-                          <>
-                            <span className="text-stone-300 dark:text-stone-700">·</span>
-                            <span className="truncate text-stone-400 dark:text-stone-500 text-3xs">
-                              By {need.ngoName}
-                            </span>
-                          </>
-                        )}
-                        {!isDrive && need.doneeFirstName && (
-                          <>
-                            <span className="text-stone-300 dark:text-stone-700">·</span>
-                            <span className="truncate text-stone-400 dark:text-stone-500 text-3xs">
-                              By {need.doneeFirstName}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Every card is now fully visible, so every CTA is live and
-                        keyboard-reachable — the carousel had to disable the
-                        blurred neighbours' links. */}
-                    {(isDrive || !isDonee) && (
-                    <Link
-                      href={offerUrl}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
-                    >
-                      {!isDonor && !isDrive && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
-                      <span>{isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}</span>
-                      <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
-                    </Link>
-                    )}
-                  </div>
-                </motion.article>
+                  motionProps={{
+                    initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 },
+                    animate: isInView ? { opacity: 1, y: 0 } : undefined,
+                    transition: { duration: 0.45, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] },
+                  }}
+                  need={{
+                    category: need.category,
+                    title: need.title,
+                    description: need.description,
+                    city: need.city,
+                    quantity: need.quantity,
+                    urgent: isUrgent,
+                    isDrive,
+                    byName: isDrive ? need.ngoName : need.doneeFirstName,
+                  }}
+                  href={offerUrl}
+                  ctaLabel={isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}
+                  locked={!isDonor && !isDrive}
+                  showCta={isDrive || !isDonee}
+                />
               );
             })}
           </div>
@@ -513,26 +437,26 @@ export function LiveNeedsSection({
         )}
 
         {/* ── Footer Link: Explore All Needs ── */}
-        <div className="ck-live-needs-footer-gap flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-stone-100/70 dark:bg-zinc-900/60 border border-stone-200/70 dark:border-zinc-800 p-4 sm:p-5">
+        <div className="ck-live-needs-footer-gap flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl lg:rounded-[2rem] lg:p-2 lg:pl-6 bg-stone-100/70 dark:bg-zinc-900/60 border border-stone-200/70 dark:border-zinc-800 p-4 sm:p-5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[var(--ck-home-accent,#b04a15)]/10 flex items-center justify-center text-[var(--ck-home-ink,#b04a15)] shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
               <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200">
-                Have gently-used goods at home?
+                Have something you no longer use?
               </p>
               <p className="text-3xs sm:text-xs text-stone-500 dark:text-stone-400">
-                Browse our complete live request directory or post an offer directly.
+                See what people near you need, and give it to someone who will use it.
               </p>
             </div>
           </div>
 
           <Link
             href="/requests"
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 shrink-0"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 lg:min-h-12 lg:px-7 text-xs uppercase tracking-wider transition-all lg:duration-500 lg:ease-[cubic-bezier(0.32,0.72,0,1)] shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 lg:active:scale-[0.98] shrink-0"
           >
-            <span>See all open requests</span>
+            <span>See all needs</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

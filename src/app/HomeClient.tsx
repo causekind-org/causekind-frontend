@@ -70,6 +70,9 @@ import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
+import { CreditsSection } from "@/components/home/CreditsSection";
+import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
+import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
 import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
@@ -234,6 +237,11 @@ export default function HomeClient({
 
   const roleStr = user?.role?.replace(/^ROLE_/, "");
   const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
+  // The live needs board is for givers; a donee is shown no one else's needs.
+  const showLiveNeeds = roleStr !== "DONEE";
+  // Guests get Prachi's split "choose your path" CTA (6a6cc53); signed-in viewers
+  // the dark card. Restored 2026-10-08 — a merge on 10-07 dropped this switch.
+  const isGuest = !user;
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -246,6 +254,12 @@ export default function HomeClient({
 
   // Show the guest tree if we are restoring, OR if they are not a donor/donee, OR if it is mobile (where the shared components are needed).
   const showGuestDesktopTree = isRestoring || !isDonorOrDonee || !isDesktop;
+  // Signed-in donors and donees: on desktop they get RoleHome instead of the
+  // guest page; on mobile they share the guest sections, minus the two that
+  // pitch signing up ("How it works" and the "Start in 60 seconds" CTA).
+  const isRoleHome = isDonorOrDonee && !isRestoring;
+  // The donee page has no lines between its sections (desktop RoleHome and this phone column).
+  const isDoneeHome = roleStr === "DONEE" && !isRestoring;
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -254,6 +268,7 @@ export default function HomeClient({
 
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+      <div aria-hidden className="ck-home-grain" />
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -274,17 +289,31 @@ export default function HomeClient({
       {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      <WhoAreWeSection />
+      <div className="hidden lg:block">
+        <WhoAreWeDesktop />
+      </div>
+      <div className="lg:hidden">
+        <WhoAreWeSection />
+      </div>
 
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
-      <HowItWorksSection />
+      <div className="hidden lg:block">
+        <HowItWorksDesktop />
+      </div>
+      {!isRoleHome && (
+        <div className="lg:hidden">
+          <HowItWorksSection />
+        </div>
+      )}
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
-      <div className="ck-home-paper hidden lg:block relative z-10">
-        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-      </div>
+      {showLiveNeeds && (
+        <div className="ck-home-paper hidden lg:block relative z-10">
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+        </div>
+      )}
 
       {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
       <div className="hidden lg:block">
@@ -415,8 +444,11 @@ export default function HomeClient({
         )}
 
 
-        {/* SECTION 8 — FINAL CTA */}
-        <FinalCtaComponent variant="desktop" />
+        {/* SECTION 8 — THE PEOPLE BEHIND CAUSEKIND */}
+        <CreditsSection />
+
+        {/* SECTION 9 — FINAL CTA */}
+        <FinalCtaComponent variant="desktop" card={!isGuest} />
       </div>
       </div>
       )}
@@ -489,16 +521,16 @@ export default function HomeClient({
         )}
 
         {/* SECTION 6 — LIVE NEEDS */}
-        <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+        {showLiveNeeds && <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />}
 
         {/* SECTION 5 — CAN I TRUST YOU */}
         <div className="-mx-5">
-          <TrustSafetySection variant="mobile" />
+          <TrustSafetySection variant="mobile" seamless={isDoneeHome} />
         </div>
 
         {/* FOUNDER'S NOTE */}
         <div className="-mx-5">
-          <FoundersNoteSection variant="mobile" />
+          <FoundersNoteSection variant="mobile" seamless={isDoneeHome} />
         </div>
 
         <div className="-mx-5">
@@ -577,10 +609,17 @@ export default function HomeClient({
           />
         )}
 
-        {/* SECTION 8 — FINAL CTA */}
+        {/* SECTION 8 — THE PEOPLE BEHIND CAUSEKIND */}
         <div className="-mx-5">
-          <FinalCtaComponent variant="mobile" />
+          <CreditsSection />
         </div>
+
+        {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
+        {!isRoleHome && (
+          <div className="-mx-5">
+            <FinalCtaComponent variant="mobile" card={!isGuest} />
+          </div>
+        )}
 
       </div>
     </div>

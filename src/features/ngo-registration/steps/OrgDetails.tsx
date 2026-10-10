@@ -12,16 +12,19 @@ import {
 import { LegalStructureCard } from "@/features/ngo-registration/components/LegalStructureCard";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
+import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 
 interface OrgDetailsProps {
   data: NGOFormState;
   onChange: (patch: Partial<NGOFormState>) => void;
   onBack: () => void;
   onContinue: () => void;
+  /** Items a reviewer asked to fix, with their notes (shown next to each). */
+  corrections?: NgoCorrections;
 }
 
 /** Step 1 — Organization Details */
-export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsProps) {
+export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: OrgDetailsProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   function validate(): boolean {
@@ -39,9 +42,14 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
   }
 
   function field(key: keyof typeof errors) {
-    return errors[key] ? (
-      <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
-    ) : null;
+    return (
+      <>
+        {errors[key] ? (
+          <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
+        ) : null}
+        <CorrectionNote note={corrections?.[key]} />
+      </>
+    );
   }
 
   const missing = getNgoStillNeededItems("org-details", data);
@@ -71,7 +79,6 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
             id="ngo-org-name"
             type="text"
             autoComplete="organization"
-            placeholder="e.g. Helping Hands Trust"
             value={data.organizationName}
             aria-invalid={!!errors.organizationName}
             onChange={(e) => {
@@ -119,7 +126,6 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
           <input
             id="ngo-reg-no"
             type="text"
-            placeholder="e.g. U85300DL2020NPL123456"
             value={data.registrationNumber}
             aria-invalid={!!errors.registrationNumber}
             onChange={(e) => {
@@ -142,7 +148,6 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
           <textarea
             id="ngo-address"
             rows={2}
-            placeholder="Street, City, State, PIN"
             value={data.registeredOfficeAddress}
             aria-invalid={!!errors.registeredOfficeAddress}
             onChange={(e) => {
@@ -167,12 +172,12 @@ export function OrgDetails({ data, onChange, onBack, onContinue }: OrgDetailsPro
             id="ngo-year"
             type="text"
             inputMode="numeric"
-            placeholder="e.g. 2012"
             maxLength={4}
             value={data.yearOfEstablishment}
             onChange={(e) => onChange({ yearOfEstablishment: e.target.value.replace(/\D/g, "").slice(0, 4) })}
             className={controlClass}
           />
+          {field("yearOfEstablishment")}
         </div>
       </div>
 

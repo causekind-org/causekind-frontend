@@ -23,8 +23,8 @@ Tailwind defaults: `sm 640` · `md 768` · `lg 1024` · `xl 1280`.
 | Problem / Solution | ≥1024 3-col grid; 768–1023 stacked; <768 segmented card | xl→3xl headings | GSAP ≥1024 only; phone IO + tabs | inline SVG | low | segmented tab touch-target height not measured (`py-2` + `text-xs`) |
 | How it works | ≥768 grid (2 cols md, 4 cols lg); <768 snap carousel | — | desktop tilt + Framer; phone CSS stagger per tab | icons | carousel bleeds `-mx-1.25rem` intentionally | native swipe; tabs above |
 | Live needs | md 2 / lg 3 col grid; <768 `.ck-snap-m` row | 2xl→5xl heading | Framer fade-up | none | filter pill row scrolls horizontally (`overflow-x-auto`) | pills and cards both swipe horizontally — nested horizontal scrollers |
-| Trust & safety | ≥768 full layout (3 cards md+); <768 swipe cards + 4-up stats | — | GSAP ≥768; phone IO | none | 4-up stats with 10px labels at 360 px — tight | — |
-| Founder's note | ≥1024 two columns; 768–1023 stacked full; <768 letterhead | — | GSAP ≥768; phone IO | placeholder avatar | low | — (null in production) |
+| Trust & safety | ≥768 full layout (3 cards md+); <768 CSS-sticky stacking deck + 2×2 stat ticket | — | GSAP ≥768; phone IO + sticky | none | sticky `top` uses `--ck-nav-h`; cards equalised by `grid-auto-rows: 1fr` | — |
+| Founder's note | ≥1024 two columns; 768–1023 stacked full; <768 letter (photo print + folded sheet) | — | GSAP ≥768; phone IO | placeholder avatar | low | — (null in production) |
 | Final CTA | ≥640 buttons in a row (full component); <768 compact card, 3 buttons in one row | 2xl→4xl | GSAP ≥768 (blobs, reveal); phone static | none | blobs clipped by card | WhatsApp buttons are external links |
 | Footer / dock | dock + bubble below 1024; home page puts dock clearance under the footer | — | dock parks near footer and during the film | — | — | support bubble is draggable (`touch-none`) and can cover content if dragged |
 

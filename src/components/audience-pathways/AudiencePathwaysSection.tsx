@@ -179,12 +179,12 @@ export default function AudiencePathwaysSection({
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="mx-auto max-w-2xl text-center"
         >
-          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-[var(--ck-role-accent)]">
+          <p className="text-[0.6875rem] font-bold uppercase tracking-[0.16em] text-[var(--ck-role-accent)] lg:inline-flex lg:items-center lg:gap-2 lg:rounded-full lg:bg-[var(--ck-role-accent)]/[0.07] lg:px-3 lg:py-1 lg:text-[10px] lg:font-medium lg:tracking-[0.2em] lg:ring-1 lg:ring-[var(--ck-role-accent)]/15 dark:lg:bg-white/5 dark:lg:ring-white/10">
             {t("eyebrow")}
           </p>
           <h2
             id="audience-pathways-heading"
-            className="mt-1.5 text-[clamp(1.3rem,1.1rem+1vw,1.85rem)] font-bold leading-tight text-stone-900 dark:text-stone-50"
+            className="mt-1.5 text-[clamp(1.3rem,1.1rem+1vw,1.85rem)] font-bold leading-tight text-stone-900 dark:text-stone-50 lg:mt-5 lg:text-5xl lg:font-semibold lg:leading-[1.04] lg:tracking-[-0.035em] lg:[font-family:var(--font-source-serif-4),Georgia,serif]"
           >
             {t("heading")}
           </h2>
@@ -205,7 +205,10 @@ export default function AudiencePathwaysSection({
           back leaves text, icons and logical spacing upright. Split mode only:
           stacked, there is no diagonal to mirror.
         */}
-        <div className="relative mt-5 overflow-hidden rounded-3xl border border-stone-200/80 md:min-h-[19rem] md:rtl:-scale-x-100 dark:border-white/10">
+        {/* Double-bezel tray at lg (high-end pass, 2026-10-05). The slab keeps
+            its own overflow/clip geometry; only its radius and border change. */}
+        <div className="mt-5 lg:mt-12 lg:rounded-[2rem] lg:bg-black/[0.03] lg:p-1.5 lg:ring-1 lg:ring-black/[0.05] dark:lg:bg-white/[0.04] dark:lg:ring-white/10">
+        <div className="relative overflow-hidden rounded-3xl border border-stone-200/80 md:min-h-[19rem] md:rtl:-scale-x-100 dark:border-white/10 lg:rounded-[calc(2rem-0.375rem)] lg:border-0 lg:shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_30px_60px_-36px_rgba(67,20,7,0.22)]">
           {panels.map((p) => {
             const isActive = focused === p.tone;
             // Lifted above the scrim so it stays lit while the rest darkens.
@@ -268,7 +271,9 @@ export default function AudiencePathwaysSection({
           )}
         </div>
 
-        <p className="mt-3.5 text-center text-xs text-stone-500 dark:text-stone-400">
+        </div>
+
+        <p className="mt-3.5 lg:mt-6 text-center text-xs text-stone-500 dark:text-stone-400">
           {t("footnote")}
         </p>
       </div>

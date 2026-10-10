@@ -165,6 +165,48 @@ describe("Navbar - NGO Profile Button States", () => {
     expect(screen.queryByText("Application Under Review")).not.toBeInTheDocument();
   });
 
+  it("shows 'NGO Approved' for 2 minutes after the NGO first sees it, then hides it for good", async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { id: 901, email: "fresh-approved@example.test", role: "NGO_PARTNER" }, isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn() });
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Approved NGO" } as never);
+    localStorage.removeItem("ck_ngo_approved_seen_901");
+    const before = Date.now();
+    const { unmount } = render(<SiteHeader />);
+    expect(await screen.findByRole("link", { name: "NGO Approved" })).toBeInTheDocument();
+    const firstSeen = Number(localStorage.getItem("ck_ngo_approved_seen_901"));
+    expect(firstSeen).toBeGreaterThanOrEqual(before);
+    unmount();
+
+    // Seen 2 minutes ago: gone, and it stays gone on later visits.
+    localStorage.setItem("ck_ngo_approved_seen_901", String(Date.now() - 2 * 60 * 1000 - 1));
+    render(<SiteHeader />);
+    await waitFor(() => expect(getMyNgoApplication).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole("link", { name: "NGO Approved" })).not.toBeInTheDocument());
+    expect(screen.queryByText("NGO Approved")).not.toBeInTheDocument();
+  });
+
+  it("hides 'NGO Approved' once the 2 minutes run out while the page is open", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      vi.mocked(useAuth).mockReturnValue({ user: { id: 902, email: "timer-approved@example.test", role: "NGO_PARTNER" }, isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn() });
+      vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Approved NGO" } as never);
+      localStorage.setItem("ck_ngo_approved_seen_902", String(Date.now() - 2 * 60 * 1000 + 1500));
+      render(<SiteHeader />);
+      expect(await screen.findByRole("link", { name: "NGO Approved" })).toBeInTheDocument();
+      await act(async () => { vi.advanceTimersByTime(2000); });
+      await waitFor(() => expect(screen.queryByRole("link", { name: "NGO Approved" })).not.toBeInTheDocument());
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("other application states keep their pill (e.g. Under Review)", async () => {
+    vi.mocked(useAuth).mockReturnValue({ user: { id: 903, email: "review@example.test", role: "NGO_PARTNER" }, isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn() });
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "UNDER_REVIEW", organizationName: "Review NGO" } as never);
+    localStorage.setItem("ck_ngo_approved_seen_903", String(Date.now() - 60 * 60 * 1000));
+    render(<SiteHeader />);
+    expect(await screen.findByRole("button", { name: /Application Under Review/i })).toBeInTheDocument();
+  });
+
   it("renders 'Drives' pill for NGO_PARTNER, but 'Donate' (nav.donate) for DONOR", async () => {
     // 1. NGO_PARTNER
     vi.mocked(useAuth).mockReturnValue({

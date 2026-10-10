@@ -14,6 +14,9 @@ import {
   getNgoStillNeededItems,
   calculateNgoProgress,
   prefillNgoFormWithUser,
+  correctionFieldLabel,
+  correctionFieldStep,
+  firstCorrectionStep,
   type NGOFormState,
   type NGOStep,
   type UploadedFile,
@@ -26,6 +29,7 @@ import { OrgPhotos } from "@/features/ngo-registration/steps/OrgPhotos";
 import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { EmailVerification } from "@/features/ngo-registration/steps/EmailVerification";
 import { ApplicationSubmitted } from "@/features/ngo-registration/steps/ApplicationSubmitted";
+import type { NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 import {
   submitNgoApplication,
   getNgoDraft,
@@ -33,6 +37,7 @@ import {
   getMyNgoApplication,
   ApiError,
   type UploadedFileDto,
+  type NgoCorrectionItem,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { isNgoRole } from "@/lib/isNgoRole";
@@ -106,12 +111,30 @@ function NgoDetailsEditor() {
   const [restoreError, setRestoreError] = useState("");
   // "fresh" = just submitted in this session, "restored" = returned to a pending application.
   const [awaitingVerification, setAwaitingVerification] = useState<"fresh" | "restored" | null>(null);
+  // A reviewer's per-item correction request: the flagged items start empty and show these notes.
+  const [correctionItems, setCorrectionItems] = useState<NgoCorrectionItem[]>([]);
+  const flaggedFields = useRef<string[]>([]);
+  const corrections: NgoCorrections = Object.fromEntries(correctionItems.map((i) => [i.field, i.note]));
+  const flaggedSteps = new Set(correctionItems.map((i) => correctionFieldStep(i.field)));
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
+  // The load below runs once per signed-in account, not again when the same account's
+  // details refresh (login stores the user without a phone; /users/me adds it a moment
+  // later). Re-running it would reset what the NGO has started typing.
+  const userRef = useRef(user);
+  userRef.current = user;
+  const userIdentifierRef = useRef(userIdentifier);
+  userIdentifierRef.current = userIdentifier;
+  const accountKey = user ? `${(user.email ?? "").toLowerCase()}|${user.role ?? ""}` : "";
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   // Load existing application status or draft on mount
   useEffect(() => {
+    const user = userRef.current;
+    const userIdentifier = userIdentifierRef.current;
+    const router = routerRef.current;
     if (isLoading) return;
     if (!user) {
       router.replace("/login?next=%2Fprofile%2Fngo-details");
@@ -145,7 +168,16 @@ function NgoDetailsEditor() {
 
           if (active) {
             setApplicationStatus(submittedApp?.status || "");
-            if (submittedApp?.status === "REJECTED" || submittedApp?.status === "NEEDS_INFORMATION") {
+            const items: NgoCorrectionItem[] =
+              submittedApp?.status === "NEEDS_INFORMATION" && Array.isArray(submittedApp.correctionItems)
+                ? submittedApp.correctionItems : [];
+            if (items.length > 0) {
+              // Per-item request: everything else comes back filled in (fields and files).
+              flaggedFields.current = items.map((i) => i.field);
+              setCorrectionItems(items);
+              setReviewMessage("");
+              setData(INITIAL_NGO_FORM);
+            } else if (submittedApp?.status === "REJECTED" || submittedApp?.status === "NEEDS_INFORMATION") {
               const reason = submittedApp.needsInformationDetails || submittedApp.rejectionReason || "Please review your organization details.";
               setReviewMessage(`${reason} Your details have been restored below. Please upload fresh evidence for this submission; your earlier application stays on record.`);
               setData(INITIAL_NGO_FORM);
@@ -235,9 +267,9 @@ function NgoDetailsEditor() {
                   : prev.activityPhotos,
               confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
               documents: { ...prev.documents, ...restoredDocs },
-            }, user));
+            }, user, flaggedFields.current));
           } else {
-            setData((prev) => prefillNgoFormWithUser(prev, user));
+            setData((prev) => prefillNgoFormWithUser(prev, user, flaggedFields.current));
           }
         }
 
@@ -248,7 +280,8 @@ function NgoDetailsEditor() {
             draft?.currentStep && (NGO_STEPS as readonly string[]).includes(draft.currentStep)
               ? (draft.currentStep as NGOStep)
               : null;
-          const startStep = initialUrlStep.current ?? savedStep;
+          // After a per-item correction request, open on the first step with something to fix.
+          const startStep = firstCorrectionStep(flaggedFields.current) ?? initialUrlStep.current ?? savedStep;
           if (startStep) setCurrentStep(startStep);
         }
       } finally {
@@ -261,7 +294,15 @@ function NgoDetailsEditor() {
     return () => {
       active = false;
     };
-  }, [user, isLoading, router, userIdentifier]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per account; see accountKey
+  }, [accountKey, isLoading]);
+
+  // Signup details that arrive after the load (e.g. the phone from /users/me) still fill
+  // the empty fields; nothing typed and nothing flagged for correction is touched.
+  useEffect(() => {
+    if (loading || !user) return;
+    setData((prev) => (prev.applicationId ? prev : prefillNgoFormWithUser(prev, user, flaggedFields.current)));
+  }, [loading, user, user?.phone, user?.fullName, user?.email]);
 
   // Keep the URL in sync with the current step.
   useEffect(() => {
@@ -445,6 +486,8 @@ function NgoDetailsEditor() {
       setApplicationStatus("PENDING_VERIFICATION");
       setAwaitingVerification("fresh");
       setReviewMessage("");
+      setCorrectionItems([]);
+      flaggedFields.current = [];
       goToStep("email-verification");
     } catch (err) {
       const rejected = markRejectedFiles(err);
@@ -585,6 +628,9 @@ function NgoDetailsEditor() {
                     {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                   </span>
                   <span className="truncate">{NGO_STEP_FULL_TITLES[stepKey]}</span>
+                  {flaggedSteps.has(stepKey) && (
+                    <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Needs a fix" aria-label="Needs a fix" />
+                  )}
                 </button>
               );
             })}
@@ -679,6 +725,28 @@ function NgoDetailsEditor() {
             <div className="flex-1 px-5 py-8 sm:px-10">
               <div className="max-w-3xl">
                 {reviewMessage && <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 whitespace-pre-wrap">{reviewMessage}</div>}
+                {correctionItems.length > 0 && currentStep !== "submitted" && !awaitingVerification && (
+                  <div role="status" aria-label="Changes requested" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
+                    <p className="font-bold">
+                      Our team asked you to fix {correctionItems.length === 1 ? "1 item" : `${correctionItems.length} items`}
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {correctionItems.map((item) => (
+                        <li key={item.field}>
+                          <button
+                            type="button"
+                            className="font-semibold underline underline-offset-2"
+                            onClick={() => goToStep(correctionFieldStep(item.field))}
+                          >
+                            {correctionFieldLabel(item.field)}
+                          </button>
+                          {": "}{item.note}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="mt-2 text-xs">Everything else is filled in from your last application. Fix these items, then submit again.</p>
+                  </div>
+                )}
                 {submitError && (
                   <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
                     {submitError}
@@ -715,6 +783,7 @@ function NgoDetailsEditor() {
                     {currentStep === "org-details" && (
                       <OrgDetails
                         data={data}
+                        corrections={corrections}
                         onChange={updateData}
                         onBack={() => router.push("/profile")}
                         onContinue={handleNextSection}
@@ -724,6 +793,7 @@ function NgoDetailsEditor() {
                     {currentStep === "legal-documents" && (
                       <LegalDocuments
                         data={data}
+                        corrections={corrections}
                         onChange={updateData}
                         onBack={handlePreviousSection}
                         onContinue={handleNextSection}
@@ -733,6 +803,7 @@ function NgoDetailsEditor() {
                     {currentStep === "authorized-rep" && (
                       <AuthorizedRepresentative
                         data={data}
+                        corrections={corrections}
                         onChange={updateData}
                         onBack={handlePreviousSection}
                         onContinue={handleNextSection}
@@ -742,6 +813,7 @@ function NgoDetailsEditor() {
                     {currentStep === "org-photos" && (
                       <OrgPhotos
                         data={data}
+                        corrections={corrections}
                         onChange={updateData}
                         onBack={handlePreviousSection}
                         onContinue={handleNextSection}

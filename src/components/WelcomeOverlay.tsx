@@ -90,7 +90,33 @@ function Sparkles12({ color }: { color: string }) {
   );
 }
 
-function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
+/**
+ * The donor's full-screen welcome, reused for donees with their own copy and navy
+ * palette (owner request 2026-10-06: donees get the same window, not the small card).
+ */
+const WELCOME_VARIANTS = {
+  donor: {
+    glow: "bg-[#b04a15]/25",
+    tile: "bg-gradient-to-br from-[#b04a15] to-[#e07b3a] shadow-[#b04a15]/30",
+    button: "bg-gradient-to-r from-[#b04a15] to-[#e07b3a] shadow-[#b04a15]/30",
+    ember: "#f0b97a",
+    blob: "rgba(224, 123, 58, 0.13)",
+    body: "Ready to make a difference? Choose what you'd like to donate and we'll match you with someone nearby.",
+    cta: "Start Giving →",
+  },
+  donee: {
+    glow: "bg-[#1e3a60]/35",
+    tile: "bg-gradient-to-br from-[#1e3a60] to-[#4a7fba] shadow-[#1e3a60]/40",
+    button: "bg-gradient-to-r from-[#1e3a60] to-[#4a7fba] shadow-[#1e3a60]/40",
+    ember: "#8fb4e0",
+    blob: "rgba(74, 127, 186, 0.16)",
+    body: "Post what you need and verified donors near you can offer exactly that. Your community is ready to help.",
+    cta: "Let's get started →",
+  },
+} as const;
+
+function DonorWelcomeView({ exiting, dismiss, variant = "donor" }: { exiting: boolean; dismiss: () => void; variant?: keyof typeof WELCOME_VARIANTS }) {
+  const v = WELCOME_VARIANTS[variant];
   const { user } = useAuth();
   const [profileName, setProfileName] = useState<string | null>(null);
   const firstName = user?.fullName?.trim().split(/\s+/)[0] || profileName;
@@ -136,7 +162,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
         /* Faint ambient background: two slow-drifting warm glows + rising embers */
         .ck-welcome-blob {
           position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%;
-          background: radial-gradient(circle, rgba(224, 123, 58, 0.13) 0%, transparent 68%);
+          background: radial-gradient(circle, ${v.blob} 0%, transparent 68%);
           animation: ck-blob-drift 24s ease-in-out infinite alternate;
         }
         .ck-welcome-blob2 {
@@ -149,7 +175,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
         }
         .ck-ember {
           position: absolute; bottom: -6px; border-radius: 9999px;
-          background: #f0b97a; opacity: 0;
+          background: ${v.ember}; opacity: 0;
           animation: ck-ember-rise linear infinite;
         }
         @keyframes ck-ember-rise {
@@ -187,8 +213,8 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
 
         <div className="ck-donor-card relative my-auto w-full max-w-sm min-w-0 text-center" onClick={e => e.stopPropagation()}>
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-[#b04a15]/25 blur-[60px] -z-10 rounded-full" />
-            <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-br from-[#b04a15] to-[#e07b3a] flex items-center justify-center mx-auto shadow-xl shadow-[#b04a15]/30">
+            <div className={`absolute inset-0 ${v.glow} blur-[60px] -z-10 rounded-full`} />
+            <div className={`w-20 h-20 rounded-[1.8rem] ${v.tile} flex items-center justify-center mx-auto shadow-xl`}>
               <HandHeart className="w-10 h-10 text-white" />
             </div>
           </div>
@@ -197,14 +223,14 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
             {firstName ? `Welcome back, ${firstName}!` : "Welcome back!"}
           </h2>
           <p className="text-stone-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
-            Ready to make a difference? Choose what you&apos;d like to donate and we&apos;ll match you with someone nearby.
+            {v.body}
           </p>
 
           <button
             onClick={go}
-            className="w-full bg-gradient-to-r from-[#b04a15] to-[#e07b3a] text-white font-extrabold py-3.5 rounded-2xl text-base shadow-lg shadow-[#b04a15]/30 hover:brightness-110 active:scale-[0.98] transition-all"
+            className={`w-full ${v.button} text-white font-extrabold py-3.5 rounded-2xl text-base shadow-lg hover:brightness-110 active:scale-[0.98] transition-all`}
           >
-            Start Giving →
+            {v.cta}
           </button>
         </div>
       </div>
@@ -353,8 +379,8 @@ export function WelcomeOverlay() {
     }
     setExiting(false);
     setShow(true);
-    // DONOR view is interactive (category picker) — no auto-dismiss.
-    if (user.role !== "DONOR") {
+    // DONOR and DONEE get the full-screen welcome with a button — no auto-dismiss.
+    if (user.role !== "DONOR" && user.role !== "DONEE") {
       const delay = user.role === "SUPER_ADMIN" ? 4200 : 3500;
       const t = setTimeout(() => dismiss(), delay);
       return () => clearTimeout(t);
@@ -374,6 +400,7 @@ export function WelcomeOverlay() {
   if (isAdminDash || !show) return null;
 
   if (user?.role === "DONOR") return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
+  if (user?.role === "DONEE") return <DonorWelcomeView exiting={exiting} dismiss={dismiss} variant="donee" />;
   if (user?.role === "SUPER_ADMIN") return <SuperAdminWelcomeView exiting={exiting} dismiss={dismiss} />;
   if (user?.role === "ADMIN") return null;
 

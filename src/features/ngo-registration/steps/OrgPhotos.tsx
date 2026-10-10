@@ -11,15 +11,18 @@ import {
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { uploadNgoPhoto } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 
 interface OrgPhotosProps {
   data: NGOFormState;
   onChange: (patch: Partial<NGOFormState>) => void;
   onBack: () => void;
   onContinue: () => void;
+  /** Items a reviewer asked to fix, with their notes (shown next to each). */
+  corrections?: NgoCorrections;
 }
 
-export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps) {
+export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: OrgPhotosProps) {
   const logoInputRef = useRef<HTMLInputElement>(null);
   const officeInputRef = useRef<HTMLInputElement>(null);
   const activityInputRefs = [
@@ -192,6 +195,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
               <p className="text-3xs text-stone-400 dark:text-stone-500">
                 Square or transparent PNG recommended (PNG, JPG, WebP · max 8MB)
               </p>
+              <CorrectionNote note={corrections?.logo} />
             </div>
             {data.logo && (
               <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-3xs font-bold text-green-700 dark:text-green-300">
@@ -342,6 +346,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
               <p className="text-3xs text-stone-400 dark:text-stone-500">
                 Front entrance or nameboard of your registered address
               </p>
+              <CorrectionNote note={corrections?.officePhoto} />
             </div>
             {data.officePhoto && (
               <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-3xs font-bold text-green-700 dark:text-green-300">
@@ -509,6 +514,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue }: OrgPhotosProps
                   key={idx}
                   className="rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/60 dark:bg-zinc-900/40 p-3 flex flex-col justify-between"
                 >
+                  <CorrectionNote note={corrections?.[`activityPhotos.${idx}`]} />
                   <input
                     ref={activityInputRefs[idx]}
                     type="file"

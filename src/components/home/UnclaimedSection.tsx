@@ -73,7 +73,7 @@ export function UnclaimedSection({
 
         <h2
           id={headingId}
-          className="mt-4 max-w-2xl font-jakarta text-2xl font-extrabold leading-tight tracking-tight text-stone-900 dark:text-white lg:text-4xl"
+          className="mt-4 max-w-2xl font-jakarta text-2xl font-extrabold leading-tight tracking-tight text-stone-900 dark:text-white lg:text-5xl lg:font-semibold lg:[font-family:var(--font-source-serif-4),Georgia,serif] lg:tracking-[-0.035em]"
           style={{ textWrap: "balance" }}
         >
           No one has tied a thread here yet
@@ -84,7 +84,9 @@ export function UnclaimedSection({
           was put on the open board. These are the ones that have waited longest.
         </p>
 
-        <ul className="mt-6 lg:mt-9 grid grid-cols-1 gap-px overflow-hidden rounded-[1.25rem] border border-[var(--ck-home-soft,#e8e2d5)] bg-[var(--ck-home-soft,#e8e2d5)] lg:border-stone-200 lg:bg-stone-200 dark:border-stone-800 dark:bg-stone-800 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Double-bezel tray at lg; a plain block below it. */}
+        <div className="mt-6 lg:mt-9 lg:rounded-[2rem] lg:bg-black/[0.03] lg:p-1.5 lg:ring-1 lg:ring-black/[0.05] dark:lg:bg-white/[0.04] dark:lg:ring-white/10">
+        <ul className="grid grid-cols-1 gap-px overflow-hidden rounded-[1.25rem] lg:rounded-[calc(2rem-0.375rem)] border border-[var(--ck-home-soft,#e8e2d5)] bg-[var(--ck-home-soft,#e8e2d5)] lg:border-stone-200 lg:bg-stone-200 dark:border-stone-800 dark:bg-stone-800 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(request => {
             const days = daysWaiting(request.createdAt);
 
@@ -125,10 +127,11 @@ export function UnclaimedSection({
             );
           })}
         </ul>
+        </div>
 
         <Link
           href="/requests"
-          className="mt-8 inline-flex items-center gap-1.5 rounded-full border border-[#9a6b12]/35 px-5 py-2.5 text-sm font-bold text-[#9a6b12] transition-colors hover:bg-[#9a6b12] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9a6b12] dark:text-[#e8b45a] dark:hover:text-stone-900"
+          className="mt-8 inline-flex items-center gap-1.5 rounded-full border border-[#9a6b12]/35 px-5 py-2.5 text-sm font-bold text-[#9a6b12] transition-[color,background-color,transform] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] hover:bg-[#9a6b12] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9a6b12] dark:text-[#e8b45a] dark:hover:text-stone-900"
         >
           See every open need
           <ArrowRight aria-hidden="true" className="size-4" />

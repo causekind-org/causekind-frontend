@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
@@ -13,6 +14,7 @@ import { detectLocationFromServer } from "@/app/actions/locations";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
 import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
+import { PhotoCaptureDialog, prefersNativeCamera } from "@/features/ngo-drives/components/PhotoCaptureDialog";
 import { DraftSaveStatus } from "@/features/wizard-kit/DraftSaveStatus";
 import { StepErrorSummary } from "@/features/wizard-kit/StepErrorSummary";
 import { StepCardStack } from "@/features/wizard-kit/StepCardStack";
@@ -67,14 +69,42 @@ const STEP_COUNT_WORD: Record<number, string> = { 4: "Four", 5: "Five" };
  * glow, the motion variants, the autosave queue — so the two flows animate and
  * persist identically rather than being two lookalike implementations that drift.
  *
- * <p>The draft already exists before this mounts: the prelude creates it when
- * the donor picks a flow type. So there is no `ensureDraft` race here, and
- * `offerId` is non-null for the whole lifetime of this component.
+ * <p>The draft is created lazily (2026-10-07): picking a flow type no longer
+ * creates one, so a donor who only looks around leaves nothing behind (and the
+ * donee never sees an empty "DRAFT" offer). `offerId` is null until the first
+ * real save — the first autosave, photo upload, check or submit — which calls
+ * `createOffer` through the autosave queue's `ensureDraft`. Concurrent callers
+ * share one POST.
  */
+/**
+ * The furthest step a saved draft shows the donor working on. Each step counts
+ * only for something the donor entered there — quantity is pre-filled from the
+ * request, so it never counts on its own.
+ */
+function evidencedStepIndex(m: OfferModel, steps: readonly OfferStep[]): number {
+  const touched: Partial<Record<OfferStep, boolean>> = {
+    photos: uploadedOfferPhotos(m.photos).length > 0,
+    purchasePlan: !!m.purchaseTimeline,
+    details: !!(m.approximateAge.trim() || m.accessoriesIncluded.trim() || m.specNotes.trim()),
+    condition: !!m.condition,
+    pickup: !!(m.pickupCity.trim() || m.pickupPincode.trim()),
+    review: m.declarationsConfirmed,
+  };
+  let last = 0;
+  steps.forEach((s, i) => { if (touched[s]) last = i; });
+  return last;
+}
+
 export function DonationOfferWizard({
-  offerId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  offerId, offer, flowType: flowTypeProp, createOffer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote,
+  onSubmitted, onExit, onSaveExit,
 }: {
-  offerId: number;
+  /** Null for a fresh offer: the draft does not exist until the first save. */
+  offerId: number | null;
+  /** The flow the donor picked; used when there is no offer yet. */
+  flowType?: DonationOffer["flowType"] | null;
+  /** Creates the server draft (or returns the resumed one) and resolves it. */
+  createOffer: () => Promise<DonationOffer>;
   /** Hydration source — a resumed DRAFT or NEEDS_INFORMATION offer. */
   offer: DonationOffer | null;
   requestTitle: string | null;
@@ -93,7 +123,7 @@ export function DonationOfferWizard({
   const locale = useLocale();
   const isRtl = locale === "ar" || locale === "ur";
 
-  const flowType = offer?.flowType ?? null;
+  const flowType = offer?.flowType ?? flowTypeProp ?? null;
   const purchase = isPurchaseFlow(flowType);
   const showSpecNotes = needsSpecNotes(flowType);
   const serializerOpts = useMemo(
@@ -119,8 +149,39 @@ export function DonationOfferWizard({
    */
   const modelRef = useRef(model);
   modelRef.current = model;
-  const [step, setStep] = useState<OfferStep>(() =>
-    offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0]);
+  /*
+    A reload reopens the step the donor was on, not the first unfinished one.
+
+    Without this, refreshing on Photos dropped the donor onto Condition (the
+    first incomplete step) as if they had pressed Continue. The remembered step
+    is only honoured when it is not PAST the first incomplete step, so a resume
+    can still never skip work that is left to do.
+  */
+  const stepKey = `ck-offer-step-${offerId ?? "new"}`;
+  // Furthest step the donor actually reached in this draft (see useFurthestStep).
+  const reachedKey = offerId != null ? `ck-offer-reached-${offerId}` : null;
+  const [step, setStep] = useState<OfferStep>(() => {
+    let resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0];
+    // "First incomplete" skips a step whose fields are pre-filled (quantity comes
+    // from the request) even though the donor never saw it. When we know how far
+    // they really got, never reopen past that.
+    let reachedAt = -1;
+    try {
+      reachedAt = reachedKey ? steps.indexOf(localStorage.getItem(reachedKey) as OfferStep) : -1;
+    } catch { /* storage unavailable — fall back to the draft's own evidence */ }
+    // Opened where this browser has no record (another device, cleared storage):
+    // judge from what the donor actually entered, never from pre-filled values.
+    if (reachedAt < 0 && offer) reachedAt = evidencedStepIndex(offerModelFrom(offer), steps);
+    if (reachedAt > -1 && reachedAt < steps.indexOf(resume)) resume = steps[reachedAt];
+    try {
+      const saved = sessionStorage.getItem(stepKey) as OfferStep | null;
+      if (saved && steps.includes(saved) && steps.indexOf(saved) <= steps.indexOf(resume)) return saved;
+    } catch { /* storage unavailable — fall back to the resume step */ }
+    return resume;
+  });
+  useEffect(() => {
+    try { sessionStorage.setItem(stepKey, step); } catch { /* best-effort */ }
+  }, [stepKey, step]);
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -140,7 +201,7 @@ export function DonationOfferWizard({
 
   // ── Autosave ──────────────────────────────────────────────────────────────
   const snapshotKey = useCallback((m: OfferModel) => offerSnapshotKey(m, serializerOpts), [serializerOpts]);
-  const createDraft = useCallback(async () => offerId, [offerId]);
+  const createDraft = useCallback(async () => (await createOffer()).id, [createOffer]);
   /**
    * One save, two endpoints on the purchase flow.
    *
@@ -181,7 +242,7 @@ export function DonationOfferWizard({
   const draft = useWizardDraft<OfferModel>({
     initialId: offerId, createDraft, updateDraft, snapshotKey,
   });
-  const { queueSave, queueSaveNow, flush, markSavedBaseline } = draft;
+  const { queueSave, queueSaveNow, flush, markSavedBaseline, ensureDraft } = draft;
 
   // Hydrated data is already what the server holds; without this baseline the
   // status chip would claim unsaved changes the instant the editor opened.
@@ -238,6 +299,7 @@ export function DonationOfferWizard({
       invalidated = false;
     }
 
+    modelRef.current = next; // same reason as setPhotos below
     setModel(next);
     if (invalidated !== null) setDeclarationsInvalidated(invalidated);
     queueSave(next);
@@ -246,6 +308,11 @@ export function DonationOfferWizard({
   // ── Photos ────────────────────────────────────────────────────────────────
   const setPhotos = useCallback((updater: (prev: OfferModel["photos"]) => OfferModel["photos"]) => {
     const next = { ...modelRef.current, photos: updater(modelRef.current.photos) };
+    // Advance the ref now, not on the next render (2026-10-08). Adding a photo
+    // calls this twice back to back — add the tile, then mark it uploading —
+    // and the second call read the pre-add list and wrote it back, so the new
+    // photo vanished until a reload fetched it from the server.
+    modelRef.current = next;
     setModel(next);
     queueSaveNow(next);
   }, [queueSaveNow]);
@@ -267,7 +334,7 @@ export function DonationOfferWizard({
     const token = ++screenTokenRef.current;
     setScreening({ kind: "running" });
     try {
-      const res = await analyzeOfferImages(offerId);
+      const res = await analyzeOfferImages(await ensureDraft());
       if (token !== screenTokenRef.current) return; // superseded
       if (!res.aiAvailable) {
         setScreening({ kind: "unavailable", note: res.note ?? "We couldn't check your photos just now — you can continue." });
@@ -280,7 +347,7 @@ export function DonationOfferWizard({
       if (token !== screenTokenRef.current) return;
       setScreening({ kind: "unavailable", note: "We couldn't check your photos just now — you can continue." });
     }
-  }, [model.photos, offerId]);
+  }, [model.photos, ensureDraft]);
 
   const onPhotoSetChanged = useCallback(() => {
     // Any change invalidates the previous verdict immediately, before the new
@@ -289,8 +356,17 @@ export function DonationOfferWizard({
     setScreening({ kind: "idle" });
   }, []);
 
+  // Desktop browsers ignore <input capture> and open the file picker, so there
+  // "Take photo" opens the webcam instead (owner, 2026-10-08). Phones keep the
+  // native camera.
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const takePhoto = useCallback((openNativeCamera: () => void) => {
+    if (prefersNativeCamera()) openNativeCamera();
+    else setCameraOpen(true);
+  }, []);
+
   const photoApi = useOfferPhotos({
-    offerId,
+    resolveOfferId: ensureDraft,
     photos: model.photos,
     setPhotos,
     onUrlsChanged: onPhotoSetChanged,
@@ -300,14 +376,12 @@ export function DonationOfferWizard({
   // The optional item video. Held here rather than inside the photos step so it
   // survives stepping away and back — screening runs on the server and its
   // verdict should not be lost because the donor moved to Details and returned.
-  // offerId exists for this component’s whole lifetime (the prelude creates the
-  // draft), so the resolver is immediate here. The listing wizard is the one
-  // that needs it lazy.
-  const resolveOfferId = useCallback(async () => offerId, [offerId]);
+  // Lazy: resolves the draft id, creating the draft on first use.
+  const resolveOfferId = ensureDraft;
   const videoApi = useOfferVideo(resolveOfferId);
 
   // Re-screen once uploads settle, keyed on the uploaded set.
-  const uploadedKey = uploadedOfferPhotos(model.photos).map(p => p.remoteUrl).join("|");
+  const uploadedKey = uploadedOfferPhotos(model.photos).map(p => p.mediaId ?? p.remoteUrl).join("|");
   const isUploading = model.photos.some(p => p.status === "uploading" || p.status === "pending");
   const screenedKeyRef = useRef<string | null>(null);
   useEffect(() => {
@@ -349,7 +423,7 @@ export function DonationOfferWizard({
 
         setCompatState({ kind: "checking" });
         try {
-          const check = await checkOfferCompatibility(offerId);
+          const check = await checkOfferCompatibility(await ensureDraft());
           if (token !== compatTokenRef.current) return;
           compatSavedKeyRef.current = key;
           setCompat(check);
@@ -362,7 +436,7 @@ export function DonationOfferWizard({
     }, 500);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [model.quantity, model.condition, offerId]);
+  }, [model.quantity, model.condition, ensureDraft]);
 
   // ── Navigation ────────────────────────────────────────────────────────────
   /**
@@ -460,7 +534,7 @@ export function DonationOfferWizard({
     try {
       const saved = await flush(model);
       if (!saved) throw new Error("Your latest changes could not be saved.");
-      const result = await submitOffer(offerId, true);
+      const result = await submitOffer(await ensureDraft(), true);
       setSubmitted(true);
       onSubmitted(result);
     } catch (e) {
@@ -471,7 +545,7 @@ export function DonationOfferWizard({
     } finally {
       setSubmitting(false);
     }
-  }, [model, submitted, photosBlocked, flush, offerId, onSubmitted, step, goTo, focusField, flowType, stillNeededQuantity]);
+  }, [model, submitted, photosBlocked, flush, ensureDraft, onSubmitted, step, goTo, focusField, flowType, stillNeededQuantity]);
 
   const handleSaveExit = useCallback(async () => {
     setSavingExit(true);
@@ -505,6 +579,7 @@ export function DonationOfferWizard({
         pickupPincode: pincode || prev.pickupPincode,
         pickupLocality: locality || prev.pickupLocality,
       };
+      modelRef.current = next;
       setModel(next);
       queueSave(next);
       setGps({ running: false, error: null });
@@ -533,14 +608,29 @@ export function DonationOfferWizard({
    * whole Zod schema and parsing the model. That was ~5 schema builds and 5
    * parses on EVERY render, which is what turned a re-render into a frozen page.
    */
-  const availability = useMemo(() => {
-    const out = {} as Record<OfferStep, StepAvailability>;
+  const stepValid = useMemo(() => {
+    const out = {} as Record<OfferStep, boolean>;
     for (const s of steps) {
-      const complete = Object.keys(validateOfferStep(s, model, flowType, stillNeededQuantity)).length === 0;
-      out[s] = { complete, canNavigate: complete };
+      out[s] = Object.keys(validateOfferStep(s, model, flowType, stillNeededQuantity)).length === 0;
     }
     return out;
   }, [model, steps, flowType, stillNeededQuantity]);
+
+  /*
+    Done = continued past AND still valid. Validity alone used to tick "Tell us
+    about the item" while the donor was on step 1, because its only required
+    field (quantity) is pre-filled from the request. Any step already reached
+    stays reachable from the rail, so the donor can go back and forward.
+  */
+  const reached = useFurthestStep(reachedKey, steps, step);
+  const availability = useMemo(() => {
+    const out = {} as Record<OfferStep, StepAvailability>;
+    steps.forEach((s, i) => {
+      const complete = i < reached && stepValid[s];
+      out[s] = { complete, canNavigate: complete || i <= reached };
+    });
+    return out;
+  }, [steps, stepValid, reached]);
 
   const isLast = step === "review";
 
@@ -586,6 +676,7 @@ export function DonationOfferWizard({
                           video={videoApi}
                           onPickVideo={file => void videoApi.upload(file)}
                           onRemoveVideo={() => void videoApi.remove()}
+                          onTakePhoto={takePhoto}
                         />
                       )}
                       {step === "purchasePlan" && (
@@ -729,7 +820,6 @@ export function DonationOfferWizard({
             submitting={submitting}
             submitted={submitted}
             savingExit={savingExit}
-            avoidBottomChrome
             // Corner clusters rather than a full-width bar. This route keeps the
             // global dock, so a slab here stacked a third band of chrome over
             // the form and collided with the dock's raised centre button.
@@ -737,6 +827,11 @@ export function DonationOfferWizard({
           />
         </div>
       </div>
+      <PhotoCaptureDialog
+        open={cameraOpen}
+        onCancel={() => setCameraOpen(false)}
+        onCaptured={file => { setCameraOpen(false); photoApi.addFiles([file]); }}
+      />
     </MotionConfig>
   );
 }

@@ -17,15 +17,36 @@ import {
 } from "lucide-react";
 import { CONTACT_INFO, LANDING_ROUTES, HOME_ROLE_COLORS } from "@/lib/landingConstants";
 import { WhatsAppTellAFriendButton } from "@/components/home/WhatsAppTellAFriend";
+import { TRUST_PILL_EYEBROW } from "@/components/home/DoneeSectionHeading";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
+/** Pre-filled WhatsApp message for launch updates (both layouts). */
+const WHATSAPP_NOTIFY_URL = `https://wa.me/917719938619?text=${encodeURIComponent(
+  "Hi CauseKind! Please notify me when online donations and fundraising launch."
+)}`;
+
 export function FinalCtaSection({
   variant = "desktop",
+  card = true,
 }: {
   variant?: "desktop" | "mobile";
+  /**
+   * true: the dark rounded card (signed-in viewers). false: the guest page's
+   * split layout ({@link FinalCtaSplit}).
+   */
+  card?: boolean;
+}) {
+  return card ? <FinalCtaCard variant={variant} /> : <FinalCtaSplit />;
+}
+
+/** The original dark CTA card, unchanged. */
+function FinalCtaCard({
+  variant,
+}: {
+  variant: "desktop" | "mobile";
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -106,10 +127,7 @@ export function FinalCtaSection({
     return () => mm.revert();
   }, [reduce, variant]);
 
-  // WhatsApp Notify URL with pre-filled message
-  const whatsappNotifyUrl = `https://wa.me/917719938619?text=${encodeURIComponent(
-    "Hi CauseKind! Please notify me when online donations and fundraising launch."
-  )}`;
+  const whatsappNotifyUrl = WHATSAPP_NOTIFY_URL;
 
   return (
     <section
@@ -243,6 +261,145 @@ export function FinalCtaSection({
               <span>Get updates on WhatsApp</span>
             </a>
           </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * One "choose your path" row per role. Titles are the "How it works" toggle
+ * labels; icons and tints are the role icons/colours used across the page.
+ */
+const PATHS = [
+  {
+    role: HOME_ROLE_COLORS.donor,
+    icon: Heart,
+    subline: "Join as a donor",
+    href: LANDING_ROUTES.donorRegister,
+    ring: "focus-visible:ring-[#B5480F] dark:focus-visible:ring-[#F4A25B]",
+  },
+  {
+    role: HOME_ROLE_COLORS.donee,
+    icon: HandHeart,
+    subline: "Join as a donee",
+    href: LANDING_ROUTES.doneeRegister,
+    ring: "focus-visible:ring-[#1E3A60] dark:focus-visible:ring-[#7FB0E8]",
+  },
+  {
+    role: HOME_ROLE_COLORS.ngo,
+    icon: Building2,
+    subline: "Register your NGO",
+    href: LANDING_ROUTES.ngoRegister,
+    ring: "focus-visible:ring-[#1F6B3F] dark:focus-visible:ring-[#52B788]",
+  },
+] as const;
+
+const REASSURANCES = ["Free for everyone", "Verified", "Local"] as const;
+
+/**
+ * Guest landing page CTA: a split layout instead of a card grid (the "How it
+ * works" section above already uses a toggle and a row of cards).
+ *
+ * <p>Left: pill, heading, subtitle, reassurance checks and the tell-a-friend
+ * button. Right: three stacked "choose your path" rows, each a single link.
+ * Below both: a dashed announcement strip. Section padding, container width
+ * and heading/subtitle type are Trust & Safety's. Border colours are marked
+ * important because an unlayered `* { border-color }` in styles.css otherwise
+ * overrides every border utility.
+ */
+function FinalCtaSplit() {
+  return (
+    <section
+      id="join"
+      aria-label="Join CauseKind"
+      className="ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
+    >
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-[55fr_45fr] items-center gap-8 lg:gap-12">
+          {/* ════════ LEFT: message ════════ */}
+          <div className="flex flex-col items-start text-left min-w-0">
+            <div className={`${TRUST_PILL_EYEBROW} mb-3 sm:mb-4`}>
+              <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Start in 60 seconds</span>
+            </div>
+
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+              Someone nearby is waiting for{" "}
+              <span className="text-[#B5480F] dark:text-[#F4A25B]">what you already have.</span>
+            </h2>
+
+            <p className="mt-2 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl">
+              Join free in a minute. Give, ask, or help your community — whichever side you&apos;re on.
+            </p>
+
+            <ul className="mt-4 sm:mt-5 flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Why join">
+              {REASSURANCES.map((item) => (
+                <li key={item} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-stone-600 dark:text-stone-400">
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
+                  {item}
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-5 sm:mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <p className="text-xs sm:text-[13px] font-medium text-stone-500 dark:text-stone-400">
+                Know someone who&apos;d love this?
+              </p>
+              <WhatsAppTellAFriendButton variant="outline-light" />
+            </div>
+          </div>
+
+          {/* ════════ RIGHT: choose your path ════════ */}
+          <div className="min-w-0">
+            <p id="join-paths-label" className="mb-3 text-xs sm:text-sm font-semibold text-stone-500 dark:text-stone-400">
+              Choose how you want to join
+            </p>
+            <ul className="flex flex-col gap-3" aria-labelledby="join-paths-label">
+              {PATHS.map(({ role, icon: Icon, subline, href, ring }) => (
+                <li key={role.id}>
+                  <Link
+                    href={href}
+                    aria-label={subline}
+                    className={`group flex items-center gap-4 w-full rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200! hover:border-stone-400! dark:border-stone-800! dark:hover:border-stone-600! px-4 py-3.5 sm:px-5 sm:py-4 shadow-sm transition-[transform,border-color,box-shadow] duration-200 motion-safe:hover:translate-x-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF7F2] dark:focus-visible:ring-offset-[#0E0C0A] ${ring}`}
+                  >
+                    <span className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-full ${role.accentBgClass}`} aria-hidden="true">
+                      <Icon className="w-5 h-5" />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
+                        {role.label}
+                      </span>
+                      <span className="block text-xs sm:text-sm text-stone-500 dark:text-stone-400">
+                        {subline}
+                      </span>
+                    </span>
+                    <ArrowRight
+                      className="w-4 h-4 shrink-0 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-[transform,color] duration-200 motion-safe:group-hover:translate-x-1"
+                      aria-hidden="true"
+                    />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* ════════ BOTTOM: coming-soon announcement ════════ */}
+        <div className="mt-8 sm:mt-10 rounded-2xl border border-dashed border-stone-300! dark:border-stone-700! px-4 py-3 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <p className="inline-flex items-center gap-2 text-xs sm:text-[13px] text-stone-600 dark:text-stone-300">
+            <Sparkles className="w-4 h-4 shrink-0 text-[#B5480F] dark:text-[#F4A25B]" aria-hidden="true" />
+            <span>Fundraising, online donations and CSR partnerships are coming soon.</span>
+          </p>
+          <a
+            href={WHATSAPP_NOTIFY_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-500/20 transition-all duration-200 active:scale-95 flex-shrink-0"
+          >
+            <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
+            <span>Get updates on WhatsApp</span>
+          </a>
         </div>
       </div>
     </section>
