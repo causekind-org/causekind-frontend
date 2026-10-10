@@ -15,7 +15,7 @@
  * what lets the UI tell the truth about which of the two the user is in.
  */
 
-export type HandoverFlow = "OFFER" | "MATCH";
+export type HandoverFlow = "OFFER" | "MATCH" | "NGO_OFFER";
 
 /** Resolved from participation, never from the account's role. See resolveRole. */
 export type HandoverRole = "DONOR" | "DONEE";
@@ -74,6 +74,11 @@ export type HandoverConfirmationState = {
   conditionRating: string | null;
   /** Server-computed where available. Never guessed from status. */
   partlyConfirmed: boolean;
+  /**
+   * The recipient has entered the donor's handover code (2026-10-07). Both
+   * "I have donated the item" and "I have received the item" wait for it.
+   */
+  otpVerified: boolean;
 };
 
 export type HandoverParticipant = {
@@ -93,6 +98,7 @@ export type HandoverViewModel = {
   title: string;
   imageUrl: string | null;
   transactionCode: string;
+  parentId?: number; // Used for NGO Drives to pass driveId
   counterpart: HandoverParticipant;
   /** Donor-side switch letting the donee call them. Reversible at any time. */
   donorAllowsDoneeCall: boolean;
@@ -104,7 +110,125 @@ export type HandoverViewModel = {
   /** OFFER only — donors get a downloadable certificate at /certificate. */
   certificateHref: string | null;
   closed: boolean;
+  /**
+   * Timestamp when the handover reached completion. Used to enforce the 3-hour
+   * issue reporting window.
+   */
+  completedAt?: string | null;
+  /**
+   * The quantity the donor committed to in the offer/match wizard.
+   * Used by the confirmation panel instead of asking again at handover time.
+   */
+  offeredQuantity: number | null;
+  /** Courier destination the recipient supplies; null when the backend sends none. */
+  delivery: HandoverDelivery | null;
 };
+
+
+/**
+ * Where a courier should deliver — same shape in both flows. `needed` is true when
+ * the handover method sends the item to the recipient.
+ */
+export type HandoverDelivery = {
+  needed: boolean;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  requestedAt: string | null;
+  submittedAt: string | null;
+};
+
+/**
+ * Where the delivery-address step stands. `recheck` is the donor asking again
+ * after an answer — how they say "please check this" without a separate message.
+ */
+export type DeliveryAddressState = "not_needed" | "awaiting" | "requested" | "provided" | "recheck";
+
+export function deliveryAddressState(vm: Pick<HandoverViewModel, "delivery">): DeliveryAddressState {
+  const d = vm.delivery;
+  if (!d?.needed) return "not_needed";
+  if (!d.submittedAt || !d.address) return d.requestedAt ? "requested" : "awaiting";
+  if (d.requestedAt && new Date(d.requestedAt).getTime() > new Date(d.submittedAt).getTime()) return "recheck";
+  return "provided";
+}
+
+/**
+ * True while the address is the thing holding the handover up: it's needed, not
+ * yet given (or given and questioned), and nobody has confirmed the handover yet.
+ * The next-step panel shows the address step in place of confirmation while so.
+ */
+export function deliveryAddressPending(vm: HandoverViewModel): boolean {
+  const s = deliveryAddressState(vm);
+  if (s === "not_needed" || s === "provided") return false;
+  if (vm.closed || vm.confirmation.donorConfirmedAt || vm.confirmation.doneeConfirmedAt) return false;
+  return vm.state === "scheduled" || vm.state === "ready_to_handover";
+}
+
+function deliveryStepCopy(vm: HandoverViewModel): { title: string; body: string } {
+  const s = deliveryAddressState(vm);
+  if (vm.role === "DONOR") {
+    if (s === "awaiting") {
+      return { title: "Ask for the delivery address",
+               body: "You're sending this by courier. Ask the recipient where to deliver it and for a number the courier can call." };
+    }
+    return { title: "Waiting for the delivery address",
+             body: s === "recheck"
+               ? "You've asked the recipient to check their address. You'll be notified when they send it again."
+               : "You've asked the recipient for it. You'll be notified the moment it arrives — then send the item and confirm here." };
+  }
+  if (s === "recheck") {
+    return { title: "Please check your delivery address",
+             body: "The donor asked you to confirm where to deliver this. Correct anything that's wrong and send it again." };
+  }
+  return { title: s === "requested" ? "The donor needs your delivery address" : "Add your delivery address",
+           body: "This is coming by courier. Tell the donor where to deliver it and a number the courier can call." };
+}
+
+/** Window (in hours) after handover dual confirmation during which participants can report an issue. */
+export const REPORT_ISSUE_WINDOW_HOURS = 48;
+export const REPORT_ISSUE_WINDOW_MS = REPORT_ISSUE_WINDOW_HOURS * 60 * 60 * 1000;
+
+/**
+ * Calculates when the 48-hour problem reporting window expires.
+ * Window starts at the later of donorConfirmedAt and doneeConfirmedAt.
+ * Returns null if both confirmations are not present.
+ */
+export function getIssueWindowExpiry(
+  confirmation?: { donorConfirmedAt?: string | null; doneeConfirmedAt?: string | null } | null,
+  completedAt?: string | null
+): Date | null {
+  if (confirmation?.donorConfirmedAt && confirmation?.doneeConfirmedAt) {
+    const rawDonor = confirmation.donorConfirmedAt.trim();
+    const isoDonor = rawDonor.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(rawDonor) ? rawDonor : `${rawDonor}Z`;
+    const rawDonee = confirmation.doneeConfirmedAt.trim();
+    const isoDonee = rawDonee.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(rawDonee) ? rawDonee : `${rawDonee}Z`;
+    const tDonor = new Date(isoDonor).getTime();
+    const tDonee = new Date(isoDonee).getTime();
+    if (!isNaN(tDonor) && !isNaN(tDonee)) {
+      return new Date(Math.max(tDonor, tDonee) + REPORT_ISSUE_WINDOW_MS);
+    }
+  }
+  if (completedAt) {
+    const raw = completedAt.trim();
+    const iso = raw.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : `${raw}Z`;
+    const time = new Date(iso).getTime();
+    if (!isNaN(time)) {
+      return new Date(time + REPORT_ISSUE_WINDOW_MS);
+    }
+  }
+  return null;
+}
+
+export function isIssueWindowClosed(
+  confirmation?: { donorConfirmedAt?: string | null; doneeConfirmedAt?: string | null } | null,
+  completedAt?: string | null
+): boolean {
+  const expiry = getIssueWindowExpiry(confirmation, completedAt);
+  if (!expiry) return true;
+  return Date.now() >= expiry.getTime();
+}
 
 // ── Journey rail ────────────────────────────────────────────────────────────
 
@@ -118,11 +242,35 @@ export const JOURNEY_STEPS: { key: JourneyStepKey; label: string }[] = [
   { key: "complete", label: "Complete" },
 ];
 
+export const JOURNEY_STEPS_NGO: { key: string; label: string }[] = [
+  { key: "checking", label: "Checking" },
+  { key: "review", label: "NGO reviews" },
+  { key: "approved", label: "Approved" },
+  { key: "scheduled", label: "Handover scheduled" },
+  { key: "received", label: "Received \u2713" },
+  { key: "certificate", label: "Certificate" },
+  { key: "fulfilled", label: "Fulfilled" },
+];
+
 /**
  * How far along the rail we are. Returns -1 for cancelled/failed so the rail can
  * render as halted rather than pretending to be at step 0.
  */
-export function journeyIndex(state: HandoverState): number {
+export function journeyIndex(state: HandoverState, flow?: HandoverFlow): number {
+  if (flow === "NGO_OFFER") {
+    switch (state) {
+      case "cancelled_or_failed": return -1;
+      case "awaiting_schedule":   return 2;
+      case "scheduled":           return 3;
+      case "ready_to_handover":   return 3;
+      case "at_risk":             return 3;
+      case "partially_confirmed": return 4;
+      case "issue_window":        return 4;
+      case "issue_raised":        return 4;
+      case "completed":           return 6;
+    }
+  }
+
   switch (state) {
     case "cancelled_or_failed": return -1;
     case "awaiting_schedule":   return 0;
@@ -163,9 +311,9 @@ export function resolveHandoverState(input: {
   if (COMPLETED_STATUSES.has(status)) return "completed";
   if (status === "ISSUE_RAISED") return "issue_raised";
   if (status === "ISSUE_WINDOW_OPEN") {
-    // OFFER only: a real state with actions (confirm no issue / report issue).
+    // OFFER and NGO_OFFER: a real state with actions (confirm no issue / report issue).
     // MATCH has no equivalent — it completes straight from dual confirmation.
-    return flow === "OFFER" ? "issue_window" : "completed";
+    return flow === "OFFER" || flow === "NGO_OFFER" ? "issue_window" : "completed";
   }
 
   // Before status: the half-confirmed window has no status in either flow.
@@ -180,22 +328,33 @@ export function resolveHandoverState(input: {
 
 const TERMINAL_STATUSES = new Set([
   "CANCELLED", "WITHDRAWN", "FAILED", "REJECTED", "DONOR_REJECTED", "ADMIN_REJECTED", "DONEE_DECLINED",
+  // NGO drive offers only.
+  "NGO_DECLINED", "ENDED",
 ]);
 
-const COMPLETED_STATUSES = new Set(["COMPLETED", "FULFILLED", "CERTIFICATE_ISSUED"]);
+const COMPLETED_STATUSES = new Set(["COMPLETED", "FULFILLED", "CERTIFICATE_ISSUED", "RECEIVED_PARTIAL"]);
 
 /**
  * Statuses at which the handover can physically happen now — OTP and confirmation
  * become available. Deliberately a union across both flows: the resolver is shared,
  * and a status name from one flow never appears in the other.
+ *
+ * <p><b>This set mirrors the server's, and may not be widened past it.</b> It is
+ * exactly `HandoverService`'s HANDOVER_IN_PROGRESS/HANDOVER_AT_RISK gate plus
+ * `ItemMatchService.HANDOVER_CONFIRMABLE_STATUSES`. It used to also list
+ * HANDOVER_SCHEDULED, RESCHEDULED, ARRANGEMENT_AGREED and TRANSPORT_DISCUSSION —
+ * all real FulfilmentStatus values — and the server refuses every one of them
+ * with "OTP can only be generated during handover". A match on any of those
+ * showed the donor a Generate code button and an "I handed it over" button that
+ * could only 400. They now resolve to `scheduled`, which offers the donor the
+ * schedule dialog and so has a way out.
  */
 const READY_STATUSES = new Set([
-  // OFFER
+  // OFFER — HandoverService.generateOtp / confirmHandoverDonor
   "HANDOVER_IN_PROGRESS",
-  // MATCH
+  // MATCH — ItemMatchService.HANDOVER_CONFIRMABLE_STATUSES
   "LOGISTICS_CONFIRMED", "PICKUP_SCHEDULED", "PICKED_UP", "IN_TRANSIT",
-  "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION", "HANDOVER_SCHEDULED",
-  "RESCHEDULED", "ARRANGEMENT_AGREED", "TRANSPORT_DISCUSSION",
+  "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION",
 ]);
 
 /**
@@ -212,8 +371,9 @@ export function resolveRole(
   doneeEmail: string | null | undefined,
 ): HandoverRole | null {
   if (!userEmail) return null;
-  if (donorEmail && userEmail === donorEmail) return "DONOR";
-  if (doneeEmail && userEmail === doneeEmail) return "DONEE";
+  const norm = userEmail.trim().toLowerCase();
+  if (donorEmail && norm === donorEmail.trim().toLowerCase()) return "DONOR";
+  if (doneeEmail && norm === doneeEmail.trim().toLowerCase()) return "DONEE";
   return null;
 }
 
@@ -230,6 +390,10 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
   const donor = vm.role === "DONOR";
   const them = donor ? "the recipient" : "the donor";
 
+  // A courier delivery can't go anywhere without the address, so while it's
+  // missing that is the next step, whatever the schedule says.
+  if (deliveryAddressPending(vm)) return deliveryStepCopy(vm);
+
   switch (vm.state) {
     case "awaiting_schedule":
       return donor
@@ -240,15 +404,18 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
 
     case "scheduled":
       return donor
+        // No code and no confirmation here — the server issues neither until the
+        // handover details are settled. Saying "generate the code below" sent the
+        // donor looking for a button this state has never rendered.
         ? { title: "Handover scheduled",
-            body: "Nothing to do right now. When you meet, generate the code below and confirm what you handed over." }
+            body: "Confirm the time and place are right. Once they're settled, the code you give the recipient appears here." }
         : { title: "Handover scheduled",
             body: "Check the time and place below. Need a different time? Ask in the chat — only the donor can reschedule." };
 
     case "ready_to_handover":
       return donor
         ? { title: "Confirm the handover",
-            body: "Generate a code for the recipient, then record how many items you handed over." }
+            body: "Generate a code for the recipient, then confirm you've handed the item over." }
         : { title: "Confirm what you received",
             body: "Enter the 6-digit code the donor gives you, then record the quantity and condition." };
 
@@ -269,6 +436,13 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
                body: "It's been rescheduled the maximum number of times. Our team will step in — you can still message each other below." };
 
     case "issue_window":
+      if (vm.flow === "NGO_OFFER") {
+        return donor
+          ? { title: "Delivery confirmed",
+              body: "Your certificate will be ready after the review window." }
+          : { title: "Is everything alright with the item?",
+              body: "You have a short window to tell us if something's wrong. If it's all fine, you can close this now." };
+      }
       return donor
         ? { title: "Delivery confirmed",
             body: "Both sides confirmed. There's a short window for the recipient to flag any problem, then this completes automatically." }
@@ -287,6 +461,10 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
             body: "This handover is complete and closed. Your record of it is below." };
 
     case "cancelled_or_failed":
+      if (vm.flow === "NGO_OFFER" && vm.rawStatus !== "REJECTED" && vm.rawStatus !== "DONEE_DECLINED") {
+        return { title: "This drive has ended",
+                 body: "This drive has ended. Thank you for offering." };
+      }
       return { title: "This handover is closed",
                body: "It didn't go ahead. The record stays here for reference and support." };
   }

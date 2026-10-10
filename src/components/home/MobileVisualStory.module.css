@@ -18,19 +18,19 @@
 .entryChoice:hover { background: var(--story-soft); border-color: var(--ck-role-accent, #a94724); }
 .entryChoice { cursor: default; gap: 18px; }
 .entryChoice:hover { border-color: var(--story-line); }
-.entryChoice:last-child:hover { background: transparent; }
+.entryChoice[data-intent="request"]:hover { background: transparent; }
 .entryChoice > span { flex: 1; }
 .entryChoice > svg { color: #ac461e; }
-.entryChoice:last-child > svg { color: #1e3a60; }
+.entryChoice[data-intent="request"] > svg { color: #1e3a60; }
 .entryLogin { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; min-height: 44px; margin-top: auto; padding: 10px 7px; border: 0; border-radius: 7px; background: #ac461e; color: #fff; font: inherit; font-size: .6875rem; line-height: 1.4; font-weight: 600; text-align: center; cursor: pointer; }
-.entryChoice:last-child .entryLogin { background: #1e3a60; }
+.entryChoice[data-intent="request"] .entryLogin { background: #1e3a60; }
 .entryLogin svg { width: 13px; height: 13px; flex-shrink: 0; }
 .entryLogin .entryArrow, .entryLogin .entryPending { position: static; color: inherit; }
 .entryLogin:active { transform: translateY(1px); }
 .entryLogin:disabled { opacity: .6; cursor: wait; }
 .entryLogin:focus-visible { outline: 2px solid var(--ck-role-accent, #a94724); outline-offset: 3px; }
 :global(.dark) .entryChoice > svg { color: #efac81; }
-:global(.dark) .entryChoice:last-child > svg { color: #a5c8ef; }
+:global(.dark) .entryChoice[data-intent="request"] > svg { color: #a5c8ef; }
 .section, .chapter { padding: 24px 20px; border-bottom: 1px solid var(--story-line); }
 .root h2 { margin: 0 0 10px; max-width: 23ch; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(1.375rem, 5vw, 1.75rem); font-weight: 500; line-height: 1.16; letter-spacing: -.025em; text-wrap: balance; }
 .root h3 { margin: 0 0 4px; font-size: .875rem; line-height: 1.4; font-weight: 700; overflow-wrap: anywhere; }
@@ -78,3 +78,5 @@
 .photoControls button:focus-visible { outline: 2px solid var(--ck-role-accent, #a94724); outline-offset: 3px; }
 :global(.dark) .root { --story-line: #39352f; --story-muted: #c4bbb0; --story-soft: #27231f; background: #191715; color: #faf4ec; }
 @media(min-width: 640px) { .section, .chapter { padding: 28px max(24px, 5vw); } .photo { aspect-ratio: 2.1; max-height: 300px; } }
+
+.entryChoice:only-child { grid-column: 1 / -1; }

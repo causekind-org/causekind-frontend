@@ -9,7 +9,7 @@ import type { WizardPhoto } from "@/features/wizard-kit/types";
  * form on it.
  */
 export const ALL_OFFER_STEPS = [
-  "photos", "purchasePlan", "details", "condition", "pickup", "review",
+  "location", "photos", "purchasePlan", "details", "condition", "pickup", "review",
 ] as const;
 export type OfferStep = (typeof ALL_OFFER_STEPS)[number];
 
@@ -20,7 +20,8 @@ export type OfferStep = (typeof ALL_OFFER_STEPS)[number];
  * existing caller means, and because `ALREADY_OWN` remains the only flow that
  * screens photographs.
  */
-export const OFFER_STEPS = ["photos", "details", "condition", "pickup", "review"] as const;
+// The location check runs before the form (OfferLocationGate), not as a step.
+export const OFFER_STEPS = ["photos", "details", "condition", "review"] as const;
 
 /**
  * Flow B — the donor will buy the item. Four steps, and the two differences are
@@ -34,7 +35,7 @@ export const OFFER_STEPS = ["photos", "details", "condition", "pickup", "review"
  * a donor to rate the condition of something that does not exist reads as a form
  * written for somebody else.
  */
-export const PURCHASE_OFFER_STEPS = ["purchasePlan", "details", "pickup", "review"] as const;
+export const PURCHASE_OFFER_STEPS = ["purchasePlan", "details", "review"] as const;
 
 export function isPurchaseFlow(flowType: string | null | undefined): boolean {
   return flowType === "WILL_PURCHASE";
@@ -366,8 +367,14 @@ export function uploadedOfferPhotos(photos: WizardPhoto[]): WizardPhoto[] {
 export function firstIncompleteOfferStep(
   model: OfferModel,
   flowType?: string | null,
+  /** Flows that start with the location check (request offers, not NGO drives). */
+  opts?: { location?: boolean },
 ): OfferStep {
   const purchase = isPurchaseFlow(flowType);
+
+  // The location check comes first (owner, 2026-10-09): it decides whether the
+  // donor may go on at all, and it is where the pickup city comes from.
+  if (opts?.location && (model.latitude == null || model.longitude == null || !model.pickupCity.trim())) return "location";
 
   if (purchase) {
     if (!model.purchaseTimeline) return "purchasePlan";
@@ -377,6 +384,7 @@ export function firstIncompleteOfferStep(
 
   const qty = Number(model.quantity);
   if (!Number.isInteger(qty) || qty < 1) return "details";
+  if (flowType === "ALREADY_OWN" && !model.approximateAge.trim()) return "details";
 
   // Condition is not a step in the purchase flow, so it can never be the answer
   // — returning it would drop the donor onto a step the wizard does not render.
@@ -384,8 +392,6 @@ export function firstIncompleteOfferStep(
     if (!model.condition) return "condition";
     if (model.hasKnownDefects && model.knownDefects.trim().length < 3) return "condition";
   }
-
-  if (!model.pickupCity.trim()) return "pickup";
 
   return "review";
 }

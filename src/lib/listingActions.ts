@@ -6,9 +6,13 @@
  * - Live submitted items can be paused, resumed, or withdrawn.
  * - Terminal items (REJECTED, WITHDRAWN, EXPIRED, FAILED) can be deleted/cleared by the donor.
  *
- * Local persistent storage is used as a safety rail so that if the backend prevents hard-deleting
- * audited or non-draft rows, the donor's dashboard immediately and permanently filters out the
- * removed item.
+ * Local persistent storage is a safety rail for the rows the backend keeps rather than erases:
+ * once the server has accepted the removal, the id is recorded here so the donor's dashboard
+ * filters it out immediately and stays that way.
+ *
+ * <p><b>Only after the server has accepted it.</b> `deleteMyListing` used to record the id first
+ * and swallow the errors, so a refused delete hid the listing in this browser forever while it
+ * sat intact on the server — unreachable by the one person who could act on it.
  */
 
 export const NOT_WITHDRAWABLE_LISTING_STATUSES = new Set<string>([

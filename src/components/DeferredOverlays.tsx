@@ -82,6 +82,16 @@ const DoneeRequestPrompt = dynamic(
     import("@/components/DoneeRequestPrompt").then((m) => m.DoneeRequestPrompt),
   { ssr: false },
 );
+const NgoProfileToast = dynamic(
+  () =>
+    import("@/components/NgoProfileToast").then((m) => m.NgoProfileToast),
+  { ssr: false },
+);
+const NgoCampaignPrompt = dynamic(
+  () =>
+    import("@/components/NgoCampaignPrompt").then((m) => m.NgoCampaignPrompt),
+  { ssr: false },
+);
 
 export function DeferredOverlays() {
   return (
@@ -93,6 +103,8 @@ export function DeferredOverlays() {
       <DoneeListingPrompt />
       <DonorListingPrompt />
       <DoneeRequestPrompt />
+      <NgoProfileToast />
+      <NgoCampaignPrompt />
     </>
   );
 }

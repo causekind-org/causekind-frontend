@@ -1,9 +1,12 @@
 "use client";
 
+import * as React from "react";
+import Link from "next/link";
 import { CalendarPlus, CircleCheck, Clock, MessageCircle, TriangleAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { nextStepCopy, type HandoverViewModel } from "./model";
+import { deliveryAddressPending, nextStepCopy, type HandoverViewModel } from "./model";
+import { DeliveryAddressStep, type DeliveryAddressActions } from "./HandoverDeliveryAddress";
 import { handoverPrimary, handoverSecondary } from "./handoverStyles";
 import { ConfirmNoIssueButton } from "./HandoverSafetyActions";
 import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmPayload } from "./HandoverConfirmationPanel";
@@ -17,7 +20,7 @@ import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmP
  * transition so the change is noticed without being animated at.
  */
 export function HandoverNextAction({
-  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat, onChanged,
+  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat, onChanged, deliveryActions,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -25,11 +28,18 @@ export function HandoverNextAction({
   onGenerateOtp: () => Promise<void>;
   onDonorConfirm: (p: DonorConfirmPayload) => Promise<void>;
   onDoneeConfirm: (p: DoneeConfirmPayload) => Promise<void>;
+  onVerifyOtp?: (otp: string) => Promise<void>;
+  proof?: import("./HandoverProofSection").HandoverProofControls;
   onOpenChat?: () => void;
   onChanged: () => void;
+  /** Absent on a flow that can't take a delivery address. */
+  deliveryActions?: DeliveryAddressActions;
 }) {
   const copy = nextStepCopy(vm);
   const donor = vm.role === "DONOR";
+  // A courier delivery can't be sent without the address — while it's missing,
+  // getting it is the action, in place of confirming the handover.
+  const addressFirst = deliveryActions != null && deliveryAddressPending(vm);
 
   return (
     <motion.section
@@ -63,16 +73,29 @@ export function HandoverNextAction({
           )
         )}
 
-        {vm.state === "scheduled" && !donor && (
+        {addressFirst && <DeliveryAddressStep vm={vm} actions={deliveryActions!} />}
+
+        {/* The donor's way out of a half-settled schedule. Without it this state
+            rendered no control at all, so a match left on a status the server
+            won't confirm from had nothing on the page that could move it. */}
+        {vm.state === "scheduled" && donor && !addressFirst && (
+          <Button onClick={onSchedule} variant="outline" className={handoverSecondary}>
+            <CalendarPlus aria-hidden /> Check the schedule
+          </Button>
+        )}
+
+        {vm.state === "scheduled" && !donor && !addressFirst && (
           <WaitingRow onOpenChat={onOpenChat} label="Ask for another time" />
         )}
 
-        {(vm.state === "ready_to_handover" || vm.state === "partially_confirmed") && (
+        {!addressFirst && (vm.state === "ready_to_handover" || vm.state === "partially_confirmed") && (
           <NeedsConfirmation
             vm={vm} otp={otp}
             onGenerateOtp={onGenerateOtp}
             onDonorConfirm={onDonorConfirm}
             onDoneeConfirm={onDoneeConfirm}
+              onVerifyOtp={onVerifyOtp}
+              proof={proof}
             onOpenChat={onOpenChat}
           />
         )}
@@ -106,12 +129,14 @@ export function HandoverNextAction({
   );
 }
 
-function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onOpenChat }: {
+function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat }: {
   vm: HandoverViewModel;
   otp: string | null;
   onGenerateOtp: () => Promise<void>;
   onDonorConfirm: (p: DonorConfirmPayload) => Promise<void>;
   onDoneeConfirm: (p: DoneeConfirmPayload) => Promise<void>;
+  onVerifyOtp?: (otp: string) => Promise<void>;
+  proof?: import("./HandoverProofSection").HandoverProofControls;
   onOpenChat?: () => void;
 }) {
   const donor = vm.role === "DONOR";
@@ -120,7 +145,25 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
   // Already done your part: there is genuinely nothing to submit, so offer the
   // only useful thing left — a nudge.
   if (youConfirmed) {
-    return <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />;
+    const showConfirmationPanel = donor && vm.confirmation.doneeConfirmedAt == null;
+    return (
+      <div className="space-y-4">
+        {showConfirmationPanel && (
+          <div className="-mx-1">
+            <HandoverConfirmationPanel
+              vm={vm}
+              otp={otp}
+              onGenerateOtp={onGenerateOtp}
+              onDonorConfirm={onDonorConfirm}
+              onDoneeConfirm={onDoneeConfirm}
+              onVerifyOtp={onVerifyOtp}
+              proof={proof}
+            />
+          </div>
+        )}
+        <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />
+      </div>
+    );
   }
 
   return (
@@ -131,6 +174,8 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
         onGenerateOtp={onGenerateOtp}
         onDonorConfirm={onDonorConfirm}
         onDoneeConfirm={onDoneeConfirm}
+              onVerifyOtp={onVerifyOtp}
+              proof={proof}
       />
     </div>
   );
@@ -160,6 +205,76 @@ function WaitingRow({ onOpenChat, label }: { onOpenChat?: () => void; label: str
  */
 function Completion({ vm }: { vm: HandoverViewModel }) {
   const qty = vm.confirmation.doneeConfirmedQty ?? vm.confirmation.donorConfirmedQty;
+  const offered = vm.offeredQuantity;
+  const [drive, setDrive] = React.useState<any>(null);
+  const [proof, setProof] = React.useState<any>(null);
+
+  React.useEffect(() => {
+    if (vm.flow === "NGO_OFFER" && vm.parentId) {
+      import("@/lib/api").then(({ getNgoDrive, getNgoDriveProof }) => {
+        getNgoDrive(vm.parentId!).then(setDrive).catch(() => {});
+        getNgoDriveProof(vm.parentId!).then(setProof).catch(() => {});
+      });
+    }
+  }, [vm.flow, vm.parentId]);
+
+  if (vm.flow === "NGO_OFFER") {
+    const isFulfilled = vm.rawStatus === "FULFILLED";
+    const isPartial = vm.rawStatus === "RECEIVED_PARTIAL";
+    const itemStr = drive?.itemName || "items";
+
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 rounded-lg bg-green-50 px-3 py-2.5 text-sm text-green-800 dark:bg-green-950/30 dark:text-green-300">
+          <CircleCheck className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span>
+            {vm.role === "DONOR" ? (
+              isPartial
+                ? `The NGO received ${qty} of your ${offered} ${itemStr}. The rest went back to the drive's needed amount.`
+                : `Received by ${vm.counterpart.name}: ${qty} ${itemStr}.`
+            ) : (
+              "Item received and confirmed."
+            )}
+          </span>
+        </div>
+
+        {isFulfilled && drive && proof && vm.role === "DONOR" && (
+          <div className="mt-4 p-4 border border-green-200 bg-white rounded-lg shadow-sm">
+            <h3 className="font-bold text-green-900 mb-2">Drive Complete!</h3>
+            <p className="text-sm text-green-800 mb-3">
+              Your {qty} {itemStr} reached {drive.beneficiaryCount} {drive.beneficiaryGroup}.
+            </p>
+            {proof.media && proof.media.length > 0 && (
+              <div className="flex gap-2 overflow-x-auto mb-3 pb-2">
+                {proof.media.slice(0, 3).map((m: any, i: number) => (
+                  <img key={i} src={m.mediaUrl} alt="Distribution proof" className="h-24 w-24 object-cover rounded shadow-sm border border-stone-200 shrink-0" />
+                ))}
+              </div>
+            )}
+            <Button asChild variant="outline" size="sm" className={handoverSecondary}>
+              <Link href={`/drives/${drive.id}/proof`}>View impact report</Link>
+            </Button>
+          </div>
+        )}
+
+        {vm.certificateHref ? (
+          <Button asChild className={handoverPrimary}>
+             <Link href={vm.certificateHref}>View certificate</Link>
+          </Button>
+        ) : (
+          <p className="text-xs text-stone-500 dark:text-stone-400">
+            {vm.role === "DONOR" && !isFulfilled ? "Your certificate will be available once the NGO completes the drive and uploads proof of distribution." : ""}
+          </p>
+        )}
+        
+        <div className="pt-2">
+          <Button asChild variant="outline" className={handoverSecondary}>
+            <Link href="/dashboard">Back to dashboard</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -189,9 +304,17 @@ function Completion({ vm }: { vm: HandoverViewModel }) {
       )}
       {vm.role === "DONEE" && vm.flow === "OFFER" && (
         <p className="text-xs text-stone-500 dark:text-stone-400">
-          If a problem surfaces in the next few days, you can still report it below.
+          If a problem surfaces within 48 hours of handover, you can still report it below.
         </p>
       )}
+      
+      <div className="pt-2">
+        <Button asChild variant="outline" className={handoverSecondary}>
+          <Link href="/dashboard">
+            Back to dashboard
+          </Link>
+        </Button>
+      </div>
     </div>
   );
 }

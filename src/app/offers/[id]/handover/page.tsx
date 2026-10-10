@@ -12,13 +12,16 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   getDonationOffer, getHandover, scheduleHandover, rescheduleHandover,
-  generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee,
+  generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee, verifyHandoverOtp,
+  requestOfferDeliveryAddress, submitOfferDeliveryAddress, getOfferDeliveryAddressSuggestion,
   setDoneeCallPermission,
   type DonationOffer, type HandoverRecord, type OfferHandoverMethod,
 } from "@/lib/api";
+import { getHandoverProofs, uploadHandoverProof, type HandoverProofPhoto } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import HandoverCelebration from "@/components/handover/HandoverCelebration";
+import { claimCelebration, OFFER_DONE } from "@/lib/celebration";
 import { adaptOffer } from "@/features/handover/adapters";
 import { HandoverHubShell } from "@/features/handover/HandoverHubShell";
 import { HandoverSkeleton } from "@/features/handover/HandoverSkeleton";
@@ -27,7 +30,7 @@ import { useCoalescedReload } from "@/features/handover/useCoalescedReload";
 
 export default function OfferHandoverHubPage() {
   const params = useParams();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const offerId = Number(params.id);
 
   const [offer, setOffer] = useState<DonationOffer | null>(null);
@@ -36,6 +39,14 @@ export default function OfferHandoverHubPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [otp, setOtp] = useState<string | null>(null);
   const [celebrate, setCelebrate] = useState(false);
+  // On-the-spot handover photos (2026-10-08): loaded with the page and on every
+  // live update, so a photo the other side takes shows up here by itself.
+  const [proofPhotos, setProofPhotos] = useState<HandoverProofPhoto[]>([]);
+  const loadProofs = useCallback(async () => {
+    if (!offerId) return;
+    try { setProofPhotos(await getHandoverProofs("OFFER", offerId)); } catch { /* not a participant yet, or offline */ }
+  }, [offerId]);
+  useEffect(() => { void loadProofs(); }, [loadProofs]);
 
   const fetchAll = useCallback(async () => {
     if (!offerId) return;
@@ -71,6 +82,7 @@ export default function OfferHandoverHubPage() {
   useEntityUpdates(["OFFER", "HANDOVER"], (_latest, batch) => {
     if (!offerId || !batch.some((d) => d.entityId === offerId)) return;
     void reload();
+    void loadProofs();
   });
 
   /**
@@ -86,17 +98,14 @@ export default function OfferHandoverHubPage() {
     void reload();
   }, [reload]);
 
+  // From the moment both sides confirm (the 48h issue window opening), not 48h
+  // later; claimed per person so donor and donee each see it once (2026-10-08).
   useEffect(() => {
-    if (offer?.status !== "COMPLETED" || !offerId) return;
-    const key = `ck_celebrated_OFFER_${offerId}`;
-    try {
-      if (localStorage.getItem(key)) return;
-      localStorage.setItem(key, "1");
-      setCelebrate(true);
-    } catch { /* private mode — never block the page */ }
-  }, [offer?.status, offerId]);
+    if (!offer || !OFFER_DONE.has(offer.status) || !offerId) return;
+    if (claimCelebration("OFFER", offerId, user?.email)) setCelebrate(true);
+  }, [offer, offerId, user?.email]);
 
-  if (loading) return <HandoverSkeleton />;
+  if (loading || authLoading) return <HandoverSkeleton />;
   if (loadError) return <HandoverLoadError message={loadError} onRetry={() => { setLoading(true); void reload(); }} />;
 
   const vm = offer ? adaptOffer(offer, handover, user?.email) : null;
@@ -140,6 +149,15 @@ export default function OfferHandoverHubPage() {
           confirmDonor: async ({ quantity }) => {
             applyHandover(await confirmHandoverDonor(offerId, quantity));
           },
+          proof: {
+            photos: proofPhotos,
+            upload: async (file, device) => {
+              setProofPhotos(await uploadHandoverProof("OFFER", offerId, file, device));
+            },
+          },
+          verifyOtp: async (code) => {
+            applyHandover(await verifyHandoverOtp(offerId, code));
+          },
           confirmDonee: async ({ otp: code, quantity, conditionRating }) => {
             applyHandover(await confirmHandoverDonee(offerId, {
               otp: code, quantityReceived: quantity, conditionRating,
@@ -148,6 +166,11 @@ export default function OfferHandoverHubPage() {
           setCallPermission: vm.role === "DONOR"
             ? async (next) => { setOffer(await setDoneeCallPermission(offerId, next)); }
             : undefined,
+          deliveryAddress: {
+            request: async () => { applyHandover(await requestOfferDeliveryAddress(offerId)); },
+            submit: async (input) => { applyHandover(await submitOfferDeliveryAddress(offerId, input)); },
+            suggest: () => getOfferDeliveryAddressSuggestion(offerId),
+          },
         }}
       />
       <HandoverCelebration

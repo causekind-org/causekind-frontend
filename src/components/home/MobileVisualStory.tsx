@@ -39,7 +39,6 @@ export function MobileVisualStory({ requests, fulfilledNeeds = [] }: { requests:
   const { user, isRestoring } = useAuth();
   const [photoIndex, setPhotoIndex] = useState(0);
   const photo = SAHAS_PHOTOS[photoIndex];
-  const [entryNotice, setEntryNotice] = useState("");
   const role = (user?.role ?? "").replace(/^ROLE_/, "");
   const donee = role === "DONEE";
   const guest = !isRestoring && !user;
@@ -59,49 +58,25 @@ export function MobileVisualStory({ requests, fulfilledNeeds = [] }: { requests:
 
   return (
     <div className={`${styles.root} lg:hidden`}>
-      <section className={styles.entry} aria-labelledby="mobile-entry-heading">
+      {(canGive || canRequest) && <section className={styles.entry} aria-labelledby="mobile-entry-heading">
         <h2 id="mobile-entry-heading"><T>How can we help today?</T></h2>
         <div className={styles.entryChoices}>
-          {/* The guided tour's last step ("Ready to give?") anchors here.
-              It used to live on MobileDoors' donor CTA; when MobileVisualStory
-              replaced that component the anchor went with it, and since
-              HomeClient renders AudiencePathwaysSection without `tourAnchors`,
-              `guest-join` was left with NO target anywhere in the tree — the
-              tour's final step had nothing to point at. It sits on the article
-              rather than the link so it survives both branches below (guests get
-              a Link, a signed-in donee gets a button). Exactly one anchor must
-              exist: two, with one in a display:none tree, collapses the
-              spotlight onto the invisible one.
-
-              Gated on `guest` — which is `!isRestoring && !user`, the same test
-              AudiencePathwaysSection uses — because this is a signup prompt. An
-              unconditional anchor put it in front of signed-in donors and donees
-              too, and left it present during the auth-restore frame. */}
-          <article className={styles.entryChoice} data-tour={guest ? "guest-join" : undefined}>
+          {canGive && <article className={styles.entryChoice} data-intent="give" data-tour={guest ? "guest-join" : undefined}>
             <Package aria-hidden="true" />
             <span><strong><T>List an item</T></strong><span><T>I have something to give</T></span></span>
-            {canGive ? (
-              <Link prefetch={true} href={guest ? loginUrlFor("/items/new") : "/items/new"} className={styles.entryLogin}>
-                <T>{guest ? "Login as donor" : "List an item"}</T><EntryNavigationStatus />
-              </Link>
-            ) : (
-              <button type="button" disabled={isRestoring} className={styles.entryLogin} onClick={() => setEntryNotice("To give an item, sign out from the menu and log in with your donor account.")}><T>Login as donor</T><ArrowRight aria-hidden="true" /></button>
-            )}
-          </article>
-          <article className={styles.entryChoice}>
+            <Link prefetch={true} href={guest ? loginUrlFor("/items/new") : "/items/new"} className={styles.entryLogin}>
+              <T>{guest ? "Login as donor" : "List an item"}</T><EntryNavigationStatus />
+            </Link>
+          </article>}
+          {canRequest && <article className={styles.entryChoice} data-intent="request">
             <HandHeart aria-hidden="true" />
             <span><strong><T>Request an item</T></strong><span><T>I need something</T></span></span>
-            {canRequest ? (
-              <NewRequestLink prefetch={true} href={guest ? loginUrlFor("/requests/new") : "/requests/new"} className={styles.entryLogin}>
-                <T>{guest ? "Login as donee" : "Request an item"}</T><EntryNavigationStatus />
-              </NewRequestLink>
-            ) : (
-              <button type="button" disabled={isRestoring} className={styles.entryLogin} onClick={() => setEntryNotice("To request an item, sign out from the menu and log in with your donee account.")}><T>Login as donee</T><ArrowRight aria-hidden="true" /></button>
-            )}
-          </article>
+            <NewRequestLink prefetch={true} href={guest ? loginUrlFor("/requests/new") : "/requests/new"} className={styles.entryLogin}>
+              <T>{guest ? "Login as donee" : "Request an item"}</T><EntryNavigationStatus />
+            </NewRequestLink>
+          </article>}
         </div>
-        {entryNotice && <p className={styles.entryNotice} role="status"><T>{entryNotice}</T></p>}
-      </section>
+      </section>}
       {fulfilledNeeds.length > 0 && (
         <section className={styles.section} aria-labelledby="mobile-fulfilled-heading">
           <span className={styles.kicker}><T>Completed on CauseKind</T></span>
@@ -186,7 +161,7 @@ export function MobileVisualStory({ requests, fulfilledNeeds = [] }: { requests:
       <section className={`${styles.section} ${styles.closing}`} aria-labelledby="mobile-closing-heading">
         <h2 id="mobile-closing-heading"><T>A little help. A good place to start.</T></h2>
         <Link className={styles.button} href="/requests"><T>{donee ? "See community needs" : "Find someone to help"}</T><ArrowRight aria-hidden="true" /></Link>
-        {canGive && <div className={styles.money}><p><T>Want to give money?</T></p><DonateNowButton size="sm" variant="outline" /></div>}
+        {canGive && <div className={styles.money}><p><T>Want to give money?</T></p><DonateNowButton size="sm" variant="outline" direct /></div>}
       </section>
     </div>
   );

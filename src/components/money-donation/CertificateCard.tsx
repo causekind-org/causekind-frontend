@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Eye, CheckCircle2, X } from 'lucide-react';
 import Image from 'next/image';
+import styles from './CertificateCard.module.css';
 
 export interface CertificateCardProps {
   title: string;
@@ -14,9 +15,10 @@ export interface CertificateCardProps {
   documentUrl: string;
   imageUrl?: string;
   extraImages?: string[];
+  mobileSummary?: { title: string; subtitle: string; wide?: boolean };
 }
 
-export function CertificateCard({ title, description, icon, benefits, documentUrl, imageUrl, extraImages = [] }: CertificateCardProps) {
+export function CertificateCard({ title, description, icon, benefits, documentUrl, imageUrl, extraImages = [], mobileSummary }: CertificateCardProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [, setLightboxPage] = useState(0);
   
@@ -25,10 +27,23 @@ export function CertificateCard({ title, description, icon, benefits, documentUr
 
   return (
     <>
+      {mobileSummary && (
+        <article className={`${styles.mini} ${mobileSummary.wide ? styles.wide : ''}`}>
+          <span className={styles.icon} aria-hidden="true">{icon}</span>
+          <div className={styles.copy}>
+            <h3>{mobileSummary.title}</h3>
+            <p>{mobileSummary.subtitle}</p>
+          </div>
+          <button type="button" aria-label={`View ${title}`} onClick={() => {
+            if (totalPages > 0) setLightboxOpen(true);
+            else window.open(documentUrl, '_blank', 'noopener,noreferrer');
+          }}>View{mobileSummary.wide ? '' : ' certificate'} <span aria-hidden="true">↗</span></button>
+        </article>
+      )}
       <motion.div 
         whileHover={{ y: -8, scale: 1.01 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="flex flex-col p-6 sm:p-8 rounded-3xl bg-[#fffdfa] dark:bg-[#23120a] shadow-[0_4px_24px_rgba(217,119,6,0.06)] hover:shadow-[0_18px_40px_rgba(217,119,6,0.18)] border border-amber-200/70 dark:border-amber-800/40 hover:border-amber-400/90 h-full group"
+        className={`${mobileSummary ? 'hidden md:flex' : 'flex'} flex-col p-6 sm:p-8 rounded-3xl bg-[#fffdfa] dark:bg-[#23120a] shadow-[0_4px_24px_rgba(217,119,6,0.06)] hover:shadow-[0_18px_40px_rgba(217,119,6,0.18)] border border-amber-200/70 dark:border-amber-800/40 hover:border-amber-400/90 h-full group`}
       >
         {/* Icon */}
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-6 bg-gradient-to-br from-[#f97316] via-[#ea580c] to-[#c2410c] shadow-md">
@@ -173,6 +188,8 @@ export function CertificateCard({ title, description, icon, benefits, documentUr
               <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
                 <h3 className="font-bold text-lg text-foreground">Document Preview</h3>
                 <button
+                  type="button"
+                  aria-label="Close certificate preview"
                   onClick={() => setLightboxOpen(false)}
                   className="p-2 text-stone-400 dark:text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-full transition-colors"
                 >
@@ -206,4 +223,3 @@ export function CertificateCard({ title, description, icon, benefits, documentUr
     </>
   );
 }
-

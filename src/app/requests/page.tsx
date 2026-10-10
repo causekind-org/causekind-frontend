@@ -33,17 +33,21 @@ export const revalidate = 60;
  * That is the same reason the homepage uses this endpoint — see the note in
  * src/app/page.tsx.
  *
- * <p>Failure is not fatal. An empty array puts the client back on exactly the
+ * <p>The whole open board is fetched (the same cached list the paged public
+ * endpoint is cut from): guests browse it in the same directory donors use,
+ * which searches, filters, sorts and pages on the client.
+ *
+ * <p>Failure is not fatal. A null seed puts the client back on exactly the
  * path it had before: mount, fetch, render. A dead backend must not blank a page
  * that also serves signed-in donors and donees.
  */
 export default async function Page() {
-  const initialRequests = await getPublicItemRequests().catch((error: unknown) => {
+  const initialPublicRequests = await getPublicItemRequests().catch((error: unknown) => {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[requests] getPublicItemRequests failed; the client will retry:", error);
     }
-    return [];
+    return null;
   });
 
-  return <RequestsClient initialPublicRequests={initialRequests} />;
+  return <RequestsClient initialPublicRequests={initialPublicRequests} />;
 }

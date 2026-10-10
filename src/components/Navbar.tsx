@@ -13,7 +13,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
+import { Menu, X, LogIn, UserPlus, Shield, Sun, Moon, User, LayoutGrid, LogOut, Globe, ChevronRight, ChevronDown, Heart, HandHeart, Compass, HeartHandshake, HelpCircle, Mail, Phone, MessageCircle, ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { useRoleColors } from "@/hooks/useRoleColors";
 import { getMyProfile, getMyMatches, getMyNgoApplication, type UserProfile, type ItemMatch } from "@/lib/api";
@@ -25,7 +25,11 @@ import { GlobalSearch, SearchTrigger } from "@/components/GlobalSearch";
 import { useTilt } from "@/hooks/useTilt";
 import DonateMegaMenu from "@/components/DonateMegaMenu";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
+import { openDonateChoice } from "@/components/donate/DonateChoice";
 import { DONATE_HREF } from "@/lib/donateScroll";
+import { isNgoRole } from "@/lib/isNgoRole";
+import { toast } from "@/lib/toast";
+import { useNgoStatus, triggerNgoLockedToast } from "@/components/ngo-landing/useNgoStatus";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -43,6 +47,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import { handleWhatsAppShare } from "@/components/home/WhatsAppTellAFriend";
 
 
 /** "Cause" reveals a letter at a time; the container only sets the cadence. */
@@ -55,6 +60,9 @@ const logoLetterVariants = {
   hidden:  { opacity: 0, y: 8 },
   visible: { opacity: 1, y: 0 },
 };
+
+/** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
+const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
 export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
@@ -378,6 +386,8 @@ export function SiteHeader() {
       if (hero && hero !== observedHero) {
         resize.disconnect();
         resize.observe(hero);
+        crossing.disconnect();
+        crossing.observe(hero);
         observedHero = hero;
         mounted.disconnect();
       }
@@ -386,24 +396,37 @@ export function SiteHeader() {
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
+    // Scroll only matters when the hero crosses the top edge of the viewport,
+    // so watch that line instead of reading the hero's rect on every scroll
+    // event (a forced layout mid-scroll, right after the page's animations
+    // have written their styles). The root is shrunk to a 0px line along the
+    // top; intersection is edge-inclusive, so a hero spanning it counts.
+    const crossing = new IntersectionObserver(schedule, { rootMargin: "0px 0px -100% 0px" });
     // The homepage may arrive after the shared header during client navigation.
     const mounted = new MutationObserver(schedule);
     mounted.observe(document.body, { childList: true, subtree: true });
     update();
-    window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule);
     mobile.addEventListener("change", schedule);
     return () => {
       cancelAnimationFrame(frame);
       resize.disconnect();
+      crossing.disconnect();
       mounted.disconnect();
-      window.removeEventListener("scroll", schedule);
       window.removeEventListener("resize", schedule);
       mobile.removeEventListener("change", schedule);
     };
   }, [pathname]);
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
+    // Set state only when the answer flips, not on every scroll event.
+    let last: boolean | null = null;
+    const onScroll = () => {
+      const next = window.scrollY > 8;
+      if (next !== last) {
+        last = next;
+        setScrolled(next);
+      }
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -597,102 +620,53 @@ export function SiteHeader() {
     pathname?.startsWith("/dashboard/ngo") ||
     pathname?.startsWith("/ngo");
 
-  const [isNgoProfileIncomplete, setIsNgoProfileIncomplete] = useState(() => {
-    if (typeof window === "undefined" || !user) return true;
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-    const cached = localStorage.getItem(demoAppKey) || localStorage.getItem(realAppKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          return false;
-        }
-      } catch {}
-    }
-    return true;
-  });
-
-  const checkNgoApplicationStatus = useCallback(() => {
-    if (!isNgoDashboard) {
-      setIsNgoProfileIncomplete(false);
-      return;
-    }
-
-    const userIdentifier =
-      user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
-    const demoAppKey = `ngo-demo-application-${userIdentifier}`;
-    const realAppKey = `ngo-application-${userIdentifier}`;
-
-    const cachedDemo = typeof window !== "undefined" ? localStorage.getItem(demoAppKey) : null;
-    const cachedReal = typeof window !== "undefined" ? localStorage.getItem(realAppKey) : null;
-    if (cachedDemo || cachedReal) {
-      try {
-        const parsed = JSON.parse((cachedDemo || cachedReal)!);
-        if (
-          parsed?.status === "UNDER_REVIEW" ||
-          parsed?.status === "APPROVED" ||
-          parsed?.status === "PENDING_VERIFICATION"
-        ) {
-          setIsNgoProfileIncomplete(false);
-          return;
-        }
-      } catch {
-        // ignore
-      }
-    }
-
-    if (user) {
-      getMyNgoApplication()
-        .then((app) => {
-          const isComplete =
-            (app as any)?.submissionStatus === "UNDER_REVIEW" ||
-            (app as any)?.submissionStatus === "APPROVED" ||
-            (app as any)?.submissionStatus === "PENDING_VERIFICATION" ||
-            app?.status === "UNDER_REVIEW" ||
-            app?.status === "APPROVED" ||
-            app?.status === "PENDING_VERIFICATION";
-          setIsNgoProfileIncomplete(!isComplete);
-        })
-        .catch(() => {
-          setIsNgoProfileIncomplete(true);
-        });
-    } else {
-      setIsNgoProfileIncomplete(true);
-    }
-  }, [isNgoDashboard, user]);
-
+  const [ngoApplicationState, setNgoApplicationState] = useState("CHECKING");
   useEffect(() => {
-    checkNgoApplicationStatus();
-
-    const handleUpdate = (e?: Event) => {
-      const customEvent = e as CustomEvent;
-      if (
-        customEvent?.detail?.status === "UNDER_REVIEW" ||
-        customEvent?.detail?.status === "APPROVED" ||
-        customEvent?.detail?.status === "PENDING_VERIFICATION"
-      ) {
-        setIsNgoProfileIncomplete(false);
-        return;
+    if (!isNgo || !user) return;
+    let active = true;
+    let sequence = 0;
+    const refresh = async () => {
+      const current = ++sequence;
+      try {
+        const app = await getMyNgoApplication();
+        if (active && current === sequence) setNgoApplicationState(app?.status || "INCOMPLETE");
+      } catch {
+        if (active && current === sequence) setNgoApplicationState("UNAVAILABLE");
       }
-      checkNgoApplicationStatus();
     };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("ngo-application-submitted", handleUpdate);
-      window.addEventListener("storage", handleUpdate);
-      return () => {
-        window.removeEventListener("ngo-application-submitted", handleUpdate);
-        window.removeEventListener("storage", handleUpdate);
-      };
+    setNgoApplicationState("CHECKING");
+    void refresh();
+    window.addEventListener("ngo-application-submitted", refresh);
+    window.addEventListener("focus", refresh);
+    return () => { active = false; window.removeEventListener("ngo-application-submitted", refresh); window.removeEventListener("focus", refresh); };
+  }, [isNgo, user, pathname]);
+  // NGO only: the "NGO Approved" pill shows for two minutes after the NGO first sees its
+  // approval (first-seen time kept per account in localStorage), then never again.
+  const [ngoApprovedPillExpired, setNgoApprovedPillExpired] = useState(false);
+  const ngoAccountKey = user ? String(user.id ?? user.userId ?? user.email ?? "") : "";
+  useEffect(() => {
+    setNgoApprovedPillExpired(false);
+    if (!isNgo || ngoApplicationState !== "APPROVED" || !ngoAccountKey) return;
+    const key = `ck_ngo_approved_seen_${ngoAccountKey}`;
+    let firstSeen = Date.now();
+    try {
+      const stored = Number(localStorage.getItem(key));
+      if (Number.isFinite(stored) && stored > 0) firstSeen = stored;
+      else localStorage.setItem(key, String(firstSeen));
+    } catch {
+      // Storage unavailable: show the pill for this visit's two minutes only.
     }
-  }, [checkNgoApplicationStatus, pathname]);
+    const remaining = firstSeen + NGO_APPROVED_PILL_MS - Date.now();
+    if (remaining <= 0) { setNgoApprovedPillExpired(true); return; }
+    const timer = setTimeout(() => setNgoApprovedPillExpired(true), remaining);
+    return () => clearTimeout(timer);
+  }, [isNgo, ngoApplicationState, ngoAccountKey]);
+  const ngoApplicationLabel = ngoApplicationState === "APPROVED" ? "NGO Approved"
+    : ngoApplicationState === "UNDER_REVIEW" ? "Application Under Review"
+    : ngoApplicationState === "PENDING_VERIFICATION" ? "Verify Application Email"
+    : ["NEEDS_INFORMATION", "REJECTED"].includes(ngoApplicationState) ? "Update Application"
+    : ngoApplicationState === "CHECKING" ? "Checking Application…"
+    : ngoApplicationState === "UNAVAILABLE" ? "View Application" : "Complete Profile";
 
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
@@ -703,7 +677,8 @@ export function SiteHeader() {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
-    { href: "/requests", label: t("nav.donate") },
+    // Donees ask, they do not give: the same slot reads "Requests" for them.
+    { href: "/requests", label: user?.role === "DONEE" ? t("mobileNav.requests") : t("nav.donate") },
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -726,7 +701,7 @@ export function SiteHeader() {
    * locales already carry them and nothing degrades to English.
    */
   const mobileNavLinks = navLinks.flatMap((link) =>
-    link.href === "/requests"
+    link.href === "/requests" && user?.role !== "DONEE"
       ? [
           // Same constant the button uses, so the drawer lands on the donation
           // form too rather than at the top of the page.
@@ -741,6 +716,49 @@ export function SiteHeader() {
     if (href === "/") return pathname === "/";
     return pathname === href || pathname.startsWith(href + "/");
   }
+
+  // NGO side menu (NGO_PARTNER only). My Drives sub-items keep the useNgoStatus
+  // lock; local test mode unlocks them, as on the upload buttons.
+  const isNgoPartner = isNgoRole(user?.role?.toUpperCase());
+  const ngoStatus = useNgoStatus();
+  const ngoLocalTestMode =
+    process.env.NODE_ENV === "development" && process.env.NEXT_PUBLIC_NGO_LOCAL_TEST_MODE === "true";
+  const ngoLockedClick = () => {
+    if (ngoStatus.isVerified && !ngoStatus.isPhotosDue && !ngoStatus.canStartDrive) {
+      toast.info(ngoStatus.driveLockReason);
+      return;
+    }
+    triggerNgoLockedToast(ngoStatus.status, ngoStatus.isPhotosDue, ngoStatus.photosDueRequestName, router);
+  };
+  // `hardLocked` is the one-drive-at-a-time rule, which local test mode never unlocks.
+  const ngoDriveItem = (label: string, link: string, locked: boolean, hardLocked = false) => {
+    const isLocked = (locked && !ngoLocalTestMode) || hardLocked;
+    return {
+      label,
+      link,
+      ariaLabel: label,
+      isLocked,
+      active: !link.includes("#") && isActive(link),
+      ...(isLocked ? { onClick: ngoLockedClick } : {}),
+    };
+  };
+  const ngoMenuItems = [
+    { label: t("nav.home"), link: "/", ariaLabel: t("nav.home"), active: isActive("/") },
+    {
+      label: "My Drives",
+      ariaLabel: "My Drives",
+      children: [
+        ngoDriveItem("Post a Drive", "/ngo/drives/new",
+          !ngoStatus.isVerified || ngoStatus.isPhotosDue, !ngoStatus.canStartDrive),
+        ngoDriveItem("Live Drives", "/dashboard/ngo#live-drives", !ngoStatus.isVerified),
+        ngoDriveItem("Handovers & Photos", "/ngo/handovers", !ngoStatus.isVerified),
+      ],
+    },
+    { label: t("nav.blog"), link: "/blog", ariaLabel: t("nav.blog"), active: isActive("/blog") },
+    ...aboutMenuItems.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
+    { label: "Dashboard", link: "/dashboard/ngo", ariaLabel: "Go to dashboard", active: isActive("/dashboard/ngo") },
+    { label: "Profile", link: "/profile", ariaLabel: "View profile", active: isActive("/profile") },
+  ];
 
   // Hooks must run unconditionally — keep this above the hideChrome early return.
   const tilt = useTilt();
@@ -924,6 +942,13 @@ export function SiteHeader() {
               // fill them, so "what should I donate" is noise on their nav.
               const isInKindTrigger = link.href === "/requests" && user?.role !== "DONEE";
               if (isInKindTrigger) {
+                const isNgoPartnerActive = isNgoRole(user?.role?.toUpperCase());
+                const triggerHref = isNgoPartnerActive ? "/dashboard/ngo#live-drives" : link.href;
+                const triggerLabel = isNgoPartnerActive ? "Drives" : link.label;
+                const active = isNgoPartnerActive
+                  ? (pathname === "/dashboard/ngo" || pathname.startsWith("/ngo/drives/"))
+                  : isActive(link.href);
+
                 return (
                   <div
                     key={link.label}
@@ -932,7 +957,7 @@ export function SiteHeader() {
                     onMouseLeave={handleInKindMouseLeave}
                   >
                     <Link
-                      href={link.href}
+                      href={triggerHref}
                       data-tour="nav-requests"
                       onFocus={handleInKindMouseEnter}
                       aria-expanded={isInKindMegaMenuOpen}
@@ -950,7 +975,7 @@ export function SiteHeader() {
                         />
                       )}
                       {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                      <span className="relative z-10">{link.label}</span>
+                      <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
                           isInKindMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
@@ -1046,24 +1071,11 @@ export function SiteHeader() {
               <DonateNowButton size="sm" label="Donate" showArrow={false} />
             )}
 
-            {isNgoDashboard && (
-              <Link href="/dashboard/ngo/profile">
-                {isNgoProfileIncomplete ? (
-                  <Button
-                    size="sm"
-                    className="bg-[#b04a15] hover:bg-[#8f390e] text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95"
-                  >
-                    Complete Profile
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-full px-4 py-2 text-xs sm:text-sm shadow-md transition-all hover:scale-105 active:scale-95 flex items-center gap-1.5"
-                  >
-                    <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-                    Application Under Review
-                  </Button>
-                )}
+            {isNgoDashboard && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
+              <Link href="/profile/ngo-details">
+                <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
+                  {ngoApplicationLabel}
+                </Button>
               </Link>
             )}
 
@@ -1336,7 +1348,7 @@ export function SiteHeader() {
         colors={[roleColors.highlight, roleColors.accent]}
         displayItemNumbering
         onNavigate={(link: string) => router.push(link)}
-        items={[
+        items={isNgoPartner ? ngoMenuItems : [
           // `isActive` matches against the pathname, which never carries a query
           // string — so the Donate entry (…?scroll=donate-form) has to be tested
           // on its path alone or it could never light up.
@@ -1345,13 +1357,15 @@ export function SiteHeader() {
             link: l.href,
             ariaLabel: l.label,
             active: isActive(l.href.split("?")[0]),
+            // Donate opens the In-Kind / Money choice; the menu closes itself.
+            ...(l.href === DONATE_HREF ? { onClick: openDonateChoice } : {}),
           })),
           ...(user
             ? [
                 ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
                 {
                   label: "My Profile",
-                  link: isNgo ? "/dashboard/ngo/profile" : "/profile",
+                  link: "/profile",
                   ariaLabel: "View profile"
                 },
               ]
@@ -1419,7 +1433,10 @@ export function SiteHeader() {
 export function SiteFooter() {
   const t = useTranslations("footer");
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isRestoring } = useAuth();
+  // Sign-up links are for guests only, and stay hidden until the login state is
+  // known so a signed-in visitor never sees them flash.
+  const showSignUpLinks = !isRestoring && !user;
   const isWizard =
     pathname === "/items/new" ||
     (pathname?.startsWith("/items/") && pathname?.endsWith("/edit")) ||
@@ -1432,9 +1449,11 @@ export function SiteFooter() {
     isWizard ||
     user?.role === "SUPER_ADMIN"
   ) return null;
+  // NGOs only have drives: no in-kind request board or campaign creation links.
+  const isNgoAccount = user?.role === "NGO" || user?.role === "NGO_PARTNER";
   const giveBackLinks = [
     ...(FEATURES.money ? [{ href: "/campaigns", l: t("moneyDrives") }] : []),
-    ...(user ? [{ href: "/requests", l: t("inkindRequests") }] : []),
+    ...(user && !isNgoAccount ? [{ href: "/requests", l: t("inkindRequests") }] : []),
   ];
   return (
     <footer className="bg-[#120c04] text-stone-250 border-t border-stone-850" id="footer">
@@ -1446,23 +1465,32 @@ export function SiteFooter() {
             <CareNestLogo size="md" />
           </div>
           <p className="text-stone-400 leading-relaxed font-medium">{t("tagline")}</p>
-          <div className="text-stone-400 font-medium text-xs">
-            <span className="text-white font-semibold">{t("contact")}:</span> +91 7719938619
+          <div className="space-y-1 text-xs text-stone-400 font-medium pt-0.5">
+            <div className="flex items-center gap-1.5">
+              <Phone className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
+              <a href="tel:+917719938619" className="hover:text-white transition-colors">
+                +91 7719938619
+              </a>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
+              <a href="mailto:support@causekind.com" className="hover:text-white transition-colors">
+                support@causekind.com
+              </a>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />
+              <a href="https://wa.me/917719938619" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                WhatsApp Support
+              </a>
+            </div>
           </div>
           <div className="flex gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
             <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
               <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[var(--ck-role-accent)]" /> {t("adminVerified")}
             </span>
-            <span className="flex items-center gap-1 sm:gap-1.5 text-3xs sm:text-2xs bg-stone-900 border border-stone-800 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full text-white">
-              <Shield className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-[#4a7fba]" /> {t("razorpaySecured")}
-            </span>
           </div>
 
-          {/* Solid on this near-black ground — an outline pill's border would
-              not clear the 3:1 a control boundary needs. Donee-hidden in CSS. */}
-          <div className="pt-2">
-            <DonateNowButton size="sm" showArrow={false} />
-          </div>
         </div>
         {giveBackLinks.length > 0 && (
           <div className="space-y-2 sm:space-y-2.5">
@@ -1483,14 +1511,25 @@ export function SiteFooter() {
           <p className="font-semibold text-white tracking-wider uppercase text-xs">{t("getSupport")}</p>
           <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             {[
-              { href: "/register", l: t("createAccount") },
+              ...(showSignUpLinks ? [{ href: "/register", l: t("createAccount") }] : []),
               { href: user ? "/dashboard" : "/login", l: t("myDashboard") },
-              ...(FEATURES.money ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
+              ...(showSignUpLinks ? [{ href: "/register?role=NGO", l: "Register your NGO" }] : []),
+              { href: "/give-safely", l: "Safety guidelines" },
+              ...(FEATURES.money && !isNgoAccount ? [{ href: "/campaigns/new", l: t("startCampaign") }] : []),
               { href: "/faq", l: t("helpFaq") },
               { href: "/blog", l: t("blog") },
             ].map(({ href, l }) => (
               <li key={href}><Link href={href} className="hover:text-white hover:underline underline-offset-4 transition duration-200">{l}</Link></li>
             ))}
+            <li>
+              <button
+                type="button"
+                onClick={() => handleWhatsAppShare()}
+                className="hover:text-white hover:underline underline-offset-4 transition duration-200 text-left cursor-pointer"
+              >
+                Invite a friend
+              </button>
+            </li>
           </ul>
         </div>
         <div className="space-y-2 sm:space-y-2.5">
@@ -1499,7 +1538,7 @@ export function SiteFooter() {
               narrow column and a centred dot then floats beside the gap. */}
           <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
-            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("zeroFees")}</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0F7A6C]" /> OTP-confirmed handovers</li>
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>

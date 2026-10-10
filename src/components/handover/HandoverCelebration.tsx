@@ -182,6 +182,8 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
   const [tipAmount, setTipAmount] = useState<number | ''>(50);
   const [customTip, setCustomTip] = useState("");
+  // "Other" opens a typed amount; the slider and presets close it (2026-10-08).
+  const [otherOpen, setOtherOpen] = useState(false);
   const [tipLoading, setTipLoading] = useState(false);
   const [tipDone, setTipDone] = useState(false);
 
@@ -279,7 +281,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
           {step !== "celebrate" && (
             <button
               onClick={onClose}
-              className="absolute right-4 top-4 text-xs font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              className={`absolute right-4 top-4 z-10 text-xs font-medium ${step === "tip" ? "text-white/80 hover:text-white" : "text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"}`}
             >
               Close
             </button>
@@ -289,11 +291,15 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
             {step === "celebrate" && (
               <motion.div key="celebrate" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}>
                 <WarmthMotif />
+                {/* Worded for whoever is looking (2026-10-08): the recipient was told
+                    "You just did something kind", which only fits the giver. */}
                 <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                  You just did something kind
+                  {role === "DONEE" ? "Your item has arrived" : "You just did something kind"}
                 </h2>
                 <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                  This handover is complete — thank you for being part of it.
+                  {role === "DONEE"
+                    ? "This handover is complete. We hope it helps — someone nearby chose to give it to you."
+                    : "This handover is complete — thank you for giving."}
                 </p>
                 <button
                   onClick={() => setStep("feedback")}
@@ -346,47 +352,98 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
 
             {step === "tip" && (
               <motion.div key="tip" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.25 }}>
-                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-                  Enjoyed doing kindness?
+                {/* Thank-you note design + slider (owner, 2026-10-08,
+                    https://claude.ai/artifact/Ref3xfQpRJP28c3d99K5zZ). The header
+                    bleeds to the card edges; colours follow the viewer's role. */}
+                <div className="-mx-7 -mt-7 mb-5 flex h-32 items-center justify-center bg-[var(--handover-accent)]">
+                  <svg width="190" height="96" viewBox="0 0 210 110" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M40 92c16-20 40-30 65-30s49 10 65 30" />
+                    <path d="M105 58c-8-14-28-12-28 4 0 13 28 28 28 28s28-15 28-28c0-16-20-18-28-4z" fill="rgba(255,255,255,0.18)" />
+                    <path d="M44 34c-3-5-11-3-9 3 1 4 9 9 9 9s8-5 9-9c2-6-6-8-9-3z" fill="#fff" stroke="none" opacity="0.7" />
+                    <path d="M168 24c-2-4-8-2-7 2 1 3 7 7 7 7s6-4 7-7c1-4-5-6-7-2z" fill="#fff" stroke="none" opacity="0.6" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
+                  One small thing more?
                 </h2>
                 <p className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
-                  If you'd like, you can support CauseKind so we can keep connecting people like you. Totally optional.
+                  CauseKind is free for everyone. A tip keeps it that way — it never comes out of a donation.
                 </p>
-                <div className="mt-4 grid grid-cols-4 gap-2">
-                  {TIP_PRESETS.map((amt) => (
-                    <button
-                      key={amt}
-                      onClick={() => { setTipAmount(amt); setCustomTip(""); }}
-                      className={`rounded-xl border-2 py-2.5 text-sm font-semibold transition-colors ${
-                        tipAmount === amt && !customTip
-                          ? "border-[var(--handover-accent)] bg-[var(--handover-soft)] text-[var(--handover-on-soft)] dark:bg-[var(--handover-accent)]/15 dark:text-[var(--handover-on-soft)]"
-                          : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      ₹{amt}
-                    </button>
-                  ))}
+
+                <p aria-live="polite" className="mt-4 text-5xl font-black tracking-tight text-[var(--handover-accent)]">
+                  ₹{effectiveTipAmount ?? 0}
+                </p>
+                <label className="mt-3 block">
+                  <span className="sr-only">Tip amount</span>
                   <input
+                    type="range"
+                    min={10}
+                    max={500}
+                    step={10}
+                    value={typeof tipAmount === "number" && !customTip ? tipAmount : Math.min(500, Math.max(10, effectiveTipAmount ?? 50))}
+                    onChange={(e) => { setTipAmount(Number(e.target.value)); setCustomTip(""); setOtherOpen(false); }}
+                    className="h-7 w-full cursor-pointer accent-[var(--handover-accent)]"
+                  />
+                  <span className="flex justify-between text-xs text-gray-400"><span>₹10</span><span>₹500</span></span>
+                </label>
+
+                <div role="radiogroup" aria-label="Quick amounts" className="mt-3 grid grid-cols-4 gap-1 rounded-2xl bg-[#f3e9df] p-1 dark:bg-white/10">
+                  {TIP_PRESETS.map((amt) => {
+                    const on = tipAmount === amt && !customTip && !otherOpen;
+                    return (
+                      <button
+                        key={amt}
+                        type="button"
+                        role="radio"
+                        aria-checked={on}
+                        onClick={() => { setTipAmount(amt); setCustomTip(""); setOtherOpen(false); }}
+                        className={`min-h-[44px] rounded-xl text-base font-bold transition-colors ${on ? "bg-white text-[var(--handover-accent)] shadow-sm dark:bg-gray-900" : "text-gray-600 dark:text-gray-300"}`}
+                      >
+                        ₹{amt}
+                      </button>
+                    );
+                  })}
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={otherOpen}
+                    onClick={() => setOtherOpen(true)}
+                    className={`min-h-[44px] rounded-xl text-base font-bold transition-colors ${otherOpen ? "bg-white text-[var(--handover-accent)] shadow-sm dark:bg-gray-900" : "text-gray-600 dark:text-gray-300"}`}
+                  >
+                    Other
+                  </button>
+                </div>
+                {otherOpen && (
+                  <input
+                    autoFocus
+                    inputMode="numeric"
                     value={customTip}
                     onChange={(e) => setCustomTip(e.target.value.replace(/[^0-9]/g, ""))}
-                    placeholder="Other"
-                    className="rounded-xl border-2 border-gray-200 py-2.5 text-center text-sm font-semibold text-gray-700 outline-none focus:border-[var(--handover-accent)]/60 dark:border-gray-700 dark:text-gray-200"
+                    placeholder="Enter an amount in ₹"
+                    aria-label="Other tip amount in rupees"
+                    className="mt-2 w-full rounded-xl border-2 border-gray-200 py-2.5 text-center text-base font-semibold text-gray-800 outline-none focus:border-[var(--handover-accent)]/60 dark:border-gray-700 dark:bg-transparent dark:text-gray-100"
                   />
-                </div>
-                <div className="mt-5 flex gap-2">
+                )}
+
+                <button
+                  onClick={handleTip}
+                  disabled={tipLoading || !effectiveTipAmount}
+                  className="mt-4 inline-flex min-h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-gray-900 px-5 text-base font-bold text-white transition-colors hover:bg-black disabled:opacity-60 dark:bg-white dark:text-gray-900"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="#f0a477" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9C.9 8.6 3 5 6.6 5c2.1 0 3.6 1.2 4.3 2.5h.2C11.8 6.2 13.3 5 15.4 5 19 5 21.1 8.6 19.6 12c-2.1 4.4-7.6 9-7.6 9z" /></svg>
+                  {tipLoading ? "Opening checkout…" : effectiveTipAmount ? `Send ₹${effectiveTipAmount} tip` : "Choose an amount"}
+                </button>
+                <div className="mt-2 flex items-center justify-between">
                   <button
                     onClick={handleSkipTip}
-                    className="flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                    className="min-h-[44px] text-sm font-semibold text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                   >
-                    No thanks
+                    Not this time
                   </button>
-                  <button
-                    onClick={handleTip}
-                    disabled={tipLoading || !effectiveTipAmount}
-                    className="flex-[2] rounded-xl bg-[var(--handover-accent)] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#943c10] disabled:opacity-60"
-                  >
-                    {tipLoading ? "Opening checkout…" : `Tip ₹${effectiveTipAmount ?? ""}`}
-                  </button>
+                  <span className="inline-flex items-center gap-1.5 text-xs text-gray-400">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V7a4 4 0 0 1 8 0v4" /></svg>
+                    Secure payment
+                  </span>
                 </div>
               </motion.div>
             )}

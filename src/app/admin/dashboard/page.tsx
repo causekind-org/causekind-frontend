@@ -11,13 +11,18 @@ import {
   adminGetAllOffers,
   adminGetAllAiAssessments, type AiAssessmentResponse,
   adminGetMyPermissions,
-  adminGetListingVideo, type OfferVideoStatus,
-  adminGetListingPhotos, type ListingPhoto,
+  adminGetNgoApplications,
+  adminGetNgoDrives,
+  adminGetPendingNgoDriveOffers,
+  adminGetNgoDriveProofs,
 } from "@/lib/api";
 import { displayReason } from "@/lib/rejectionReason";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
+import { HandoverPhotoLog } from "../HandoverPhotoLog";
+import { NgoReviewPanel } from "../ngos/NgoReviewPanel";
+import { NgoDriveReviewPanel, NgoDriveOffersPanel, NgoDriveProofsPanel } from "../ngo-drives/NgoDriveAdminPanels";
 import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel";
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
@@ -25,29 +30,45 @@ import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import {
-  Bot, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
+  Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
+  Camera,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "listings" | "matches" | "offers" | "match-history" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
 const TAB_CAPABILITY: Record<TabKey, string> = {
   campaigns: "CAMPAIGNS",
   requests: "REQUEST_REVIEW",
+  // Same capability the backend checks on /api/v1/admin/ngo-applications.
+  "ngo-applications": "REQUEST_REVIEW",
+  // Same capabilities AdminCapabilityFilter maps for /admin/ngo-drives and /admin/ngo-drive-offers.
+  "ngo-drives": "REQUEST_REVIEW",
+  "drive-offers": "OFFER_REVIEW",
+  "drive-proofs": "REQUEST_REVIEW",
   listings: "LISTING_REVIEW",
   matches: "MATCH_INTERVENE",
   offers: "OFFER_REVIEW",
   "match-history": "MATCH_INTERVENE",
+  "handover-photos": "MATCH_INTERVENE",
   "ai-logs": "LISTING_REVIEW",
   "user-journey": "USER_READ",
   analytics: "PAYMENT_REVIEW",
   whatsapp: "WHATSAPP",
 };
+/** ?tab= values that open an NGO tab (tab keys plus the longer names used in links). */
+const NGO_TAB_LINKS: Record<string, TabKey> = {
+  "ngo-drives": "ngo-drives",
+  "drive-offers": "drive-offers", "ngo-drive-offers": "drive-offers",
+  "drive-proofs": "drive-proofs", "ngo-proofs": "drive-proofs",
+};
+const NGO_TAB_KEYS: TabKey[] = ["ngo-applications", "ngo-drives", "drive-offers", "drive-proofs"];
+
 type RejectType = "campaign" | "listing" | "match";
 type DetailSelection =
   | { type: "request"; item: ItemRequest }
@@ -135,11 +156,13 @@ function splitValues(value?: string | null, separator: "," | "|" = ",") {
 }
 
 function listingPhotos(listing: ItemListing) {
+  if (listing.photoUrls?.length) return listing.photoUrls;
   return [listing.imageUrl, ...(listing.imageUrls ? listing.imageUrls.split("|") : [])]
     .filter(Boolean) as string[];
 }
 
 function matchListingPhotos(match: ItemMatch) {
+  if (match.listingPhotoUrls?.length) return match.listingPhotoUrls;
   return [match.listingImageUrl, ...(match.listingImageUrls ? match.listingImageUrls.split("|") : [])]
     .filter(Boolean) as string[];
 }
@@ -158,10 +181,13 @@ export default function AdminDashboardPage() {
   const [listings, setListings] = useState<ItemListing[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
   const [offersNeedingAction, setOffersNeedingAction] = useState(0);
+  const [ngoAwaiting, setNgoAwaiting] = useState(0);
   const [offersInFlight, setOffersInFlight] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState<TabKey>("campaigns");
+  // NGO sidebar group: opens with its header, and always while one of its tabs is active.
+  const [ngoExpanded, setNgoExpanded] = useState(false);
   const [journeyUserId, setJourneyUserId] = useState<number | null>(null);
 
   // Effective permissions — null while loading (treated as "everything granted"
@@ -214,6 +240,41 @@ export default function AdminDashboardPage() {
       setTab("user-journey");
     }
   }, []);
+
+  // NGO applications awaiting review — the sidebar badge and the header total.
+  // Its own request, so an admin without REQUEST_REVIEW (a 403 here) still gets
+  // the rest of the queue; the badge just stays at zero for them.
+  const loadNgoCount = useCallback(() => {
+    adminGetNgoApplications("UNDER_REVIEW", 0)
+      .then(res => setNgoAwaiting(res.totalElements))
+      .catch(() => setNgoAwaiting(0));
+  }, []);
+  useEffect(() => { loadNgoCount(); }, [loadNgoCount]);
+
+  // NGO drive queues: pending drives, donor offers to drives, distribution proofs.
+  // Separate requests for the same reason as above: a 403 only zeroes its own badge.
+  const [drivesPending, setDrivesPending] = useState(0);
+  const [driveOffersPending, setDriveOffersPending] = useState(0);
+  const [driveProofsPending, setDriveProofsPending] = useState(0);
+  const loadDriveCounts = useCallback(() => {
+    adminGetNgoDrives("PENDING_REVIEW").then(r => setDrivesPending(r.length)).catch(() => setDrivesPending(0));
+    adminGetPendingNgoDriveOffers().then(r => setDriveOffersPending(r.length)).catch(() => setDriveOffersPending(0));
+    adminGetNgoDriveProofs().then(r => setDriveProofsPending(r.length)).catch(() => setDriveProofsPending(0));
+  }, []);
+  useEffect(() => { loadDriveCounts(); }, [loadDriveCounts]);
+
+  // Deep link: /admin/dashboard?tab=ngo-applications[&application=<id>]
+  const [ngoDeepLink, setNgoDeepLink] = useState<string | null>(null);
+  useEffect(() => {
+    const qs = new URLSearchParams(window.location.search);
+    const wanted = qs.get("tab");
+    if (wanted === "ngo-applications") {
+      setTab("ngo-applications");
+      setNgoDeepLink(qs.get("application"));
+    } else if (wanted && NGO_TAB_LINKS[wanted]) {
+      setTab(NGO_TAB_LINKS[wanted]);
+    }
+  }, []);
   const [rejectId, setRejectId] = useState<number | null>(null);
   const [rejectType, setRejectType] = useState<RejectType | null>(null);
   const [rejectReason, setRejectReason] = useState("");
@@ -253,26 +314,28 @@ export default function AdminDashboardPage() {
   // ── Data loading ──
   const loadData = useCallback(() => {
     setLoading(true);
+    // Queue tabs show no NGO work; it is reviewed only in the NGO tabs.
+    const queue = { excludeNgo: true };
     Promise.all([
-      adminGetCampaigns("PENDING_APPROVAL"),
-      adminGetItemRequests("PENDING_VERIFICATION"),
+      adminGetCampaigns("PENDING_APPROVAL", queue),
+      adminGetItemRequests("PENDING_VERIFICATION", queue),
       Promise.all([
-        adminGetItemListings("SUBMITTED"),
-        adminGetItemListings("MANUAL_REVIEW"),
+        adminGetItemListings("SUBMITTED", queue),
+        adminGetItemListings("MANUAL_REVIEW", queue),
       ]).then(([submitted, manual]) => [...submitted, ...manual]),
-      adminGetMatches("PENDING_APPROVAL"),
+      adminGetMatches("PENDING_APPROVAL", queue),
       // Offers tab manages its own list/loading inside OffersQueuePanel — here we only
       // need counts: needs-action for the tab badge, plus open offers so the header
       // doesn't claim "all clear" while an offer is mid-pipeline with the parties.
-      adminGetAllOffers().then(all => ({
+      adminGetAllOffers(undefined, queue).then(all => ({
         needsAction: all.filter(o => ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)).length,
         open: all.filter(o => !["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED", "DRAFT"].includes(o.status)).length,
       })),
       // Rejected items were previously fetched by nothing at all, so an AI
       // auto-reject was final AND invisible — no queue contained it and no admin
       // could act on it. These two make it reviewable.
-      adminGetItemListings("REJECTED"),
-      adminGetItemRequests("REJECTED"),
+      adminGetItemListings("REJECTED", queue),
+      adminGetItemRequests("REJECTED", queue),
     ]).then(([c, r, l, m, offerCounts, rejL, rejR]) => {
       setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
       setOffersNeedingAction(offerCounts.needsAction);
@@ -481,11 +544,15 @@ export default function AdminDashboardPage() {
   }
   if (!user) return null;
 
-  const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction;
+  // Drive offers are monitor-only (the NGO accepts, the handover follows), so their
+  // badge counts handovers under way and is not added to the admin's to-do total.
+  const total = campaigns.length + requests.length + listings.length + matches.length + offersNeedingAction + ngoAwaiting
+    + drivesPending + driveProofsPending;
   // "user-journey" belongs here too. Leaving it out meant that tab rendered its
   // own panel *and* the approval-queue feed underneath it, and put it on the
   // wrong side of the mobile nav split below.
-  const isReportTab = tab === "match-history" || tab === "ai-logs"
+  const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
+  const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
     || tab === "user-journey" || tab === "analytics" || tab === "whatsapp";
 
   const TABS = [
@@ -496,25 +563,51 @@ export default function AdminDashboardPage() {
     { key: "offers"    as TabKey, label: "Offers",       count: offersNeedingAction, icon: Gift,          color: "#f472b6" },
   ].filter(t => canSeeTab(t.key));
 
+  // Everything NGO-related lives in its own group; capabilities still apply per tab.
+  const NGO_TABS = [
+    { key: "ngo-applications" as TabKey, label: "NGO Applications", count: ngoAwaiting, icon: Building2, color: "#34a578" },
+    { key: "ngo-drives" as TabKey, label: "NGO Drives", count: drivesPending, icon: ClipboardList, color: "#2f8f6a" },
+    { key: "drive-offers" as TabKey, label: "Drive Offers", count: driveOffersPending, icon: Gift, color: "#e05f9b" },
+    { key: "drive-proofs" as TabKey, label: "Distribution Proofs", count: driveProofsPending, icon: Package, color: "#c98a1b" },
+  ].filter(t => canSeeTab(t.key));
+  const ngoTotal = NGO_TABS.reduce((sum, t) => sum + t.count, 0);
+  const ngoGroupOpen = ngoExpanded || NGO_TAB_KEYS.includes(tab);
+
   // Single source for the report destinations, consumed by both the desktop
   // sidebar and the mobile strip — the two were hand-duplicated before, which is
   // how "User Journey" ended up in one list and not the other.
   const REPORTS = [
     { key: "match-history" as TabKey, label: "Match History",     icon: Handshake,     color: "text-teal-400"   },
+    { key: "handover-photos" as TabKey, label: "Handover Photo Log", icon: Camera,      color: "text-amber-400"  },
     { key: "ai-logs"       as TabKey, label: "AI Screening Logs", icon: Bot,           color: "text-violet-400" },
     { key: "user-journey"  as TabKey, label: "User Journey",      icon: UserRound,     color: "text-sky-400"    },
     { key: "analytics"     as TabKey, label: "Analytics",         icon: TrendingUp,    color: "text-amber-400"  },
     { key: "whatsapp"      as TabKey, label: "WhatsApp",          icon: MessageCircle, color: "text-green-400"  },
   ].filter(t => canSeeTab(t.key));
 
-  const headerTitle =tab === "match-history" ? "Match History"
+  const headerTitle = tab === "ngo-applications" ? "NGO Applications"
+    : tab === "ngo-drives" ? "NGO Drives"
+    : tab === "drive-offers" ? "Drive Offers"
+    : tab === "drive-proofs" ? "Distribution Proofs"
+    : tab === "match-history" ? "Match History"
+    : tab === "handover-photos" ? "Handover Photo Log"
     : tab === "ai-logs" ? "AI Screening Logs"
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
     : tab === "whatsapp" ? "WhatsApp"
     : "Approval Queue";
 
-  const headerSubtitle = tab === "match-history"
+  const headerSubtitle = tab === "ngo-applications"
+    ? `${ngoAwaiting} application${ngoAwaiting !== 1 ? "s" : ""} awaiting review · approval unlocks requests and drives`
+    : tab === "ngo-drives"
+    ? `${drivesPending} drive${drivesPending !== 1 ? "s" : ""} awaiting review · approval makes a drive live for donors`
+    : tab === "drive-offers"
+    ? `${driveOffersPending} donor offer${driveOffersPending !== 1 ? "s" : ""} to drives in handover · monitor only, the NGO accepts offers`
+    : tab === "drive-proofs"
+    ? `${driveProofsPending} distribution proof${driveProofsPending !== 1 ? "s" : ""} awaiting review · approval completes the drive`
+    : tab === "handover-photos"
+    ? "Every on-the-spot handover photo, with the full record of each donation"
+    : tab === "match-history"
     ? `${allMatches.length} match${allMatches.length !== 1 ? "es" : ""} · complete lifecycle view`
     : tab === "user-journey"
     ? "One user's complete story — every step on record, from registration to today"
@@ -587,6 +680,49 @@ export default function AdminDashboardPage() {
               </div>
             </button>
           ))}
+
+          {NGO_TABS.length > 0 && (
+            <div className="pt-2 space-y-2">
+              <button
+                onClick={() => setNgoExpanded(open => !open)}
+                aria-expanded={ngoGroupOpen}
+                aria-controls="admin-ngo-group"
+                className="w-full flex items-center justify-between px-1 py-1 text-left"
+              >
+                <span className="flex items-center gap-2 text-3xs font-black uppercase tracking-widest text-stone-500">
+                  <Building2 className="w-3.5 h-3.5" aria-hidden /> NGO
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-sm font-black tabular-nums" style={{ color: ngoTotal > 0 ? "#34a578" : "#3d3d52" }}>{ngoTotal}</span>
+                  {ngoGroupOpen ? <ChevronUp className="w-4 h-4 text-stone-500" aria-hidden /> : <ChevronDown className="w-4 h-4 text-stone-500" aria-hidden />}
+                </span>
+              </button>
+              {ngoGroupOpen && (
+                <div id="admin-ngo-group" className="space-y-2 pl-2 border-l border-white/[0.07]">
+                  {NGO_TABS.map(({ key, label, count, icon: Icon, color }) => (
+                    <button
+                      key={key}
+                      onClick={() => setTab(key)}
+                      aria-current={tab === key ? "page" : undefined}
+                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all border ${
+                        tab === key ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
+                      }`}
+                      style={{ background: tab === key ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <Icon className="w-4 h-4 shrink-0" style={{ color: tab === key ? "#b04a15" : color }} />
+                        <span className={`text-sm font-semibold ${tab === key ? "text-white" : "text-stone-400"}`}>{label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
+                        <span className="text-base font-black tabular-nums leading-none" style={{ color: count > 0 ? color : "#3d3d52" }}>{count}</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Reports */}
@@ -703,6 +839,37 @@ export default function AdminDashboardPage() {
               </button>
             ))}
 
+            {NGO_TABS.length > 0 && (
+              <>
+                <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
+                <button
+                  onClick={() => setNgoExpanded(open => !open)}
+                  aria-expanded={ngoGroupOpen}
+                  className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all ${
+                    NGO_TAB_KEYS.includes(tab) ? "bg-[#34a578] text-white" : "bg-white text-stone-600 border border-stone-200"
+                  }`}
+                >
+                  NGO
+                  {ngoTotal > 0 && <span className="opacity-80">{ngoTotal}</span>}
+                  {ngoGroupOpen ? <ChevronUp className="w-3 h-3" aria-hidden /> : <ChevronDown className="w-3 h-3" aria-hidden />}
+                </button>
+                {ngoGroupOpen && NGO_TABS.map(({ key, label, count }) => (
+                  <button
+                    key={key}
+                    data-active={tab === key || undefined}
+                    onClick={() => setTab(key)}
+                    aria-current={tab === key ? "page" : undefined}
+                    className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      tab === key ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
+                    }`}
+                  >
+                    {label}
+                    {count > 0 && <span className="opacity-80">{count}</span>}
+                  </button>
+                ))}
+              </>
+            )}
+
             {REPORTS.length > 0 && (
               <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
             )}
@@ -727,10 +894,19 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ── Cards feed ── */}
-        <div className="flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 max-w-4xl space-y-3 sm:space-y-4">
+        <div className={`flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 ${tab === "ngo-applications" || tab === "ngo-drives" ? "max-w-6xl" : "max-w-4xl"} space-y-3 sm:space-y-4`}>
 
           {/* ── DONATION OFFERS TAB — reuses the same panel as the standalone /admin/offers page ── */}
           {tab === "offers" && <OffersQueuePanel />}
+
+          {/* ── NGO APPLICATIONS TAB — /admin/ngos redirects here. Approving
+                 creates the NGO profile, which unlocks requests and drives. ── */}
+          {tab === "ngo-applications" && <NgoReviewPanel initialApplicationId={ngoDeepLink} onDecision={loadNgoCount} />}
+
+          {/* ── NGO DRIVE QUEUES ── */}
+          {tab === "ngo-drives" && <NgoDriveReviewPanel onChange={loadDriveCounts} />}
+{tab === "drive-offers" && <NgoDriveOffersPanel />}
+          {tab === "drive-proofs" && <NgoDriveProofsPanel onChange={loadDriveCounts} />}
 
           {/* ── REQUESTS TAB — merged with Donee Verification: the tiered verification
                  queue (checklist, SLA, hold, documents) is the single review path,
@@ -739,7 +915,7 @@ export default function AdminDashboardPage() {
           {tab === "requests" && <VerificationQueuePanel />}
 
           {/* ── APPROVAL QUEUE TABS ── */}
-          {!isReportTab && tab !== "offers" && tab !== "requests" && (
+          {!isReportTab && tab !== "offers" && tab !== "requests" && !isDriveTab && (
             loading ? (
               <div className="flex flex-col items-center justify-center py-28">
                 <Loader2 className="w-8 h-8 animate-spin text-stone-300" />
@@ -845,6 +1021,9 @@ export default function AdminDashboardPage() {
               </>
             )
           )}
+
+          {/* ── HANDOVER PHOTO LOG (2026-10-08) ── */}
+          {tab === "handover-photos" && <HandoverPhotoLog />}
 
           {/* ── MATCH HISTORY TAB ── */}
           {tab === "match-history" && (
@@ -1120,61 +1299,6 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
   const recBadge = REC_BADGE[a.recommendation] ?? "bg-stone-100 text-stone-700 border-stone-300";
   const fraudBadge = a.fraudRisk ? (FRAUD_BADGE[a.fraudRisk] ?? "") : "";
 
-  // Fetched lazily on first expand — the assessment payload itself doesn't carry
-  // the donor's video, since it's optional and lives on the listing, not the AI log.
-  // Both this and the photos below come back as S3 presigned URLs that expire
-  // after 300s, so while the card stays open we re-fetch fresh ones well before
-  // that — otherwise a card left open (or opened, ignored, revisited) shows
-  // broken images/video instead of a slow-but-working reload.
-  const PRESIGNED_REFRESH_MS = 4 * 60 * 1000; // 4 min: refresh before the 5 min expiry
-  const [video, setVideo] = useState<OfferVideoStatus | null | "loading">(null);
-  const [videoError, setVideoError] = useState<string | null>(null);
-  useEffect(() => {
-    if (!expanded) return;
-    let cancelled = false;
-    const load = () => {
-      setVideo((prev) => (prev === null ? "loading" : prev));
-      adminGetListingVideo(a.listingId)
-        .then((v) => { if (!cancelled) { setVideo(v); setVideoError(null); } })
-        .catch((err) => {
-          if (cancelled) return;
-          setVideo(null);
-          setVideoError(err instanceof Error ? err.message : "Could not load video");
-        });
-    };
-    load();
-    const id = setInterval(load, PRESIGNED_REFRESH_MS);
-    return () => { cancelled = true; clearInterval(id); };
-  }, [expanded, a.listingId]);
-
-  // The assessment's own `images` is a snapshot taken when the AI ran — empty
-  // when screening was bypassed. Fall back to the listing's live current
-  // photos so approved-but-unmatched listings still show something here.
-  const needsLivePhotos = !a.images || a.images.length === 0;
-  const [livePhotos, setLivePhotos] = useState<ListingPhoto[] | null>(null);
-  const [livePhotosError, setLivePhotosError] = useState<string | null>(null);
-  const [livePhotosLoaded, setLivePhotosLoaded] = useState(false);
-  useEffect(() => {
-    if (!expanded || !needsLivePhotos) return;
-    let cancelled = false;
-    const load = () => {
-      adminGetListingPhotos(a.listingId)
-        .then((p) => { if (!cancelled) { setLivePhotos(p); setLivePhotosError(null); setLivePhotosLoaded(true); } })
-        .catch((err) => {
-          if (cancelled) return;
-          setLivePhotos(null);
-          setLivePhotosError(err instanceof Error ? err.message : "Could not load listing photos");
-          setLivePhotosLoaded(true);
-        });
-    };
-    load();
-    const id = setInterval(load, PRESIGNED_REFRESH_MS);
-    return () => { cancelled = true; clearInterval(id); };
-  }, [expanded, needsLivePhotos, a.listingId]);
-  const livePhotoUrls = (livePhotos ?? [])
-    .filter((p) => p.status === "APPROVED" && p.url)
-    .map((p) => p.url as string);
-
   return (
     <div className="bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
       <button className="w-full text-left p-3 sm:p-4 hover:bg-stone-50 transition" onClick={onToggle}>
@@ -1260,34 +1384,6 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
 
           {/* Photos the AI assessed — click any thumbnail for a full-size preview */}
           {a.images && a.images.length > 0 && <PhotoStrip images={a.images} label="Photos assessed" />}
-          {(!a.images || a.images.length === 0) && livePhotoUrls.length > 0 && (
-            <PhotoStrip images={livePhotoUrls} label="Listing photos (live)" />
-          )}
-          {(!a.images || a.images.length === 0) && livePhotosLoaded && livePhotoUrls.length === 0 && livePhotosError && (
-            <p className="text-2xs text-red-500">Could not load listing photos: {livePhotosError}</p>
-          )}
-
-          {/* Donor-uploaded video, if any — optional, so absence is normal, not an error */}
-          {video === "loading" ? (
-            <div className="flex items-center gap-1.5 text-2xs text-stone-400">
-              <Loader2 className="h-3 w-3 animate-spin" /> Checking for donor video…
-            </div>
-          ) : video && video.available && video.playbackUrl ? (
-            <div>
-              <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1">Donor video</p>
-              <video
-                src={video.playbackUrl}
-                controls
-                className="max-h-64 w-full max-w-sm rounded-lg border border-stone-200 bg-black"
-              />
-            </div>
-          ) : video ? (
-            <p className="text-2xs text-stone-400">
-              Donor uploaded a video, but it isn&apos;t available yet ({video.status.replace(/_/g, " ").toLowerCase()}).
-            </p>
-          ) : videoError ? (
-            <p className="text-2xs text-red-500">Could not load donor video: {videoError}</p>
-          ) : null}
 
           {a.evidenceNotes && <p className="text-xs italic text-stone-600">{a.evidenceNotes}</p>}
 
@@ -1573,7 +1669,7 @@ function ListingApprovalCard({
 
           {(l.approximateAge || l.workingStatus || l.dimensions || l.approximateWeight || l.locality || l.pincode) && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-stone-50 rounded-xl p-3">
-              {l.approximateAge    && <div><span className="text-stone-400">Age: </span><span className="font-semibold text-stone-700">{l.approximateAge}</span></div>}
+              {l.approximateAge    && <div><span className="text-stone-400">Item age: </span><span className="font-semibold text-stone-700">{l.approximateAge}</span></div>}
               {l.workingStatus     && <div><span className="text-stone-400">Working: </span><span className="font-semibold text-stone-700">{l.workingStatus.replace(/_/g, " ")}</span></div>}
               {l.dimensions        && <div><span className="text-stone-400">Size: </span><span className="font-semibold text-stone-700">{l.dimensions}</span></div>}
               {l.approximateWeight && <div><span className="text-stone-400">Weight: </span><span className="font-semibold text-stone-700">{l.approximateWeight}</span></div>}
@@ -1819,7 +1915,7 @@ function ListingDetailContent({ listing: l }: { listing: ItemListing }) {
             { label: "Condition", value: l.condition },
             { label: "Brand", value: l.brand },
             { label: "Model", value: l.model },
-            { label: "Age", value: l.approximateAge },
+            { label: "Item age", value: l.approximateAge },
             { label: "Working status", value: formatEnum(l.workingStatus) },
             { label: "Dimensions", value: l.dimensions },
             { label: "Weight", value: l.approximateWeight },
@@ -1976,7 +2072,7 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
                 { label: "Status", value: formatEnum(m.listingStatus) },
                 { label: "Brand", value: m.listingBrand },
                 { label: "Model", value: m.listingModel },
-                { label: "Age", value: m.listingApproximateAge },
+                { label: "Item age", value: m.listingApproximateAge },
                 { label: "Working status", value: formatEnum(m.listingWorkingStatus) },
                 { label: "Dimensions", value: m.listingDimensions },
                 { label: "Weight", value: m.listingApproximateWeight },

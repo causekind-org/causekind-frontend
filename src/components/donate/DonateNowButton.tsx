@@ -34,6 +34,7 @@ export function DonateNowButton({
   fullWidth = false,
   className = "",
   href = DONATE_HREF,
+  direct = false,
 }: {
   size?: "sm" | "md" | "lg";
   variant?: "solid" | "outline";
@@ -43,13 +44,22 @@ export function DonateNowButton({
   className?: string;
   /** Override only for a placement that must land somewhere else. */
   href?: string;
+  /**
+   * Go straight to `href`. Without it a click opens the In-Kind / Money choice
+   * (DonateChoice, mounted in the root layout) — set it only where the copy
+   * around the button already says "money".
+   */
+  direct?: boolean;
 }) {
   const iconPx = size === "sm" ? 14 : size === "lg" ? 19 : 17;
 
   return (
     <Link
       href={href}
+      // The arrival handler owns scrolling for the donation deep link.
+      scroll={href === DONATE_HREF ? false : undefined}
       data-donate-cta={size}
+      data-donate-direct={direct || undefined}
       className={[
         "ck-donate-cta",
         `ck-donate-${size}`,

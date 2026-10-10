@@ -5,11 +5,10 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
-import { resolveLocationFromGPS, getDialCodes } from "@/app/actions/locations";
+import { getDialCodes } from "@/app/actions/locations";
 import {
   getProfile,
   updateProfile,
-  updateLocation,
   getMyDonations,
   getMyCampaigns,
   getMyItemRequests,
@@ -26,6 +25,7 @@ import {
   type DoneeNeedProfile,
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
+import { NgoProfileView } from "./ngo-view";
 import { FEATURES } from "@/lib/features";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,7 +52,6 @@ import {
   Award,
   BookOpen,
   Package,
-  Navigation,
   CheckCircle2,
   Gift,
   Handshake,
@@ -69,6 +68,7 @@ import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { useTranslations } from "next-intl";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -250,9 +250,6 @@ export default function ProfilePage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [storyExpanded, setStoryExpanded] = useState(false);
 
-  // GPS location
-  const [locStatus, setLocStatus] = useState<"idle" | "requesting" | "saved" | "error">("idle");
-
   // Derived option lists (memoized to avoid re-building every render)
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } = useLocations(countryIso, stateIso);
   const maxPhoneLength = PHONE_LENGTHS[dialCountry] ?? 10;
@@ -269,6 +266,11 @@ export default function ProfilePage() {
     if (authLoading) return;
     if (!user) {
       router.push("/login");
+      return;
+    }
+
+    if (isNgoRole(user.role?.toUpperCase())) {
+      setLoading(false);
       return;
     }
 
@@ -475,77 +477,6 @@ export default function ProfilePage() {
     return [cityValue, stateIso, countryIso].filter(Boolean).join(", ");
   }
 
-  function handleUseMyLocation() {
-    if (!navigator.geolocation) {
-      toast.error(t("errorNoGps"));
-      return;
-    }
-    setLocStatus("requesting");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const updated = await updateLocation(lat, lng);
-          setProfile(updated);
-          setLocStatus("saved");
-          toast.success(t("successLocationSaved"));
-
-          // Reverse-geocode to auto-fill the dropdown menus in UI
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`);
-            if (res.ok) {
-              const data = await res.json();
-              const address = data.address;
-              if (address) {
-                const countryCode = address.country_code?.toUpperCase();
-                const stateName = address.state;
-                const cityName = address.city || address.town || address.village || address.suburb;
-
-                if (countryCode) {
-                  setDialCountry(countryCode);
-                  setCountryIso(countryCode);
-                  const { stateIso: resolvedState, cityValue: resolvedCity } = await resolveLocationFromGPS(countryCode, stateName, cityName);
-                  
-                  if (resolvedState) {
-                    setStateIso(resolvedState);
-                    if (resolvedCity) {
-                      setCityValue(resolvedCity);
-                      setCityFreeText("");
-                      setForceFreeTextCity(false);
-                    } else if (cityName) {
-                      setCityValue("");
-                      setCityFreeText(cityName);
-                      setForceFreeTextCity(true);
-                    }
-                  } else {
-                    setStateIso("");
-                    setCityValue("");
-                    if (cityName) { setCityFreeText(cityName); setForceFreeTextCity(true); }
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.error("Reverse geocoding failed", e);
-          }
-        } catch {
-          setLocStatus("error");
-          toast.error(t("errorLocationFailed"));
-        }
-      },
-      (err) => {
-        setLocStatus("error");
-        toast.error(
-          err.code === 1
-            ? t("errorLocationDenied")
-            : t("errorLocationUnavailable")
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  }
-
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
 
@@ -588,6 +519,11 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  const isNgo = isNgoRole(user?.role?.toUpperCase());
+  if (!authLoading && isNgo) {
+    return <NgoProfileView />;
   }
 
   // Loading skeleton
@@ -641,7 +577,6 @@ export default function ProfilePage() {
         badge:     "bg-[#1e3a60] text-white shadow-lg shadow-[#1e3a60]/30",
         badgeRing: "border-[#1e3a60]/35",
         focusRing: "focus-visible:ring-[#1e3a60]/20",
-        gpsBtn:    "bg-[#1e3a60] hover:bg-[#162d4a]",
       }
     : {
         eyebrow:   "text-[#8B4513] dark:text-[#C17A3A]",
@@ -655,7 +590,6 @@ export default function ProfilePage() {
         badge:     "bg-[#C17A3A] text-white shadow-lg shadow-[#C17A3A]/30",
         badgeRing: "border-[#C17A3A]/35",
         focusRing: "focus-visible:ring-[#C17A3A]/20",
-        gpsBtn:    "bg-[var(--ck-role-accent)] hover:bg-[#943e11]",
       };
 
   const completedDonations = donations.filter((d) => d.status === "COMPLETED");
@@ -1004,6 +938,7 @@ export default function ProfilePage() {
                       <div className="flex gap-2">
                         <div className="w-[96px] sm:w-[120px] shrink-0">
                           <SearchableSelect
+                            direction="up"
                             options={dialCodeOptions}
                             value={dialCountry}
                             onChange={(iso) => {
@@ -1037,6 +972,7 @@ export default function ProfilePage() {
                       <div className="space-y-1">
                         <Label htmlFor="country" className="text-xs text-stone-500">{t("country")}</Label>
                         <SearchableSelect
+                          direction="up"
                           id="country"
                           options={countryOptions}
                           value={countryIso}
@@ -1054,6 +990,7 @@ export default function ProfilePage() {
                           </p>
                         ) : (
                           <SearchableSelect
+                            direction="up"
                             id="state"
                             options={stateOptions}
                             value={stateIso}
@@ -1081,6 +1018,7 @@ export default function ProfilePage() {
                           </div>
                         ) : (
                           <SearchableSelect
+                            direction="up"
                             id="city"
                             options={cityOptions}
                             value={cityValue}
@@ -1092,51 +1030,6 @@ export default function ProfilePage() {
                           />
                         )}
                       </div>
-                    </div>
-
-                    {/* GPS Coordinates */}
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                        <Navigation className="w-3.5 h-3.5" /> {t("gpsLocation")}
-                      </Label>
-                      <div className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/20 p-3">
-                        <div className="flex-1 min-w-0">
-                          {profile?.latitude && profile?.longitude ? (
-                            <div className="flex items-center gap-2">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                              <div>
-                                <p className="text-xs font-bold text-stone-850 dark:text-white">{t("locationSaved")}</p>
-                                <p className="text-3xs text-stone-400">
-                                  {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-                              <div>
-                                <p className="text-xs font-bold text-stone-850 dark:text-white">{t("noGpsLocation")}</p>
-                                <p className="text-3xs text-stone-400">{t("gpsMatchingNote")}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={handleUseMyLocation}
-                          disabled={locStatus === "requesting"}
-                          className={`shrink-0 flex items-center gap-1.5 rounded-lg ${acc.gpsBtn} px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60`}
-                        >
-                          {locStatus === "requesting" ? (
-                            <><Loader2 className="w-3 h-3 animate-spin" /> {t("getting")}</>
-                          ) : (
-                            <><Navigation className="w-3 h-3" /> {t("useGps")}</>
-                          )}
-                        </button>
-                      </div>
-                      <p className="text-3xs text-stone-400 leading-relaxed">
-                        {t("gpsPrivacyNote")}
-                      </p>
                     </div>
 
             </DialogBody>

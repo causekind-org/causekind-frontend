@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useEffect, useState } from "react";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
@@ -140,7 +141,7 @@ export function VerificationQueuePanel() {
     setLoading(true);
     try {
       const status = statusFilter === "ALL" ? undefined : statusFilter;
-      const data = await adminGetItemRequests(status);
+      const data = await adminGetItemRequests(status, { excludeNgo: true });
       setRequests(data.sort((a, b) => new Date(a.verificationDueAt ?? a.createdAt).getTime() - new Date(b.verificationDueAt ?? b.createdAt).getTime()));
     } catch {
       toast.error("Failed to load requests");
@@ -420,6 +421,7 @@ export function VerificationQueuePanel() {
                       </div>
                     </div>
                   </div>
+
 
                   {/* Stat grid — mirrors the reference layout, with "Requesting" standing in for "Sales Representee" */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-2 pt-3 border-t border-[#e5e2d5] dark:border-zinc-700 text-xs">
@@ -833,8 +835,19 @@ function VerificationFormGrid({ v, isEmergency }: { v: NonNullable<AdminRequestV
     ["Detailed story", v.detailedStory],
     ["Maps pin", v.mapsPin],
   ];
-  const populated = rows.filter(([, val]) => val !== null && val !== undefined && val !== "");
-  if (populated.length === 0) return null;
+  // The donee profile's optional questions read "Not provided" when left blank
+  // (owner, 2026-10-06), so a skipped answer is visibly skipped rather than a
+  // missing row. Blanks are stored as blanks; this is display only. Every other
+  // empty row is still hidden (retired fields such as "Medical condition").
+  const SHOW_WHEN_BLANK = new Set([
+    "Gender", "Address landmark", "Beneficiary", "Supporting institution", "Landlord contact",
+    "Referrer", "Alt. contact", "Detailed story", "Maps pin",
+  ]);
+  const isBlank = (val: unknown) => val === null || val === undefined || String(val).trim() === "";
+  if (rows.every(([, val]) => isBlank(val))) return null;
+  const populated = rows
+    .filter(([label, val]) => !isBlank(val) || SHOW_WHEN_BLANK.has(label as string))
+    .map(([label, val]) => [label, isBlank(val) ? "Not provided" : val] as const);
 
   return (
     <div className="bg-white dark:bg-zinc-800 rounded-xl p-3 text-xs border border-stone-100 dark:border-zinc-700">

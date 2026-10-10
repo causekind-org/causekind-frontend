@@ -5,58 +5,73 @@ import { HandHeart, Sparkles, X, Terminal, ShieldCheck, Database, Lock, CheckCir
 import { useAuth } from "@/hooks/useAuth";
 import { usePathname, useRouter } from "next/navigation";
 import { getMyProfile } from "@/lib/api";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 type OverlayConfig = {
   icon: React.ReactNode;
   headline: string;
   subline: string;
-  accentBg: string;      
-  iconWrapBg: string;    
-  iconColor: string;     
-  confettiColor: string; 
+  accentBg: string;
+  iconWrapBg: string;
+  iconColor: string;
+  confettiColor: string;
+};
+
+const ORANGE_THEME = {
+  accentBg: "bg-[#f0b97a]",
+  iconWrapBg: "bg-[#f0b97a]/20",
+  iconColor: "text-[#b04a15]",
+  confettiColor: "#f0b97a",
+};
+
+const NGO_THEME = {
+  accentBg: "bg-ngo-500",
+  iconWrapBg: "bg-ngo-500/20 dark:bg-ngo-500/30",
+  iconColor: "text-ngo-700 dark:text-ngo-400",
+  confettiColor: "#34a578",
 };
 
 function getConfig(role: string | undefined): OverlayConfig {
-  switch (role) {
-    case "DONEE":
-      return {
-        icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
-        headline: "Welcome — support starts here",
-        subline:
-          "Post your verified needs and connect with generous donors nearby. Your community is ready to help — let's get started.",
-        accentBg: "bg-[#1e3a60]",
-        iconWrapBg: "bg-[#1e3a60]/10 dark:bg-[#1e3a60]/30",
-        iconColor: "text-[#1e3a60] dark:text-blue-400",
-        confettiColor: "#4a7fba",
-      };
-    default:
-      return {
-        icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
-        headline: "Welcome to CauseKind",
-        subline:
-          "You're all set. Explore nearby needs, manage requests, and help build a kinder community.",
-        accentBg: "bg-[#f0b97a]",
-        iconWrapBg: "bg-[#f0b97a]/20",
-        iconColor: "text-[#b04a15]",
-        confettiColor: "#f0b97a",
-      };
+  const normalizedRole = role?.toUpperCase();
+
+  if (normalizedRole === "DONEE") {
+    return {
+      icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
+      headline: "Welcome — support starts here",
+      subline:
+        "Post your verified needs and connect with generous donors nearby. Your community is ready to help — let's get started.",
+      accentBg: "bg-[#1e3a60]",
+      iconWrapBg: "bg-[#1e3a60]/10 dark:bg-[#1e3a60]/30",
+      iconColor: "text-[#1e3a60] dark:text-blue-400",
+      confettiColor: "#4a7fba",
+    };
   }
+
+  const theme = isNgoRole(normalizedRole) ? NGO_THEME : ORANGE_THEME;
+
+  return {
+    icon: <Sparkles className="w-8 h-8" aria-hidden="true" />,
+    headline: "Welcome to CauseKind",
+    subline:
+      "You're all set. Explore nearby needs, manage requests, and help build a kinder community.",
+    ...theme,
+  };
 }
 
 function Sparkles12({ color }: { color: string }) {
   const positions = [
-    { top: "8%",  left: "12%", delay: "0s",    size: 6  },
-    { top: "5%",  left: "50%", delay: "0.12s", size: 5  },
-    { top: "10%", left: "82%", delay: "0.08s", size: 7  },
-    { top: "25%", left: "94%", delay: "0.2s",  size: 4  },
-    { top: "65%", left: "92%", delay: "0.15s", size: 6  },
-    { top: "88%", left: "78%", delay: "0.05s", size: 5  },
-    { top: "92%", left: "50%", delay: "0.18s", size: 7  },
-    { top: "88%", left: "22%", delay: "0.1s",  size: 4  },
-    { top: "65%", left: "6%",  delay: "0.22s", size: 6  },
-    { top: "42%", left: "3%",  delay: "0.07s", size: 5  },
-    { top: "30%", left: "88%", delay: "0.25s", size: 4  },
-    { top: "50%", left: "96%", delay: "0.03s", size: 5  },
+    { top: "8%", left: "12%", delay: "0s", size: 6 },
+    { top: "5%", left: "50%", delay: "0.12s", size: 5 },
+    { top: "10%", left: "82%", delay: "0.08s", size: 7 },
+    { top: "25%", left: "94%", delay: "0.2s", size: 4 },
+    { top: "65%", left: "92%", delay: "0.15s", size: 6 },
+    { top: "88%", left: "78%", delay: "0.05s", size: 5 },
+    { top: "92%", left: "50%", delay: "0.18s", size: 7 },
+    { top: "88%", left: "22%", delay: "0.1s", size: 4 },
+    { top: "65%", left: "6%", delay: "0.22s", size: 6 },
+    { top: "42%", left: "3%", delay: "0.07s", size: 5 },
+    { top: "30%", left: "88%", delay: "0.25s", size: 4 },
+    { top: "50%", left: "96%", delay: "0.03s", size: 5 },
   ];
 
   return (
@@ -75,27 +90,58 @@ function Sparkles12({ color }: { color: string }) {
   );
 }
 
-function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
-  const [firstName, setFirstName] = useState<string | null>(null);
+/**
+ * The donor's full-screen welcome, reused for donees with their own copy and navy
+ * palette (owner request 2026-10-06: donees get the same window, not the small card).
+ */
+const WELCOME_VARIANTS = {
+  donor: {
+    glow: "bg-[#b04a15]/25",
+    tile: "bg-gradient-to-br from-[#b04a15] to-[#e07b3a] shadow-[#b04a15]/30",
+    button: "bg-gradient-to-r from-[#b04a15] to-[#e07b3a] shadow-[#b04a15]/30",
+    ember: "#f0b97a",
+    blob: "rgba(224, 123, 58, 0.13)",
+    body: "Ready to make a difference? Choose what you'd like to donate and we'll match you with someone nearby.",
+    cta: "Start Giving →",
+  },
+  donee: {
+    glow: "bg-[#1e3a60]/35",
+    tile: "bg-gradient-to-br from-[#1e3a60] to-[#4a7fba] shadow-[#1e3a60]/40",
+    button: "bg-gradient-to-r from-[#1e3a60] to-[#4a7fba] shadow-[#1e3a60]/40",
+    ember: "#8fb4e0",
+    blob: "rgba(74, 127, 186, 0.16)",
+    body: "Post what you need and verified donors near you can offer exactly that. Your community is ready to help.",
+    cta: "Let's get started →",
+  },
+} as const;
+
+function DonorWelcomeView({ exiting, dismiss, variant = "donor" }: { exiting: boolean; dismiss: () => void; variant?: keyof typeof WELCOME_VARIANTS }) {
+  const v = WELCOME_VARIANTS[variant];
+  const { user } = useAuth();
+  const [profileName, setProfileName] = useState<string | null>(null);
+  const firstName = user?.fullName?.trim().split(/\s+/)[0] || profileName;
 
   useEffect(() => {
+    if (user?.fullName?.trim()) return;
+    let cancelled = false;
     getMyProfile()
       .then(p => {
         const first = p?.fullName?.trim().split(/\s+/)[0];
-        if (first) setFirstName(first);
+        if (first && !cancelled) setProfileName(first);
       })
-      .catch(() => {});
-  }, []);
+      .catch(() => { });
+    return () => { cancelled = true; };
+  }, [user?.email, user?.fullName]);
 
   function go() {
     dismiss();
   }
 
   const embers = [
-    { left: "12%", size: 4, delay: "0s",   dur: "11s" },
+    { left: "12%", size: 4, delay: "0s", dur: "11s" },
     { left: "28%", size: 3, delay: "3.5s", dur: "13s" },
     { left: "45%", size: 5, delay: "1.2s", dur: "10s" },
-    { left: "62%", size: 3, delay: "5s",   dur: "14s" },
+    { left: "62%", size: 3, delay: "5s", dur: "14s" },
     { left: "78%", size: 4, delay: "2.2s", dur: "12s" },
     { left: "90%", size: 3, delay: "6.5s", dur: "13s" },
   ];
@@ -116,7 +162,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
         /* Faint ambient background: two slow-drifting warm glows + rising embers */
         .ck-welcome-blob {
           position: absolute; width: 46vmax; height: 46vmax; border-radius: 50%;
-          background: radial-gradient(circle, rgba(224, 123, 58, 0.13) 0%, transparent 68%);
+          background: radial-gradient(circle, ${v.blob} 0%, transparent 68%);
           animation: ck-blob-drift 24s ease-in-out infinite alternate;
         }
         .ck-welcome-blob2 {
@@ -129,7 +175,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
         }
         .ck-ember {
           position: absolute; bottom: -6px; border-radius: 9999px;
-          background: #f0b97a; opacity: 0;
+          background: ${v.ember}; opacity: 0;
           animation: ck-ember-rise linear infinite;
         }
         @keyframes ck-ember-rise {
@@ -145,7 +191,7 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
       `}</style>
 
       <div
-        className={`fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-stone-950/85 backdrop-blur-xl ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
+        className={`fixed inset-0 z-[9999] flex flex-col items-center overflow-x-hidden overflow-y-auto overscroll-contain px-5 py-16 bg-stone-950/85 backdrop-blur-xl ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
         onClick={dismiss}
       >
         {/* Ambient animated backdrop — deliberately faint, behind the card */}
@@ -161,30 +207,30 @@ function DonorWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () 
           ))}
         </div>
 
-        <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-6 right-6 text-white/40 hover:text-white hover:rotate-90 transition-all duration-300 p-2">
+        <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-3 right-3 text-white/40 hover:text-white hover:rotate-90 transition-all duration-300 p-2">
           <X className="w-7 h-7" aria-hidden="true" />
         </button>
 
-        <div className="ck-donor-card relative w-full max-w-sm text-center" onClick={e => e.stopPropagation()}>
+        <div className="ck-donor-card relative my-auto w-full max-w-sm min-w-0 text-center" onClick={e => e.stopPropagation()}>
           <div className="relative mb-6">
-            <div className="absolute inset-0 bg-[#b04a15]/25 blur-[60px] -z-10 rounded-full" />
-            <div className="w-20 h-20 rounded-[1.8rem] bg-gradient-to-br from-[#b04a15] to-[#e07b3a] flex items-center justify-center mx-auto shadow-xl shadow-[#b04a15]/30">
+            <div className={`absolute inset-0 ${v.glow} blur-[60px] -z-10 rounded-full`} />
+            <div className={`w-20 h-20 rounded-[1.8rem] ${v.tile} flex items-center justify-center mx-auto shadow-xl`}>
               <HandHeart className="w-10 h-10 text-white" />
             </div>
           </div>
 
-          <h2 className="text-3xl font-black text-white tracking-tight mb-3">
-            Welcome back, {firstName ?? "Donor"}!
+          <h2 className="text-[26px] sm:text-3xl font-black text-white tracking-tight mb-3 [overflow-wrap:anywhere]">
+            {firstName ? `Welcome back, ${firstName}!` : "Welcome back!"}
           </h2>
           <p className="text-stone-400 text-sm leading-relaxed mb-8 max-w-xs mx-auto">
-            Ready to make a difference? Choose what you&apos;d like to donate and we&apos;ll match you with someone nearby.
+            {v.body}
           </p>
 
           <button
             onClick={go}
-            className="w-full bg-gradient-to-r from-[#b04a15] to-[#e07b3a] text-white font-extrabold py-3.5 rounded-2xl text-base shadow-lg shadow-[#b04a15]/30 hover:brightness-110 active:scale-[0.98] transition-all"
+            className={`w-full ${v.button} text-white font-extrabold py-3.5 rounded-2xl text-base shadow-lg hover:brightness-110 active:scale-[0.98] transition-all`}
           >
-            Start Giving →
+            {v.cta}
           </button>
         </div>
       </div>
@@ -214,8 +260,8 @@ function DefaultWelcomeView({ user, exiting, dismiss }: { user: any; exiting: bo
         .ck-card-exit { animation: ck-card-out 0.38s cubic-bezier(0.4,0,1,1) both; }
         @keyframes ck-progress-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }
       `}</style>
-      <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-stone-950/50 dark:bg-black/60 backdrop-blur-sm ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`} onClick={dismiss}>
-        <div className={`relative w-full max-w-sm bg-[#faf8f5] dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-stone-900/20 dark:shadow-black/50 overflow-hidden ${exiting ? "ck-card-exit" : "ck-card-enter"}`} onClick={(e) => e.stopPropagation()}>
+      <div className={`fixed inset-0 z-[9999] flex flex-col items-center overflow-x-hidden overflow-y-auto overscroll-contain p-4 bg-stone-950/50 dark:bg-black/60 backdrop-blur-sm ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`} onClick={dismiss}>
+        <div className={`relative my-auto w-full max-w-sm min-w-0 bg-[#faf8f5] dark:bg-zinc-900 rounded-3xl shadow-2xl shadow-stone-900/20 dark:shadow-black/50 overflow-hidden ${exiting ? "ck-card-exit" : "ck-card-enter"}`} onClick={(e) => e.stopPropagation()}>
           <Sparkles12 color={cfg.confettiColor} />
           <div className={`${cfg.accentBg} h-1.5 w-full`} />
           <button type="button" onClick={dismiss} aria-label="Close welcome message" className="absolute top-4 right-4 flex items-center justify-center w-8 h-8 rounded-full text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-all active:scale-95">
@@ -241,16 +287,16 @@ function DefaultWelcomeView({ user, exiting, dismiss }: { user: any; exiting: bo
 // ── Super Admin — "command center boot-up" ──────────────────────────────────────
 function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss: () => void }) {
   const bootLines = [
-    { icon: Terminal,     text: "Initializing CauseKind core…",       delay: 0.2 },
-    { icon: Lock,         text: "Authenticating super-admin keys…",   delay: 0.6 },
-    { icon: Database,     text: "Mounting database control surfaces…", delay: 1.0 },
-    { icon: ShieldCheck,  text: "Elevating privileges → ROOT",         delay: 1.4 },
-    { icon: CheckCircle2, text: "All systems online.",                 delay: 1.8 },
+    { icon: Terminal, text: "Initializing CauseKind core…", delay: 0.2 },
+    { icon: Lock, text: "Authenticating super-admin keys…", delay: 0.6 },
+    { icon: Database, text: "Mounting database control surfaces…", delay: 1.0 },
+    { icon: ShieldCheck, text: "Elevating privileges → ROOT", delay: 1.4 },
+    { icon: CheckCircle2, text: "All systems online.", delay: 1.8 },
   ];
 
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-hidden bg-[#05070d] ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
+      className={`fixed inset-0 z-[9999] flex flex-col items-center p-4 overflow-x-hidden overflow-y-auto overscroll-contain bg-[#05070d] ${exiting ? "ck-scrim-exit" : "ck-scrim-enter"}`}
       onClick={dismiss}
     >
       {/* Animated grid backdrop */}
@@ -265,7 +311,7 @@ function SuperAdminWelcomeView({ exiting, dismiss }: { exiting: boolean; dismiss
         <X className="w-7 h-7" aria-hidden="true" />
       </button>
 
-      <div className="relative z-10 w-full max-w-lg" onClick={e => e.stopPropagation()}>
+      <div className="relative z-10 my-auto w-full max-w-lg min-w-0" onClick={e => e.stopPropagation()}>
         {/* Boot log */}
         <div className="font-mono text-sm space-y-2 mb-8">
           {bootLines.map((l, i) => (
@@ -333,19 +379,30 @@ export function WelcomeOverlay() {
     }
     setExiting(false);
     setShow(true);
-    // DONOR view is interactive (category picker) — no auto-dismiss.
-    if (user.role !== "DONOR") {
+    // DONOR and DONEE get the full-screen welcome with a button — no auto-dismiss.
+    if (user.role !== "DONOR" && user.role !== "DONEE") {
       const delay = user.role === "SUPER_ADMIN" ? 4200 : 3500;
       const t = setTimeout(() => dismiss(), delay);
       return () => clearTimeout(t);
     }
   }, [isLoading, user, dismiss, isAdminDash]);
 
+  // Lock the page behind the overlay while it is open, so it cannot be panned
+  // or scrolled underneath; restored exactly as it was on close.
+  useEffect(() => {
+    if (!show || isAdminDash) return;
+    const html = document.documentElement;
+    const prev = html.style.overflow;
+    html.style.overflow = "hidden";
+    return () => { html.style.overflow = prev; };
+  }, [show, isAdminDash]);
+
   if (isAdminDash || !show) return null;
 
-  if (user?.role === "DONOR")       return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
+  if (user?.role === "DONOR") return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
+  if (user?.role === "DONEE") return <DonorWelcomeView exiting={exiting} dismiss={dismiss} variant="donee" />;
   if (user?.role === "SUPER_ADMIN") return <SuperAdminWelcomeView exiting={exiting} dismiss={dismiss} />;
-  if (user?.role === "ADMIN")       return null;
+  if (user?.role === "ADMIN") return null;
 
   return <DefaultWelcomeView user={user} exiting={exiting} dismiss={dismiss} />;
 }

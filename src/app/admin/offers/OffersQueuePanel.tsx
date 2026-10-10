@@ -107,7 +107,7 @@ export function OffersQueuePanel() {
   async function load() {
     setLoading(true);
     try {
-      const all = await adminGetAllOffers();
+      const all = await adminGetAllOffers(undefined, { excludeNgo: true });
       setOffers(all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
     } catch {
       toast.error("Failed to load offers");
@@ -557,7 +557,7 @@ export function OffersQueuePanel() {
                                 ["Condition", item.condition],
                                 ["Working Status", item.workingStatus],
                                 ["Brand / Model", [item.brand, item.model].filter(Boolean).join(" / ") || null],
-                                ["Approx. Age", item.approximateAge],
+                                ["Item age", item.approximateAge],
                                 ["Dimensions", item.dimensions],
                                 ["Weight", item.approximateWeight],
                                 ["Accessories", item.accessoriesIncluded],

@@ -27,14 +27,22 @@ export const OFFER_METHODS: HandoverMethodOption[] = [
   { value: "COURIER",  label: "Courier",            hint: "A courier moves it between you." },
 ];
 
+export const NGO_OFFER_METHODS: HandoverMethodOption[] = [
+  { value: "NGO_PICKUP",   label: "NGO picks up", hint: "They come to you." },
+  { value: "DONOR_DROP_OFF", label: "You deliver", hint: "You take it to them." },
+];
+
 export const MATCH_METHODS: HandoverMethodOption[] = [
   { value: "IN_PERSON",   label: "In person",  hint: "You meet and hand it over." },
+  // Added 2026-10-07 (owner). The match method is free text on the backend
+  // (ItemMatch.handoverMethod), so a new value needs no enum or DB change.
+  { value: "DONEE_PICKUP", label: "Donee will pick up", hint: "The recipient comes to collect it from you." },
   { value: "COURIER",     label: "Courier",    hint: "A courier moves it between you." },
   { value: "THIRD_PARTY", label: "Third party", hint: "Someone else carries it for you." },
 ];
 
 /** Human label for any stored method value, including retired ones. */
-function methodLabel(value: string | null, options: HandoverMethodOption[]): string | null {
+export function methodLabel(value: string | null, options: HandoverMethodOption[]): string | null {
   if (!value) return null;
   const known = options.find((o) => o.value === value);
   if (known) return known.label;
@@ -106,6 +114,7 @@ export function adaptOffer(
       doneeConfirmedQty: confirmation?.doneeConfirmedQty ?? null,
       conditionRating: confirmation?.doneeConditionRating ?? null,
       partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
+      otpVerified: confirmation?.otpVerified ?? false,
     },
     methodOptions: OFFER_METHODS,
     certificateCode: null,
@@ -113,6 +122,9 @@ export function adaptOffer(
     certificateHref: role === "DONOR" && offer.status === "COMPLETED"
       ? `/certificate?offerId=${offer.id}` : null,
     closed: state === "completed" || state === "cancelled_or_failed",
+    completedAt: null,
+    offeredQuantity: offer.itemDetails?.quantity ?? null,
+    delivery: handover?.delivery ?? null,
   };
 }
 
@@ -145,7 +157,7 @@ export function adaptMatch(
     state,
     rawStatus: match.status,
     title,
-    imageUrl: match.donorImages?.[0] ?? match.listingImageUrl ?? null,
+    imageUrl: match.donorImages?.[0] ?? match.listingPhotoUrls?.[0] ?? match.listingImageUrl ?? null,
     transactionCode: `CK-M${String(match.id).padStart(5, "0")}`,
     counterpart: role === "DONOR"
       ? { name: match.doneeName, phone: match.doneeContact }
@@ -173,6 +185,7 @@ export function adaptMatch(
       conditionRating: match.doneeConditionRating,
       // Server-computed. Trusted over a local re-derivation because the server is
       // what the cancellation policy actually consults.
+      otpVerified: match.deliveryOtpVerified ?? false,
       partlyConfirmed: match.handoverPartlyConfirmed
         ?? ((match.donorConfirmedAt != null) !== (match.doneeConfirmedAt != null)),
     },
@@ -183,7 +196,28 @@ export function adaptMatch(
     certificateCode: match.verifiedDeliveryCertificate ?? null,
     certificateHref: null,
     closed: state === "completed" || state === "cancelled_or_failed",
+    completedAt: match.completedAt ?? null,
+    offeredQuantity: matchCommittedQuantity(match),
+    delivery: match.delivery ?? null,
   };
+}
+
+/**
+ * What the donor is committed to handing over in a match. Mirrors the backend's
+ * ItemMatchService.committedQuantity, which caps what the donee can confirm
+ * receiving: the allocation set while scheduling, else as much of the listing
+ * as the request asked for.
+ */
+export function matchCommittedQuantity(
+  match: Pick<ItemMatch, "allocatedQuantity" | "listingQuantity" | "requestQuantity">,
+): number | null {
+  const positive = (n: number | null | undefined) => (n != null && n > 0 ? n : null);
+  const allocated = positive(match.allocatedQuantity);
+  if (allocated != null) return allocated;
+  const listed = positive(match.listingQuantity);
+  const asked = positive(match.requestQuantity);
+  if (listed != null && asked != null) return Math.min(listed, asked);
+  return listed ?? asked;
 }
 
 function normaliseViewerRole(value: string | null | undefined): HandoverRole | null {
@@ -203,4 +237,99 @@ export function hasCoordinates(lat: number | null, lng: number | null): boolean 
 
 export function mapsHref(lat: number, lng: number): string {
   return `https://www.google.com/maps?q=${lat},${lng}`;
+}
+
+/** Google Maps directions from wherever the viewer is to the pin. */
+export function directionsHref(lat: number, lng: number): string {
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+}
+
+/**
+ * A small static map image of the pin (Maps Static API, same browser key as the
+ * map), or null without a key. Callers hide the image if it fails to load.
+ */
+export function staticMapSrc(lat: number, lng: number): string | null {
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!key) return null;
+  const p = new URLSearchParams({
+    center: `${lat},${lng}`, zoom: "16", size: "640x240", scale: "2",
+    markers: `color:0xb04a15|${lat},${lng}`, key,
+  });
+  return `https://maps.googleapis.com/maps/api/staticmap?${p.toString()}`;
+}
+
+// ── NGO OFFER ───────────────────────────────────────────────────────────────
+
+export function adaptNgoOffer(
+  offer: any, // NgoDriveOfferResponse
+  handover: any | null, // NgoDriveOfferHandoverRecordResponse
+  userEmail: string | null | undefined,
+  contextRole: HandoverRole,
+): HandoverViewModel | null {
+  const role = contextRole;
+  
+  const confirmation = handover?.confirmation ?? null;
+  const donorConfirmedAt = confirmation?.donorConfirmedAt ?? null;
+  const doneeConfirmedAt = confirmation?.ngoConfirmedAt ?? null;
+
+  // The backend might not give us a scheduled date initially, so we derive hasSchedule from status
+  // or handover object.
+  const hasSchedule = handover != null && handover.scheduledDateTime != null;
+
+  const state = resolveHandoverState({
+    flow: "NGO_OFFER",
+    status: offer.status,
+    hasSchedule,
+    atRisk: handover?.atRisk ?? false,
+    donorConfirmedAt,
+    doneeConfirmedAt,
+  });
+
+  return {
+    flow: "NGO_OFFER",
+    id: offer.id,
+    parentId: offer.driveId,
+    role,
+    state,
+    rawStatus: offer.status,
+    title: offer.driveTitle,
+    imageUrl: offer.media?.[0]?.mediaUrl ?? null,
+    transactionCode: `CK-ND${String(offer.id).padStart(5, "0")}`,
+    counterpart: role === "DONOR"
+      ? { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null }
+      : { name: offer.donorDisplayName, phone: null },
+    donorAllowsDoneeCall: false, // Not applicable for NGO drives
+    schedule: handover
+      ? {
+          method: handover.method,
+          methodLabel: methodLabel(handover.method, NGO_OFFER_METHODS),
+          scheduledAt: handover.scheduledDateTime,
+          address: handover.locationAddress,
+          latitude: handover.locationLatitude,
+          longitude: handover.locationLongitude,
+          notes: null,
+          rescheduleCount: handover.rescheduleCount,
+          maxReschedules: 2, // MAX_RESCHEDULES
+          atRisk: handover.atRisk,
+        }
+      : null,
+    confirmation: {
+      donorConfirmedAt,
+      donorConfirmedQty: confirmation?.donorConfirmedQty ?? null,
+      doneeConfirmedAt,
+      doneeConfirmedQty: confirmation?.ngoConfirmedQty ?? null,
+      conditionRating: null, // No condition rating for NGO drives
+      partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
+      // NGO drives keep their one-step flow (code entered with the receipt).
+      otpVerified: false,
+    },
+    methodOptions: NGO_OFFER_METHODS,
+    certificateCode: null, // Handled differently if needed
+    certificateHref: role === "DONOR" && offer.status === "COMPLETED"
+      ? `/certificate?offerId=${offer.id}&type=ngo_drive` : null, // Assuming this is how certificates work for NGO drives
+    closed: state === "completed" || state === "cancelled_or_failed",
+    completedAt: null, // Optional, could parse from statusHistory
+    offeredQuantity: offer.quantity,
+    delivery: null, // Delivery address flow is not used for NGO drives
+  };
 }

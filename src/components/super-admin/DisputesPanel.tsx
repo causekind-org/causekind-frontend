@@ -63,6 +63,15 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
   MONEY_DEMANDED: "Money demanded",
   INAPPROPRIATE_BEHAVIOUR: "Inappropriate behaviour",
   OTHER: "Other",
+  // Donee handover options
+  ITEM_NOT_RECEIVED: "Item not received",
+  ITEM_DAMAGED: "Item arrived damaged",
+  ITEM_NOT_AS_DESCRIBED: "Item not as described",
+  QUANTITY_MISMATCH: "Quantity wrong",
+  // Donor handover options
+  RECIPIENT_DID_NOT_SHOW: "Recipient didn't show up",
+  RECIPIENT_DENIED_DELIVERY: "Recipient disputes delivery",
+  ITEM_RESOLD_OR_MISUSED: "Item resold or misused",
 };
 
 export function DisputesPanel({ isDark }: { isDark: boolean }) {

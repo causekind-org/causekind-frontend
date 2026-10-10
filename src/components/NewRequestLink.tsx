@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "@/components/AppLink";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { useNeedProfileGate } from "@/hooks/useNeedProfileGate";
 
 /**
@@ -19,14 +20,20 @@ export function NewRequestLink({
   onClick,
   ...rest
 }: React.ComponentProps<typeof Link>) {
+  const { user } = useAuth();
   const { requestAccess } = useNeedProfileGate();
   const router = useRouter();
   const [pending, setPending] = useState(false);
-  const destination = typeof href === "string" ? href : "/requests/new";
+  let destination = typeof href === "string" ? href : "/requests/new";
+  const isNgo = ["NGO", "NGO_PARTNER"].includes(user?.role?.toUpperCase() || "");
+  if (isNgo && destination.split("?")[0] === "/requests/new") {
+    // NGOs post drives, never the donee request form.
+    destination = "/ngo/drives/new";
+  }
 
   return (
     <Link
-      href={href}
+      href={isNgo ? destination : href}
       className={className}
       aria-busy={pending || undefined}
       onClick={async (e) => {

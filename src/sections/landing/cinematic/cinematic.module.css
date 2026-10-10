@@ -1,0 +1,401 @@
+/*
+ * Film-layer styles shared by the cinematic chapters.
+ *
+ * Class names inside the SVGs are global (`r-*`, `c1-*`, `c2-*`) because GSAP
+ * selects them; everything here is scoped under a chapter root so none of it
+ * can leak onto the rest of the site.
+ */
+
+.stage {
+  position: relative;
+  height: calc(var(--ck-svh, 1svh) * 100);
+  min-height: 560px;
+  overflow: hidden;
+  isolation: isolate;
+  --cine-cream: #fbf9f4;
+  --cine-night: #0f0a07;
+}
+
+/* ── Scroll tracks ──
+   The film's scroll length is plain CSS, so it is part of the server-rendered
+   page before any chapter code has loaded. Each stage is sticky inside its
+   track, which does what a GSAP pin did without inserting spacer height after
+   load — that late insertion let a quick early scroll skip past the film and
+   made a refresh restore into the film instead of the section the reader was
+   on. The chapters script over whatever length the track has, so these set
+   the pacing: Chapter 1 = stage + hero lead-in + title hold + 7.2 / 5.6
+   screens; Chapter 2 = stage + 6.4 / 5.2 screens (landscape / portrait). */
+.track {
+  position: relative;
+}
+.track > .stage {
+  position: sticky;
+  top: 0;
+}
+.track1 {
+  height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 100) + calc(var(--ck-svh, 1svh) * 60) + calc(var(--ck-svh, 1svh) * 720));
+}
+.track2 {
+  height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 640));
+}
+@media (orientation: portrait) {
+  .track1 {
+    height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 100) + calc(var(--ck-svh, 1svh) * 60) + calc(var(--ck-svh, 1svh) * 560));
+  }
+  .track2 {
+    height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 520));
+  }
+}
+/* Reduced motion: the chapters are stills, so there is nothing to scroll through. */
+@media (prefers-reduced-motion: reduce) {
+  .track1,
+  .track2 {
+    height: auto;
+  }
+  .track > .stage {
+    position: relative;
+  }
+}
+
+.ch1 {
+  background: var(--cine-cream);
+}
+
+:global(.dark) .ch1 {
+  background: #09090b;
+}
+
+.ch2 {
+  background: var(--cine-night);
+  /* What the film resolves to — the page colour of the section after it. */
+  --ch2-end: #fbf9f4;
+  --ch2-end-ink: #1c130d;
+}
+
+:global(.dark) .ch2 {
+  --ch2-end: #09090b;
+  --ch2-end-ink: #f5efe6;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* ── Ink: every assembling object's outline copy ─────────────────────────── */
+.stage :global(.ink) {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.stage :global(.ink) :global(*) {
+  fill: none !important;
+  stroke: #ff7a2f !important;
+  stroke-width: 2.4px !important;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stage :global(.ink) :global(.no-ink) {
+  display: none;
+}
+
+/* ── Copy ─────────────────────────────────────────────────────────────────── */
+/* Faces come from ./fonts.ts, set on each stage root. */
+.display {
+  font-family: var(--font-cine-display), Impact, "Arial Narrow", sans-serif;
+  font-weight: 800;
+  font-optical-sizing: auto;
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
+  line-height: 0.9;
+}
+
+.serif {
+  font-family: var(--font-cine-serif), Georgia, serif;
+  font-variation-settings: "SOFT" 100;
+  font-optical-sizing: auto;
+}
+
+.mono {
+  font-family: var(--font-cine-mono), ui-monospace, monospace;
+  font-weight: 500;
+}
+
+.mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding: 0.14em 0.06em 0.12em;
+  margin: -0.14em -0.06em -0.12em;
+}
+
+.word {
+  display: inline-block;
+  will-change: transform;
+}
+
+/*
+ * Chapter 1's title card. `data-state` is set from the page's position (see
+ * `syncTitle` in Chapter1TheUnusedThing.tsx): "before" while the hero covers
+ * the stage (words wait below their masks, instantly — nobody can see them),
+ * "in" once the hero starts to lift (words rise), "after" once the film has
+ * started (words lift away). No state means visible. Transform and opacity
+ * only, so the transitions run on the compositor even while the page is busy.
+ */
+.titleCard .word {
+  transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 55ms);
+}
+.titleCard[data-state="before"] .word {
+  transform: translate3d(0, 110%, 0);
+  transition: none;
+}
+/* Back from the film: the words return quickly, nearly together. */
+.titleCard .mask {
+  transition:
+    opacity 0.22s ease-out,
+    transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--i, 0) * 15ms);
+}
+.titleCard[data-state="before"] .mask {
+  transition: none;
+}
+.titleCard[data-state="after"] .mask {
+  opacity: 0;
+  transform: translate3d(0, -40%, 0);
+  transition:
+    opacity 0.45s ease-in,
+    transform 0.55s cubic-bezier(0.55, 0, 0.8, 0.2);
+  transition-delay: calc(var(--i, 0) * 40ms);
+}
+.titleEyebrow {
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease;
+}
+.titleCard[data-state="after"] .titleEyebrow {
+  opacity: 0;
+  transform: translate3d(0, -20px, 0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .titleCard .word,
+  .titleCard .mask,
+  .titleEyebrow {
+    transition: none !important;
+  }
+}
+
+.glowText {
+  color: #ff7a2f;
+  text-shadow:
+    0 0 16px rgba(255, 122, 47, 0.5),
+    0 0 48px rgba(255, 122, 47, 0.3);
+}
+
+/* ── HUD ──────────────────────────────────────────────────────────────────── */
+.hud {
+  position: absolute;
+  z-index: 40;
+  font-family: var(--font-cine-mono), ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #fbf1dd;
+  opacity: 1;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .hud {
+    font-size: 11px;
+  }
+}
+
+.pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  /* No backdrop-filter: it re-blurs whatever animates beneath it every frame. */
+  background: rgba(15, 10, 7, 0.72);
+}
+
+.rec {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  vertical-align: 1px;
+  animation: rec 1.4s steps(2, jump-none) infinite;
+}
+
+@keyframes rec {
+  50% {
+    opacity: 0.15;
+  }
+}
+
+/* ── Film grain + vignette ────────────────────────────────────────────────── */
+.grain {
+  position: absolute;
+  inset: -60%;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1.4 -0.2'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grain 0.8s steps(5) infinite;
+  will-change: transform;
+}
+
+/* On phones and touch screens the grain is a multi-screen layer animating
+   forever for an effect too fine to see at that size — drop it. */
+@media (max-width: 767px), (pointer: coarse) {
+  .grain {
+    display: none;
+  }
+}
+
+@keyframes grain {
+  0% {
+    transform: translate(0, 0);
+  }
+  20% {
+    transform: translate(-4%, 3%);
+  }
+  40% {
+    transform: translate(3%, -5%);
+  }
+  60% {
+    transform: translate(-6%, -2%);
+  }
+  80% {
+    transform: translate(5%, 4%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 44;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 75% 70% at 50% 52%,
+    transparent 45%,
+    rgba(15, 10, 7, 0.55) 100%
+  );
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grain,
+  .rec {
+    animation: none;
+  }
+}
+
+/*
+ * Chapter 2's captions and final line. `data-on` is set from the scroll
+ * position (see `syncCaps` in Chapter2TheEcosystem.tsx): on, the caption fades
+ * in and its words rise; off, it fades out. Never scrubbed, so a paused scroll
+ * can't leave words half-cut by their masks.
+ */
+.cap {
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+.cap[data-on="true"] {
+  opacity: 1;
+}
+.cap .word {
+  transform: translate3d(0, 110%, 0);
+  transition: transform 0.55s ease-in;
+}
+.cap[data-on="true"] .word {
+  transform: none;
+  transition: transform 0.95s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(0.08s + var(--i, 0) * 0.14s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cap,
+  .cap .word {
+    transition: none !important;
+  }
+}
+
+/* ── Chapter 2 end card: claymorphic Donate Now ─────────────────────────────
+   Rides the .c2-final caption's data-on switch, rising in after the headline
+   and the glowing line. Clickable only while the card is shown. Puffy clay:
+   a soft drop shadow below plus inner light (top-left) and inner shade
+   (bottom-right). The global breathe animation animates box-shadow, so it is
+   switched off here or it would overwrite the clay shadow every frame. */
+.clayCtaWrap {
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, 24px, 0) scale(0.92);
+  transition: opacity 0.35s ease, transform 0.35s ease-in;
+}
+.cap[data-on="true"] .clayCtaWrap {
+  pointer-events: auto;
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.6s ease 0.9s,
+    transform 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.9s;
+}
+.clayCta:global(.ck-donate-cta) {
+  border-radius: 9999px;
+  animation: none;
+  box-shadow:
+    0 18px 34px -12px color-mix(in srgb, var(--ck-donate-acc) 55%, transparent),
+    0 6px 12px -4px rgb(60 25 5 / 0.25),
+    inset 5px 6px 10px rgb(255 255 255 / 0.32),
+    inset -6px -8px 14px rgb(70 25 0 / 0.30);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.2s ease;
+}
+.clayCta:global(.ck-donate-cta):hover {
+  transform: translateY(-2px) scale(1.03);
+}
+.clayCta:global(.ck-donate-cta):active {
+  transform: translateY(1px) scale(0.96, 0.93);
+  box-shadow:
+    0 8px 16px -10px color-mix(in srgb, var(--ck-donate-acc) 50%, transparent),
+    inset 6px 8px 14px rgb(70 25 0 / 0.30),
+    inset -3px -4px 8px rgb(255 255 255 / 0.22);
+}
+.clayCta:global(.ck-donate-cta):focus-visible {
+  outline: 3px solid var(--ck-donate-hi);
+  outline-offset: 4px;
+}
+.clayCta :global(.ck-donate-sheen),
+.clayCta :global(.ck-donate-ring) {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .clayCtaWrap,
+  .cap[data-on="true"] .clayCtaWrap,
+  .clayCta:global(.ck-donate-cta) {
+    transition: none !important;
+  }
+  .clayCta:global(.ck-donate-cta):hover,
+  .clayCta:global(.ck-donate-cta):active {
+    transform: none;
+  }
+}

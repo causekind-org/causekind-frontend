@@ -32,10 +32,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { toast } from "@/lib/toast";
 import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
+import {
+  OfferLocationGate, readPassedOfferLocation, type PassedOfferLocation,
+} from "@/features/donation-offer-wizard/OfferLocationGate";
 import Link from "@/components/AppLink";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
-  ShoppingBag, Shuffle, Loader2, Sparkles, type LucideIcon,
+  ShoppingBag, Loader2, Sparkles, type LucideIcon,
   Camera, ImagePlus, CheckCircle2, Eye, Info, ShieldAlert,
   Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
@@ -79,16 +82,7 @@ const FLOW_OPTIONS: {
     // "Receipt may be asked" was true while this was a plan. It is not now:
     // a photo of the item and a receipt are both required before handover.
     tags: ["Buy after approval", "Choose your timeline", "Photo + receipt required"],
-  },
-  {
-    type: "SIMILAR_ITEM",
-    title: "I have a similar item",
-    desc: "Your item may not exactly match the specs — the donee will review it.",
-    badge: null,
-    icon: Shuffle,
-    iconBg: "bg-purple-100 dark:bg-purple-950",
-    iconText: "text-purple-600 dark:text-purple-400",
-    tags: ["Alt spec allowed", "Donee reviews fit", "May need clarification"],
+    // Paused (owner, 2026-10-09): shown, not selectable.
     comingSoon: true,
   },
 ];
@@ -279,7 +273,7 @@ function getOfferGuidance(offer: DonationOffer): OfferGuidance {
     case "HANDOVER_AT_RISK":
       return { title: s === "HANDOVER_AT_RISK" ? "Handover needs attention" : "Handover in progress", explanation: s === "HANDOVER_AT_RISK" ? "The handover has been rescheduled multiple times. Please contact the recipient or admin to resolve this." : "Your handover is scheduled. Go to the Handover Hub to generate the OTP and confirm the handover.", action: { label: "Open Handover Hub", href: `/offers/${offer.id}/handover` }, color: s === "HANDOVER_AT_RISK" ? "amber" : "blue" };
     case "ISSUE_WINDOW_OPEN":
-      return { title: "Delivery confirmed", explanation: "Both parties confirmed the handover. The issue reporting window is open for a short time. If there's any problem, report it now.", action: { label: "Report an issue", href: `/offers/${offer.id}/issues` }, color: "green" };
+      return { title: "Delivery confirmed", explanation: "Both parties confirmed the handover. The 48-hour problem reporting window is open. If there's any problem, report it now.", action: { label: "Report a problem", href: `/offers/${offer.id}/issues` }, color: "green" };
     case "ISSUE_RAISED":
       return { title: "Issue under review", explanation: "An issue was reported for this donation. Our team is reviewing it. We will contact you if any action is needed.", color: "amber" };
     case "COMPLETED":
@@ -412,7 +406,20 @@ export default function OfferWizardPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestLoadFailed, setRequestLoadFailed] = useState(false);
   const [blockedByOther, setBlockedByOther] = useState(false);
+  // This donor already completed a donation to this request — they can give more.
+  const [donatedBefore, setDonatedBefore] = useState(false);
   const [nudged, setNudged] = useState<DonorFlowType | null>(null);
+
+  // ── Location check before the offer (owner, 2026-10-10) ──
+  // "Offer this item" opens with the donor's location check, not a form step.
+  // Guests get here after logging in (the redirect above). A pass is kept for
+  // the browser session (and on the offer itself), so it isn't asked twice.
+  const [passedLocation, setPassedLocation] = useState<PassedOfferLocation | null>(null);
+  useEffect(() => { setPassedLocation(readPassedOfferLocation(requestId)); }, [requestId]);
+  /** My offers for this request have been looked up (so we know whether one already has a location). */
+  const [offersChecked, setOffersChecked] = useState(false);
+  /** Review's "Change location": the check again, over the open form. */
+  const [recheckingLocation, setRecheckingLocation] = useState(false);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
@@ -424,14 +431,20 @@ export default function OfferWizardPage() {
     if (!requestId) return;
     // Don't fire five authenticated calls for someone who is about to be
     // redirected — a guest would just collect 401s, and a donee 403s.
-    if (authLoading || !user || user.role === "DONEE") return;
+    if (authLoading || !user || user.role !== "DONOR") return;
     getAnonymizedRequest(requestId).then(setRequest).catch(() => setRequestLoadFailed(true));
     getQuantityAllocation(requestId).then(setQty).catch(() => {});
     // Check if the donor already has an offer for this request
     getMyDonationOffers()
       .then((offers) => {
-        const found = offers.find((o) => o.requestId === requestId &&
-          !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED"].includes(o.status));
+        setOffersChecked(true);
+        const mine = offers.filter((o) => o.requestId === requestId);
+        setDonatedBefore(mine.some((o) => o.status === "COMPLETED"));
+        // Finished offers don't block a new one — neither a withdrawn/declined/rejected
+        // attempt nor a COMPLETED donation: a donor who gave 4 of 10 laptops can come
+        // back and give the other 6. Mirrors DonationOfferService.isFinishedOfferStatus.
+        const found = mine.find((o) =>
+          !["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DONEE_DECLINED", "COMPLETED"].includes(o.status));
         if (!found) {
           // No offer of our own yet — check whether another donor already has one
           // actively in progress on this request before letting the donor start.
@@ -454,7 +467,7 @@ export default function OfferWizardPage() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => setOffersChecked(true));
     // `user?.id`, not `user`. The object identity changes when the background
     // /users/me check resolves and replaces it, which re-ran this whole effect —
     // re-fetching, and (before the guard above) re-navigating.
@@ -499,34 +512,45 @@ export default function OfferWizardPage() {
     toast.info("This option is coming soon — for now, offer an item you already own.");
   }
 
-  // ── Step 1: Select flow type + create/resume draft ────────────────────────
-  async function handleFlowSelect(flowType: DonorFlowType) {
+  // ── Step 1: Select flow type — opens the form, creates nothing ────────────
+  // The draft is created by the wizard on the first real save (createOfferLazily
+  // below). Picking a card used to POST a draft immediately, so a donor who only
+  // looked around left an empty DRAFT behind that the donee could see.
+  function handleFlowSelect(flowType: DonorFlowType) {
+    if (blockedByOther) return; // the page already knows another donor is mid-offer
     set("flowType", flowType);
-    setLoading(true);
     setError(null);
+    setStep(2);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  /**
+   * Called by the wizard (through its autosave queue) the first time it needs an
+   * offer id. Same outcomes the old flow-select handled: a resumed draft, an
+   * existing active offer (back to step 1 with its banner), or another donor
+   * already mid-offer (the blocked dialog). Throws in the last two so nothing is
+   * saved against an offer the donor cannot edit.
+   */
+  async function createOfferLazily(): Promise<DonationOffer> {
+    const flowType = form.flowType as DonorFlowType;
     try {
       const returned = await createOfferDraft(requestId, flowType);
       setOffer(returned);
-      // If this resumes an in-progress draft rather than starting a fresh one,
-      // refill the form so the donor doesn't have to re-enter everything.
-      if (returned.itemDetails) hydrateForm(returned);
-      // If backend returned an existing active offer (not a fresh draft), handle it
       if (returned.status !== "DRAFT" && returned.status !== "NEEDS_INFORMATION") {
         setExistingOffer(returned);
-        return; // Stay on Step 1 — the existing offer banner will appear
+        setStep(1);
+        throw new Error("This request already has your active offer.");
       }
-      setStep(2);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      return returned;
     } catch (e: unknown) {
       if ((e as ApiConflictError)?.code === "OFFER_BLOCKED_ACTIVE_ELSEWHERE") {
         setBlockedByOther(true);
-      } else {
-        setError(e instanceof Error ? e.message : "Failed to create offer draft");
+        setStep(1);
       }
-    } finally {
-      setLoading(false);
+      throw e;
     }
   }
+
 
 
   if (requestLoadFailed) {
@@ -554,6 +578,25 @@ export default function OfferWizardPage() {
     );
   }
 
+  // Offers are donor-only on the server (DonationOfferService.resolveDonor).
+  // An NGO, representative or admin account would only collect 403s in the
+  // wizard, so say so plainly instead — without switching their role.
+  if (user.role !== "DONOR") {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
+        <p className="max-w-md text-gray-600 dark:text-gray-400">
+          Offering an item needs a donor account. You&apos;re signed in with a different account type.
+        </p>
+        <button
+          onClick={() => router.push(`/requests/${params.id}`)}
+          className="rounded-xl bg-[#b04a15] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"
+        >
+          Back to the request
+        </button>
+      </div>
+    );
+  }
+
   if (!request) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -562,10 +605,34 @@ export default function OfferWizardPage() {
     );
   }
 
+  // What donors can still send once earlier donations are counted — from the
+  // request's own quantity, capped, so it can never read below zero.
+  const stillNeeded = Math.max(0, request.quantity - Math.min(request.quantityDelivered ?? 0, request.quantity));
+
   // The request/flow picker creates the server draft. Once it exists, the
   // editable item form owns the viewport so its desktop rail, stacked card and
   // mobile sticky controls are not constrained by the legacy page wrapper.
-  if (step === 2 && offer) {
+  const activeOfferSubmitted = !!existingOffer
+    && existingOffer.status !== "DRAFT" && existingOffer.status !== "NEEDS_INFORMATION";
+  const draftHasLocation = existingOffer?.itemDetails?.latitude != null && existingOffer?.itemDetails?.longitude != null;
+  /** "No, go back" / Cancel: to wherever "Offer this item" was clicked. */
+  function leaveOffer() {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/requests");
+  }
+  if (request && offersChecked && step !== 3 && !activeOfferSubmitted && !passedLocation && !draftHasLocation) {
+    return (
+      <main className="min-h-screen bg-[#faf8f5] px-4 py-6 sm:py-10 dark:bg-zinc-950">
+        <OfferLocationGate
+          requestId={requestId} requestTitle={request.title}
+          onPass={(loc) => { setPassedLocation(loc); window.scrollTo({ top: 0 }); }}
+          onDecline={leaveOffer}
+        />
+      </main>
+    );
+  }
+
+  if (step === 2 && (offer || form.flowType)) {
     // `overflow-x-clip`, deliberately NOT `overflow-x-hidden`: `hidden` would
     // make this a scroll container, and this wizard's three `position: sticky`
     // elements would then stick to it instead of the viewport.
@@ -580,17 +647,23 @@ export default function OfferWizardPage() {
         className="min-h-screen overflow-x-clip bg-[#faf8f5] dark:bg-zinc-950"
       >
         <DonationOfferWizard
-          offerId={offer.id}
+          offerId={offer?.id ?? null}
+          requestId={requestId}
           offer={offer}
+          flowType={(offer?.flowType ?? form.flowType) as DonationOffer["flowType"]}
+          createOffer={createOfferLazily}
           requestTitle={request.title}
           requestedQuantity={request.quantity}
-          adminNote={offer.status === "NEEDS_INFORMATION" ? offer.displayRejectionReason : null}
+          stillNeededQuantity={stillNeeded}
+          adminNote={offer?.status === "NEEDS_INFORMATION" ? offer.displayRejectionReason : null}
           onExit={() => {
             setExistingOffer(offer);
             setStep(1);
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           onSaveExit={() => router.push("/offers")}
+          initialLocation={passedLocation}
+          onChangeLocation={() => setRecheckingLocation(true)}
           onSubmitted={(submitted) => {
             setOffer(submitted);
             setExistingOffer(submitted);
@@ -598,6 +671,19 @@ export default function OfferWizardPage() {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
+        {/* Over the form, not instead of it: unmounting the form would reload it
+            from the page's older copy of the draft and lose the latest edits. */}
+        {recheckingLocation && (
+          <div role="dialog" aria-modal="true" aria-label="Check your location"
+            className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 px-4 py-8 backdrop-blur-sm">
+            <OfferLocationGate
+              requestId={requestId} requestTitle={request.title}
+              onPass={(loc) => { setPassedLocation(loc); setRecheckingLocation(false); }}
+              // Here "No" or Cancel means "keep my previous location", not "leave".
+              onDecline={() => setRecheckingLocation(false)}
+            />
+          </div>
+        )}
       </main>
     );
   }
@@ -696,6 +782,18 @@ export default function OfferWizardPage() {
               );
             })()}
 
+            {/* A returning donor — their earlier donation is done, and the request
+                still needs more. Same left-accent style as the existing-offer banner. */}
+            {donatedBefore && !existingOffer && stillNeeded > 0 && (
+              <div className="mb-6 border-l-4 border-green-400 py-1 pl-4 dark:border-green-600">
+                <p className="text-sm font-bold text-green-800 dark:text-green-200">Thank you for donating to this request</p>
+                <p className="mt-1 text-sm leading-relaxed text-green-700 dark:text-green-300">
+                  Your earlier donation is complete. {stillNeeded} more {stillNeeded === 1 ? "is" : "are"} still
+                  needed — you can offer again below.
+                </p>
+              </div>
+            )}
+
             {/* Breadcrumb */}
             <div className="mb-4 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">
               <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">Requests</Link>
@@ -727,7 +825,12 @@ export default function OfferWizardPage() {
                 <span className="text-gray-300 dark:text-gray-700">•</span>
                 <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {request.city}</span>
                 <span className="text-gray-300 dark:text-gray-700">•</span>
-                <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantity} unit{request.quantity === 1 ? "" : "s"} needed</span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
+                  {stillNeeded < request.quantity
+                    ? `${stillNeeded} of ${request.quantity} still needed`
+                    : `${request.quantity} unit${request.quantity === 1 ? "" : "s"} needed`}
+                </span>
               </div>
             </header>
 
@@ -750,7 +853,7 @@ export default function OfferWizardPage() {
                   </p>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
                   {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags, comingSoon }, i) => {
                     const isSelecting = loading && form.flowType === type;
 
@@ -850,7 +953,7 @@ export default function OfferWizardPage() {
                   </div>
                   <div className="flex gap-5 sm:gap-8 text-right">
                     <div>
-                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{qty.quantityDelivered} / {qty.quantityRequired}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{request.quantity - stillNeeded} / {request.quantity}</p>
                       <p className="text-2xs font-semibold uppercase tracking-wide text-gray-400">Provided</p>
                     </div>
                     <div>
@@ -876,7 +979,7 @@ export default function OfferWizardPage() {
             <div className="mb-6 flex flex-wrap items-center gap-x-2 gap-y-2 text-sm text-gray-500 dark:text-gray-400">
               <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {daysAgo(request.createdAt)}</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
-              <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {request.quantityRemaining} still needed</span>
+              <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {stillNeeded} still needed</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
               <button
                 onClick={() => shareRequest(request.title, request.id)}

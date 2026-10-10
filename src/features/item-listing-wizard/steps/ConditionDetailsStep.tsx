@@ -30,14 +30,14 @@ export function ConditionDetailsStep({
 
   return (
     <div className="space-y-2">
-      <WizardField label="Approximate age" required error={errors.approximateAge} aiFilled={aiFilled.has("approximateAge")} uncertain={uncertain.has("approximateAge")}>
+      <WizardField label="How old is the item?" hint="Roughly how long you've had it or used it." required error={errors.approximateAge} aiFilled={aiFilled.has("approximateAge")} uncertain={uncertain.has("approximateAge")}>
         {({ id, describedBy, invalid }) => (
           <select
             id={id} name="approximateAge" aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass} value={model.approximateAge}
             onChange={e => onChange("approximateAge", e.target.value)}
           >
-            <option value="">Select an age</option>
+            <option value="">Select how old it is</option>
             {AGE_RANGES.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         )}

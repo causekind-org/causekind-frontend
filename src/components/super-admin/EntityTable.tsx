@@ -7,6 +7,7 @@ import {
   type SuperAdminEntity, type SuperAdminRow, type SuperAdminDependent, type ApiConflictError,
 } from "@/lib/api";
 import { rowCode } from "@/lib/row-code";
+import { useAuth } from "@/hooks/useAuth";
 import { Search, Pencil, Trash2, X, Plus, Loader2, AlertTriangle, RefreshCw, Eye } from "lucide-react";
 
 export type ColumnType = "text" | "number" | "textarea" | "boolean" | "select";
@@ -167,6 +168,47 @@ function DeleteConfirm({
   );
 }
 
+/* ── Bulk delete confirm — always dark overlay ──────────────────────────── */
+function BulkDeleteConfirm({
+  count, progress, onCancel, onDelete,
+}: {
+  count: number;
+  /** Rows processed so far while running; null when idle. */
+  progress: number | null;
+  onCancel: () => void;
+  onDelete: (cascade: boolean) => void;
+}) {
+  const running = progress !== null;
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={running ? undefined : onCancel} style={{ animation: "fadeIn 0.15s ease forwards" }}>
+      <div className="w-full max-w-sm bg-[#1a0e0e] border border-red-500/30 rounded-xl sm:rounded-2xl shadow-2xl p-4 sm:p-6 text-center" onClick={e => e.stopPropagation()}>
+        <div className="w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-red-500/15 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+          <AlertTriangle className="w-7 h-7 text-red-400" />
+        </div>
+        <h3 className="text-base font-bold text-white">Hard-delete {count} row{count !== 1 ? "s" : ""}?</h3>
+        <p className="text-xs text-stone-400 mt-2 leading-relaxed">
+          This permanently removes them from the database. It cannot be undone.
+          <br /><b className="text-stone-300">Delete</b> skips any row still referenced by other records.
+          <br /><b className="text-stone-300">Delete everything</b> also removes those linked records.
+        </p>
+        {running ? (
+          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-stone-300">
+            <Loader2 className="w-4 h-4 animate-spin" /> Deleting {Math.min(progress + 1, count)} of {count}…
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2 mt-6">
+            <div className="flex gap-2">
+              <button onClick={() => onDelete(false)} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">Delete</button>
+              <button onClick={() => onDelete(true)} className="flex-1 bg-red-900 hover:bg-red-800 border border-red-500/40 text-white font-bold py-2.5 rounded-lg text-sm transition-colors">Delete everything</button>
+            </div>
+            <button onClick={onCancel} className="py-2 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ── Main table ──────────────────────────────────────────────────────────── */
 export function EntityTable({
   entity, title, columns, canCreate = false, createColumns, isDark = true, onView, onRowClick, enrich,
@@ -202,6 +244,22 @@ export function EntityTable({
   const [deleteRow, setDeleteRow] = useState<SuperAdminRow | null>(null);
   const [deleteBlockers, setDeleteBlockers] = useState<SuperAdminDependent[] | null>(null);
   const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState<number | null>(null);
+  const { user } = useAuth();
+
+  /** Your own account cannot be selected, so a bulk delete never removes you. */
+  const isSelf = (row: SuperAdminRow) =>
+    entity === "users" && !!user?.email && String(row.email ?? "").toLowerCase() === user.email.toLowerCase();
+  const selectable = rows.filter(r => !isSelf(r));
+  const allSelected = selectable.length > 0 && selectable.every(r => selected.has(String(r.id)));
+  const toggle = (id: string) => setSelected(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+  const toggleAll = () => setSelected(allSelected ? new Set() : new Set(selectable.map(r => String(r.id))));
 
   const tableCols = columns.filter(c => c.inTable !== false);
 
@@ -212,6 +270,7 @@ export function EntityTable({
       // Enrichment is best-effort display polish — its endpoint failing
       // shouldn't block showing the raw rows that did load.
       setRows(enrich ? await enrich(raw).catch(() => raw) : raw);
+      setSelected(new Set());
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to load");
     } finally {
@@ -285,6 +344,32 @@ export function EntityTable({
     } finally {
       setSaving(false);
     }
+  }
+
+  /** One row at a time, so each failure is counted against its own row. */
+  async function handleBulkDelete(cascade: boolean) {
+    const ids = rows.filter(r => selected.has(String(r.id)) && !isSelf(r)).map(r => r.id);
+    let deleted = 0, linked = 0, skipped = 0, failed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      setBulkProgress(i);
+      const id = ids[i];
+      try {
+        const result = await superAdminDelete(entity, Number(id), cascade);
+        deleted++;
+        if (cascade && result?.total) linked += Math.max(0, result.total - 1);
+        setRows(prev => prev.filter(r => r.id !== id));
+        setSelected(prev => { const n = new Set(prev); n.delete(String(id)); return n; });
+      } catch (e) {
+        if ((e as ApiConflictError)?.dependents) skipped++; else failed++;
+      }
+    }
+    setBulkProgress(null);
+    setBulkOpen(false);
+    const parts = [`Deleted ${deleted} row${deleted !== 1 ? "s" : ""}`];
+    if (linked) parts.push(`${linked} linked record${linked !== 1 ? "s" : ""}`);
+    if (skipped) parts.push(`${skipped} skipped (still referenced)`);
+    if (failed) parts.push(`${failed} failed`);
+    (failed || skipped ? toast.error : toast.success)(parts.join(" · "));
   }
 
   // ── Theme tokens ──
@@ -362,12 +447,32 @@ export function EntityTable({
         </div>
       </div>
 
+      {selected.size > 0 && (
+        <div className={`flex flex-wrap items-center gap-3 rounded-xl border px-4 py-2.5 text-sm ${isDark ? "border-red-500/30 bg-red-500/10 text-stone-200" : "border-red-200 bg-red-50 text-stone-800"}`}>
+          <span className="font-bold">{selected.size} selected</span>
+          <button onClick={() => setBulkOpen(true)} className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs transition-colors">
+            <Trash2 className="w-3.5 h-3.5" /> Delete selected
+          </button>
+          <button onClick={() => setSelected(new Set())} className={`text-xs font-semibold underline-offset-2 hover:underline ${t.iconMuted}`}>Clear</button>
+        </div>
+      )}
+
       {/* Table */}
       <div className={`rounded-xl sm:rounded-2xl border overflow-hidden ${t.table}`}>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className={t.thead}>
               <tr>
+                <th className="pl-3 pr-1 py-2 sm:pl-4 sm:py-3 w-8">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all rows"
+                    checked={allSelected}
+                    disabled={loading || selectable.length === 0}
+                    onChange={toggleAll}
+                    className="w-4 h-4 cursor-pointer accent-[#b04a15]"
+                  />
+                </th>
                 <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-2xs uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
                   #
                 </th>
@@ -388,7 +493,7 @@ export function EntityTable({
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i}>
-                    {Array.from({ length: tableCols.length + 2 }).map((_, c) => (
+                    {Array.from({ length: tableCols.length + 3 }).map((_, c) => (
                       <td key={c} className="px-2.5 py-2 sm:px-4 sm:py-3">
                         <div className={`h-3.5 rounded animate-pulse ${t.skeleton}`} />
                       </td>
@@ -400,7 +505,7 @@ export function EntityTable({
                 ))
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={tableCols.length + 3} className={`px-4 py-10 sm:py-16 text-center text-sm ${t.empty}`}>
+                  <td colSpan={tableCols.length + 4} className={`px-4 py-10 sm:py-16 text-center text-sm ${t.empty}`}>
                     No rows found.
                   </td>
                 </tr>
@@ -412,6 +517,17 @@ export function EntityTable({
                     className={`sa-row-cascade transition-colors ${t.rowHover} ${onRowClick ? "cursor-pointer" : ""}`}
                     style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }}
                   >
+                    <td className="pl-3 pr-1 py-2 sm:pl-4 sm:py-3" onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select row ${rowCode(entity, row.id)}`}
+                        checked={selected.has(String(row.id))}
+                        disabled={isSelf(row)}
+                        title={isSelf(row) ? "Your own account cannot be bulk-deleted" : undefined}
+                        onChange={() => toggle(String(row.id))}
+                        className="w-4 h-4 cursor-pointer accent-[#b04a15] disabled:cursor-not-allowed disabled:opacity-30"
+                      />
+                    </td>
                     <td className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap tabular-nums ${t.cellId}`}>{i + 1}</td>
                     <td className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap font-mono text-xs ${t.cellId}`}>{rowCode(entity, row.id)}</td>
                     {tableCols.map(c => (
@@ -461,6 +577,14 @@ export function EntityTable({
       )}
       {creating && (
         <RowForm title={`Create ${title}`} columns={createColumns ?? columns} initial={{}} saving={saving} onClose={() => setCreating(false)} onSave={handleCreate} />
+      )}
+      {bulkOpen && (
+        <BulkDeleteConfirm
+          count={selected.size}
+          progress={bulkProgress}
+          onCancel={() => setBulkOpen(false)}
+          onDelete={handleBulkDelete}
+        />
       )}
       {deleteRow && (
         <DeleteConfirm

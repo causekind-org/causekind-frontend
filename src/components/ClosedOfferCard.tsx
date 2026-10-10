@@ -31,6 +31,14 @@ const CLOSED_LABELS: Record<string, { label: string; tone: string }> = {
   WITHDRAWN:      { label: "Withdrawn", tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
 };
 
+/** What happened, in plain words — so the panel is never empty (2026-10-08). */
+const CLOSED_EXPLAINED: Record<string, string> = {
+  WITHDRAWN: "You withdrew this offer. Nothing was handed over, and the request stays open for other donors.",
+  CANCELLED: "This offer was cancelled before the handover, so nothing changed hands.",
+  DONEE_DECLINED: "The recipient decided this item was not right for them. Your item is still yours.",
+  ADMIN_REJECTED: "Our team could not approve this offer.",
+};
+
 const NEXT_STEPS = [
   { href: "/requests", icon: "🔍", title: "Offer to a different request",
     blurb: "Browse verified requests and find a better match for your item." },
@@ -148,6 +156,20 @@ export function ClosedOfferCard({ offer, onChanged }: {
           {/* Detail — the full reason and next steps, only once asked for */}
           {expanded && (
             <div className="space-y-3 border-t border-stone-100 px-3 py-3 dark:border-zinc-800">
+              <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+                {CLOSED_EXPLAINED[offer.status] ?? "This offer is closed."}
+              </p>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-2xs sm:grid-cols-3">
+                <div><dt className="text-stone-400">Request</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestTitle}</dd></div>
+                {offer.requestCity && <div><dt className="text-stone-400">Where</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestCity}</dd></div>}
+                <div><dt className="text-stone-400">Offered on</dt><dd className="font-semibold text-stone-700 dark:text-stone-300">{new Date(offer.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</dd></div>
+              </dl>
+              {offer.status !== "ADMIN_REJECTED" && (
+                <Link href={`/requests/${offer.requestId}/offer`}
+                  className="inline-flex items-center gap-1 text-2xs font-bold text-[var(--ck-role-accent)] hover:underline">
+                  Offer to this request again →
+                </Link>
+              )}
               {reason && (
                 <div className="rounded-lg bg-stone-50 px-3 py-2 text-xs leading-relaxed text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
                   <span className="font-semibold">Reason: </span>{reason}

@@ -1,7 +1,8 @@
 "use client";
 
-import { CalendarDays, ExternalLink, MapPin, Repeat, StickyNote, Truck } from "lucide-react";
-import { hasCoordinates, mapsHref } from "./adapters";
+import { useState } from "react";
+import { CalendarDays, Check, Copy, ExternalLink, MapPin, Navigation, Repeat, StickyNote, Truck } from "lucide-react";
+import { directionsHref, hasCoordinates, mapsHref, staticMapSrc } from "./adapters";
 import type { HandoverViewModel } from "./model";
 
 /**
@@ -44,24 +45,7 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
         <Row icon={Truck} label="How">{s.methodLabel ?? "Not set"}</Row>
         {(s.address || showMap) && (
           <Row icon={MapPin} label="Where">
-            {/* block, not inline: the link below is inline-flex, so an inline
-                span ran straight into it — "Pinned locationOpen in Google Maps" */}
-            <span className="block break-words">{s.address ?? "Pinned location"}</span>
-            {showMap && (
-              <a
-                href={mapsHref(s.latitude!, s.longitude!)}
-                target="_blank"
-                rel="noopener noreferrer"
-                // Reads as a control, not as run-on text: role-tinted fill, its
-                // own line, an icon that says "leaves the page", and a 44px target.
-                className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-md border border-[var(--handover-accent)]/30 bg-[var(--handover-soft)] px-3 text-sm font-semibold text-[var(--handover-on-soft)] transition-colors hover:border-[var(--handover-accent)]/60 hover:bg-[var(--handover-soft)]/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)]"
-              >
-                <MapPin className="size-4 shrink-0" aria-hidden />
-                Open in Google Maps
-                <ExternalLink className="size-3.5 shrink-0 opacity-70" aria-hidden />
-                <span className="sr-only">(opens in a new tab)</span>
-              </a>
-            )}
+            <HandoverPlace address={s.address} lat={showMap ? s.latitude : null} lng={showMap ? s.longitude : null} />
           </Row>
         )}
         {s.notes && <Row icon={StickyNote} label="Notes">{s.notes}</Row>}
@@ -88,6 +72,72 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
         </p>
       )}
     </Panel>
+  );
+}
+
+/**
+ * The handover place: the address as the donor wrote it, a small map of the
+ * pin that opens Google Maps, and the two things the person travelling needs,
+ * directions and the address to copy.
+ */
+function HandoverPlace({ address, lat, lng }: { address: string | null; lat: number | null; lng: number | null }) {
+  const pinned = lat != null && lng != null;
+  const src = pinned ? staticMapSrc(lat, lng) : null;
+  const [imgFailed, setImgFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  async function copy() {
+    if (!address) return;
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked: the address is on screen to select */ }
+  }
+
+  const action = "inline-flex min-h-[44px] items-center gap-1.5 rounded-md border px-3 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)]";
+  const primary = `${action} border-[var(--handover-accent)]/30 bg-[var(--handover-soft)] text-[var(--handover-on-soft)] hover:border-[var(--handover-accent)]/60`;
+  const secondary = `${action} border-stone-200 text-stone-700 hover:bg-stone-50 dark:border-zinc-700 dark:text-stone-200 dark:hover:bg-zinc-800`;
+
+  return (
+    <div className="space-y-2.5">
+      <span className="block break-words font-medium text-stone-800 dark:text-stone-100">{address ?? "Pinned location"}</span>
+
+      {pinned && src && !imgFailed && (
+        <a
+          href={mapsHref(lat, lng)} target="_blank" rel="noopener noreferrer"
+          className="block overflow-hidden rounded-lg border border-stone-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)] dark:border-zinc-700"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- external Static Maps image; next/image would need the host configured and adds nothing here */}
+          <img
+            src={src} alt="Map of the handover spot. Opens Google Maps." loading="lazy"
+            className="h-36 w-full object-cover sm:h-40" onError={() => setImgFailed(true)}
+          />
+        </a>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        {pinned && (
+          <>
+            <a href={directionsHref(lat, lng)} target="_blank" rel="noopener noreferrer" className={primary}>
+              <Navigation className="size-4 shrink-0" aria-hidden /> Directions
+              <span className="sr-only">(opens Google Maps in a new tab)</span>
+            </a>
+            <a href={mapsHref(lat, lng)} target="_blank" rel="noopener noreferrer" className={secondary}>
+              <MapPin className="size-4 shrink-0" aria-hidden /> Open in Google Maps
+              <ExternalLink className="size-3.5 shrink-0 opacity-70" aria-hidden />
+              <span className="sr-only">(opens in a new tab)</span>
+            </a>
+          </>
+        )}
+        {address && (
+          <button type="button" onClick={() => void copy()} className={secondary}>
+            {copied ? <Check className="size-4 shrink-0" aria-hidden /> : <Copy className="size-4 shrink-0" aria-hidden />}
+            {copied ? "Copied" : "Copy address"}
+          </button>
+        )}
+      </div>
+    </div>
   );
 }
 

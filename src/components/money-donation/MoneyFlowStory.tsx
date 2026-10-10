@@ -2,14 +2,15 @@
 
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useMotionValue, useSpring, useReducedMotion } from 'framer-motion';
-import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home, ArrowRight } from 'lucide-react';
+import { Heart, Users, Banknote, HandHeart, GraduationCap, Stethoscope, Home } from 'lucide-react';
+import { MobileInitiatives } from './MobileInitiatives';
 import { SahasLogo } from './SahasLogo';
 import Link from "@/components/AppLink";
 
 /* ─── Step Data ─── */
 const steps = [
   {
-    icon: <Heart className="w-7 h-7" />,
+    icon: <Heart className="w-5 h-5 md:w-7 md:h-7" />,
     iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
     glowColor: 'rgba(234,88,12,0.3)',
     label: 'You Donate',
@@ -18,7 +19,7 @@ const steps = [
     detail: 'UPI · Cards · Net Banking',
   },
   {
-    icon: <SahasLogo size={44} />,
+    icon: <SahasLogo size={44} className="w-7 h-7 md:w-11 md:h-11" />,
     iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
     glowColor: 'rgba(217,119,6,0.3)',
     label: 'Sahas Charitable Trust',
@@ -27,7 +28,7 @@ const steps = [
     detail: 'Registered · Audited',
   },
   {
-    icon: <Banknote className="w-7 h-7" />,
+    icon: <Banknote className="w-5 h-5 md:w-7 md:h-7" />,
     iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
     glowColor: 'rgba(234,88,12,0.3)',
     label: 'Funds Are Allocated',
@@ -36,7 +37,7 @@ const steps = [
     detail: 'Zero overhead',
   },
   {
-    icon: <HandHeart className="w-7 h-7" />,
+    icon: <HandHeart className="w-5 h-5 md:w-7 md:h-7" />,
     iconBg: 'from-[#f97316] via-[#ea580c] to-[#c2410c]',
     glowColor: 'rgba(217,119,6,0.3)',
     label: 'Direct Impact',
@@ -90,7 +91,7 @@ function TiltCard({ children, className = '' }: { children: React.ReactNode; cla
 /* ─── Story Step ─── */
 function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: number; isLast: boolean }) {
   return (
-    <div className="relative flex flex-row md:flex-col items-start md:items-center gap-5 md:gap-0 md:flex-1 z-10 group">
+    <div className="relative flex flex-row md:flex-col items-stretch md:items-center gap-3.5 md:gap-0 md:flex-1 z-10 group">
       {/* Icon orb with gold ring */}
       <div className="flex-shrink-0 flex flex-col items-center">
         <motion.div
@@ -106,13 +107,13 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8, delay: index * 0.18 + 0.2 }}
-            className="absolute inset-0 rounded-2xl blur-xl opacity-60"
+            className="absolute inset-0 rounded-xl md:rounded-2xl blur-lg md:blur-xl opacity-50 md:opacity-60"
             style={{ background: step.glowColor }}
           />
-          <div className={`relative w-16 h-16 rounded-2xl bg-gradient-to-br ${step.iconBg} text-white flex items-center justify-center shadow-lg ring-2 ring-[#d97706]/40 shadow-[0_0_18px_rgba(234,88,12,0.28)]`}>
+          <div className={`relative w-11 h-11 md:w-16 md:h-16 rounded-xl md:rounded-2xl bg-gradient-to-br ${step.iconBg} text-white flex items-center justify-center shadow-md md:shadow-lg ring-2 ring-[#d97706]/40 md:shadow-[0_0_18px_rgba(234,88,12,0.28)]`}>
             {step.icon}
             {/* Step number badge */}
-            <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[#fffbf5] dark:bg-[#2a1309] text-[#c2410c] dark:text-amber-300 text-xs font-extrabold flex items-center justify-center shadow-md border border-amber-300/70 dark:border-amber-700/60">
+            <div className="absolute -top-1.5 -right-1.5 md:-top-2 md:-right-2 w-5 h-5 md:w-6 md:h-6 rounded-full bg-[#fffbf5] dark:bg-[#2a1309] text-[#c2410c] dark:text-amber-300 text-[0.625rem] md:text-xs font-extrabold flex items-center justify-center shadow-md border border-amber-300/70 dark:border-amber-700/60">
               {index + 1}
             </div>
           </div>
@@ -125,7 +126,7 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
             whileInView={{ scaleY: 1 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.5, delay: index * 0.18 + 0.25 }}
-            className="w-px h-20 md:hidden bg-gradient-to-b from-[#ea580c] via-[#f59e0b] to-transparent origin-top mt-3"
+            className="w-0.5 flex-1 min-h-3 md:hidden rounded-full bg-gradient-to-b from-[#ea580c]/70 via-[#f59e0b]/50 to-amber-300/30 dark:to-amber-800/30 origin-top my-1.5"
           />
         )}
       </div>
@@ -136,37 +137,31 @@ function StoryStep({ step, index, isLast }: { step: typeof steps[0]; index: numb
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.5, delay: index * 0.18 + 0.1 }}
-        className="flex-1 md:text-center mt-1 md:mt-5 pb-10 md:pb-0 md:px-2"
+        className={`flex-1 min-w-0 md:text-center pt-0.5 md:pt-0 md:mt-5 md:pb-0 md:px-2 ${isLast ? 'pb-0' : 'pb-4'}`}
       >
-        <span className="inline-block text-[0.6875rem] font-bold tracking-widest uppercase text-amber-800 dark:text-amber-300 mb-1.5">
-          {step.label}
-        </span>
-        <h3 className="text-lg sm:text-xl font-extrabold text-foreground mb-2 leading-snug">
+        {/* On mobile the detail chip sits beside the label to save a line */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mb-0.5 md:mb-1.5 md:block">
+          <span className="inline-block text-[0.625rem] md:text-[0.6875rem] font-bold tracking-widest uppercase text-amber-800 dark:text-amber-300">
+            {step.label}
+          </span>
+          {step.detail && (
+            <span className="md:hidden inline-block text-[0.625rem] font-semibold leading-none text-amber-900 dark:text-amber-200 bg-amber-100/80 dark:bg-amber-950/60 px-2 py-1 rounded-full">
+              {step.detail}
+            </span>
+          )}
+        </div>
+        <h3 className="text-[0.9375rem] md:text-lg lg:text-xl font-extrabold text-foreground mb-1 md:mb-2 leading-snug">
           {step.headline}
         </h3>
-        <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed mb-3">
+        <p className="text-[0.8125rem] md:text-sm text-stone-600 dark:text-stone-300 leading-relaxed md:mb-3">
           {step.description}
         </p>
         {step.detail && (
-          <span className="inline-block text-[0.6875rem] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/50 px-3 py-1 rounded-full border border-amber-300/60 dark:border-amber-700/50 shadow-xs">
+          <span className="hidden md:inline-block text-[0.6875rem] font-semibold text-amber-900 dark:text-amber-200 bg-amber-50/90 dark:bg-amber-950/50 px-3 py-1 rounded-full border border-amber-300/60 dark:border-amber-700/50 shadow-xs">
             {step.detail}
           </span>
         )}
       </motion.div>
-
-      {/* Desktop arrow connector between steps with diamond motif */}
-      {!isLast && (
-        <motion.div
-          initial={{ opacity: 0, x: -10 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.4, delay: index * 0.18 + 0.35 }}
-          className="hidden md:flex items-center gap-1 absolute -right-4 lg:-right-6 top-7 z-20 text-amber-500 dark:text-amber-400"
-        >
-          <span className="w-1.5 h-1.5 rotate-45 bg-amber-400 dark:bg-amber-500 inline-block" />
-          <ArrowRight className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-        </motion.div>
-      )}
     </div>
   );
 }
@@ -183,7 +178,7 @@ export function MoneyFlowStory() {
   const bgX = useTransform(scrollYProgress, [0, 1], ['0%', '-15%']);
 
   return (
-    <section ref={containerRef} className="relative ck-below-nav py-10 sm:py-14 lg:py-16 bg-gradient-to-b from-[#fffbf5] via-[#fff8ee] to-[#fffbf5] dark:from-[#1c0d06] dark:via-[#160a04] dark:to-[#1c0d06] overflow-hidden flex flex-col justify-center">
+    <section ref={containerRef} className="relative py-8 sm:py-14 lg:py-16 overflow-hidden flex flex-col justify-center">
 
       {/* Decorative background blobs */}
       <motion.div
@@ -195,28 +190,28 @@ export function MoneyFlowStory() {
         className="absolute -left-40 bottom-1/4 w-[min(400px,74vw)] h-[min(400px,74vw)] rounded-full bg-orange-500/10 blur-3xl pointer-events-none"
       />
 
-      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-6">
+      <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-2 md:pt-6">
         {/* Section header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
           transition={{ duration: 0.6 }}
-          className="mb-8 sm:mb-10 text-center max-w-3xl mx-auto"
+          className="mb-5 sm:mb-10 text-center max-w-3xl mx-auto"
         >
-          <span className="inline-block text-xs font-bold tracking-wider uppercase text-amber-900 dark:text-amber-200 mb-4 bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 px-3 py-1 rounded-full shadow-xs">
+          <span className="inline-block text-xs font-bold tracking-wider uppercase text-amber-900 dark:text-amber-200 mb-3 md:mb-4 bg-amber-100/90 dark:bg-amber-950/60 border border-amber-300/60 dark:border-amber-700/50 px-3 py-1 rounded-full shadow-xs">
             Where Your Money Goes
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-foreground leading-tight mb-5">
+          <h2 className="text-[1.625rem] sm:text-4xl lg:text-5xl font-extrabold text-foreground leading-tight mb-2.5 md:mb-5 text-balance">
             From you, to those who need it most.
           </h2>
-          <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl mx-auto">
+          <p className="text-sm sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed max-w-2xl mx-auto">
             Every donation follows a clear, accountable path. Here&apos;s exactly how your contribution creates real impact.
           </p>
         </motion.div>
 
         {/* ── Horizontal Timeline ── */}
-        <div className="relative mb-8">
+        <div className="relative mb-6 md:mb-8 rounded-2xl md:rounded-none border border-amber-200/80 dark:border-amber-800/40 md:border-0 bg-[#fffdfa]/85 dark:bg-[#23120a]/80 md:bg-transparent md:dark:bg-transparent p-4 md:p-0 shadow-[0_4px_20px_rgba(217,119,6,0.07)] md:shadow-none">
           {/* Desktop connecting line with animated progress */}
           <div className="hidden md:block absolute top-8 left-[8%] right-[8%] h-0.5 bg-amber-200/60 dark:bg-amber-900/40 z-0">
             <motion.div
@@ -256,10 +251,11 @@ export function MoneyFlowStory() {
           transition={{ duration: 0.6, delay: 0.4 }}
           className="w-full"
         >
-          <h4 className="text-sm font-bold uppercase tracking-widest text-amber-800 dark:text-amber-300 text-center mb-8">
+          <MobileInitiatives areas={impactAreas} />
+          <h4 className="text-sm font-bold uppercase tracking-widest text-amber-800 dark:text-amber-300 text-center mb-8 hidden md:block">
             Supporting Core Initiatives
           </h4>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1000px' }}>
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-5" style={{ perspective: '1000px' }}>
             {impactAreas.map((area, i) => (
               <motion.div
                 key={i}

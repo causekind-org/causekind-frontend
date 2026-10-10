@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -11,12 +11,26 @@ import {
   trackDonationPaymentSubmitted,
   trackDonationCompleted,
 } from '@/lib/clarityEvents';
-import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight } from 'lucide-react';
-import { initiateTrustDonation } from '@/lib/api';
+import { Lock, ShieldCheck, Heart, Check, Receipt, ArrowRight, Camera, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { initiateTrustDonation, readPanCard, uploadTrustDonationPanPhoto } from '@/lib/api';
+import { PhotoCaptureDialog, prefersNativeCamera } from '@/features/ngo-drives/components/PhotoCaptureDialog';
+
+/**
+ * Does the name on the PAN card belong to the person filling in the form?
+ * Lenient on purpose (owner, 2026-10-08): case, order, middle names, initials
+ * and dots don't matter — one shared name part of 2+ letters is enough. A card
+ * with no name part in common blocks the donation.
+ */
+function panNameMatches(formName: string, cardName: string): boolean {
+  const parts = (s: string) => s.toUpperCase().replace(/[^A-Z\s]/g, ' ').split(/\s+/).filter((p) => p.length >= 2);
+  const card = new Set(parts(cardName));
+  return parts(formName).some((p) => card.has(p));
+}
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
 import { getDialCodes } from '@/app/actions/locations';
 import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
 import { useAuth } from '@/hooks/useAuth';
+import styles from './MoneyDonationForm.module.css';
 
 /**
  * Loads Razorpay's checkout script on demand.
@@ -33,6 +47,7 @@ function loadRazorpayScript(): Promise<boolean> {
 }
 
 const PRESET_AMOUNTS = [500, 1000, 2500, 5000];
+const MAX_DONATION = 9999999;
 
 /**
  * Tip options, in rupees. Zero is a first-class choice rather than something the
@@ -87,12 +102,24 @@ export function MoneyDonationForm() {
   const donorEmail = user?.email ?? '';
 
   const [submitting, setSubmitting] = useState(false);
+  // PAN card photo (2026-10-08): read by AI to fill the PAN, attached to the
+  // donation once it exists. Optional — typing the PAN still works.
+  const [panPhoto, setPanPhoto] = useState<File | null>(null);
+  const [panPreview, setPanPreview] = useState<string | null>(null);
+  const [panReading, setPanReading] = useState(false);
+  const [panNote, setPanNote] = useState<{ tone: 'ok' | 'warn' | 'error'; text: string } | null>(null);
+  const [cardName, setCardName] = useState<string | null>(null);
+  const [panWebcam, setPanWebcam] = useState(false);
+  const panUploadRef = useRef<HTMLInputElement>(null);
+  const panCameraRef = useRef<HTMLInputElement>(null);
   const [amount, setAmount] = useState<number | ''>(1000);
   const [customAmount, setCustomAmount] = useState<string>('');
   const [isCustom, setIsCustom] = useState(false);
   const [presetTip, setPresetTip] = useState<number>(DEFAULT_TIP);
   const [customTip, setCustomTip] = useState<string>('');
   const [isCustomTip, setIsCustomTip] = useState(false);
+  const [mobileTipOpen, setMobileTipOpen] = useState(false);
+  const [lastMobileTip, setLastMobileTip] = useState(DEFAULT_TIP);
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -135,7 +162,9 @@ export function MoneyDonationForm() {
   };
 
   const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value.replace(/[^0-9]/g, '');
+    // Seven digits caps the amount at MAX_DONATION (₹99,99,999); slicing also
+    // catches pasted values that would slip past maxLength.
+    const val = e.target.value.replace(/[^0-9]/g, '').slice(0, 7);
     setCustomAmount(val);
     setIsCustom(true);
     setAmount('');
@@ -145,19 +174,72 @@ export function MoneyDonationForm() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handlePanPhoto = async (file: File) => {
+    setPanPhoto(file);
+    setPanPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(file); });
+    setPanReading(true); setPanNote(null); setCardName(null);
+    try {
+      const r = await readPanCard(file);
+      if (!r.read || !r.panNumber) {
+        setPanNote({ tone: 'error', text: r.message ?? "We couldn't read this card. Please try a clearer photo or type your PAN." });
+        return;
+      }
+      setFormData((f) => ({ ...f, panNumber: r.panNumber! }));
+      setCardName(r.nameOnCard);
+      setPanNote({ tone: 'ok', text: `Read from your card: ${r.panNumber}${r.nameOnCard ? ` · ${r.nameOnCard}` : ''}. Please check it.` });
+    } catch (err) {
+      setPanNote({ tone: 'error', text: err instanceof Error ? err.message : "We couldn't read the card. Please type your PAN." });
+    } finally {
+      setPanReading(false);
+    }
+  };
+
+  const clearPanPhoto = () => {
+    setPanPhoto(null); setCardName(null); setPanNote(null);
+    setPanPreview((prev) => { if (prev) URL.revokeObjectURL(prev); return null; });
+  };
+
+  // The card's name vs the Full name field — shown as a note, and blocks the donation.
+  const panNameMismatch = !!cardName && formData.fullName.trim().length >= 2 && !panNameMatches(formData.fullName, cardName);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (panNameMismatch) {
+      toast.error(`The name on your PAN card (${cardName}) doesn't match the name you entered. Please correct it, or remove the card photo.`);
+      return;
+    }
 
     if (!donation || donation < 1) {
       toast.error('Please select or enter a valid donation amount.');
       return;
     }
-    if (!formData.fullName) {
-      toast.error('Please enter your name.');
+    if (donation > MAX_DONATION) {
+      toast.error(`Donation amount cannot exceed ₹${money(MAX_DONATION)}.`);
       return;
     }
-    if (!user && !formData.email) {
-      toast.error('Please enter your email so we can send your receipt.');
+    if (!formData.fullName || formData.fullName.trim().length < 2) {
+      toast.error('Please enter your full name.');
+      return;
+    }
+    const invalidMatches = formData.fullName.match(/[^A-Z\s.'-]/gi);
+    if (invalidMatches && invalidMatches.length > 0) {
+      toast.error('Full name cannot contain numbers or special characters.');
+      return;
+    }
+    if (!user) {
+      if (!formData.email || !formData.email.trim()) {
+        toast.error('Please enter your email address.');
+        return;
+      }
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(formData.email.trim())) {
+        toast.error('Please enter a valid email address (e.g., name@example.com).');
+        return;
+      }
+    }
+    if (!formData.mobileNumber || formData.mobileNumber.length !== maxPhoneLength) {
+      toast.error(`Please enter a valid ${maxPhoneLength}-digit mobile number.`);
       return;
     }
     // Required since 2026-09-18. The trust reports every donor's PAN in Form
@@ -203,6 +285,12 @@ export function MoneyDonationForm() {
         panNumber: formData.panNumber,
         address: formData.address.trim() || undefined,
       });
+
+      // Attach the card photo now that the donation exists. Best-effort: the
+      // donation must not fail over the photo, the typed PAN is what counts.
+      if (panPhoto) {
+        uploadTrustDonationPanPhoto(order.donationId, panPhoto).catch(() => { /* optional */ });
+      }
 
       const rzp = new window.Razorpay({
         key: order.razorpayKeyId,
@@ -273,7 +361,7 @@ export function MoneyDonationForm() {
       // 113px, so the heading came to rest underneath the navbar. --ck-nav-h is
       // the real height, published by Navbar from a ResizeObserver; the 7rem
       // fallback covers the frame before it is first written.
-      className="scroll-mt-[calc(var(--ck-nav-h,7rem)+1rem)] py-6 bg-[#fff9f2] dark:bg-[#1a0b04] focus:outline-none"
+      className="scroll-mt-[calc(var(--ck-nav-h,7rem)+1rem)] py-6 focus:outline-none"
     >
       <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mx-auto flex max-w-[78rem] flex-col gap-3">
@@ -352,6 +440,77 @@ export function MoneyDonationForm() {
               {/* LEFT — the choices */}
               <div className="flex flex-col gap-4 p-5 sm:p-6">
 
+                <div className={styles.mobileChoices}>
+                  <div className={styles.amountSection}>
+                    <p className={styles.eyebrow}>Your gift to</p>
+                    <h3 className={styles.recipient}>Sahas Charitable Trust</h3>
+                    <label htmlFor="mobileDonationAmount" className={styles.amountLabel}>Your donation</label>
+                    <div className={styles.amountEntry}>
+                      <span aria-hidden="true">₹</span>
+                      <input
+                        id="mobileDonationAmount"
+                        type="text"
+                        inputMode="numeric"
+                        aria-label="Donation amount in rupees"
+                        aria-describedby="mobileDonationHint"
+                        value={isCustom ? customAmount : amount}
+                        onChange={handleCustomAmountChange}
+                        maxLength={7}
+                      />
+                    </div>
+                    <p id="mobileDonationHint" className={styles.hint}>Tap the amount to enter your own</p>
+                    <div className={styles.presets} role="group" aria-label="Donation amounts">
+                      {PRESET_AMOUNTS.map((value) => (
+                        <button key={value} type="button" aria-pressed={donation === value} onClick={() => handleAmountClick(value)}>
+                          ₹{money(value)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className={styles.support}>
+                    <div className={styles.supportRow}>
+                      <label className={styles.supportLabel}>
+                        <input type="checkbox" checked={tip > 0} onChange={(event) => {
+                          if (!event.target.checked && tip > 0) setLastMobileTip(tip);
+                          setPresetTip(event.target.checked ? lastMobileTip : 0);
+                          setIsCustomTip(false);
+                          setCustomTip('');
+                        }} />
+                        <span>Add ₹{money(tip > 0 ? tip : lastMobileTip)} for CauseKind<small>Optional · helps run the platform</small></span>
+                      </label>
+                      <button className={styles.change} type="button" aria-expanded={mobileTipOpen} aria-controls="mobileTipEditor" onClick={() => setMobileTipOpen(!mobileTipOpen)}>
+                        {mobileTipOpen ? 'Done' : 'Change'}
+                      </button>
+                    </div>
+                    <div id="mobileTipEditor" hidden={!mobileTipOpen} className={styles.tipEditor}>
+                      <p>We take nothing from your donation. You choose whether to support CauseKind.</p>
+                      <div className={styles.presets} role="group" aria-label="Platform support amounts">
+                        {TIP_OPTIONS.filter((value) => value > 0).map((value) => (
+                          <button key={value} type="button" aria-pressed={tip === value} onClick={() => {
+                            setPresetTip(value);
+                            setLastMobileTip(value);
+                            setIsCustomTip(false);
+                            setCustomTip('');
+                          }}>₹{money(value)}</button>
+                        ))}
+                      </div>
+                      <label htmlFor="mobileSupportAmount">Or enter support amount (₹)</label>
+                      <input id="mobileSupportAmount" type="text" inputMode="numeric" value={isCustomTip ? customTip : presetTip} onChange={(event) => {
+                        const value = event.target.value.replace(/[^0-9]/g, '');
+                        setCustomTip(value);
+                        setIsCustomTip(true);
+                        if (Number(value) > 0) setLastMobileTip(Number(value));
+                      }} />
+                    </div>
+                  </div>
+                  <div className={styles.mobileTotal} aria-live="polite" aria-atomic="true">
+                    <div><strong>Total amount</strong><small>{tip > 0 ? `₹${money(donation)} donation + ₹${money(tip)} support` : 'No platform support added'}</small></div>
+                    <output>₹{money(total)}</output>
+                  </div>
+                </div>
+
+                <div className="hidden flex-col gap-4 md:flex">
+
                 {/* Step 1 — amount.
                     The Custom control shares the preset row as a fifth cell and
                     SWAPS IN PLACE into an input when chosen, rather than sitting
@@ -388,9 +547,9 @@ export function MoneyDonationForm() {
                           id="customAmount"
                           type="text"
                           inputMode="numeric"
-                          autoFocus
                           value={customAmount}
                           onChange={handleCustomAmountChange}
+                          maxLength={7}
                           placeholder="Amount"
                           className="h-11 w-full rounded-xl border border-amber-500 bg-[#fffdfa] pl-6 pr-2 text-sm font-bold tabular-nums text-foreground shadow-xs outline-none ring-2 ring-amber-400/40 placeholder:font-semibold placeholder:text-stone-400 dark:bg-[#221008] dark:placeholder:text-stone-500"
                         />
@@ -465,7 +624,6 @@ export function MoneyDonationForm() {
                           id="customTip"
                           type="text"
                           inputMode="numeric"
-                          autoFocus
                           value={customTip}
                           onChange={(e) => {
                             setCustomTip(e.target.value.replace(/[^0-9]/g, ''));
@@ -492,6 +650,8 @@ export function MoneyDonationForm() {
 
                 <hr className="border-amber-200/60 dark:border-amber-900/40" />
 
+                </div>
+
                 {/* Step 3 — details */}
                 <div className="flex flex-col gap-3">
                   <StepLabel n={3} title="Your details" />
@@ -506,7 +666,15 @@ export function MoneyDonationForm() {
                         name="fullName"
                         required
                         value={formData.fullName}
-                        onChange={handleChange}
+                        onChange={(e) => {
+                          const val = e.target.value.toUpperCase();
+                          const invalidMatches = val.match(/[^A-Z\s.'-]/g);
+                          if (invalidMatches && invalidMatches.length > 0) {
+                            const uniqueInvalid = Array.from(new Set(invalidMatches)).join(' ');
+                            toast.error(`Special characters or numbers are not allowed: ${uniqueInvalid}`, { id: 'name-char-error' });
+                          }
+                          setFormData({ ...formData, fullName: val.replace(/[^A-Z\s.'-]/g, '') });
+                        }}
                         className={inputClasses}
                         placeholder="Enter your full name"
                       />
@@ -524,7 +692,12 @@ export function MoneyDonationForm() {
                           name="email"
                           required
                           value={formData.email}
-                          onChange={handleChange}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              email: e.target.value.toLowerCase().replace(/\s/g, ''),
+                            })
+                          }
                           className={inputClasses}
                           placeholder="Enter your email address"
                         />
@@ -593,6 +766,47 @@ export function MoneyDonationForm() {
                         placeholder="Enter your 10-character PAN"
                         maxLength={10}
                       />
+                      {/* PAN card photo: upload or take one; AI fills the number. */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button type="button" disabled={panReading}
+                          onClick={() => panUploadRef.current?.click()}
+                          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-amber-200/80 bg-[#fffdfa] px-3 text-xs font-bold text-stone-700 hover:border-amber-400 disabled:opacity-50 dark:border-amber-800/60 dark:bg-[#221008] dark:text-amber-100">
+                          <Upload className="size-3.5" aria-hidden /> Upload PAN card
+                        </button>
+                        <button type="button" disabled={panReading}
+                          onClick={() => (prefersNativeCamera() ? panCameraRef.current?.click() : setPanWebcam(true))}
+                          className="inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-amber-200/80 bg-[#fffdfa] px-3 text-xs font-bold text-stone-700 hover:border-amber-400 disabled:opacity-50 dark:border-amber-800/60 dark:bg-[#221008] dark:text-amber-100">
+                          <Camera className="size-3.5" aria-hidden /> Take a photo
+                        </button>
+                        {panPreview && (
+                          <span className="inline-flex items-center gap-2">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- local preview */}
+                            <img src={panPreview} alt="Your PAN card" className="h-10 w-16 rounded-md border border-amber-200 object-cover" />
+                            <button type="button" onClick={clearPanPhoto} className="min-h-10 px-1 text-xs font-semibold text-stone-500 underline hover:text-stone-700">Remove</button>
+                          </span>
+                        )}
+                      </div>
+                      <input ref={panUploadRef} type="file" accept="image/*" className="sr-only" aria-hidden tabIndex={-1}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) void handlePanPhoto(f); e.target.value = ''; }} />
+                      <input ref={panCameraRef} type="file" accept="image/*" capture="environment" className="sr-only" aria-hidden tabIndex={-1}
+                        onChange={(e) => { const f = e.target.files?.[0]; if (f) void handlePanPhoto(f); e.target.value = ''; }} />
+                      <PhotoCaptureDialog open={panWebcam} onCancel={() => setPanWebcam(false)}
+                        onCaptured={(f) => { setPanWebcam(false); void handlePanPhoto(f); }} />
+                      {panReading && (
+                        <p role="status" className="flex items-center gap-1.5 text-xs text-stone-500"><Loader2 className="size-3.5 animate-spin" aria-hidden /> Reading your PAN card…</p>
+                      )}
+                      {panNote && !panReading && (
+                        <p role="status" className={`flex items-start gap-1.5 text-xs ${panNote.tone === 'ok' ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {panNote.tone === 'ok' ? <Check className="mt-px size-3.5 shrink-0" aria-hidden /> : <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden />}
+                          {panNote.text}
+                        </p>
+                      )}
+                      {panNameMismatch && (
+                        <p role="alert" className="flex items-start gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400">
+                          <AlertCircle className="mt-px size-3.5 shrink-0" aria-hidden />
+                          The name on this card ({cardName}) doesn&apos;t match the name you entered. Fix your name above, or remove the card photo.
+                        </p>
+                      )}
                     </div>
                     {/* Spans both columns so it costs exactly one grid row.
                         Deliberately NOT required and deliberately a single line:

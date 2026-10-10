@@ -11,6 +11,7 @@ import { HandoverScheduleDialog, type SchedulePayload } from "./HandoverSchedule
 import { HandoverContactPanel } from "./HandoverContactPanel";
 import { HandoverChatPanel, HandoverChatDrawer } from "./HandoverChatPanel";
 import { HandoverSafetyActions } from "./HandoverSafetyActions";
+import { HandoverDeliveryPanel, type DeliveryAddressActions } from "./HandoverDeliveryAddress";
 import type { DonorConfirmPayload, DoneeConfirmPayload } from "./HandoverConfirmationPanel";
 import type { HandoverViewModel } from "./model";
 
@@ -38,7 +39,13 @@ export function HandoverHubShell({
     generateOtp: () => Promise<void>;
     confirmDonor: (p: DonorConfirmPayload) => Promise<void>;
     confirmDonee: (p: DoneeConfirmPayload) => Promise<void>;
+    /** Recipient enters the donor's code (offers and matches; not NGO drives). */
+    verifyOtp?: (otp: string) => Promise<void>;
+    /** On-the-spot handover photo (offers and matches). */
+    proof?: import("./HandoverProofSection").HandoverProofControls;
     setCallPermission?: (next: boolean) => Promise<void>;
+    /** Courier delivery address — ask (donor), answer and pre-fill (recipient). */
+    deliveryAddress?: DeliveryAddressActions;
   };
   onChanged: () => void;
 }) {
@@ -58,7 +65,9 @@ export function HandoverHubShell({
     const desktop = typeof window !== "undefined"
       && window.matchMedia("(min-width: 1024px)").matches;
     if (desktop) {
-      document.getElementById("handover-chat")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const chat = document.getElementById("handover-chat");
+      chat?.scrollIntoView({ behavior: "smooth", block: "start" });
+      chat?.querySelector<HTMLTextAreaElement>("textarea")?.focus({ preventScroll: true });
       return;
     }
     setChatOpen(true);
@@ -102,7 +111,7 @@ export function HandoverHubShell({
 
         {/* ── Journey ────────────────────────────────────────────────────── */}
         <div className="mb-6 rounded-lg border border-stone-200 bg-white px-4 py-3.5 dark:border-zinc-800 dark:bg-zinc-900">
-          <HandoverJourneyRail state={vm.state} />
+          <HandoverJourneyRail state={vm.state} flow={vm.flow} />
         </div>
 
         {/* ── Workspace ──────────────────────────────────────────────────── */}
@@ -115,14 +124,27 @@ export function HandoverHubShell({
               onGenerateOtp={actions.generateOtp}
               onDonorConfirm={actions.confirmDonor}
               onDoneeConfirm={actions.confirmDonee}
+              onVerifyOtp={actions.verifyOtp}
+              proof={actions.proof}
               onOpenChat={openChat}
               onChanged={onChanged}
+              deliveryActions={actions.deliveryAddress}
             />
 
             {/* Mobile keeps schedule directly under the action; desktop moves it
                 into the rail so the main column stays about doing, not reading. */}
+            {/* Once, not per breakpoint: it can hold a form, and two copies would
+                duplicate its field ids. */}
+            <HandoverDeliveryPanel vm={vm} actions={actions.deliveryAddress} />
+
             <div className="lg:hidden">
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
+            </div>
+
+            {/* Desktop: the conversation gets the main column's full width,
+                right under the next step. Phones use the floating chat button. */}
+            <div id="handover-chat" className="hidden scroll-mt-4 lg:block">
+              <HandoverChatPanel vm={vm} currentUserEmail={userEmail} />
             </div>
 
             {/* Unframed below-the-fold sections, separated by dividers rather than
@@ -136,9 +158,6 @@ export function HandoverHubShell({
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
             </div>
             <HandoverContactPanel vm={vm} onTogglePermission={actions.setCallPermission} />
-            <div id="handover-chat" className="hidden lg:block">
-              <HandoverChatPanel vm={vm} currentUserEmail={userEmail} />
-            </div>
           </aside>
         </div>
       </div>

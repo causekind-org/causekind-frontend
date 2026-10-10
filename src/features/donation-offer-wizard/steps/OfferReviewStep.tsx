@@ -1,17 +1,18 @@
 "use client";
 
-import Image from "next/image";
+import { WizardPhotoImage } from "@/features/wizard-kit/WizardPhotoImage";
 import { DeclarationsBlock } from "@/features/wizard-kit/DeclarationsBlock";
 import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
 import type { CompatibilityCheck } from "@/lib/api";
 import {
-  DELIVERY_PAYERS, OFFER_GROUP_TITLES, declarationGroupsFor,
+  OFFER_GROUP_TITLES, declarationGroupsFor,
   isPurchaseFlow, purchaseTimelineLabel, uploadedOfferPhotos,
   type OfferModel, type OfferStep,
 } from "../offerModel";
 
 export function OfferReviewStep({
-  model, errors, requestTitle, compat, declarationsInvalidated, onChange, onEdit, flowType,
+  model, errors, requestTitle, compat, declarationsInvalidated, onChange, onEdit, flowType, declarationGroups,
+  hidePickup = false, photoGallery, video, onChangeLocation,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
@@ -21,9 +22,20 @@ export function OfferReviewStep({
   onChange: <K extends keyof OfferModel>(key: K, value: OfferModel[K]) => void;
   onEdit: (step: OfferStep) => void;
   flowType?: string | null;
+  declarationGroups?: readonly any[];
+  /** Optional. Leaves out the location section (a flow without a location, e.g. NGO drives). */
+  hidePickup?: boolean;
+  /** "Your location"'s Edit: back to the location check that opens the offer. */
+  onChangeLocation?: () => void;
+  /**
+   * Optional. Renders the photos (and the video, if any) with this instead of the
+   * small thumbnail strip. Without it the strip is shown as before.
+   */
+  photoGallery?: (photos: { id: string; url: string }[]) => React.ReactNode;
+  /** Optional. A short description of the item video, shown in the Photos section. */
+  video?: React.ReactNode;
 }) {
   const photos = uploadedOfferPhotos(model.photos);
-  const payer = DELIVERY_PAYERS.find(p => p.value === model.deliveryCostBornBy);
   // Every section's Edit jumps to a step. Rendering the photos or condition
   // section on a purchase offer would hand the donor a link to a step this
   // flow does not have — a dead end, not just an empty row.
@@ -50,15 +62,18 @@ export function OfferReviewStep({
         <ReviewSection title="Photos" onEdit={() => onEdit("photos")}>
           {photos.length === 0 ? (
             <p className="text-2xs text-stone-400">No photos yet</p>
+          ) : photoGallery ? (
+            photoGallery(photos.map(p => ({ id: p.id, url: p.remoteUrl as string })))
           ) : (
             <ul className="flex gap-2 overflow-x-auto">
               {photos.map((p, i) => (
                 <li key={p.id} className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-stone-200 dark:border-zinc-800">
-                  <Image src={p.remoteUrl as string} alt={`Photo ${i + 1}`} fill sizes="64px" className="object-cover" unoptimized />
+                  <WizardPhotoImage src={p.remoteUrl as string} alt={`Photo ${i + 1}`} className="object-cover" />
                 </li>
               ))}
             </ul>
           )}
+          {video}
         </ReviewSection>
       )}
 
@@ -67,7 +82,7 @@ export function OfferReviewStep({
         {/* Age is not collected on a purchase offer, so it must not be summarised
             on one either — a review row for a field the donor was never shown
             invites them to "correct" something the form will not accept. */}
-        {!purchase && <ReviewRow label="Approximate age" value={model.approximateAge} />}
+        {!purchase && <ReviewRow label="Item age" value={model.approximateAge} />}
         <ReviewRow
           label={purchase ? "Comes with" : "Accessories"}
           value={model.accessoriesIncluded}
@@ -92,16 +107,17 @@ export function OfferReviewStep({
         </ReviewSection>
       )}
 
-      <ReviewSection title="Pickup & delivery" onEdit={() => onEdit("pickup")}>
+      {!hidePickup && <ReviewSection title="Your location" onEdit={onChangeLocation}>
         <ReviewRow label="City" value={model.pickupCity} />
-        <ReviewRow label="Pincode" value={model.pickupPincode} />
         <ReviewRow label="Locality" value={model.pickupLocality} />
-        <ReviewRow label="Drop-off" value={model.donorDropOffAvailable ? "I'll drop it off" : "Needs collection"} />
-        {!model.donorDropOffAvailable && <ReviewRow label="Delivery paid by" value={payer?.label ?? model.deliveryCostBornBy} />}
-      </ReviewSection>
+        <ReviewRow label="PIN code" value={model.pickupPincode} />
+        <ReviewRow label="Handover" value={model.donorDropOffAvailable
+          ? "You'll take it to the recipient's area if they can't come"
+          : "Within 10 km of the recipient"} />
+      </ReviewSection>}
 
       <DeclarationsBlock
-        groups={declarationGroupsFor(flowType)}
+        groups={declarationGroups ?? declarationGroupsFor(flowType)}
         groupTitles={OFFER_GROUP_TITLES}
         confirmed={model.declarationsConfirmed}
         onConfirmedChange={v => onChange("declarationsConfirmed", v)}

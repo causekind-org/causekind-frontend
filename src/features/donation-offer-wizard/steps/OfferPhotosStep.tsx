@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useTranslations } from "next-intl";
 import { PHOTO_COPY } from "@/features/wizard-kit/mediaStatusCopy";
-import Image from "next/image";
+import { WizardPhotoImage } from "@/features/wizard-kit/WizardPhotoImage";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Camera, ImagePlus, Loader2, RefreshCw, ShieldAlert, Sparkles, X } from "lucide-react";
 import { pressProps, revealVariants } from "@/features/wizard-kit/wizardMotion";
@@ -36,7 +36,7 @@ export type ScreeningState =
  */
 export function OfferPhotosStep({
   photos, error, screening, onAddFiles, onRetryPhoto, onRemovePhoto, onRescreen,
-  video, onPickVideo, onRemoveVideo,
+  video, onPickVideo, onRemoveVideo, onTakePhoto,
 }: {
   photos: WizardPhoto[];
   error?: string;
@@ -53,6 +53,12 @@ export function OfferPhotosStep({
   video?: OfferVideoState;
   onPickVideo?: (file: File) => void;
   onRemoveVideo?: () => void;
+  /**
+   * Optional. Replaces what "Take photo" does; it receives a function that opens
+   * the device camera input. Without it the button opens that input directly, as
+   * it always has (phones open the camera; desktop browsers show the file picker).
+   */
+  onTakePhoto?: (openNativeCamera: () => void) => void;
 }) {
   const t = useTranslations();
   const reduced = !!useReducedMotion();
@@ -80,7 +86,7 @@ export function OfferPhotosStep({
       <div className="grid grid-cols-2 gap-2">
         <motion.button
           type="button" {...pressProps(reduced)}
-          onClick={() => cameraRef.current?.click()}
+          onClick={() => onTakePhoto ? onTakePhoto(() => cameraRef.current?.click()) : cameraRef.current?.click()}
           className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-soft)] px-3 py-2.5 text-sm font-bold text-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         >
           <Camera className="h-4 w-4" aria-hidden /> Take photo
@@ -112,12 +118,12 @@ export function OfferPhotosStep({
       {photos.length > 0 && (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {photos.map((p, i) => {
-            const src = p.remoteUrl ?? p.localUrl;
+            const src = p.localUrl || p.remoteUrl;
             return (
               <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-900">
                 {src && (
-                  <Image src={src} alt="" fill sizes="(max-width: 640px) 50vw, 200px"
-                    className={`object-cover ${p.status === "uploaded" ? "" : "opacity-60"}`} unoptimized />
+                  <WizardPhotoImage src={src} alt={`Photo ${i + 1}`}
+                    className={`object-cover ${p.status === "uploaded" ? "" : "opacity-60"}`} />
                 )}
 
                 {i === 0 && p.status === "uploaded" && (
