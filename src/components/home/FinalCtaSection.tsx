@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
@@ -216,7 +217,7 @@ function FinalCtaCard({
               </Link>
 
               {/* Button 3: NGO */}
-              <Link
+              {FEATURES.ngoRegistration ? <Link
                 href={LANDING_ROUTES.ngoRegister}
                 className="cta-action-btn relative group overflow-hidden flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#1F6B3F] hover:bg-[#27824D] text-white font-bold text-xs sm:text-[13px] tracking-wide shadow-md transition-all duration-200 active:scale-95"
               >
@@ -228,7 +229,15 @@ function FinalCtaCard({
                 <Building2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                 <span>Register your NGO</span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
+              </Link> : (
+                <span aria-disabled="true"
+                  className="cta-action-btn relative flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#1F6B3F]/60 text-white/90 font-bold text-xs sm:text-[13px] tracking-wide cursor-not-allowed"
+                >
+                  <Building2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span>Register your NGO</span>
+                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider">Coming soon</span>
+                </span>
+              )}
             </div>
 
             {/* ════════ TELL A FRIEND ON WHATSAPP ════════ */}
@@ -289,8 +298,9 @@ const PATHS = [
   {
     role: HOME_ROLE_COLORS.ngo,
     icon: Building2,
-    subline: "Register your NGO",
-    href: LANDING_ROUTES.ngoRegister,
+    subline: FEATURES.ngoRegistration ? "Register your NGO" : "NGO registration · Coming soon",
+    // Empty while NGO signup is off: rendered as a "Coming soon" row, not a link.
+    href: FEATURES.ngoRegistration ? LANDING_ROUTES.ngoRegister : "",
     ring: "focus-visible:ring-[#1F6B3F] dark:focus-visible:ring-[#52B788]",
   },
 ] as const;
@@ -358,7 +368,19 @@ function FinalCtaSplit() {
             <ul className="flex flex-col gap-3" aria-labelledby="join-paths-label">
               {PATHS.map(({ role, icon: Icon, subline, href, ring }) => (
                 <li key={role.id}>
-                  <Link
+                  {!href ? (
+                    // NGO while signup is off: the same row, not a link, marked "Coming soon".
+                    <div aria-disabled="true" className="flex items-center gap-4 w-full rounded-2xl bg-white/70 dark:bg-zinc-900/70 border border-stone-200 dark:border-stone-800 px-4 py-3.5 sm:px-5 sm:py-4 opacity-75 cursor-not-allowed">
+                      <span className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-full ${role.accentBgClass}`} aria-hidden="true">
+                        <Icon className="w-5 h-5" />
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">{role.label}</span>
+                        <span className="block text-xs sm:text-sm text-stone-500 dark:text-stone-400">{subline}</span>
+                      </span>
+                      <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-stone-500 dark:bg-zinc-800 dark:text-stone-400">Coming soon</span>
+                    </div>
+                  ) : <Link
                     href={href}
                     aria-label={subline}
                     className={`group flex items-center gap-4 w-full rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200! hover:border-stone-400! dark:border-stone-800! dark:hover:border-stone-600! px-4 py-3.5 sm:px-5 sm:py-4 shadow-sm transition-[transform,border-color,box-shadow] duration-200 motion-safe:hover:translate-x-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF7F2] dark:focus-visible:ring-offset-[#0E0C0A] ${ring}`}
@@ -378,7 +400,7 @@ function FinalCtaSplit() {
                       className="w-4 h-4 shrink-0 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-[transform,color] duration-200 motion-safe:group-hover:translate-x-1"
                       aria-hidden="true"
                     />
-                  </Link>
+                  </Link>}
                 </li>
               ))}
             </ul>

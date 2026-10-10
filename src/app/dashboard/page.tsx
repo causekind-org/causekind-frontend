@@ -38,7 +38,7 @@ import {
   Award, HandCoins, Loader2, Package, PackageCheck, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
   Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck,
-  ChevronDown, History, MessageCircle, Trash2
+  ChevronDown, History, MessageCircle, Trash2, Search
 } from "lucide-react";
 import { DashboardSkeleton, PageSkeleton } from "@/components/skeletons";
 import {
@@ -1449,6 +1449,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => ({
       key: `o${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
+      text: [o.requestTitle, o.requestCity, "donated completed your offer"].join(" "),
       node: <DoneRow title={o.requestTitle ?? "Donation"} tag="Donated · your offer"
         sub={[doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · ")}
         thumb={o.media?.[0]?.mediaUrl ?? null} photos={(o.media ?? []).map(m => m.mediaUrl)}
@@ -1461,6 +1462,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       return {
         key: `l${item.id}`,
         at: Date.parse(when ?? "") || 0,
+        text: [item.title, item.category, match?.requestTitle, match?.doneeName, "donated matched"].join(" "),
         node: <DoneRow title={item.title} tag="Donated · matched"
           sub={[doneDate(when), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · ")}
           thumb={item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null)}
@@ -1471,31 +1473,59 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     const fromClosedOffers = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED").map(o => ({
       key: `c${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
+      text: [o.requestTitle, o.requestCity, o.status.replace(/_/g, " "), o.rejectionReason].join(" "),
       node: <ClosedOfferCard offer={o} onChanged={onChanged} />,
     }));
     // A delivered match whose listing already has its own row above is not repeated.
     const fromMatches = pastMatches.filter(m => !(m.listingId != null && listedIds.has(m.listingId))).map(m => ({
       key: `m${m.id}`,
       at: matchEndedAt(m),
+      text: [matchItemLabel(m), m.requestTitle, m.doneeName, pastMatchLabel(m.status, "DONOR").label, m.rejectionReason].join(" "),
       node: <PastMatchRow m={m} viewer="DONOR" />,
     }));
     return [...fromOffers, ...fromItems, ...fromClosedOffers, ...fromMatches].sort((a, b) => b.at - a.at);
   }, [offers, fulfilledItems, matches, pastMatches, onChanged]);
 
+  // Search (owner, 2026-10-10): every word must appear in the row's item, request,
+  // person, place, status or reason; case-insensitive.
+  const [query, setQuery] = useState("");
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = words.length === 0 ? entries
+    : entries.filter(e => { const t = e.text.toLowerCase(); return words.every(w => t.includes(w)); });
+
   return (
     <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
       <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
+        {/* Title left, search in the right corner; stacks on a phone (owner, 2026-10-10). */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
         <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
           <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation history
         </CardTitle>
         <p className="text-xs text-stone-400 mt-0.5">Everything that has ended — donated, cancelled, withdrawn or declined — newest first</p>
+        </div>
+        {entries.length > 0 && (
+          <div className="relative w-full shrink-0 sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden />
+            <label htmlFor="donor-history-search" className="sr-only">Search donation history</label>
+            <input id="donor-history-search" type="search" value={query} onChange={e => setQuery(e.target.value)}
+              placeholder="Search by item, request, person or status"
+              className="h-11 w-full rounded-xl border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--ck-role-accent)]/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200" />
+          </div>
+        )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-2 pt-3 sm:pt-4">
         {entries.length === 0 ? (
           <p className="py-6 text-center text-sm text-stone-500">Nothing here yet.</p>
+        ) : shown.length === 0 ? (
+          <p className="py-6 text-center text-sm text-stone-500">
+            Nothing matches &ldquo;{query.trim()}&rdquo;.{" "}
+            <button type="button" onClick={() => setQuery("")} className="font-semibold text-[var(--ck-role-accent)] hover:underline">Clear search</button>
+          </p>
         ) : (
-          entries.map(e => <div key={e.key}>{e.node}</div>)
+          shown.map(e => <div key={e.key}>{e.node}</div>)
         )}
       </CardContent>
     </Card>
@@ -1542,25 +1572,57 @@ function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClo
         photos: m.listingPhotoUrls?.length ? m.listingPhotoUrls : (m.donorImages ?? []),
       };
     });
-    const received = [...fromOffers, ...fromMatches].map(({ key, at, ...r }) => ({ key, at, node: <DoneRow {...r} /> }));
-    const closedOffers = onlyOffersClosed.map(o => ({ key: `c${o.id}`, at: offerEndedAt(o), node: <PastOfferRow o={o} /> }));
-    const closedMatches = onlyMatchesClosed.map(m => ({ key: `x${m.id}`, at: matchEndedAt(m), node: <PastMatchRow m={m} viewer="DONEE" /> }));
+    const received = [...fromOffers, ...fromMatches].map(({ key, at, ...r }) => ({
+      key, at, text: [r.title, r.tag, r.sub, "received"].join(" "), node: <DoneRow {...r} />,
+    }));
+    const closedOffers = onlyOffersClosed.map(o => ({ key: `c${o.id}`, at: offerEndedAt(o),
+      text: [o.requestTitle, o.donorName, pastOfferLabel(o.status).label, o.rejectionReason].join(" "),
+      node: <PastOfferRow o={o} /> }));
+    const closedMatches = onlyMatchesClosed.map(m => ({ key: `x${m.id}`, at: matchEndedAt(m),
+      text: [matchItemLabel(m), m.requestTitle, m.donorName, pastMatchLabel(m.status, "DONEE").label, m.rejectionReason].join(" "),
+      node: <PastMatchRow m={m} viewer="DONEE" /> }));
     return [...received, ...closedOffers, ...closedMatches].sort((a, b) => b.at - a.at);
   }, [offers, matches, onlyOffersClosed, onlyMatchesClosed]);
+
+  // Search, same as the donor's History (owner, 2026-10-10): every word must match.
+  const [query, setQuery] = useState("");
+  const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const shown = words.length === 0 ? rows
+    : rows.filter(e => { const t = e.text.toLowerCase(); return words.every(w => t.includes(w)); });
 
   return (
     <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
       <CardHeader className="border-b pb-3 sm:pb-4 relative z-10">
-        <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-          <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donations received
-        </CardTitle>
-        <p className="text-xs text-stone-400 mt-0.5">Everything received, and every offer or match that didn&apos;t go ahead, newest first</p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
+              <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donations received
+            </CardTitle>
+            <p className="text-xs text-stone-400 mt-0.5">Everything received, and every offer or match that didn&apos;t go ahead, newest first</p>
+          </div>
+          {rows.length > 0 && (
+            <div className="relative w-full shrink-0 sm:w-72">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden />
+              <label htmlFor="donee-history-search" className="sr-only">Search donations received</label>
+              <input id="donee-history-search" type="search" value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="Search by item, request, donor or status"
+                className="h-11 w-full rounded-xl border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--ck-role-accent)]/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200" />
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-2 pt-3 sm:pt-4">
-        {rows.length === 0
-          ? <p className="py-6 text-center text-sm text-stone-500">Nothing here yet.</p>
-          : rows.map(e => <div key={e.key}>{e.node}</div>)}
+        {rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-stone-500">Nothing here yet.</p>
+        ) : shown.length === 0 ? (
+          <p className="py-6 text-center text-sm text-stone-500">
+            Nothing matches &ldquo;{query.trim()}&rdquo;.{" "}
+            <button type="button" onClick={() => setQuery("")} className="font-semibold text-[var(--ck-role-accent)] hover:underline">Clear search</button>
+          </p>
+        ) : (
+          shown.map(e => <div key={e.key}>{e.node}</div>)
+        )}
       </CardContent>
     </Card>
   );

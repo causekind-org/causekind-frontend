@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FEATURES } from "@/lib/features";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolvePostAuthDestination, socialCompletionUrl } from "@/lib/postAuthDestination";
 import { loginUrlFor } from "@/lib/safeRedirect";
@@ -233,8 +234,13 @@ function RegisterContent() {
   // Seeded through useState's initialiser rather than an effect so the correct
   // choice is highlighted on first paint, with no flicker from DONOR to DONEE —
   // and so a user who changes it is never overwritten by a later re-render.
+  // NGO signup off (production, until NGO launches): a `?role=NGO` link opens
+  // the donor form with a "coming soon" note instead of the NGO form.
+  const ngoRequestedButOff = !FEATURES.ngoRegistration
+    && ["NGO", "NGO_PARTNER"].includes(searchParams.get("role")?.toUpperCase() ?? "");
   const initialRole = (() => {
     const raw = searchParams.get("role")?.toUpperCase();
+    if (!FEATURES.ngoRegistration && (raw === "NGO" || raw === "NGO_PARTNER")) return "DONOR";
     // NGO links use the short `?role=NGO`; it means the NGO_PARTNER sign-up form.
     if (raw === "NGO") return "NGO_PARTNER";
     return raw === "DONEE" || raw === "DONOR" || raw === "NGO_PARTNER" ? raw : "DONOR";
@@ -751,6 +757,11 @@ function RegisterContent() {
           <label className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
             Register as
           </label>
+          {ngoRequestedButOff && (
+            <p role="status" className="mb-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+              NGO registration is coming soon. You can join as a donor or a donee meanwhile.
+            </p>
+          )}
           <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <button
               type="button"
@@ -774,6 +785,7 @@ function RegisterContent() {
               <span className="text-sm font-bold">Donee 🤝</span>
               <span className="text-3xs opacity-85 mt-0.5 font-normal">Request support</span>
             </button>
+            {FEATURES.ngoRegistration ? (
             <button
               type="button"
               onClick={() => set("role", "NGO_PARTNER")}
@@ -785,6 +797,19 @@ function RegisterContent() {
               <span className="text-sm font-bold">NGO 🏢</span>
               <span className="text-3xs opacity-85 mt-0.5 font-normal">Organization</span>
             </button>
+            ) : (
+            // Shown, so NGOs know it is coming, but not selectable.
+            <button
+              type="button"
+              disabled
+              aria-disabled="true"
+              title="NGO registration is coming soon"
+              className="flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border border-dashed border-stone-200 dark:border-zinc-800 bg-stone-50/60 dark:bg-zinc-900/60 text-center text-stone-400 dark:text-stone-500 cursor-not-allowed"
+            >
+              <span className="text-sm font-bold">NGO 🏢</span>
+              <span className="mt-0.5 rounded-full bg-stone-200/70 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider text-stone-500 dark:bg-zinc-800 dark:text-stone-400">Coming soon</span>
+            </button>
+            )}
           </div>
         </div>
       </Reveal>
