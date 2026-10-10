@@ -12,7 +12,7 @@ import {
 
 export function OfferReviewStep({
   model, errors, requestTitle, compat, declarationsInvalidated, onChange, onEdit, flowType, declarationGroups,
-  hidePickup = false, photoGallery, video,
+  hidePickup = false, photoGallery, video, onChangeLocation,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
@@ -23,8 +23,10 @@ export function OfferReviewStep({
   onEdit: (step: OfferStep) => void;
   flowType?: string | null;
   declarationGroups?: readonly any[];
-  /** Optional. Leaves out the Pickup & delivery section (a flow without that step). */
+  /** Optional. Leaves out the location section (a flow without a location, e.g. NGO drives). */
   hidePickup?: boolean;
+  /** "Your location"'s Edit: back to the location check that opens the offer. */
+  onChangeLocation?: () => void;
   /**
    * Optional. Renders the photos (and the video, if any) with this instead of the
    * small thumbnail strip. Without it the strip is shown as before.
@@ -105,7 +107,7 @@ export function OfferReviewStep({
         </ReviewSection>
       )}
 
-      {!hidePickup && <ReviewSection title="Your location" onEdit={() => onEdit("location")}>
+      {!hidePickup && <ReviewSection title="Your location" onEdit={onChangeLocation}>
         <ReviewRow label="City" value={model.pickupCity} />
         <ReviewRow label="Locality" value={model.pickupLocality} />
         <ReviewRow label="PIN code" value={model.pickupPincode} />

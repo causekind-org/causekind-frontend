@@ -32,6 +32,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { toast } from "@/lib/toast";
 import { DonationOfferWizard } from "@/features/donation-offer-wizard/DonationOfferWizard";
+import {
+  OfferLocationGate, readPassedOfferLocation, type PassedOfferLocation,
+} from "@/features/donation-offer-wizard/OfferLocationGate";
 import Link from "@/components/AppLink";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
@@ -406,6 +409,17 @@ export default function OfferWizardPage() {
   // This donor already completed a donation to this request — they can give more.
   const [donatedBefore, setDonatedBefore] = useState(false);
   const [nudged, setNudged] = useState<DonorFlowType | null>(null);
+
+  // ── Location check before the offer (owner, 2026-10-10) ──
+  // "Offer this item" opens with the donor's location check, not a form step.
+  // Guests get here after logging in (the redirect above). A pass is kept for
+  // the browser session (and on the offer itself), so it isn't asked twice.
+  const [passedLocation, setPassedLocation] = useState<PassedOfferLocation | null>(null);
+  useEffect(() => { setPassedLocation(readPassedOfferLocation(requestId)); }, [requestId]);
+  /** My offers for this request have been looked up (so we know whether one already has a location). */
+  const [offersChecked, setOffersChecked] = useState(false);
+  /** Review's "Change location": the check again, over the open form. */
+  const [recheckingLocation, setRecheckingLocation] = useState(false);
   const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
@@ -423,6 +437,7 @@ export default function OfferWizardPage() {
     // Check if the donor already has an offer for this request
     getMyDonationOffers()
       .then((offers) => {
+        setOffersChecked(true);
         const mine = offers.filter((o) => o.requestId === requestId);
         setDonatedBefore(mine.some((o) => o.status === "COMPLETED"));
         // Finished offers don't block a new one — neither a withdrawn/declined/rejected
@@ -452,7 +467,7 @@ export default function OfferWizardPage() {
           }
         }
       })
-      .catch(() => {});
+      .catch(() => setOffersChecked(true));
     // `user?.id`, not `user`. The object identity changes when the background
     // /users/me check resolves and replaces it, which re-ran this whole effect —
     // re-fetching, and (before the guard above) re-navigating.
@@ -597,6 +612,26 @@ export default function OfferWizardPage() {
   // The request/flow picker creates the server draft. Once it exists, the
   // editable item form owns the viewport so its desktop rail, stacked card and
   // mobile sticky controls are not constrained by the legacy page wrapper.
+  const activeOfferSubmitted = !!existingOffer
+    && existingOffer.status !== "DRAFT" && existingOffer.status !== "NEEDS_INFORMATION";
+  const draftHasLocation = existingOffer?.itemDetails?.latitude != null && existingOffer?.itemDetails?.longitude != null;
+  /** "No, go back" / Cancel: to wherever "Offer this item" was clicked. */
+  function leaveOffer() {
+    if (typeof window !== "undefined" && window.history.length > 1) router.back();
+    else router.push("/requests");
+  }
+  if (request && offersChecked && step !== 3 && !activeOfferSubmitted && !passedLocation && !draftHasLocation) {
+    return (
+      <main className="min-h-screen bg-[#faf8f5] px-4 py-6 sm:py-10 dark:bg-zinc-950">
+        <OfferLocationGate
+          requestId={requestId} requestTitle={request.title}
+          onPass={(loc) => { setPassedLocation(loc); window.scrollTo({ top: 0 }); }}
+          onDecline={leaveOffer}
+        />
+      </main>
+    );
+  }
+
   if (step === 2 && (offer || form.flowType)) {
     // `overflow-x-clip`, deliberately NOT `overflow-x-hidden`: `hidden` would
     // make this a scroll container, and this wizard's three `position: sticky`
@@ -627,6 +662,8 @@ export default function OfferWizardPage() {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
           onSaveExit={() => router.push("/offers")}
+          initialLocation={passedLocation}
+          onChangeLocation={() => setRecheckingLocation(true)}
           onSubmitted={(submitted) => {
             setOffer(submitted);
             setExistingOffer(submitted);
@@ -634,6 +671,19 @@ export default function OfferWizardPage() {
             window.scrollTo({ top: 0, behavior: "smooth" });
           }}
         />
+        {/* Over the form, not instead of it: unmounting the form would reload it
+            from the page's older copy of the draft and lose the latest edits. */}
+        {recheckingLocation && (
+          <div role="dialog" aria-modal="true" aria-label="Check your location"
+            className="fixed inset-0 z-[60] overflow-y-auto bg-black/40 px-4 py-8 backdrop-blur-sm">
+            <OfferLocationGate
+              requestId={requestId} requestTitle={request.title}
+              onPass={(loc) => { setPassedLocation(loc); setRecheckingLocation(false); }}
+              // Here "No" or Cancel means "keep my previous location", not "leave".
+              onDecline={() => setRecheckingLocation(false)}
+            />
+          </div>
+        )}
       </main>
     );
   }

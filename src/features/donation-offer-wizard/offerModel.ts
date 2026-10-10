@@ -20,7 +20,8 @@ export type OfferStep = (typeof ALL_OFFER_STEPS)[number];
  * existing caller means, and because `ALREADY_OWN` remains the only flow that
  * screens photographs.
  */
-export const OFFER_STEPS = ["location", "photos", "details", "condition", "review"] as const;
+// The location check runs before the form (OfferLocationGate), not as a step.
+export const OFFER_STEPS = ["photos", "details", "condition", "review"] as const;
 
 /**
  * Flow B — the donor will buy the item. Four steps, and the two differences are
@@ -34,7 +35,7 @@ export const OFFER_STEPS = ["location", "photos", "details", "condition", "revie
  * a donor to rate the condition of something that does not exist reads as a form
  * written for somebody else.
  */
-export const PURCHASE_OFFER_STEPS = ["location", "purchasePlan", "details", "review"] as const;
+export const PURCHASE_OFFER_STEPS = ["purchasePlan", "details", "review"] as const;
 
 export function isPurchaseFlow(flowType: string | null | undefined): boolean {
   return flowType === "WILL_PURCHASE";

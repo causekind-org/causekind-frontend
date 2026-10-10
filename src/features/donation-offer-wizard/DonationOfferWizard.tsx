@@ -26,7 +26,7 @@ import { GuidedPurchaseLayout } from "./GuidedPurchaseLayout";
 import { OfferPurchasePlanStep } from "./steps/OfferPurchasePlanStep";
 import { OfferDetailsStep } from "./steps/OfferDetailsStep";
 import { OfferConditionStep, type CompatState } from "./steps/OfferConditionStep";
-import { OfferLocationStep, type OfferLocationStatus } from "./steps/OfferLocationStep";
+import type { PassedOfferLocation } from "./OfferLocationGate";
 import { OfferReviewStep } from "./steps/OfferReviewStep";
 import { useOfferPhotos } from "./useOfferPhotos";
 import { useOfferVideo } from "./useOfferVideo";
@@ -61,7 +61,7 @@ const STEP_INTROS: Record<OfferStep, string> = {
 };
 
 /** Step count in words, for the sidebar. Two flows, two lengths. */
-const STEP_COUNT_WORD: Record<number, string> = { 4: "Four", 5: "Five" };
+const STEP_COUNT_WORD: Record<number, string> = { 3: "Three", 4: "Four", 5: "Five" };
 
 /**
  * The five-step donation-offer editor.
@@ -98,10 +98,14 @@ function evidencedStepIndex(m: OfferModel, steps: readonly OfferStep[]): number 
 
 export function DonationOfferWizard({
   offerId, requestId, offer, flowType: flowTypeProp, createOffer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote,
-  onSubmitted, onExit, onSaveExit,
+  onSubmitted, onExit, onSaveExit, initialLocation = null, onChangeLocation,
 }: {
-  /** The request being offered on; step 1 checks the donor's distance to it. */
+  /** The request being offered on. */
   requestId: number;
+  /** The location the donor just checked before the form (OfferLocationGate); fills the pickup fields. */
+  initialLocation?: PassedOfferLocation | null;
+  /** Review's "Change location": back to the location check. */
+  onChangeLocation?: () => void;
   /** Null for a fresh offer: the draft does not exist until the first save. */
   offerId: number | null;
   /** The flow the donor picked; used when there is no offer yet. */
@@ -137,7 +141,13 @@ export function DonationOfferWizard({
   /** This flow's steps. Everything that counts, walks or jumps reads this. */
   const steps = useMemo(() => offerStepsFor(flowType), [flowType]);
 
-  const [model, setModel] = useState<OfferModel>(() => offer ? offerModelFrom(offer) : emptyOfferModel);
+  // The just-checked location wins over what a draft held: it is the newer answer.
+  // Seeded here rather than through setField so opening the form saves nothing
+  // (the draft is still created on the first real save).
+  const [model, setModel] = useState<OfferModel>(() => ({
+    ...(offer ? offerModelFrom(offer) : emptyOfferModel),
+    ...(initialLocation ?? {}),
+  }));
 
   /**
    * The committed model, for handlers that need to read it without closing over
@@ -164,7 +174,7 @@ export function DonationOfferWizard({
   // Furthest step the donor actually reached in this draft (see useFurthestStep).
   const reachedKey = offerId != null ? `ck-offer-reached-${offerId}` : null;
   const [step, setStep] = useState<OfferStep>(() => {
-    let resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType, { location: true }) : steps[0];
+    let resume = offer ? firstIncompleteOfferStep(offerModelFrom(offer), offer.flowType) : steps[0];
     // "First incomplete" skips a step whose fields are pre-filled (quantity comes
     // from the request) even though the donor never saw it. When we know how far
     // they really got, never reopen past that.
@@ -191,8 +201,6 @@ export function DonationOfferWizard({
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  /** Step 1's state, so Continue waits for the distance check and the donor's answer. */
-  const [locationStatus, setLocationStatus] = useState<OfferLocationStatus>({ busy: false, needsConsent: false, ready: false });
 
   const [screening, setScreening] = useState<ScreeningState>({ kind: "idle" });
   const [compat, setCompat] = useState<CompatibilityCheck | null>(null);
@@ -308,6 +316,17 @@ export function DonationOfferWizard({
     if (invalidated !== null) setDeclarationsInvalidated(invalidated);
     queueSave(next);
   }, [queueSave]);
+
+  // A location re-checked while the form is open (Review's "Change location")
+  // arrives as a new initialLocation: apply it like any other edit, so it saves.
+  const appliedLocationRef = useRef(initialLocation);
+  useEffect(() => {
+    if (!initialLocation || initialLocation === appliedLocationRef.current) return;
+    appliedLocationRef.current = initialLocation;
+    (Object.keys(initialLocation) as (keyof PassedOfferLocation)[]).forEach((k) => {
+      setField(k, initialLocation[k] as never);
+    });
+  }, [initialLocation, setField]);
 
   // ── Photos ────────────────────────────────────────────────────────────────
   const setPhotos = useCallback((updater: (prev: OfferModel["photos"]) => OfferModel["photos"]) => {
@@ -476,14 +495,6 @@ export function DonationOfferWizard({
   const photosBlocked = !purchase && screening.kind === "prohibited";
 
   const handleContinue = useCallback(async () => {
-    if (step === "location") {
-      if (locationStatus.busy) return;
-      if (locationStatus.needsConsent) {
-        setErrors({ donorDropOffAvailable: "Answer the question above to continue." });
-        focusField("donorDropOffAvailable");
-        return;
-      }
-    }
     const stepErrors = validateOfferStep(step, model, flowType, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
@@ -492,10 +503,6 @@ export function DonationOfferWizard({
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors);
       focusField(Object.keys(stepErrors)[0]);
-      return;
-    }
-    if (step === "location" && !locationStatus.ready) {
-      setErrors({ latitude: "We need to check your location before you continue." });
       return;
     }
 
@@ -514,7 +521,7 @@ export function DonationOfferWizard({
       }
       goTo(steps[idx + 1], 1);
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField, steps, flowType, stillNeededQuantity, locationStatus]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, steps, flowType, stillNeededQuantity]);
 
   /** Synchronous guard. Disabled UI alone loses the race on a double tap. */
   const submitLockRef = useRef(false);
@@ -680,18 +687,12 @@ export function DonationOfferWizard({
                       {step === "condition" && (
                         <OfferConditionStep model={model} errors={errors} onChange={setField} compat={compatState} />
                       )}
-                      {step === "location" && (
-                        <OfferLocationStep
-                          requestId={requestId} model={model} errors={errors} onChange={setField}
-                          onDecline={onExit} onStatusChange={setLocationStatus}
-                        />
-                      )}
                       {step === "review" && (
                         <>
                           <OfferReviewStep
                             model={model} errors={errors} requestTitle={requestTitle} compat={compat}
                             declarationsInvalidated={declarationsInvalidated} flowType={flowType}
-                            onChange={setField} onEdit={s => goTo(s, -1)}
+                            onChange={setField} onEdit={s => goTo(s, -1)} onChangeLocation={onChangeLocation}
                           />
                           {submitError && (
                             <p role="alert" className="mt-3 rounded-xl border border-red-300 bg-red-50 p-3 text-2xs font-semibold text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
@@ -801,8 +802,6 @@ export function DonationOfferWizard({
             onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={isLast ? "Submit donation offer" : "Continue"}
-            advancing={step === "location" && locationStatus.busy}
-            advancingLabel="Checking location…"
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}
