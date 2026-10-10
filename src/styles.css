@@ -5001,6 +5001,64 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   }
 }
 
+/* Navratri desktop copy, scaled up (~15–25%) to balance the larger dancers.
+   Fluid between 1024px and 1920px; the photo hero is untouched. */
+@media (min-width: 1024px) {
+  .ck-hero-navratri .ck-hero-eyebrow {
+    gap: 0.6rem;
+    padding: clamp(0.25rem, 0.15rem + 0.2vw, 0.35rem) clamp(0.8rem, 0.6rem + 0.35vw, 1rem);
+  }
+  .ck-hero-navratri .ck-hero-eyebrow p { font-size: clamp(0.7rem, 0.6rem + 0.18vw, 0.8rem); }
+  .ck-hero-navratri .ck-hero-headline {
+    margin-top: clamp(0.95rem, 2.4vh, 2rem);
+    font-size: clamp(2.9rem, min(4vw, 7.8vh), 6.8rem);
+  }
+  .ck-hero-navratri .ck-hero-subtext {
+    margin-top: clamp(0.85rem, 2.1vh, 1.65rem);
+    /* In em, so the measure grows with the type and it stays three lines. */
+    max-width: 23.5em;
+    font-size: clamp(1.1rem, 0.85rem + 0.5vw, 1.5rem);
+  }
+  /* The photo needed this gutter; here the dancers keep their own distance. */
+  .ck-hero-navratri .ck-hero-copy { padding-right: 0; }
+  .ck-hero-navratri .ck-hero-actions { margin-top: clamp(1.2rem, 3.1vh, 2.6rem); }
+
+  /* Buttons: height, padding, label and icons ~18% up; spacing between unchanged. */
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder,
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    min-height: clamp(3.75rem, 2.9rem + 1.35vw, 4.25rem);
+    gap: 0.85rem;
+  }
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder {
+    padding-left: clamp(1.6rem, 1.3rem + 0.45vw, 1.9rem);
+  }
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder {
+    font-size: clamp(0.62rem, 0.48rem + 0.23vw, 0.72rem);
+  }
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    font-size: clamp(0.8rem, 0.6rem + 0.3vw, 0.92rem);
+  }
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    padding-inline: clamp(1.6rem, 1.3rem + 0.45vw, 1.9rem);
+  }
+  .ck-hero-navratri .ck-hero-cta-icon { width: 1.2rem; height: 1.2rem; }
+  .ck-hero-navratri .ck-hero-action-arrow { width: 1.45rem; height: 1.45rem; padding: 0.6rem; }
+  .ck-hero-navratri .ck-hero-donate-cta .ck-donate-heart svg { width: 1.2rem; height: 1.2rem; }
+  .ck-hero-navratri .ck-hero-donate-cta .ck-donate-arrow svg { width: 1.45rem; height: 1.45rem; }
+
+  /* The dancers start where the larger button row ends (see .ck-navratri-figure). */
+  .ck-hero-navratri .ck-navratri-figure {
+    --L: calc(var(--ck-hero-side-gutter, 0px) + clamp(3rem, 6vw, 7rem) + 49rem + 1.2vw);
+    --R: calc(100cqw - var(--L) - clamp(0.5rem, 1vw, 1.5rem));
+  }
+}
+
 @keyframes ck-navratri-enter {
   from { opacity: 0; transform: translate3d(0, 24px, 0); }
   to { opacity: 1; transform: none; }
