@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { Loader2 } from "lucide-react";
 import type { ItemMatch } from "@/lib/api";
 
@@ -99,7 +100,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function timeAgo(iso: string | null | undefined): string {
   if (!iso) return "recently";
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  const mins = Math.max(0, Math.round((Date.now() - serverDate(iso).getTime()) / 60000));
   if (mins < 1) return "just now";
   if (mins < 60) return `${mins} min ago`;
   const hours = Math.round(mins / 60);

@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { ArrowRight, Inbox, MapPin, Plus, RotateCw } from "lucide-react";
@@ -52,7 +53,7 @@ function requestHref(r: ItemRequest) {
 }
 
 const byNewest = (a: ItemRequest, b: ItemRequest) =>
-  new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime();
 
 function RequestCard({ r }: { r: ItemRequest }) {
   const badge = statusBadge(r);

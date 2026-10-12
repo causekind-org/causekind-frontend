@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
@@ -108,7 +109,7 @@ export function OffersQueuePanel() {
     setLoading(true);
     try {
       const all = await adminGetAllOffers(undefined, { excludeNgo: true });
-      setOffers(all.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      setOffers(all.sort((a, b) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime()));
     } catch {
       toast.error("Failed to load offers");
     } finally {
@@ -634,7 +635,7 @@ export function OffersQueuePanel() {
                               AI screening {offer.status === "SUBMITTED" ? "has not started yet" : "is in progress"}
                             </div>
                             <p className="text-xs text-sky-600 dark:text-sky-400">
-                              Submitted {offer.submittedAt ? new Date(offer.submittedAt).toLocaleString() : "—"}.
+                              Submitted {offer.submittedAt ? serverDate(offer.submittedAt).toLocaleString() : "—"}.
                               {offer.status === "SUBMITTED" && " If this doesn't move within a few minutes, the background screening job may not have run — use Retry below."}
                             </p>
                             <button onClick={() => handleRetryScreening(offer.id)} disabled={retrying === offer.id}
@@ -696,7 +697,7 @@ export function OffersQueuePanel() {
                               </div>
                             )}
                             <p className="text-3xs text-stone-400 pt-1">
-                              Screened {new Date(expandedData.offer.assessment.createdAt).toLocaleString()}
+                              Screened {serverDate(expandedData.offer.assessment.createdAt).toLocaleString()}
                             </p>
                           </div>
                         )}
@@ -720,7 +721,7 @@ export function OffersQueuePanel() {
                             ) : (
                               <p className="text-xs text-stone-400 mt-0.5">Phone: visible at handover stage</p>
                             )}
-                            <p className="text-xs text-stone-400 mt-0.5">Offer #{offer.id} · submitted {new Date(offer.createdAt).toLocaleDateString()}</p>
+                            <p className="text-xs text-stone-400 mt-0.5">Offer #{offer.id} · submitted {serverDate(offer.createdAt).toLocaleDateString()}</p>
                           </div>
                           {/* Donee */}
                           <div className="border-t border-stone-100 dark:border-zinc-700 pt-2">
@@ -802,7 +803,7 @@ export function OffersQueuePanel() {
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-3 mt-0.5">
-                                  <span className="text-3xs text-stone-400">{new Date(entry.changedAt).toLocaleString()}</span>
+                                  <span className="text-3xs text-stone-400">{serverDate(entry.changedAt).toLocaleString()}</span>
                                   {entry.changedByEmail && (
                                     <span className="text-3xs text-stone-400">by {entry.changedByEmail}</span>
                                   )}
@@ -832,7 +833,7 @@ export function OffersQueuePanel() {
                               <span className="text-xs font-black text-red-700 dark:text-red-400 uppercase tracking-wide">
                                 Handover Problem Reported
                               </span>
-                              <span className="ml-auto text-3xs text-red-400">{new Date(m.sentAt).toLocaleString()}</span>
+                              <span className="ml-auto text-3xs text-red-400">{serverDate(m.sentAt).toLocaleString()}</span>
                             </div>
                             <p className="text-sm text-red-700 dark:text-red-300 font-medium">
                               {m.content.replace("[HANDOVER PROBLEM] ", "")}
@@ -895,7 +896,7 @@ export function OffersQueuePanel() {
                                       </span>
                                     )}
                                     <span className="text-xs font-medium text-stone-600 dark:text-stone-300">{m.senderName}</span>
-                                    <span className="ml-auto text-3xs text-stone-400">{new Date(m.sentAt).toLocaleString()}</span>
+                                    <span className="ml-auto text-3xs text-stone-400">{serverDate(m.sentAt).toLocaleString()}</span>
                                   </div>
                                   <p className="text-stone-700 dark:text-stone-300">{m.content.replace("[ADMIN] ", "")}</p>
                                 </div>

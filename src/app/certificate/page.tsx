@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certificate } from "@/lib/api";
@@ -135,7 +136,7 @@ export default function CertificatePage() {
     );
   }
 
-  const handoverDate = new Date(cert.handoverDate).toLocaleDateString("en-IN", {
+  const handoverDate = serverDate(cert.handoverDate).toLocaleDateString("en-IN", {
     day: "2-digit", month: "2-digit", year: "numeric",
   });
 

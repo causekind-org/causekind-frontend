@@ -126,6 +126,7 @@ function NeedProfileEditor() {
         savedJson.current=sentJson;
         // Not apply(p): the donee may have kept typing while this was in flight.
         setProfile(p);
+        if(p.documentWarning) toast.warning(p.documentWarning,{duration:12000});
         setSaveState(unsaved()?"idle":"saved");
         return true;
       }catch{ setSaveState("error"); return false; }

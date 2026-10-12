@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { saTheme } from "@/components/super-admin/saTheme";
 import type { SaMatchState } from "@/lib/api";
 import { AlertTriangle, ArrowRight, CheckCircle2, CircleDot, Clock, User } from "lucide-react";
@@ -20,7 +21,7 @@ import { AlertTriangle, ArrowRight, CheckCircle2, CircleDot, Clock, User } from 
 
 function ago(iso: string | null): string | null {
   if (!iso) return null;
-  const then = new Date(iso).getTime();
+  const then = serverDate(iso).getTime();
   if (Number.isNaN(then)) return null;
   const mins = Math.floor((Date.now() - then) / 60000);
   if (mins < 1) return "just now";

@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -51,7 +52,7 @@ export default function DashboardHistoryPage() {
         // Most recent delivery first; a request with no delivery on record falls
         // back to when it was posted.
         const lastActivity = (r: ItemRequest) => Math.max(
-          new Date(r.createdAt).getTime(),
+          serverDate(r.createdAt).getTime(),
           ...deliveriesForRequest(r.id, offs, myMatches).map(d => d.deliveredAt),
         );
         // By what was received, not the raw counter — a request completed through
@@ -134,7 +135,7 @@ export default function DashboardHistoryPage() {
                               <span>•</span>
                               <span><TranslatedText text={r.category} /></span>
                               <span>•</span>
-                              <span>Requested {shortDate(new Date(r.createdAt).getTime())}</span>
+                              <span>Requested {shortDate(serverDate(r.createdAt).getTime())}</span>
                             </div>
                           </div>
                         </div>

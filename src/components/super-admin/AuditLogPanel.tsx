@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import { superAdminAuditLog, type AuditLogEntry } from "@/lib/api";
@@ -61,7 +62,7 @@ export function AuditLogPanel() {
               {entries.map(e => (
                 <tr key={e.id}>
                   <td className="px-4 py-2 whitespace-nowrap text-xs text-muted-foreground">
-                    {new Date(e.createdAt).toLocaleString()}
+                    {serverDate(e.createdAt).toLocaleString()}
                   </td>
                   <td className="px-4 py-2">
                     <p className="text-xs">{e.actorEmail}</p>

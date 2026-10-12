@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -321,7 +322,7 @@ export default function NgoDriveManagePage() {
                     <strong>Proof needs another look:</strong> {drive.adminReason}
                   </p>
                 )}
-                {drive.proofDueAt && <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Due by {new Date(drive.proofDueAt).toLocaleString()}</p>}
+                {drive.proofDueAt && <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Due by {serverDate(drive.proofDueAt).toLocaleString()}</p>}
                 <label className="block text-sm font-bold text-stone-800 dark:text-stone-200">Distribution photos (1–10)
                   <input type="file" name="proofFiles" accept="image/*" multiple required className="mt-1 block w-full text-sm font-normal" />
                 </label>

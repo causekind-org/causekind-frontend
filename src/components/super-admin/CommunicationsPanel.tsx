@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
   superAdminCommunicationLog,
@@ -324,7 +325,7 @@ export function CommunicationsPanel({
                     </p>
                     <p className={`truncate text-xs ${t.muted}`}>
                       user {m.targetUserId} · {m.sentByEmail} ·{" "}
-                      {new Date(m.sentAt).toLocaleString()}
+                      {serverDate(m.sentAt).toLocaleString()}
                       {m.template ? ` · ${m.template}` : ""}
                     </p>
                     {/* The failure is the thing worth keeping. Shown, not hidden

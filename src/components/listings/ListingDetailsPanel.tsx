@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, type ReactNode } from "react";
 import { PhotoThumbs } from "@/components/PhotoThumbs";
 import Link from "@/components/AppLink";
@@ -13,7 +14,7 @@ const MATCHED = ["SOFT_RESERVED", "RESERVED", "MATCHED", "PARTIALLY_DONATED"];
 const DONATED = ["DONATED", "FULFILLED"];
 
 const fmt = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null;
+  iso ? serverDate(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null;
 
 function firstAt(entries: ListingActivityEntry[], statuses: string[]) {
   return entries.find(e => statuses.includes(e.toStatus))?.changedAt ?? null;

@@ -1,3 +1,4 @@
+import { serverDate } from "@/lib/serverTime";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Building2, CalendarDays, MapPin, Package, UserRound } from "lucide-react";
@@ -103,7 +104,7 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
   const who = isNgo ? (req.organizationName || "A registered organisation") : (req.doneeFirstName || "A neighbour");
   const visual = CATEGORY_VISUALS[req.category];
   const urgent = req.urgency === "CRITICAL" || req.emergency;
-  const posted = req.createdAt ? new Date(req.createdAt) : null;
+  const posted = req.createdAt ? serverDate(req.createdAt) : null;
 
   return (
     <article className="mt-4 min-w-0 rounded-xl border border-stone-200 bg-white p-5 dark:border-white/10 dark:bg-white/[0.04] sm:p-7">

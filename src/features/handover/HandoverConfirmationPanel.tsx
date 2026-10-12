@@ -184,6 +184,11 @@ function DonorOtpSection({
  * offer's quantity as the primary source (see HandoverService.confirmHandoverDonor),
  * so all this panel has to do is confirm, not collect.
  */
+/** Once either side has confirmed, the photos are the record behind it: no removing. */
+function proofLocked(vm: HandoverViewModel): boolean {
+  return vm.confirmation.donorConfirmedAt != null || vm.confirmation.doneeConfirmedAt != null;
+}
+
 function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped, proof }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -234,7 +239,7 @@ function DonorConfirm({ vm, otp, onGenerateOtp, onConfirm, stepped, proof }: {
           </p>
         )}
 
-        {codeVerified && proof && <HandoverProofSection proof={proof} viewerRole="DONOR" />}
+        {codeVerified && proof && <HandoverProofSection proof={proof} viewerRole="DONOR" locked={proofLocked(vm)} />}
 
         <div className="space-y-1.5 border-t border-stone-100 pt-4 dark:border-zinc-800">
           {offered != null && offered > 0 && (
@@ -399,7 +404,7 @@ function DoneeConfirm({ vm, onConfirm, onVerifyOtp, proof }: {
         </div>
         )}
 
-        {codeVerified && proof && <HandoverProofSection proof={proof} viewerRole="DONEE" />}
+        {codeVerified && proof && <HandoverProofSection proof={proof} viewerRole="DONEE" locked={proofLocked(vm)} />}
 
         {/* Stepped flows: nothing below until the code is verified. */}
         {(!stepped || codeVerified) && (<>

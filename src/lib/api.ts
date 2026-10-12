@@ -517,6 +517,8 @@ export type UserProfile = {
   role: string;
   latitude: number | null;
   longitude: number | null;
+  /** Donee only: set when a name change leaves the ID document contradicting the profile. */
+  documentWarning?: string;
 };
 
 export function getProfile() {
@@ -2527,6 +2529,11 @@ const proofPath = (type: HandoverProofContext, id: number) =>
 
 export function getHandoverProofs(type: HandoverProofContext, id: number) {
   return request<HandoverProofPhoto[]>(proofPath(type, id));
+}
+
+/** Removes the viewer's own photo; the server refuses once either side has confirmed. */
+export function removeHandoverProof(type: HandoverProofContext, id: number, photoId: number) {
+  return request<HandoverProofPhoto[]>(`${proofPath(type, id)}/${photoId}`, { method: "DELETE" });
 }
 
 export function uploadHandoverProof(type: HandoverProofContext, id: number, file: File, device: string) {
@@ -4913,6 +4920,8 @@ export type DoneeNeedProfile = {
   documents: VerificationDocument[];
   complete: boolean;
   missing: string[];
+  /** Set by a save whose re-check found the name or gender contradicting the ID. */
+  documentWarning?: string | null;
 };
 export function getDoneeNeedProfile() { return request<DoneeNeedProfile>("/api/v1/users/me/need-profile"); }
 export function saveDoneeNeedProfile(details: Partial<RequestVerification>) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatServerTime } from "@/lib/serverTime";
 import {
   getChatMessages,
   getChatMessagesSince,
@@ -207,7 +208,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
                   {msg.content}
                 </div>
                 <p className={`mt-0.5 text-3xs text-gray-400 ${isMe ? "text-right" : ""}`}>
-                  {new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {formatServerTime(msg.sentAt)}
                   {msg.readAt && isMe && " · Read"}
                 </p>
               </div>

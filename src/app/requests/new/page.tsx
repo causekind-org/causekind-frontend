@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "@/components/AppLink";
@@ -349,7 +350,7 @@ function DocSlot({
           </p>
         ) : uploaded && doc ? (
           <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
-            Uploaded {new Date(doc.uploadedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+            Uploaded {serverDate(doc.uploadedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
             {screening?.status === "valid" && (
               uploadScreened
                 ? " · Photo accepted"

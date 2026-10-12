@@ -17,7 +17,7 @@ import {
   requestMatchDeliveryAddress, submitMatchDeliveryAddress, getMatchDeliveryAddressSuggestion,
   type ItemMatch,
 } from "@/lib/api";
-import { getHandoverProofs, uploadHandoverProof, type HandoverProofPhoto } from "@/lib/api";
+import { getHandoverProofs, uploadHandoverProof, removeHandoverProof, type HandoverProofPhoto } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import HandoverCelebration from "@/components/handover/HandoverCelebration";
@@ -123,6 +123,9 @@ export default function MatchHandoverHubPage() {
             photos: proofPhotos,
             upload: async (file, device) => {
               setProofPhotos(await uploadHandoverProof("MATCH", matchId, file, device));
+            },
+            remove: async (photoId) => {
+              setProofPhotos(await removeHandoverProof("MATCH", matchId, photoId));
             },
           },
           verifyOtp: async (code) => {

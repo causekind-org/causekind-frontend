@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useState } from "react";
 import { superAdminRevealDonation, type SaRevealField, type SuperAdminRow } from "@/lib/api";
 import { saTheme, type SaTheme } from "@/components/super-admin/saTheme";
@@ -8,7 +9,7 @@ import { Eye, Loader2, X } from "lucide-react";
 function fmt(v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
-    return new Date(v).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+    return serverDate(v).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   }
   return String(v);
 }

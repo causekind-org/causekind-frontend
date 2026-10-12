@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getDonationOffer, reportPostDeliveryIssue, type DonationOffer } from "@/lib/api";
@@ -36,7 +37,7 @@ export default function ReportProblemPage() {
         if (!offer.windowExpiresAt) {
           // If status is completed and completedAt is >48h ago
           if (offer.status === "COMPLETED" && offer.closedAt) {
-            const time = new Date(offer.closedAt).getTime();
+            const time = serverDate(offer.closedAt).getTime();
             return !isNaN(time) && Date.now() - time > 48 * 60 * 60 * 1000;
           }
           return false;

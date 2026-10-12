@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useReducer, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
@@ -218,7 +219,7 @@ function AboutThisNeed({ request }: { request: AnonymizedRequest }) {
 }
 
 function daysAgo(iso: string): string {
-  const days = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
+  const days = Math.max(0, Math.floor((Date.now() - serverDate(iso).getTime()) / 86_400_000));
   if (days === 0) return "Listed today";
   if (days === 1) return "Listed 1 day ago";
   return `Listed ${days} days ago`;
