@@ -2463,6 +2463,11 @@ export function getHandoverProofs(type: HandoverProofContext, id: number) {
   return request<HandoverProofPhoto[]>(proofPath(type, id));
 }
 
+/** Removes the viewer's own photo; the server refuses once either side has confirmed. */
+export function removeHandoverProof(type: HandoverProofContext, id: number, photoId: number) {
+  return request<HandoverProofPhoto[]>(`${proofPath(type, id)}/${photoId}`, { method: "DELETE" });
+}
+
 export function uploadHandoverProof(type: HandoverProofContext, id: number, file: File, device: string) {
   const formData = new FormData();
   formData.append("file", file);
