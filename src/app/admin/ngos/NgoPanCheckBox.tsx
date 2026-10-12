@@ -9,15 +9,17 @@ function sourceLabel(source: string | null) {
 }
 
 /**
- * PAN card feature: kept but not used yet; will be moved to another place later.
- * Not rendered by the review panel now.
- *
- * The "PAN check" box in the NGO application review: the signup PAN, its holder type
+ * The "PAN check" box in the NGO application review: the PAN typed in wizard step 1 (or,
+ * for the kept PAN-card signup feature, the signup PAN), its holder type
  * (4th letter) against the chosen structure, its 5th letter against the organization
  * name, and whether the values were read from the card or typed. Red for a personal PAN
  * or a mismatch. Advisory only.
  */
-export function NgoPanCheckBox({ panCheck }: { panCheck: NgoReviewDetail["panCheck"] }) {
+export function NgoPanCheckBox({ panCheck, showSources = true }: {
+  panCheck: NgoReviewDetail["panCheck"];
+  /** False for the PAN typed in the wizard, where nothing is read from the card. */
+  showSources?: boolean;
+}) {
   if (!panCheck) return null;
   const c = panCheck.check;
   const structure = c.legalStructure ? STRUCTURE_LABELS[c.legalStructure] ?? c.legalStructure : "No structure";
@@ -55,12 +57,12 @@ export function NgoPanCheckBox({ panCheck }: { panCheck: NgoReviewDetail["panChe
                 : `Does not match (PAN ${c.panNumber?.[4]}, name ${c.nameLetter})`}
           </dd>
         </div>
-        <div>
+        {showSources && <div>
           <dt className="text-stone-500">Where the values came from</dt>
           <dd className="mt-1" data-testid="pan-check-sources">
             Name: {sourceLabel(panCheck.organizationNameSource)} · Date: {sourceLabel(panCheck.dateOfFormationSource)} · PAN: {sourceLabel(panCheck.panNumberSource)}
           </dd>
-        </div>
+        </div>}
       </dl>
     </section>
   );

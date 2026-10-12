@@ -36,6 +36,7 @@ vi.mock("@/lib/api", () => ({
   resendNgoOtp: vi.fn(),
   uploadNgoDocument: vi.fn(),
   uploadNgoPhoto: vi.fn(),
+  checkNgoPanLetters: vi.fn().mockResolvedValue({ warnings: [] }),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({

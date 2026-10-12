@@ -4601,10 +4601,22 @@ export interface UploadedFileDto {
   demo?: boolean;
 }
 
+/** One authorized representative card (step 3). `emailVerified` is filled by the server. */
+export interface NgoRepresentativeDto {
+  fullName?: string | null;
+  designation?: string | null;
+  mobileNumber?: string | null;
+  email?: string | null;
+  panNumber?: string | null;
+  idProof?: UploadedFileDto | null;
+  emailVerified?: boolean | null;
+}
+
 export interface NgoDraftDto {
   currentStep?: string;
   organizationName?: string;
   legalStructure?: string;
+  panNumber?: string;
   registrationNumber?: string;
   registeredOfficeAddress?: string;
   yearOfEstablishment?: string;
@@ -4614,11 +4626,35 @@ export interface NgoDraftDto {
   officialEmail?: string;
   confirmationChecked?: boolean;
   authorizationLetter?: UploadedFileDto | null;
+  representatives?: NgoRepresentativeDto[];
   documents?: Record<string, UploadedFileDto | null>;
   logo?: UploadedFileDto | null;
   officePhoto?: UploadedFileDto | null;
   activityPhotos?: (UploadedFileDto | null)[];
   updatedAt?: string | null;
+}
+
+/** Shown for every refused NGO document upload (wrong type or too large). */
+export const NGO_DOCUMENT_RULE = "Upload a PDF, JPG or PNG up to 10 MB";
+/** Shown for every refused NGO photo upload. */
+export const NGO_PHOTO_RULE = "Upload a JPG, PNG or WebP photo up to 10 MB";
+
+/** The PAN letter checks for the PAN typed in step 1 (warnings only). */
+export function checkNgoPanLetters(data: { panNumber: string; legalStructure: string; organizationName: string }) {
+  return request<PanCheckResult>("/api/v1/ngo-registration/pan-letter-check", { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Sends a 6-digit code to a representative's email. `verified` is true when it was already verified. */
+export function sendNgoRepresentativeEmailCode(email: string, name: string) {
+  return request<{ sent: boolean; verified: boolean }>("/api/v1/ngo-registration/representative-email/send", {
+    method: "POST", body: JSON.stringify({ email, name }),
+  });
+}
+
+export function verifyNgoRepresentativeEmailCode(email: string, code: string) {
+  return request<{ verified: boolean }>("/api/v1/ngo-registration/representative-email/verify", {
+    method: "POST", body: JSON.stringify({ email, code }),
+  });
 }
 
 /**
@@ -4737,6 +4773,8 @@ export async function uploadNgoDocument(file: File, documentType: string, catego
       const body = await res.json();
       if (typeof body?.message === "string" && body.message) message = body.message;
     } catch {}
+    // Wrong type or too large: always the same plain rule.
+    if (res.status === 413 || res.status === 415) message = NGO_DOCUMENT_RULE;
     throw new Error(message);
   }
 
@@ -4759,7 +4797,7 @@ export async function uploadNgoPhoto(file: File, photoType: string): Promise<Ngo
   });
 
   if (!res.ok) {
-    let message = "Photo upload failed. Please check the image and try again.";
+    let message = res.status === 413 || res.status === 415 ? NGO_PHOTO_RULE : "Photo upload failed. Please check the image and try again.";
     try {
       const body = await res.json();
       if (typeof body?.message === "string" && body.message) message = body.message;
@@ -4778,6 +4816,7 @@ export async function uploadNgoPhoto(file: File, photoType: string): Promise<Ngo
 export function submitNgoApplication(payload: {
   organizationName: string;
   legalStructure: string;
+  panNumber: string;
   registrationNumber: string;
   registeredOfficeAddress: string;
   yearOfEstablishment: string;
@@ -4787,6 +4826,7 @@ export function submitNgoApplication(payload: {
   officialEmail: string;
   confirmationChecked: boolean;
   authorizationLetter: UploadedFileDto | null;
+  representatives: NgoRepresentativeDto[];
   documents: Record<string, UploadedFileDto | null>;
   logo: UploadedFileDto | null;
   officePhoto: UploadedFileDto | null;
@@ -4908,6 +4948,14 @@ export type NgoReviewApplication = NgoApplicationStatusResponse & {
   registeredOfficeAddress: string; yearOfEstablishment: string; representativeName: string;
   designation: string; mobileNumber: string; officialEmail: string; reviewedAt: string | null;
   aiScreeningVerdict: string | null; aiScreeningNotes: string | null;
+  /** The organization PAN typed in step 1 (null on applications from before the current wizard). */
+  panNumber?: string | null;
+};
+export type NgoReviewRepresentative = {
+  position: number; fullName: string; designation: string; mobileNumber: string; email: string;
+  emailVerified: boolean; emailVerifiedAt: string | null; panNumber: string | null;
+  panValidFormat: boolean | null; panPersonal: boolean | null;
+  idProofFileId: number | null; idProofField: string;
 };
 export type NgoReviewFile = {
   id: number; kind: "document" | "photo"; type: string; name: string;
@@ -4920,11 +4968,17 @@ export type NgoReviewDetail = {
   decisions: { id: number; fromStatus: string; toStatus: string; changedByEmail: string; note: string; changedAt: string }[];
   current: boolean;
   corrections?: { summary: string; items: NgoCorrectionItem[] } | null;
-  /** PAN card feature: kept but not used yet; will be moved to another place later. Always null for now. */
+  /** The PAN check box for the PAN typed in step 1 (null for older applications). */
   panCheck?: {
     check: PanCheckResult; organizationNameSource: string | null;
     dateOfFormationSource: string | null; panNumberSource: string | null;
   } | null;
+  /** False for applications submitted before the current wizard (no representatives). */
+  wizardV2?: boolean;
+  representatives?: NgoReviewRepresentative[];
+  /** Wizard keys ("documents.x") the current wizard requires / offers as optional. */
+  requiredDocuments?: string[];
+  optionalDocuments?: string[];
 };
 export function adminGetNgoApplications(status: string, page = 0) {
   const params = new URLSearchParams({ page: String(page) });

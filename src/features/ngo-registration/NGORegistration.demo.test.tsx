@@ -50,6 +50,12 @@ describe("NGORegistration Component - Demo Mode ON", () => {
     // Step 1: Organization Details
     await user.type(screen.getByLabelText(/Organization Name/i), "Helping Hearts Demo Trust");
     await user.click(screen.getByRole("button", { name: /Trust/i }));
+    await user.type(screen.getByLabelText(/PAN Number/i), "AAATH1234K");
+    // PAN card and registration certificate
+    for (const btn of screen.getAllByRole("button", { name: /Mark as uploaded ✓/i })) {
+      await user.click(btn);
+    }
+    await waitFor(() => expect(screen.queryAllByRole("button", { name: /Mark as uploaded ✓/i })).toHaveLength(0));
     await user.type(screen.getByLabelText(/Registration Number/i), "MH/TRU/2026/DEMO");
     await user.type(screen.getByLabelText(/Registered Office Address/i), "Demo Street, Mumbai");
     await user.type(screen.getByLabelText(/Year of Establishment/i), "2020");
@@ -69,12 +75,19 @@ describe("NGORegistration Component - Demo Mode ON", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /Authorized Representative/i })).toBeInTheDocument();
     });
-    await user.type(screen.getByLabelText(/Full Name/i), "Demo Representative");
-    await user.selectOptions(screen.getByLabelText(/Designation/i), "Managing Trustee");
-    await user.type(screen.getByLabelText(/Mobile Number/i), "+91 99999 88888");
-    await user.type(screen.getByLabelText(/Official Email Address/i), "demo@helpinghearts.org");
-    const markLetterBtn = screen.getByRole("button", { name: /Mark as uploaded ✓/i });
-    await user.click(markLetterBtn);
+    await user.type(screen.getByLabelText(/^Full name/i), "Demo Representative");
+    await user.type(screen.getByLabelText(/^Designation/i), "Managing Trustee");
+    await user.type(screen.getByLabelText(/^Mobile number/i), "+91 99999 88888");
+    await user.type(screen.getByLabelText(/^Email/i), "demo@helpinghearts.org");
+    await user.click(screen.getByRole("button", { name: "Send code" }));
+    await user.type(await screen.findByLabelText(/6-digit code/i), "123456");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText("Verified")).toBeInTheDocument();
+    // Authorization document and the ID proof
+    for (const btn of screen.getAllByRole("button", { name: /Mark as uploaded ✓/i })) {
+      await user.click(btn);
+    }
+    await waitFor(() => expect(screen.getByRole("button", { name: /Continue/i })).not.toBeDisabled());
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 
     // Step 4: Organization Photos - use demo buttons
@@ -93,7 +106,7 @@ describe("NGORegistration Component - Demo Mode ON", () => {
     });
     expect(screen.getByText("Helping Hearts Demo Trust")).toBeInTheDocument();
     expect(screen.getByText("MH/TRU/2026/DEMO")).toBeInTheDocument();
-    expect(screen.getByText("demo@helpinghearts.org")).toBeInTheDocument();
+    expect(screen.getByText(/demo@helpinghearts\.org/)).toBeInTheDocument();
 
     const checkbox = screen.getByRole("checkbox");
     await user.click(checkbox);

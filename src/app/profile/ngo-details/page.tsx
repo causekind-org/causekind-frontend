@@ -22,6 +22,7 @@ import {
   type UploadedFile,
   fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
+import { applyDraft, buildDraftPayload, buildSubmitPayload } from "@/features/ngo-registration/ngoWizardPayload";
 import { OrgDetails } from "@/features/ngo-registration/steps/OrgDetails";
 import { LegalDocuments } from "@/features/ngo-registration/steps/LegalDocuments";
 import { AuthorizedRepresentative } from "@/features/ngo-registration/steps/AuthorizedRepresentative";
@@ -36,42 +37,10 @@ import {
   saveNgoDraft,
   getMyNgoApplication,
   ApiError,
-  type UploadedFileDto,
   type NgoCorrectionItem,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { isNgoRole } from "@/lib/isNgoRole";
-
-function toDto(file: UploadedFile | null): UploadedFileDto | null {
-  if (!file) return null;
-  return {
-    documentId: file.documentId ?? null,
-    photoId: file.photoId ?? null,
-    name: file.name,
-    key: file.s3Key ?? null,
-    url: file.s3Url ?? null,
-    size: file.size ?? null,
-    mimeType: file.mimeType ?? null,
-    demo: file.demo ?? false,
-  };
-}
-
-function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
-  if (!dto) return null;
-  // A saved reference with no upload id is not a file the backend will attach, so
-  // showing it as uploaded would only hide that it has to be uploaded again.
-  if (!IS_NGO_DEMO_MODE && dto.documentId == null && dto.photoId == null) return null;
-  return {
-    name: dto.name || "Uploaded document",
-    documentId: dto.documentId ?? undefined,
-    photoId: dto.photoId ?? undefined,
-    s3Key: dto.key ?? undefined,
-    s3Url: dto.url ?? undefined,
-    size: dto.size ?? undefined,
-    mimeType: dto.mimeType ?? undefined,
-    demo: dto.demo ?? false,
-  };
-}
 
 // Reads a ?step=... deep link. email-verification is never a valid entry point.
 function readUrlStep(param: string | null): NGOStep | null {
@@ -240,34 +209,7 @@ function NgoDetailsEditor() {
 
         if (active) {
           if (draft) {
-            const restoredDocs: Record<string, UploadedFile | null> = {};
-            if (draft.documents) {
-              for (const [key, dto] of Object.entries(draft.documents)) {
-                restoredDocs[key] = fromDto(dto as any);
-              }
-            }
-
-            setData((prev) => prefillNgoFormWithUser({
-              ...prev,
-              organizationName: fieldText(draft.organizationName) || prev.organizationName,
-              legalStructure: (draft.legalStructure as any) || prev.legalStructure,
-              registrationNumber: fieldText(draft.registrationNumber) || prev.registrationNumber,
-              registeredOfficeAddress: fieldText(draft.registeredOfficeAddress) || prev.registeredOfficeAddress,
-              yearOfEstablishment: fieldText(draft.yearOfEstablishment) || prev.yearOfEstablishment,
-              representativeName: fieldText(draft.representativeName) || prev.representativeName,
-              designation: draft.designation || prev.designation,
-              mobileNumber: fieldText(draft.mobileNumber) || prev.mobileNumber,
-              officialEmail: fieldText(draft.officialEmail) || prev.officialEmail,
-              authorizationLetter: fromDto(draft.authorizationLetter) || prev.authorizationLetter,
-              logo: fromDto(draft.logo) || prev.logo,
-              officePhoto: fromDto(draft.officePhoto) || prev.officePhoto,
-              activityPhotos:
-                draft.activityPhotos && draft.activityPhotos.length > 0
-                  ? draft.activityPhotos.map(fromDto)
-                  : prev.activityPhotos,
-              confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
-              documents: { ...prev.documents, ...restoredDocs },
-            }, user, flaggedFields.current));
+            setData((prev) => prefillNgoFormWithUser(applyDraft(prev, draft), user, flaggedFields.current));
           } else {
             setData((prev) => prefillNgoFormWithUser(prev, user, flaggedFields.current));
           }
@@ -328,7 +270,13 @@ function NgoDetailsEditor() {
     const documents = { ...data.documents };
     const activityPhotos = [...data.activityPhotos];
     for (const { field, message } of rejected) {
-      if (field!.startsWith("documents.")) documents[field!.slice(10)] = mark(documents[field!.slice(10)] ?? null, message!);
+      const rep = /^representatives\.(\d)\.idProof$/.exec(field!);
+      if (rep) {
+        const i = Number(rep[1]);
+        const reps = [...(patch.representatives ?? data.representatives)];
+        if (reps[i]) reps[i] = { ...reps[i], idProof: mark(reps[i].idProof, message!) };
+        patch.representatives = reps;
+      } else if (field!.startsWith("documents.")) documents[field!.slice(10)] = mark(documents[field!.slice(10)] ?? null, message!);
       else if (field === "authorizationLetter") patch.authorizationLetter = mark(data.authorizationLetter, message!);
       else if (field === "logo") patch.logo = mark(data.logo, message!);
       else if (field === "officePhoto") patch.officePhoto = mark(data.officePhoto, message!);
@@ -372,29 +320,7 @@ function NgoDetailsEditor() {
         }
         toast.success("Progress saved locally (Demo Mode)");
       } else {
-        const documentsDto: Record<string, ReturnType<typeof toDto>> = {};
-        for (const [id, file] of Object.entries(data.documents)) {
-          documentsDto[id] = toDto(file);
-        }
-
-        await saveNgoDraft({
-          organizationName: data.organizationName,
-          legalStructure: data.legalStructure,
-          registrationNumber: data.registrationNumber,
-          registeredOfficeAddress: data.registeredOfficeAddress,
-          yearOfEstablishment: data.yearOfEstablishment,
-          representativeName: data.representativeName,
-          designation: data.designation,
-          mobileNumber: data.mobileNumber,
-          officialEmail: data.officialEmail,
-          confirmationChecked: data.confirmationChecked,
-          authorizationLetter: toDto(data.authorizationLetter),
-          documents: documentsDto,
-          logo: toDto(data.logo),
-          officePhoto: toDto(data.officePhoto),
-          activityPhotos: data.activityPhotos.map(toDto),
-          currentStep,
-        });
+        await saveNgoDraft(buildDraftPayload(data, currentStep));
         toast.success("Registration draft saved");
       }
     } catch (e) {
@@ -442,7 +368,7 @@ function NgoDetailsEditor() {
         updateData({
           applicationId: demoAppId,
           submittedAt: subTime,
-          officialEmail: user?.email || data.officialEmail,
+          officialEmail: user?.email || buildSubmitPayload(data).officialEmail,
         });
         setAwaitingVerification("fresh");
         goToStep("email-verification");
@@ -453,28 +379,7 @@ function NgoDetailsEditor() {
     }
 
     try {
-      const documentsDto: Record<string, ReturnType<typeof toDto>> = {};
-      for (const [id, file] of Object.entries(data.documents)) {
-        documentsDto[id] = toDto(file);
-      }
-
-      const response = await submitNgoApplication({
-        organizationName: data.organizationName,
-        legalStructure: data.legalStructure,
-        registrationNumber: data.registrationNumber,
-        registeredOfficeAddress: data.registeredOfficeAddress,
-        yearOfEstablishment: data.yearOfEstablishment,
-        representativeName: data.representativeName,
-        designation: data.designation,
-        mobileNumber: data.mobileNumber,
-        officialEmail: data.officialEmail,
-        confirmationChecked: data.confirmationChecked,
-        authorizationLetter: toDto(data.authorizationLetter),
-        documents: documentsDto,
-        logo: toDto(data.logo),
-        officePhoto: toDto(data.officePhoto),
-        activityPhotos: data.activityPhotos.map(toDto),
-      });
+      const response = await submitNgoApplication(buildSubmitPayload(data));
 
       const subTime = formatSubmissionTime(new Date());
       updateData({

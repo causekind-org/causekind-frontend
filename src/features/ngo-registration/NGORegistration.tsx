@@ -10,9 +10,7 @@ import {
   prefillNgoFormWithUser,
   type NGOFormState,
   type NGOStep,
-  type UploadedFile,
   calculateNgoProgress,
-  fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { NGOProgress } from "@/features/ngo-registration/components/NGOProgress";
 import { OrgDetails } from "@/features/ngo-registration/steps/OrgDetails";
@@ -22,7 +20,8 @@ import { OrgPhotos } from "@/features/ngo-registration/steps/OrgPhotos";
 import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { EmailVerification } from "@/features/ngo-registration/steps/EmailVerification";
 import { ApplicationSubmitted } from "@/features/ngo-registration/steps/ApplicationSubmitted";
-import { submitNgoApplication, getMyNgoApplication, getNgoDraft, saveNgoDraft, type UploadedFileDto } from "@/lib/api";
+import { submitNgoApplication, getMyNgoApplication, getNgoDraft, saveNgoDraft } from "@/lib/api";
+import { applyDraft, buildDraftPayload, buildSubmitPayload } from "@/features/ngo-registration/ngoWizardPayload";
 import { useAuth } from "@/hooks/useAuth";
 
 export interface NGOProgressInfo {
@@ -35,37 +34,6 @@ export interface NGOProgressInfo {
 interface NGORegistrationProps {
   onCancelToDonor?: () => void;
   onProgressChange?: (info: NGOProgressInfo) => void;
-}
-
-function toDto(file: UploadedFile | null): UploadedFileDto | null {
-  if (!file) return null;
-  return {
-    documentId: file.documentId ?? null,
-    photoId: file.photoId ?? null,
-    name: file.name,
-    key: file.s3Key ?? null,
-    url: file.s3Url ?? null,
-    size: file.size ?? null,
-    mimeType: file.mimeType ?? null,
-    demo: file.demo ?? false,
-  };
-}
-
-function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
-  if (!dto) return null;
-  // A saved reference with no upload id is not a file the backend will attach, so
-  // showing it as uploaded would only hide that it has to be uploaded again.
-  if (!IS_NGO_DEMO_MODE && dto.documentId == null && dto.photoId == null) return null;
-  return {
-    name: dto.name || "Uploaded document",
-    documentId: dto.documentId ?? undefined,
-    photoId: dto.photoId ?? undefined,
-    s3Key: dto.key ?? undefined,
-    s3Url: dto.url ?? undefined,
-    size: dto.size ?? undefined,
-    mimeType: dto.mimeType ?? undefined,
-    demo: dto.demo ?? false,
-  };
 }
 
 export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegistrationProps) {
@@ -159,40 +127,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
           return;
         }
 
-        const restoredDocs: Record<string, UploadedFile | null> = {};
-        if (draft.documents) {
-          for (const [docKey, fileDto] of Object.entries(draft.documents)) {
-            restoredDocs[docKey] = fromDto(fileDto);
-          }
-        }
-
-        const restoredActivity: (UploadedFile | null)[] = [null, null, null];
-        if (draft.activityPhotos && Array.isArray(draft.activityPhotos)) {
-          draft.activityPhotos.forEach((photoDto, idx) => {
-            if (idx < 3) {
-              restoredActivity[idx] = fromDto(photoDto);
-            }
-          });
-        }
-
-        setData((prev) => prefillNgoFormWithUser({
-          ...prev,
-          organizationName: fieldText(draft.organizationName) || prev.organizationName,
-          legalStructure: (draft.legalStructure as any) ?? prev.legalStructure,
-          registrationNumber: fieldText(draft.registrationNumber) || prev.registrationNumber,
-          registeredOfficeAddress: fieldText(draft.registeredOfficeAddress) || prev.registeredOfficeAddress,
-          yearOfEstablishment: fieldText(draft.yearOfEstablishment) || prev.yearOfEstablishment,
-          representativeName: fieldText(draft.representativeName) || prev.representativeName,
-          designation: draft.designation ?? prev.designation,
-          mobileNumber: fieldText(draft.mobileNumber) || prev.mobileNumber,
-          officialEmail: fieldText(draft.officialEmail) || prev.officialEmail,
-          confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
-          authorizationLetter: draft.authorizationLetter ? fromDto(draft.authorizationLetter) : prev.authorizationLetter,
-          documents: Object.keys(restoredDocs).length > 0 ? restoredDocs : prev.documents,
-          logo: draft.logo ? fromDto(draft.logo) : prev.logo,
-          officePhoto: draft.officePhoto ? fromDto(draft.officePhoto) : prev.officePhoto,
-          activityPhotos: restoredActivity,
-        }, user));
+        setData((prev) => prefillNgoFormWithUser(applyDraft(prev, draft), user));
 
         const savedStep = draft.currentStep as string;
         if (savedStep && (NGO_STEPS as readonly string[]).includes(savedStep)) {
@@ -230,29 +165,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
     if (!user) return;
 
     try {
-      const documentsDto: Record<string, UploadedFileDto | null> = {};
-      for (const [id, file] of Object.entries(updatedForm.documents)) {
-        documentsDto[id] = toDto(file);
-      }
-
-      await saveNgoDraft({
-        currentStep: targetStep,
-        organizationName: updatedForm.organizationName,
-        legalStructure: updatedForm.legalStructure,
-        registrationNumber: updatedForm.registrationNumber,
-        registeredOfficeAddress: updatedForm.registeredOfficeAddress,
-        yearOfEstablishment: updatedForm.yearOfEstablishment,
-        representativeName: updatedForm.representativeName,
-        designation: updatedForm.designation,
-        mobileNumber: updatedForm.mobileNumber,
-        officialEmail: updatedForm.officialEmail,
-        confirmationChecked: updatedForm.confirmationChecked,
-        authorizationLetter: toDto(updatedForm.authorizationLetter),
-        documents: documentsDto,
-        logo: toDto(updatedForm.logo),
-        officePhoto: toDto(updatedForm.officePhoto),
-        activityPhotos: updatedForm.activityPhotos.map(toDto),
-      });
+      await saveNgoDraft(buildDraftPayload(updatedForm, targetStep));
     } catch (err) {
       console.warn("Failed to persist NGO draft:", err);
     }
@@ -309,7 +222,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
         updateData({
           applicationId: demoAppId,
           submittedAt: subTime,
-          officialEmail: user?.email || data.officialEmail,
+          officialEmail: user?.email || buildSubmitPayload(data).officialEmail,
         });
         goToStep("email-verification");
       } finally {
@@ -319,32 +232,8 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
     }
 
     try {
-      // Convert documents map (Record<string, UploadedFile | null>)
-      const documentsDto: Record<
-        string,
-        ReturnType<typeof toDto>
-      > = {};
-      for (const [id, file] of Object.entries(data.documents)) {
-        documentsDto[id] = toDto(file);
-      }
-
-      const response = await submitNgoApplication({
-        organizationName: data.organizationName,
-        legalStructure: data.legalStructure,
-        registrationNumber: data.registrationNumber,
-        registeredOfficeAddress: data.registeredOfficeAddress,
-        yearOfEstablishment: data.yearOfEstablishment,
-        representativeName: data.representativeName,
-        designation: data.designation,
-        mobileNumber: data.mobileNumber,
-        officialEmail: data.officialEmail,
-        confirmationChecked: data.confirmationChecked,
-        authorizationLetter: toDto(data.authorizationLetter),
-        documents: documentsDto,
-        logo: toDto(data.logo),
-        officePhoto: toDto(data.officePhoto),
-        activityPhotos: data.activityPhotos.map(toDto),
-      });
+      const payload = buildSubmitPayload(data);
+      const response = await submitNgoApplication(payload);
 
       // Store the canonical backend-issued applicationId and the submission time.
       // The local `generateApplicationId()` placeholder is intentionally NOT used here.
@@ -352,7 +241,7 @@ export function NGORegistration({ onCancelToDonor, onProgressChange }: NGORegist
       updateData({
         applicationId: response.applicationId,
         submittedAt: subTime,
-        officialEmail: response.officialEmail || user?.email || data.officialEmail,
+        officialEmail: response.officialEmail || user?.email || payload.officialEmail,
       });
 
       goToStep("email-verification");

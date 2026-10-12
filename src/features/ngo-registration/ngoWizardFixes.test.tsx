@@ -57,6 +57,14 @@ describe("prefill from signup (point 2)", () => {
   it("treats whitespace as empty", () => {
     expect(prefillNgoFormWithUser({ ...INITIAL_NGO_FORM, mobileNumber: "  " }, user).mobileNumber).toBe("+919876543210");
   });
+
+  it("starts Representative 1 with the signup email and mobile, still to be verified", () => {
+    const rep = prefillNgoFormWithUser(INITIAL_NGO_FORM, user).representatives[0];
+    expect(rep).toMatchObject({ email: "hope@ngo.test", mobileNumber: "+919876543210", emailVerified: false });
+    const typed = { ...INITIAL_NGO_FORM, representatives: [{ ...INITIAL_NGO_FORM.representatives[0], email: "rep@ngo.test" }] };
+    expect(prefillNgoFormWithUser(typed, user).representatives[0].email).toBe("rep@ngo.test");
+    expect(prefillNgoFormWithUser(INITIAL_NGO_FORM, user, ["representatives.0.email"]).representatives[0].email).toBe("");
+  });
 });
 
 describe("correction items (point 9)", () => {
@@ -66,7 +74,14 @@ describe("correction items (point 9)", () => {
     expect(correctionFieldLabel("documents.company-pan")).toBe("Company PAN Card");
     expect(correctionFieldLabel("activityPhotos.1")).toBe("Activity photo 2");
     expect(correctionFieldStep("yearOfEstablishment")).toBe("org-details");
-    expect(correctionFieldStep("documents.coi")).toBe("legal-documents");
+    // The PAN card and registration certificate are step 1; the rest of the documents step 2.
+    expect(correctionFieldStep("documents.coi")).toBe("org-details");
+    expect(correctionFieldStep("documents.pan")).toBe("org-details");
+    expect(correctionFieldStep("panNumber")).toBe("org-details");
+    expect(correctionFieldStep("documents.society-moa")).toBe("legal-documents");
+    expect(correctionFieldStep("representatives.2.idProof")).toBe("authorized-rep");
+    expect(correctionFieldLabel("representatives.2.idProof")).toBe("Representative 3 ID proof");
+    expect(correctionFieldLabel("documents.s8-licence")).toBe("Section 8 Licence (Form INC-12)");
     expect(correctionFieldStep("authorizationLetter")).toBe("authorized-rep");
     expect(correctionFieldStep("logo")).toBe("org-photos");
   });

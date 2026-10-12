@@ -9,7 +9,19 @@ import {
   type DocCategory,
   type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
-import { uploadNgoDocument } from "@/lib/api";
+import { NGO_DOCUMENT_RULE, uploadNgoDocument } from "@/lib/api";
+
+/** Documents: PDF, JPG or PNG, up to 10 MB (the server checks the real file too). */
+export const NGO_DOCUMENT_MAX_BYTES = 10 * 1024 * 1024;
+const DOCUMENT_TYPES = ["application/pdf", "image/jpeg", "image/png"];
+const DOCUMENT_EXTENSIONS = /\.(pdf|jpe?g|png)$/i;
+
+/** Null when the file may be uploaded, otherwise the message to show. */
+export function checkNgoDocumentFile(file: File): string | null {
+  const typeOk = DOCUMENT_TYPES.includes(file.type) || (!file.type && DOCUMENT_EXTENSIONS.test(file.name));
+  if (!typeOk || file.size > NGO_DOCUMENT_MAX_BYTES || file.size === 0) return NGO_DOCUMENT_RULE;
+  return null;
+}
 
 interface DocUploadCardProps {
   docId: string;
@@ -18,6 +30,10 @@ interface DocUploadCardProps {
   uploaded: UploadedFile | null;
   onUpload: (file: UploadedFile) => void;
   onRemove: () => void;
+  /** Short help shown under the label. */
+  hint?: string;
+  /** id of the file input when the same document type appears more than once (representative ID proofs). */
+  inputId?: string;
 }
 
 /**
@@ -34,6 +50,8 @@ export function DocUploadCard({
   uploaded,
   onUpload,
   onRemove,
+  hint,
+  inputId,
 }: DocUploadCardProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -42,11 +60,15 @@ export function DocUploadCard({
   const [lastFile, setLastFile] = useState<File | null>(null);
 
   async function performUpload(file: File) {
+    const refused = IS_NGO_DEMO_MODE ? null : checkNgoDocumentFile(file);
+    if (refused) {
+      setUploadError(refused);
+      setLastFile(null);
+      return;
+    }
     setIsUploading(true);
     setUploadError(null);
     setLastFile(file);
-
-
 
     try {
       const res = await uploadNgoDocument(file, docId, category);
@@ -121,7 +143,10 @@ export function DocUploadCard({
     <div className="rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/60 dark:bg-zinc-900/40 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between gap-2 px-3.5 pt-3 pb-1.5">
-        <p className="text-xs font-bold text-stone-800 dark:text-stone-200">{label}</p>
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-stone-800 dark:text-stone-200">{label}</p>
+          {hint && <p className="mt-0.5 text-3xs text-stone-500 dark:text-stone-400">{hint}</p>}
+        </div>
         <span
           className={cn(
             "shrink-0 rounded-full px-2 py-0.5 text-3xs font-black uppercase tracking-wide",
@@ -130,7 +155,7 @@ export function DocUploadCard({
               : "bg-stone-200 text-stone-500 dark:bg-zinc-700 dark:text-stone-400"
           )}
         >
-          {mustHave ? "Must Have" : "Supporting"}
+          {mustHave ? "Required" : "Optional"}
         </span>
       </div>
 
@@ -168,9 +193,9 @@ export function DocUploadCard({
       >
         <input
           ref={inputRef}
-          id={`doc-upload-${docId}`}
+          id={inputId ?? `doc-upload-${docId}`}
           type="file"
-          accept=".pdf,.jpg,.jpeg,.png,.webp"
+          accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
           className="sr-only"
           disabled={isUploading}
           onChange={(e) => handleFiles(e.target.files)}
@@ -193,7 +218,7 @@ export function DocUploadCard({
                 Click or drag to upload
               </p>
               <p className="text-3xs text-stone-400 dark:text-stone-500">
-                PDF, JPG, PNG or WebP · Max 10 MB
+                PDF, JPG or PNG · Max 10 MB
               </p>
             </>
           )}
@@ -224,7 +249,7 @@ export function DocUploadCard({
         <div className="border-t border-red-100 dark:border-red-950/50 bg-red-50/70 dark:bg-red-950/20 px-3.5 py-2 flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
             <AlertCircle className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" />
-            <p className="text-3xs text-red-700 dark:text-red-300 font-medium truncate">
+            <p role="alert" className="text-3xs text-red-700 dark:text-red-300 font-medium">
               {uploadError}
             </p>
           </div>

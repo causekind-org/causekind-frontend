@@ -6,6 +6,7 @@ import {
   type NgoReviewApplication, type NgoReviewDetail, type NgoReviewFile,
 } from "@/lib/api";
 import { correctionFieldLabel } from "@/features/ngo-registration/ngoRegistrationModel";
+import { NgoPanCheckBox } from "./NgoPanCheckBox";
 
 const field = "w-full rounded-lg border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
@@ -23,6 +24,24 @@ const TEXT_FIELDS = [
   "organizationName", "legalStructure", "registrationNumber", "registeredOfficeAddress", "yearOfEstablishment",
   "representativeName", "designation", "mobileNumber", "officialEmail",
 ] as const;
+/** Current wizard: the PAN is a step 1 field; representatives have their own items. */
+const V2_TEXT_FIELDS = [
+  "organizationName", "legalStructure", "panNumber", "registrationNumber", "yearOfEstablishment", "registeredOfficeAddress",
+] as const;
+const REPRESENTATIVE_TEXT_FIELDS = ["fullName", "designation", "mobileNumber", "email", "panNumber"] as const;
+const STEP1_DOCUMENTS = ["documents.pan", "documents.trust-reg-cert", "documents.society-reg-cert", "documents.coi"];
+
+/** Which section of the review a file belongs to (older applications keep one documents list). */
+function fileGroup(file: NgoReviewFile, detail: NgoReviewDetail): string {
+  if (file.kind === "photo") return "Photos";
+  const f = file.field ?? "";
+  if (!detail.wizardV2) return "Documents";
+  if (STEP1_DOCUMENTS.includes(f)) return "Organization (step 1)";
+  if (f === "authorizationLetter" || f.startsWith("representatives.")) return "Authorized representatives (step 3)";
+  if (detail.requiredDocuments?.includes(f) || detail.optionalDocuments?.includes(f)) return "Legal documents (step 2)";
+  return "Earlier documents";
+}
+const GROUP_ORDER = ["Organization (step 1)", "Legal documents (step 2)", "Authorized representatives (step 3)", "Documents", "Earlier documents", "Photos"];
 
 /**
  * Evidence links are presigned for five minutes (private storage). Refresh a little before
@@ -187,7 +206,14 @@ export function NgoReviewPanel({
   }
 
   const checklist = detail ? [
-    ...TEXT_FIELDS.map(key => ({ key, name: correctionFieldLabel(key), value: String(detail.application[key] ?? "") })),
+    ...(detail.wizardV2 ? V2_TEXT_FIELDS : TEXT_FIELDS).map(key => ({
+      key, name: correctionFieldLabel(key), value: String((detail.application as Record<string, unknown>)[key] ?? ""),
+    })),
+    ...(detail.representatives ?? []).flatMap(r => REPRESENTATIVE_TEXT_FIELDS.map(part => ({
+      key: `representatives.${r.position}.${part}`,
+      name: correctionFieldLabel(`representatives.${r.position}.${part}`),
+      value: String(r[part] ?? ""),
+    }))),
     ...detail.files.filter(f => f.field).map(f => ({ key: f.field!, name: correctionFieldLabel(f.field!), value: f.name || label(f.type) })),
   ] : [];
 
@@ -236,13 +262,45 @@ export function NgoReviewPanel({
             <p className="mt-1 text-sm capitalize">{label(detail.application.status)}{!detail.current && " · Historical submission"}</p>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               {Object.entries({
-                "Legal structure": detail.application.legalStructure, "Registration number": detail.application.registrationNumber,
+                "Legal structure": detail.application.legalStructure,
+                ...(detail.application.panNumber ? { "PAN": detail.application.panNumber } : {}),
+                "Registration number": detail.application.registrationNumber,
                 "Registered address": detail.application.registeredOfficeAddress, "Established": detail.application.yearOfEstablishment,
                 "Representative": detail.application.representativeName, "Designation": detail.application.designation,
                 "Phone": detail.application.mobileNumber, "Contact email": detail.application.officialEmail,
                 "Account email verified": detail.application.verifiedAt ? new Date(detail.application.verifiedAt).toLocaleString() : "Pending",
               }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
             </dl>
+            {!detail.wizardV2 && (
+              <p className="mt-3 text-xs text-stone-500">Submitted with the earlier application form (one representative, no PAN number).</p>
+            )}
+            <NgoPanCheckBox panCheck={detail.panCheck} showSources={false} />
+            {detail.wizardV2 && (detail.representatives?.length ?? 0) > 0 && (
+              <section aria-label="Authorized representatives" className="mt-6">
+                <h3 className="font-bold">Authorized representatives</h3>
+                <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                  {detail.representatives!.map(r => {
+                    const idProof = detail.files.find(f => f.field === r.idProofField);
+                    return <li key={r.position} data-testid="representative" className="rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-700">
+                      <p className="font-semibold">{r.position + 1}. {r.fullName}</p>
+                      <p className="text-stone-600 dark:text-stone-300">{r.designation}</p>
+                      <p className="mt-1 font-mono text-xs">{r.mobileNumber}</p>
+                      <p className="mt-1 break-all text-xs">{r.email}{" "}
+                        {r.emailVerified
+                          ? <span className="font-semibold text-emerald-700 dark:text-emerald-300">✓ verified</span>
+                          : <span className="font-semibold text-red-700">not verified</span>}
+                      </p>
+                      <p className="mt-1 text-xs">PAN: <span className="font-mono">{r.panNumber || "Not given"}</span>
+                        {r.panNumber && r.panValidFormat === false && <span className="ml-1 font-semibold text-red-700">· not a valid PAN</span>}
+                        {r.panPersonal === true && <span className="ml-1 text-emerald-700 dark:text-emerald-300">· personal PAN ✓</span>}
+                        {r.panPersonal === false && <span className="ml-1 font-semibold text-red-700">· not a personal PAN (4th letter is not P)</span>}
+                      </p>
+                      <p className="mt-1 text-xs">ID proof: {idProof ? (idProof.name || "uploaded") : <span className="text-red-700">missing</span>}</p>
+                    </li>;
+                  })}
+                </ul>
+              </section>
+            )}
             {detail.corrections && detail.corrections.items.length > 0 && (
               <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
                 <h3 className="font-bold">Corrections requested</h3>
@@ -255,8 +313,14 @@ export function NgoReviewPanel({
             <h3 className="mt-7 font-bold">Evidence</h3>
             <p className="mt-1 text-xs text-stone-500">Files are private. Previews use secure links that expire after five minutes and renew automatically.</p>
             {detail.files.length === 0 && <p className="mt-3 text-sm">No uploaded evidence found.</p>}
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2">{detail.files.map(file => {
+            {GROUP_ORDER.filter(group => detail.files.some(f => fileGroup(f, detail) === group)).map(group => <div key={group}>
+            <h4 className="mt-4 text-xs font-bold uppercase tracking-wide text-stone-500">{group}</h4>
+            <ul className="mt-2 grid gap-3 sm:grid-cols-2">{detail.files.filter(f => fileGroup(f, detail) === group).map(file => {
               const key = fileKey(file);
+              const requirement = file.field && detail.wizardV2
+                ? detail.requiredDocuments?.includes(file.field) ? "Required"
+                  : detail.optionalDocuments?.includes(file.field) ? "Optional · a plus" : null
+                : null;
               const link = links[key];
               const name = file.name || label(file.type);
               return <li key={key} data-testid="evidence-item" className="rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-700">
@@ -273,8 +337,9 @@ export function NgoReviewPanel({
                     </div>
                   )
                 ) : null}
-                <p className={`${isImage(file) ? "mt-2 " : ""}break-words font-semibold`}>{name}</p>
-                <p className="text-xs capitalize">{label(file.type)}{file.moderationVerdict ? ` · ${file.moderationVerdict}` : ""}</p>
+                <p className={`${isImage(file) ? "mt-2 " : ""}break-words font-semibold`}>{file.field ? correctionFieldLabel(file.field) : label(file.type)}</p>
+                <p className="break-words text-xs">{name}{file.moderationVerdict ? ` · ${file.moderationVerdict}` : ""}</p>
+                {requirement && <p className={`mt-1 text-xs font-semibold ${requirement === "Required" ? "text-stone-600" : "text-emerald-700 dark:text-emerald-300"}`}>{requirement}</p>}
                 {!file.ownershipRecorded && <p className="mt-1 text-amber-700">Historical ownership is unverified. Request a fresh upload before approval.</p>}
                 <div className="mt-2 flex flex-wrap gap-4">
                   {link ? (
@@ -288,7 +353,7 @@ export function NgoReviewPanel({
                   )}
                 </div>
               </li>;
-            })}</ul>
+            })}</ul></div>)}
             <div className="mt-6 rounded-lg bg-stone-50 p-4 text-sm dark:bg-zinc-800">
               <h3 className="font-bold">AI screening · advisory</h3>
               <p>{detail.application.aiScreeningVerdict || "No screening result yet"}</p>

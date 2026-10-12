@@ -28,6 +28,7 @@ vi.mock("@/lib/api", () => ({
   resendNgoOtp: vi.fn(),
   uploadNgoDocument: vi.fn(),
   uploadNgoPhoto: vi.fn(),
+  checkNgoPanLetters: vi.fn().mockResolvedValue({ warnings: [] }),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: vi.fn() }));
@@ -60,8 +61,10 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
 
     expect(await screen.findByLabelText(/Organization Name/i)).toHaveValue("Hope Welfare Trust");
     await openStep(/Authorized Representative/i);
-    expect(await screen.findByLabelText(/Mobile Number/i)).toHaveValue("+919876543210");
-    expect(screen.getByLabelText(/Official Email Address/i)).toHaveValue("hope@ngo.test");
+    // Representative 1 starts with the signup mobile and email (the email still needs its code).
+    expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("+919876543210");
+    expect(screen.getByLabelText(/^Email/i)).toHaveValue("hope@ngo.test");
+    expect(screen.getByRole("button", { name: "Send code" })).toBeEnabled();
   }, 15000);
 
   it("fills them when a saved draft has them empty, and keeps what the NGO typed", async () => {
@@ -74,8 +77,8 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
 
     expect(await screen.findByLabelText(/Organization Name/i)).toHaveValue("Typed Name Trust");
     await openStep(/Authorized Representative/i);
-    expect(await screen.findByLabelText(/Mobile Number/i)).toHaveValue("+919876543210");
-    expect(screen.getByLabelText(/Official Email Address/i)).toHaveValue("hope@ngo.test");
+    expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("+919876543210");
+    expect(screen.getByLabelText(/^Email/i)).toHaveValue("hope@ngo.test");
   }, 15000);
 
   it("fills the phone when it arrives after login, without resetting what was typed", async () => {
@@ -93,7 +96,7 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     expect(screen.getByLabelText(/Registration Number/i)).toHaveValue("TR-1");
     expect(getMyNgoApplication).toHaveBeenCalledTimes(1);
     await openStep(/Authorized Representative/i);
-    expect(await screen.findByLabelText(/Mobile Number/i)).toHaveValue("+919876543210");
+    expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("+919876543210");
   }, 15000);
 });
 
@@ -121,10 +124,13 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     vi.mocked(getNgoDraft).mockResolvedValue({
       currentStep: "org-details",
       organizationName: "Hope Welfare Trust", legalStructure: "trust", registrationNumber: "",
-      registeredOfficeAddress: "12 Shanti Nagar, Pune", yearOfEstablishment: "2019",
+      registeredOfficeAddress: "12 Shanti Nagar, Pune", yearOfEstablishment: "2019", panNumber: "AAATH1234K",
       representativeName: "Ananya Sharma", designation: "Secretary", mobileNumber: "+919876543210",
       officialEmail: "contact@hope.test", confirmationChecked: false,
-      documents: { "trust-reg-cert": file(11, "reg.pdf"), "trust-pan": file(13, "pan.pdf"), "trustee-info": file(14, "trustees.pdf") },
+      representatives: [{ fullName: "Ananya Sharma", designation: "Secretary", mobileNumber: "+919876543210",
+        email: "contact@hope.test", panNumber: "ABCPS1234K", idProof: file(16, "ananya-id.pdf"), emailVerified: true }],
+      documents: { "trust-reg-cert": file(11, "reg.pdf"), pan: file(13, "pan.pdf"),
+        "bank-proof": file(14, "bank.pdf"), "cert-12a": file(17, "12a.pdf") },
       authorizationLetter: file(15, "letter.pdf"),
       logo: file(21, "logo.png", "photoId"), officePhoto: file(22, "office.png", "photoId"),
       activityPhotos: [file(23, "activity.png", "photoId"), null, null],
@@ -150,23 +156,27 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     expect(screen.getByLabelText(/Organization Name/i)).toHaveValue("Hope Welfare Trust");
     expect(screen.getByLabelText(/Registered Office Address/i)).toHaveValue("12 Shanti Nagar, Pune");
     expect(screen.getByLabelText(/Year of Establishment/i)).toHaveValue("2019");
+    expect(screen.getByLabelText(/PAN Number/i)).toHaveValue("AAATH1234K");
+    expect(screen.getByText("pan.pdf")).toBeInTheDocument();
+    expect(screen.getByText("reg.pdf")).toBeInTheDocument();
     expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toEqual(["Needs a fix: Does not match the certificate"]);
 
-    // Step 2: three documents carried over, the deed empty with its note.
+    // Step 2: bank proof and 12A carried over, the deed empty with its note.
     await openStep(/Legal Documents/i);
     await screen.findAllByText(/Step 2 of 6/i);
     expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toEqual(["Needs a fix: The deed scan is cut off"]);
-    expect(screen.getByText("reg.pdf")).toBeInTheDocument();
-    expect(screen.getByText("pan.pdf")).toBeInTheDocument();
-    expect(screen.getByText("trustees.pdf")).toBeInTheDocument();
+    expect(screen.getByText("bank.pdf")).toBeInTheDocument();
+    expect(screen.getByText("12a.pdf")).toBeInTheDocument();
     const inputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
-    expect(inputs).toHaveLength(1); // only the flagged deed is waiting for an upload
+    expect(inputs).toHaveLength(4); // the flagged deed, and the three optional documents
 
-    // Steps 3 and 4 carried over too, with no notes.
+    // Steps 3 and 4 carried over too, with no notes; the verified email stays verified.
     await openStep(/Authorized Representative/i);
-    expect(await screen.findByLabelText(/Mobile Number/i)).toHaveValue("+919876543210");
-    expect(screen.getByLabelText(/Official Email Address/i)).toHaveValue("contact@hope.test");
+    expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("+919876543210");
+    expect(screen.getByLabelText(/^Email/i)).toHaveValue("contact@hope.test");
+    expect(screen.getByText("Verified")).toBeInTheDocument();
     expect(screen.getByText("letter.pdf")).toBeInTheDocument();
+    expect(screen.getByText("ananya-id.pdf")).toBeInTheDocument();
     expect(screen.queryAllByTestId("correction-note")).toHaveLength(0);
 
     // Fix the two items.
@@ -189,7 +199,11 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     expect(body.organizationName).toBe("Hope Welfare Trust");
     expect(body.documents["trust-deed"].documentId).toBe(99);
     expect(body.documents["trust-reg-cert"].documentId).toBe(11);
-    expect(body.documents["trust-pan"].documentId).toBe(13);
+    expect(body.documents.pan.documentId).toBe(13);
+    expect(body.panNumber).toBe("AAATH1234K");
+    expect(body.representatives).toHaveLength(1);
+    expect(body.representatives[0].idProof.documentId).toBe(16);
+    expect(body.officialEmail).toBe("contact@hope.test");
     expect(body.authorizationLetter.documentId).toBe(15);
     expect(body.logo.photoId).toBe(21);
     expect(body.officePhoto.photoId).toBe(22);

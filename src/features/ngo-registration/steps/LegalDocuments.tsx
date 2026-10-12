@@ -55,7 +55,8 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400">
           Upload your organization&apos;s legal documents. Required documents are tagged{" "}
-          <span className="font-bold text-ngo-700 dark:text-ngo-300">Must Have</span>.
+          <span className="font-bold text-ngo-700 dark:text-ngo-300">Required</span>. Your PAN card and
+          registration certificate were uploaded in Step 1.
         </p>
       </div>
 
@@ -72,7 +73,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
       {mustHaveDocs.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-2xs font-black uppercase tracking-widest text-stone-400">
-            Must Have
+            Required
           </h3>
           <div className="space-y-2.5">
             {mustHaveDocs.map((doc) => (
@@ -81,6 +82,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
                   docId={doc.id}
                   label={doc.label}
                   category={doc.category}
+                  hint={doc.hint}
                   uploaded={data.documents[doc.id] ?? null}
                   onUpload={(file) => setDoc(doc.id, file)}
                   onRemove={() => setDoc(doc.id, null)}
@@ -96,7 +98,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
       {supportingDocs.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-2xs font-black uppercase tracking-widest text-stone-400">
-            Supporting Documents
+            Optional (a plus for reviewers)
           </h3>
           <div className="space-y-2.5">
             {supportingDocs.map((doc) => (
@@ -105,6 +107,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
                   docId={doc.id}
                   label={doc.label}
                   category={doc.category}
+                  hint={doc.hint}
                   uploaded={data.documents[doc.id] ?? null}
                   onUpload={(file) => setDoc(doc.id, file)}
                   onRemove={() => setDoc(doc.id, null)}
@@ -119,7 +122,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
       {/* Validation message */}
       {missingMustHave.length > 0 && (
         <p className="text-3xs text-stone-400 dark:text-stone-500 text-center">
-          Upload all <span className="font-bold text-ngo-700 dark:text-ngo-300">Must Have</span> documents to continue.
+          Upload all <span className="font-bold text-ngo-700 dark:text-ngo-300">Required</span> documents to continue.
         </p>
       )}
 

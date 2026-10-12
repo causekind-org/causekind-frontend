@@ -9,7 +9,14 @@ import {
   type UploadedFile,
   getNgoStillNeededItems,
 } from "@/features/ngo-registration/ngoRegistrationModel";
-import { uploadNgoPhoto } from "@/lib/api";
+import { NGO_PHOTO_RULE, uploadNgoPhoto } from "@/lib/api";
+
+/** Photos: JPG, PNG or WebP, up to 10 MB (the server checks the real file too). */
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+export function checkNgoPhotoFile(file: File): string | null {
+  const typeOk = PHOTO_TYPES.includes(file.type) || (!file.type && /\.(jpe?g|png|webp)$/i.test(file.name));
+  return !typeOk || file.size === 0 || file.size > 10 * 1024 * 1024 ? NGO_PHOTO_RULE : null;
+}
 import { cn } from "@/lib/utils";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 
@@ -145,16 +152,27 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
 
   function handleLogoFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+    const refused = checkNgoPhotoFile(files[0]);
+    if (refused) return setLogoError(refused);
     performLogoUpload(files[0]);
   }
 
   function handleOfficeFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
+    const refused = checkNgoPhotoFile(files[0]);
+    if (refused) return setOfficeError(refused);
     performOfficeUpload(files[0]);
   }
 
   function handleActivityFile(index: number, files: FileList | null) {
     if (!files || files.length === 0) return;
+    const refused = checkNgoPhotoFile(files[0]);
+    if (refused) {
+      const next = [...activityErrors];
+      next[index] = refused;
+      setActivityErrors(next);
+      return;
+    }
     performActivityUpload(index, files[0]);
   }
 
@@ -193,7 +211,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
                 Organization Logo <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
               </p>
               <p className="text-3xs text-stone-400 dark:text-stone-500">
-                Square or transparent PNG recommended (PNG, JPG, WebP · max 8MB)
+                Square or transparent PNG recommended (PNG, JPG, WebP · max 10 MB)
               </p>
               <CorrectionNote note={corrections?.logo} />
             </div>
@@ -288,7 +306,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
                   <>
                     <Upload className="h-5 w-5 text-stone-400" aria-hidden />
                     <p className="text-2xs font-semibold text-stone-600 dark:text-stone-300">Click or drag logo here</p>
-                    <p className="text-3xs text-stone-400">PNG, JPG or WebP · Max 8MB</p>
+                    <p className="text-3xs text-stone-400">PNG, JPG or WebP · Max 10 MB</p>
                   </>
                 )}
               </div>
@@ -439,7 +457,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
                   <>
                     <Camera className="h-5 w-5 text-stone-400" aria-hidden />
                     <p className="text-2xs font-semibold text-stone-600 dark:text-stone-300">Click or drag office photo</p>
-                    <p className="text-3xs text-stone-400">JPG, PNG, WebP · Max 8MB</p>
+                    <p className="text-3xs text-stone-400">JPG, PNG, WebP · Max 10 MB</p>
                   </>
                 )}
               </div>

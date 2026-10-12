@@ -68,8 +68,8 @@ describe("NGO wizard prefilled from signup", { timeout: 30000 }, () => {
   it("pre-fills the official email and phone", async () => {
     vi.mocked(getNgoDraft).mockResolvedValue({ ...signupDraft, currentStep: "authorized-rep" } as NgoDraftDto);
     render(<NGORegistration />);
-    await waitFor(() => expect(input("rep-email").value).toBe("contact@hope.test"));
-    expect(input("rep-mobile").value).toContain("9876543210");
+    await waitFor(() => expect(input("rep-0-email").value).toBe("contact@hope.test"));
+    expect(input("rep-0-mobile").value).toContain("9876543210");
   });
 
   it("never replaces a value the NGO already saved in its draft", async () => {

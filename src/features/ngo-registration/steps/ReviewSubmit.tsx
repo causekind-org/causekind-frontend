@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
 import {
+  PAN_DOC,
+  authorizationDocumentLabel,
+  getRegistrationCertificateDoc,
+  isRepresentativeEmpty,
+  normalizePan,
   getDocsForStructure,
   legalStructureLabel,
   type NGOFormState,
@@ -94,6 +99,29 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
               </dd>
             </div>
             <div>
+              <dt className="text-stone-400 text-3xs uppercase font-semibold">PAN Number</dt>
+              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+                {normalizePan(data.panNumber ?? "") || "—"}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-stone-400 text-3xs uppercase font-semibold">{PAN_DOC.label}</dt>
+              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
+                {data.documents[PAN_DOC.id]?.name || "Not uploaded"}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
+              <dt className="text-stone-400 text-3xs uppercase font-semibold">
+                {getRegistrationCertificateDoc(data.legalStructure)?.label ?? "Registration certificate"}
+              </dt>
+              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
+                {(() => {
+                  const cert = getRegistrationCertificateDoc(data.legalStructure);
+                  return (cert && data.documents[cert.id]?.name) || "Not uploaded";
+                })()}
+              </dd>
+            </div>
+            <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Registration Number</dt>
               <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.registrationNumber || "—"}
@@ -172,7 +200,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                 3
               </span>
               <h3 className="text-xs font-bold uppercase tracking-wider text-stone-700 dark:text-stone-300">
-                Authorized Representative
+                Authorized Representatives
               </h3>
             </div>
             <button
@@ -185,33 +213,25 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             </button>
           </div>
 
+          <ul className="space-y-2 mb-3">
+            {(data.representatives ?? []).filter((card, i) => i === 0 || !isRepresentativeEmpty(card)).map((card, i) => (
+              <li key={i} className="rounded-lg bg-white dark:bg-zinc-800/60 px-3 py-2 border border-stone-100 dark:border-zinc-800 text-xs">
+                <p className="font-bold text-stone-800 dark:text-stone-200">
+                  {i + 1}. {card.fullName || "—"} <span className="font-medium text-stone-500">· {card.designation || "—"}</span>
+                </p>
+                <p className="mt-0.5 text-stone-600 dark:text-stone-300">
+                  <span className="font-mono">{card.mobileNumber || "—"}</span> · {card.email || "—"}{" "}
+                  {card.emailVerified ? <span className="font-bold text-emerald-700">✓ verified</span> : <span className="font-bold text-red-600">not verified</span>}
+                </p>
+                <p className="mt-0.5 text-stone-500">
+                  PAN: <span className="font-mono">{normalizePan(card.panNumber) || "—"}</span> · ID proof: {card.idProof?.name ?? "not uploaded"}
+                </p>
+              </li>
+            ))}
+          </ul>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            <div>
-              <dt className="text-stone-400 text-3xs uppercase font-semibold">Representative Name</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
-                {data.representativeName || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-stone-400 text-3xs uppercase font-semibold">Designation</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
-                {data.designation || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-stone-400 text-3xs uppercase font-semibold">Mobile Number</dt>
-              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
-                {data.mobileNumber || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-stone-400 text-3xs uppercase font-semibold">Official Email</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5 truncate">
-                {data.officialEmail || "—"}
-              </dd>
-            </div>
             <div className="sm:col-span-2">
-              <dt className="text-stone-400 text-3xs uppercase font-semibold">Authorization Letter</dt>
+              <dt className="text-stone-400 text-3xs uppercase font-semibold">{authorizationDocumentLabel(data.legalStructure)}</dt>
               <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 flex items-center gap-1.5">
                 {data.authorizationLetter ? (
                   <>

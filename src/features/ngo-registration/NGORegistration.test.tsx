@@ -47,7 +47,27 @@ vi.mock("@/lib/api", () => ({
   getMyNgoApplication: vi.fn().mockResolvedValue(null),
   getNgoDraft: vi.fn().mockResolvedValue(null),
   saveNgoDraft: vi.fn().mockResolvedValue({ status: "SAVED" }),
+  checkNgoPanLetters: vi.fn().mockResolvedValue({ warnings: [] }),
+  sendNgoRepresentativeEmailCode: vi.fn().mockResolvedValue({ sent: true, verified: false }),
+  verifyNgoRepresentativeEmailCode: vi.fn().mockResolvedValue({ verified: true }),
+  NGO_DOCUMENT_RULE: "Upload a PDF, JPG or PNG up to 10 MB",
+  NGO_PHOTO_RULE: "Upload a JPG, PNG or WebP photo up to 10 MB",
 }));
+
+const dummyPdf = () => new File(["%PDF-1.4 dummy"], "cert.pdf", { type: "application/pdf" });
+const fileInputs = () => document.querySelectorAll<HTMLInputElement>('input[type="file"]');
+
+/** Step 1 in its order: name, structure, PAN card, PAN number, certificate, number, year, address. */
+async function fillStep1(user: ReturnType<typeof userEvent.setup>, name: string, regNo: string) {
+  await user.type(screen.getByLabelText(/Organization Name/i), name);
+  await user.click(screen.getByRole("button", { name: /Trust/i }));
+  await user.upload(fileInputs()[0], dummyPdf()); // PAN card
+  await user.type(screen.getByLabelText(/PAN Number/i), "AAATH1234K");
+  await user.upload(fileInputs()[0], dummyPdf()); // Trust Registration Certificate (the only empty card left)
+  await user.type(screen.getByLabelText(/Registration Number/i), regNo);
+  await user.type(screen.getByLabelText(/Year of Establishment/i), "2018");
+  await user.type(screen.getByLabelText(/Registered Office Address/i), "Bandra West, Mumbai 400050");
+}
 
 beforeAll(() => {
   global.ResizeObserver = class {
@@ -75,6 +95,8 @@ describe("NGORegistration Component", () => {
     expect(stillNeeded).toBeInTheDocument();
     expect(stillNeeded).toHaveTextContent(/Organization name/i);
     expect(stillNeeded).toHaveTextContent(/Legal structure/i);
+    expect(stillNeeded).toHaveTextContent(/PAN card upload/i);
+    expect(stillNeeded).toHaveTextContent(/PAN number/i);
     expect(stillNeeded).toHaveTextContent(/Registration number/i);
     expect(stillNeeded).toHaveTextContent(/Registered office address/i);
     expect(stillNeeded).toHaveTextContent(/year of establishment/i);
@@ -84,11 +106,7 @@ describe("NGORegistration Component", () => {
     const user = userEvent.setup();
     render(<NGORegistration />);
 
-    await user.type(screen.getByLabelText(/Organization Name/i), "Helping Hearts Foundation");
-    await user.click(screen.getByRole("button", { name: /Trust/i }));
-    await user.type(screen.getByLabelText(/Registration Number/i), "TRU/2020/001");
-    await user.type(screen.getByLabelText(/Registered Office Address/i), "123 Charity Lane, Mumbai");
-    await user.type(screen.getByLabelText(/Year of Establishment/i), "2018");
+    await fillStep1(user, "Helping Hearts Foundation", "TRU/2020/001");
 
     const continueBtn = screen.getByRole("button", { name: /Continue/i });
     expect(continueBtn).not.toBeDisabled();
@@ -99,31 +117,27 @@ describe("NGORegistration Component", () => {
       expect(screen.getByRole("heading", { name: /Legal Documents/i })).toBeInTheDocument();
     });
     expect(screen.getByText(/Showing documents for:/i)).toBeInTheDocument();
-    expect(screen.getByText(/Trust Registration Certificate/i)).toBeInTheDocument();
-  }, 20000);
+    expect(screen.getByText(/Registered Trust Deed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Bank account proof/i)).toBeInTheDocument();
+    expect(screen.getByText(/80G certificate/i)).toBeInTheDocument();
+  }, 30000);
 
   it("completes full end-to-end flow from Step 1 to Application Submitted with state preserved", async () => {
     const user = userEvent.setup();
     render(<NGORegistration />);
 
     // Step 1: Organization Details
-    await user.type(screen.getByLabelText(/Organization Name/i), "Helping Hearts Trust");
-    await user.click(screen.getByRole("button", { name: /Trust/i }));
-    await user.type(screen.getByLabelText(/Registration Number/i), "MH/TRU/2026/9876");
-    await user.type(screen.getByLabelText(/Registered Office Address/i), "Bandra West, Mumbai 400050");
-    await user.type(screen.getByLabelText(/Year of Establishment/i), "2018");
+    await fillStep1(user, "Helping Hearts Trust", "MH/TRU/2026/9876");
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 
     // Step 2: Legal Documents
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /Legal Documents/i })).toBeInTheDocument();
     });
-    const docInputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
-    const dummyPdf = new File(["%PDF-1.4 dummy"], "cert.pdf", { type: "application/pdf" });
-    await user.upload(docInputs[0], dummyPdf); // Trust Registration Certificate
-    await user.upload(docInputs[1], dummyPdf); // Registered Trust Deed
-    await user.upload(docInputs[2], dummyPdf); // Trust PAN Card
-    await user.upload(docInputs[3], dummyPdf); // Trustee Info
+    // Required: deed, bank proof, 12A (each upload removes its input, so the first empty one is next).
+    await user.upload(fileInputs()[0], dummyPdf());
+    await user.upload(fileInputs()[0], dummyPdf());
+    await user.upload(fileInputs()[0], dummyPdf());
     await waitFor(() => {
       expect(screen.queryByText(/Uploading.../i)).not.toBeInTheDocument();
     });
@@ -133,11 +147,17 @@ describe("NGORegistration Component", () => {
     await waitFor(() => {
       expect(screen.getByRole("heading", { name: /Authorized Representative/i })).toBeInTheDocument();
     });
-    await user.type(screen.getByLabelText(/Full Name/i), "Priya Sharma");
-    await user.selectOptions(screen.getByLabelText(/Designation/i), "Managing Trustee");
-    await user.type(screen.getByLabelText(/Mobile Number/i), "+91 98765 43210");
-    await user.type(screen.getByLabelText(/Official Email Address/i), "priya@helpinghearts.org");
-    await user.upload(document.querySelector<HTMLInputElement>('input[type="file"]')!, dummyPdf);
+    await user.upload(fileInputs()[0], dummyPdf()); // authorization document
+    await user.type(screen.getByLabelText(/^Full name/i), "Priya Sharma");
+    await user.type(screen.getByLabelText(/^Designation/i), "Managing Trustee");
+    await user.type(screen.getByLabelText(/^Mobile number/i), "+91 98765 43210");
+    await user.type(screen.getByLabelText(/^Email/i), "priya@helpinghearts.org");
+    expect(screen.getByRole("button", { name: /Continue/i })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Send code" }));
+    await user.type(await screen.findByLabelText(/6-digit code/i), "654321");
+    await user.click(screen.getByRole("button", { name: "Verify" }));
+    expect(await screen.findByText("Verified")).toBeInTheDocument();
+    await user.upload(fileInputs()[0], dummyPdf()); // ID proof
     await waitFor(() => expect(screen.queryByText(/Uploading.../i)).not.toBeInTheDocument());
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 
@@ -162,8 +182,9 @@ describe("NGORegistration Component", () => {
     // Check summarized information
     expect(screen.getByText("Helping Hearts Trust")).toBeInTheDocument();
     expect(screen.getByText("MH/TRU/2026/9876")).toBeInTheDocument();
-    expect(screen.getByText("Priya Sharma")).toBeInTheDocument();
-    expect(screen.getByText("priya@helpinghearts.org")).toBeInTheDocument();
+    expect(screen.getByText(/1\. Priya Sharma/)).toBeInTheDocument();
+    expect(screen.getByText(/priya@helpinghearts\.org/)).toBeInTheDocument();
+    expect(screen.getByText("AAATH1234K")).toBeInTheDocument();
 
     // Checkbox declaration
     const submitBtn = screen.getByRole("button", { name: /Submit Application/i });
@@ -202,6 +223,12 @@ describe("NGORegistration Component", () => {
     const payload = vi.mocked(submitNgoApplication).mock.calls[0][0];
     expect(payload.authorizationLetter?.documentId).toBe(101);
     expect(payload.documents["trust-reg-cert"]?.documentId).toBe(101);
+    expect(payload.documents.pan?.documentId).toBe(101);
+    expect(payload.panNumber).toBe("AAATH1234K");
+    expect(payload.representatives).toHaveLength(1);
+    expect(payload.representatives[0]).toMatchObject({ fullName: "Priya Sharma", email: "priya@helpinghearts.org" });
+    expect(payload.representatives[0].idProof?.documentId).toBe(101);
+    expect(payload.officialEmail).toBe("priya@helpinghearts.org");
     expect(payload.logo?.photoId).toBe(201);
     expect(verifyNgoOtp).toHaveBeenCalledWith("CK-NGO-2026-ABCD1234", "123456");
   }, 60000);
