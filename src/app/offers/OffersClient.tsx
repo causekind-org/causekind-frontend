@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getMyDonationOffers, reconfirmOfferAvailability, withdrawOffer, type DonationOffer } from "@/lib/api";
@@ -171,7 +172,7 @@ export default function OffersClient() {
                     </p>
                   )}
                   {offer.submittedAt && (
-                    <p className="text-xs text-gray-400 mt-1">Submitted {new Date(offer.submittedAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-gray-400 mt-1">Submitted {serverDate(offer.submittedAt).toLocaleDateString()}</p>
                   )}
                 </div>
                 <div className="flex flex-col gap-2 flex-shrink-0">

@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useRef, useState } from "react";
 import { Camera, Loader2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -75,7 +76,7 @@ export function HandoverProofSection({ proof, viewerRole, locked = false }: {
   const who = (p: HandoverProofPhoto) =>
     p.uploaderRole === viewerRole ? "You" : p.uploaderRole === "DONOR" ? "The donor" : "The recipient";
   const when = (iso: string) =>
-    new Date(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+    serverDate(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
   return (
     <div className="space-y-2.5 rounded-xl border border-stone-200 p-3 dark:border-zinc-800">

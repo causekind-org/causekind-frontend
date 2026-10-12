@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
 
@@ -521,7 +522,7 @@ function CampaignsPageInner() {
       );
     } else if (sort === "newest") {
       result = [...result].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime()
       );
     } else if (sort === "funded") {
       result = [...result].sort(

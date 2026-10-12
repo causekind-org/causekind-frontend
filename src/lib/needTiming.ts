@@ -11,6 +11,7 @@
  * <p>`raksha-bandhan.ts` re-exports these so its own callers are untouched.
  */
 
+import { serverDate } from "@/lib/serverTime";
 import type { PublicItemRequest } from "./api";
 
 /**
@@ -29,7 +30,7 @@ import type { PublicItemRequest } from "./api";
 export function daysWaiting(createdAt: string | null | undefined, now = new Date()): number | null {
   if (!createdAt) return null;
 
-  const created = new Date(createdAt);
+  const created = serverDate(createdAt);
   const ms = created.getTime();
   if (Number.isNaN(ms)) return null;
 
@@ -72,7 +73,7 @@ export function longestWaiting(
   const dated = requests.filter(r => daysWaiting(r.createdAt, now) !== null);
 
   const oldestFirst = [...dated].sort(
-    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    (a, b) => serverDate(a.createdAt).getTime() - serverDate(b.createdAt).getTime(),
   );
 
   return typeof limit === "number" ? oldestFirst.slice(0, limit) : oldestFirst;

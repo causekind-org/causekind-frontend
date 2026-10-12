@@ -1,3 +1,4 @@
+import { serverDate } from "@/lib/serverTime";
 import type { ItemListing, ItemMatch } from "@/lib/api";
 
 export const MATCHED_DONATION_STAGES = ["Listed", "Verified", "Matching", "Matched", "Donated"];
@@ -19,8 +20,8 @@ export function findMatchForListing(listing: ItemListing, matches: ItemMatch[]):
   const candidates = completedMatches.length > 0 ? completedMatches : listingMatches;
 
   return candidates.slice().sort((a, b) => {
-    const timeA = new Date(a.completedAt ?? a.doneeConfirmedAt ?? a.closedAt ?? a.createdAt).getTime();
-    const timeB = new Date(b.completedAt ?? b.doneeConfirmedAt ?? b.closedAt ?? b.createdAt).getTime();
+    const timeA = serverDate(a.completedAt ?? a.doneeConfirmedAt ?? a.closedAt ?? a.createdAt).getTime();
+    const timeB = serverDate(b.completedAt ?? b.doneeConfirmedAt ?? b.closedAt ?? b.createdAt).getTime();
     return timeB - timeA;
   })[0];
 }

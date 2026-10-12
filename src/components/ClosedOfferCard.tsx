@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useState } from "react";
 import Link from "@/components/AppLink";
 import { ChevronDown, Trash2, Loader2 } from "lucide-react";
@@ -162,7 +163,7 @@ export function ClosedOfferCard({ offer, onChanged }: {
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-2xs sm:grid-cols-3">
                 <div><dt className="text-stone-400">Request</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestTitle}</dd></div>
                 {offer.requestCity && <div><dt className="text-stone-400">Where</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestCity}</dd></div>}
-                <div><dt className="text-stone-400">Offered on</dt><dd className="font-semibold text-stone-700 dark:text-stone-300">{new Date(offer.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</dd></div>
+                <div><dt className="text-stone-400">Offered on</dt><dd className="font-semibold text-stone-700 dark:text-stone-300">{serverDate(offer.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</dd></div>
               </dl>
               {offer.status !== "ADMIN_REJECTED" && (
                 <Link href={`/requests/${offer.requestId}/offer`}

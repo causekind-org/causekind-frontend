@@ -8,6 +8,7 @@
  * component. Normalizing at the edge keeps the conditional in exactly two files.
  */
 
+import { toZonedIso } from "@/lib/serverTime";
 import type { DonationOffer, HandoverRecord, ItemMatch } from "@/lib/api";
 import {
   resolveHandoverState, resolveRole,
@@ -97,7 +98,7 @@ export function adaptOffer(
       ? {
           method: handover.method,
           methodLabel: methodLabel(handover.method, OFFER_METHODS),
-          scheduledAt: handover.scheduledDateTime,
+          scheduledAt: toZonedIso(handover.scheduledDateTime),
           address: handover.locationAddress,
           latitude: handover.locationLatitude,
           longitude: handover.locationLongitude,
@@ -167,7 +168,7 @@ export function adaptMatch(
       ? {
           method: match.handoverMethod,
           methodLabel: methodLabel(match.handoverMethod, MATCH_METHODS),
-          scheduledAt: match.pickupDateTime,
+          scheduledAt: toZonedIso(match.pickupDateTime),
           address: match.handoverAddress,
           latitude: match.handoverLatitude,
           longitude: match.handoverLongitude,
@@ -303,7 +304,7 @@ export function adaptNgoOffer(
       ? {
           method: handover.method,
           methodLabel: methodLabel(handover.method, NGO_OFFER_METHODS),
-          scheduledAt: handover.scheduledDateTime,
+          scheduledAt: toZonedIso(handover.scheduledDateTime),
           address: handover.locationAddress,
           latitude: handover.locationLatitude,
           longitude: handover.locationLongitude,

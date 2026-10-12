@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
@@ -33,7 +34,7 @@ const CAT: Record<string, { color: string; bg: string; icon: typeof UserRound; l
 
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-IN", {
+  return serverDate(iso).toLocaleString("en-IN", {
     day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit",
   });
 }

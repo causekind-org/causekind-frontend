@@ -1,6 +1,7 @@
 "use client";
 
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
@@ -77,7 +78,7 @@ function Stat({ label, children }: { label: string; children: React.ReactNode })
 
 function formatDue(dueAt: string | null): { label: string; color: string } {
   if (!dueAt) return { label: "—", color: "text-stone-400" };
-  const diffMs = new Date(dueAt).getTime() - Date.now();
+  const diffMs = serverDate(dueAt).getTime() - Date.now();
   const hours = diffMs / 3_600_000;
   if (hours < 0) return { label: `${Math.abs(hours).toFixed(0)}h overdue`, color: "text-red-600 font-bold" };
   if (hours < 4) return { label: `${hours.toFixed(1)}h left`, color: "text-red-500 font-bold" };
@@ -142,7 +143,7 @@ export function VerificationQueuePanel() {
     try {
       const status = statusFilter === "ALL" ? undefined : statusFilter;
       const data = await adminGetItemRequests(status, { excludeNgo: true });
-      setRequests(data.sort((a, b) => new Date(a.verificationDueAt ?? a.createdAt).getTime() - new Date(b.verificationDueAt ?? b.createdAt).getTime()));
+      setRequests(data.sort((a, b) => serverDate(a.verificationDueAt ?? a.createdAt).getTime() - serverDate(b.verificationDueAt ?? b.createdAt).getTime()));
     } catch {
       toast.error("Failed to load requests");
     } finally {
@@ -162,13 +163,13 @@ export function VerificationQueuePanel() {
     .filter((r) => {
       if (tierFilter !== "ALL" && r.verificationTier !== tierFilter) return false;
       if (dayStartMs != null && dayEndMs != null) {
-        const createdMs = new Date(r.createdAt).getTime();
+        const createdMs = serverDate(r.createdAt).getTime();
         if (createdMs < dayStartMs || createdMs >= dayEndMs) return false;
       }
       return true;
     })
     .sort((a, b) => {
-      const diff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      const diff = serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime();
       return listedOrder === "newest" ? diff : -diff;
     });
 
@@ -433,8 +434,8 @@ export function VerificationQueuePanel() {
                     </Stat>
                     <Stat label="Category">{r.category} · Qty {r.quantity}</Stat>
                     <Stat label="Listed">
-                      <span title={new Date(r.createdAt).toLocaleString()}>
-                        {new Date(r.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      <span title={serverDate(r.createdAt).toLocaleString()}>
+                        {serverDate(r.createdAt).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </span>
                     </Stat>
                     <Stat label="Approval Expires">
@@ -766,7 +767,7 @@ function VerificationDetail({
                   </span>
                   {item.checkedAt && (
                     <span className="text-4xs text-stone-400">
-                      {new Date(item.checkedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+                      {serverDate(item.checkedAt).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
                     </span>
                   )}
                 </div>

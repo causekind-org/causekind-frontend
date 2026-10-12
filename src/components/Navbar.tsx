@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useRef, useCallback } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
@@ -584,7 +585,7 @@ export function SiteHeader() {
 
   const latestMatch = matches.length > 0
     ? [...matches].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime()
       )[0]
     : null;
 

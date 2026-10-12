@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -322,7 +323,7 @@ export default function NgoDashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {liveDrives.sort((a: any, b: any) => new Date(b.createdAt || Date.now()).getTime() - new Date(a.createdAt || Date.now()).getTime()).map((drive: any) => {
+                {liveDrives.sort((a: any, b: any) => serverDate(b.createdAt || Date.now()).getTime() - serverDate(a.createdAt || Date.now()).getTime()).map((drive: any) => {
                   const isAwaiting = drive.status === "FULLY_PLEDGED";
                   return (
                     <div key={drive.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden mb-4">
@@ -404,7 +405,7 @@ export default function NgoDashboardPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {fulfilledDrives.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).map((drive: any) => {
+                {fulfilledDrives.sort((a: any, b: any) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime()).map((drive: any) => {
                   return (
                     <div key={drive.id} className="bg-white dark:bg-zinc-900 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm overflow-hidden mb-4">
                       <div className="p-4 sm:p-5">

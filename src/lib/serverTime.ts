@@ -14,6 +14,22 @@ export function parseServerDate(iso: string | null | undefined): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * Drop-in for `new Date(x)` on a backend field: zone-less stamps read as UTC,
+ * anything else (numbers, Dates, zoned strings) exactly as `new Date` would.
+ * Missing or unreadable gives an Invalid Date, like `new Date(undefined)`.
+ */
+export function serverDate(value: string | number | Date | null | undefined): Date {
+  if (typeof value === "string") return parseServerDate(value) ?? new Date(NaN);
+  if (value == null) return new Date(NaN);
+  return new Date(value);
+}
+
+/** The same instant as an ISO string with its zone, for values handed on as strings. */
+export function toZonedIso(iso: string | null | undefined): string | null {
+  return parseServerDate(iso)?.toISOString() ?? null;
+}
+
 /** "14:18"-style time of a backend timestamp, in the viewer's own time zone. */
 export function formatServerTime(iso: string | null | undefined): string {
   const d = parseServerDate(iso);

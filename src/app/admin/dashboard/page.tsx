@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
@@ -127,7 +128,7 @@ function formatEnum(value?: string | null) {
 
 function formatDateTime(value?: string | null) {
   if (!value) return null;
-  const date = new Date(value);
+  const date = serverDate(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString("en-IN", {
     day: "numeric",
@@ -140,7 +141,7 @@ function formatDateTime(value?: string | null) {
 
 function formatDate(value?: string | null) {
   if (!value) return null;
-  const date = new Date(value);
+  const date = serverDate(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -1213,7 +1214,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-stone-500">
             <span>Donor: <strong className="text-stone-700">{m.donorName}</strong>{m.donorCity && ` · ${m.donorCity}`}</span>
             <span>Donee: <strong className="text-stone-700">{m.doneeName}</strong>{m.doneeCity && ` · ${m.doneeCity}`}</span>
-            <span>Created: {new Date(m.createdAt).toLocaleDateString("en-IN")}</span>
+            <span>Created: {serverDate(m.createdAt).toLocaleDateString("en-IN")}</span>
           </div>
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-stone-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-stone-400 shrink-0 mt-1" />}
@@ -1251,7 +1252,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
               <p className="font-bold mb-2 flex items-center gap-1"><MapPin className="w-3 h-3" /> Logistics</p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-stone-600">
                 <div><span className="text-stone-400">Method: </span><strong>{m.handoverMethod.replace(/_/g, " ")}</strong></div>
-                {m.pickupDateTime && <div><span className="text-stone-400">Pickup: </span><strong>{new Date(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</strong></div>}
+                {m.pickupDateTime && <div><span className="text-stone-400">Pickup: </span><strong>{serverDate(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</strong></div>}
                 {m.handoverAddress && <div className="col-span-2"><span className="text-stone-400">Pickup address: </span><strong>{m.handoverAddress}</strong></div>}
                 {m.deliveryAddress && <div className="col-span-2"><span className="text-stone-400">Delivery address: </span><strong>{m.deliveryAddress}</strong></div>}
                 {m.allocatedQuantity && <div><span className="text-stone-400">Quantity: </span><strong>{m.allocatedQuantity}</strong></div>}
@@ -1271,7 +1272,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
                 {history.map((h, i) => (
                   <li key={i} className="ml-4">
                     <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#b04a15]" />
-                    <p className="text-xs text-stone-400">{new Date(h.changedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</p>
+                    <p className="text-xs text-stone-400">{serverDate(h.changedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</p>
                     <p className="text-xs font-semibold">
                       <span className="text-stone-400">{h.fromStatus?.replace(/_/g, " ")} → </span>
                       <span className={`${STATUS_COLORS[h.toStatus] ?? ""} px-1.5 py-0.5 rounded`}>{h.toStatus.replace(/_/g, " ")}</span>
@@ -1318,7 +1319,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
               </span>
             )}
             <span className="text-2xs text-stone-400">{Math.round(a.confidence)}% conf</span>
-            <span className="text-2xs text-stone-400">{new Date(a.createdAt).toLocaleDateString()}</span>
+            <span className="text-2xs text-stone-400">{serverDate(a.createdAt).toLocaleDateString()}</span>
           </div>
         </div>
         {a.evidenceNotes && (
@@ -1416,7 +1417,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             <p className="text-xs text-red-700"><span className="font-semibold">Safety: </span>{a.safetyWarnings}</p>
           )}
 
-          <p className="text-3xs text-stone-400 pt-1">Assessed {new Date(a.createdAt).toLocaleString()}</p>
+          <p className="text-3xs text-stone-400 pt-1">Assessed {serverDate(a.createdAt).toLocaleString()}</p>
         </div>
       )}
     </div>

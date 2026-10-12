@@ -1,10 +1,11 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import type { ItemMatch } from "@/lib/api";
 import { MatchReviewBanner } from "@/components/matches/MatchReviewBanner";
 
 function timeAgo(iso: string) {
-  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  const mins = Math.max(0, Math.round((Date.now() - serverDate(iso).getTime()) / 60000));
   if (mins < 60) return `${mins} min ago`;
   const hours = Math.round(mins / 60);
   return hours < 24 ? `${hours} h ago` : `${Math.round(hours / 24)} d ago`;

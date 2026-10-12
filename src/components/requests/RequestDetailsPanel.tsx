@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, type ReactNode } from "react";
 import { PhotoThumbs } from "@/components/PhotoThumbs";
 import { getRequestActivity, type ItemRequest, type RequestActivityEntry } from "@/lib/api";
@@ -12,7 +13,7 @@ const PARTIAL = ["PARTIALLY_FULFILLED"];
 const RECEIVED = ["FULLY_FULFILLED", "FULFILLED"];
 
 const fmt = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null;
+  iso ? serverDate(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null;
 
 function firstAt(entries: RequestActivityEntry[], statuses: string[]) {
   return entries.find(e => statuses.includes(e.toStatus))?.changedAt ?? null;

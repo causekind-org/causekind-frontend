@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import {
   superAdminDirectory,
@@ -223,7 +224,7 @@ export function UserDirectoryPanel({
                     </span>
                   </td>
                   <td className={`whitespace-nowrap px-3 py-2 text-xs tabular-nums ${t.muted}`}>
-                    {u.registeredAt ? new Date(u.registeredAt).toLocaleDateString() : "—"}
+                    {u.registeredAt ? serverDate(u.registeredAt).toLocaleDateString() : "—"}
                   </td>
                 </tr>
               ))}

@@ -7,6 +7,7 @@
  * ItemMatchService.recordMatchDelivery on the backend). Showing what was *offered*
  * instead is how the page once listed 25 + 10 + 10 under a total of 50/50.
  */
+import { serverDate } from "@/lib/serverTime";
 import type { DonationOffer, ItemMatch } from "@/lib/api";
 import { offerDeliveredQuantity } from "@/lib/requestFulfilment";
 import { matchCommittedQuantity } from "@/features/handover/adapters";
@@ -32,7 +33,7 @@ export type Delivery =
 /** Match statuses that mean the item reached the donee. */
 export const MATCH_DELIVERED_STATUSES = new Set(["COMPLETED", "FULFILLED"]);
 
-const time = (iso: string | null | undefined) => (iso ? new Date(iso).getTime() : NaN);
+const time = (iso: string | null | undefined) => (iso ? serverDate(iso).getTime() : NaN);
 const firstValid = (...values: number[]) => values.find(v => Number.isFinite(v)) ?? 0;
 const positive = (n: number | null | undefined) => (n != null && n > 0 ? n : null);
 

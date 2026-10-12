@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,7 +39,7 @@ function isAllowedImage(src: string): boolean {
 }
 
 const when = (iso: string | null | undefined) =>
-  iso ? new Date(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : null;
+  iso ? serverDate(iso).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }) : null;
 
 const humanize = (value: string | null | undefined) => {
   if (!value) return null;
