@@ -449,6 +449,8 @@ export type UserProfile = {
   role: string;
   latitude: number | null;
   longitude: number | null;
+  /** Donee only: set when a name change leaves the ID document contradicting the profile. */
+  documentWarning?: string;
 };
 
 export function getProfile() {
@@ -4805,6 +4807,8 @@ export type DoneeNeedProfile = {
   documents: VerificationDocument[];
   complete: boolean;
   missing: string[];
+  /** Set by a save whose re-check found the name or gender contradicting the ID. */
+  documentWarning?: string | null;
 };
 export function getDoneeNeedProfile() { return request<DoneeNeedProfile>("/api/v1/users/me/need-profile"); }
 export function saveDoneeNeedProfile(details: Partial<RequestVerification>) {
