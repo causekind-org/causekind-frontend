@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
   superAdminApplyRestriction,
@@ -268,13 +269,13 @@ function RestrictionBody({ r, t, meta }: { r: SaRestriction; t: SaTheme; meta: S
           )}
         </p>
         <span className={`text-[11px] ${t.dim}`}>
-          {r.expiresAt ? `until ${new Date(r.expiresAt).toLocaleString()}` : "no end date"}
+          {r.expiresAt ? `until ${serverDate(r.expiresAt).toLocaleString()}` : "no end date"}
         </span>
       </div>
       <p className={`mt-0.5 text-xs ${t.text}`}>{r.reason}</p>
       {r.internalNote && <p className={`mt-1 text-[11px] italic ${t.muted}`}>Internal: {r.internalNote}</p>}
       <p className={`mt-1 text-[11px] ${t.dim}`}>
-        by {r.createdBy} · {new Date(r.createdAt).toLocaleString()}
+        by {r.createdBy} · {serverDate(r.createdAt).toLocaleString()}
       </p>
     </>
   );
@@ -437,7 +438,7 @@ function IdentityHeader({ profile, t }: { profile: SaUserProfile; t: SaTheme }) 
           <p className="font-semibold">{s.suspensionReason ?? "No reason recorded"}</p>
           <p className={`mt-1 ${t.muted}`}>
             By {s.suspendedByEmail ?? "unknown"}
-            {s.suspendedAt && ` on ${new Date(s.suspendedAt).toLocaleString()}`}
+            {s.suspendedAt && ` on ${serverDate(s.suspendedAt).toLocaleString()}`}
             {s.suspendedUntil
               ? ` · until ${new Date(s.suspendedUntil).toLocaleString()}`
               : " · no end date"}
@@ -460,7 +461,7 @@ function IdentityTab({ profile, t }: { profile: SaUserProfile; t: SaTheme }) {
         <Field label="Phone" value={profile.phone} t={t} />
         <Field
           label="Registered"
-          value={profile.registeredAt ? new Date(profile.registeredAt).toLocaleString() : null}
+          value={profile.registeredAt ? serverDate(profile.registeredAt).toLocaleString() : null}
           t={t}
         />
       </section>

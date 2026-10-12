@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useRef, useState } from "react";
 import { myTasks, respondToTask, uploadTaskAttachment, type MyTask } from "@/lib/api";
 import { compressDisplayPhoto } from "@/lib/imageCompression";
@@ -116,7 +117,7 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
 
       {task.dueAt && !task.overdue && (
         <p className="mt-1 text-xs text-muted-foreground">
-          Please reply by {new Date(task.dueAt).toLocaleDateString()}
+          Please reply by {serverDate(task.dueAt).toLocaleDateString()}
         </p>
       )}
 

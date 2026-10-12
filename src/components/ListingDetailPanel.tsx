@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect } from "react";
 import Image from "next/image";
 import Link from "@/components/AppLink";
@@ -530,7 +531,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
           {listing.submittedAt && (
             <div className="px-5 py-3 border-b border-stone-100 dark:border-zinc-800">
               <p className="text-3xs text-stone-400">
-                Submitted on {new Date(listing.submittedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                Submitted on {serverDate(listing.submittedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
           )}

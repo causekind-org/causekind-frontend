@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useState } from "react";
 import { CalendarDays, Check, Copy, ExternalLink, MapPin, Navigation, Repeat, StickyNote, Truck } from "lucide-react";
 import { directionsHref, hasCoordinates, mapsHref, staticMapSrc } from "./adapters";
@@ -36,7 +37,7 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
       <dl className="space-y-2.5 text-sm">
         <Row icon={CalendarDays} label="When">
           {s.scheduledAt
-            ? new Date(s.scheduledAt).toLocaleString("en-IN", {
+            ? serverDate(s.scheduledAt).toLocaleString("en-IN", {
                 weekday: "short", day: "numeric", month: "short",
                 hour: "numeric", minute: "2-digit",
               })

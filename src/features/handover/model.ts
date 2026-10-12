@@ -1,3 +1,4 @@
+import { serverDate } from "@/lib/serverTime";
 /**
  * The normalized Handover view model.
  *
@@ -150,7 +151,7 @@ export function deliveryAddressState(vm: Pick<HandoverViewModel, "delivery">): D
   const d = vm.delivery;
   if (!d?.needed) return "not_needed";
   if (!d.submittedAt || !d.address) return d.requestedAt ? "requested" : "awaiting";
-  if (d.requestedAt && new Date(d.requestedAt).getTime() > new Date(d.submittedAt).getTime()) return "recheck";
+  if (d.requestedAt && serverDate(d.requestedAt).getTime() > serverDate(d.submittedAt).getTime()) return "recheck";
   return "provided";
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "@/components/AppLink";
@@ -1653,7 +1654,7 @@ const isLiveDonorOffer = (o: DonationOffer) =>
 // the issue window, so at least 7 days past completion — then joins the history.
 const COMPLETED_OFFER_LIVE_MS = 7 * 24 * 60 * 60 * 1000;
 
-const offerEndedAt = (o: DonationOffer) => new Date(o.closedAt ?? o.createdAt).getTime();
+const offerEndedAt = (o: DonationOffer) => serverDate(o.closedAt ?? o.createdAt).getTime();
 
 function isPastOffer(o: DonationOffer, now: number): boolean {
   if (TERMINAL_OFFER_STATUSES.includes(o.status)) return true;
@@ -2309,7 +2310,7 @@ function DoneeDashboard({
                       const raw = offer.windowExpiresAt?.trim();
                       const expiresAt = raw
                         ? new Date(raw.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(raw) ? raw : `${raw}Z`).getTime()
-                        : offer.closedAt ? new Date(offer.closedAt).getTime() + 48 * 60 * 60 * 1000 : NaN;
+                        : offer.closedAt ? serverDate(offer.closedAt).getTime() + 48 * 60 * 60 * 1000 : NaN;
                       const canReport = isNaN(expiresAt) || Date.now() < expiresAt;
                       return (
                         <div key={offer.id} className="space-y-1">
@@ -2515,7 +2516,7 @@ function DoneeDashboard({
                               <p className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1"><Calendar className="w-3 h-3" /> Pickup Details</p>
                               <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-stone-600 dark:text-stone-400">
                                 <div><span className="text-stone-400">Method: </span><span className="font-medium">{m.handoverMethod.replace(/_/g, " ")}</span></div>
-                                {m.pickupDateTime && <div><span className="text-stone-400">When: </span><span className="font-medium">{new Date(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span></div>}
+                                {m.pickupDateTime && <div><span className="text-stone-400">When: </span><span className="font-medium">{serverDate(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span></div>}
                                 {m.handoverAddress && <div className="col-span-2"><span className="text-stone-400">Address: </span><span className="font-medium">{m.handoverAddress}</span></div>}
                                 {m.transportArrangedBy && <div><span className="text-stone-400">Transport by: </span><span className="font-medium">{m.transportArrangedBy.replace(/_/g, " ")}</span></div>}
                                 {m.fulfilmentNotes && <div className="col-span-2"><span className="text-stone-400">Notes: </span><span className="font-medium">{m.fulfilmentNotes}</span></div>}
@@ -2582,7 +2583,7 @@ async function loadAllDonationOffers(): Promise<any[]> {
     requestCity: d.ngoName,
     flowType: null,
   }));
-  const time = (o: any) => new Date(o.createdAt || o.submittedAt || 0).getTime();
+  const time = (o: any) => serverDate(o.createdAt || o.submittedAt || 0).getTime();
   return [...offers, ...mapped].sort((a, b) => time(b) - time(a));
 }
 
@@ -2610,7 +2611,7 @@ export default function DashboardPage() {
         rejectionReason: d.ngoDeclineReason || d.rejectionReason,
         flowType: null
       }));
-      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
+      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => serverDate(b.createdAt || b.submittedAt || 0).getTime() - serverDate(a.createdAt || a.submittedAt || 0).getTime()));
     });
   });
 
@@ -2670,7 +2671,7 @@ export default function DashboardPage() {
         rejectionReason: d.ngoDeclineReason || d.rejectionReason,
         flowType: null
       }));
-      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
+      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => serverDate(b.createdAt || b.submittedAt || 0).getTime() - serverDate(a.createdAt || a.submittedAt || 0).getTime()));
     });
   }
 
@@ -2754,7 +2755,7 @@ export default function DashboardPage() {
           rejectionReason: d.ngoDeclineReason || d.rejectionReason,
           flowType: null
         }));
-        setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => new Date(b.createdAt || b.submittedAt || 0).getTime() - new Date(a.createdAt || a.submittedAt || 0).getTime()));
+        setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => serverDate(b.createdAt || b.submittedAt || 0).getTime() - serverDate(a.createdAt || a.submittedAt || 0).getTime()));
       }),
     ])
       .finally(() => setLoading(false));

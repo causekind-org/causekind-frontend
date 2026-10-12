@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -103,7 +104,7 @@ function heroStatusPill(status: string): { label: string; cls: string; dot: stri
 }
 
 function byNewest(a: ItemRequest, b: ItemRequest) {
-  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  return serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime();
 }
 
 function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; publicRequests: ItemRequest[] }) {

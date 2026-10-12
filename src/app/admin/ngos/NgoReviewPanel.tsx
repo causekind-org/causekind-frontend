@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   adminGetNgoApplications, adminGetNgoApplication, adminDecideNgoApplication, adminGetNgoEvidenceLink, ApiError,
@@ -240,7 +241,7 @@ export function NgoReviewPanel({
                 "Registered address": detail.application.registeredOfficeAddress, "Established": detail.application.yearOfEstablishment,
                 "Representative": detail.application.representativeName, "Designation": detail.application.designation,
                 "Phone": detail.application.mobileNumber, "Contact email": detail.application.officialEmail,
-                "Account email verified": detail.application.verifiedAt ? new Date(detail.application.verifiedAt).toLocaleString() : "Pending",
+                "Account email verified": detail.application.verifiedAt ? serverDate(detail.application.verifiedAt).toLocaleString() : "Pending",
               }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
             </dl>
             {detail.corrections && detail.corrections.items.length > 0 && (
@@ -332,7 +333,7 @@ export function NgoReviewPanel({
                 disabled={busy || (decision === "NEEDS_INFORMATION" && !correctionsReady)}>{busy ? "Saving decision…" : "Save decision"}</button>
             </form>}
             {detail.decisions.length > 0 && <div className="mt-6"><h3 className="font-bold">Decision history</h3><ul className="mt-2 space-y-3 text-sm">
-              {detail.decisions.map(entry => <li key={entry.id}><p>{label(entry.fromStatus)} → {label(entry.toStatus)} · {entry.changedByEmail}</p><p className="whitespace-pre-wrap">{entry.note}</p><p className="text-xs text-stone-500">{new Date(entry.changedAt).toLocaleString()}</p></li>)}
+              {detail.decisions.map(entry => <li key={entry.id}><p>{label(entry.fromStatus)} → {label(entry.toStatus)} · {entry.changedByEmail}</p><p className="whitespace-pre-wrap">{entry.note}</p><p className="text-xs text-stone-500">{serverDate(entry.changedAt).toLocaleString()}</p></li>)}
             </ul></div>}
             {detail.submissions.length > 1 && <div className="mt-6"><h3 className="font-bold">Submission history</h3><ul className="mt-2 space-y-2 text-sm">
               {detail.submissions.map(app => <li key={app.applicationId}><button className="break-all text-left underline" disabled={busy} onClick={() => void open(app.applicationId)}>{app.applicationId} · {label(app.status)}</button></li>)}

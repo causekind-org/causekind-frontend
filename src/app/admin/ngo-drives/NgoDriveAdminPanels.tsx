@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -252,7 +253,7 @@ export function NgoDriveOffersPanel() {
       {offers.map(o => (
         <article key={o.id} className={card}>
           <h2 className="text-lg font-bold">{o.donorName || "Donor"} → {o.driveTitle}</h2>
-          <p className="mt-1 text-sm text-stone-500">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${new Date(o.submittedAt).toLocaleString()}` : ""}</p>
+          <p className="mt-1 text-sm text-stone-500">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${serverDate(o.submittedAt).toLocaleString()}` : ""}</p>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             {Object.entries({
               Offering: `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}`,
@@ -328,7 +329,7 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
       {drives.map(d => (
         <article key={d.id} className={card}>
           <h2 className="text-lg font-bold">{d.title}</h2>
-          <p className="mt-1 text-sm text-stone-500">{d.ngoUser?.fullName}{d.distributionProofSubmittedAt ? ` · submitted ${new Date(d.distributionProofSubmittedAt).toLocaleString()}` : ""}</p>
+          <p className="mt-1 text-sm text-stone-500">{d.ngoUser?.fullName}{d.distributionProofSubmittedAt ? ` · submitted ${serverDate(d.distributionProofSubmittedAt).toLocaleString()}` : ""}</p>
           <p className="mt-3 text-sm">
             Received {d.quantityReceived ?? 0} of {d.quantityNeeded} {label(d.unit)} · reached {d.beneficiariesReached ?? "not reported"} {label(d.beneficiaryGroup)}
             <span className="block text-xs text-stone-500">The drive planned for about {d.beneficiaryCount}.</span>

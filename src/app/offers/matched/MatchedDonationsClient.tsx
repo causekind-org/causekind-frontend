@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -34,8 +35,8 @@ export default function MatchedDonationsClient() {
           match: findMatchForListing(item, matches),
         }))
         .sort((a, b) => {
-          const timeA = new Date(getListingCompletionDate(a.item, a.match)).getTime();
-          const timeB = new Date(getListingCompletionDate(b.item, b.match)).getTime();
+          const timeA = serverDate(getListingCompletionDate(a.item, a.match)).getTime();
+          const timeB = serverDate(getListingCompletionDate(b.item, b.match)).getTime();
           return timeB - timeA;
         });
 
@@ -113,7 +114,7 @@ export default function MatchedDonationsClient() {
                     </p>
                     {completionDate && (
                       <p className="text-xs text-gray-400 mt-1">
-                        Completed {new Date(completionDate).toLocaleDateString()}
+                        Completed {serverDate(completionDate).toLocaleDateString()}
                       </p>
                     )}
                   </div>

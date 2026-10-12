@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
@@ -87,7 +88,7 @@ export function AnalyticsPanel() {
   const monthlyTrend = useMemo(() => {
     const map: Record<string, { key: string; month: string; amount: number; count: number }> = {};
     completedDonations.forEach((d) => {
-      const date = new Date(d.createdAt);
+      const date = serverDate(d.createdAt);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
       const label = date.toLocaleString("en-IN", { month: "short", year: "2-digit" });
       if (!map[key]) map[key] = { key, month: label, amount: 0, count: 0 };
@@ -412,7 +413,7 @@ export function AnalyticsPanel() {
                   {donations.slice(0, 20).map((d) => (
                     <tr key={d.id} className="hover:bg-muted/30 transition-colors">
                       <td className="whitespace-nowrap px-4 py-3 text-xs text-muted-foreground">
-                        {new Date(d.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
+                        {serverDate(d.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}
                       </td>
                       <td className="px-4 py-3">
                         <p className="font-medium leading-tight">{d.donorName}</p>

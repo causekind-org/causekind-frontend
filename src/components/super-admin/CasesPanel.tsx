@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
   superAdminCase,
@@ -163,7 +164,7 @@ function CaseQueue({
                     {c.dueAt ? (
                       <span className={c.overdue ? "font-semibold text-red-400" : t.muted}>
                         {c.overdue && <Clock className="mr-1 inline size-3" />}
-                        {new Date(c.dueAt).toLocaleDateString()}
+                        {serverDate(c.dueAt).toLocaleDateString()}
                       </span>
                     ) : <span className={t.dim}>—</span>}
                   </td>
@@ -258,7 +259,7 @@ function CaseWorkspace({
         {data.description && <p className={`mt-3 text-sm ${t.text}`}>{data.description}</p>}
 
         <div className={`mt-3 flex flex-wrap gap-4 border-t pt-3 text-xs ${t.cardFlat} ${t.muted}`}>
-          <span>Due {s.dueAt ? new Date(s.dueAt).toLocaleString() : "—"}</span>
+          <span>Due {s.dueAt ? serverDate(s.dueAt).toLocaleString() : "—"}</span>
           {data.waitingOnUserMinutes > 0 && (
             /* Shown because it explains a due date that has moved. */
             <span>Paused on user {Math.round(data.waitingOnUserMinutes / 60)}h</span>
@@ -484,7 +485,7 @@ function CaseWorkspace({
                     <span className={`font-normal ${t.muted}`}> · {e.previousValue} → {e.newValue}</span>
                   )}
                 </p>
-                <time className={`text-[11px] ${t.dim}`}>{new Date(e.createdAt).toLocaleString()}</time>
+                <time className={`text-[11px] ${t.dim}`}>{serverDate(e.createdAt).toLocaleString()}</time>
               </div>
               {e.body && <p className={`mt-1 text-xs ${t.muted}`}>{e.body}</p>}
               <div className="mt-1.5 flex items-center gap-1.5">

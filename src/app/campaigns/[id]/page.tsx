@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
 
@@ -538,7 +539,7 @@ function CampaignDetailPageInner() {
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#8C3D1D]">{u.userName}</span>
                         <span className="text-xs text-stone-400">
-                          {new Date(u.createdAt).toLocaleDateString("en-IN", {
+                          {serverDate(u.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",

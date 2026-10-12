@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -632,21 +633,21 @@ export default function ProfilePage() {
   const humanize = (v: string) => v.replace(/_/g, " ").toLowerCase();
   const story = [
     ...myListings.map((l) => ({
-      at: new Date(l.submittedAt ?? l.createdAt).getTime(),
+      at: serverDate(l.submittedAt ?? l.createdAt).getTime(),
       title: `Listed "${l.title}"`,
       detail: `${l.category ?? "item"} - now ${humanize(l.status)}`,
       broken: ["REJECTED", "WITHDRAWN", "EXPIRED"].includes(l.status),
       done: ["DONATED", "FULFILLED", "PARTIALLY_DONATED"].includes(l.status),
     })),
     ...myRequests.map((r) => ({
-      at: new Date(r.createdAt).getTime(),
+      at: serverDate(r.createdAt).getTime(),
       title: `Posted "${r.title}"`,
       detail: `${r.category} - now ${humanize(r.status)}`,
       broken: ["REJECTED", "EXPIRED"].includes(r.status),
       done: ["FULFILLED", "FULLY_FULFILLED"].includes(r.status),
     })),
     ...myMatches.map((m) => ({
-      at: new Date(m.createdAt).getTime(),
+      at: serverDate(m.createdAt).getTime(),
       title: isDonee
         ? `Matched with a donor for "${m.requestTitle ?? m.listingTitle ?? "your request"}"`
         : `Your item matched: "${m.listingTitle ?? m.requestTitle ?? "an item"}"`,
@@ -656,7 +657,7 @@ export default function ProfilePage() {
     })),
     ...(FEATURES.money
       ? completedDonations.map((d) => ({
-          at: new Date(d.createdAt).getTime(),
+          at: serverDate(d.createdAt).getTime(),
           title: `Donated ${formatINR(Number(d.amount))} to "${d.campaignTitle}"`,
           detail: "completed",
           broken: false,

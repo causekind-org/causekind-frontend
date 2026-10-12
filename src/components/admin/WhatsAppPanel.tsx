@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
@@ -505,7 +506,7 @@ function MessageLogTab() {
                   <td className="py-2 pr-4">{m.phoneNumber}</td>
                   <td className="py-2 pr-4">{m.templateName ?? m.messageType}</td>
                   <td className="py-2 pr-4"><Badge variant={statusVariant(m.status)}>{m.status}</Badge></td>
-                  <td className="py-2 pr-4">{new Date(m.createdAt).toLocaleString()}</td>
+                  <td className="py-2 pr-4">{serverDate(m.createdAt).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>
