@@ -27,9 +27,11 @@ export type HandoverProofControls = {
  * `capture="environment"`, desktops open the webcam dialog. A browser cannot
  * prove a photo is fresh, but this is as close as the web gets.
  */
-export function HandoverProofSection({ proof, viewerRole }: {
+export function HandoverProofSection({ proof, viewerRole, locked = false }: {
   proof: HandoverProofControls;
   viewerRole: "DONOR" | "DONEE";
+  /** Either side has confirmed: photos can no longer be removed (the server refuses too). */
+  locked?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [webcam, setWebcam] = useState(false);
@@ -54,7 +56,14 @@ export function HandoverProofSection({ proof, viewerRole }: {
     if (!proof.remove) return;
     setRemoving(photoId); setError(null);
     try { await proof.remove(photoId); }
-    catch (e) { setError(e instanceof Error ? e.message : "Couldn't remove the photo."); }
+    // The server's only 400 here is "already confirmed" (e.g. the other side
+    // confirmed a moment ago), and its reason text is replaced by a generic one.
+    catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      setError(/couldn't read that request/i.test(msg)
+        ? "This photo can't be removed — the handover has already been confirmed."
+        : msg || "Couldn't remove the photo.");
+    }
     finally { setRemoving(null); }
   }
 
@@ -92,7 +101,7 @@ export function HandoverProofSection({ proof, viewerRole }: {
                 )}
               </button>
               {/* Only your own photo, and the server still refuses once either side confirmed. */}
-              {proof.remove && p.uploaderRole === viewerRole && (
+              {proof.remove && !locked && p.uploaderRole === viewerRole && (
                 <button type="button" onClick={() => void remove(p.id)} disabled={removing !== null || busy}
                   aria-label="Remove this photo"
                   className="absolute right-1 top-1 flex size-7 items-center justify-center rounded-full bg-black/65 text-white shadow disabled:opacity-60">
