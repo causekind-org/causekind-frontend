@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "@/components/AppLink";
-import { ChevronDown, EyeOff, Loader2 } from "lucide-react";
+import { ChevronDown, Trash2, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -148,7 +148,7 @@ export function ClosedOfferCard({ offer, onChanged }: {
                 title="Remove from dashboard"
                 className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
               >
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />}
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               </button>
             </div>
           </div>

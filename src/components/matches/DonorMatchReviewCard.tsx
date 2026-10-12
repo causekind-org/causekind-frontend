@@ -23,7 +23,7 @@ export function DonorMatchReviewCard({
   onDecline: () => void;
 }) {
   const photo = match.listingPhotoUrls?.[0];
-  const item = match.listingTitle || "your item";
+  const item = match.listingTitle || match.donorItemDescription || "your item";
   const need = match.requestTitle || "a nearby need";
   const covered = match.allocatedQuantity ?? null;
   const needed = match.requestQuantity ?? null;

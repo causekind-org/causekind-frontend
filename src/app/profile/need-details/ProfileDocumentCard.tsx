@@ -25,7 +25,7 @@ export function ProfileDocumentCard({ type, label, required, document: doc, busy
       </div>
     </div>
     {selfie && <p className="mb-3 text-xs leading-relaxed text-slate-500">Face the camera in good light and keep your face unobstructed. Both live photos and uploads receive the same face-visibility check.</p>}
-    <input ref={input} id={`doc-${type}`} type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} className="block w-full text-xs file:mr-2 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-[#1e3a60]" onChange={e => { const file=e.target.files?.[0]; e.target.value=""; if(file)onUpload(file); }}/>
+    <input ref={input} id={`doc-${type}`} type="file" accept={selfie ? "image/jpeg,image/png,image/webp" : "image/jpeg,image/png,image/webp,application/pdf"} disabled={busy} className="block w-full text-xs file:mr-2 file:rounded-md file:border-0 file:bg-slate-100 file:px-3 file:py-2 file:text-[#1e3a60]" onChange={e => { const file=e.target.files?.[0]; e.target.value=""; if(file)onUpload(file); }}/>
     <div className="mt-3 flex flex-wrap items-center gap-4">
       {selfie && <button type="button" disabled={busy} onClick={()=>setCameraOpen(true)} className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#1e3a60] px-3 text-xs font-semibold text-white disabled:opacity-50"><Camera className="size-4"/>Take live photo</button>}
       {doc && <button type="button" disabled={busy} className="min-h-10 text-xs text-red-600 underline disabled:opacity-50" onClick={onRemove}>Remove</button>}

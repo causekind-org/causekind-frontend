@@ -62,7 +62,7 @@ export const DONEE_PILL_BUTTON =
 
 /** Section shell classes shared by the donee sections. */
 export const DONEE_SECTION =
-  "ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-[var(--ck-role-border)]! py-12 sm:py-16 lg:py-20";
+  "ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] py-12 sm:py-16 lg:py-20";
 
 /** Card surface shared by the donee sections. */
 export const DONEE_CARD =

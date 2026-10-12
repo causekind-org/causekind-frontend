@@ -69,17 +69,17 @@ function DoneeHome({ hero }: { hero?: React.ReactNode }) {
       <HowReceivingWorksSection />
       <MyRequestsSection />
       <div className="hidden lg:block">
-        <TrustSafetySection variant="desktop" tone="donee" />
+        <TrustSafetySection variant="desktop" tone="donee" seamless />
       </div>
       <div className="lg:hidden">
-        <TrustSafetySection variant="mobile" tone="donee" />
+        <TrustSafetySection variant="mobile" tone="donee" seamless />
       </div>
       <HandoverTipsSection />
       <div className="hidden lg:block">
-        <FoundersNoteSection variant="desktop" tone="donee" />
+        <FoundersNoteSection variant="desktop" tone="donee" seamless />
       </div>
       <div className="lg:hidden">
-        <FoundersNoteSection variant="mobile" tone="donee" />
+        <FoundersNoteSection variant="mobile" tone="donee" seamless />
       </div>
       <GoogleReviewsSection />
       <CreditsSection variant="donee" />

@@ -1,6 +1,7 @@
 "use client";
 
-import Image from "next/image";
+import { useEffect, useRef } from "react";
+import Image, { getImageProps } from "next/image";
 import { Anton } from "next/font/google";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -12,11 +13,141 @@ import { useTranslations } from "next-intl";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { TrustBand } from "@/components/home/TrustBand";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavratriCampaign } from "@/hooks/useNavratriCampaign";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
 const mobileDisplay = Anton({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-hero-mobile" });
 const HERO_FOREGROUND = "/images/causekind-hero-foreground.png";
+
+/** Navratri hero copy (11–20 Oct 2026, see src/lib/navratri.ts). Same for every role. */
+const NAVRATRI_COPY = {
+  headlineTop: "This Navratri,",
+  headlineAccent: "Let Kindness Shine.",
+  subtext:
+    "Celebrate the spirit of giving. Connect with someone nearby and make this festive season brighter through meaningful donations.",
+  alt: "Illustration of a woman and a man dancing garba with dandiya sticks",
+};
+
+/**
+ * Festive accents floating around the dancers: marigold petals and diya
+ * sparkles, drawn here rather than shipped as images. Positions are percent of
+ * the dancers' own box, so they can never drift over the copy. Desktop only.
+ */
+const NAVRATRI_ACCENTS = [
+  { kind: "petal", top: "6%", left: "8%", size: 14, rotate: -24, delay: 0 },
+  { kind: "spark", top: "18%", left: "-3%", size: 12, rotate: 0, delay: 0.6 },
+  { kind: "petal", top: "44%", left: "-5%", size: 12, rotate: 38, delay: 1.3 },
+  { kind: "spark", top: "3%", left: "62%", size: 10, rotate: 0, delay: 2.1 },
+  { kind: "petal", top: "30%", left: "97%", size: 13, rotate: 112, delay: 0.9 },
+  { kind: "spark", top: "60%", left: "100%", size: 11, rotate: 0, delay: 1.8 },
+  { kind: "petal", top: "74%", left: "3%", size: 11, rotate: -70, delay: 2.6 },
+] as const;
+
+function NavratriAccent({ kind, size }: { kind: "petal" | "spark"; size: number }) {
+  return kind === "petal" ? (
+    <svg viewBox="0 0 20 28" width={size} height={size * 1.4}>
+      <path d="M10 1C15 7 18 13 17 18c-1 5-4 8-7 9-3-1-6-4-7-9C2 13 5 7 10 1Z" fill="#f28c1b" />
+      <path d="M10 5c2 5 2 13 0 19" stroke="#ffd27a" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 20 20" width={size} height={size}>
+      <path d="M10 0c1 6 4 9 10 10-6 1-9 4-10 10-1-6-4-9-10-10C6 9 9 6 10 0Z" fill="#f5b52e" />
+    </svg>
+  );
+}
+
+/** A 1x1 transparent GIF: the <picture> source for the breakpoint that must not fetch. */
+const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+/**
+ * The phone and tablet Navratri ground: the portrait illustration in the normal
+ * mobile hero's own photo shell, so the scrim, the seam fade, the transparent
+ * header and every button style are the photo hero's, untouched. Hidden from
+ * lg, where NavratriArt takes over, and the blank source keeps a desktop from
+ * fetching it.
+ */
+function NavratriMobilePhoto() {
+  const { props } = getImageProps({
+    src: "/images/navratri-hero-mobile.webp",
+    alt: NAVRATRI_COPY.alt,
+    fill: true,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "(max-width: 1023px) 100vw, 1px",
+  });
+  return (
+    <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:hidden">
+      <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[#2a0f14]">
+        <picture>
+          <source media="(min-width: 1024px)" srcSet={BLANK_PIXEL} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in props */}
+          <img {...props} className="ck-hero-photo-image ck-navratri-mobile-photo object-cover" />
+        </picture>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The Navratri illustration. Layered: the floral borders and cream are the
+ * stage's own background (CSS, desktop only, with the slow drift), and the
+ * dancers are a transparent cut-out in front of them — sized from the room the
+ * copy leaves, so they grow as large as the hero allows without touching the
+ * buttons (styles.css, "Navratri hero"). One image for every width: next/image
+ * serves phones a small rendition from the srcset, and there is no preload, so
+ * a phone never fetches a desktop-sized file. Loops pause while the hero is
+ * off screen.
+ */
+function NavratriArt() {
+  const artRef = useRef<HTMLDivElement>(null);
+  const { props: desktopProps } = getImageProps({
+    src: "/images/navratri-hero-dancers.webp",
+    alt: NAVRATRI_COPY.alt,
+    width: 1290,
+    height: 1280,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "(min-width: 1024px) 48vw, 1px",
+  });
+
+  useEffect(() => {
+    const art = artRef.current;
+    if (!art || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) delete art.dataset.offscreen;
+      else art.dataset.offscreen = "";
+    });
+    io.observe(art);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div ref={artRef} className="ck-navratri-art">
+      <div className="ck-navratri-figure">
+        <picture>
+          {/* Below lg this layer is hidden and the portrait photo is the hero
+              (NavratriMobilePhoto); the blank source keeps phones from
+              fetching the desktop cut-out at all. */}
+          <source media="(max-width: 1023px)" srcSet={BLANK_PIXEL} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in desktopProps */}
+          <img {...desktopProps} className="ck-navratri-dancers" />
+        </picture>
+        <span className="ck-navratri-accents" aria-hidden>
+          {NAVRATRI_ACCENTS.map((a, i) => (
+            <span
+              key={i}
+              className="ck-navratri-accent"
+              style={{ top: a.top, left: a.left, rotate: `${a.rotate}deg`, animationDelay: `${a.delay}s` }}
+            >
+              <NavratriAccent kind={a.kind} size={a.size} />
+            </span>
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Keep the reference's primary orange CTA useful for every auth state. During
@@ -179,6 +310,10 @@ export function HeroSection() {
   const t = useTranslations("hero");
   const primaryAction = usePrimaryAction();
   const { user, isRestoring } = useAuth();
+  const navratri = useNavratriCampaign();
+  const headlineTop = navratri ? NAVRATRI_COPY.headlineTop : t("headlineTop");
+  const headlineAccent = navratri ? NAVRATRI_COPY.headlineAccent : t("headlineAccent");
+  const subtext = navratri ? NAVRATRI_COPY.subtext : t("subtext");
 
   return (
     <MotionConfig reducedMotion="user">
@@ -186,7 +321,7 @@ export function HeroSection() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className="ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
+        className={`${navratri ? "ck-hero-navratri " : ""}ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
 
@@ -220,7 +355,7 @@ export function HeroSection() {
                   of an 844px screen and say nothing. */}
               {/* Desktop eyebrow is a microscopic pill (high-end pass,
                   2026-10-05) — it replaced the flanking-rule treatment. */}
-              <div className="hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex dark:bg-white/5 dark:text-[var(--ck-home-highlight,#f29a65)] dark:ring-white/10">
+              <div className="ck-hero-eyebrow hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex dark:bg-white/5 dark:text-[var(--ck-home-highlight,#f29a65)] dark:ring-white/10">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
                 <p className="text-[0.65rem] font-medium uppercase tracking-[0.2em]">
                   {t("eyebrow")}
@@ -241,14 +376,14 @@ export function HeroSection() {
               >
                 {/* Mobile copy wraps naturally with the bundled condensed font;
                     desktop retains the existing two-line composition. */}
-                <span className="block lg:whitespace-nowrap">{t("headlineTop")}</span>
-                <span className="block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
-                  {t("headlineAccent")}
+                <span className="block lg:whitespace-nowrap">{headlineTop}</span>
+                <span className="ck-hero-headline-accent block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
+                  {headlineAccent}
                 </span>
               </h1>
 
-              <p className="mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
-                {t("subtext")}
+              <p className="ck-hero-subtext mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
+                {subtext}
               </p>
 
               <div data-guest={!user && !isRestoring ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
@@ -296,7 +431,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
+            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
                 <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
@@ -325,7 +460,7 @@ export function HeroSection() {
                 />
               </div>
               <ConnectionPins />
-            </div>
+            </div>}
 
             {/* Melts the hero's bottom edge into the section below it, so the
                 photograph and the cream read as one surface rather than two

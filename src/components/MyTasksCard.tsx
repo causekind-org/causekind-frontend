@@ -161,12 +161,12 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
                   onChange={(e) => setAnswers((a) => ({ ...a, [item.id]: e.target.value }))}
                 />
               ) : (
-                // DOCUMENT and PHOTO: take the photo or pick one. Documents are
-                // photographed here the same way ID and residence proofs already
-                // are — the whole application is images-only.
+                // DOCUMENT and PHOTO: take the photo or pick one. A DOCUMENT
+                // may also be a PDF, the same as ID and residence proofs.
                 <PhotoAnswer
                   requestId={task.requestId}
                   itemId={item.id}
+                  allowPdf={item.itemType === "DOCUMENT"}
                   value={answers[item.id] ?? ""}
                   onChange={(url) => setAnswers((a) => ({ ...a, [item.id]: url }))}
                 />
@@ -206,11 +206,13 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
 function PhotoAnswer({
   requestId,
   itemId,
+  allowPdf = false,
   value,
   onChange,
 }: {
   requestId: number;
   itemId: number;
+  allowPdf?: boolean;
   value: string;
   onChange: (url: string) => void;
 }) {
@@ -224,7 +226,7 @@ function PhotoAnswer({
       // A task attachment is looked at, not read for text, so it takes the same
       // ~1MB ladder as listing and offer photos rather than the gentler
       // single-pass the documents keep.
-      const prepared = await compressDisplayPhoto(file);
+      const prepared = file.type === "application/pdf" ? file : await compressDisplayPhoto(file);
       onChange(await uploadTaskAttachment(requestId, prepared));
       toast.success("Photo attached.");
     } catch (e) {
@@ -240,7 +242,7 @@ function PhotoAnswer({
         ref={fileRef}
         id={`item-${itemId}`}
         type="file"
-        accept="image/*"
+        accept={allowPdf ? "image/*,application/pdf" : "image/*"}
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0];
@@ -252,8 +254,12 @@ function PhotoAnswer({
 
       {value ? (
         <div className="flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="Your uploaded photo" className="size-12 rounded object-cover border" />
+          {/\.pdf(\?|$)/i.test(value) ? (
+            <a href={value} target="_blank" rel="noreferrer" className="flex size-12 items-center justify-center rounded border text-xs font-semibold">PDF</a>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={value} alt="Your uploaded photo" className="size-12 rounded object-cover border" />
+          )}
           <span className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
             <Check className="size-3" /> Attached
           </span>

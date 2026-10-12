@@ -258,6 +258,8 @@ export default function HomeClient({
   // guest page; on mobile they share the guest sections, minus the two that
   // pitch signing up ("How it works" and the "Start in 60 seconds" CTA).
   const isRoleHome = isDonorOrDonee && !isRestoring;
+  // The donee page has no lines between its sections (desktop RoleHome and this phone column).
+  const isDoneeHome = roleStr === "DONEE" && !isRestoring;
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -523,12 +525,12 @@ export default function HomeClient({
 
         {/* SECTION 5 — CAN I TRUST YOU */}
         <div className="-mx-5">
-          <TrustSafetySection variant="mobile" />
+          <TrustSafetySection variant="mobile" seamless={isDoneeHome} />
         </div>
 
         {/* FOUNDER'S NOTE */}
         <div className="-mx-5">
-          <FoundersNoteSection variant="mobile" />
+          <FoundersNoteSection variant="mobile" seamless={isDoneeHome} />
         </div>
 
         <div className="-mx-5">

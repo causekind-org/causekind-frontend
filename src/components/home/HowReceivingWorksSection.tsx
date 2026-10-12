@@ -1,9 +1,8 @@
 "use client";
 
 import React from "react";
-import { PenLine, ShieldCheck, HandHeart, PackageCheck, Plus } from "lucide-react";
-import { NewRequestLink } from "@/components/NewRequestLink";
-import { DoneeSectionHeading, DONEE_HEADING_GAP, DONEE_PILL_BUTTON, DONEE_SECTION } from "./DoneeSectionHeading";
+import { PenLine, ShieldCheck, HandHeart, PackageCheck } from "lucide-react";
+import { DoneeSectionHeading, DONEE_HEADING_GAP, DONEE_SECTION } from "./DoneeSectionHeading";
 
 const STEPS = [
   { icon: PenLine, title: "Post your need", text: "Tell us exactly what you need and how many." },
@@ -72,12 +71,6 @@ export function HowReceivingWorksSection() {
           })}
         </ol>
 
-        <div className="mt-10 sm:mt-12 flex justify-center">
-          <NewRequestLink href="/requests/new" className={DONEE_PILL_BUTTON}>
-            <Plus className="w-4 h-4" aria-hidden="true" />
-            Post a new need
-          </NewRequestLink>
-        </div>
       </div>
     </section>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import {
@@ -132,8 +133,9 @@ const TABS: TabConfig[] = [
     roleBgSoft: "#E5F1E9",
     roleBorder: "rgba(31, 107, 63, 0.25)",
     roleGlow: "rgba(31, 107, 63, 0.15)",
-    buttonText: "Register your NGO",
-    buttonHref: LANDING_ROUTES.ngoRegister,
+    buttonText: FEATURES.ngoRegistration ? "Register your NGO" : "NGO registration · Coming soon",
+    // Empty while NGO signup is off: the button renders as "Coming soon", not a link.
+    buttonHref: FEATURES.ngoRegistration ? LANDING_ROUTES.ngoRegister : "",
     steps: [
       {
         number: "01",
@@ -600,7 +602,7 @@ export function HowItWorksSection() {
             key={`cta-${activeTab}`}
             transition={{ duration: 0.35, delay: 0.2 }}
           >
-            <Link href={currentTabConfig.buttonHref}>
+            {currentTabConfig.buttonHref ? <Link href={currentTabConfig.buttonHref}>
               <motion.button
                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white shadow-sm hover:shadow-md transition-all duration-300 active:scale-98 cursor-pointer"
                 style={{
@@ -613,7 +615,12 @@ export function HowItWorksSection() {
                 <span>{currentTabConfig.buttonText}</span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </motion.button>
-            </Link>
+            </Link> : <span aria-disabled="true"
+                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white opacity-70 cursor-not-allowed"
+                style={{ backgroundColor: currentTabConfig.roleColor }}
+              >
+                {currentTabConfig.buttonText}
+              </span>}
           </motion.div>
         </div>
       </div>

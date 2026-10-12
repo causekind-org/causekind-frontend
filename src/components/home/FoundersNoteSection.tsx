@@ -98,7 +98,7 @@ function FounderAvatarPlaceholder({ tone = "donor" }: { tone?: FoundersNoteTone 
  * and the postmark lands when each of them reaches the screen — all
  * transform/opacity (styles in FoundersNoteMobile.module.css).
  */
-function FoundersNoteMobile({ tone = "donor" }: { tone?: FoundersNoteTone }) {
+function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: FoundersNoteTone; seamless?: boolean }) {
   const isDonee = tone === "donee";
   const ref = useRevealOnce<HTMLElement>();
   const doodleRef = useRevealOnce<HTMLDivElement>();
@@ -110,7 +110,7 @@ function FoundersNoteMobile({ tone = "donor" }: { tone?: FoundersNoteTone }) {
       id="founders-note"
       aria-label="Why We Built CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 px-5${isDonee ? ` ${fm.donee}` : ""}`}
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-b border-stone-200/80 dark:border-stone-800/80 "}px-5${isDonee ? ` ${fm.donee}` : ""}`}
     >
       {isDonee ? (
         <FoundersDoneeHeading />
@@ -241,23 +241,26 @@ function FoundersNoteMobile({ tone = "donor" }: { tone?: FoundersNoteTone }) {
 export function FoundersNoteSection({
   variant = "desktop",
   tone = "donor",
+  seamless = false,
 }: {
   variant?: "desktop" | "mobile";
   tone?: FoundersNoteTone;
+  /** No line between this and the neighbouring sections (the donee page). */
+  seamless?: boolean;
 }) {
   // Visibility safety: placeholder content shows only in dev and on staging, never in production
   const previewAllowed = usePlaceholderPreview();
   if (FOUNDER.isPlaceholder && !previewAllowed) {
     return null;
   }
-  if (variant === "desktop") return <FoundersNoteFull variant="desktop" tone={tone} />;
+  if (variant === "desktop") return <FoundersNoteFull variant="desktop" tone={tone} seamless={seamless} />;
   return (
     <>
       <div className="md:hidden">
-        <FoundersNoteMobile tone={tone} />
+        <FoundersNoteMobile tone={tone} seamless={seamless} />
       </div>
       <div className="hidden md:block">
-        <FoundersNoteFull variant="mobile" tone={tone} />
+        <FoundersNoteFull variant="mobile" tone={tone} seamless={seamless} />
       </div>
     </>
   );
@@ -266,9 +269,11 @@ export function FoundersNoteSection({
 function FoundersNoteFull({
   variant,
   tone = "donor",
+  seamless = false,
 }: {
   variant: "desktop" | "mobile";
   tone?: FoundersNoteTone;
+  seamless?: boolean;
 }) {
   const isDonee = tone === "donee";
   // Accent classes per tone. The donor strings are the original ones verbatim.
@@ -428,7 +433,7 @@ function FoundersNoteFull({
       id="founders-note"
       aria-label="Why We Built CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] border-t border-b border-stone-200/80 dark:border-stone-800/80 min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors"
+      className={`relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-b border-stone-200/80 dark:border-stone-800/80 "}min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors`}
     >
       {/* Ambient background glow */}
       {isDonee ? (

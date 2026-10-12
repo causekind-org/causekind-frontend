@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { gsap } from "gsap";
@@ -198,7 +199,7 @@ export function FinalCtaDesktop({
               </Link>
 
               {/* Button 3: NGO */}
-              <Link
+              {FEATURES.ngoRegistration ? <Link
                 href={LANDING_ROUTES.ngoRegister}
                 className="cta-action-btn relative group overflow-hidden flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#1F6B3F] hover:bg-[#27824D] text-white font-bold text-xs sm:text-[13px] tracking-wide shadow-md transition-all duration-200 active:scale-95"
               >
@@ -210,7 +211,15 @@ export function FinalCtaDesktop({
                 <Building2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                 <span>Register your NGO</span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
+              </Link> : (
+                <span aria-disabled="true"
+                  className="cta-action-btn relative flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#1F6B3F]/60 text-white/90 font-bold text-xs sm:text-[13px] tracking-wide cursor-not-allowed"
+                >
+                  <Building2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span>Register your NGO</span>
+                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider">Coming soon</span>
+                </span>
+              )}
             </div>
 
             {/* ════════ TELL A FRIEND ON WHATSAPP ════════ */}

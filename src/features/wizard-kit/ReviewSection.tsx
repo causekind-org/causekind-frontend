@@ -15,7 +15,8 @@ export function ReviewSection({
   children,
 }: {
   title: string;
-  onEdit: () => void;
+  /** Omit for a section that can't be edited from here. */
+  onEdit?: () => void;
   children: React.ReactNode;
 }) {
   return (
@@ -24,14 +25,14 @@ export function ReviewSection({
     <section className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-zinc-800 dark:bg-zinc-950/40">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-2xs font-black uppercase tracking-wider text-stone-400">{title}</h3>
-        <button
+        {onEdit && <button
           type="button"
           onClick={onEdit}
           aria-label={`Edit ${title}`}
           className="flex min-h-[32px] items-center gap-1 rounded-lg px-2 text-2xs font-bold text-[var(--ck-role-accent)] transition-colors hover:bg-[var(--ck-role-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         >
           <Pencil className="h-3 w-3" aria-hidden /> Edit
-        </button>
+        </button>}
       </div>
       <dl className="mt-2 space-y-1.5">{children}</dl>
     </section>

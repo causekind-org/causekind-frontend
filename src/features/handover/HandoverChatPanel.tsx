@@ -1,41 +1,77 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { Lock, MessageCircle } from "lucide-react";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerBody, DrawerTitle, DrawerDescription,
 } from "@/components/ui/drawer";
 import ChatWindow from "@/components/ChatWindow";
 import MatchChatWindow from "@/components/MatchChatWindow";
 import { handoverScope, type HandoverViewModel } from "./model";
-import { Panel } from "./HandoverScheduleSummary";
+
+/** Who the viewer is talking to, for the chat header. */
+function counterpartLabel(vm: HandoverViewModel): { name: string; role: string } {
+  const role = vm.flow === "NGO_OFFER"
+    ? (vm.role === "DONOR" ? "NGO" : "Donor")
+    : (vm.role === "DONOR" ? "Recipient" : "Donor");
+  return { name: vm.counterpart.name?.trim() || `the ${role.toLowerCase()}`, role };
+}
+
+const EMPTY_TEXT = "No messages yet. Say hello and agree the details of the handover here.";
+
+/** The thread itself: one of the two existing chat windows, framed by its host. */
+function Thread({ vm, currentUserEmail }: { vm: HandoverViewModel; currentUserEmail: string }) {
+  return vm.flow === "OFFER"
+    ? <ChatWindow offerId={vm.id} currentUserEmail={currentUserEmail} locked={vm.closed} embedded emptyText={EMPTY_TEXT} className="h-full" />
+    : <MatchChatWindow matchId={vm.id} currentUserEmail={currentUserEmail} locked={vm.closed} embedded emptyText={EMPTY_TEXT} className="h-full" />;
+}
 
 /**
- * Chat: inline in the desktop coordination rail, a full-height Drawer on mobile.
+ * Desktop chat: a full-width card in the main column, under "Your next step".
+ * It used to sit at the bottom of the narrow right rail, under Schedule and
+ * Contact, which left the main column ending early beside a long empty gap and
+ * gave the conversation a cramped, doubly-titled box.
  *
- * <p>The two existing chat windows are kept as-is behind a `flow` switch rather
- * than merged — they talk to different endpoints and different thread models, and
- * unifying them would mean a rewrite of working, tested components for no user-
- * visible gain. This is the seam, not a merge.
- *
- * <p>Both windows own their own scroll container, which is what keeps a new message
- * from scrolling the whole page.
+ * <p>The two existing chat windows are kept behind a `flow` switch rather than
+ * merged: they talk to different endpoints and thread models. They render
+ * `embedded` here, so this card owns the one header and the one border.
  */
 export function HandoverChatPanel({ vm, currentUserEmail, className = "" }: {
   vm: HandoverViewModel;
   currentUserEmail: string;
   className?: string;
 }) {
-  const locked = vm.closed;
+  const { name, role } = counterpartLabel(vm);
+  const initial = name.replace(/^the /, "").charAt(0).toUpperCase() || "?";
 
   return (
-    <Panel title="Messages" className={className}>
-      <div className="h-[420px] overflow-hidden rounded-md">
-        {vm.flow === "OFFER"
-          ? <ChatWindow offerId={vm.id} currentUserEmail={currentUserEmail} locked={locked} className="h-full" />
-          : <MatchChatWindow matchId={vm.id} currentUserEmail={currentUserEmail} locked={locked} className="h-full" />}
+    <section
+      aria-label={`Chat with ${name}`}
+      className={`flex h-[560px] flex-col overflow-hidden rounded-lg border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900 ${className}`}
+    >
+      <header className="flex items-center gap-3 border-b border-stone-200 bg-stone-50/70 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <span
+          aria-hidden
+          className="grid size-10 shrink-0 place-items-center rounded-full bg-[var(--handover-soft)] text-sm font-bold text-[var(--handover-on-soft)]"
+        >
+          {initial}
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="truncate text-sm font-semibold text-stone-900 dark:text-stone-100">Chat with {name}</h2>
+          <p className="truncate text-xs text-stone-500 dark:text-stone-400">
+            {role} · Agree the time and place here. Your phone number stays private.
+          </p>
+        </div>
+        {vm.closed && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-stone-100 px-2.5 py-1 text-2xs font-semibold text-stone-500 dark:bg-zinc-800">
+            <Lock className="size-3" aria-hidden /> Closed
+          </span>
+        )}
+      </header>
+      <div className="min-h-0 flex-1">
+        <Thread vm={vm} currentUserEmail={currentUserEmail} />
       </div>
-    </Panel>
+    </section>
   );
 }
 
@@ -106,7 +142,7 @@ export function HandoverChatDrawer({ vm, currentUserEmail, open, onOpenChange }:
             the .handover-* element that defines the accent tokens. */}
         <DrawerContent className={`${handoverScope(vm.role)} h-[85dvh]`}>
           <DrawerHeader>
-            <DrawerTitle>Messages</DrawerTitle>
+            <DrawerTitle>Chat with {counterpartLabel(vm).name}</DrawerTitle>
             {/* Radix warns when a Dialog has no description and no explicit
                 opt-out. sr-only rather than aria-describedby={undefined}: the
                 sentence is genuinely useful to a screen-reader user opening a
@@ -117,9 +153,7 @@ export function HandoverChatDrawer({ vm, currentUserEmail, open, onOpenChange }:
             </DrawerDescription>
           </DrawerHeader>
           <DrawerBody>
-            {vm.flow === "OFFER"
-              ? <ChatWindow offerId={vm.id} currentUserEmail={currentUserEmail} locked={vm.closed} className="h-full" />
-              : <MatchChatWindow matchId={vm.id} currentUserEmail={currentUserEmail} locked={vm.closed} className="h-full" />}
+            <Thread vm={vm} currentUserEmail={currentUserEmail} />
           </DrawerBody>
         </DrawerContent>
       </Drawer>

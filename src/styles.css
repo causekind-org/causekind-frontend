@@ -2621,6 +2621,24 @@ body.mobile-menu-open {
     is what put these two back into a stack.
   */
   .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-action-arrow { display: none; }
+  /*
+    Signed-in primary ("List an item" / "Request an item"): filled like the
+    guest's "Sign up now". The rule above this block strips the fill from every
+    primary below lg and only the guest rule put it back, so a signed-in donor
+    or donee got a bare text link. Fixed colours rather than --ck-home-accent:
+    in dark mode that token lifts to a pale tint that white type can't sit on.
+  */
+  .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta {
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+    background: #b04a15;
+    color: #fff6ed;
+    font-weight: 800;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  }
+  .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta:hover { background: #963c0d; }
+  [data-ck-role-theme="donee"] .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta { background: #1e3a60; }
+  [data-ck-role-theme="donee"] .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta:hover { background: #2d5a96; }
   .ck-showcase-hero .ck-hero-photo-image { animation: none; transform: none; object-position: 50% top; }
   .ck-showcase-hero .ck-hero-category-rail { display: none; }
   .ck-mobile-hero-trust {
@@ -2787,10 +2805,11 @@ body.mobile-menu-open {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ── Stacking context z-index fix for searchable selects inside Reveal/grid ── */
-div:has(.searchable-select-open) {
-  z-index: 99 !important;
-  position: relative !important;
+/* Raise only the select's immediate field container. Matching every ancestor
+   also changed fixed dialog content to relative/z-99, beneath its z-100 overlay. */
+div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .searchable-select-open) {
+  z-index: 99;
+  position: relative;
 }
 
 /* ── Reading Tools and Font/Theme Modes (from globals.css) ── */
@@ -4797,4 +4816,248 @@ div:has(.searchable-select-open) {
   .ck-ripple { animation: none; opacity: 0.22; transform: translate(-50%, -50%) scale(0.5); }
   .ck-ripple-2 { transform: translate(-50%, -50%) scale(0.7); }
   .ck-ripple-3 { transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* ── Navratri hero (11–20 Oct 2026; src/lib/navratri.ts) ──────────────────────
+   HeroSection with the garba illustration in place of the handover photo.
+   Below lg it is the normal mobile photo hero with a portrait illustration.
+   From lg it is a light, cream island in every theme: the illustration is
+   light, so the copy stays dark and the role colours keep their light-mode
+   values even in dark mode, and the illustration spans the full hero width
+   — the left floral border pinned to the left edge, the dancers and the right
+   border to the right, the same cream (#faf1e4) between — so the dancers are
+   never cropped whatever the hero's aspect ratio. Unlayered, so it outranks
+   the Tailwind utilities on the shared markup. */
+/* Desktop only: the cream island with dark copy. Below lg the Navratri hero is
+   the normal photo hero (dark ground, white copy) with the portrait image. */
+@media (min-width: 1024px) {
+  .ck-hero-navratri .ck-lead-hero-stage {
+    background: #faf1e4;
+    color-scheme: light;
+  }
+  .dark .ck-hero-navratri .ck-lead-hero-stage {
+    --ck-role-accent: #b04a15;
+    --ck-role-hover: #c45520;
+    --ck-role-highlight: #f0b97a;
+    --ck-role-on-accent: #ffffff;
+    --ck-role-ring: #b04a15;
+    --ck-role-shadow-rgb: 176, 74, 21;
+    --ck-home-accent: #b04a15;
+    --ck-home-ink: #b04a15;
+    --ck-home-hover: #c45520;
+    --ck-home-highlight: #f0b97a;
+    --ck-home-shadow-rgb: 176, 74, 21;
+  }
+  .dark[data-ck-role-theme="donee"] .ck-hero-navratri .ck-lead-hero-stage {
+    --ck-role-accent: #1e3a60;
+    --ck-role-hover: #2d5a96;
+    --ck-role-highlight: #7fb0e8;
+    --ck-role-ring: #2d5a96;
+    --ck-role-shadow-rgb: 30, 58, 96;
+    --ck-home-accent: #1e3a60;
+    --ck-home-ink: #1e3a60;
+    --ck-home-hover: #2d5a96;
+    --ck-home-highlight: #7fb0e8;
+    --ck-home-shadow-rgb: 30, 58, 96;
+  }
+  .dark .ck-hero-navratri .ck-lead-hero-stage .ck-donate-cta {
+    --ck-donate-acc: var(--ck-role-accent);
+    --ck-donate-hov: var(--ck-role-hover);
+    --ck-donate-on: #ffffff;
+  }
+  .ck-hero-navratri .ck-hero-headline { color: #100c06; }
+  .ck-hero-navratri .ck-hero-headline .ck-hero-headline-accent { color: var(--ck-home-ink, #c54805); }
+  .ck-hero-navratri .ck-hero-subtext { color: #34322f; }
+  .ck-hero-navratri .ck-hero-eyebrow {
+    background: color-mix(in srgb, var(--ck-home-accent, #b04a15) 7%, transparent);
+    color: var(--ck-home-ink, #c54805);
+    --tw-ring-color: color-mix(in srgb, var(--ck-home-accent, #b04a15) 15%, transparent);
+  }
+  .ck-hero-navratri .ck-hero-secondary-cta { color: var(--ck-home-ink, #b04a15); }
+
+  /* The illustration's foot melts into the page colour below, so the cream ends
+     softly on the dark sections in dark mode (and invisibly in light mode). */
+  .ck-navratri-art::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 9%;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--surface-cream));
+  }
+}
+
+/* Phones and tablets: the normal mobile photo hero, with the portrait
+   illustration as its photo. Both dancers are in the image's top half, so it
+   is pinned to the top and only nudged sideways to keep them both in frame
+   on narrow screens. Only the slow zoom runs here. */
+@media (max-width: 1023px) {
+  .ck-navratri-art { display: none; }
+  .ck-showcase-hero .ck-navratri-mobile-photo {
+    object-position: 58% top;
+    transform-origin: 50% 25%;
+    animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* A little taller than the photo hero, still leaving the category bar on
+     the first screen at 1366x657. */
+  .ck-hero-navratri .ck-lead-hero-stage {
+    min-height: clamp(25rem, calc(100svh - max(var(--ck-nav-h, 0px), 5.5rem) - clamp(6rem, 18svh - 2rem, 9.5rem)), 68rem);
+  }
+  .ck-hero-navratri .ck-hero-copy {
+    padding-left: clamp(3rem, 6vw, 7rem);
+  }
+  /* The whole stage, gutters included, is the illustration: cream, the two
+     floral borders (with the slow drift), then the dancers in front. */
+  .ck-navratri-art {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--ck-hero-side-gutter, 0px));
+    right: calc(-1 * var(--ck-hero-side-gutter, 0px));
+    overflow: hidden;
+    pointer-events: none;
+    background: #faf1e4;
+    container-type: size;
+  }
+  .ck-navratri-art::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      url("/images/navratri-hero-border-left.webp") no-repeat left top / auto 100%,
+      url("/images/navratri-hero-border-right.webp") no-repeat right top / auto 100%;
+    animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
+  }
+  .ck-navratri-art::after { z-index: 2; }
+  /*
+    The dancers take the room the copy leaves. --L is where the widest copy
+    line (the guest's three buttons, ~40rem) ends plus a comfortable gap;
+    --R the width from there to the right border's inner edge; --H the stage
+    height between the top and the category bar that overlaps its foot. They
+    grow to fit whichever runs out first, so they are as large as the hero
+    allows and are never cropped, never under the copy.
+  */
+  .ck-navratri-figure {
+    --L: calc(var(--ck-hero-side-gutter, 0px) + clamp(3rem, 6vw, 7rem) + 42rem);
+    --R: calc(100cqw - var(--L) - clamp(1.5rem, 3.5vw, 4rem));
+    --B: calc(clamp(1.75rem, 3.7vh, 2.75rem) + 0.5rem);
+    --H: calc(100cqh - var(--B) - 3cqh);
+    --W: min(var(--R), var(--H) * 1.008);
+    position: absolute;
+    z-index: 1;
+    bottom: var(--B);
+    left: calc(var(--L) + (var(--R) - var(--W)) * 0.25);
+    width: var(--W);
+    aspect-ratio: 1290 / 1280;
+    animation: ck-navratri-enter 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ck-navratri-dancers {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform-origin: 50% 100%;
+    animation: ck-navratri-sway 6s ease-in-out infinite alternate;
+  }
+  .ck-navratri-accents {
+    position: absolute;
+    inset: 0;
+  }
+  .ck-navratri-accent {
+    position: absolute;
+    line-height: 0;
+    opacity: 0.9;
+    animation: ck-navratri-float 4s ease-in-out infinite alternate;
+  }
+}
+
+/* Navratri desktop copy, scaled up (~15–25%) to balance the larger dancers.
+   Fluid between 1024px and 1920px; the photo hero is untouched. */
+@media (min-width: 1024px) {
+  .ck-hero-navratri .ck-hero-eyebrow {
+    gap: 0.6rem;
+    padding: clamp(0.25rem, 0.15rem + 0.2vw, 0.35rem) clamp(0.8rem, 0.6rem + 0.35vw, 1rem);
+  }
+  .ck-hero-navratri .ck-hero-eyebrow p { font-size: clamp(0.7rem, 0.6rem + 0.18vw, 0.8rem); }
+  .ck-hero-navratri .ck-hero-headline {
+    margin-top: clamp(0.95rem, 2.4vh, 2rem);
+    font-size: clamp(2.9rem, min(4vw, 7.8vh), 6.8rem);
+  }
+  .ck-hero-navratri .ck-hero-subtext {
+    margin-top: clamp(0.85rem, 2.1vh, 1.65rem);
+    /* In em, so the measure grows with the type and it stays three lines. */
+    max-width: 23.5em;
+    font-size: clamp(1.1rem, 0.85rem + 0.5vw, 1.5rem);
+  }
+  /* The photo needed this gutter; here the dancers keep their own distance. */
+  .ck-hero-navratri .ck-hero-copy { padding-right: 0; }
+  .ck-hero-navratri .ck-hero-actions { margin-top: clamp(1.2rem, 3.1vh, 2.6rem); }
+
+  /* Buttons: height, padding, label and icons ~18% up; spacing between unchanged. */
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder,
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    min-height: clamp(3.75rem, 2.9rem + 1.35vw, 4.25rem);
+    gap: 0.85rem;
+  }
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder {
+    padding-left: clamp(1.6rem, 1.3rem + 0.45vw, 1.9rem);
+  }
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder {
+    font-size: clamp(0.62rem, 0.48rem + 0.23vw, 0.72rem);
+  }
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    font-size: clamp(0.8rem, 0.6rem + 0.3vw, 0.92rem);
+  }
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    padding-inline: clamp(1.6rem, 1.3rem + 0.45vw, 1.9rem);
+  }
+  .ck-hero-navratri .ck-hero-cta-icon { width: 1.2rem; height: 1.2rem; }
+  .ck-hero-navratri .ck-hero-action-arrow { width: 1.45rem; height: 1.45rem; padding: 0.6rem; }
+  .ck-hero-navratri .ck-hero-donate-cta .ck-donate-heart svg { width: 1.2rem; height: 1.2rem; }
+  .ck-hero-navratri .ck-hero-donate-cta .ck-donate-arrow svg { width: 1.45rem; height: 1.45rem; }
+
+  /* The dancers start where the larger button row ends (see .ck-navratri-figure). */
+  .ck-hero-navratri .ck-navratri-figure {
+    --L: calc(var(--ck-hero-side-gutter, 0px) + clamp(3rem, 6vw, 7rem) + 49rem + 1.2vw);
+    --R: calc(100cqw - var(--L) - clamp(0.5rem, 1vw, 1.5rem));
+  }
+}
+
+@keyframes ck-navratri-enter {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ck-navratri-sway {
+  from { transform: translate3d(0, 0, 0) rotate(-0.45deg); }
+  to { transform: translate3d(0, -5px, 0) rotate(0.45deg); }
+}
+@keyframes ck-navratri-float {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -7px, 0); }
+}
+
+/* Off screen (the film has the page): every Navratri loop holds still. */
+.ck-navratri-art[data-offscreen]::before,
+.ck-navratri-art[data-offscreen] .ck-navratri-dancers,
+.ck-navratri-art[data-offscreen] .ck-navratri-accent {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-navratri-mobile-photo,
+  .ck-navratri-art::before,
+  .ck-navratri-figure,
+  .ck-navratri-dancers,
+  .ck-navratri-accent {
+    animation: none;
+  }
 }

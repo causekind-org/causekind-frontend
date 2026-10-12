@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { HandoverMapPinField } from "./HandoverMapPinField";
+import { HandoverLocationField } from "./HandoverLocationField";
 import { methodNeedsCourierFields } from "./adapters";
 import { handoverScope, type HandoverViewModel } from "./model";
 import {
@@ -65,6 +65,8 @@ export function HandoverScheduleDialog({
   const [courierName, setCourierName] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  /** The map or the address box is still working out the location. */
+  const [locationBusy, setLocationBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [drive, setDrive] = useState<any>(null);
@@ -94,7 +96,11 @@ export function HandoverScheduleDialog({
   const needsCourier = methodNeedsCourierFields(method);
   // A reschedule costs the other person a trip, so it has to say why.
   const reasonRequired = isReschedule;
-  let canSubmit = !busy && when.trim() !== "" && address.trim() !== "" && (!reasonRequired || reason.trim().length >= 3);
+  const hasPin = lat != null && lng != null;
+  // The donee is sent both the written address and a map link, so both are
+  // required, and Save waits for any lookup still filling one from the other.
+  let canSubmit = !busy && !locationBusy && when.trim() !== "" && address.trim() !== "" && hasPin
+    && (!reasonRequired || reason.trim().length >= 3);
 
   // Validate NGO Drop off limits
   if (canSubmit && method === "DONOR_DROP_OFF" && drive) {
@@ -198,29 +204,19 @@ export function HandoverScheduleDialog({
             />
           </Field>
 
-          <Field label="Where?" htmlFor="ho-address" required>
-            <Input
-              id="ho-address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="e.g. Andheri East, Mumbai"
-              disabled={busy}
-              className={handoverInput}
-            />
-            <Hint>An area is enough for now — you can share the exact spot later.</Hint>
-          </Field>
-
-          <Field label="Exact spot (optional)">
-            {/* Deferred: Google Maps is not fetched until this is opened. An
-                existing pin auto-expands so a reschedule never looks like it
-                lost the location. */}
-            <HandoverMapPinField
+          <Field label="Where?" required>
+            <HandoverLocationField
+              address={address}
               lat={lat}
               lng={lng}
               disabled={busy}
-              onChange={(a, b) => { setLat(a); setLng(b); }}
+              onAddressChange={setAddress}
+              onPinChange={(a, b) => { setLat(a); setLng(b); }}
+              onBusyChange={setLocationBusy}
             />
+            {!hasPin && address.trim() !== "" && !locationBusy && (
+              <Hint>Place the pin too (search, use your current location, or tap the map) so the donee gets a map link.</Hint>
+            )}
           </Field>
 
           {needsCourier && (
@@ -290,7 +286,9 @@ export function HandoverScheduleDialog({
           <Button disabled={!canSubmit} onClick={submit} className={handoverPrimary}>
             {busy
               ? <><Loader2 className="animate-spin" aria-hidden /> Saving</>
-              : "Save"}
+              : locationBusy
+                ? <><Loader2 className="animate-spin" aria-hidden /> Checking location…</>
+                : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

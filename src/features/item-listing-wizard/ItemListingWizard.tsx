@@ -474,10 +474,19 @@ export function ItemListingWizard({
       } as const;
       (Object.keys(fields) as (keyof typeof fields)[]).forEach(k => {
         const v = fields[k];
-        if (!v) return;
-        if (opts?.onlyEmpty && String(prev[k] ?? "").trim()) return;
-        next[k] = v;
+        // Filling the blanks of a resumed draft: never touch what is there.
+        if (opts?.onlyEmpty) { if (v && !String(prev[k] ?? "").trim()) next[k] = v; return; }
+        // A new spot: a field the lookup could not find is cleared, never left
+        // describing the previous spot.
+        next[k] = v ?? "";
       });
+      modelRef.current = next;
+      setModel(next);
+      queueSave(next);
+    }, () => {
+      // Nothing found at the new spot: the old address no longer applies.
+      if (opts?.onlyEmpty) return;
+      const next = { ...modelRef.current, countryIso: "", stateIso: "", city: "", locality: "", pincode: "" };
       modelRef.current = next;
       setModel(next);
       queueSave(next);
@@ -516,7 +525,23 @@ export function ItemListingWizard({
     setStep(next);
   }, []);
 
+  /**
+   * Continue waits on the photos step while the photos are still uploading,
+   * being screened, or being read by the AI (including the short pause before
+   * the read starts), so the donor never moves on with details the AI is about
+   * to fill in, or with photos that have no verdict yet.
+   */
+  const analysisDue = mode === "create" && uploadedCount >= 1 && !isUploading && analysedKeyRef.current !== uploadedKey;
+  const photosBusy: string | null = step !== "photos" ? null
+    : isUploading ? "Uploading photos…"
+    : photoApi.screening ? "Checking photos…"
+    : aiRunning || analysisDue ? "Reading your photos…"
+    : null;
+
   const locationRef = useRef<LocationStepHandle>(null);
+  /** Step 4 is working out a new location (GPS, search, pin lookup, typed address). */
+  const [locationBusy, setLocationBusy] = useState(false);
+  const locationHeld = step === "location" && locationBusy;
   const [checkingLocation, setCheckingLocation] = useState(false);
   /** On the location step: wait for any pending lookup. False = stay on the step. */
   const settleLocation = useCallback(async () => {
@@ -526,6 +551,7 @@ export function ItemListingWizard({
   }, [step]);
 
   const handleContinue = useCallback(async () => {
+    if (photosBusy || locationHeld) return;
     if (!(await settleLocation())) return;
     // modelRef: the lookup may have just moved the pin.
     const model = modelRef.current;
@@ -547,10 +573,12 @@ export function ItemListingWizard({
       // flow awaited the network and then a 380ms timer before moving.
       goTo(WIZARD_STEPS[idx + 1], 1);
     } else {
-      void handleSubmit();
+      // Through the ref: this callback is not rebuilt when the model changes,
+      // and a captured handleSubmit validated the model as it was on arrival at
+      // review (declarations unticked), so ticking them never took effect.
+      void handleSubmitRef.current();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, goTo, reduced, settleLocation]);
+  }, [step, goTo, reduced, settleLocation, photosBusy, locationHeld]);
 
   const handleBack = useCallback(() => {
     const idx = stepIndex(step);
@@ -567,6 +595,8 @@ export function ItemListingWizard({
   }, [flush, router, settleLocation]);
 
   const handleSubmit = useCallback(async () => {
+    // The live model, not a render's copy: Submit can arrive through handleContinue.
+    const model = modelRef.current;
     const allErrors = validateAll(model);
     if (Object.keys(allErrors).length) {
       setErrors(allErrors);
@@ -596,7 +626,9 @@ export function ItemListingWizard({
     } finally {
       setSubmitting(false);
     }
-  }, [model, step, ensureDraft, flush, mode, router]);
+  }, [step, ensureDraft, flush, mode, router]);
+  const handleSubmitRef = useRef(handleSubmit);
+  handleSubmitRef.current = handleSubmit;
 
   // ── Progress availability ─────────────────────────────────────────────────
   // Done = continued past AND still valid; going back keeps later checks.
@@ -629,6 +661,7 @@ export function ItemListingWizard({
   }, [step]);
 
   const isLast = step === "review";
+
   const continueLabel = isLast
     ? (mode === "needs-info" ? "Resubmit for review" : "Submit for review")
     : "Continue";
@@ -759,6 +792,7 @@ export function ItemListingWizard({
                     <LocationStep
                       model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
                       onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped} controlRef={locationRef}
+                      onBusyChange={setLocationBusy}
                     />
                   )}
                   {step === "review" && (
@@ -786,8 +820,8 @@ export function ItemListingWizard({
             onContinue={() => void handleContinue()}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={continueLabel}
-            advancing={checkingLocation}
-            advancingLabel="Checking location…"
+            advancing={checkingLocation || locationHeld || !!photosBusy}
+            advancingLabel={checkingLocation || locationHeld ? "Checking location…" : photosBusy ?? undefined}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

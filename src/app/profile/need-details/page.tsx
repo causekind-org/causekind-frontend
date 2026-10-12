@@ -92,6 +92,11 @@ function NeedProfileEditor() {
   const [active,setActive]=useState(0);
   // Compulsory fields left blank when the donee tried to move on.
   const [blankKeys,setBlankKeys]=useState<Set<string>>(new Set());
+  // Sections the donee has moved on from with Next / Finish. The rail's green
+  // tick needs this AND the section's data: sections with no required fields
+  // were otherwise ticked before the donee ever opened them (owner, 2026-10-09).
+  const [confirmed,setConfirmed]=useState<Set<number>>(new Set());
+  const confirm=(index:number)=>setConfirmed(s=>s.has(index)?s:new Set(s).add(index));
 
   // ── Saving ─────────────────────────────────────────────────────────────
   // The latest form values and the last values the server confirmed, as refs:
@@ -171,6 +176,7 @@ function NeedProfileEditor() {
     setMoving(false);
     if(!ok){ toast.error("We couldn't save this section. Check your connection and try again."); return; }
     setBlankKeys(new Set());
+    confirm(active);
     setActive(active+1);
   }
 
@@ -180,6 +186,7 @@ function NeedProfileEditor() {
     const ok=await saveNow();
     setMoving(false);
     if(!ok){ toast.error("We couldn't save your profile. Check your connection and try again."); return; }
+    if(active===DOCS_STEP) confirm(DOCS_STEP);
     if(missing.length===0){ router.push(destination); return; }
     const firstSection=GROUPS.findIndex((_,i)=>blankRequired(i,detailsRef.current).length>0);
     if(firstSection>=0){
@@ -198,7 +205,10 @@ function NeedProfileEditor() {
   // Allowlist, not a sanitiser: `next` is attacker-controllable, so only these
   // exact shapes round-trip. `category` comes from the donee-view tiles.
   const destination=next && /^\/requests\/new(?:\?(?:draftId=\d+|category=[A-Za-z0-9%_-]{1,60}))?$/.test(next) ? next : "/requests/new";
-  function apply(p:DoneeNeedProfile) {setProfile(p);setDetails(p.details);savedJson.current=JSON.stringify(p.details);}
+  // A profile that was already complete when loaded keeps every tick: the
+  // donee finished it on an earlier visit.
+  const profileWasComplete=useRef(false);
+  function apply(p:DoneeNeedProfile) {setProfile(p);setDetails(p.details);savedJson.current=JSON.stringify(p.details);if(p.missing.length===0)profileWasComplete.current=true;}
   async function load() {try {setError("");apply(await getDoneeNeedProfile());} catch(e) {setError(e instanceof Error?e.message:"Could not load your profile");}}
   useEffect(()=>{if(isLoading)return;if(!user){router.replace("/login?next=%2Fprofile%2Fneed-details");return;}void load();},[user,isLoading]);
   async function upload(type:VerificationDocumentType,file:File) {
@@ -260,7 +270,7 @@ function NeedProfileEditor() {
           {STEPS.map((title,index)=>
             <button key={title} type="button" onClick={()=>goTo(index)}
               className={`flex min-h-11 items-center gap-3 rounded-lg px-3 text-left text-sm transition-colors ${index===active?"bg-stone-100 font-bold text-[#1e3a60] dark:bg-zinc-800 dark:text-blue-200":"font-semibold text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-zinc-800/60"}`}>
-              {(()=>{const done=stepDone(index,missing);return(
+              {(()=>{const done=(confirmed.has(index)||profileWasComplete.current)&&stepDone(index,missing);return(
               <span aria-label={done?"Done":undefined} className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-2xs font-black ${done?"bg-emerald-500 text-white":index===active?"bg-[var(--ck-role-accent)] text-white":"border border-stone-300 text-stone-400 dark:border-zinc-600"}`}>{done?<Check className="h-3 w-3" strokeWidth={3.5} aria-hidden />:index+1}</span>);})()}
               {title}
             </button>

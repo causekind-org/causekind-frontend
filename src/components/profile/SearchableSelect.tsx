@@ -15,6 +15,8 @@ interface SearchableSelectProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  /** Direction of the options panel relative to the field. */
+  direction?: "up" | "down";
   disabled?: boolean;
   /** Shown inside the trigger when disabled */
   disabledPlaceholder?: string;
@@ -31,6 +33,7 @@ export function SearchableSelect({
   value,
   onChange,
   placeholder = "Select...",
+  direction = "down",
   disabled = false,
   disabledPlaceholder,
   searchPlaceholder = "Search...",
@@ -150,7 +153,8 @@ export function SearchableSelect({
       {open && (
         <div
           className={[
-            "absolute z-[100] mt-1 w-full min-w-[200px]",
+            "absolute z-[100] w-full min-w-[200px]",
+            direction === "up" ? "bottom-full mb-1" : "top-full mt-1",
             "rounded-xl border border-[var(--ck-role-accent)]/15 dark:border-stone-700",
             "bg-white dark:bg-zinc-900 shadow-lg",
           ].join(" ")}

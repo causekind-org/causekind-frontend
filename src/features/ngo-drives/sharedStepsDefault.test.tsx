@@ -10,7 +10,7 @@ vi.mock("next-intl", () => ({ useTranslations: () => (k: string) => k }));
  * The drive give form added optional props to these shared steps. Without them, the
  * donor↔donee offer wizard must behave exactly as before: "Take photo" opens the
  * device camera input directly, and Review keeps its thumbnail strip and its
- * Pickup & delivery section.
+ * "Your location" section (it replaced Pickup & delivery on 2026-10-09).
  */
 const originalClick = HTMLInputElement.prototype.click;
 afterEach(() => { HTMLInputElement.prototype.click = originalClick; });
@@ -27,14 +27,14 @@ describe("shared offer steps without the drive-only props (donor↔donee flow)",
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  it("OfferReviewStep: small cropped thumbnail strip and the Pickup & delivery section", () => {
+  it("OfferReviewStep: small cropped thumbnail strip and the Your location section", () => {
     const model = {
       ...emptyOfferModel, quantity: "2", pickupCity: "Pune", pickupLocality: "Kothrud", pickupPincode: "411038",
       photos: [{ id: "a", status: "uploaded", remoteUrl: "https://cdn.test/a.png" }, { id: "b", status: "uploaded", remoteUrl: "https://cdn.test/b.png" }],
     } as never;
     render(<OfferReviewStep model={model} errors={{}} requestTitle="School bags" compat={null}
       declarationsInvalidated={false} onChange={vi.fn()} onEdit={vi.fn()} />);
-    expect(screen.getByText("Pickup & delivery")).toBeInTheDocument();
+    expect(screen.getByText("Your location")).toBeInTheDocument();
     expect(screen.getByText("Pune")).toBeInTheDocument();
     const imgs = screen.getAllByRole("img");
     expect(imgs).toHaveLength(2);

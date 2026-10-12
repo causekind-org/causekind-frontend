@@ -1,9 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  Package,
   X,
   Sparkles,
   Check,
@@ -41,17 +39,6 @@ const CATEGORIES = [
     };
   }),
 
-  {
-    name: "List Item",
-    Icon: Package,
-    col: "text-orange-300",
-    iconBg: "bg-orange-500/20",
-    border: "border-orange-400/40",
-    ring: "ring-orange-400/50",
-    badge: "bg-orange-400",
-    blurb:
-      "Skip choosing a category and list an item you want to give.",
-  },
 ];
 
 /* =========================================================
@@ -72,7 +59,6 @@ const CATEGORY_IMAGES: Record<string, string> = {
   Clothing: "/categories/clothing.webp",
   Electronics: "/categories/electronics.webp",
   Sports: "/categories/sports.webp",
-  "List Item": "/categories/list-item.webp",
 };
 
 /* =========================================================
@@ -104,7 +90,6 @@ const BACKDROP_EMBERS = [
 ========================================================= */
 
 export function DonorCategoryModal() {
-  const router = useRouter();
   const { user, isLoading } = useAuth();
   const [show, setShow] = useState(false);
 
@@ -281,16 +266,6 @@ useEffect(() => {
   ======================================================= */
 
   function selectCategory(name: string) {
-    /*
-      List Item keeps its original behavior.
-    */
-
-    if (name === "List Item") {
-      setShow(false);
-      router.push("/items/new");
-      return;
-    }
-
     setRippleKeys((previous) => ({
       ...previous,
       [name]: (previous[name] ?? 0) + 1,
@@ -320,10 +295,6 @@ useEffect(() => {
     RENDER
   ======================================================= */
 
-  /* The desktop picture grid leaves List Item out (rows keep it). */
-  const DESKTOP_CATEGORIES = CATEGORIES.filter(
-    ({ name }) => name !== "List Item"
-  );
 
   if (!show || !user || user.role !== "DONOR" ) {
     return null;
@@ -1155,13 +1126,16 @@ useEffect(() => {
             ck-page
             relative
             flex
-            h-[100dvh]
+            h-[100vh]
+            supports-[height:100dvh]:h-[100dvh]
             min-h-0
             flex-col
             px-5
             py-3
+            pb-[max(0.75rem,env(safe-area-inset-bottom))]
             sm:px-7
             sm:py-4
+            sm:pb-[max(1rem,env(safe-area-inset-bottom))]
             lg:px-8
             lg:py-4
             xl:px-10
@@ -1308,8 +1282,9 @@ useEffect(() => {
 
               One column of slim rows on phones, two from md: a small
               photo, the name, the one-line description (always visible,
-              no hover needed) and a tick. List Item navigates instead of
-              toggling, so it shows an arrow, not a tick.
+              no hover needed) and a tick. The list starts at the top
+              (justify-start): centring an overflowing scroll column hid the
+              first rows above the scroll origin on phones.
 
               CATEGORY GRID (lg and up) — the picture cards: five per
               row, a photo with the icon and name strip under it, the
@@ -1328,13 +1303,16 @@ useEffect(() => {
               max-w-[1100px]
               flex-1
               flex-col
-              justify-center
+              justify-start
               overflow-y-auto
-              py-3
-              sm:py-4
+              overscroll-contain
+              pt-3
+              pb-6
+              sm:pt-4
               lg:max-w-[1500px]
               lg:flex-row
               lg:items-center
+              lg:justify-center
               lg:overflow-visible
               lg:py-3
             "
@@ -1353,7 +1331,6 @@ useEffect(() => {
             >
               {CATEGORIES.map(({ name, Icon, col, iconBg, border, ring, blurb }) => {
                 const isSelected = tempSelected.includes(name);
-                const isListItem = name === "List Item";
                 const image = CATEGORY_IMAGES[name];
 
                 return (
@@ -1361,7 +1338,7 @@ useEffect(() => {
                     key={name}
                     type="button"
                     onClick={() => selectCategory(name)}
-                    aria-pressed={isListItem ? undefined : isSelected}
+                    aria-pressed={isSelected}
                     className={`
                       group
                       flex
@@ -1381,7 +1358,6 @@ useEffect(() => {
                       sm:gap-4
                       sm:p-2.5
                       sm:pr-4
-                      ${isListItem ? "border-dashed" : ""}
                       ${
                         isSelected
                           ? `${border} ring-1 ${ring} bg-white/[0.08]`
@@ -1416,13 +1392,7 @@ useEffect(() => {
                       </span>
                     </span>
 
-                    {isListItem ? (
-                      <ArrowRight
-                        className="h-5 w-5 shrink-0 text-orange-300 transition-transform duration-200 group-hover:translate-x-0.5"
-                        aria-hidden
-                      />
-                    ) : (
-                      <span
+                    <span
                         aria-hidden
                         className={`
                           flex
@@ -1442,7 +1412,6 @@ useEffect(() => {
                       >
                         <Check className="h-4 w-4" strokeWidth={4} />
                       </span>
-                    )}
                   </button>
                 );
               })}
@@ -1462,7 +1431,7 @@ useEffect(() => {
               "
             >
 
-              {DESKTOP_CATEGORIES.map(
+              {CATEGORIES.map(
                 (
                   {
                     name,
@@ -1566,9 +1535,6 @@ useEffect(() => {
 
                         {/* =================================================
                             CATEGORY IMAGE
-
-                            IMPORTANT:
-                            List Item also uses its image now.
 
                             The negative delay starts each photo
                             mid-drift, so the grid is already in

@@ -839,6 +839,20 @@ export function getItemListing(id: number) {
   return request<ItemListing>(`/api/v1/items/${id}`);
 }
 
+/** One status change on the donee's own request, oldest first. */
+export type RequestActivityEntry = { fromStatus: string; toStatus: string; changedAt: string };
+
+export function getRequestActivity(id: number) {
+  return request<RequestActivityEntry[]>(`/api/v1/item-requests/${id}/activity`);
+}
+
+/** One status change on the donor's own listing, oldest first. */
+export type ListingActivityEntry = { fromStatus: string; toStatus: string; changedAt: string };
+
+export function getListingActivity(id: number) {
+  return request<ListingActivityEntry[]>(`/api/v1/items/${id}/activity`);
+}
+
 // ── Spec flow: Draft → Update → Submit ──────────────────────────────────────
 
 export function createItemListingDraft() {
@@ -2420,6 +2434,25 @@ export type ChatMessage = {
 
 export function getAnonymizedRequest(requestId: number) {
   return request<AnonymizedRequest>(`/api/v1/item-requests/${requestId}/anonymized`);
+}
+
+/**
+ * How far the donor is from a request (offer wizard step 1). Whole km, whether
+ * it is inside the matching radius, the request's area as words, and the area's
+ * centre to ~1 km. Never the donee's exact location.
+ */
+export type DonorDistanceCheck = {
+  located: boolean;
+  distanceKm: number | null;
+  radiusKm: number;
+  withinRadius: boolean;
+  area: string | null;
+  approxLatitude: number | null;
+  approxLongitude: number | null;
+};
+
+export function checkDonorDistance(requestId: number, lat: number, lng: number) {
+  return request<DonorDistanceCheck>(`/api/v1/item-requests/${requestId}/distance-check?lat=${lat}&lng=${lng}`);
 }
 
 export function getQuantityAllocation(requestId: number) {

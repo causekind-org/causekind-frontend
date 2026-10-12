@@ -34,6 +34,8 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
     hasKnownDefects: z.boolean(),
     knownDefects: z.string(),
     pickupCity: z.string(),
+    latitude: z.number().nullable(),
+    longitude: z.number().nullable(),
     pickupPincode: z.string(),
     pickupLocality: z.string(),
     donorDropOffAvailable: z.boolean(),
@@ -120,9 +122,18 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
       }
     }
 
-    // Whitespace-only is not a city.
+    // Required for an item the donor already owns (owner, 2026-10-09). A purchase
+    // is new, and NGO drive offers (no flowType) are unchanged.
+    if (flowType === "ALREADY_OWN" && !v.approximateAge.trim()) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: "How old is the item? A rough estimate is fine." });
+    }
+
+    // The location step: a pin, and the city it gives (whitespace is not a city).
+    if (v.latitude == null || v.longitude == null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["latitude"], message: "Use your current location, or find it on the map, to continue." });
+    }
     if (!v.pickupCity.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: "Where can this be collected from?" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: "Add your city." });
     }
 
     if (!v.declarationsConfirmed) {
@@ -137,6 +148,9 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
 export type OfferValues = OfferModel;
 
 export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]> = {
+  location: ["latitude", "pickupCity", "pickupPincode", "pickupLocality", "donorDropOffAvailable"],
+  // Not a step of request offers any more (2026-10-09); kept for the shared type.
+  pickup: ["deliveryCostBornBy"],
   photos: ["photos"],
   purchasePlan: [
     "purchaseTimeline", "estimatedCost", "proposedBrand", "proposedModel",
@@ -144,7 +158,6 @@ export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]
   ],
   details: ["quantity", "approximateAge", "accessoriesIncluded", "specNotes"],
   condition: ["condition", "hasKnownDefects", "knownDefects"],
-  pickup: ["pickupCity", "pickupPincode", "pickupLocality", "donorDropOffAvailable", "deliveryCostBornBy"],
   review: ["declarationsConfirmed"],
 };
 
