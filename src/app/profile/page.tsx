@@ -513,6 +513,7 @@ export default function ProfilePage() {
       });
       setProfile(updated);
       toast.success(t("successProfileUpdated"));
+      if (updated.documentWarning) toast.warning(updated.documentWarning, { duration: 12000 });
       setSettingsOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("errorUpdateFailed"));
