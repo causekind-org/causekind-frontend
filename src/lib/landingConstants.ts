@@ -121,7 +121,7 @@ export const LANDING_ROUTES = {
  * In production, it is completely hidden until `isPlaceholder` is set to false.
  */
 export const FOUNDER = {
-  isPlaceholder: true,
+  isPlaceholder: false,
   name: "Ramzan Hasnani",
   title: "Founder, CauseKind",
   photo: "/images/ramzan-hasnani.webp",
