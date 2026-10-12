@@ -17,7 +17,7 @@ import {
   setDoneeCallPermission,
   type DonationOffer, type HandoverRecord, type OfferHandoverMethod,
 } from "@/lib/api";
-import { getHandoverProofs, uploadHandoverProof, type HandoverProofPhoto } from "@/lib/api";
+import { getHandoverProofs, uploadHandoverProof, removeHandoverProof, type HandoverProofPhoto } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import HandoverCelebration from "@/components/handover/HandoverCelebration";
@@ -153,6 +153,9 @@ export default function OfferHandoverHubPage() {
             photos: proofPhotos,
             upload: async (file, device) => {
               setProofPhotos(await uploadHandoverProof("OFFER", offerId, file, device));
+            },
+            remove: async (photoId) => {
+              setProofPhotos(await removeHandoverProof("OFFER", offerId, photoId));
             },
           },
           verifyOtp: async (code) => {
