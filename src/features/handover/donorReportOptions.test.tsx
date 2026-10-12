@@ -23,6 +23,7 @@ vi.mock("@/lib/api", () => ({
   reportMatchIssue: vi.fn().mockResolvedValue({}),
   confirmNoIssue: vi.fn().mockResolvedValue({}),
   CANCELLATION_REASONS: [],
+  cancellationReasonsFor: () => [],
 }));
 
 vi.mock("@/lib/toast", () => ({
