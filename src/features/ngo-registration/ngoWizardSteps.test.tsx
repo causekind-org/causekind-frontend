@@ -146,12 +146,10 @@ describe("Step 3: Authorized representatives", { timeout: 20000 }, () => {
     await userEvent.click(screen.getByRole("button", { name: "Send code" }));
     expect(sendNgoRepresentativeEmailCode).toHaveBeenCalledWith("hope@ngo.test", "Ananya");
     await userEvent.type(await screen.findByLabelText(/6-digit code/), "111111");
-    await userEvent.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(/incorrect or has expired/);
     expect(form.representatives[0].emailVerified).toBe(false);
     await userEvent.clear(screen.getByLabelText(/6-digit code/));
     await userEvent.type(screen.getByLabelText(/6-digit code/), "222222");
-    await userEvent.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByText("Verified")).toBeInTheDocument();
     expect(form.representatives[0].emailVerified).toBe(true);
 

@@ -81,7 +81,6 @@ describe("NGORegistration Component - Demo Mode ON", () => {
     await user.type(screen.getByLabelText(/^Email/i), "demo@helpinghearts.org");
     await user.click(screen.getByRole("button", { name: "Send code" }));
     await user.type(await screen.findByLabelText(/6-digit code/i), "123456");
-    await user.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByText("Verified")).toBeInTheDocument();
     // Authorization document and the ID proof
     for (const btn of screen.getAllByRole("button", { name: /Mark as uploaded ✓/i })) {

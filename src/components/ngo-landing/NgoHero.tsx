@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, AnimatePresence } from "framer-motion";
@@ -15,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useNgoStatus } from "./useNgoStatus";
+import { NgoHeroGallery } from "./NgoHeroGallery";
 import { NgoHeroTrustCard } from "./NgoHeroTrustCard";
 
 export function NgoHero() {
@@ -136,50 +136,29 @@ export function NgoHero() {
 
   // One photo for every NGO state (incomplete, under review, changes
   // requested, verified) — only the copy and buttons change with status.
-  const heroImageSrc = "/images/ngo-hero-landing.jpg";
   const heroImageAlt = "NGO workers handing school supplies to children";
 
   return (
-    <section id="ngo-hero" className="relative isolate w-full overflow-hidden text-stone-900 dark:text-stone-100 lg:min-h-[calc(100svh-var(--ck-nav-h,4.5rem))] lg:pb-[2vh]">
+    <section id="ngo-hero" className="relative isolate w-full text-stone-900 dark:text-stone-100">
       {/* ─────────────────────────────────────────────────────────────
           HERO STAGE. The photo covers the FULL hero width edge-to-edge,
           starting from the left under the navbar. Text sits on the photo
           with a narrow left fade + text-shadow for readability.
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative isolate w-full lg:h-[max(520px,calc(100svh-var(--ck-nav-h,4.5rem)-5rem))] lg:overflow-hidden flex flex-col justify-between">
-
-        {/* Full-width photo behind the entire hero area */}
-        <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block" aria-hidden="true">
-          <Image
-            src={heroImageSrc}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-[center_75%]"
-          />
-          {/* Thin bottom dissolve so the hero blends into the trust strip */}
-          <div className="absolute inset-x-0 bottom-0 h-[6%] bg-[linear-gradient(to_bottom,transparent,var(--surface-cream))]" />
-        </div>
-
-        {/* Narrow left-edge fade for text readability — photo stays visible */}
-        <div
-          className="pointer-events-none absolute inset-0 -z-10 hidden lg:block bg-[linear-gradient(to_right,rgba(255,255,255,0.55)_0%,rgba(255,255,255,0.35)_12%,rgba(255,255,255,0)_22%,transparent_100%)] dark:bg-[linear-gradient(to_right,rgba(9,9,11,0.60)_0%,rgba(9,9,11,0.40)_12%,rgba(9,9,11,0)_22%,transparent_100%)]"
-          aria-hidden="true"
-        />
+      <div className="relative isolate w-full">
 
         {/* ─────────────────────────────────────────────────────────────
             MAIN CONTENT CONTAINER (Left-aligned text column, edge-positioned)
             ───────────────────────────────────────────────────────────── */}
-        <div className="w-full px-4 sm:px-6 lg:pl-10 xl:pl-12 lg:pr-8 py-8 sm:py-12 lg:py-[clamp(1rem,3.5vh,2.5rem)] flex-1 flex flex-col justify-between z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center flex-1 pb-6 sm:pb-8 lg:pb-[2vh]">
+        <div className="relative z-20 w-full px-4 sm:px-6 pt-10 sm:pt-14 lg:pt-16 -mb-8 sm:-mb-12">
+          <div className="mx-auto flex max-w-3xl flex-col items-center gap-6">
 
             {/* LEFT COLUMN: Verified Badge (if verified), Headlines, CTAs, Helper Text */}
             <motion.div
               variants={containerVariants}
               initial="hidden"
               animate="visible"
-              className="lg:col-span-7 max-w-[560px] flex flex-col items-start text-left [text-shadow:0_1px_3px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.8)] dark:[text-shadow:0_1px_3px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.8)]"
+              className="max-w-[640px] flex flex-col items-center text-center"
             >
               {/* 1. Verified Status Badge (Only in verified state) */}
               {isVerified && (
@@ -189,7 +168,7 @@ export function NgoHero() {
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-white" />
                   <span className="text-3xs sm:text-2xs font-bold tracking-tight">
-                    ✓ Verified by CauseKind
+                    Verified by CauseKind
                   </span>
                 </motion.div>
               )}
@@ -209,7 +188,7 @@ export function NgoHero() {
               {/* 3. Subheadline */}
               <motion.p
                 variants={itemVariants}
-                className="text-base sm:text-lg lg:text-[clamp(0.95rem,1.9vh,1.125rem)] text-stone-900 dark:text-stone-100 leading-relaxed max-w-[480px] mb-7 lg:mb-[2.4vh] font-normal [text-shadow:0_1px_2px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.85)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.85)]"
+                className="text-base sm:text-lg lg:text-[clamp(0.95rem,1.9vh,1.125rem)] text-stone-900 dark:text-stone-100 leading-relaxed max-w-[520px] mx-auto mb-7 lg:mb-[2.4vh] font-normal"
               >
                 {subheadline}
               </motion.p>
@@ -217,7 +196,7 @@ export function NgoHero() {
               {/* 4. Action CTAs */}
               <motion.div
                 variants={itemVariants}
-                className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 w-full sm:w-auto mb-3 relative"
+                className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3.5 w-full sm:w-auto mb-3 relative"
               >
                 {/* Start a Drive Button */}
                 {canPostRequest ? (
@@ -247,7 +226,7 @@ export function NgoHero() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: 6 }}
-                          className="hidden sm:block absolute left-0 top-full mt-2 w-72 rounded-2xl bg-stone-900 dark:bg-zinc-800 text-white p-3.5 shadow-2xl z-30 text-xs"
+                          className="hidden sm:block absolute left-1/2 -translate-x-1/2 top-full mt-2 w-72 rounded-2xl bg-stone-900 dark:bg-zinc-800 text-white p-3.5 shadow-2xl z-30 text-xs"
                         >
                           <div className="flex items-start gap-2.5">
                             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -302,7 +281,7 @@ export function NgoHero() {
               {/* Helper Text Under Hero Button */}
               <motion.div
                 variants={itemVariants}
-                className="flex items-center gap-2 text-3xs sm:text-2xs text-stone-800 dark:text-stone-200 font-medium mb-4 [text-shadow:0_1px_2px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.85)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.85)]"
+                className="flex items-center justify-center gap-2 text-3xs sm:text-2xs text-stone-800 dark:text-stone-200 font-medium mb-4"
               >
                 {!canPostRequest ? (
                   <>
@@ -320,7 +299,7 @@ export function NgoHero() {
 
             {/* RIGHT COLUMN: the NGO's live drive (verified NGOs with an active drive only) */}
             {isVerified && activeRequests > 0 && (
-              <div className="lg:col-span-5 flex flex-col items-start lg:items-end justify-end mt-auto">
+              <div className="flex w-full flex-col items-center">
                 <motion.div
                   initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 16 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -368,20 +347,12 @@ export function NgoHero() {
           </div>
         </div>
 
-        {/* Phones/tablets: photo behind the text, positioned so the girl
-            and the man in the vest are visible. */}
-        <div className="pointer-events-none absolute inset-0 -z-20 lg:hidden" aria-hidden="true">
-          <Image
-            src={heroImageSrc}
-            alt=""
-            fill
-            priority
-            sizes="100vw"
-            className="object-cover object-[60%_70%]"
-          />
-          {/* Slight overlay so text on the photo stays readable */}
-          <div className="absolute inset-0 bg-white/40 dark:bg-black/40" />
-        </div>
+      </div>
+
+      {/* Animated scroll gallery: tilts from angled to flat as the text scrolls away */}
+      <div className="relative">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 z-10 h-[40vh] bg-[radial-gradient(ellipse_at_top,rgba(21,128,61,0.28),transparent_70%)] blur-3xl dark:bg-[radial-gradient(ellipse_at_top,rgba(74,222,128,0.18),transparent_70%)]" />
+        <NgoHeroGallery />
       </div>
 
       {/* ─────────────────────────────────────────────────────────────

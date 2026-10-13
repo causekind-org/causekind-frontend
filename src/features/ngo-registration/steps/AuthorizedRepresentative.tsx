@@ -22,6 +22,7 @@ import { sendNgoRepresentativeEmailCode, verifyNgoRepresentativeEmailCode } from
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
+import { NgoOtpInput } from "@/features/ngo-registration/components/NgoOtpInput";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 
 interface AuthorizedRepresentativeProps {
@@ -172,6 +173,7 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"send" | "verify" | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
+  const codeRef = useRef<HTMLInputElement>(null);
   const prefix = `rep-${index}`;
   const pan = normalizePan(card.panNumber);
 
@@ -204,16 +206,19 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
     }
   }
 
-  async function verifyCode() {
+  async function verifyCode(value: string = code) {
     setBusy("verify");
     setCodeError(null);
     try {
-      if (!IS_NGO_DEMO_MODE) await verifyNgoRepresentativeEmailCode(fieldText(card.email), code.trim());
+      if (!IS_NGO_DEMO_MODE) await verifyNgoRepresentativeEmailCode(fieldText(card.email), value.trim());
       onChange({ emailVerified: true });
       setCodeSent(false);
       setCode("");
     } catch (err) {
+      // Wrong code: show why, clear the boxes and put the cursor back in them.
       setCodeError(err instanceof Error ? err.message : "That code didn't work. Please try again.");
+      setCode("");
+      setTimeout(() => codeRef.current?.focus(), 0);
     } finally {
       setBusy(null);
     }
@@ -309,16 +314,15 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
           )}
         </div>
         {!card.emailVerified && codeSent && (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <label htmlFor={`${prefix}-code`} className="text-3xs font-semibold text-stone-600 dark:text-stone-300">6-digit code</label>
-            <input id={`${prefix}-code`} type="text" inputMode="numeric" maxLength={6}
-              value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className={cn(controlClass, "w-36 font-mono tracking-widest")} />
-            <button type="button" onClick={verifyCode} disabled={code.length !== 6 || busy !== null}
-              className="rounded-lg bg-ngo-700 px-3 py-2 text-xs font-bold text-white hover:bg-ngo-600 disabled:cursor-not-allowed disabled:opacity-50">
-              {busy === "verify" ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Verifying" /> : "Verify"}
-            </button>
-            <span className="text-3xs text-stone-500">We sent a code to {fieldText(card.email)}.</span>
+          <div className="space-y-1.5 pt-1">
+            <p className="text-3xs font-semibold text-stone-600 dark:text-stone-300">
+              Enter the 6-digit code we sent to {fieldText(card.email)}
+            </p>
+            <NgoOtpInput ref={codeRef} id={`${prefix}-code`} aria-label={`6-digit code for representative ${index + 1}`}
+              value={code} disabled={busy === "verify"}
+              onChange={(v) => { setCode(v); if (codeError) setCodeError(null); }}
+              onComplete={(v) => void verifyCode(v)} />
+            {busy === "verify" && <p className="flex items-center gap-1 text-3xs text-stone-500"><Loader2 className="h-3 w-3 animate-spin" /> Checking…</p>}
           </div>
         )}
         {codeError && <p role="alert" className="text-3xs font-semibold text-red-600 dark:text-red-400">{codeError}</p>}

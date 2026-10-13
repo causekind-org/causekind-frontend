@@ -858,15 +858,15 @@ export function NgoProfileView() {
               ))}
             </div>
 
-            {/* Complete your profile readiness rail inside hero band */}
-            <NgoReadinessRail
+            {/* Complete your profile readiness rail inside hero band: only until the NGO is approved */}
+            {application?.status !== "APPROVED" && <NgoReadinessRail
               pct={progress.percent}
               completedCount={progress.completedCount}
               totalSteps={6}
               isSubmitted={isApplicationSubmitted}
               status={application?.status}
               nextStepLabel={nextStepLabel}
-            />
+            />}
           </div>
         </div>
 

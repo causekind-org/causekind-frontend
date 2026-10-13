@@ -19,7 +19,7 @@ describe("NGO landing with server-backed status", () => {
     localStorage.setItem("ngo-application-101", JSON.stringify({ status: "APPROVED" }));
     render(<NgoLandingView />);
     await screen.findByRole("link", { name: /Start your application/ });
-    expect(screen.queryByText("✓ Verified by CauseKind")).not.toBeInTheDocument();
+    expect(screen.queryByText("Verified by CauseKind")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Start a Drive/i })).toBeInTheDocument();
   });
   it("opens the next incomplete section from the server draft", async () => {
@@ -35,14 +35,14 @@ describe("NGO landing with server-backed status", () => {
   it("unlocks drive creation only after server approval", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
-    await screen.findByText("✓ Verified by CauseKind");
+    await screen.findByText("Verified by CauseKind");
     expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new");
   });
   it("shows a failed activity read as an error rather than zero activity", async () => {
     vi.mocked(getNgoOverview).mockRejectedValue(new Error("Activity unavailable"));
     render(<NgoLandingView />);
     expect(await screen.findByRole("alert")).toHaveTextContent("Activity unavailable");
-    expect(screen.queryByText("✓ Verified by CauseKind")).not.toBeInTheDocument();
+    expect(screen.queryByText("Verified by CauseKind")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
   });
   it("does not present sample donations or testimonials as live evidence", async () => {

@@ -155,7 +155,6 @@ describe("NGORegistration Component", () => {
     expect(screen.getByRole("button", { name: /Continue/i })).toBeDisabled();
     await user.click(screen.getByRole("button", { name: "Send code" }));
     await user.type(await screen.findByLabelText(/6-digit code/i), "654321");
-    await user.click(screen.getByRole("button", { name: "Verify" }));
     expect(await screen.findByText("Verified")).toBeInTheDocument();
     await user.upload(fileInputs()[0], dummyPdf()); // ID proof
     await waitFor(() => expect(screen.queryByText(/Uploading.../i)).not.toBeInTheDocument());
