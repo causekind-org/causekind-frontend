@@ -95,7 +95,8 @@ function NewNgoDriveForm() {
   const [ngoContactName, setNgoContactName] = useState("");
   const [ngoContactPhone, setNgoContactPhone] = useState("");
   
-  const [step, setStep] = useState<NgoDriveStep>("drive-type");
+  // ?type=items comes from the "Start a Drive" popup, which already chose the type.
+  const [step, setStep] = useState<NgoDriveStep>(searchParams?.get("type") === "items" ? "drive-details" : "drive-type");
   const [direction, setDirection] = useState(1);
   const reduced = !!useReducedMotion();
   

@@ -1,3 +1,4 @@
+import { StartDriveChoice } from "@/components/ngo-landing/StartDriveChoice";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
@@ -203,6 +204,7 @@ export default async function RootLayout({
                   <DeferredOverlays />
                   {/* Every Donate button opens this In-Kind / Money choice. */}
                   <DonateChoice />
+                  <StartDriveChoice />
                   {/* Guests' and donors' next step after "Donate items". */}
                   <DonateItemsChoiceModal />
                   {/* Donor-only: a waiting match, once, until answered or closed. */}

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -65,12 +64,15 @@ const TRUST_CARDS: TrustCardItem[] = [
 ];
 
 export function NgoTrustSection() {
-  const { isVerified, ngoName, isLoading, error } = useNgoStatus();
+  const { isVerified } = useNgoStatus();
   const [activeFlippedCardId, setActiveFlippedCardId] = useState<string | null>(null);
 
   const handleCardFlip = (cardId: string, willFlip: boolean) => {
     setActiveFlippedCardId(willFlip ? cardId : null);
   };
+
+  // Only the trust grid (before verification) is left in this section.
+  if (isVerified) return null;
 
   return (
     <section className="relative overflow-hidden py-16 sm:py-24 text-stone-900 dark:text-stone-100">
@@ -166,11 +168,6 @@ export function NgoTrustSection() {
           </div>
         )}
 
-        <div className="rounded-3xl border border-ngo-200 p-6 dark:border-zinc-700">
-          <h3 className="text-xl font-bold">Your organization’s verification</h3>
-          <p className="mt-3 text-sm">{isLoading ? "Checking your application…" : error ? "We couldn’t check your application. Please retry from your profile." : isVerified ? `${ngoName} has an approved CauseKind application. Each new drive is reviewed separately.` : "Complete your application and email verification. Our team reviews the organization before you can start drives."}</p>
-          <Link href="/profile/ngo-details" className="mt-4 inline-block text-sm font-semibold underline">View your application</Link>
-        </div>
       </div>
     </section>
   );

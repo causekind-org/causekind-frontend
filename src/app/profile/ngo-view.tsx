@@ -873,7 +873,7 @@ export function NgoProfileView() {
       {/* ── Main Body: 2-column layout with Your Journey & Milestones (matching Donee) ── */}
       <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-12 space-y-8">
         {/* If application is submitted, show application status & compliance details */}
-        {isApplicationSubmitted && application && (
+        {isApplicationSubmitted && application && application.status !== "APPROVED" && (
           <div className="rounded-2xl sm:rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 p-5 sm:p-8 shadow-sm backdrop-blur-sm space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 dark:border-zinc-800 pb-5">
               <div className="flex items-center gap-3">

@@ -51,6 +51,8 @@ describe("NGO landing with server-backed status", () => {
     expect(screen.queryByText("Live activity")).not.toBeInTheDocument();
     expect(screen.queryByText("Trusted by Givers and NGOs")).not.toBeInTheDocument();
     expect(screen.queryByText("Verified Impact Score")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /View your handovers and photos/ })).toHaveAttribute("href", "/ngo/handovers");
+    // The handover-record and verification cards were removed from the landing page.
+    expect(screen.queryByText("Keep a clear record of each handover")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Your organization.s verification/)).not.toBeInTheDocument();
   });
 });
