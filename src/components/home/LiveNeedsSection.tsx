@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
@@ -203,25 +205,25 @@ export function LiveNeedsSection({
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
             <p className="mb-5 hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ck-home-ink,#b04a15)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:inline-flex dark:bg-white/5 dark:text-[var(--ck-home-ink,#e07b3a)] dark:ring-white/10">
-              <span className="size-1.5 rounded-full bg-current" aria-hidden />
+              <span className="size-1.5 rounded-full bg-current" aria-hidden /><LandingText>
               Live board
-            </p>
+            </LandingText></p>
             <h2
               id="live-needs-heading"
               className="text-[1.625rem] lg:text-6xl font-semibold [font-family:var(--font-source-serif-4),Georgia,serif] tracking-[-0.03em] lg:tracking-[-0.035em] text-stone-900 dark:text-stone-50 leading-[1.12] lg:leading-[1.02]"
             >
               {/* Two runs, not one: the accent half has to keep its own colour,
                   and LetterSwap emits a single coloured span. */}
-              {animateHeading ? <LetterSwap text="Real people. Real needs." /> : "Real people. Real needs."}{" "}
+              {animateHeading ? <LetterSwap text="Real people. Real needs." /> : <LandingText>Real people. Real needs.</LandingText>}{" "}
               <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">
-                {animateHeading ? <LetterSwap text="Right now." /> : "Right now."}
+                {animateHeading ? <LetterSwap text="Right now." /> : <LandingText>Right now.</LandingText>}
               </span>
             </h2>
 
-            <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
+            <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium"><LandingText>
               Every request here is posted by a verified individual or community school in India. No cash,
               no guesswork — offer the exact item they are waiting for today.
-            </p>
+            </LandingText></p>
           </div>
 
           {/*
@@ -238,12 +240,12 @@ export function LiveNeedsSection({
               <ShieldCheck className="w-5 h-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-black text-stone-900 dark:text-stone-100 leading-tight">
+              <p className="text-sm font-black text-stone-900 dark:text-stone-100 leading-tight"><LandingText>
                 Every donee is verified
-              </p>
-              <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+              </LandingText></p>
+              <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400"><LandingText>
                 ID and address checked before a need is posted
-              </p>
+              </LandingText></p>
             </div>
           </div>
         </div>
@@ -260,9 +262,9 @@ export function LiveNeedsSection({
                   : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5" /><LandingText>
               All Categories
-            </button>
+            </LandingText></button>
 
             {ALL_REQUEST_CATEGORIES.map((cat) => {
               const visual = CATEGORY_VISUALS[cat];
@@ -292,14 +294,14 @@ export function LiveNeedsSection({
                   >
                     <AnimatedCategoryIcon category={cat} iconClassName="w-3.5 h-3.5" />
                   </span>
-                  {cat}
+                  <LandingText>{cat}</LandingText>
                   {count > 0 && (
                     <span
                       className={`rounded-full px-1.5 text-3xs font-black tabular-nums ${
                         isSelected ? "bg-white/25 text-white" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
                       }`}
                     >
-                      {count}
+                      <LandingText>{count}</LandingText>
                     </span>
                   )}
                 </button>
@@ -324,20 +326,20 @@ export function LiveNeedsSection({
             <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400 dark:text-stone-500">
               <Sparkles className="w-6 h-6" />
             </div>
-            <p className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-200">
-              No open requests in {selectedCategory} right now
-            </p>
+            <p className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-200"><LandingText>
+              No open requests in </LandingText><LandingText>{selectedCategory}</LandingText><LandingText> right now
+            </LandingText></p>
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 max-w-sm">
-              {emptyStateCta
+              <LandingText>{emptyStateCta
                 ? "Be the first to post one, or check back soon — new needs are added regularly."
-                : "Check back soon — new needs are added regularly. Try another category in the meantime."}
+                : "Check back soon — new needs are added regularly. Try another category in the meantime."}</LandingText>
             </p>
             {emptyStateCta ? (
               <NewRequestLink
                 href={emptyStateCta.href}
                 className="inline-flex items-center gap-2 rounded-xl bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95"
               >
-                <span>{emptyStateCta.label}</span>
+                <span><LandingText>{emptyStateCta.label}</LandingText></span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </NewRequestLink>
             ) : null}
@@ -347,7 +349,7 @@ export function LiveNeedsSection({
           {/* A grid from 768px up; below that `.ck-snap-m` turns the same
               element into a native scroll-snap row with a peek of the next
               card, so six needs cost one card of height, not six. */}
-          <div
+          <LandingAttributes><div
             ref={needsRowRef}
             className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
             role="region"
@@ -388,31 +390,31 @@ export function LiveNeedsSection({
                 />
               );
             })}
-          </div>
+          </div></LandingAttributes>
           {pageCount > 1 && (
-            <nav aria-label="Open needs pages" className="mt-3 flex items-center justify-center gap-2">
-              <button type="button" aria-label="Previous requests" disabled={activePage === 0}
+            <LandingAttributes><nav aria-label="Open needs pages" className="mt-3 flex items-center justify-center gap-2">
+              <LandingAttributes><button type="button" aria-label="Previous requests" disabled={activePage === 0}
                 onClick={() => setPage(activePage - 1)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:left-0 md:top-1/2 md:-translate-y-1/2">
                 <ChevronLeft size={20} aria-hidden="true" />
-              </button>
+              </button></LandingAttributes>
               <div className="flex min-w-0 items-center overflow-x-auto">
                 {Array.from({ length: pageCount }, (_, index) => (
-                  <button key={index} type="button" aria-label={`Requests page ${index + 1}`}
+                  <LandingAttributes key={index}><button key={index} type="button" aria-label={`Requests page ${index + 1}`}
                     aria-current={index === activePage ? "page" : undefined}
                     onClick={() => setPage(index)}
                     className="flex h-11 w-8 shrink-0 items-center justify-center text-[var(--ck-home-ink,#b04a15)] focus-visible:outline-2">
                     <span className={`h-2 w-2 rounded-full bg-current ${index === activePage ? "opacity-100" : "opacity-30"}`} />
-                  </button>
+                  </button></LandingAttributes>
                 ))}
               </div>
-              <button type="button" aria-label="Next requests" disabled={activePage === pageCount - 1}
+              <LandingAttributes><button type="button" aria-label="Next requests" disabled={activePage === pageCount - 1}
                 onClick={() => setPage(activePage + 1)}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2">
                 <ChevronRight size={20} aria-hidden="true" />
-              </button>
-              <span className="sr-only" aria-live="polite">Page {activePage + 1} of {pageCount}</span>
-            </nav>
+              </button></LandingAttributes>
+              <span className="sr-only" aria-live="polite"><LandingText>Page </LandingText><LandingText>{activePage + 1}</LandingText><LandingText> of </LandingText><LandingText>{pageCount}</LandingText></span>
+            </nav></LandingAttributes>
           )}
           </div>
         )}
@@ -427,11 +429,11 @@ export function LiveNeedsSection({
             className="mt-4 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs sm:text-sm text-stone-500 dark:text-stone-400 hover:text-[var(--ck-home-ink,#b04a15)] dark:hover:text-[var(--ck-home-ink,#e07b3a)] transition-colors group/more"
           >
             <span className="font-bold text-stone-700 dark:text-stone-200 tabular-nums">
-              {hiddenCount} more open {hiddenCount === 1 ? "need" : "needs"}
+              <LandingText>{hiddenCount}</LandingText><LandingText> more open </LandingText><LandingText>{hiddenCount === 1 ? "need" : "needs"}</LandingText>
             </span>
-            {selectedCategory !== "All" && <span>in {selectedCategory}</span>}
+            {selectedCategory !== "All" && <span><LandingText>in </LandingText><LandingText>{selectedCategory}</LandingText></span>}
             <span className="text-stone-300 dark:text-stone-700">·</span>
-            <span className="font-semibold">See them all</span>
+            <span className="font-semibold"><LandingText>See them all</LandingText></span>
             <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/more:translate-x-1" />
           </Link>
         )}
@@ -443,12 +445,12 @@ export function LiveNeedsSection({
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200">
+              <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200"><LandingText>
                 Have something you no longer use?
-              </p>
-              <p className="text-3xs sm:text-xs text-stone-500 dark:text-stone-400">
+              </LandingText></p>
+              <p className="text-3xs sm:text-xs text-stone-500 dark:text-stone-400"><LandingText>
                 See what people near you need, and give it to someone who will use it.
-              </p>
+              </LandingText></p>
             </div>
           </div>
 
@@ -456,7 +458,7 @@ export function LiveNeedsSection({
             href="/requests"
             className="inline-flex items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 lg:min-h-12 lg:px-7 text-xs uppercase tracking-wider transition-all lg:duration-500 lg:ease-[cubic-bezier(0.32,0.72,0,1)] shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 lg:active:scale-[0.98] shrink-0"
           >
-            <span>See all needs</span>
+            <span><LandingText>See all needs</LandingText></span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

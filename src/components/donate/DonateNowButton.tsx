@@ -1,10 +1,13 @@
+
+import { LandingText } from "@/components/LandingTranslation";
 import Link from "@/components/AppLink";
 import { DONATE_HREF } from "@/lib/donateScroll";
 
 /**
  * The animated "Donate Now" call to action.
  *
- * <p>Deliberately a SERVER component — no "use client", no hooks, no auth read.
+ * <p>The button shell has no "use client", hooks or auth read. Its label uses
+ * the small LandingText client boundary to translate on landing routes.
  * Everything that varies is CSS:
  *
  * <ul>
@@ -18,9 +21,8 @@ import { DONATE_HREF } from "@/lib/donateScroll";
  *       disappear, and no placement can forget the check.</li>
  * </ul>
  *
- * <p>That is why this ships no client JavaScript at all: five placements, one
- * of them in the navbar on every page, and none of them costs a hydration
- * boundary.
+ * <p>The shared label translator reuses the same Google cache across placements,
+ * including the navbar. The shell and its role visibility remain CSS-driven.
  *
  * <p>The motion lives in styles.css under "Donate Now". Idle motion is the
  * point — a phone has no hover, so breathe / sheen / heartbeat run unprompted
@@ -82,7 +84,7 @@ export function DonateNowButton({
         </svg>
       </span>
 
-      <span className="ck-donate-label">{label}</span>
+      <span className="ck-donate-label"><LandingText>{label}</LandingText></span>
 
       {showArrow && (
         <span className="ck-donate-arrow" aria-hidden="true">

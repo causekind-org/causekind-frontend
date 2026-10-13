@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 /**
  * Chapter 1 — "One small thing can become a big thing."
@@ -245,7 +247,7 @@ function ThoughtBubble({ spec, variant }: { spec: CloudSpec; variant: "l" | "p" 
             <tspan key={li} x={spec.cx} dy={li ? 32 : 0}>
               {line.map((w, i) => (
                 <tspan key={i} className="c1-thought-w">
-                  {i ? ` ${w}` : w}
+                  <LandingText>{i ? ` ${w}` : w}</LandingText>
                 </tspan>
               ))}
             </tspan>
@@ -1454,9 +1456,9 @@ export function Chapter1TheUnusedThing({
           <p
             className={`c1-t-eyebrow ${styles.titleEyebrow} ${styles.mono} mb-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] max-md:tracking-[0.2em] text-[#b04a15] dark:text-[#ff9a5c]`}
           >
-            <span className="h-px w-8 bg-current max-md:hidden" />
+            <span className="h-px w-8 bg-current max-md:hidden" /><LandingText>
             Chapter one · The unused thing
-            <span className="h-px w-8 bg-current max-md:hidden" />
+            </LandingText><span className="h-px w-8 bg-current max-md:hidden" />
           </p>
           <h2
             id="ck-ch1-title"
@@ -1465,9 +1467,9 @@ export function Chapter1TheUnusedThing({
             {["One", "small", "thing"].map((w, i) => (
               <Fragment key={w}>
                 <span className={`c1-t-m ${styles.mask}`} style={{ ["--i" as string]: i } as React.CSSProperties}>
-                  <span className={`c1-t-w ${styles.word}`}>{w}</span>
+                  <span className={`c1-t-w ${styles.word}`}><LandingText>{w}</LandingText></span>
                 </span>
-                {i < 2 ? " " : null}
+                <LandingText>{i < 2 ? " " : null}</LandingText>
               </Fragment>
             ))}
             <br />
@@ -1475,10 +1477,10 @@ export function Chapter1TheUnusedThing({
               <Fragment key={w}>
                 <span className={`c1-t-m ${styles.mask}`} style={{ ["--i" as string]: i + 3 } as React.CSSProperties}>
                   <span className={`c1-t-w ${styles.word} text-[#b04a15] dark:text-[#ff8a4c]`}>
-                    {w}
+                    <LandingText>{w}</LandingText>
                   </span>
                 </span>
-                {i < 4 ? " " : null}
+                <LandingText>{i < 4 ? " " : null}</LandingText>
               </Fragment>
             ))}
           </h2>
@@ -1488,9 +1490,9 @@ export function Chapter1TheUnusedThing({
         <p
           className={`c1-sub ${styles.serif} absolute inset-x-0 bottom-[17vh] mx-auto md:bottom-[7vh] w-fit max-w-[88vw] rounded-full bg-[#1c130d]/80 px-5 py-2 text-center text-[clamp(0.95rem,1.6vw,1.2rem)] italic text-[#fbf1dd]`}
           style={{ opacity: 0 }}
-        >
+        ><LandingText>
           Every home has one thing it quietly outgrew.
-        </p>
+        </LandingText></p>
 
         {/* ── The words, behind the bag ─────────────────────────────────── */}
         <div
@@ -1511,9 +1513,9 @@ export function Chapter1TheUnusedThing({
             {LINE_1.map((w, i) => (
               <Fragment key={i}>
                 <span className={styles.mask}>
-                  <span className={`c1-w1 ${styles.word}`}>{w}</span>
+                  <span className={`c1-w1 ${styles.word}`}><LandingText>{w}</LandingText></span>
                 </span>
-                {i < LINE_1.length - 1 ? " " : null}
+                <LandingText>{i < LINE_1.length - 1 ? " " : null}</LandingText>
               </Fragment>
             ))}
           </p>
@@ -1523,12 +1525,12 @@ export function Chapter1TheUnusedThing({
           >
             {LINE_2.map((w, i) => (
               <span key={i} className="relative inline-block">
-                <span className={`c1-w2 ${styles.word}`}>{w}</span>
+                <span className={`c1-w2 ${styles.word}`}><LandingText>{w}</LandingText></span>
                 <span
                   className="c1-impact pointer-events-none absolute left-1/2 top-1/2 -ml-[0.5em] -mt-[0.5em] h-[1em] w-[1em] rounded-full border-2 border-[#ff7a2f]"
                   style={{ opacity: 0 }}
                 />
-                {i < LINE_2.length - 1 ? " " : null}
+                <LandingText>{i < LINE_2.length - 1 ? " " : null}</LandingText>
               </span>
             ))}
           </p>
@@ -1636,7 +1638,7 @@ export function Chapter1TheUnusedThing({
                 <path d={BAG.silhouette} strokeWidth="26" opacity="0.22" />
                 <path d={BAG.silhouette} strokeWidth="12" opacity="0.4" />
               </g>
-              {bagImage}
+              <LandingText>{bagImage}</LandingText>
               <g clipPath="url(#c1-bag-clip)">
                 <rect
                   className="c1-sheen"

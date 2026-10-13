@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -27,8 +29,8 @@ export function NgoGlanceStrip() {
   } = useNgoDashboardData();
 
   // Strip is rendered for verified NGOs ONLY
-  if (isLoading) return <p role="status" className="mx-auto max-w-7xl px-4 py-6">Loading your organization’s activity…</p>;
-  if (error) return <div role="alert" className="mx-auto max-w-7xl px-4 py-6"><p>{error}</p><button onClick={() => void refresh()} className="mt-2 underline">Retry</button></div>;
+  if (isLoading) return <p role="status" className="mx-auto max-w-7xl px-4 py-6"><LandingText>Loading your organization’s activity…</LandingText></p>;
+  if (error) return <div role="alert" className="mx-auto max-w-7xl px-4 py-6"><p><LandingText>{error}</LandingText></p><button onClick={() => void refresh()} className="mt-2 underline"><LandingText>Retry</LandingText></button></div>;
   if (!isVerified) return null;
 
   const isPhotosWarning = photosDue > 0;
@@ -49,12 +51,12 @@ export function NgoGlanceStrip() {
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-amber-700 dark:text-amber-400"><LandingText>
                   Photos Due · New Drives Paused
-                </p>
-                <p className="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-100 mt-0.5">
-                  Upload handover photos for <span className="underline decoration-amber-500">{photosDueRequestName}</span> to start your next drive.
-                </p>
+                </LandingText></p>
+                <p className="text-sm sm:text-base font-bold text-amber-950 dark:text-amber-100 mt-0.5"><LandingText>
+                  Upload handover photos for </LandingText><span className="underline decoration-amber-500"><LandingText>{photosDueRequestName}</LandingText></span><LandingText> to start your next drive.
+                </LandingText></p>
               </div>
             </div>
 
@@ -63,7 +65,7 @@ export function NgoGlanceStrip() {
               className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold px-5 py-2.5 text-xs sm:text-sm shadow-md transition-all shrink-0 w-full sm:w-auto"
             >
               <Camera className="w-4 h-4" />
-              <span>Upload Photos →</span>
+              <span><LandingText>Upload Photos →</LandingText></span>
             </Link>
           </motion.div>
         ) : null}
@@ -80,13 +82,13 @@ export function NgoGlanceStrip() {
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-stone-200/70 dark:border-zinc-800">
             <div className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs sm:text-sm font-bold text-ngo-950 dark:text-stone-100">
+              <span className="text-xs sm:text-sm font-bold text-ngo-950 dark:text-stone-100"><LandingText>
                 At a glance
-              </span>
+              </LandingText></span>
             </div>
-            <span className="text-3xs text-stone-500 dark:text-stone-400 font-medium">
+            <span className="text-3xs text-stone-500 dark:text-stone-400 font-medium"><LandingText>
               Live operations
-            </span>
+            </LandingText></span>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
@@ -97,11 +99,11 @@ export function NgoGlanceStrip() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-stone-100 tabular-nums">
-                  {activeRequests}
+                  <LandingText>{activeRequests}</LandingText>
                 </div>
-                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400">
+                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400"><LandingText>
                   Live drives
-                </div>
+                </LandingText></div>
               </div>
             </div>
 
@@ -112,11 +114,11 @@ export function NgoGlanceStrip() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-stone-100 tabular-nums">
-                  {itemsPledged}
+                  <LandingText>{itemsPledged}</LandingText>
                 </div>
-                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400">
+                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400"><LandingText>
                   Items pledged
-                </div>
+                </LandingText></div>
               </div>
             </div>
 
@@ -127,11 +129,11 @@ export function NgoGlanceStrip() {
               </div>
               <div>
                 <div className="text-2xl sm:text-3xl font-black text-stone-900 dark:text-stone-100 tabular-nums">
-                  {dropoffsToConfirm}
+                  <LandingText>{dropoffsToConfirm}</LandingText>
                 </div>
-                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400">
+                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400"><LandingText>
                   Drop-offs to confirm
-                </div>
+                </LandingText></div>
               </div>
             </div>
 
@@ -160,11 +162,11 @@ export function NgoGlanceStrip() {
                       : "text-stone-900 dark:text-stone-100"
                   }`}
                 >
-                  {photosDue}
+                  <LandingText>{photosDue}</LandingText>
                 </div>
-                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400">
+                <div className="text-3xs sm:text-xs font-bold text-stone-600 dark:text-stone-400"><LandingText>
                   Photos due
-                </div>
+                </LandingText></div>
               </div>
             </div>
           </div>
@@ -174,22 +176,22 @@ export function NgoGlanceStrip() {
             <div className="mt-5 pt-4 border-t border-stone-100 dark:border-zinc-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs sm:text-sm text-stone-600 dark:text-stone-300">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-ngo-700 dark:text-ngo-300 shrink-0" />
-                <span>
+                <span><LandingText>
                   No drives yet. Your first drive takes 2 minutes.
-                </span>
+                </LandingText></span>
               </div>
               {canPostRequest ? (
               <Link
                 href="/ngo/drives/new"
                 className="inline-flex items-center gap-1.5 font-bold text-ngo-700 dark:text-ngo-300 hover:text-ngo-800 dark:hover:text-ngo-200"
               >
-                <span>Start a Drive</span>
+                <span><LandingText>Start a Drive</LandingText></span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
               ) : (
-                <span className="inline-flex items-center gap-1.5 font-bold text-stone-400 cursor-not-allowed" aria-disabled="true" title={lockReason}>
-                  Start a Drive · {lockReason}
-                </span>
+                <LandingAttributes><span className="inline-flex items-center gap-1.5 font-bold text-stone-400 cursor-not-allowed" aria-disabled="true" title={lockReason}><LandingText>
+                  Start a Drive · </LandingText><LandingText>{lockReason}</LandingText>
+                </span></LandingAttributes>
               )}
             </div>
           )}

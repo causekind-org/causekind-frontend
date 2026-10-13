@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 /* Controlled, Next-adapted fork of the React Bits StaggeredMenu.
    Differences from the original:
@@ -112,7 +114,7 @@ const StaggeredMenuParentItem = ({
       onBlur={handleBlur}
       onKeyDown={handleKeyDown}
     >
-      <button
+      <LandingAttributes><button
         ref={parentButtonRef}
         type="button"
         className={'sm-panel-item sm-panel-item--parent' + (item.active || isChildActive ? ' is-active' : '')}
@@ -124,7 +126,7 @@ const StaggeredMenuParentItem = ({
       >
         <span className="sm-panel-itemLabel">
           <span className="inline-flex items-center gap-2">
-            <span>{item.label}</span>
+            <span><LandingText>{item.label}</LandingText></span>
             <ChevronDown
               className={`sm-submenu-chevron w-4 h-4 sm:w-5 sm:h-5 text-[var(--sm-accent,#1E6B4F)] opacity-75 transition-transform duration-200 ${
                 isOpen ? 'rotate-180' : ''
@@ -133,9 +135,9 @@ const StaggeredMenuParentItem = ({
             />
           </span>
         </span>
-      </button>
+      </button></LandingAttributes>
 
-      <div
+      <LandingAttributes><div
         id={submenuId}
         className={'sm-submenu-wrapper' + (isOpen ? ' is-open' : '')}
         role="region"
@@ -144,7 +146,7 @@ const StaggeredMenuParentItem = ({
         <ul className="sm-submenu-list" role="list">
           {item.children.map((child, cIdx) => (
             <li className="sm-submenu-itemWrap" key={child.label + cIdx}>
-              <a
+              <LandingAttributes><a
                 className={
                   'sm-submenu-item' +
                   (child.active ? ' is-active' : '') +
@@ -156,7 +158,7 @@ const StaggeredMenuParentItem = ({
                 tabIndex={isOpen ? 0 : -1}
                 onClick={(e) => handleItemClick(e, child)}
               >
-                <span className="sm-submenu-label">{child.label}</span>
+                <span className="sm-submenu-label"><LandingText>{child.label}</LandingText></span>
                 {child.isLocked && (
                   <Lock
                     className="w-3.5 h-3.5 text-ngo-600 dark:text-ngo-400 shrink-0 opacity-80 sm-lock-icon"
@@ -164,11 +166,11 @@ const StaggeredMenuParentItem = ({
                     aria-hidden="true"
                   />
                 )}
-              </a>
+              </a></LandingAttributes>
             </li>
           ))}
         </ul>
-      </div>
+      </div></LandingAttributes>
     </li>
   );
 };
@@ -372,13 +374,13 @@ export const StaggeredMenu = ({
       inert={!open}
     >
       {/* Backdrop — click away to close */}
-      <button
+      <LandingAttributes><button
         type="button"
         className="sm-backdrop backdrop-blur-md"
         aria-label="Close menu"
         tabIndex={open ? 0 : -1}
         onClick={() => onClose?.()}
-      />
+      /></LandingAttributes>
 
       <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
         {layerColors.map((c, i) => (
@@ -388,7 +390,7 @@ export const StaggeredMenu = ({
 
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" data-lenis-prevent inert={!open}>
         <div className="sm-panel-inner">
-          {header && <div className="sm-panel-header">{header}</div>}
+          {header && <div className="sm-panel-header"><LandingText>{header}</LandingText></div>}
 
           <ul className="sm-panel-list" role="list" data-numbering={displayItemNumbering || undefined}>
             {items && items.length ? (
@@ -403,7 +405,7 @@ export const StaggeredMenu = ({
                   />
                 ) : (
                   <li className="sm-panel-itemWrap" key={it.label + idx}>
-                    <a
+                    <LandingAttributes><a
                       className={
                         'sm-panel-item' +
                         (it.active ? ' is-active' : '') +
@@ -417,7 +419,7 @@ export const StaggeredMenu = ({
                     >
                       <span className="sm-panel-itemLabel">
                         <span className="inline-flex items-center gap-2">
-                          <span>{it.label}</span>
+                          <span><LandingText>{it.label}</LandingText></span>
                           {it.isLocked && (
                             <Lock
                               className="w-4 h-4 text-ngo-600 dark:text-ngo-400 shrink-0 opacity-80 sm-lock-icon"
@@ -427,35 +429,35 @@ export const StaggeredMenu = ({
                           )}
                         </span>
                       </span>
-                    </a>
+                    </a></LandingAttributes>
                   </li>
                 )
               )
             ) : (
               <li className="sm-panel-itemWrap" aria-hidden="true">
                 <span className="sm-panel-item">
-                  <span className="sm-panel-itemLabel">No items</span>
+                  <span className="sm-panel-itemLabel"><LandingText>No items</LandingText></span>
                 </span>
               </li>
             )}
           </ul>
 
           {displaySocials && socialItems && socialItems.length > 0 && (
-            <div className="sm-socials" aria-label="Social links">
-              <h3 className="sm-socials-title">Socials</h3>
+            <LandingAttributes><div className="sm-socials" aria-label="Social links">
+              <h3 className="sm-socials-title"><LandingText>Socials</LandingText></h3>
               <ul className="sm-socials-list" role="list">
                 {socialItems.map((s, i) => (
                   <li key={s.label + i} className="sm-socials-item">
                     <a href={s.link} target="_blank" rel="noopener noreferrer" className="sm-socials-link">
-                      {s.label}
+                      <LandingText>{s.label}</LandingText>
                     </a>
                   </li>
                 ))}
               </ul>
-            </div>
+            </div></LandingAttributes>
           )}
 
-          {footer && <div className="sm-panel-footer">{footer}</div>}
+          {footer && <div className="sm-panel-footer"><LandingText>{footer}</LandingText></div>}
         </div>
       </aside>
     </div>

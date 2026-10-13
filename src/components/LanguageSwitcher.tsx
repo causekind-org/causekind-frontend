@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { ChevronDown, Globe } from "lucide-react";
 import { LANGUAGE_OPTIONS } from "@/i18n/config";
 import type { Locale } from "@/i18n/config";
+import { useLandingTranslation } from "@/components/LandingTranslation";
 
 /** Must match the panel's `w-44`; the flip maths depends on it. */
 const PANEL_W = 176;
 const EDGE_GAP = 8;
 
 export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) {
+  const languageLabel = useLandingTranslation("Select language");
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
   const [open, setOpen] = useState(false);
@@ -59,7 +61,7 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1 h-8 rounded-full px-2.5 text-xs font-bold border border-stone-200 dark:border-stone-700 hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 transition-colors text-stone-700 dark:text-stone-300"
-        title="Select language"
+        title={languageLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
       >

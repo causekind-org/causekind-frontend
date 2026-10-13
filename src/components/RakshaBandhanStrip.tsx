@@ -1,3 +1,5 @@
+
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 import Link from "@/components/AppLink";
 import { ArrowUpRight, Plus } from "lucide-react";
 
@@ -41,7 +43,7 @@ export function RakshaBandhanStrip() {
   if (!isRakshaBandhanCampaignActive()) return null;
 
   return (
-    <section
+    <LandingAttributes><section
       aria-label="Causekind Raksha Bandhan announcement"
       className="relative isolate w-full overflow-hidden bg-[#4a1526] text-[#f7f0e4]"
     >
@@ -73,10 +75,10 @@ export function RakshaBandhanStrip() {
             at the other end of the band. */}
         <div className="hidden shrink-0 flex-col items-center leading-none min-[480px]:flex">
           <span className="text-[1.35rem] font-semibold tracking-[-0.02em]" style={{ fontFamily: SERIF }}>
-            {RAKSHA_BANDHAN_CAMPAIGN.dateDay}
+            <LandingText>{RAKSHA_BANDHAN_CAMPAIGN.dateDay}</LandingText>
           </span>
           <span className="mt-1 text-[0.5rem] font-bold uppercase tracking-[0.22em] text-[#e0ac48]">
-            {RAKSHA_BANDHAN_CAMPAIGN.dateMonth}
+            <LandingText>{RAKSHA_BANDHAN_CAMPAIGN.dateMonth}</LandingText>
           </span>
         </div>
 
@@ -96,7 +98,7 @@ export function RakshaBandhanStrip() {
         />
 
         <div className="min-w-0 flex-1">
-          <span className="sr-only">{RAKSHA_BANDHAN_CAMPAIGN.spokenMessage}</span>
+          <span className="sr-only"><LandingText>{RAKSHA_BANDHAN_CAMPAIGN.spokenMessage}</LandingText></span>
           {/* No marquee. The Independence strip scrolls a repeated slogan; this
               is a single sentence meant to be read once, and moving it would
               only make that harder. It wraps to two lines when narrow. */}
@@ -108,10 +110,10 @@ export function RakshaBandhanStrip() {
               className="text-[0.95rem] italic tracking-[0.005em] text-[#f7f0e4] sm:text-[1.05rem]"
               style={{ fontFamily: SERIF }}
             >
-              {RAKSHA_BANDHAN_CAMPAIGN.headline}
+              <LandingText>{RAKSHA_BANDHAN_CAMPAIGN.headline}</LandingText>
             </span>
             <span className="text-[0.72rem] font-medium tracking-[0.01em] text-[#f7f0e4]/70 sm:text-[0.8rem]">
-              {RAKSHA_BANDHAN_CAMPAIGN.subhead}
+              <LandingText>{RAKSHA_BANDHAN_CAMPAIGN.subhead}</LandingText>
             </span>
           </p>
         </div>
@@ -123,18 +125,18 @@ export function RakshaBandhanStrip() {
             href={RAKSHA_BANDHAN_CAMPAIGN.secondaryCtaHref}
             className="inline-flex min-h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-[#f7f0e4]/30 px-4 py-1.5 text-xs font-semibold text-[#f7f0e4] transition-[background-color,border-color] duration-200 hover:border-[#f7f0e4]/55 hover:bg-[#f7f0e4]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e0ac48] focus-visible:ring-offset-2 focus-visible:ring-offset-[#4a1526] motion-reduce:transition-none"
           >
-            {RAKSHA_BANDHAN_CAMPAIGN.secondaryCtaLabel}
+            <LandingText>{RAKSHA_BANDHAN_CAMPAIGN.secondaryCtaLabel}</LandingText>
             <Plus aria-hidden="true" className="h-3.5 w-3.5" />
           </Link>
           <Link
             href={RAKSHA_BANDHAN_CAMPAIGN.ctaHref}
             className="inline-flex min-h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#e0ac48] px-4 py-1.5 text-xs font-bold text-[#3b0f1e] shadow-[0_1px_0_rgba(255,255,255,0.25)_inset] transition-[background-color,transform] duration-200 hover:bg-[#eec066] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f7f0e4] focus-visible:ring-offset-2 focus-visible:ring-offset-[#4a1526] active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
           >
-            {RAKSHA_BANDHAN_CAMPAIGN.ctaLabel}
+            <LandingText>{RAKSHA_BANDHAN_CAMPAIGN.ctaLabel}</LandingText>
             <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }

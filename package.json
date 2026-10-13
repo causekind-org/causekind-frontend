@@ -12,11 +12,13 @@
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "translate": "node scripts/generate-translations.mjs",
+    "translate": "node --experimental-strip-types scripts/warm-translations.mjs",
+    "translate:warm": "node --experimental-strip-types scripts/warm-translations.mjs",
     "build:ds": "tsup && npm run build:ds:css",
     "build:ds:css": "tailwindcss -i src/design-system/entry.css -o dist/styles.css"
   },
   "dependencies": {
+    "@formatjs/icu-messageformat-parser": "3.5.20",
     "@hookform/resolvers": "^5.2.2",
     "@next/third-parties": "^16.2.9",
     "@radix-ui/react-accordion": "^1.2.12",

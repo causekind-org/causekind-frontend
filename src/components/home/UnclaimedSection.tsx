@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 import { useId } from "react";
 import Link from "next/link";
@@ -66,23 +68,23 @@ export function UnclaimedSection({
                 "repeating-linear-gradient(90deg, #c9962f 0px, #c9962f 5px, transparent 5px, transparent 9px)",
             }}
           />
-          <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#9a6b12] dark:text-[#e8b45a]">
+          <span className="text-[11px] font-black uppercase tracking-[0.18em] text-[#9a6b12] dark:text-[#e8b45a]"><LandingText>
             Raksha Bandhan
-          </span>
+          </LandingText></span>
         </div>
 
         <h2
           id={headingId}
           className="mt-4 max-w-2xl font-jakarta text-2xl font-extrabold leading-tight tracking-tight text-stone-900 dark:text-white lg:text-5xl lg:font-semibold lg:[font-family:var(--font-source-serif-4),Georgia,serif] lg:tracking-[-0.035em]"
           style={{ textWrap: "balance" }}
-        >
+        ><LandingText>
           No one has tied a thread here yet
-        </h2>
+        </LandingText></h2>
 
-        <p className="mt-3 max-w-xl text-sm leading-relaxed text-stone-600 dark:text-stone-300 sm:text-base">
+        <p className="mt-3 max-w-xl text-sm leading-relaxed text-stone-600 dark:text-stone-300 sm:text-base"><LandingText>
           Every request below went out to be matched privately, found no one, and
           was put on the open board. These are the ones that have waited longest.
-        </p>
+        </LandingText></p>
 
         {/* Double-bezel tray at lg; a plain block below it. */}
         <div className="mt-6 lg:mt-9 lg:rounded-[2rem] lg:bg-black/[0.03] lg:p-1.5 lg:ring-1 lg:ring-black/[0.05] dark:lg:bg-white/[0.04] dark:lg:ring-white/10">
@@ -98,26 +100,26 @@ export function UnclaimedSection({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <span className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-400 dark:text-stone-500">
-                      {request.category}
+                      <LandingText>{request.category}</LandingText>
                     </span>
                     {days !== null && (
                       <span className="shrink-0 text-[11px] font-bold tabular-nums text-[#9a6b12] dark:text-[#e8b45a]">
-                        {waitingLabel(days)}
+                        <LandingText>{waitingLabel(days)}</LandingText>
                       </span>
                     )}
                   </div>
 
                   <p className="font-jakarta text-lg font-extrabold leading-snug tracking-tight text-stone-900 dark:text-white">
-                    {request.title}
+                    <LandingText>{request.title}</LandingText>
                   </p>
 
                   <p className="text-sm font-semibold text-stone-600 dark:text-stone-300">
-                    {request.doneeFirstName} · {request.city}
+                    {request.doneeFirstName} · <LandingText>{request.city}</LandingText>
                   </p>
 
-                  <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-xs font-bold text-[#9a6b12] dark:text-[#e8b45a]">
+                  <span className="mt-auto inline-flex items-center gap-1.5 pt-2 text-xs font-bold text-[#9a6b12] dark:text-[#e8b45a]"><LandingText>
                     Tie a thread
-                    <ArrowRight
+                    </LandingText><ArrowRight
                       aria-hidden="true"
                       className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
                     />
@@ -132,9 +134,9 @@ export function UnclaimedSection({
         <Link
           href="/requests"
           className="mt-8 inline-flex items-center gap-1.5 rounded-full border border-[#9a6b12]/35 px-5 py-2.5 text-sm font-bold text-[#9a6b12] transition-[color,background-color,transform] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] hover:bg-[#9a6b12] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9a6b12] dark:text-[#e8b45a] dark:hover:text-stone-900"
-        >
+        ><LandingText>
           See every open need
-          <ArrowRight aria-hidden="true" className="size-4" />
+          </LandingText><ArrowRight aria-hidden="true" className="size-4" />
         </Link>
       </div>
     </section>

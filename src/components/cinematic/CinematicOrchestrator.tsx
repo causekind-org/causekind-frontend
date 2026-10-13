@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 /**
  * CinematicOrchestrator — the landing page's film.
@@ -44,16 +46,16 @@ function Chapter1Poster() {
         <p
           className={`${styles.mono} mb-5 flex items-center gap-3 text-[11px] font-medium uppercase tracking-[0.3em] max-md:tracking-[0.2em] text-[#b04a15] dark:text-[#ff9a5c]`}
         >
-          <span className="h-px w-8 bg-current max-md:hidden" />
+          <span className="h-px w-8 bg-current max-md:hidden" /><LandingText>
           Chapter one · The unused thing
-          <span className="h-px w-8 bg-current max-md:hidden" />
+          </LandingText><span className="h-px w-8 bg-current max-md:hidden" />
         </p>
         <h2
           className={`${styles.display} text-[clamp(2.6rem,9vw,8.5rem)] max-md:text-[clamp(2.6rem,12.5vw,3.4rem)] text-stone-900 dark:text-stone-100`}
-        >
+        ><LandingText>
           One small thing
-          <br />
-          <span className="text-[#b04a15] dark:text-[#ff8a4c]">can become a big thing.</span>
+          </LandingText><br />
+          <span className="text-[#b04a15] dark:text-[#ff8a4c]"><LandingText>can become a big thing.</LandingText></span>
         </h2>
       </div>
     </section>

@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import Image from "next/image";
 import { Anton } from "next/font/google";
@@ -67,13 +69,13 @@ export function NavratriHero() {
             <div className="absolute inset-0 z-0 hidden lg:block overflow-hidden bg-[#fdfaf5]">
               <picture>
                 <source media="(max-width: 1279px)" srcSet="/images/navratri-hero-1280.webp" />
-                <Image
+                <LandingAttributes><Image
                   src="/images/navratri-hero-1920.webp"
                   alt="Illustration of a woman and a man dancing garba with dandiya sticks"
                   fill
                   priority
                   className="object-cover object-right"
-                />
+                /></LandingAttributes>
               </picture>
             </div>
 
@@ -81,13 +83,13 @@ export function NavratriHero() {
             <div className="relative z-0 w-full h-[60vw] max-h-[400px] min-h-[300px] lg:hidden order-2 mt-4 rounded-2xl overflow-hidden">
               <picture>
                 <source media="(max-width: 767px)" srcSet="/images/navratri-hero-800.webp" />
-                <Image
+                <LandingAttributes><Image
                   src="/images/navratri-hero-1280.webp"
                   alt="Illustration of a woman and a man dancing garba with dandiya sticks"
                   fill
                   priority
                   className="object-cover object-[center_20%]"
-                />
+                /></LandingAttributes>
               </picture>
             </div>
 
@@ -110,15 +112,15 @@ export function NavratriHero() {
                 id="causekind-hero-title"
                 className="ck-hero-headline text-[#100c06] mt-4 lg:mt-[clamp(0.8rem,2vh,1.65rem)]"
               >
-                <span className="block lg:whitespace-nowrap">This Navratri,</span>
-                <span className="block text-[var(--ck-home-ink,#c54805)] lg:whitespace-nowrap">
+                <span className="block lg:whitespace-nowrap"><LandingText>This Navratri,</LandingText></span>
+                <span className="block text-[var(--ck-home-ink,#c54805)] lg:whitespace-nowrap"><LandingText>
                   Let Kindness Shine.
-                </span>
+                </LandingText></span>
               </h1>
 
-              <p className="mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#34322f] [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
+              <p className="mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#34322f] [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]"><LandingText>
                 Celebrate the spirit of giving. Connect with someone nearby and make this festive season brighter through meaningful donations.
-              </p>
+              </LandingText></p>
 
               <div data-guest={!user && !isRestoring ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
                 {primaryAction.href ? (
@@ -127,8 +129,8 @@ export function NavratriHero() {
                     className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#100c06] shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
-                    {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden">{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</span>}
-                    <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
+                    {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden"><LandingText>{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</LandingText></span>}
+                    <span className="relative z-[1] min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>
                     <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                   </NewRequestLink>
                 ) : (
@@ -137,7 +139,7 @@ export function NavratriHero() {
                     className="ck-hero-auth-placeholder inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="size-4 shrink-0 sm:size-5" />
-                    <span className="min-w-0 text-center">{primaryAction.label}</span>
+                    <span className="min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>
                     <ArrowRight className="ck-hero-action-arrow size-4 shrink-0 sm:size-5" />
                   </span>
                 )}

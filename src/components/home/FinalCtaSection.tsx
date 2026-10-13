@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React, { useState, useEffect, useRef } from "react";
 import { FEATURES } from "@/lib/features";
@@ -131,7 +133,7 @@ function FinalCtaCard({
   const whatsappNotifyUrl = WHATSAPP_NOTIFY_URL;
 
   return (
-    <section
+    <LandingAttributes><section
       ref={sectionRef}
       id="join"
       aria-label="Join CauseKind"
@@ -160,7 +162,7 @@ function FinalCtaCard({
             {/* Small Top Eyebrow */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-bold tracking-widest uppercase bg-white/10 text-amber-200 border border-white/15 mb-3 backdrop-blur-xs">
               <Sparkles className="w-3.5 h-3.5 text-[#F4A25B]" aria-hidden="true" />
-              <span>START IN 60 SECONDS</span>
+              <span><LandingText>START IN 60 SECONDS</LandingText></span>
             </div>
 
             {/* Heading with Word-by-Word Reveal */}
@@ -168,21 +170,21 @@ function FinalCtaCard({
               ref={headingRef}
               className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight"
             >
-              <span className="inline-block cta-heading-word mr-1.5">Someone</span>
-              <span className="inline-block cta-heading-word mr-1.5">nearby</span>
-              <span className="inline-block cta-heading-word mr-1.5">is</span>
-              <span className="inline-block cta-heading-word mr-1.5">waiting</span>
-              <span className="inline-block cta-heading-word mr-1.5">for</span>
-              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]">what</span>
-              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]">you</span>
-              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]">already</span>
-              <span className="inline-block cta-heading-word text-[#F4A25B]">have.</span>
+              <span className="inline-block cta-heading-word mr-1.5"><LandingText>Someone</LandingText></span>
+              <span className="inline-block cta-heading-word mr-1.5"><LandingText>nearby</LandingText></span>
+              <span className="inline-block cta-heading-word mr-1.5"><LandingText>is</LandingText></span>
+              <span className="inline-block cta-heading-word mr-1.5"><LandingText>waiting</LandingText></span>
+              <span className="inline-block cta-heading-word mr-1.5"><LandingText>for</LandingText></span>
+              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]"><LandingText>what</LandingText></span>
+              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]"><LandingText>you</LandingText></span>
+              <span className="inline-block cta-heading-word mr-1.5 text-[#F4A25B]"><LandingText>already</LandingText></span>
+              <span className="inline-block cta-heading-word text-[#F4A25B]"><LandingText>have.</LandingText></span>
             </h2>
 
             {/* Subtext */}
-            <p className="mt-2.5 text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed font-normal">
+            <p className="mt-2.5 text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed font-normal"><LandingText>
               Join free in a minute. Give, ask, or help your community — whichever side you're on.
-            </p>
+            </LandingText></p>
 
             {/* ════════ 3 ACTION BUTTONS (1 Row on Desktop, Stacked on Mobile) ════════ */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl mt-5 sm:mt-6">
@@ -197,7 +199,7 @@ function FinalCtaCard({
                   aria-hidden="true"
                 />
                 <Heart className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                <span>Join as Donor</span>
+                <span><LandingText>Join as Donor</LandingText></span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
 
@@ -212,7 +214,7 @@ function FinalCtaCard({
                   aria-hidden="true"
                 />
                 <HandHeart className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                <span>Join as a Donee</span>
+                <span><LandingText>Join as a Donee</LandingText></span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
 
@@ -227,37 +229,37 @@ function FinalCtaCard({
                   aria-hidden="true"
                 />
                 <Building2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                <span>Register your NGO</span>
+                <span><LandingText>Register your NGO</LandingText></span>
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </Link> : (
                 <span aria-disabled="true"
                   className="cta-action-btn relative flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#1F6B3F]/60 text-white/90 font-bold text-xs sm:text-[13px] tracking-wide cursor-not-allowed"
                 >
                   <Building2 className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                  <span>Register your NGO</span>
-                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider">Coming soon</span>
+                  <span><LandingText>Register your NGO</LandingText></span>
+                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wider"><LandingText>Coming soon</LandingText></span>
                 </span>
               )}
             </div>
 
             {/* ════════ TELL A FRIEND ON WHATSAPP ════════ */}
             <div className="mt-5 sm:mt-6 flex flex-col items-center gap-2">
-              <p className="text-xs sm:text-[13px] font-semibold text-stone-300">
+              <p className="text-xs sm:text-[13px] font-semibold text-stone-300"><LandingText>
                 Know someone who&apos;d love this?
-              </p>
+              </LandingText></p>
               <WhatsAppTellAFriendButton variant="outline" />
             </div>
 
             {/* Small reassurance line */}
-            <p className="mt-3 text-[11px] sm:text-xs font-medium text-stone-400">
+            <p className="mt-3 text-[11px] sm:text-xs font-medium text-stone-400"><LandingText>
               Free for everyone · Verified · Local
-            </p>
+            </LandingText></p>
           </div>
 
           {/* ════════ COMING SOON STRIP ════════ */}
           <div className="relative z-10 mt-5 pt-4 sm:mt-6 sm:pt-4 border-t border-stone-800 dark:border-stone-700/60 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
             <div className="text-stone-300 text-xs sm:text-[13px] font-normal text-center sm:text-left">
-              <span>Fundraising, online donations and CSR partnerships are coming soon.</span>
+              <span><LandingText>Fundraising, online donations and CSR partnerships are coming soon.</LandingText></span>
             </div>
 
             <a
@@ -267,12 +269,12 @@ function FinalCtaCard({
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-500/20 transition-all duration-200 active:scale-95 flex-shrink-0"
             >
               <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Get updates on WhatsApp</span>
+              <span><LandingText>Get updates on WhatsApp</LandingText></span>
             </a>
           </div>
         </div>
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }
 
@@ -320,7 +322,7 @@ const REASSURANCES = ["Free for everyone", "Verified", "Local"] as const;
  */
 function FinalCtaSplit() {
   return (
-    <section
+    <LandingAttributes><section
       id="join"
       aria-label="Join CauseKind"
       className="ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
@@ -331,40 +333,40 @@ function FinalCtaSplit() {
           <div className="flex flex-col items-start text-left min-w-0">
             <div className={`${TRUST_PILL_EYEBROW} mb-3 sm:mb-4`}>
               <Sparkles className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Start in 60 seconds</span>
+              <span><LandingText>Start in 60 seconds</LandingText></span>
             </div>
 
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
-              Someone nearby is waiting for{" "}
-              <span className="text-[#B5480F] dark:text-[#F4A25B]">what you already have.</span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight"><LandingText>
+              Someone nearby is waiting for</LandingText>{" "}
+              <span className="text-[#B5480F] dark:text-[#F4A25B]"><LandingText>what you already have.</LandingText></span>
             </h2>
 
-            <p className="mt-2 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl">
+            <p className="mt-2 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl"><LandingText>
               Join free in a minute. Give, ask, or help your community — whichever side you&apos;re on.
-            </p>
+            </LandingText></p>
 
-            <ul className="mt-4 sm:mt-5 flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Why join">
+            <LandingAttributes><ul className="mt-4 sm:mt-5 flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Why join">
               {REASSURANCES.map((item) => (
                 <li key={item} className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-medium text-stone-600 dark:text-stone-400">
                   <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                  {item}
+                  <LandingText>{item}</LandingText>
                 </li>
               ))}
-            </ul>
+            </ul></LandingAttributes>
 
             <div className="mt-5 sm:mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <p className="text-xs sm:text-[13px] font-medium text-stone-500 dark:text-stone-400">
+              <p className="text-xs sm:text-[13px] font-medium text-stone-500 dark:text-stone-400"><LandingText>
                 Know someone who&apos;d love this?
-              </p>
+              </LandingText></p>
               <WhatsAppTellAFriendButton variant="outline-light" />
             </div>
           </div>
 
           {/* ════════ RIGHT: choose your path ════════ */}
           <div className="min-w-0">
-            <p id="join-paths-label" className="mb-3 text-xs sm:text-sm font-semibold text-stone-500 dark:text-stone-400">
+            <p id="join-paths-label" className="mb-3 text-xs sm:text-sm font-semibold text-stone-500 dark:text-stone-400"><LandingText>
               Choose how you want to join
-            </p>
+            </LandingText></p>
             <ul className="flex flex-col gap-3" aria-labelledby="join-paths-label">
               {PATHS.map(({ role, icon: Icon, subline, href, ring }) => (
                 <li key={role.id}>
@@ -375,12 +377,12 @@ function FinalCtaSplit() {
                         <Icon className="w-5 h-5" />
                       </span>
                       <span className="flex-1 min-w-0">
-                        <span className="block text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">{role.label}</span>
-                        <span className="block text-xs sm:text-sm text-stone-500 dark:text-stone-400">{subline}</span>
+                        <span className="block text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100"><LandingText>{role.label}</LandingText></span>
+                        <span className="block text-xs sm:text-sm text-stone-500 dark:text-stone-400"><LandingText>{subline}</LandingText></span>
                       </span>
-                      <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-stone-500 dark:bg-zinc-800 dark:text-stone-400">Coming soon</span>
+                      <span className="shrink-0 rounded-full bg-stone-100 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-stone-500 dark:bg-zinc-800 dark:text-stone-400"><LandingText>Coming soon</LandingText></span>
                     </div>
-                  ) : <Link
+                  ) : <LandingAttributes><Link
                     href={href}
                     aria-label={subline}
                     className={`group flex items-center gap-4 w-full rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200! hover:border-stone-400! dark:border-stone-800! dark:hover:border-stone-600! px-4 py-3.5 sm:px-5 sm:py-4 shadow-sm transition-[transform,border-color,box-shadow] duration-200 motion-safe:hover:translate-x-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF7F2] dark:focus-visible:ring-offset-[#0E0C0A] ${ring}`}
@@ -390,17 +392,17 @@ function FinalCtaSplit() {
                     </span>
                     <span className="flex-1 min-w-0">
                       <span className="block text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
-                        {role.label}
+                        <LandingText>{role.label}</LandingText>
                       </span>
                       <span className="block text-xs sm:text-sm text-stone-500 dark:text-stone-400">
-                        {subline}
+                        <LandingText>{subline}</LandingText>
                       </span>
                     </span>
                     <ArrowRight
                       className="w-4 h-4 shrink-0 text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 transition-[transform,color] duration-200 motion-safe:group-hover:translate-x-1"
                       aria-hidden="true"
                     />
-                  </Link>}
+                  </Link></LandingAttributes>}
                 </li>
               ))}
             </ul>
@@ -411,7 +413,7 @@ function FinalCtaSplit() {
         <div className="mt-8 sm:mt-10 rounded-2xl border border-dashed border-stone-300! dark:border-stone-700! px-4 py-3 sm:px-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
           <p className="inline-flex items-center gap-2 text-xs sm:text-[13px] text-stone-600 dark:text-stone-300">
             <Sparkles className="w-4 h-4 shrink-0 text-[#B5480F] dark:text-[#F4A25B]" aria-hidden="true" />
-            <span>Fundraising, online donations and CSR partnerships are coming soon.</span>
+            <span><LandingText>Fundraising, online donations and CSR partnerships are coming soon.</LandingText></span>
           </p>
           <a
             href={WHATSAPP_NOTIFY_URL}
@@ -420,10 +422,10 @@ function FinalCtaSplit() {
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-500/20 transition-all duration-200 active:scale-95 flex-shrink-0"
           >
             <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
-            <span>Get updates on WhatsApp</span>
+            <span><LandingText>Get updates on WhatsApp</LandingText></span>
           </a>
         </div>
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }

@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useState, useEffect, useRef, useCallback } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
@@ -73,7 +75,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
   return (
-    <motion.span
+    <LandingAttributes><motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
       aria-label="CauseKind"
       whileHover={{ scale: 1.03 }}
@@ -140,7 +142,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
           </motion.span>
         </span>
       )}
-    </motion.span>
+    </motion.span></LandingAttributes>
   );
 }
 
@@ -215,17 +217,17 @@ function LoginNudgeBubble({ user }: { user: AuthUser | null }) {
       <div className="absolute -top-1.5 right-6 w-3 h-3 bg-white dark:bg-zinc-900 border-t border-l border-stone-200 dark:border-zinc-700 rotate-45" />
 
       <div className="relative rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 shadow-[0_12px_36px_rgba(0,0,0,0.16)] p-4">
-        <button
+        <LandingAttributes><button
           onClick={dismiss}
           aria-label="Dismiss"
           className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <X className="w-3 h-3" />
-        </button>
-        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 pr-5">New here?</p>
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
+        </button></LandingAttributes>
+        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 pr-5"><LandingText>New here?</LandingText></p>
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed"><LandingText>
           Log in to donate items or request help — it only takes a moment.
-        </p>
+        </LandingText></p>
       </div>
     </div>
   );
@@ -857,7 +859,7 @@ export function SiteHeader() {
               lives in styles.css, which is the only place that can outrank the
               cream `data-home-hero` inherited from the old treatment. The
               hover tint goes: it fought the glass for the same surface. */}
-          <button
+          <LandingAttributes><button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
             aria-label="Open menu"
@@ -866,7 +868,7 @@ export function SiteHeader() {
             className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
-          </button>
+          </button></LandingAttributes>
         </div>
 
         {/* Desktop Header */}
@@ -918,7 +920,7 @@ export function SiteHeader() {
                         />
                       )}
                       {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                      <span className="relative z-10">{triggerLabel}</span>
+                      <span className="relative z-10"><LandingText>{triggerLabel}</LandingText></span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
                           isAboutMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
@@ -975,7 +977,7 @@ export function SiteHeader() {
                         />
                       )}
                       {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                      <span className="relative z-10">{triggerLabel}</span>
+                      <span className="relative z-10"><LandingText>{triggerLabel}</LandingText></span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
                           isInKindMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
@@ -1024,7 +1026,7 @@ export function SiteHeader() {
                     />
                   )}
                   {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                  <span className="relative z-10">{link.label}</span>
+                  <span className="relative z-10"><LandingText>{link.label}</LandingText></span>
                 </Link>
               );
             })}
@@ -1038,7 +1040,7 @@ export function SiteHeader() {
             <span data-tour="bell" className="inline-flex"><NotificationBell /></span>
 
             {/* Sleek Theme Toggle */}
-            <button
+            <LandingAttributes><button
               onClick={toggleTheme}
               className={iconBtnCls}
               aria-label={t("nav.toggleTheme")}
@@ -1049,10 +1051,10 @@ export function SiteHeader() {
                 <Sun className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
                 <Moon className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
               </div>
-            </button>
+            </button></LandingAttributes>
 
             {/* Hamburger menu trigger */}
-            <button
+            <LandingAttributes><button
               onClick={() => setIsSidebarOpen(true)}
               className={iconBtnCls}
               aria-label="Open workspace menu"
@@ -1060,7 +1062,7 @@ export function SiteHeader() {
               {...tilt}
             >
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
-            </button>
+            </button></LandingAttributes>
 
             {/* Deliberately NOT behind FEATURES.money. That flag postpones
                 monetary campaigns and the old /donate page; /donate/money is
@@ -1074,7 +1076,7 @@ export function SiteHeader() {
             {isNgoDashboard && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
               <Link href="/profile/ngo-details">
                 <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
-                  {ngoApplicationLabel}
+                  <LandingText>{ngoApplicationLabel}</LandingText>
                 </Button>
               </Link>
             )}
@@ -1102,7 +1104,7 @@ export function SiteHeader() {
               >
                 <span className="inline-flex items-center gap-1.5">
                   {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  {user ? t("nav.signOut") : t("nav.logIn")}
+                  <LandingText>{user ? t("nav.signOut") : t("nav.logIn")}</LandingText>
                 </span>
               </SpecularButton>
               <LoginNudgeBubble user={user} />
@@ -1200,19 +1202,19 @@ export function SiteHeader() {
                           <div className="w-10 h-10 rounded-xl bg-orange-500/10 dark:bg-orange-400/15 flex items-center justify-center text-[var(--ck-role-accent)] group-hover:scale-110 transition-transform duration-200">
                             <HeartHandshake className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-orange-500/10 text-[var(--ck-role-accent)] border border-orange-500/20">
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-orange-500/10 text-[var(--ck-role-accent)] border border-orange-500/20"><LandingText>
                             Story
-                          </span>
+                          </LandingText></span>
                         </div>
                         <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.about")}
                         </h4>
-                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>
                           Our story, mission, and transparent model for direct peer-to-peer giving.
-                        </p>
+                        </LandingText></p>
                       </div>
                       <div className="mt-4 flex items-center text-xs font-semibold text-[var(--ck-role-accent)] opacity-80 group-hover:opacity-100 transition-opacity">
-                        <span>Read our story</span>
+                        <span><LandingText>Read our story</LandingText></span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
                       </div>
                     </Link>
@@ -1228,19 +1230,19 @@ export function SiteHeader() {
                           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-400/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-200">
                             <HelpCircle className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20">
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"><LandingText>
                             Help & Safety
-                          </span>
+                          </LandingText></span>
                         </div>
                         <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.faq")}
                         </h4>
-                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
+                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>
                           Clear answers on item matching, verification rules, and donor safety.
-                        </p>
+                        </LandingText></p>
                       </div>
                       <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <span>Browse answers</span>
+                        <span><LandingText>Browse answers</LandingText></span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
                       </div>
                     </Link>
@@ -1260,17 +1262,17 @@ export function SiteHeader() {
                             <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {t("nav.contact")}
                             </h4>
-                            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20">
+                            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20"><LandingText>
                               Support
-                            </span>
+                            </LandingText></span>
                           </div>
-                          <p className="text-xs text-stone-600 dark:text-stone-400">
+                          <p className="text-xs text-stone-600 dark:text-stone-400"><LandingText>
                             Need help, partnership inquiries, or donor support? Talk directly to our team.
-                          </p>
+                          </LandingText></p>
                         </div>
                       </div>
                       <div className="flex items-center text-xs font-semibold text-blue-600 dark:text-blue-400 shrink-0 pl-4 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <span>Get in touch</span>
+                        <span><LandingText>Get in touch</LandingText></span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
                       </div>
                     </Link>
@@ -1281,16 +1283,16 @@ export function SiteHeader() {
                     <div>
                       <div className="flex items-center gap-2 mb-3">
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--ck-role-accent)] text-white shadow-2xs">
-                          <Heart className="w-3 h-3 fill-current" />
+                          <Heart className="w-3 h-3 fill-current" /><LandingText>
                           100% Direct Giving
-                        </span>
+                        </LandingText></span>
                       </div>
-                      <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2">
+                      <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><LandingText>
                         Giving Directly to People in Need.
-                      </h4>
-                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4">
+                      </LandingText></h4>
+                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4"><LandingText>
                         Zero platform fees on in-kind donations. Every request is vetted to ensure your generosity makes an immediate impact.
-                      </p>
+                      </LandingText></p>
                     </div>
 
                     <Link
@@ -1298,7 +1300,7 @@ export function SiteHeader() {
                       onClick={() => setOpenMegaMenu(null)}
                       className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[var(--ck-role-accent)] hover:brightness-110 shadow-sm hover:shadow-md transition-all duration-200"
                     >
-                      <span>Explore Community Needs</span>
+                      <span><LandingText>Explore Community Needs</LandingText></span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
@@ -1309,15 +1311,15 @@ export function SiteHeader() {
                   <div className="flex items-center gap-6 flex-wrap">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-medium">Verified Beneficiaries</span>
+                      <span className="font-medium"><LandingText>Verified Beneficiaries</LandingText></span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" />
-                      <span className="font-medium">100% Free Peer Giving</span>
+                      <span className="font-medium"><LandingText>100% Free Peer Giving</LandingText></span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span className="font-medium">Smart AI Matching</span>
+                      <span className="font-medium"><LandingText>Smart AI Matching</LandingText></span>
                     </div>
                   </div>
                   <Link
@@ -1325,7 +1327,7 @@ export function SiteHeader() {
                     onClick={() => setOpenMegaMenu(null)}
                     className="flex items-center gap-1 font-semibold text-[var(--ck-role-accent)] hover:underline"
                   >
-                    <span>Learn about CauseKind verification</span>
+                    <span><LandingText>Learn about CauseKind verification</LandingText></span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -1380,7 +1382,7 @@ export function SiteHeader() {
               <div className="w-11 h-11 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shrink-0">
                 {avatarDataUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
+                  <LandingAttributes><img src={avatarDataUrl} alt="" className="w-full h-full object-cover" /></LandingAttributes>
                 ) : (
                   <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
                     {user.email[0]}
@@ -1392,8 +1394,8 @@ export function SiteHeader() {
                   {profile?.fullName || user.email.split("@")[0]}
                 </p>
                 <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                  {(roleLabel[user.role] ?? user.role)} · {livesTouched} lives touched
-                </p>
+                  <LandingText>{(roleLabel[user.role] ?? user.role)}</LandingText> · <LandingText>{livesTouched}</LandingText><LandingText> lives touched
+                </LandingText></p>
               </div>
             </div>
           ) : null
@@ -1401,18 +1403,18 @@ export function SiteHeader() {
         footer={
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Theme</span>
-              <button
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><LandingText>Theme</LandingText></span>
+              <LandingAttributes><button
                 onClick={toggleTheme}
                 aria-label="Toggle theme"
                 className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#e5e2d5] dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-[#f0eee6] dark:hover:bg-zinc-800 transition-all active:scale-95"
               >
                 <Sun className={`w-3.5 h-3.5 absolute text-amber-500 transition-all duration-500 ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
                 <Moon className={`w-3.5 h-3.5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
-              </button>
+              </button></LandingAttributes>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">Language</span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><LandingText>Language</LandingText></span>
               <LanguageSwitcher dropUp />
             </div>
             {user && (
@@ -1474,15 +1476,15 @@ export function SiteFooter() {
             </div>
             <div className="flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5 text-[#B5480F]" aria-hidden="true" />
-              <a href="mailto:support@causekind.com" className="hover:text-white transition-colors">
+              <a href="mailto:support@causekind.com" className="hover:text-white transition-colors"><LandingText>
                 support@causekind.com
-              </a>
+              </LandingText></a>
             </div>
             <div className="flex items-center gap-1.5">
               <MessageCircle className="w-3.5 h-3.5 text-emerald-500" aria-hidden="true" />
-              <a href="https://wa.me/917719938619" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+              <a href="https://wa.me/917719938619" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors"><LandingText>
                 WhatsApp Support
-              </a>
+              </LandingText></a>
             </div>
           </div>
           <div className="flex gap-1.5 sm:gap-2 pt-0.5 sm:pt-1 flex-wrap">
@@ -1531,9 +1533,9 @@ export function SiteFooter() {
                 type="button"
                 onClick={() => handleWhatsAppShare()}
                 className="hover:text-white hover:underline underline-offset-4 transition duration-200 text-left cursor-pointer"
-              >
+              ><LandingText>
                 Invite a friend
-              </button>
+              </LandingText></button>
             </li>
           </ul>
         </div>
@@ -1543,7 +1545,7 @@ export function SiteFooter() {
               narrow column and a centred dot then floats beside the gap. */}
           <ul className="space-y-1 sm:space-y-1.5 text-stone-400 font-medium">
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" /> {t("adminVerifiedFull")}</li>
-            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0F7A6C]" /> OTP-confirmed handovers</li>
+            <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#0F7A6C]" /><LandingText> OTP-confirmed handovers</LandingText></li>
             <li className="flex items-start gap-1.5 sm:gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#4a7fba]" /> {t("certificates")}</li>
           </ul>
         </div>
@@ -1553,33 +1555,33 @@ export function SiteFooter() {
           <span className="w-full sm:w-auto">
             © {new Date().getFullYear()} <span className="font-bold text-[var(--ck-role-accent)]">Cause</span><span className="font-bold text-stone-300">Kind</span>. {t("rights")}
           </span>
-          <Link href="/privacy" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/privacy" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4"><LandingText>
             Privacy Policy
-          </Link>
+          </LandingText></Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
-          <Link href="/terms" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/terms" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4"><LandingText>
             Terms &amp; Conditions
-          </Link>
+          </LandingText></Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
-          <Link href="/refund" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/refund" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4"><LandingText>
             Refund &amp; Cancellation Policy
-          </Link>
+          </LandingText></Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
-          <Link href="/razorpay" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/razorpay" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4"><LandingText>
             Razorpay Policies
-          </Link>
+          </LandingText></Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
-          <Link href="/terms#payments" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/terms#payments" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4"><LandingText>
             Donation Policy
-          </Link>
+          </LandingText></Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
-          <Link href="/terms#campaigns" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/terms#campaigns" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4"><LandingText>
             Campaign Policy (Coming Soon)
-          </Link>
+          </LandingText></Link>
           <span className="hidden h-3 w-px bg-stone-700 sm:inline-block" />
-          <Link href="/contact" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4">
+          <Link href="/contact" className="font-semibold text-stone-400 transition-colors hover:text-white hover:underline underline-offset-4"><LandingText>
             Contact Us
-          </Link>
+          </LandingText></Link>
         </div>
       </div>
     </footer>
