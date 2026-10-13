@@ -200,13 +200,13 @@ export function ContactPageClient() {
             <dl className="space-y-3 sm:space-y-4">
               <div>
                 <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Name</dt>
-                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Atharva Raorane</dd>
+                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Gaurav Yadav</dd>
               </div>
               <div>
                 <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Email</dt>
                 {/* break-words over break-all — same reason as the channel rows:
                     break-all chops the domain mid-word. */}
-                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100 break-words [overflow-wrap:anywhere]">Atharvaraorane147@gmail.com</dd>
+                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100 break-words [overflow-wrap:anywhere]">gaurav@causekind.com</dd>
               </div>
               <div>
                 <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Response time</dt>
