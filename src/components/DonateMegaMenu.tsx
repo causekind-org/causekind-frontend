@@ -1,3 +1,5 @@
+
+import { LandingText } from "@/components/LandingTranslation";
 import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { motion, useReducedMotion } from "framer-motion";
@@ -34,19 +36,19 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
             <span className="shrink-0 rounded-lg bg-[var(--ck-role-accent)]/10 p-2 text-[var(--ck-role-accent)]">
               <HandCoins className="h-4 w-4" />
             </span>
-            <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
+            <span className="text-sm font-semibold text-stone-800 dark:text-stone-100"><LandingText>
               Fund the trust directly
-            </span>
+            </LandingText></span>
           </span>
 
-          <span className="mt-3 block text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+          <span className="mt-3 block text-xs leading-relaxed text-stone-500 dark:text-stone-400"><LandingText>
             Give money to Sahas Charitable Trust — 12AA and 80G certified, funding
             education, healthcare and social welfare. Every rupee is accounted for.
-          </span>
+          </LandingText></span>
 
-          <span className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold text-[var(--ck-role-accent)]">
+          <span className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold text-[var(--ck-role-accent)]"><LandingText>
             Donate money
-            <ArrowRight
+            </LandingText><ArrowRight
               className="h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
               aria-hidden="true"
             />
@@ -58,10 +60,10 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
       <section className="col-span-8" aria-labelledby="donate-mega-inkind">
         <SectionHeading id="donate-mega-inkind">{t("nav.inKindDonation")}</SectionHeading>
 
-        <p className="mt-1 text-xs leading-snug text-stone-500 dark:text-stone-400">
+        <p className="mt-1 text-xs leading-snug text-stone-500 dark:text-stone-400"><LandingText>
           Every category has its own quiet rules — what genuinely helps, what ends
           up thrown away, and how to prepare an item so it arrives ready to use.
-        </p>
+        </LandingText></p>
 
         {/* Same nine categories, same order. Tighter than before: p-2 rather
             than p-3 and a smaller icon well, so two sections fit the panel
@@ -81,10 +83,10 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-semibold text-stone-800 dark:text-stone-100">
-                      {cat.name}
+                      <LandingText>{cat.name}</LandingText>
                     </span>
                     <span className="mt-0.5 block text-3xs leading-snug text-stone-500 dark:text-stone-400">
-                      {cat.tagline}
+                      <LandingText>{cat.tagline}</LandingText>
                     </span>
                   </span>
                 </Link>
@@ -159,9 +161,9 @@ function BrowseAllLink({ onNavigate }: { onNavigate?: () => void }) {
         }}
         animate={reduceMotion ? undefined : { backgroundPosition: ["140% 0%", "-40% 0%"] }}
         transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 2.4, ease: "easeInOut" }}
-      >
+      ><LandingText>
         Browse all live needs
-      </motion.span>
+      </LandingText></motion.span>
 
       <ArrowRight
         className="w-3.5 h-3.5 transition-transform duration-300 ease-out group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"

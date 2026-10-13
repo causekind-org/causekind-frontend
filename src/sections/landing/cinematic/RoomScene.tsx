@@ -1,3 +1,5 @@
+
+import { LandingText } from "@/components/LandingTranslation";
 import type { ReactNode } from "react";
 import { P } from "./palette";
 
@@ -99,7 +101,7 @@ function BookRow({ x0, x1, base, seed }: { x0: number; x1: number; base: number;
     i++;
     if (lean) break;
   }
-  return <>{books}</>;
+  return <><LandingText>{books}</LandingText></>;
 }
 
 export function RoomDefs() {
@@ -936,9 +938,9 @@ export function RoomScene() {
           fontSize="21"
           fill="#5a3b22"
           transform="rotate(-5 1150 704)"
-        >
+        ><LandingText>
           OLD THINGS
-        </text>
+        </LandingText></text>
         <path
           className="no-ink"
           d="M 1092 736 H 1200"

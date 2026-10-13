@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { serverDate } from "@/lib/serverTime";
 import React, { useCallback, useEffect, useState } from "react";
@@ -72,10 +74,10 @@ function RequestCard({ r }: { r: ItemRequest }) {
       >
         <div className="flex items-start justify-between gap-3">
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-3xs font-black uppercase tracking-wider ${SOFT}`}>
-            {r.category}
+            <LandingText>{r.category}</LandingText>
           </span>
           <span className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-3xs font-bold ${badge.cls}`}>
-            {badge.label}
+            <LandingText>{badge.label}</LandingText>
           </span>
         </div>
 
@@ -93,7 +95,7 @@ function RequestCard({ r }: { r: ItemRequest }) {
         <div className="mt-auto pt-4">
           {showProgress && (
             <>
-              <div
+              <LandingAttributes><div
                 className="h-1.5 w-full overflow-hidden rounded-full bg-[var(--ck-role-soft)]"
                 role="progressbar"
                 aria-valuemin={0}
@@ -102,10 +104,10 @@ function RequestCard({ r }: { r: ItemRequest }) {
                 aria-label={`${f.fulfilled} of ${f.requested} received`}
               >
                 <div className="h-full rounded-full bg-[var(--ck-role-accent)] transition-[width] duration-500" style={{ width: `${pct}%` }} />
-              </div>
+              </div></LandingAttributes>
               <p className="mt-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
-                {f.fulfilled} of {f.requested} received
-              </p>
+                <LandingText>{f.fulfilled}</LandingText><LandingText> of </LandingText><LandingText>{f.requested}</LandingText><LandingText> received
+              </LandingText></p>
             </>
           )}
         </div>
@@ -167,43 +169,43 @@ export function MyRequestsSection() {
       className={DONEE_SECTION}
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <DoneeSectionHeading
+        <LandingAttributes><DoneeSectionHeading
           id="my-requests-heading"
           eyebrow="My requests"
           title="Your requests at a glance."
           lede="Track every need you've posted and see what's on its way."
-        />
+        /></LandingAttributes>
 
         <div className={DONEE_HEADING_GAP}>
           {failed ? (
             <div role="alert" className={`${DONEE_CARD} flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5`}>
-              <p className="text-sm font-medium text-stone-700 dark:text-stone-300">
+              <p className="text-sm font-medium text-stone-700 dark:text-stone-300"><LandingText>
                 We couldn&apos;t load your requests just now.
-              </p>
+              </LandingText></p>
               <button
                 type="button"
                 onClick={load}
                 className="inline-flex items-center gap-1.5 self-start sm:self-auto rounded-full border border-[var(--ck-role-accent)]/40! px-4 py-2 text-xs font-extrabold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-soft)] transition-colors"
               >
-                <RotateCw className="w-3.5 h-3.5" aria-hidden="true" />
+                <RotateCw className="w-3.5 h-3.5" aria-hidden="true" /><LandingText>
                 Try again
-              </button>
+              </LandingText></button>
             </div>
           ) : empty ? (
             <div className="rounded-2xl border-2 border-dashed border-[var(--ck-role-border)]! bg-white/60 dark:bg-zinc-900/60 px-6 py-10 flex flex-col items-center text-center">
               <span className={`w-12 h-12 rounded-2xl flex items-center justify-center ${SOFT}`}>
                 <Inbox className="w-6 h-6" aria-hidden="true" />
               </span>
-              <p className="mt-4 text-base font-bold text-stone-900 dark:text-stone-100">
+              <p className="mt-4 text-base font-bold text-stone-900 dark:text-stone-100"><LandingText>
                 You haven&apos;t posted any needs yet
-              </p>
-              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">
+              </LandingText></p>
+              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400"><LandingText>
                 Tell us what you need and we&apos;ll help find a donor nearby.
-              </p>
+              </LandingText></p>
               <NewRequestLink href="/requests/new" className={`${DONEE_PILL_BUTTON} mt-5`}>
-                <Plus className="w-4 h-4" aria-hidden="true" />
+                <Plus className="w-4 h-4" aria-hidden="true" /><LandingText>
                 Post your first need
-              </NewRequestLink>
+              </LandingText></NewRequestLink>
             </div>
           ) : (
             <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-5">
@@ -221,13 +223,13 @@ export function MyRequestsSection() {
             <Link
               href={ALL_REQUESTS_HREF}
               className="inline-flex items-center gap-1.5 text-sm font-extrabold text-[var(--ck-role-accent)] hover:underline underline-offset-4"
-            >
-              View all <ArrowRight className="w-4 h-4" aria-hidden="true" />
+            ><LandingText>
+              View all </LandingText><ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
             <NewRequestLink href="/requests/new" className={DONEE_PILL_BUTTON}>
-              <Plus className="w-4 h-4" aria-hidden="true" />
+              <Plus className="w-4 h-4" aria-hidden="true" /><LandingText>
               Post a new need
-            </NewRequestLink>
+            </LandingText></NewRequestLink>
           </div>
         )}
       </div>

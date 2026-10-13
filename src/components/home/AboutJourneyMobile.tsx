@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 /**
  * About CauseKind — phone (< 768px) illustration of the section's line,
@@ -239,7 +241,7 @@ export function AboutJourneyMobile({
         </g>
         <Badge x={x + 18} y={y - 18} />
         <text x={x} y={y + 42} textAnchor="middle" className={styles.jLabel}>
-          {label}
+          <LandingText>{label}</LandingText>
         </text>
         {/* What they need — becomes a tick when it arrives. */}
         <g transform={`translate(${bx} 336)`}>
@@ -252,7 +254,7 @@ export function AboutJourneyMobile({
             }
           />
           <text y="-6" textAnchor="middle" className={styles.jBubbleLabel}>
-            {NeedIcon ? "NEEDS" : "GOT IT"}
+            <LandingText>{NeedIcon ? "NEEDS" : "GOT IT"}</LandingText>
           </text>
           <g key={need ? need.id : "tick"} className={styles.jBubbleIcon}>
             {NeedIcon ? (
@@ -301,15 +303,15 @@ export function AboutJourneyMobile({
           <circle className={styles.jRing} cx="180" cy="356" r="70" />
           <circle className={styles.jRing} cx="180" cy="356" r="128" />
         </g>
-        <text x="180" y="424" textAnchor="middle" className={styles.jLabel}>
+        <text x="180" y="424" textAnchor="middle" className={styles.jLabel}><LandingText>
           Nearby · within 10 km
-        </text>
+        </LandingText></text>
 
         {/* ── Home shelf ─────────────────────────────────────────────── */}
         <rect className={styles.jPanel} x="14" y="24" width="332" height="100" rx="20" />
-        <text x="30" y="44" className={styles.jLabel}>
+        <text x="30" y="44" className={styles.jLabel}><LandingText>
           At home · unused
-        </text>
+        </LandingText></text>
         <rect className={styles.jPlank} x="26" y="106" width="308" height="7" rx="3.5" />
         <rect className={styles.jPlankEdge} x="26" y="111" width="308" height="3" rx="1.5" />
         <g className={styles.jDust}>
@@ -382,7 +384,7 @@ export function AboutJourneyMobile({
           <path d={HEART} transform="translate(0 3)" fill="#fff" />
         </g>
         <text x={HUB[0]} y={HUB[1] + 50} textAnchor="middle" className={`${styles.jLabel} ${styles.jHubLabel}`}>
-          {phase === "match" ? "Matched" : "CauseKind"}
+          <LandingText>{phase === "match" ? "Matched" : "CauseKind"}</LandingText>
         </text>
 
         {/* ── Who needs them ─────────────────────────────────────────── */}
@@ -390,7 +392,7 @@ export function AboutJourneyMobile({
         {destNode("ngo", Ngo, "NGO")}
       </svg>
       <p key={caption} className={styles.jCaption}>
-        {caption}
+        <LandingText>{caption}</LandingText>
       </p>
     </div>
   );

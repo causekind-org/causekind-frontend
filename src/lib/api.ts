@@ -1999,7 +1999,23 @@ export function doneePhotoSrc(path: string): string {
 /** Mirrors the backend CancellationReason enum. */
 export type CancellationReason =
   | "ITEM_NO_LONGER_AVAILABLE" | "CANNOT_ARRANGE_HANDOVER" | "SCHEDULING_PROBLEM"
-  | "OTHER_PARTY_UNRESPONSIVE" | "SAFETY_CONCERN" | "CREATED_BY_MISTAKE" | "OTHER";
+  | "OTHER_PARTY_UNRESPONSIVE" | "SAFETY_CONCERN" | "CREATED_BY_MISTAKE" | "OTHER"
+  | "NO_LONGER_NEEDED" | "RECEIVED_ELSEWHERE";
+
+/** The recipient's own reasons; the donor's list ("item no longer available") made no sense to them. */
+export const DONEE_CANCELLATION_REASONS: { value: CancellationReason; label: string; needsDetail: boolean }[] = [
+  { value: "NO_LONGER_NEEDED", label: "I no longer need this item", needsDetail: false },
+  { value: "RECEIVED_ELSEWHERE", label: "I already got this item elsewhere", needsDetail: false },
+  { value: "CANNOT_ARRANGE_HANDOVER", label: "I can't collect or receive it", needsDetail: false },
+  { value: "SCHEDULING_PROBLEM", label: "The handover time doesn't work for me", needsDetail: false },
+  { value: "OTHER_PARTY_UNRESPONSIVE", label: "The donor isn't responding", needsDetail: false },
+  { value: "SAFETY_CONCERN", label: "Safety concern", needsDetail: true },
+  { value: "OTHER", label: "Other", needsDetail: true },
+];
+
+export function cancellationReasonsFor(role: "DONOR" | "DONEE" = "DONOR") {
+  return role === "DONEE" ? DONEE_CANCELLATION_REASONS : CANCELLATION_REASONS;
+}
 
 export const CANCELLATION_REASONS: { value: CancellationReason; label: string; needsDetail: boolean }[] = [
   { value: "ITEM_NO_LONGER_AVAILABLE", label: "The item is no longer available", needsDetail: false },

@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import Link from "@/components/AppLink";
 import { usePathname, useRouter } from "next/navigation";
@@ -156,7 +158,7 @@ export function MobileBottomNav() {
   ) return null;
 
   return (
-    <nav
+    <LandingAttributes><nav
       // `inert` while parked: the links leave the tab order too, so keyboard
       // focus cannot land on a bar that is off-screen.
       inert={parked}
@@ -224,7 +226,7 @@ export function MobileBottomNav() {
           const selected = index === activeIndex;
 
           return (
-            <Link
+            <LandingAttributes key={item.href}><Link
               key={item.href}
               href={item.href}
               aria-current={index === routeActiveIndex ? "page" : undefined}
@@ -256,9 +258,9 @@ export function MobileBottomNav() {
                   : "translate-y-1 opacity-0"
                 }`}
               >
-                {item.label}
+                <LandingText>{item.label}</LandingText>
               </span>
-            </Link>
+            </Link></LandingAttributes>
           );
         })}
 
@@ -322,7 +324,7 @@ export function MobileBottomNav() {
           />
         )}
       </div>
-    </nav>
+    </nav></LandingAttributes>
   );
 }
 
@@ -507,7 +509,7 @@ export function FloatingSupportButton() {
             </span>
             <div>
               <p className="text-xs font-bold text-stone-850 dark:text-stone-100">{t("emailUs")}</p>
-              <p className="text-3xs text-stone-400 font-medium">support@causekind.com</p>
+              <p className="text-3xs text-stone-400 font-medium"><LandingText>support@causekind.com</LandingText></p>
             </div>
           </a>
           <a
@@ -538,7 +540,7 @@ export function FloatingSupportButton() {
 
           `touch-none` matters: without it a drag on a touch screen scrolls the
           page instead of moving the button. */}
-      <button
+      <LandingAttributes><button
         onClick={guardClick(() => setOpen(v => !v))}
         {...dragHandlers}
         aria-label={open ? t("closeSupport") : t("openSupport")}
@@ -562,7 +564,7 @@ export function FloatingSupportButton() {
             : <MessageCircle className="w-5 h-5 text-white" />
           }
         </span>
-      </button>
+      </button></LandingAttributes>
     </>
   );
 }

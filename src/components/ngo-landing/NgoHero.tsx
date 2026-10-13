@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useState, useRef } from "react";
 import Image from "next/image";
@@ -150,14 +152,14 @@ export function NgoHero() {
 
         {/* Full-width photo behind the entire hero area */}
         <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block" aria-hidden="true">
-          <Image
+          <LandingAttributes><Image
             src={heroImageSrc}
             alt=""
             fill
             priority
             sizes="100vw"
             className="object-cover object-[center_75%]"
-          />
+          /></LandingAttributes>
           {/* Thin bottom dissolve so the hero blends into the trust strip */}
           <div className="absolute inset-x-0 bottom-0 h-[6%] bg-[linear-gradient(to_bottom,transparent,var(--surface-cream))]" />
         </div>
@@ -188,9 +190,9 @@ export function NgoHero() {
                   className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-sm mb-5 lg:mb-[1.6vh] bg-ngo-700 text-white border-ngo-800"
                 >
                   <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                  <span className="text-3xs sm:text-2xs font-bold tracking-tight">
+                  <span className="text-3xs sm:text-2xs font-bold tracking-tight"><LandingText>
                     ✓ Verified by CauseKind
-                  </span>
+                  </LandingText></span>
                 </motion.div>
               )}
 
@@ -200,9 +202,9 @@ export function NgoHero() {
                 className="text-3xl sm:text-5xl lg:text-[clamp(2rem,5.4vh,3.4rem)] font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-[1.08] mb-5 lg:mb-[1.8vh]"
                 style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
               >
-                <span className="block">{headlineLine1}</span>
+                <span className="block"><LandingText>{headlineLine1}</LandingText></span>
                 <span className="block text-ngo-700 dark:text-ngo-300 italic font-serif">
-                  {headlineLine2}
+                  <LandingText>{headlineLine2}</LandingText>
                 </span>
               </motion.h1>
 
@@ -211,7 +213,7 @@ export function NgoHero() {
                 variants={itemVariants}
                 className="text-base sm:text-lg lg:text-[clamp(0.95rem,1.9vh,1.125rem)] text-stone-900 dark:text-stone-100 leading-relaxed max-w-[480px] mb-7 lg:mb-[2.4vh] font-normal [text-shadow:0_1px_2px_rgba(255,255,255,0.9),0_0_12px_rgba(255,255,255,0.85)] dark:[text-shadow:0_1px_2px_rgba(0,0,0,0.9),0_0_12px_rgba(0,0,0,0.85)]"
               >
-                {subheadline}
+                <LandingText>{subheadline}</LandingText>
               </motion.p>
 
               {/* 4. Action CTAs */}
@@ -225,7 +227,7 @@ export function NgoHero() {
                     href="/ngo/drives/new"
                     className="inline-flex items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 active:scale-[0.98] text-white font-bold px-7 py-3.5 lg:py-[1.4vh] text-sm sm:text-base shadow-lg shadow-ngo-700/25 hover:shadow-xl hover:shadow-ngo-700/40 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
                   >
-                    <span>Start a Drive</span>
+                    <span><LandingText>Start a Drive</LandingText></span>
                     <ArrowRight className="w-4 h-4" />
                   </Link>
                 ) : (
@@ -237,7 +239,7 @@ export function NgoHero() {
                       className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-stone-200 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 font-bold px-7 py-3.5 lg:py-[1.4vh] text-sm sm:text-base cursor-not-allowed border border-stone-300 dark:border-zinc-700 shadow-sm transition-all focus:outline-none"
                     >
                       <Lock className="w-4 h-4 text-stone-400 dark:text-stone-500" />
-                      <span>Start a Drive</span>
+                      <span><LandingText>Start a Drive</LandingText></span>
                     </button>
 
                     {/* Desktop Tooltip on Click */}
@@ -253,17 +255,17 @@ export function NgoHero() {
                             <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                             <div className="space-y-2">
                               <p className="font-medium text-stone-200 leading-snug">
-                                {status === "incomplete" && (stepNumber === 0 ? "Start your application to get verified." : "Complete your profile to get verified.")}
-                                {status === "under_review" && "Your application is under review. We'll unlock this once you're approved."}
-                                {status === "changes_requested" && "A few documents need fixing."}
-                                {isPhotosDue && `Upload handover photos for ${photosDueRequestName} to start your next drive.`}
+                                <LandingText>{status === "incomplete" && (stepNumber === 0 ? "Start your application to get verified." : "Complete your profile to get verified.")}</LandingText>
+                                <LandingText>{status === "under_review" && "Your application is under review. We'll unlock this once you're approved."}</LandingText>
+                                <LandingText>{status === "changes_requested" && "A few documents need fixing."}</LandingText>
+                                <LandingText>{isPhotosDue && `Upload handover photos for ${photosDueRequestName} to start your next drive.`}</LandingText>
                               </p>
                               {status === "incomplete" && (
                                 <Link
                                   href={wizardHref || "/profile/ngo-details"}
                                   className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
                                 >
-                                  <span>{stepNumber === 0 ? "Start application →" : "Continue application →"}</span>
+                                  <span><LandingText>{stepNumber === 0 ? "Start application →" : "Continue application →"}</LandingText></span>
                                 </Link>
                               )}
                               {status === "changes_requested" && (
@@ -271,7 +273,7 @@ export function NgoHero() {
                                   href="/profile/ngo-details"
                                   className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
                                 >
-                                  <span>Fix now →</span>
+                                  <span><LandingText>Fix now →</LandingText></span>
                                 </Link>
                               )}
                               {isPhotosDue && (
@@ -279,7 +281,7 @@ export function NgoHero() {
                                   href="/ngo/handovers"
                                   className="inline-flex items-center gap-1 text-xs font-bold text-emerald-400 hover:text-emerald-300"
                                 >
-                                  <span>Upload photos →</span>
+                                  <span><LandingText>Upload photos →</LandingText></span>
                                 </Link>
                               )}
                             </div>
@@ -295,7 +297,7 @@ export function NgoHero() {
                   href={secondaryCtaHref}
                   className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-stone-300 dark:border-zinc-700 bg-white/80 dark:bg-zinc-900/80 hover:bg-stone-50 dark:hover:bg-zinc-800 active:scale-[0.98] text-stone-800 dark:text-stone-200 font-bold px-6 py-3.5 lg:py-[1.4vh] text-sm sm:text-base backdrop-blur-sm shadow-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ngo-700 focus:ring-offset-2"
                 >
-                  <span>{secondaryCtaText}</span>
+                  <span><LandingText>{secondaryCtaText}</LandingText></span>
                 </Link>}
               </motion.div>
 
@@ -307,12 +309,12 @@ export function NgoHero() {
                 {!canPostRequest ? (
                   <>
                     <Lock className="w-3.5 h-3.5 text-stone-500 dark:text-stone-400 shrink-0" />
-                    <span>{lockReason || "Available once CauseKind verifies your NGO."}</span>
+                    <span><LandingText>{lockReason || "Available once CauseKind verifies your NGO."}</LandingText></span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-3.5 h-3.5 text-ngo-700 dark:text-ngo-300 shrink-0" />
-                    <span>Direct handovers · 10 km donor reach · Verified impact certificates</span>
+                    <span><LandingText>Direct handovers · 10 km donor reach · Verified impact certificates</LandingText></span>
                   </>
                 )}
               </motion.div>
@@ -334,18 +336,18 @@ export function NgoHero() {
                   <div className="rounded-[14px] bg-white/95 dark:bg-stone-900/95 border border-ngo-100 dark:border-zinc-800 shadow-[0_12px_30px_rgba(0,0,0,0.12)] p-4 sm:p-5 backdrop-blur-md">
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="text-3xs font-bold uppercase tracking-wider text-ngo-700 dark:text-ngo-300">
+                          <span className="text-3xs font-bold uppercase tracking-wider text-ngo-700 dark:text-ngo-300"><LandingText>
                             Live Drive
-                          </span>
+                          </LandingText></span>
                           <Link
                             href="/dashboard/ngo#live-drives"
                             className="text-3xs font-bold text-stone-500 hover:text-stone-900 dark:hover:text-stone-100"
-                          >
+                          ><LandingText>
                             View all →
-                          </Link>
+                          </LandingText></Link>
                         </div>
                         <p className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 mb-2">
-                          {photosDueRequestName || "Winter Relief Blankets Drive"}
+                          <LandingText>{photosDueRequestName || "Winter Relief Blankets Drive"}</LandingText>
                         </p>
                         <div className="h-1.5 w-full rounded-full bg-stone-100 dark:bg-zinc-800 overflow-hidden mb-1.5">
                           <div
@@ -356,8 +358,8 @@ export function NgoHero() {
                           />
                         </div>
                         <div className="flex items-center justify-between text-3xs text-stone-500 dark:text-stone-400 font-medium">
-                          <span>{itemsPledged} items pledged</span>
-                          <span>Live</span>
+                          <span><LandingText>{itemsPledged}</LandingText><LandingText> items pledged</LandingText></span>
+                          <span><LandingText>Live</LandingText></span>
                         </div>
                       </div>
                   </div>
@@ -371,14 +373,14 @@ export function NgoHero() {
         {/* Phones/tablets: photo behind the text, positioned so the girl
             and the man in the vest are visible. */}
         <div className="pointer-events-none absolute inset-0 -z-20 lg:hidden" aria-hidden="true">
-          <Image
+          <LandingAttributes><Image
             src={heroImageSrc}
             alt=""
             fill
             priority
             sizes="100vw"
             className="object-cover object-[60%_70%]"
-          />
+          /></LandingAttributes>
           {/* Slight overlay so text on the photo stays readable */}
           <div className="absolute inset-0 bg-white/40 dark:bg-black/40" />
         </div>

@@ -1,3 +1,5 @@
+
+import { LandingText } from "@/components/LandingTranslation";
 import React from "react";
 
 /**
@@ -26,14 +28,14 @@ export function DoneeSectionHeading({
   return (
     <div className="flex flex-col items-center text-center relative mt-2 sm:mt-4">
       <div className={`${tone === "donee" ? DONEE_PILL_EYEBROW : TRUST_PILL_EYEBROW} mb-3 sm:mb-4`}>
-        {eyebrow}
+        <LandingText>{eyebrow}</LandingText>
       </div>
       <h2 id={id} className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
-        {title}
+        <LandingText>{title}</LandingText>
       </h2>
       {lede && (
         <p className="mt-1 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto">
-          {lede}
+          <LandingText>{lede}</LandingText>
         </p>
       )}
     </div>

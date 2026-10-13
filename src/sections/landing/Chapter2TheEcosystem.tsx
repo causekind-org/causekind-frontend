@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 /**
  * Chapter 2 — "It finds its person."
@@ -790,7 +792,7 @@ export function Chapter2TheEcosystem() {
       <p
         className={`${styles.mono} mb-4 text-[10px] uppercase tracking-[0.3em] text-[#ff9a5c] sm:text-[11px]`}
       >
-        {eyebrow}
+        <LandingText>{eyebrow}</LandingText>
       </p>
       <p className={`${styles.display} text-[clamp(2.4rem,5.6vw,5.6rem)] text-[#fbf1dd]`}>
         {big.map((w, i) => (
@@ -800,7 +802,7 @@ export function Chapter2TheEcosystem() {
               <span
                 className={`c2-cap-w ${styles.word} ${i === big.length - 1 ? "text-[#ff8a4c]" : ""}`}
               >
-                {w}
+                <LandingText>{w}</LandingText>
               </span>
             </span>
           </span>
@@ -809,7 +811,7 @@ export function Chapter2TheEcosystem() {
       <p
         className={`${styles.serif} mt-5 max-w-[30ch] text-[clamp(1rem,1.35vw,1.2rem)] leading-relaxed text-[#e9dcc6]/85`}
       >
-        {small}
+        <LandingText>{small}</LandingText>
       </p>
     </div>
   );
@@ -820,9 +822,9 @@ export function Chapter2TheEcosystem() {
       aria-labelledby="ck-ch2-title"
       className={`${styles.stage} ${styles.ch2} ${cineFonts} ck-cine-ch2`}
     >
-      <h2 id="ck-ch2-title" className="sr-only">
+      <h2 id="ck-ch2-title" className="sr-only"><LandingText>
         CauseKind finds the person who needs it
-      </h2>
+      </LandingText></h2>
 
       <svg
         className={styles.svg}
@@ -968,9 +970,9 @@ export function Chapter2TheEcosystem() {
                 fontWeight="800"
                 fill="#1b0f08"
                 style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
-              >
+              ><LandingText>
                 10 KM
-              </text>
+              </LandingText></text>
             </g>
           </g>
           {[0, 1, 2].map((i) => (
@@ -1042,7 +1044,7 @@ export function Chapter2TheEcosystem() {
                       fill="#f3e2c8"
                       style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
                     >
-                      {p.label}
+                      <LandingText>{p.label}</LandingText>
                     </text>
                   </g>
                 </g>
@@ -1076,9 +1078,9 @@ export function Chapter2TheEcosystem() {
                     fontWeight="800"
                     fill="#1b0f08"
                     style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
-                  >
+                  ><LandingText>
                     Needs a school bag
-                  </text>
+                  </LandingText></text>
                 </g>
               </g>
             </g>
@@ -1152,9 +1154,9 @@ export function Chapter2TheEcosystem() {
                   fontWeight="800"
                   fill="#1c130d"
                   style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
-                >
+                ><LandingText>
                   List an item
-                </text>
+                </LandingText></text>
               </g>
               <g className="c2-ui c2-ui-a">
                 <rect x="713" y="318" width="174" height="164" rx="16" fill="#f1e2c7" />
@@ -1179,9 +1181,9 @@ export function Chapter2TheEcosystem() {
                 className="c2-ui c2-ui-b"
                 style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
               >
-                <text x="716" y="512" fontSize="16" fontWeight="800" fill="#1c130d">
+                <text x="716" y="512" fontSize="16" fontWeight="800" fill="#1c130d"><LandingText>
                   School bag
-                </text>
+                </LandingText></text>
               </g>
               <g
                 className="c2-ui c2-ui-b"
@@ -1195,9 +1197,9 @@ export function Chapter2TheEcosystem() {
                   fontSize="10.5"
                   fontWeight="700"
                   fill="#9a3a10"
-                >
+                ><LandingText>
                   Education
-                </text>
+                </LandingText></text>
                 <rect x="796" y="524" width="88" height="24" rx="12" fill="#e3efe2" />
                 <text
                   x="840"
@@ -1206,9 +1208,9 @@ export function Chapter2TheEcosystem() {
                   fontSize="10.5"
                   fontWeight="700"
                   fill="#2f5d34"
-                >
+                ><LandingText>
                   Good condition
-                </text>
+                </LandingText></text>
               </g>
               <g className="c2-ui c2-ui-b">
                 <rect x="716" y="562" width="168" height="8" rx="4" fill="#e6d8c0" />
@@ -1226,9 +1228,9 @@ export function Chapter2TheEcosystem() {
                     fontWeight="800"
                     fill="#fff"
                     style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
-                  >
+                  ><LandingText>
                     List item
-                  </text>
+                  </LandingText></text>
                   <g className="c2-btn-done">
                     <text
                       x="810"
@@ -1238,9 +1240,9 @@ export function Chapter2TheEcosystem() {
                       fontWeight="800"
                       fill="#fff"
                       style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
-                    >
+                    ><LandingText>
                       Listed
-                    </text>
+                    </LandingText></text>
                   </g>
                   <path
                     className="c2-check"
@@ -1375,9 +1377,9 @@ export function Chapter2TheEcosystem() {
               fill="#fff"
               letterSpacing="1.5"
               style={{ fontFamily: "var(--font-plus-jakarta-sans), sans-serif" }}
-            >
+            ><LandingText>
               VERIFIED
-            </text>
+            </LandingText></text>
           </g>
         </g>
 
@@ -1404,24 +1406,24 @@ export function Chapter2TheEcosystem() {
           style={{ marginTop: "calc(var(--hdr, 0px) / 2)" }}
         >
           <div className="relative w-full">
-            {caption(
+            <LandingText>{caption(
               "c2-cap-1 bottom-0 md:bottom-auto md:top-0 md:-translate-y-1/2",
               "Chapter two · It finds its person",
               ["List it."],
               "Photograph the thing you already own and say what condition it’s in. That’s the listing.",
-            )}
-            {caption(
+            )}</LandingText>
+            <LandingText>{caption(
               "c2-cap-2 bottom-0 md:bottom-auto md:top-0 md:-translate-y-1/2",
               "Matching",
               ["Someone", "within 10 km."],
               "A verified person nearby who asked for exactly this.",
-            )}
-            {caption(
+            )}</LandingText>
+            <LandingText>{caption(
               "c2-cap-3 bottom-0 md:bottom-auto md:top-0 md:-translate-y-1/2",
               "The handover",
               ["Verified.", "In person."],
               "You meet, and a one-time code confirms it actually changed hands.",
-            )}
+            )}</LandingText>
           </div>
         </div>
       </div>
@@ -1442,7 +1444,7 @@ export function Chapter2TheEcosystem() {
                 <span
                   className={`c2-final-w ${styles.word} ${i === 1 ? "text-[#b04a15] dark:text-[#ff8a4c]" : ""}`}
                 >
-                  {w}
+                  <LandingText>{w}</LandingText>
                 </span>
               </span>
             </span>

@@ -1,4 +1,6 @@
 "use client";
+import { LandingAttributes, useLandingTranslations } from "@/components/LandingTranslation";
+
 
 /*
  * React Bits - True Focus Text Animation Component
@@ -37,7 +39,8 @@ export function TrueFocus({
   style,
 }: TrueFocusProps) {
   // If items not provided, parse from sentence (split by dots preserving period or custom split)
-  const focusGroups = items || ["Get verified.", "Post.", "Deliver."];
+  const focusGroups = useLandingTranslations(items || ["Get verified.", "Post.", "Deliver."]);
+  const focusText = focusGroups.join("\n");
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -95,7 +98,7 @@ export function TrueFocus({
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [updateFocusRect]);
+  }, [updateFocusRect, focusText]);
 
   // Auto-advance timer
   useEffect(() => {
@@ -119,7 +122,7 @@ export function TrueFocus({
   // Reduced motion render: clean accessible static heading
   if (shouldReduceMotion) {
     return (
-      <h2
+      <LandingAttributes><h2
         ref={containerRef}
         className={`relative inline-flex flex-wrap items-center justify-center gap-x-3 gap-y-1 ${className}`}
         style={style}
@@ -130,12 +133,12 @@ export function TrueFocus({
             {group}
           </span>
         ))}
-      </h2>
+      </h2></LandingAttributes>
     );
   }
 
   return (
-    <h2
+    <LandingAttributes><h2
       ref={containerRef}
       className={`relative inline-flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3.5 gap-y-1.5 ${className}`}
       style={style}
@@ -208,7 +211,7 @@ export function TrueFocus({
           />
         </motion.span>
       )}
-    </h2>
+    </h2></LandingAttributes>
   );
 }
 
