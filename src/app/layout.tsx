@@ -7,6 +7,7 @@ import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
 import { TranslationAttribution } from "@/components/TranslationAttribution";
+import { AutoPageTranslator } from "@/components/AutoPageTranslator";
 import { getInterfaceCatalogue } from "@/lib/translation/messages";
 import { isTranslationLocale } from "@/lib/translation/server";
 import { AuthProvider } from "@/hooks/useAuth";
@@ -193,7 +194,7 @@ export default async function RootLayout({
                   <SiteHeader />
                   <main className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
                   <SiteFooter />
-                  {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <TranslationAttribution />}
+                  {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <MobileBottomNav />
                   <FloatingSupportButton />
                   {/* Site-wide bottom fade — hidden on /admin & /super-admin. */}

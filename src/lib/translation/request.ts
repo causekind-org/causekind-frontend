@@ -15,7 +15,9 @@ const freeTextClients = new Map<string, Window>();
 // The Google Cloud daily quota is the real spending cap; these are backstops.
 export const MAX_FREE_TEXT_ITEMS = 32;
 export const MAX_FREE_TEXT_LENGTH = 1_000;
-const FREE_TEXT_REQUESTS_PER_MINUTE = 40;
+// AutoPageTranslator sends every page's leftover English, not just the landing.
+const FREE_TEXT_REQUESTS_PER_MINUTE = 60;
+const REQUESTS_PER_MINUTE = 120;
 
 function clientKey(request: NextRequest): string {
   // Hosting must overwrite this header. This is only a per-instance backstop.
@@ -38,16 +40,28 @@ export function takeFreeTextAllowance(request: NextRequest): boolean {
   return take(freeTextClients, clientKey(request), FREE_TEXT_REQUESTS_PER_MINUTE);
 }
 
+/**
+ * Compare the Origin with the host the browser actually addressed, not with
+ * `nextUrl.origin`: `next dev -H 0.0.0.0` reports 0.0.0.0:3000 there while the
+ * browser sends localhost:3000, which made every landing-page translation 403.
+ */
+function isSameHostOrigin(request: NextRequest): boolean {
+  const origin = request.headers.get("origin");
+  const host = request.headers.get("x-forwarded-host")?.split(",")[0].trim() || request.headers.get("host");
+  if (!origin || !host) return false;
+  try { return new URL(origin).host === host.toLowerCase(); }
+  catch { return false; }
+}
+
 export function guardTranslationRequest(request: NextRequest): Response | null {
   const headers = translationResponseHeaders;
   // Browsers always send Sec-Fetch-Site on fetch(); scripts can fake both
   // headers, so this stops casual abuse only. Google's project quota is the
   // real spending cap — see docs/google-translation.md.
-  if (request.headers.get("origin") !== request.nextUrl.origin ||
-      request.headers.get("sec-fetch-site") !== "same-origin") {
+  if (!isSameHostOrigin(request) || request.headers.get("sec-fetch-site") !== "same-origin") {
     return Response.json({ error: "Origin not allowed" }, { status: 403, headers });
   }
-  if (!take(clients, clientKey(request), 60)) {
+  if (!take(clients, clientKey(request), REQUESTS_PER_MINUTE)) {
     return Response.json({ error: "Too many translation requests" }, {
       status: 429, headers: { ...headers, "Retry-After": "60" },
     });

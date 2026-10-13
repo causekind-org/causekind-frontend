@@ -80,6 +80,29 @@ This follow-up is **changed, not tested**. No Google calls, credentials access,
 browser checks, tests, typecheck or build were initiated by the agent. Translation
 layout and interactive controls still need explicitly authorized verification.
 
+## Every other page — `AutoPageTranslator` (2026-10-13)
+
+`src/components/AutoPageTranslator.tsx` is mounted once in the root layout
+(only when the API key is set). On a non-English locale it scans `document.body`
+and translates leftover English through the same client queue and
+`/api/translate`, then keeps a `MutationObserver` running so lists, tabs and
+dialogs that render later are covered too.
+
+- **It never adds, removes or wraps nodes.** It only rewrites existing text
+  node values and the `title`/`alt`/`placeholder`/`aria-label` attributes. If
+  React re-renders a node in English, it is translated again.
+- **Skipped:** `/admin`, `/super-admin`; `script/style/noscript/code/pre/svg`;
+  `translate="no"`, `data-no-translate`, contenteditable; text inside
+  `textarea/select/option` (user values); text with any non-Latin letter
+  (already translated); URLs, emails, phone numbers, codes/OTPs and numeric
+  values; brand names (CauseKind, NGO, Google Maps, …); strings over 1,000 chars.
+- Switching back to English restores the originals it changed.
+- Handover pages are not excluded: OTP/handover codes are digits and are
+  skipped by the numeric rule. Add `data-no-translate` to anything else that
+  must stay verbatim.
+- Text appears in English first and switches about a second later. Database
+  content (need titles, descriptions) is translated wherever it is shown.
+
 ## Blog behavior
 
 `src/data/blogTranslations/index.ts` **reads
@@ -162,7 +185,7 @@ Both endpoints require same-origin browser requests (`Origin` plus
   article text). Translated and cached permanently, as before.
 - **Free text** — anything else (need titles, user content, hardcoded landing
   copy). At most 32 items (the browser's batch size) of ≤1,000 characters per
-  request, 40 such requests per minute per IP, and the cache entry expires after 7 days so junk cannot pile
+  request, 60 such requests per minute per IP (120/min overall), and the cache entry expires after 7 days so junk cannot pile
   up. Refused items come back untranslated; the rest of the batch still works.
 
 Scripts can fake these headers, so they stop casual abuse only — the Google
