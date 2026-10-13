@@ -1039,6 +1039,11 @@ export function SiteHeader() {
             {user && <span data-tour="search" className="inline-flex"><SearchTrigger /></span>}
             <span data-tour="bell" className="inline-flex"><NotificationBell /></span>
 
+            {/* Language picker — desktop/tablet; phones keep it in the menu. */}
+            <span className="hidden sm:inline-flex">
+              <LanguageSwitcher pillClassName={iconBtnCls} />
+            </span>
+
             {/* Sleek Theme Toggle */}
             <LandingAttributes><button
               onClick={toggleTheme}

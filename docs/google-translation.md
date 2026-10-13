@@ -161,8 +161,8 @@ Both endpoints require same-origin browser requests (`Origin` plus
 - **Site text** — text found in the blog source (titles, descriptions,
   article text). Translated and cached permanently, as before.
 - **Free text** — anything else (need titles, user content, hardcoded landing
-  copy). At most 8 items of ≤500 characters per request, 20 such requests per
-  minute per IP, and the cache entry expires after 7 days so junk cannot pile
+  copy). At most 32 items (the browser's batch size) of ≤1,000 characters per
+  request, 40 such requests per minute per IP, and the cache entry expires after 7 days so junk cannot pile
   up. Refused items come back untranslated; the rest of the batch still works.
 
 Scripts can fake these headers, so they stop casual abuse only — the Google

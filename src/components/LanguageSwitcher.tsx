@@ -11,7 +11,12 @@ import { useLandingTranslation } from "@/components/LandingTranslation";
 const PANEL_W = 176;
 const EDGE_GAP = 8;
 
-export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) {
+/**
+ * `pillClassName` switches to the compact header trigger: a round button
+ * (styled by the caller to match its neighbours) showing a globe and the
+ * short language code instead of the native name.
+ */
+export function LanguageSwitcher({ dropUp = false, pillClassName }: { dropUp?: boolean; pillClassName?: string } = {}) {
   const languageLabel = useLandingTranslation("Select language");
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
@@ -58,6 +63,19 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
 
   return (
     <div ref={ref} className="relative">
+      {pillClassName ? (
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className={`${pillClassName} flex-col gap-0.5`}
+          title={languageLabel}
+          aria-label={languageLabel}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <Globe className="h-3.5 w-3.5 shrink-0 text-stone-600 dark:text-stone-400" />
+          <span className="text-[0.6rem] font-extrabold leading-none tracking-wide">{current.code.toUpperCase()}</span>
+        </button>
+      ) : (
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1 h-8 rounded-full px-2.5 text-xs font-bold border border-stone-200 dark:border-stone-700 hover:bg-[var(--ck-role-soft)] dark:hover:bg-zinc-800 transition-colors text-stone-700 dark:text-stone-300"
@@ -71,6 +89,7 @@ export function LanguageSwitcher({ dropUp = false }: { dropUp?: boolean } = {}) 
           className={`h-3 w-3 text-stone-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
         />
       </button>
+      )}
 
       {open && (
         <div

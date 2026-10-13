@@ -10,9 +10,12 @@ const clients = new Map<string, Window>();
 const freeTextClients = new Map<string, Window>();
 
 /** Free text = anything not shipped with the site (need titles, user content). */
-export const MAX_FREE_TEXT_ITEMS = 8;
-export const MAX_FREE_TEXT_LENGTH = 500;
-const FREE_TEXT_REQUESTS_PER_MINUTE = 20;
+// Items match the browser's 32-string batch: a lower cap silently left most of
+// the landing page English (only the first strings — the hero — got through).
+// The Google Cloud daily quota is the real spending cap; these are backstops.
+export const MAX_FREE_TEXT_ITEMS = 32;
+export const MAX_FREE_TEXT_LENGTH = 1_000;
+const FREE_TEXT_REQUESTS_PER_MINUTE = 40;
 
 function clientKey(request: NextRequest): string {
   // Hosting must overwrite this header. This is only a per-instance backstop.
