@@ -11,6 +11,24 @@ import { SOCIAL_LINKS, type SocialLink } from "@/config/social";
 import { LandingText } from "@/components/LandingTranslation";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
 
+/**
+ * Footer Dark Theme Color Palette
+ * Defined once as constants for consistency and maintainability.
+ */
+export const FOOTER_COLORS = {
+  bg: "#120c04",
+  textHeading: "#FFFFFF",
+  textBody: "#D9CCBB",
+  accent: "#E58A4B",
+  disabled: "#8A7B6B",
+  border: "rgba(255, 255, 255, 0.12)",
+  separator: "rgba(255, 255, 255, 0.25)",
+  socialBg: "rgba(255, 255, 255, 0.08)",
+  socialHoverBg: "#B4541A",
+  brandCause: "#FFFFFF",
+  brandKind: "#E58A4B",
+} as const;
+
 export interface FooterProps {
   /**
    * Optional user role override ("DONOR" | "DONEE" | "NGO" etc.).
@@ -126,7 +144,7 @@ function SocialIcon({ id }: { id: SocialLink["id"] }) {
 
 /**
  * Shared Site Footer for CauseKind.
- * Renders identical Warm Sand layout and bottom bar for all roles,
+ * Renders identical dark layout and bottom bar for all roles,
  * varying only the "Get Support" links based on user role.
  */
 export function Footer({ role }: FooterProps) {
@@ -157,7 +175,7 @@ export function Footer({ role }: FooterProps) {
 
   return (
     <footer
-      className="bg-[#F1E6D3] text-[#6B5242] border-t border-[#E2D2B8] pb-20 md:pb-0"
+      className="bg-[#120c04] text-[#D9CCBB] border-t border-white/[0.12] pb-20 md:pb-0"
       id="footer"
     >
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12">
@@ -174,11 +192,11 @@ export function Footer({ role }: FooterProps) {
           {/* Column 1: Brand */}
           <div className="col-span-2 md:col-span-1 flex flex-col items-center text-center md:items-start md:text-left space-y-3.5">
             <Link href="/" className="inline-block" aria-label="CauseKind Home">
-              <div className="inline-flex items-center bg-white px-3 py-1.5 rounded-xl border border-[#E2D2B8] shadow-xs [&_*]:dark:text-[#3B2416]! [&_.ck-logo-kind-shimmer]:text-[#B4541A]!">
+              <div className="inline-flex items-center bg-white px-3 py-1.5 rounded-xl [&_*]:dark:text-[#120c04]! [&_.ck-logo-kind-shimmer]:text-[#B4541A]!">
                 <CareNestLogo size="md" />
               </div>
             </Link>
-            <p className="text-[#6B5242] text-sm leading-relaxed font-medium max-w-xs mx-auto md:mx-0 md:max-w-none">
+            <p className="text-[#D9CCBB] text-sm leading-relaxed font-medium max-w-xs mx-auto md:mx-0 md:max-w-none">
               <LandingText>India&apos;s verified giving platform connecting donors directly with verified recipients.</LandingText>
             </p>
 
@@ -189,7 +207,7 @@ export function Footer({ role }: FooterProps) {
                   size="sm"
                   label="Donate"
                   showArrow={false}
-                  className="!bg-[#B4541A] hover:!bg-[#9A4616] !text-white dark:!text-white dark:!bg-[#B4541A] dark:hover:!bg-[#9A4616] rounded-full font-semibold !px-6 !py-2.5 !h-auto text-sm transition-all duration-200 focus:outline-none focus-visible:!ring-2 focus-visible:!ring-[#B4541A] focus-visible:!ring-offset-2 focus-visible:!ring-offset-[#F1E6D3] shadow-xs w-fit inline-flex items-center gap-2 [&_.ck-donate-sheen]:hidden [&_.ck-donate-ring]:hidden [animation:none]!"
+                  className="!bg-[#B4541A] hover:!bg-[#9A4616] !text-white dark:!text-white dark:!bg-[#B4541A] dark:hover:!bg-[#9A4616] rounded-full font-semibold !px-6 !py-2.5 !h-auto text-sm transition-all duration-200 focus:outline-none focus-visible:!ring-2 focus-visible:!ring-[#B4541A] focus-visible:!ring-offset-2 focus-visible:!ring-offset-[#120c04] shadow-xs w-fit inline-flex items-center gap-2 [&_.ck-donate-sheen]:hidden [&_.ck-donate-ring]:hidden [animation:none]!"
                 />
               </div>
             )}
@@ -206,7 +224,7 @@ export function Footer({ role }: FooterProps) {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={item.ariaLabel}
-                  className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white text-[#B4541A] border border-[#E2D2B8] hover:bg-[#B4541A] hover:text-white hover:border-[#B4541A] transition-all duration-200 inline-flex items-center justify-center shrink-0 shadow-xs"
+                  className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white/[0.08] text-white hover:bg-[#B4541A] hover:text-white focus-visible:bg-[#B4541A] focus-visible:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#E58A4B] focus-visible:ring-offset-2 focus-visible:ring-offset-[#120c04] transition-all duration-200 inline-flex items-center justify-center shrink-0"
                 >
                   <SocialIcon id={item.id} />
                 </a>
@@ -216,22 +234,22 @@ export function Footer({ role }: FooterProps) {
 
           {/* Column 2: Get Support */}
           <div className="col-span-1 md:col-span-1 space-y-3">
-            <p className="font-bold text-[#3B2416] tracking-wider uppercase text-xs">
+            <p className="font-bold text-white tracking-wider uppercase text-xs">
               <LandingText>Get Support</LandingText>
             </p>
-            <ul className="space-y-2 text-[#6B5242] text-sm font-medium">
+            <ul className="space-y-2 text-[#D9CCBB] text-sm font-medium">
               {supportLinks.map((link) => (
                 <li key={link.label}>
                   {link.href && !link.disabled ? (
                     <Link
                       href={link.href}
-                      className="hover:text-[#B4541A] hover:underline underline-offset-4 transition-colors duration-200"
+                      className="hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
                     >
                       <LandingText>{link.label}</LandingText>
                     </Link>
                   ) : (
                     <span
-                      className="text-[#A8957F] cursor-not-allowed select-none inline-block"
+                      className="text-[#8A7B6B] cursor-not-allowed select-none inline-block"
                       aria-disabled="true"
                       tabIndex={-1}
                     >
@@ -245,10 +263,10 @@ export function Footer({ role }: FooterProps) {
 
           {/* Column 3: Our Trust Promise */}
           <div className="col-span-1 md:col-span-1 space-y-3">
-            <p className="font-bold text-[#3B2416] tracking-wider uppercase text-xs">
+            <p className="font-bold text-white tracking-wider uppercase text-xs">
               <LandingText>Our Trust Promise</LandingText>
             </p>
-            <ul className="space-y-2.5 text-[#6B5242] text-sm font-medium">
+            <ul className="space-y-2.5 text-[#D9CCBB] text-sm font-medium">
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#B4541A]" aria-hidden="true" />
                 <span><LandingText>Admin-verified listings</LandingText></span>
@@ -266,17 +284,17 @@ export function Footer({ role }: FooterProps) {
 
           {/* Column 4: Contact */}
           <div className="col-span-2 md:col-span-1 space-y-4 md:space-y-3">
-            <p className="font-bold text-[#3B2416] tracking-wider uppercase text-xs text-center md:text-left">
+            <p className="font-bold text-white tracking-wider uppercase text-xs text-center md:text-left">
               <LandingText>Contact</LandingText>
             </p>
-            <div className="space-y-5 md:space-y-3 text-sm text-[#6B5242]">
+            <div className="space-y-5 md:space-y-3 text-sm text-[#D9CCBB]">
               {/* Item 1: Address */}
               <div className="flex flex-col items-center text-center md:flex-row md:items-start md:text-left gap-2 md:gap-2.5">
                 <div
-                  className="w-10 h-10 rounded-full bg-white border border-[#E2D2B8] text-[#B4541A] flex items-center justify-center shrink-0 shadow-xs md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0 md:shadow-none md:mt-0.5"
+                  className="w-10 h-10 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0 md:mt-0.5"
                   aria-hidden="true"
                 >
-                  <MapPin className="w-4.5 h-4.5 md:w-4 md:h-4 text-[#B4541A] shrink-0" aria-hidden="true" />
+                  <MapPin className="w-4.5 h-4.5 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
                 </div>
                 <span className="leading-relaxed max-w-xs mx-auto md:max-w-none md:mx-0">
                   <LandingText>
@@ -288,14 +306,14 @@ export function Footer({ role }: FooterProps) {
               {/* Item 2: Phone */}
               <div className="flex flex-col items-center text-center md:flex-row md:items-center md:text-left gap-1 md:gap-2.5">
                 <div
-                  className="w-10 h-10 rounded-full bg-white border border-[#E2D2B8] text-[#B4541A] flex items-center justify-center shrink-0 shadow-xs md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0 md:shadow-none"
+                  className="w-10 h-10 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0"
                   aria-hidden="true"
                 >
-                  <Phone className="w-4.5 h-4.5 md:w-4 md:h-4 text-[#B4541A] shrink-0" aria-hidden="true" />
+                  <Phone className="w-4.5 h-4.5 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
                 </div>
                 <a
                   href="tel:+917719938619"
-                  className="min-h-[44px] md:min-h-0 inline-flex items-center justify-center hover:text-[#B4541A] transition-colors"
+                  className="min-h-[44px] md:min-h-0 inline-flex items-center justify-center hover:text-[#E58A4B] transition-colors"
                 >
                   +91 7719938619
                 </a>
@@ -304,14 +322,14 @@ export function Footer({ role }: FooterProps) {
               {/* Item 3: Email */}
               <div className="flex flex-col items-center text-center md:flex-row md:items-center md:text-left gap-1 md:gap-2.5">
                 <div
-                  className="w-10 h-10 rounded-full bg-white border border-[#E2D2B8] text-[#B4541A] flex items-center justify-center shrink-0 shadow-xs md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0 md:shadow-none"
+                  className="w-10 h-10 rounded-full bg-white/[0.08] text-white flex items-center justify-center shrink-0 md:w-auto md:h-auto md:rounded-none md:bg-transparent md:border-0"
                   aria-hidden="true"
                 >
-                  <Mail className="w-4.5 h-4.5 md:w-4 md:h-4 text-[#B4541A] shrink-0" aria-hidden="true" />
+                  <Mail className="w-4.5 h-4.5 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
                 </div>
                 <a
                   href="mailto:support@causekind.com"
-                  className="min-h-[44px] md:min-h-0 inline-flex items-center justify-center hover:text-[#B4541A] transition-colors"
+                  className="min-h-[44px] md:min-h-0 inline-flex items-center justify-center hover:text-[#E58A4B] transition-colors"
                 >
                   <LandingText>support@causekind.com</LandingText>
                 </a>
@@ -322,11 +340,11 @@ export function Footer({ role }: FooterProps) {
       </div>
 
       {/* Divider above bottom bar */}
-      <div className="border-t border-[#E2D2B8] py-4 px-4 sm:px-6">
-        <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-[#6B5242] font-medium">
+      <div className="border-t border-white/[0.12] py-4 px-4 sm:px-6">
+        <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-[#D9CCBB] font-medium">
           {/* Left: Copyright */}
           <div className="text-center md:text-left">
-            © 2026 <span className="font-bold text-[#3B2416]">Cause</span><span className="font-bold text-[#B4541A]">Kind</span>. <LandingText>Made with care in India.</LandingText>
+            © 2026 <span className="font-bold text-white">Cause</span><span className="font-bold text-[#E58A4B]">Kind</span>. <LandingText>Made with care in India.</LandingText>
           </div>
 
           {/* Right: Legal Links */}
@@ -334,11 +352,11 @@ export function Footer({ role }: FooterProps) {
             {FOOTER_LEGAL_LINKS.map((item, idx) => (
               <React.Fragment key={item.href}>
                 {idx > 0 && (
-                  <span className="hidden sm:inline-block h-3 w-px bg-[#E2D2B8]" aria-hidden="true" />
+                  <span className="hidden sm:inline-block h-3 w-px bg-white/25" aria-hidden="true" />
                 )}
                 <Link
                   href={item.href}
-                  className="font-medium text-[#6B5242] hover:text-[#B4541A] hover:underline underline-offset-4 transition-colors"
+                  className="font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
                 >
                   <LandingText>{item.label}</LandingText>
                 </Link>

@@ -117,7 +117,7 @@ describe("Footer Component", () => {
       const disabledSpan = ngoComingSoon.closest("span")!;
       expect(disabledSpan).toHaveAttribute("aria-disabled", "true");
       expect(disabledSpan).toHaveAttribute("tabindex", "-1");
-      expect(disabledSpan).toHaveClass("text-[#A8957F]");
+      expect(disabledSpan).toHaveClass("text-[#8A7B6B]");
       expect(disabledSpan).toHaveClass("cursor-not-allowed");
 
       expect(screen.getByRole("link", { name: "Safety guidelines" })).toHaveAttribute("href", "/give-safely");
@@ -348,7 +348,7 @@ describe("Footer Component", () => {
   });
 
   describe("Social Icons", () => {
-    it("renders single row on mobile and 3-column grid on desktop with exactly 6 platforms", () => {
+    it("renders single row on mobile and 3-column grid on desktop with exactly 6 platforms and dark theme button styling", () => {
       render(<Footer />);
 
       const socialContainer = screen.getByLabelText("Social media links");
@@ -366,12 +366,19 @@ describe("Footer Component", () => {
       const socialLinks = within(socialContainer).getAllByRole("link");
       expect(socialLinks).toHaveLength(6);
 
-      // Verify button sizes: 36px (w-9 h-9) on mobile, 40px (md:w-10 md:h-10) on desktop
+      // Verify button sizes and dark theme styling
       socialLinks.forEach((link) => {
         expect(link).toHaveClass("w-9");
         expect(link).toHaveClass("h-9");
         expect(link).toHaveClass("md:w-10");
         expect(link).toHaveClass("md:h-10");
+        expect(link).toHaveClass("bg-white/[0.08]");
+        expect(link).toHaveClass("text-white");
+        expect(link).toHaveClass("hover:bg-[#B4541A]");
+        expect(link).toHaveClass("hover:text-white");
+        expect(link).toHaveClass("focus-visible:ring-[#E58A4B]");
+        expect(link).not.toHaveClass("border");
+        expect(link).not.toHaveClass("bg-white");
       });
 
       const expected = [
@@ -395,26 +402,30 @@ describe("Footer Component", () => {
   });
 
   describe("Bottom Bar & Legal Links", () => {
-    it("renders copyright with CauseKind branding and all 7 legal links", () => {
+    it("renders copyright with CauseKind branding and all 7 legal links with dark theme colors", () => {
       render(<Footer />);
 
       expect(screen.getByText(/Made with care in India/i)).toBeInTheDocument();
-      expect(screen.getByText("Cause")).toBeInTheDocument();
-      expect(screen.getByText("Kind")).toBeInTheDocument();
+      const causeSpan = screen.getByText("Cause");
+      const kindSpan = screen.getByText("Kind");
+      expect(causeSpan).toHaveClass("text-white");
+      expect(kindSpan).toHaveClass("text-[#E58A4B]");
 
       FOOTER_LEGAL_LINKS.forEach((item) => {
         const link = screen.getByRole("link", { name: item.label });
         expect(link).toHaveAttribute("href", item.href);
+        expect(link).toHaveClass("text-[#D9CCBB]");
+        expect(link).toHaveClass("hover:text-[#E58A4B]");
       });
     });
   });
 
   describe("Visibility and Layout classes", () => {
-    it("renders the warm sand background and 80px mobile padding (pb-20)", () => {
+    it("renders the dark brown background and 80px mobile padding (pb-20)", () => {
       const { container } = render(<Footer />);
       const footerElement = container.querySelector("#footer");
       expect(footerElement).toBeInTheDocument();
-      expect(footerElement).toHaveClass("bg-[#F1E6D3]");
+      expect(footerElement).toHaveClass("bg-[#120c04]");
       expect(footerElement).toHaveClass("pb-20");
       expect(footerElement).toHaveClass("md:pb-0");
     });
@@ -435,6 +446,29 @@ describe("Footer Component", () => {
       mockPathname = "/items/123/edit";
       const { container: c4 } = render(<Footer />);
       expect(c4.querySelector("#footer")).toBeNull();
+    });
+  });
+
+  describe("Dark Theme Styling and Warm Sand Cleanup", () => {
+    it("renders headings in #FFFFFF, body/links in #D9CCBB, accents in #E58A4B, and no leftover warm sand colors", () => {
+      const { container } = render(<Footer />);
+      const footerHtml = container.innerHTML;
+
+      // No Warm Sand hex values anywhere in rendered HTML
+      expect(footerHtml).not.toContain("#3B2416");
+      expect(footerHtml).not.toContain("#6B5242");
+      expect(footerHtml).not.toContain("#E2D2B8");
+      expect(footerHtml).not.toContain("#F1E6D3");
+      expect(footerHtml).not.toContain("#A8957F");
+
+      // Logo card has no border
+      const logoCard = screen.getByTestId("carenest-logo").closest("div.rounded-xl")!;
+      expect(logoCard).toHaveClass("bg-white");
+      expect(logoCard).not.toHaveClass("border");
+
+      // Top border and divider above bottom bar are rgba(255,255,255,0.12)
+      const footerElement = container.querySelector("#footer")!;
+      expect(footerElement).toHaveClass("border-t", "border-white/[0.12]");
     });
   });
 });
