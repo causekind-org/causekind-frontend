@@ -79,6 +79,8 @@ vi.mock("@/hooks/useDynamicTranslation", () => ({
 vi.mock("@/lib/api", () => ({
   getMyProfile: vi.fn().mockResolvedValue(null),
   getItemRequests: vi.fn().mockResolvedValue([]),
+  getMyItemRequests: vi.fn().mockResolvedValue([]),
+  getNgoDrives: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock("@/components/Reveal", () => ({

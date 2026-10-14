@@ -8,9 +8,16 @@ export { translateText } from "@/lib/translation/client";
 
 type TextValue = string | null | undefined;
 
+// Same reason as useMessagesOrEmpty in LandingTranslation: many suites mock
+// next-intl without useLocale, and Vitest throws on a missing mock export.
+function useLocaleOrEnglish(): string {
+  try { return useLocale() ?? "en"; }
+  catch { return "en"; }
+}
+
 /** Show the original immediately when either source text or language changes. */
 function useTranslation(value: TextValue, translate: (text: string, locale: string) => Promise<string>): TextValue {
-  const locale = useLocale();
+  const locale = useLocaleOrEnglish();
   const [result, setResult] = useState<{ source: TextValue; locale: string; text: string }>();
   useEffect(() => {
     if (!value || locale === "en") return;
@@ -29,7 +36,7 @@ export function useDynamicTranslation(text: TextValue): TextValue {
 
 /** Concurrent strings share the client queue and server Google batches. */
 export function useDynamicTranslations(texts: TextValue[]): TextValue[] {
-  const locale = useLocale();
+  const locale = useLocaleOrEnglish();
   const source = JSON.stringify(texts);
   const [result, setResult] = useState<{ source: string; locale: string; texts: TextValue[] }>();
   useEffect(() => {
@@ -46,7 +53,7 @@ export function useDynamicTranslations(texts: TextValue[]): TextValue[] {
 }
 
 export function TranslatedText({ text }: { text: TextValue }): ReactNode {
-  const locale = useLocale();
+  const locale = useLocaleOrEnglish();
   const translated = useDynamicTranslation(text);
   if (!translated || translated === text) return translated ?? "";
   return createElement("span", { lang: `${locale}-x-mtfrom-und` }, translated);

@@ -36,6 +36,12 @@ function useMessagesOrEmpty(): object {
   catch { return EMPTY_MESSAGES; }
 }
 
+function usePathnameOrNull(): string | null {
+  // Same as above for suites that mock next/navigation without usePathname.
+  try { return usePathname(); }
+  catch { return null; }
+}
+
 function useCatalogueStrings(): Set<string> {
   const messages = useMessagesOrEmpty();
   return useMemo(() => stringsOf(messages), [messages]);
@@ -55,7 +61,7 @@ function shouldTranslate(text: string, catalogue: Set<string>): boolean {
 
 /** Shared components retain their existing behavior away from landing routes. */
 export function useLandingTranslation(text: string): string {
-  const pathname = usePathname();
+  const pathname = usePathnameOrNull();
   const catalogue = useCatalogueStrings();
   const enabled = (pathname === "/" || pathname === "/ngo") && shouldTranslate(text, catalogue);
   const translated = useDynamicTranslation(enabled ? text : null);
@@ -63,7 +69,7 @@ export function useLandingTranslation(text: string): string {
 }
 
 export function useLandingTranslations(texts: string[]): string[] {
-  const pathname = usePathname();
+  const pathname = usePathnameOrNull();
   const catalogue = useCatalogueStrings();
   const onLanding = pathname === "/" || pathname === "/ngo";
   const wanted = texts.map((text) => onLanding && shouldTranslate(text, catalogue));
