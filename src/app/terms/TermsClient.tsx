@@ -38,8 +38,8 @@ import {
 const LAST_UPDATED = "24 June 2026";
 
 const SUPPORT_EMAIL = "support@causekind.com";
-const GRIEVANCE_NAME = "Atharva Raorane";
-const GRIEVANCE_EMAIL = "Atharvaraorane147@gmail.com";
+const GRIEVANCE_NAME = "Gaurav Yadav";
+const GRIEVANCE_EMAIL = "gaurav@causekind.com";
 const COMPANY_ADDRESS =
   "3rd Floor, Apoorva Bldg, Flat no. 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202";
 
@@ -271,16 +271,14 @@ export default function TermsClient() {
                       <button
                         key={s.id}
                         onClick={() => jumpTo(s.id)}
-                        className={`group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm font-semibold transition-all duration-200 ${
-                          on
-                            ? "bg-[#b04a15]/10 text-[#b04a15] dark:bg-orange-400/10 dark:text-orange-400"
-                            : "text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
-                        }`}
+                        className={`group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm font-semibold transition-all duration-200 ${on
+                          ? "bg-[#b04a15]/10 text-[#b04a15] dark:bg-orange-400/10 dark:text-orange-400"
+                          : "text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
+                          }`}
                       >
                         <span
-                          className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-200 ${
-                            on ? "scale-125 bg-[#f0b97a]" : "bg-stone-300 group-hover:bg-stone-400 dark:bg-zinc-700"
-                          }`}
+                          className={`h-1.5 w-1.5 shrink-0 rounded-full transition-all duration-200 ${on ? "scale-125 bg-[#f0b97a]" : "bg-stone-300 group-hover:bg-stone-400 dark:bg-zinc-700"
+                            }`}
                         />
                         {s.title}
                       </button>
@@ -415,7 +413,7 @@ export default function TermsClient() {
                 <P>
                   Donations made on the Platform are <Lead>non-refundable</Lead>, as they are directed to causes and
                   beneficiaries. The only exception: if Your account is <Lead>debited more than once for the same
-                  donation</Lead> due to a technical error, the duplicate amount will be refunded to the original payment
+                    donation</Lead> due to a technical error, the duplicate amount will be refunded to the original payment
                   method after verification. Refund requests for duplicate transactions may be sent to{" "}
                   <a href={`mailto:${SUPPORT_EMAIL}`} className="font-semibold text-[#b04a15] underline-offset-2 hover:underline dark:text-orange-400">
                     {SUPPORT_EMAIL}
@@ -569,7 +567,7 @@ export default function TermsClient() {
                   These Terms are governed by the laws of the <Lead>Republic of India</Lead>. Any dispute shall first be
                   attempted to be resolved through good-faith negotiation. Failing that, the dispute shall be referred to{" "}
                   <Lead>arbitration</Lead> by a sole arbitrator under the <Lead>Arbitration and Conciliation Act,
-                  1996</Lead>, seated at <Lead>Mumbai, Maharashtra</Lead>, conducted in English. Subject to arbitration,
+                    1996</Lead>, seated at <Lead>Mumbai, Maharashtra</Lead>, conducted in English. Subject to arbitration,
                   the courts at <Lead>Mumbai, Maharashtra</Lead> shall have exclusive jurisdiction.
                 </P>
               </Section>
