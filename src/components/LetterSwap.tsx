@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useLandingTranslation } from "@/components/LandingTranslation";
 
 /**
  * The whole cascade, first letter to last, is capped at this.
@@ -37,7 +38,7 @@ const MAX_CASCADE_MS = 300;
  * `prefers-reduced-motion` the text simply changes, with no motion at all.
  */
 export function LetterSwap({
-  text,
+  text: sourceText,
   className = "",
 }: {
   /** The current string. Changing it is what triggers the swap. */
@@ -45,8 +46,9 @@ export function LetterSwap({
   className?: string;
 }) {
   const reduceMotion = useReducedMotion();
+  const text = useLandingTranslation(sourceText);
 
-  if (reduceMotion) return <span className={className}>{text}</span>;
+  if (reduceMotion || /[^\u0000-\u024f]/u.test(text)) return <span className={className}>{text}</span>;
 
   const words = text.split(" ");
 

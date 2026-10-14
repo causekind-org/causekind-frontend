@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { HandoverMapPinField } from "./HandoverMapPinField";
+import { HandoverLocationField } from "./HandoverLocationField";
 import { methodNeedsCourierFields } from "./adapters";
 import { handoverScope, type HandoverViewModel } from "./model";
 import {
@@ -65,7 +65,19 @@ export function HandoverScheduleDialog({
   const [courierName, setCourierName] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  /** The map or the address box is still working out the location. */
+  const [locationBusy, setLocationBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [drive, setDrive] = useState<any>(null);
+
+  useEffect(() => {
+    if (vm.flow === "NGO_OFFER" && vm.parentId && open) {
+      import("@/lib/api").then(({ getNgoDrive }) => {
+        getNgoDrive(vm.parentId!).then(setDrive).catch(() => {});
+      });
+    }
+  }, [vm.flow, vm.parentId, open]);
 
   const scope = handoverScope(vm.role);
 
@@ -84,7 +96,26 @@ export function HandoverScheduleDialog({
   const needsCourier = methodNeedsCourierFields(method);
   // A reschedule costs the other person a trip, so it has to say why.
   const reasonRequired = isReschedule;
-  const canSubmit = !busy && when.trim() !== "" && address.trim() !== "" && (!reasonRequired || reason.trim().length >= 3);
+  const hasPin = lat != null && lng != null;
+  // The donee is sent both the written address and a map link, so both are
+  // required, and Save waits for any lookup still filling one from the other.
+  let canSubmit = !busy && !locationBusy && when.trim() !== "" && address.trim() !== "" && hasPin
+    && (!reasonRequired || reason.trim().length >= 3);
+
+  // Validate NGO Drop off limits
+  if (canSubmit && method === "DONOR_DROP_OFF" && drive) {
+    const d = new Date(when);
+    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
+    const availableDays = (drive.availableDays || "").split(",").map((s: string) => s.trim());
+    if (availableDays.length > 0 && !availableDays.includes("Everyday") && !availableDays.includes(dayName)) {
+      canSubmit = false;
+    }
+    const neededBy = new Date(drive.neededBy);
+    if (d > neededBy) {
+      canSubmit = false;
+    }
+    // Time slot validation could go here, but for simplicity we rely on the submit warning if it fails.
+  }
 
   async function submit() {
     if (busy || !canSubmit) return;      // `disabled` lags a fast double-click
@@ -144,6 +175,22 @@ export function HandoverScheduleDialog({
             {selectedHint && <Hint>{selectedHint}</Hint>}
           </Field>
 
+          {method === "DONOR_DROP_OFF" && vm.flow === "NGO_OFFER" && (
+            <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-100 text-sm text-amber-800 dark:text-amber-400">
+              <strong>Drop-off Location:</strong> {vm.counterpart.name}
+              <br />
+              {drive ? (
+                <>
+                  Available days: {drive.availableDays} (up to {new Date(drive.neededBy).toLocaleDateString()})
+                  <br/>
+                  Hours: {drive.availableFrom} - {drive.availableTo}
+                </>
+              ) : (
+                "Please select a time during their operating hours."
+              )}
+            </div>
+          )}
+
           <Field label="When?" htmlFor="ho-when" required>
             <Input
               id="ho-when"
@@ -152,32 +199,24 @@ export function HandoverScheduleDialog({
               onChange={(e) => setWhen(e.target.value)}
               disabled={busy}
               className={handoverInput}
+              min={method === "DONOR_DROP_OFF" ? new Date(Date.now() + 86400000).toISOString().slice(0, 16) : undefined}
+              max={method === "DONOR_DROP_OFF" && drive ? new Date(drive.neededBy).toISOString().slice(0, 16) : undefined}
             />
           </Field>
 
-          <Field label="Where?" htmlFor="ho-address" required>
-            <Input
-              id="ho-address"
-              type="text"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              placeholder="e.g. Andheri East, Mumbai"
-              disabled={busy}
-              className={handoverInput}
-            />
-            <Hint>An area is enough for now — you can share the exact spot later.</Hint>
-          </Field>
-
-          <Field label="Exact spot (optional)">
-            {/* Deferred: Google Maps is not fetched until this is opened. An
-                existing pin auto-expands so a reschedule never looks like it
-                lost the location. */}
-            <HandoverMapPinField
+          <Field label="Where?" required>
+            <HandoverLocationField
+              address={address}
               lat={lat}
               lng={lng}
               disabled={busy}
-              onChange={(a, b) => { setLat(a); setLng(b); }}
+              onAddressChange={setAddress}
+              onPinChange={(a, b) => { setLat(a); setLng(b); }}
+              onBusyChange={setLocationBusy}
             />
+            {!hasPin && address.trim() !== "" && !locationBusy && (
+              <Hint>Place the pin too (search, use your current location, or tap the map) so the donee gets a map link.</Hint>
+            )}
           </Field>
 
           {needsCourier && (
@@ -247,7 +286,9 @@ export function HandoverScheduleDialog({
           <Button disabled={!canSubmit} onClick={submit} className={handoverPrimary}>
             {busy
               ? <><Loader2 className="animate-spin" aria-hidden /> Saving</>
-              : "Save"}
+              : locationBusy
+                ? <><Loader2 className="animate-spin" aria-hidden /> Checking location…</>
+                : "Save"}
           </Button>
         </DialogFooter>
       </DialogContent>

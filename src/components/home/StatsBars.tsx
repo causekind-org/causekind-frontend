@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 /**
  * StatsBars — Desktop stats row + live activity ticker.
@@ -20,7 +22,7 @@ export function DesktopStatsBar({ stats }: { stats: PlatformStats | null }) {
   const items = [
     { value: stats ? `₹${formatINR(stats.totalRaised)}` : "₹5,652", label: tStats("totalRaised"),    icon: Coins,    color: "text-[var(--ck-home-ink,#b04a15)]"  },
     { value: stats ? stats.activeCampaigns             : "3",       label: tStats("activeCampaigns"), icon: Heart,    color: "text-[var(--ck-home-ink,#c2660a)]"  },
-    { value: stats ? stats.totalDonations               : "24",      label: tStats("donations"),       icon: Sparkles, color: "text-[#1e3a60]"  },
+    { value: stats ? stats.totalDonations               : "24",      label: tStats("donations"),       icon: Sparkles, color: "text-[var(--ck-role-accent)]"  },
     { value: stats ? stats.uniqueDonors                 : "18",      label: tStats("donors"),          icon: Users,    color: "text-amber-700"  },
   ];
 
@@ -31,8 +33,8 @@ export function DesktopStatsBar({ stats }: { stats: PlatformStats | null }) {
           <div key={s.label} className="flex items-center gap-3 px-10">
             <s.icon className={`h-6 w-6 shrink-0 ${s.color}`} />
             <div>
-              <p className="text-2xl font-black text-stone-900 dark:text-stone-100 tabular-nums leading-none">{s.value}</p>
-              <p className="text-2xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-0.5 whitespace-nowrap">{s.label}</p>
+              <p className="text-2xl font-black text-stone-900 dark:text-stone-100 tabular-nums leading-none"><LandingText>{s.value}</LandingText></p>
+              <p className="text-2xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-0.5 whitespace-nowrap"><LandingText>{s.label}</LandingText></p>
             </div>
           </div>
         ))}
@@ -47,9 +49,9 @@ export function LiveTicker({ activity }: { activity: RecentActivity[] }) {
   return (
     <div className="bg-[var(--ck-home-surface,#fff7ed)]/30 dark:bg-zinc-900/10 py-3 overflow-hidden flex items-center gap-3">
       <span className="shrink-0 ml-6 rounded-full bg-[var(--ck-home-accent,#963c0d)] px-3 py-1 text-3xs font-black tracking-widest text-white z-10 flex items-center gap-1 shadow-sm">
-        <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--ck-home-highlight,#f0b97a)]" />
+        <span className="h-1.5 w-1.5 animate-ping rounded-full bg-[var(--ck-home-highlight,#f0b97a)]" /><LandingText>
         LIVE
-      </span>
+      </LandingText></span>
       <div className="overflow-hidden flex-1">
         <div className="ticker-track">
           {[...activity, ...activity].map((a, i) => (
@@ -58,14 +60,14 @@ export function LiveTicker({ activity }: { activity: RecentActivity[] }) {
                 <>
                   <span className="inline-block h-2 w-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]" />
                   <span className="text-[var(--ck-home-ink,#b04a15)] font-extrabold">₹{new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(a.amount ?? 0)}</span>
-                  {" donated to "}
+                  <LandingText>{" donated to "}</LandingText>
                   <span className="font-extrabold text-stone-800 dark:text-stone-200"><TranslatedText text={a.campaignTitle} /></span>
                   <span className="text-stone-400">· <TranslatedText text={a.city} /></span>
                 </>
               ) : (
                 <>
-                  <span className="inline-block h-2 w-2 rounded-full bg-[#1e3a60]" />
-                  <span className="text-[#1e3a60] font-extrabold">New Campaign </span>
+                  <span className="inline-block h-2 w-2 rounded-full bg-[var(--ck-role-accent)]" />
+                  <span className="text-[var(--ck-role-accent)] font-extrabold"><LandingText>New Campaign </LandingText></span>
                   <span className="font-extrabold text-stone-800 dark:text-stone-200"><TranslatedText text={a.campaignTitle} /></span>
                   <span className="text-stone-400">· <TranslatedText text={a.category} /> · <TranslatedText text={a.city} /></span>
                 </>

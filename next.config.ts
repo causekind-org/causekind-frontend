@@ -37,23 +37,13 @@ const nextConfig: NextConfig = {
     // a slightly heavier one.
     qualities: [75, 90, 95, 100],
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "images.unsplash.com",
-      },
-      {
-        protocol: "https",
-        hostname: "**.amazonaws.com",
-      },
+      { protocol: "http", hostname: "localhost", port: "8080" },
+      { protocol: "https", hostname: "images.unsplash.com" },
+      { protocol: "https", hostname: "**.amazonaws.com" },
     ],
   },
   async redirects() {
     return [
-      {
-        source: "/dashboard/ngo",
-        destination: "/",
-        permanent: false,
-      },
       {
         source: "/dashboard/ngo/complete-profile",
         destination: "/dashboard/ngo/profile",

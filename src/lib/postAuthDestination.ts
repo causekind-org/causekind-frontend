@@ -15,11 +15,13 @@ import { safeInternalPath } from "./safeRedirect";
  * literal defined in this file. A raw `next` value never reaches a router.
  */
 
+import { isNgoRole } from "@/lib/isNgoRole";
+
 /** Role-based landing page when there is no specific destination to return to. */
 export function homeForRole(role: string | null | undefined): string {
   if (role === "SUPER_ADMIN") return "/super-admin";
   if (role === "ADMIN") return "/admin/dashboard";
-  if (role === "NGO" || role === "NGO_PARTNER") return "/";
+  if (isNgoRole(role)) return "/";
   return "/";
 }
 
@@ -31,6 +33,12 @@ export function homeForRole(role: string | null | undefined): string {
  * `/requests/123/offer-history` as the wizard.
  */
 const OFFER_ROUTE = /^\/requests\/[^/]+\/offer\/?$/;
+
+/**
+ * The donor listing wizard: `/items/new`, with or without a query (`?draft=`).
+ * Only donors (and admins) can use it; the page itself bounces anyone else.
+ */
+const LIST_ITEM_ROUTE = /^\/items\/new\/?(?:[?#]|$)/;
 
 export type PostAuthDestination = {
   /** Always an internal path. Safe to hand straight to the router. */
@@ -70,6 +78,15 @@ export function resolvePostAuthDestination(
       notice:
         "Offering an item needs a donor account. You're signed in as a donee — " +
         "here are your requests instead.",
+    };
+  }
+
+  // A donee or NGO who signed in from "List an item" goes to their own home
+  // instead of being bounced out of the donor wizard.
+  if (role && role !== "DONOR" && role !== "ADMIN" && LIST_ITEM_ROUTE.test(next)) {
+    return {
+      path: homeForRole(role),
+      notice: "Listing an item needs a donor account. Here's your home page instead.",
     };
   }
 

@@ -71,8 +71,10 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & {
     /** Set false when the dialog supplies its own close affordance. */
     showCloseButton?: boolean;
+    /** Extra classes for the backdrop behind this dialog. */
+    overlayClassName?: string;
   }
->(({ className, children, showCloseButton = true, onCloseAutoFocus, ...props }, ref) => {
+>(({ className, children, showCloseButton = true, overlayClassName, onCloseAutoFocus, ...props }, ref) => {
   /**
    * Restore focus to whatever opened this.
    *
@@ -92,7 +94,7 @@ const DialogContent = React.forwardRef<
 
   return (
   <DialogPortal>
-    <DialogOverlay />
+    <DialogOverlay className={overlayClassName} />
     <DialogPrimitive.Content
       ref={ref}
       onCloseAutoFocus={(e) => {

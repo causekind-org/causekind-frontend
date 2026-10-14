@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 import {
   useCallback,
@@ -308,9 +310,9 @@ export function RakshaBandhanIntro() {
         type="button"
         onClick={dismiss}
         className="group absolute right-3 top-3 inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-white/25 bg-black/30 px-5 py-2.5 text-xs font-semibold tracking-[0.08em] text-white/85 backdrop-blur-md transition-[background-color,border-color,color] duration-200 hover:border-white/45 hover:bg-black/45 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:right-6 sm:top-6"
-      >
+      ><LandingText>
         Skip
-        <span className="sr-only"> the Raksha Bandhan introduction</span>
+        </LandingText><span className="sr-only"><LandingText> the Raksha Bandhan introduction</LandingText></span>
       </button>
       )}
 

@@ -78,7 +78,7 @@ export function BasicsStep({
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
             value={model.quantity}
-            onChange={e => onChange("quantity", Number(e.target.value))}
+            onChange={e => onChange("quantity", e.target.value === "" ? "" : Number(e.target.value))}
           />
         )}
       </WizardField>

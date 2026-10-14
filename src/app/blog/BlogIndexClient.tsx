@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef, Suspense } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CategoryDropdown } from "@/components/blog/CategoryDropdown";
@@ -48,12 +48,8 @@ function BlogListingContent() {
   const locale = useLocale();
   const t = useTranslations("blog_page");
 
-  // Cards show pre-translated static content (see scripts/generate-blog-translations.mjs),
-  // fetched once per locale from public/blog-translations/<locale>.json (not
-  // bundled into the JS build — 13 locales of translated article HTML is too
-  // large to ship to every visitor or hand the compiler in one module graph).
-  // getBlogTranslation/getInsiderTipTranslation below read synchronously from
-  // that fetch's in-memory cache; this bump forces a re-render once it lands.
+  // Warm Google-backed card metadata, without loading any article bodies.
+  // The synchronous getters below use that cache after this render bump.
   const [, setTranslationsVersion] = useState(0);
   useEffect(() => {
     if (locale === "en") return;

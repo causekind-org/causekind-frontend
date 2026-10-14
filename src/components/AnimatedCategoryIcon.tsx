@@ -66,21 +66,22 @@ export default function AnimatedCategoryIcon({ category, className = "", iconCla
   // ICON_MOTION_PARENT_PROPS). Setting `animate` here would break that
   // propagation, so it is only set for the touch loop, where there is no parent
   // gesture to inherit.
+  //
+  // The touch loop is a CSS keyframe animation (`.ck-cat-icon-loop`), not a
+  // Framer `animate` loop: a Framer loop on scale + rotate is JavaScript on
+  // every frame for every visible pill, while a CSS transform animation runs on
+  // the compositor. A CSS animation also outranks the inline transform Framer
+  // leaves at rest, so the two never fight.
   return (
     <motion.span
       ref={ref}
-      className={`inline-flex ${className}`}
+      className={`inline-flex ${loop ? "ck-cat-icon-loop" : ""} ${className}`}
       aria-hidden="true"
       variants={{
         rest: { scale: 1, rotate: 0 },
         active: { scale: 1.18, rotate: -6 },
       }}
-      animate={loop ? { scale: [1, 1.1, 1], rotate: [0, -5, 0] } : undefined}
-      transition={
-        loop
-          ? { duration: 2.4, repeat: Infinity, repeatDelay: 1.6, ease: "easeInOut" }
-          : { type: "spring", stiffness: 420, damping: 18 }
-      }
+      transition={{ type: "spring", stiffness: 420, damping: 18 }}
     >
       <Icon className={iconClassName} />
     </motion.span>

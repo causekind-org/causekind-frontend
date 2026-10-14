@@ -5,7 +5,11 @@ import Script from "next/script";
 import { RouteProgressBar } from "@/components/RouteProgressBar";
 import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages } from "next-intl/server";
+import { getLocale, getMessages } from "next-intl/server";
+import { TranslationAttribution } from "@/components/TranslationAttribution";
+import { AutoPageTranslator } from "@/components/AutoPageTranslator";
+import { getInterfaceCatalogue } from "@/lib/translation/messages";
+import { isTranslationLocale } from "@/lib/translation/server";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
 import { NeedProfileGateProvider } from "@/hooks/useNeedProfileGate";
@@ -42,6 +46,10 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
 import { DeferredOverlays } from "@/components/DeferredOverlays";
+import { DonateChoice } from "@/components/donate/DonateChoice";
+import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
+import { MatchActionDock } from "@/components/matches/MatchActionDock";
+import { CompletionCelebrationWatcher } from "@/components/handover/CompletionCelebrationWatcher";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -94,6 +102,10 @@ const robotoMono = Roboto_Mono({
   preload: false,
 });
 
+// Cold translation misses have bounded queue/provider deadlines. Cache warming
+// before release keeps normal renders out of that cold path.
+export const maxDuration = 60;
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.causekind.com"),
   title: "CauseKind — Give With Purpose",
@@ -107,18 +119,21 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const messages = await getMessages();
+  const locale = await getLocale();
+  const catalogue = await getInterfaceCatalogue(isTranslationLocale(locale) ? locale : "en");
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={catalogue.translated ? `${locale}-x-mtfrom-en` : "en"} suppressHydrationWarning>
       <head>
         {/* Sets data-ck-role-theme BEFORE first paint. Without it a recipient
             sees a terracotta flash: useAuth hydrates from localStorage in a
             useEffect, which runs after paint. Reads only the non-secret
             {email, role} metadata the app already caches, and whitelists the
             role to donor|donee — see lib/roleTheme.ts. */}
-        <Script id="causekind-role-theme" strategy="beforeInteractive">
-          {ROLE_THEME_BOOT_SCRIPT}
-        </Script>
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }}
+        />
         {/* Material Symbols, subset and pinned.
 
             This was requesting the FULL variable axis range
@@ -179,6 +194,7 @@ export default async function RootLayout({
                   <SiteHeader />
                   <main className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
                   <SiteFooter />
+                  {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <MobileBottomNav />
                   <FloatingSupportButton />
                   {/* Site-wide bottom fade — hidden on /admin & /super-admin. */}
@@ -196,6 +212,13 @@ export default async function RootLayout({
                     style={{ zIndex: 2147483647 }}
                   />
                   <DeferredOverlays />
+                  {/* Every Donate button opens this In-Kind / Money choice. */}
+                  <DonateChoice />
+                  {/* Guests' and donors' next step after "Donate items". */}
+                  <DonateItemsChoiceModal />
+                  {/* Donor-only: a waiting match, once, until answered or closed. */}
+                  <MatchActionDock />
+                  <CompletionCelebrationWatcher />
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>

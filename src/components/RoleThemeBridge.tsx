@@ -33,12 +33,20 @@ export function RoleThemeBridge() {
     if (isLoading) return;
 
     const theme = themeForRole(user?.role);
-    if (theme) root.setAttribute(ROLE_THEME_ATTR, theme);
-    else root.removeAttribute(ROLE_THEME_ATTR);   // logout, admin, unknown role
+    if (theme) {
+      root.setAttribute(ROLE_THEME_ATTR, theme);
+      root.setAttribute("data-theme-role", theme);
+    } else {
+      root.removeAttribute(ROLE_THEME_ATTR);   // logout, admin, unknown role
+      root.removeAttribute("data-theme-role");
+    }
   }, [user?.role, isLoading]);
 
   // Clean up if the provider itself unmounts, so no stale role colour survives.
-  useEffect(() => () => document.documentElement.removeAttribute(ROLE_THEME_ATTR), []);
+  useEffect(() => () => {
+    document.documentElement.removeAttribute(ROLE_THEME_ATTR);
+    document.documentElement.removeAttribute("data-theme-role");
+  }, []);
 
   return null;
 }

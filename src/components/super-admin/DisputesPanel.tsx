@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import {
   superAdminListDisputes, superAdminResolveDispute, type PostDeliveryIssue,
@@ -63,6 +64,15 @@ const ISSUE_TYPE_LABELS: Record<string, string> = {
   MONEY_DEMANDED: "Money demanded",
   INAPPROPRIATE_BEHAVIOUR: "Inappropriate behaviour",
   OTHER: "Other",
+  // Donee handover options
+  ITEM_NOT_RECEIVED: "Item not received",
+  ITEM_DAMAGED: "Item arrived damaged",
+  ITEM_NOT_AS_DESCRIBED: "Item not as described",
+  QUANTITY_MISMATCH: "Quantity wrong",
+  // Donor handover options
+  RECIPIENT_DID_NOT_SHOW: "Recipient didn't show up",
+  RECIPIENT_DENIED_DELIVERY: "Recipient disputes delivery",
+  ITEM_RESOLD_OR_MISUSED: "Item resold or misused",
 };
 
 export function DisputesPanel({ isDark }: { isDark: boolean }) {
@@ -167,7 +177,7 @@ function DisputeCard({
         </div>
         {d.windowExpiresAt && !resolved && (
           <span className={`inline-flex items-center gap-1 text-3xs font-bold shrink-0 ${t.muted}`}>
-            <Clock className="w-3 h-3" /> Window: {new Date(d.windowExpiresAt).toLocaleDateString("en-IN")}
+            <Clock className="w-3 h-3" /> Window: {serverDate(d.windowExpiresAt).toLocaleDateString("en-IN")}
           </span>
         )}
       </div>
@@ -189,7 +199,7 @@ function DisputeCard({
         <div className={`rounded-xl border p-3 text-xs ${t.okBg}`}>
           <p className={`font-bold ${t.ok}`}>Resolution</p>
           <p className={`mt-1 ${t.muted}`}>{d.adminResolution}</p>
-          <p className={`mt-1.5 ${t.dim}`}>{d.resolvedAt && new Date(d.resolvedAt).toLocaleString("en-IN")}</p>
+          <p className={`mt-1.5 ${t.dim}`}>{d.resolvedAt && serverDate(d.resolvedAt).toLocaleString("en-IN")}</p>
         </div>
       ) : (
         <div className="flex flex-col sm:flex-row gap-2">

@@ -1,4 +1,6 @@
-import Link from "next/link";
+
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+import Link from "@/components/AppLink";
 import { ArrowUpRight, Plus } from "lucide-react";
 
 import {
@@ -13,7 +15,7 @@ export function IndependenceDayStrip() {
   if (!isIndependenceDayCampaignActive()) return null;
 
   return (
-    <section
+    <LandingAttributes><section
       aria-label="Causekind Independence Day announcement"
       className="relative isolate w-full overflow-hidden bg-[#075942] text-white shadow-[0_8px_24px_-18px_rgba(7,89,66,0.82)]"
     >
@@ -59,11 +61,11 @@ export function IndependenceDayStrip() {
       <div className="relative flex min-h-12 w-full items-center gap-3 px-4 py-1.5 sm:min-h-14 sm:gap-4 sm:px-6 lg:px-8">
         <div className="hidden h-9 w-9 shrink-0 flex-col items-center justify-center rounded-lg border border-white/40 bg-[#075942]/90 text-center shadow-sm backdrop-blur-[1px] min-[480px]:flex">
           <span className="text-sm font-black leading-none tracking-[-0.07em]">15</span>
-          <span className="mt-0.5 text-[0.5rem] font-bold uppercase tracking-[0.16em] text-white/80">Aug</span>
+          <span className="mt-0.5 text-[0.5rem] font-bold uppercase tracking-[0.16em] text-white/80"><LandingText>Aug</LandingText></span>
         </div>
 
         <div className="relative min-w-0 flex-1 overflow-hidden" aria-live="off">
-          <span className="sr-only">Happy Independence Day. Give with purpose.</span>
+          <span className="sr-only"><LandingText>Happy Independence Day. Give with purpose.</LandingText></span>
           <div aria-hidden="true" className="ck-independence-marquee flex w-max whitespace-nowrap">
             <span className="pr-7 text-[0.68rem] font-extrabold uppercase tracking-[0.16em] text-[#111827] drop-shadow-[0_1px_0_rgba(255,255,255,0.35)] sm:pr-9 sm:text-xs sm:tracking-[0.2em]">
               {tickerContent}
@@ -81,18 +83,18 @@ export function IndependenceDayStrip() {
                invisible; over the full-width flag it let saffron and white show
                through and the label lost its footing. */
             className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-white/45 bg-[#075942] px-3.5 py-2 text-xs font-extrabold text-white shadow-sm transition-[transform,background-color,border-color] duration-200 hover:border-white/70 hover:bg-[#0a6e52] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#075942] active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
-          >
+          ><LandingText>
             List an item
-            <Plus aria-hidden="true" className="h-3.5 w-3.5" />
+            </LandingText><Plus aria-hidden="true" className="h-3.5 w-3.5" />
           </Link>
           <Link
             href={INDEPENDENCE_DAY_CAMPAIGN.ctaHref}
             /* A white button on a flag with a white centre band needs an edge of
                its own, or it dissolves into the stripe behind it. */
             className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-[#075942]/35 bg-white px-3.5 py-2 text-xs font-extrabold text-[#075942] shadow-sm transition-[transform,background-color,color] duration-200 hover:bg-[#fff5e8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#075942] focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] motion-reduce:transition-none motion-reduce:active:scale-100"
-          >
+          ><LandingText>
             Browse Needs
-            <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+            </LandingText><ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
           </Link>
         </div>
       </div>
@@ -113,6 +115,6 @@ export function IndependenceDayStrip() {
           }
         }
       `}</style>
-    </section>
+    </section></LandingAttributes>
   );
 }

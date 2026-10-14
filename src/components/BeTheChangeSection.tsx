@@ -2,7 +2,7 @@
 
 import { useId, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";

@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
+import { usePinAddress } from "@/hooks/usePinAddress";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -11,7 +13,6 @@ import {
   type ItemListing, type ListingImageAnalysis,
 } from "@/lib/api";
 import { trackListItem } from "@/lib/metaEvents";
-import { resolveLocationFromGPS, detectLocationFromServer } from "@/app/actions/locations";
 
 import { WizardProgressBar, WizardProgressRail, type StepAvailability } from "@/features/wizard-kit/WizardProgress";
 import { WizardNavigation } from "@/features/wizard-kit/WizardNavigation";
@@ -23,7 +24,7 @@ import { PhotosStep } from "./steps/PhotosStep";
 import { useOfferVideo, LISTING_VIDEO_ENDPOINTS } from "@/features/donation-offer-wizard/useOfferVideo";
 import { BasicsStep } from "./steps/BasicsStep";
 import { ConditionDetailsStep } from "./steps/ConditionDetailsStep";
-import { LocationStep } from "./steps/LocationStep";
+import { LocationStep, type LocationStepHandle } from "./steps/LocationStep";
 import { ReviewSubmitStep } from "./steps/ReviewSubmitStep";
 import { useListingDraft } from "./useListingDraft";
 import { useListingPhotos } from "./useListingPhotos";
@@ -34,7 +35,7 @@ import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import { validateAll, validateStep, stepForField } from "./wizardSchema";
 import {
   WIZARD_STEPS, emptyModel, isSubcategoryValid, modelFromListing,
-  needsDimensions, needsWorkingStatus, normalizeWorkingStatus, stepIndex, uploadedUrls,
+  needsDimensions, needsWorkingStatus, normalizeWorkingStatus, stepCountWord, stepIndex, uploadedUrls,
   type WizardMode, type WizardModel, type WizardPhoto, type WizardStep,
 } from "./wizardModel";
 
@@ -42,15 +43,20 @@ const STEP_LABELS: Record<WizardStep, string> = {
   photos: "Show the item",
   basics: "Item basics",
   condition: "Condition & details",
-  location: "Confirm location",
+  location: "Item location",
   review: "Review & submit",
+};
+
+/** Card headings, where they differ from the rail label. */
+const STEP_HEADINGS: Partial<Record<WizardStep, string>> = {
+  location: "Where is the item?",
 };
 
 const STEP_INTROS: Record<WizardStep, string> = {
   photos: "A few good photos do most of the work.",
   basics: "What is it, and how many?",
   condition: "How is it doing, and what should a recipient know?",
-  location: "Where would a recipient collect it from?",
+  location: "We use this to match your item with needs within 10 km of you.",
   review: "One last look before it goes to our team.",
 };
 
@@ -94,7 +100,8 @@ export function ItemListingWizard({
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
-  const [gps, setGps] = useState<{ running: boolean; error: string | null }>({ running: false, error: null });
+  /** The donor's profile coordinates: where the map starts when the listing has no pin. */
+  const [profileCenter, setProfileCenter] = useState<{ lat: number; lng: number } | null>(null);
 
   const [aiRunning, setAiRunning] = useState(false);
   const [aiNote, setAiNote] = useState<string | null>(null);
@@ -411,11 +418,13 @@ export function ItemListingWizard({
   const prefilledRef = useRef(false);
   useEffect(() => {
     let isMounted = true;
-    if (prefilledRef.current || mode !== "create") return;
+    if (prefilledRef.current) return;
     prefilledRef.current = true;
     getProfile()
       .then(p => {
         if (!isMounted) return;
+        if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
+        if (mode !== "create") return;
         setModel(prev => {
           // The profile stores city in the same flattened "City, StateIso,
           // CountryIso" shape, so it is parsed rather than dropped into the city
@@ -429,8 +438,8 @@ export function ItemListingWizard({
             countryIso: dirtyRef.current.has("countryIso") ? prev.countryIso : (parsed.countryIso || prev.countryIso),
             stateIso: dirtyRef.current.has("stateIso") ? prev.stateIso : (prev.stateIso || parsed.stateIso),
             city: dirtyRef.current.has("city") ? prev.city : (prev.city || parsed.city),
-            latitude: prev.latitude ?? p.latitude ?? undefined,
-            longitude: prev.longitude ?? p.longitude ?? undefined,
+            // No coordinates from the profile: the donor places this listing's
+            // pin on step 4 (the map only opens on the profile location).
           };
           modelRef.current = next;
           return next;
@@ -440,61 +449,72 @@ export function ItemListingWizard({
     return () => { isMounted = false; };
   }, [mode]);
 
-  const handleGps = useCallback(() => {
-    if (!navigator.geolocation) {
-      setGps({ running: false, error: "This device can't share its location." });
-      return;
-    }
-    setGps({ running: true, error: null });
-    navigator.geolocation.getCurrentPosition(
-      async pos => {
-        try {
-          const geo = await detectLocationFromServer(pos.coords.latitude, pos.coords.longitude);
-          if (!geo.ok) {
-            // Distinguish "nothing is mapped there" from "the lookup service is
-            // unavailable" — they call for different things from the donor, and
-            // the old code showed one message for both.
-            setGps({
-              running: false,
-              error: geo.reason === "no-address"
-                ? "There's no street address at that spot."
-                : "The address lookup is unavailable right now.",
-            });
-            return;
-          }
-          const a = geo.address;
-          const countryIso = (a.country_code ?? "").toUpperCase() || model.countryIso;
-          const cityName = a.city ?? a.town ?? a.village ?? a.state_district ?? "";
-          const { stateIso, cityValue } = await resolveLocationFromGPS(countryIso, a.state ?? "", cityName);
+  // ── Item location: map pin → address ─────────────────────────────────────
+  /**
+   * The pin is the source of truth for coordinates; the address fields follow
+   * it (shared lookup: usePinAddress). A lookup value replaces a field; a field
+   * the lookup has nothing for is left as the donor typed it. `onlyEmpty` is
+   * for pins we placed ourselves (the profile location), which never overwrite.
+   */
+  const pinAddress = usePinAddress();
+  const { lookup: lookupPin, geocodeTyped } = pinAddress;
+  const lookup = { running: pinAddress.running, error: pinAddress.error, whenIdle: pinAddress.whenIdle };
+  const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
+    const placed = { ...modelRef.current, latitude: lat, longitude: lng };
+    modelRef.current = placed;
+    setModel(placed);
+    queueSave(placed);
+    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
+    lookupPin(lat, lng, found => {
+      const prev = modelRef.current;
+      const next = { ...prev };
+      const fields = {
+        countryIso: found.countryIso, stateIso: found.stateIso, city: found.city,
+        locality: found.locality, pincode: found.pincode,
+      } as const;
+      (Object.keys(fields) as (keyof typeof fields)[]).forEach(k => {
+        const v = fields[k];
+        // Filling the blanks of a resumed draft: never touch what is there.
+        if (opts?.onlyEmpty) { if (v && !String(prev[k] ?? "").trim()) next[k] = v; return; }
+        // A new spot: a field the lookup could not find is cleared, never left
+        // describing the previous spot.
+        next[k] = v ?? "";
+      });
+      modelRef.current = next;
+      setModel(next);
+      queueSave(next);
+    }, () => {
+      // Nothing found at the new spot: the old address no longer applies.
+      if (opts?.onlyEmpty) return;
+      const next = { ...modelRef.current, countryIso: "", stateIso: "", city: "", locality: "", pincode: "" };
+      modelRef.current = next;
+      setModel(next);
+      queueSave(next);
+    });
+  }, [queueSave, lookupPin]);
 
-          setModel(prev => {
-            const next = {
-              ...prev,
-              countryIso: countryIso || prev.countryIso,
-              stateIso: stateIso || prev.stateIso,
-              city: cityValue || cityName || prev.city,
-              pincode: dirtyRef.current.has("pincode") ? prev.pincode : (a.postcode ?? prev.pincode),
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            };
-            queueSave(next);
-            return next;
-          });
-          setGps({ running: false, error: null });
-        } catch {
-          setGps({ running: false, error: "We couldn't turn that into an address." });
-        }
-      },
-      () => setGps({ running: false, error: "Location permission was denied." }),
-      { enableHighAccuracy: true, timeout: 10_000 },
-    );
-  }, [model.countryIso, queueSave]);
+  /**
+   * The donor typed an address: move the pin to it. Only with no map does an
+   * address that can't be placed fall back to the profile location; with a map
+   * the pin stays where it is and the donor places it.
+   */
+  const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }, useProfileFallback: boolean) => {
+    const coords = await geocodeTyped(q, useProfileFallback ? profileCenter : null);
+    if (!coords) return false;
+    const next = { ...modelRef.current, latitude: coords.lat, longitude: coords.lng };
+    modelRef.current = next;
+    setModel(next);
+    queueSave(next);
+    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
+    return true;
+  }, [geocodeTyped, profileCenter, queueSave]);
+
 
   // ── Navigation ────────────────────────────────────────────────────────────
   const focusField = useCallback((field: string) => {
     const target = stepForField(field);
     if (target !== step) { setDirection(-1); setStep(target); return; }
-    const el = document.querySelector<HTMLElement>(`[name="${field}"]`);
+    const el = document.querySelector<HTMLElement>(`[name="${field}"], [data-field="${field}"]`);
     el?.focus();
     el?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
   }, [step, reduced]);
@@ -505,7 +525,36 @@ export function ItemListingWizard({
     setStep(next);
   }, []);
 
-  const handleContinue = useCallback(() => {
+  /**
+   * Continue waits on the photos step while the photos are still uploading,
+   * being screened, or being read by the AI (including the short pause before
+   * the read starts), so the donor never moves on with details the AI is about
+   * to fill in, or with photos that have no verdict yet.
+   */
+  const analysisDue = mode === "create" && uploadedCount >= 1 && !isUploading && analysedKeyRef.current !== uploadedKey;
+  const photosBusy: string | null = step !== "photos" ? null
+    : isUploading ? "Uploading photos…"
+    : photoApi.screening ? "Checking photos…"
+    : aiRunning || analysisDue ? "Reading your photos…"
+    : null;
+
+  const locationRef = useRef<LocationStepHandle>(null);
+  /** Step 4 is working out a new location (GPS, search, pin lookup, typed address). */
+  const [locationBusy, setLocationBusy] = useState(false);
+  const locationHeld = step === "location" && locationBusy;
+  const [checkingLocation, setCheckingLocation] = useState(false);
+  /** On the location step: wait for any pending lookup. False = stay on the step. */
+  const settleLocation = useCallback(async () => {
+    if (step !== "location" || !locationRef.current) return true;
+    setCheckingLocation(true);
+    try { return await locationRef.current.flush(); } finally { setCheckingLocation(false); }
+  }, [step]);
+
+  const handleContinue = useCallback(async () => {
+    if (photosBusy || locationHeld) return;
+    if (!(await settleLocation())) return;
+    // modelRef: the lookup may have just moved the pin.
+    const model = modelRef.current;
     const stepErrors = validateStep(step, model);
     if (Object.keys(stepErrors).length) {
       setErrors(stepErrors);
@@ -524,10 +573,12 @@ export function ItemListingWizard({
       // flow awaited the network and then a 380ms timer before moving.
       goTo(WIZARD_STEPS[idx + 1], 1);
     } else {
-      void handleSubmit();
+      // Through the ref: this callback is not rebuilt when the model changes,
+      // and a captured handleSubmit validated the model as it was on arrival at
+      // review (declarations unticked), so ticking them never took effect.
+      void handleSubmitRef.current();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, model, goTo, reduced]);
+  }, [step, goTo, reduced, settleLocation, photosBusy, locationHeld]);
 
   const handleBack = useCallback(() => {
     const idx = stepIndex(step);
@@ -535,14 +586,17 @@ export function ItemListingWizard({
   }, [step, goTo]);
 
   const handleSaveExit = useCallback(async () => {
+    if (!(await settleLocation())) return;
     setSavingExit(true);
-    const ok = await flush(model);
+    const ok = await flush(modelRef.current);
     setSavingExit(false);
     if (!ok) { toast.error("We couldn't save your draft. Check your connection and try again."); return; }
     router.push("/dashboard");
-  }, [flush, model, router]);
+  }, [flush, router, settleLocation]);
 
   const handleSubmit = useCallback(async () => {
+    // The live model, not a render's copy: Submit can arrive through handleContinue.
+    const model = modelRef.current;
     const allErrors = validateAll(model);
     if (Object.keys(allErrors).length) {
       setErrors(allErrors);
@@ -572,16 +626,24 @@ export function ItemListingWizard({
     } finally {
       setSubmitting(false);
     }
-  }, [model, step, ensureDraft, flush, mode, router]);
+  }, [step, ensureDraft, flush, mode, router]);
+  const handleSubmitRef = useRef(handleSubmit);
+  handleSubmitRef.current = handleSubmit;
 
   // ── Progress availability ─────────────────────────────────────────────────
+  // Done = continued past AND still valid; going back keeps later checks.
+  const reached = useFurthestStep(draft.draftId != null ? `ck-listing-reached-${draft.draftId}` : null, WIZARD_STEPS, step);
+  const stepValid = useMemo(() => {
+    const out = {} as Record<WizardStep, boolean>;
+    for (const s of WIZARD_STEPS) out[s] = Object.keys(validateStep(s, model)).length === 0;
+    return out;
+  }, [model]);
   const availability = useMemo(() => {
-    const current = stepIndex(step);
     const savedSnapshot = draft.isSnapshotSaved(model);
     const out = {} as Record<WizardStep, StepAvailability>;
     for (const s of WIZARD_STEPS) {
       const i = stepIndex(s);
-      const complete = i < current;
+      const complete = i < reached && stepValid[s];
       out[s] = {
         complete,
         // Only a completed step whose data the server has confirmed is safe to
@@ -590,7 +652,7 @@ export function ItemListingWizard({
       };
     }
     return out;
-  }, [step, model, draft]);
+  }, [reached, stepValid, model, draft]);
 
   // Focus the new step heading so keyboard and screen-reader users land in the
   // right place rather than at the top of the document.
@@ -599,6 +661,7 @@ export function ItemListingWizard({
   }, [step]);
 
   const isLast = step === "review";
+
   const continueLabel = isLast
     ? (mode === "needs-info" ? "Resubmit for review" : "Submit for review")
     : "Continue";
@@ -623,7 +686,7 @@ export function ItemListingWizard({
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
               {mode === "needs-info" ? "Update your listing" : "List an item"}
             </h2>
-            <p className="mb-8 text-sm text-white/50">Five short steps. We save as you go.</p>
+            <p className="mb-8 text-sm text-white/50">{stepCountWord()} short steps. We save as you go.</p>
             <WizardProgressRail current={step} steps={WIZARD_STEPS} navLabel="Listing progress" labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
           <p className="text-2xs text-white/35">Your name and address stay private until a match is approved.</p>
@@ -646,7 +709,9 @@ export function ItemListingWizard({
           </div>
 
           <div ref={scrollRef} className="flex-1 px-4 py-5">
-            <div className="mx-auto w-full max-w-[680px]">
+            {/* The photo step takes the whole area beside the left bar on desktop
+                (owner, 2026-10-08, design option A); the other steps keep 680px. */}
+            <div className={`mx-auto w-full max-w-[680px] ${step === "photos" ? "lg:max-w-[1160px]" : ""}`}>
               <div className="mb-4 hidden items-center justify-between lg:flex">
                 <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
                   Step {stepIndex(step) + 1} of {WIZARD_STEPS.length}
@@ -682,15 +747,19 @@ export function ItemListingWizard({
                   <WizardBorderGlow />
 
                   <div className="ck-wizard-step-card-content">
+                  <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
                   <h1
                     ref={headingRef}
                     tabIndex={-1}
                     className="text-base font-bold text-stone-900 outline-none sm:text-lg dark:text-stone-100"
                     style={{ fontFamily: "var(--font-source-serif-4), serif" }}
                   >
-                    {STEP_LABELS[step]}
+                    {STEP_HEADINGS[step] ?? STEP_LABELS[step]}
                   </h1>
                   <p className="mb-2 mt-0.5 text-xs text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
+                  </div>
+                  </div>
 
                   <div className="mb-2 empty:hidden">
                     <StepErrorSummary errors={Object.fromEntries(Object.entries(errors).filter(([, v]) => v))} onFocusField={focusField} />
@@ -720,7 +789,11 @@ export function ItemListingWizard({
                     <ConditionDetailsStep model={model} errors={errors} aiFilled={aiFilled} uncertain={uncertain} onChange={setField} />
                   )}
                   {step === "location" && (
-                    <LocationStep model={model} errors={errors} gps={gps} onChange={setField} onUseGps={handleGps} onConfirm={handleContinue} />
+                    <LocationStep
+                      model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
+                      onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped} controlRef={locationRef}
+                      onBusyChange={setLocationBusy}
+                    />
                   )}
                   {step === "review" && (
                     <ReviewSubmitStep
@@ -744,9 +817,11 @@ export function ItemListingWizard({
           <WizardNavigation
             canGoBack={stepIndex(step) > 0}
             onBack={handleBack}
-            onContinue={handleContinue}
+            onContinue={() => void handleContinue()}
             onSaveExit={() => void handleSaveExit()}
             continueLabel={continueLabel}
+            advancing={checkingLocation || locationHeld || !!photosBusy}
+            advancingLabel={checkingLocation || locationHeld ? "Checking location…" : photosBusy ?? undefined}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

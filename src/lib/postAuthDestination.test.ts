@@ -107,6 +107,27 @@ describe("resolvePostAuthDestination", () => {
       resolvePostAuthDestination("/requests/123/offer-history", "DONEE").path,
     ).toBe("/requests/123/offer-history");
   });
+
+  it("sends a donor into the listing wizard, with or without a draft", () => {
+    expect(resolvePostAuthDestination("/items/new", "DONOR").path).toBe("/items/new");
+    expect(resolvePostAuthDestination("/items/new?draft=7", "DONOR").path).toBe("/items/new?draft=7");
+  });
+
+  it.each(["DONEE", "NGO_PARTNER", "NGO"])("sends a %s home instead of the listing wizard, with a reason", role => {
+    const out = resolvePostAuthDestination("%2Fitems%2Fnew", role);
+    expect(out.path).toBe(homeForRole(role));
+    expect(out.notice).toMatch(/donor account/i);
+  });
+
+  it("does not treat a lookalike route as the listing wizard", () => {
+    expect(resolvePostAuthDestination("/items/newest", "DONEE").path).toBe("/items/newest");
+  });
+
+  it("leaves /requests to the page for every role", () => {
+    // Donees see their own requests there; NGOs are redirected by the page.
+    expect(resolvePostAuthDestination("/requests", "DONEE").path).toBe("/requests");
+    expect(resolvePostAuthDestination("/requests", "NGO_PARTNER").path).toBe("/requests");
+  });
 });
 
 describe("registerUrlPreserving", () => {

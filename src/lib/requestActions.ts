@@ -80,7 +80,8 @@ export function canWithdrawRequest(status: string): boolean {
  * backend refuses them anyway.
  */
 export function canHideWithdrawnRequest(status: string): boolean {
-  return status === "CANCELLED";
+  // Rejected too (owner, 2026-10-09): a closed request the donee can clear away.
+  return status === "CANCELLED" || status === "REJECTED";
 }
 
 /**

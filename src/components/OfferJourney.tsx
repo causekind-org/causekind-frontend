@@ -95,6 +95,61 @@ export function buildDonorJourney(status: string): JourneyStage[] {
   ];
 }
 
+/** The same offer seen from the recipient's side (donee Matches tab). */
+export function buildDoneeJourney(status: string): JourneyStage[] {
+  return [
+    {
+      label: "Offer Received",
+      sublabel: "A donor offered an item",
+      statuses: ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED", "NEEDS_INFORMATION", "PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP"],
+      nowText:
+        status === "PENDING_DONEE_REVIEW" ? "A donor has offered to fulfil your request. Review their item details above and accept or decline." :
+        status === "NEEDS_INFORMATION" ? "The donor is adding missing details to their offer. No action needed from you yet." :
+        "AI is checking the donor's item details and photos. You'll be asked to review it next.",
+    },
+    {
+      label: "You Accepted",
+      sublabel: "You accepted the offer",
+      statuses: ["DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED"],
+      nowText: "You accepted this offer. Waiting for the donor to confirm their item is still available.",
+    },
+    {
+      label: "Donor Confirmed",
+      sublabel: "Donor reconfirmed the item",
+      statuses: ["DONOR_RECONFIRMED", "CONDITION_CHANGED_RESCREENING", "PENDING_ADMIN_APPROVAL"],
+      nowText: "The donor confirmed availability. CauseKind admin is doing a final review before approving.",
+    },
+    {
+      label: "Admin Approved",
+      sublabel: "CauseKind verified the match",
+      statuses: ["ADMIN_APPROVED"],
+      nowText: "The donation has been approved! The donor will arrange pickup or delivery with you.",
+    },
+    {
+      label: "Handover",
+      sublabel: "Item collected or delivered",
+      statuses: ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"],
+      nowText:
+        status === "HANDOVER_AT_RISK" ? "The handover has been rescheduled multiple times. Admin may step in to help coordinate." :
+        "A handover has been scheduled. Be ready to receive the item and confirm it via the Handover Hub.",
+    },
+    {
+      label: "Item Received",
+      sublabel: "You confirmed receipt",
+      statuses: ["ISSUE_WINDOW_OPEN", "ISSUE_RAISED"],
+      nowText:
+        status === "ISSUE_RAISED" ? "An issue was reported. The CauseKind team is reviewing it." :
+        "You received the item. If anything is wrong, report it now within the issue window.",
+    },
+    {
+      label: "Complete",
+      sublabel: "Donation successfully fulfilled",
+      statuses: ["COMPLETED"],
+      nowText: "The donation is complete. Thank you for using CauseKind!",
+    },
+  ];
+}
+
 /**
  * Index of the milestone this status sits on, or -1 when the status maps to no
  * milestone. Callers use -1 to fall back to the card's standalone explanation.
@@ -106,9 +161,9 @@ export function donorJourneyIndex(status: string): number {
 const isAtRiskStatus = (status: string) =>
   status === "HANDOVER_AT_RISK" || status === "ISSUE_RAISED";
 
-export function OfferJourney({ status }: { status: string }) {
+export function OfferJourney({ status, role = "donor" }: { status: string; role?: "donor" | "donee" }) {
   const reduce = useReducedMotion();
-  const stages = buildDonorJourney(status);
+  const stages = role === "donee" ? buildDoneeJourney(status) : buildDonorJourney(status);
   const idx = stages.findIndex(s => s.statuses.includes(status));
 
   // Unmapped status — the card keeps its own explanation instead.

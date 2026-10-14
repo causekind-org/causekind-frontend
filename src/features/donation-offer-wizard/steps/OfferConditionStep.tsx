@@ -20,16 +20,20 @@ export type CompatState =
  * adding it here would be a new required-feeling field, not a redesign.
  */
 export function OfferConditionStep({
-  model, errors, onChange, compat,
+  model, errors, onChange, compat, conditions = OFFER_CONDITIONS, conditionHint,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
   onChange: <K extends keyof OfferModel>(key: K, value: OfferModel[K]) => void;
   compat: CompatState;
+  /** Only for NGO drives: the conditions the drive accepts. Everyone else gets the full list. */
+  conditions?: readonly string[];
+  /** Only for NGO drives: the drive's rule in plain words. */
+  conditionHint?: string;
 }) {
   return (
     <div className="space-y-3">
-      <WizardField label="Condition" required error={errors.condition}>
+      <WizardField label="Condition" required error={errors.condition} hint={conditionHint}>
         {({ id, describedBy, invalid }) => (
           <select
             id={id} name="condition" value={model.condition}
@@ -38,7 +42,7 @@ export function OfferConditionStep({
             className={controlClass}
           >
             <option value="">Select…</option>
-            {OFFER_CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+            {conditions.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         )}
       </WizardField>

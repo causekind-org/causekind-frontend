@@ -25,6 +25,8 @@ export function WizardNavigation({
   submitting,
   submitted,
   savingExit,
+  advancing,
+  advancingLabel = "Saving…",
   avoidBottomChrome = false,
   variant = "bar",
 }: {
@@ -37,6 +39,9 @@ export function WizardNavigation({
   submitting: boolean;
   submitted: boolean;
   savingExit: boolean;
+  advancing?: boolean;
+  /** Text beside the spinner while `advancing`. */
+  advancingLabel?: string;
   /** Lift the sticky bar above CauseKind's floating mobile navigation dock. */
   avoidBottomChrome?: boolean;
   /**
@@ -58,7 +63,7 @@ export function WizardNavigation({
     <motion.button
       type="button"
       onClick={onContinue}
-      disabled={submitting || submitted}
+      disabled={submitting || submitted || advancing}
       {...pressProps(reduced)}
       // whitespace-nowrap: "Submit donation offer" wrapped to two lines in the
       // corner cluster, which doubled the button's height and pushed it into
@@ -80,9 +85,9 @@ export function WizardNavigation({
         >
           <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> Submitted
         </motion.span>
-      ) : submitting ? (
+      ) : submitting || advancing ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Submitting…
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {advancing ? advancingLabel : "Submitting…"}
         </>
       ) : (
         <>
@@ -133,25 +138,28 @@ export function WizardNavigation({
               <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />
             </motion.button>
           )}
+        </div>
+
+        {/* Beside Continue (owner, 2026-10-08), as in the bar layout. */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onSaveExit}
             disabled={savingExit}
-            className="min-h-[40px] shrink-0 rounded-lg px-2 text-2xs font-bold text-stone-500 underline underline-offset-2 transition-colors hover:text-stone-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:text-stone-400"
+            className="inline-flex items-center min-h-[40px] shrink-0 rounded-lg px-2 text-2xs font-bold text-stone-500 underline underline-offset-2 transition-colors hover:text-stone-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:text-stone-400"
           >
             {savingExit ? "Saving…" : "Save & exit"}
           </button>
+          {continueButton}
         </div>
-
-        {continueButton}
       </div>
     );
   }
 
   return (
     <div
-      className={`sticky z-30 border-t border-stone-200 bg-[#faf8f5]/95 backdrop-blur
-                 py-3 dark:border-zinc-800 dark:bg-zinc-950/95
+      className={`sticky z-40 isolate border-t border-stone-200 bg-[#faf8f5]/95 backdrop-blur
+                 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-zinc-950/95
                  ${avoidBottomChrome ? "bottom-[var(--ck-bottom-chrome)] lg:bottom-0" : "bottom-0"}`}
     >
       <div className="mx-auto flex max-w-[680px] items-center gap-2 px-4">
@@ -167,21 +175,25 @@ export function WizardNavigation({
           </motion.button>
         )}
 
-        <button
-          type="button"
-          onClick={onSaveExit}
-          disabled={savingExit}
-          className="min-h-[44px] shrink-0 rounded-xl px-2.5 text-xs font-bold text-stone-500 underline underline-offset-2 transition-colors hover:text-stone-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:text-stone-400"
-        >
-          {savingExit ? "Saving…" : "Save & exit"}
-        </button>
 
         {/* ml-auto/sm:min-w here rather than on the button itself, so the
             floating variant can reuse the same control without inheriting the
             slab layout's alignment. Sized to its content, not flex-1 —
             stretched across the row it read as a slab. */}
-        <div className="ml-auto sm:min-w-[150px] [&>button]:w-full">
-          {continueButton}
+        {/* Save & exit sits beside Continue (owner, 2026-10-08): in the middle
+            of the bar its hit area ended up offset below the label. */}
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onSaveExit}
+            disabled={savingExit}
+            className="relative z-10 inline-flex min-h-[44px] shrink-0 items-center rounded-xl px-2.5 text-xs font-bold text-stone-500 underline underline-offset-2 transition-colors hover:text-stone-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:text-stone-400"
+          >
+            {savingExit ? "Saving…" : "Save & exit"}
+          </button>
+          <div className="sm:min-w-[150px] [&>button]:w-full">
+            {continueButton}
+          </div>
         </div>
       </div>
     </div>

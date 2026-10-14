@@ -266,6 +266,7 @@ export function ItemDonationScrolly() {
     let loadedCount = 0;
     let raf = 0;
     let disposed = false;
+    let fetchStarted = false;
 
     // Eased scrub: `target` is where the scroll currently is; `rendered` is the
     // frame actually on screen, which chases `target` by SCRUB_EASE each frame.
@@ -275,21 +276,84 @@ export function ItemDonationScrolly() {
     let rendered = 0;
     let running = false;
 
-    for (let i = 0; i < FRAME_COUNT; i++) {
-      const img = new Image();
-      img.decoding = "async";
-      img.src = framePath(i + 1);
-      img.onload = () => {
-        loadedRef.current[i] = true;
-        loadedCount++;
-        // The first frame arriving is enough to paint something and let the
-        // scrub begin; the rest stream in behind it.
-        if (i === 0 || loadedCount === FRAME_COUNT) {
-          if (!disposed) setReady(true);
-          draw(rendered);
-        }
+    /*
+     * Fetch the frame set — but only once the section is genuinely approaching.
+     *
+     * <p>This used to run unconditionally in this effect's body, which meant
+     * every desktop visitor to the homepage downloaded all 598 frames — 17 MB
+     * of WebP — during initial load, before the hero had even settled, whether
+     * or not they ever scrolled this far. The film sits six screen-heights
+     * down; most visitors paid for it and never saw it. It competed for
+     * bandwidth with the hero image, the fonts and the need board, all of
+     * which are above the fold.
+     *
+     * <p>Gated on an IntersectionObserver with a full-viewport rootMargin, so
+     * the fetch begins roughly one screen before the section arrives — far
+     * enough ahead that frame 1 is painted by the time the pin engages, late
+     * enough that it never competes with the initial render.
+     *
+     * <p>Order matters as much as timing. The frames are requested from the
+     * middle outward rather than 1→598: the browser caps concurrent
+     * connections, so a naive in-order flood means the last frames queue
+     * behind everything and a fast scroller hits `nearestLoaded`'s fallback
+     * for the whole back half. Interleaving from both ends keeps the reachable
+     * range dense wherever the scrub currently is.
+     */
+    function startFetch() {
+      if (fetchStarted || disposed) return;
+      fetchStarted = true;
+
+      const load = (i: number) => {
+        if (imagesRef.current[i]) return;
+        const img = new Image();
+        img.decoding = "async";
+        // Below the browser's default fetch priority: these are never the LCP
+        // and must yield to anything above the fold that is still in flight.
+        img.fetchPriority = "low";
+        img.src = framePath(i + 1);
+        img.onload = () => {
+          loadedRef.current[i] = true;
+          loadedCount++;
+          // The first frame arriving is enough to paint something and let the
+          // scrub begin; the rest stream in behind it.
+          if (i === 0 || loadedCount === FRAME_COUNT) {
+            if (!disposed) setReady(true);
+            draw(rendered);
+          }
+        };
+        imagesRef.current[i] = img;
       };
-      imagesRef.current[i] = img;
+
+      // Frame 1 first and alone — it is the one the expanding card shows, so
+      // nothing else should be ahead of it in the queue.
+      load(0);
+      for (let step = 1; step < FRAME_COUNT; step++) {
+        load(step);
+        const mirrored = FRAME_COUNT - step;
+        if (mirrored > step) load(mirrored);
+      }
+    }
+
+    const section = sectionRef.current;
+    let observer: IntersectionObserver | null = null;
+    if (section && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            startFetch();
+            observer?.disconnect();
+            observer = null;
+          }
+        },
+        // One viewport of lead time in both directions — also covers a reload
+        // with the browser already scrolled past the section.
+        { rootMargin: "100% 0px" }
+      );
+      observer.observe(section);
+    } else {
+      // No observer (very old browser, or the section ref never attached):
+      // fetching everything is still better than a blank canvas.
+      startFetch();
     }
 
     /** The nearest loaded frame at or below `idx`, so a not-yet-loaded frame
@@ -397,6 +461,12 @@ export function ItemDonationScrolly() {
       cancelAnimationFrame(raf);
       window.removeEventListener("scroll", kick);
       window.removeEventListener("resize", kick);
+      observer?.disconnect();
+      // Drop the decoded bitmaps. Without this the 598 images stay reachable
+      // through the ref after a client navigation away from the homepage, and
+      // the browser has no reason to reclaim them.
+      imagesRef.current = [];
+      loadedRef.current = [];
       // Never leave the header hidden if the section unmounts while pinned.
       setImmersive(false);
     };

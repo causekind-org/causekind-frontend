@@ -37,11 +37,14 @@ function doneeVm(): HandoverViewModel {
       doneeConfirmedQty: null,
       conditionRating: null,
       partlyConfirmed: true,
+      otpVerified: false,
     },
     methodOptions: [],
     certificateCode: null,
     certificateHref: null,
     closed: false,
+    offeredQuantity: 2,
+    delivery: null,
   };
 }
 
@@ -66,7 +69,7 @@ describe("the donee confirmation needs the code", () => {
     const qty = screen.getByRole("spinbutton");
     await user.type(qty, "2");
 
-    const confirm = screen.getByRole("button", { name: /i received it/i });
+    const confirm = screen.getByRole("button", { name: /i have received the item/i });
     // Quantity alone used to be enough — that was the bug.
     expect(confirm).toBeDisabled();
   });
@@ -79,7 +82,7 @@ describe("the donee confirmation needs the code", () => {
     const code = screen.getByLabelText(/six digit handover code/i);
     await user.type(code, "123");
 
-    expect(screen.getByRole("button", { name: /i received it/i })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /i have received the item/i })).toBeDisabled();
   });
 
   it("never sends undefined for the code", async () => {
@@ -89,7 +92,7 @@ describe("the donee confirmation needs the code", () => {
     await user.type(screen.getByRole("spinbutton"), "2");
     await user.type(screen.getByLabelText(/six digit handover code/i), "123456");
 
-    const confirm = screen.getByRole("button", { name: /i received it/i });
+    const confirm = screen.getByRole("button", { name: /i have received the item/i });
     expect(confirm).toBeEnabled();
     await user.click(confirm);
 

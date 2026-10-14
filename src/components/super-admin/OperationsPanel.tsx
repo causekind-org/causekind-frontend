@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
   superAdminConfig,
@@ -205,7 +206,7 @@ export function OperationsPanel({ isDark }: { isDark: boolean }) {
                   <p className={`font-mono text-xs ${t.text}`}>{c.configValue ?? "(null)"}</p>
                 </div>
                 <p className={`text-xs ${t.muted}`}>
-                  {c.updatedBy} · {new Date(c.updatedAt).toLocaleString()}
+                  {c.updatedBy} · {serverDate(c.updatedAt).toLocaleString()}
                 </p>
                 {c.reason && <p className={`mt-0.5 text-xs ${t.text}`}>{c.reason}</p>}
               </li>

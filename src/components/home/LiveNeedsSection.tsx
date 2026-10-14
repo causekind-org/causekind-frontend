@@ -1,24 +1,27 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 
-import { useMemo, useRef, useState } from "react";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import { useInView, useReducedMotion } from "framer-motion";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
-  MapPin,
-  Lock,
   ArrowRight,
+  ChevronLeft,
+  ChevronRight,
   ShieldCheck,
   CheckCircle2,
   Sparkles,
 } from "lucide-react";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { loginUrlFor } from "@/lib/safeRedirect";
-import type { PlatformStats, PublicItemRequest } from "@/lib/api";
-import { TranslatedText } from "@/hooks/useDynamicTranslation";
+import { getNgoDrives, type PlatformStats, type PublicItemRequest, type PublicNgoDrive } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import LetterSwap from "@/components/LetterSwap";
+import { LiveNeedCard } from "@/components/home/LiveNeedCard";
 
 /**
  * How many needs the homepage grid shows before handing off to /requests.
@@ -29,6 +32,34 @@ import LetterSwap from "@/components/LetterSwap";
  * cards make a long mobile section; that is what a feed looks like.
  */
 const NEEDS_SHOWN = 6;
+
+/** A live NGO drive shaped like an item request, so one grid renders both. */
+type NeedCard = PublicItemRequest & { ngoDriveId?: number; ngoName?: string | null };
+
+function driveAsNeed(d: PublicNgoDrive): NeedCard {
+  return {
+    id: d.id,
+    title: d.title,
+    category: d.category,
+    description: d.description ?? "",
+    urgency: d.urgency,
+    emergency: false,
+    city: d.ngoCity ?? "",
+    quantity: d.stillNeeded ?? d.quantityNeeded,
+    ngoDriveId: d.id,
+    ngoName: d.ngoOrganizationName,
+  } as unknown as NeedCard;
+}
+
+/** Requests and drives alternate, so drives are not all pushed to later pages. */
+function interleave(requests: NeedCard[], drives: NeedCard[]): NeedCard[] {
+  const out: NeedCard[] = [];
+  for (let i = 0; i < Math.max(requests.length, drives.length); i++) {
+    if (i < requests.length) out.push(requests[i]);
+    if (i < drives.length) out.push(drives[i]);
+  }
+  return out;
+}
 
 export function LiveNeedsSection({
   initialRequests = [],
@@ -52,6 +83,7 @@ export function LiveNeedsSection({
 }) {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const sectionRef = useRef<HTMLElement>(null);
+  const needsRowRef = useRef<HTMLDivElement>(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.1 });
   const reduceMotion = useReducedMotion();
 
@@ -72,8 +104,6 @@ export function LiveNeedsSection({
    */
   const { user, isLoading: authLoading } = useAuth();
   const role = (user?.role ?? "").toUpperCase().replace(/^ROLE_/, "");
-  /** Anyone who can actually offer an item — the same test CategoryNeedsBoard uses. */
-  const isDonor = !!user && role !== "DONEE";
   const emptyStateCta = authLoading
     ? null
     : user === null
@@ -84,7 +114,16 @@ export function LiveNeedsSection({
 
   // Purely backend-driven now — whatever the API returns (including an empty
   // array) is what renders. No local fallback/dummy data masking a real empty state.
-  const allNeeds = initialRequests ?? [];
+  // LIVE NGO drives (public endpoint, no location filter yet) mixed into the grid.
+  const [drives, setDrives] = useState<NeedCard[]>([]);
+  useEffect(() => {
+    let active = true;
+    getNgoDrives()
+      .then((rows) => { if (active) setDrives((rows ?? []).map(driveAsNeed)); })
+      .catch(() => { /* drives are optional here; requests still render */ });
+    return () => { active = false; };
+  }, []);
+  const allNeeds = useMemo(() => interleave(initialRequests ?? [], drives), [initialRequests, drives]);
 
   /*
    * The filtered list and the six we show are derived separately, on purpose.
@@ -102,7 +141,19 @@ export function LiveNeedsSection({
         : allNeeds.filter((n) => n.category === selectedCategory),
     [allNeeds, selectedCategory],
   );
-  const displayedNeeds = filteredNeeds.slice(0, NEEDS_SHOWN);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(NEEDS_SHOWN);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const sync = () => { setPageSize(query.matches ? 1 : NEEDS_SHOWN); setPage(0); };
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
+  useEffect(() => { setPage(0); }, [selectedCategory]);
+  const pageCount = Math.ceil(filteredNeeds.length / pageSize);
+  const activePage = Math.min(page, Math.max(0, pageCount - 1));
+  const displayedNeeds = filteredNeeds.slice(activePage * pageSize, (activePage + 1) * pageSize);
   const hiddenCount = filteredNeeds.length - displayedNeeds.length;
 
   const cardCount = displayedNeeds.length;
@@ -123,13 +174,26 @@ export function LiveNeedsSection({
     return counts;
   }, [allNeeds]);
 
+  // Below 768px the needs are a swipe row; a new filter starts it from the first card.
+  useEffect(() => {
+    if (needsRowRef.current) needsRowRef.current.scrollLeft = 0;
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    // Refresh ScrollTrigger when filtered card count changes layout height
+    const timer = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [selectedCategory, displayedNeeds.length]);
+
   return (
     <section
       ref={sectionRef}
       id="live-needs-section"
       aria-labelledby="live-needs-heading"
       // Was #fbf9f4 — a shade off the sections either side. Same one cream.
-      className="relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
+      className="ck-m-section relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors"
     >
       {/* The two warm ambient blurs are gone — see the note in
           ComingSoonMagnets. Every section was tinting its own background a
@@ -140,22 +204,26 @@ export function LiveNeedsSection({
         {/* ── Section Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
+            <p className="mb-5 hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ck-home-ink,#b04a15)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:inline-flex dark:bg-white/5 dark:text-[var(--ck-home-ink,#e07b3a)] dark:ring-white/10">
+              <span className="size-1.5 rounded-full bg-current" aria-hidden /><LandingText>
+              Live board
+            </LandingText></p>
             <h2
               id="live-needs-heading"
-              className="text-2xl lg:text-5xl font-black tracking-tight text-stone-900 dark:text-stone-50 leading-[1.12]"
+              className="text-[1.625rem] lg:text-6xl font-semibold [font-family:var(--font-source-serif-4),Georgia,serif] tracking-[-0.03em] lg:tracking-[-0.035em] text-stone-900 dark:text-stone-50 leading-[1.12] lg:leading-[1.02]"
             >
               {/* Two runs, not one: the accent half has to keep its own colour,
                   and LetterSwap emits a single coloured span. */}
-              {animateHeading ? <LetterSwap text="Real people. Real needs." /> : "Real people. Real needs."}{" "}
+              {animateHeading ? <LetterSwap text="Real people. Real needs." /> : <LandingText>Real people. Real needs.</LandingText>}{" "}
               <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">
-                {animateHeading ? <LetterSwap text="Right now." /> : "Right now."}
+                {animateHeading ? <LetterSwap text="Right now." /> : <LandingText>Right now.</LandingText>}
               </span>
             </h2>
 
-            <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
+            <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium"><LandingText>
               Every request here is posted by a verified individual or community school in India. No cash,
               no guesswork — offer the exact item they are waiting for today.
-            </p>
+            </LandingText></p>
           </div>
 
           {/*
@@ -172,12 +240,12 @@ export function LiveNeedsSection({
               <ShieldCheck className="w-5 h-5" aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-black text-stone-900 dark:text-stone-100 leading-tight">
+              <p className="text-sm font-black text-stone-900 dark:text-stone-100 leading-tight"><LandingText>
                 Every donee is verified
-              </p>
-              <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+              </LandingText></p>
+              <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400"><LandingText>
                 ID and address checked before a need is posted
-              </p>
+              </LandingText></p>
             </div>
           </div>
         </div>
@@ -194,9 +262,9 @@ export function LiveNeedsSection({
                   : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5" /><LandingText>
               All Categories
-            </button>
+            </LandingText></button>
 
             {ALL_REQUEST_CATEGORIES.map((cat) => {
               const visual = CATEGORY_VISUALS[cat];
@@ -226,14 +294,14 @@ export function LiveNeedsSection({
                   >
                     <AnimatedCategoryIcon category={cat} iconClassName="w-3.5 h-3.5" />
                   </span>
-                  {cat}
+                  <LandingText>{cat}</LandingText>
                   {count > 0 && (
                     <span
                       className={`rounded-full px-1.5 text-3xs font-black tabular-nums ${
                         isSelected ? "bg-white/25 text-white" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
                       }`}
                     >
-                      {count}
+                      <LandingText>{count}</LandingText>
                     </span>
                   )}
                 </button>
@@ -258,126 +326,96 @@ export function LiveNeedsSection({
             <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400 dark:text-stone-500">
               <Sparkles className="w-6 h-6" />
             </div>
-            <p className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-200">
-              No open requests in {selectedCategory} right now
-            </p>
+            <p className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-200"><LandingText>
+              No open requests in </LandingText><LandingText>{selectedCategory}</LandingText><LandingText> right now
+            </LandingText></p>
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 max-w-sm">
-              {emptyStateCta
+              <LandingText>{emptyStateCta
                 ? "Be the first to post one, or check back soon — new needs are added regularly."
-                : "Check back soon — new needs are added regularly. Try another category in the meantime."}
+                : "Check back soon — new needs are added regularly. Try another category in the meantime."}</LandingText>
             </p>
             {emptyStateCta ? (
               <NewRequestLink
                 href={emptyStateCta.href}
                 className="inline-flex items-center gap-2 rounded-xl bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95"
               >
-                <span>{emptyStateCta.label}</span>
+                <span><LandingText>{emptyStateCta.label}</LandingText></span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </NewRequestLink>
             ) : null}
           </div>
         ) : (
-          <div className="grid gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="relative md:px-12">
+          {/* A grid from 768px up; below that `.ck-snap-m` turns the same
+              element into a native scroll-snap row with a peek of the next
+              card, so six needs cost one card of height, not six. */}
+          <LandingAttributes><div
+            ref={needsRowRef}
+            className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
+            role="region"
+            aria-label="Open needs"
+            tabIndex={-1}
+          >
             {displayedNeeds.map((need, idx) => {
-              const visual = CATEGORY_VISUALS[need.category];
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
-              // A signed-in donor goes straight to the offer form. This used to
-              // send everyone through loginUrlFor(), which always returns a
-              // login URL regardless of auth — so someone already signed in was
-              // bounced to /login to be sent back where they were going.
-              const offerPath = `/requests/${need.id}/offer`;
-              const offerUrl = isDonor ? offerPath : loginUrlFor(offerPath);
+              const isDonor = role === "DONOR";
+              const isDonee = role === "DONEE";
+              const isDrive = need.ngoDriveId !== undefined;
+              const offerUrl = isDrive
+                ? `/drives/${need.ngoDriveId}`
+                : isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
-                <motion.article
-                  key={need.id}
-                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 }}
-                  animate={isInView ? { opacity: 1, y: 0 } : undefined}
-                  transition={{ duration: 0.45, delay: Math.min(idx, 5) * 0.06 }}
-                  className="flex flex-col rounded-[1.25rem] bg-white dark:bg-zinc-900/95 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 p-4 lg:p-6 lg:bg-white/95 lg:border-stone-200/90 lg:shadow-sm lg:shadow-[var(--ck-home-deep,#431407)]/5 dark:lg:shadow-black/20"
-                >
-                  <div className="grow">
-                    {/* Top Bar: Category Pill & Urgent Tag */}
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-3xs font-extrabold uppercase tracking-wider ${
-                          visual?.iconBg ?? "bg-stone-100"
-                        } ${visual?.text ?? "text-stone-700"}`}
-                      >
-                        <AnimatedCategoryIcon category={need.category} iconClassName="w-3.5 h-3.5" />
-                        {need.category}
-                      </span>
-
-                      {isUrgent && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-red-600 dark:text-red-400">
-                          <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
-                          Urgent
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Title — a third of the row is narrower than the old
-                        980px stage, so the display size comes down with it. */}
-                    <h3 className="text-lg sm:text-xl font-black text-stone-900 dark:text-stone-50 leading-snug text-pretty">
-                      <TranslatedText text={need.title} />
-                    </h3>
-
-                    {/* Description snippet if available */}
-                    {need.description && (
-                      <p className="mt-2 text-sm text-stone-500 dark:text-stone-400 line-clamp-2 leading-relaxed">
-                        <TranslatedText text={need.description} />
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Card Meta & CTA. The block above grows, so every footer in
-                      the row sits on the same line however long a title wraps. */}
-                  <div className="mt-5 pt-4 border-t border-stone-100 dark:border-zinc-800/80 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-                      <div className="flex items-center gap-1.5 truncate font-semibold">
-                        <MapPin className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
-                        <span className="truncate">
-                          <TranslatedText text={need.city} />
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 font-medium">
-                        <span>
-                          Qty:{" "}
-                          <strong className="text-stone-800 dark:text-stone-200 font-bold">
-                            {need.quantity}
-                          </strong>
-                        </span>
-                        {need.doneeFirstName && (
-                          <>
-                            <span className="text-stone-300 dark:text-stone-700">·</span>
-                            <span className="truncate text-stone-400 dark:text-stone-500 text-3xs">
-                              By {need.doneeFirstName}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Every card is now fully visible, so every CTA is live and
-                        keyboard-reachable — the carousel had to disable the
-                        blurred neighbours' links. */}
-                    <Link
-                      href={offerUrl}
-                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
-                    >
-                      {/* The lock and the "log in" wording only make sense for
-                          someone who is not signed in. */}
-                      {!isDonor && (
-                        <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />
-                      )}
-                      <span>{isDonor ? "Offer this item" : "Log in to offer this item"}</span>
-                      <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
-                    </Link>
-                  </div>
-                </motion.article>
+                <LiveNeedCard
+                  key={isDrive ? `drive-${need.ngoDriveId}` : `request-${need.id}`}
+                  motionProps={{
+                    initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 },
+                    animate: isInView ? { opacity: 1, y: 0 } : undefined,
+                    transition: { duration: 0.45, delay: Math.min(idx, 5) * 0.06, ease: [0.22, 1, 0.36, 1] },
+                  }}
+                  need={{
+                    category: need.category,
+                    title: need.title,
+                    description: need.description,
+                    city: need.city,
+                    quantity: need.quantity,
+                    urgent: isUrgent,
+                    isDrive,
+                    byName: isDrive ? need.ngoName : need.doneeFirstName,
+                  }}
+                  href={offerUrl}
+                  ctaLabel={isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}
+                  locked={!isDonor && !isDrive}
+                  showCta={isDrive || !isDonee}
+                />
               );
             })}
+          </div></LandingAttributes>
+          {pageCount > 1 && (
+            <LandingAttributes><nav aria-label="Open needs pages" className="mt-3 flex items-center justify-center gap-2">
+              <LandingAttributes><button type="button" aria-label="Previous requests" disabled={activePage === 0}
+                onClick={() => setPage(activePage - 1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:left-0 md:top-1/2 md:-translate-y-1/2">
+                <ChevronLeft size={20} aria-hidden="true" />
+              </button></LandingAttributes>
+              <div className="flex min-w-0 items-center overflow-x-auto">
+                {Array.from({ length: pageCount }, (_, index) => (
+                  <LandingAttributes key={index}><button key={index} type="button" aria-label={`Requests page ${index + 1}`}
+                    aria-current={index === activePage ? "page" : undefined}
+                    onClick={() => setPage(index)}
+                    className="flex h-11 w-8 shrink-0 items-center justify-center text-[var(--ck-home-ink,#b04a15)] focus-visible:outline-2">
+                    <span className={`h-2 w-2 rounded-full bg-current ${index === activePage ? "opacity-100" : "opacity-30"}`} />
+                  </button></LandingAttributes>
+                ))}
+              </div>
+              <LandingAttributes><button type="button" aria-label="Next requests" disabled={activePage === pageCount - 1}
+                onClick={() => setPage(activePage + 1)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-current text-[var(--ck-home-ink,#b04a15)] disabled:opacity-30 disabled:cursor-not-allowed focus-visible:outline-2 md:absolute md:right-0 md:top-1/2 md:-translate-y-1/2">
+                <ChevronRight size={20} aria-hidden="true" />
+              </button></LandingAttributes>
+              <span className="sr-only" aria-live="polite"><LandingText>Page </LandingText><LandingText>{activePage + 1}</LandingText><LandingText> of </LandingText><LandingText>{pageCount}</LandingText></span>
+            </nav></LandingAttributes>
+          )}
           </div>
         )}
 
@@ -391,36 +429,36 @@ export function LiveNeedsSection({
             className="mt-4 inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs sm:text-sm text-stone-500 dark:text-stone-400 hover:text-[var(--ck-home-ink,#b04a15)] dark:hover:text-[var(--ck-home-ink,#e07b3a)] transition-colors group/more"
           >
             <span className="font-bold text-stone-700 dark:text-stone-200 tabular-nums">
-              {hiddenCount} more open {hiddenCount === 1 ? "need" : "needs"}
+              <LandingText>{hiddenCount}</LandingText><LandingText> more open </LandingText><LandingText>{hiddenCount === 1 ? "need" : "needs"}</LandingText>
             </span>
-            {selectedCategory !== "All" && <span>in {selectedCategory}</span>}
+            {selectedCategory !== "All" && <span><LandingText>in </LandingText><LandingText>{selectedCategory}</LandingText></span>}
             <span className="text-stone-300 dark:text-stone-700">·</span>
-            <span className="font-semibold">See them all</span>
+            <span className="font-semibold"><LandingText>See them all</LandingText></span>
             <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/more:translate-x-1" />
           </Link>
         )}
 
         {/* ── Footer Link: Explore All Needs ── */}
-        <div className="ck-live-needs-footer-gap flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl bg-stone-100/70 dark:bg-zinc-900/60 border border-stone-200/70 dark:border-zinc-800 p-4 sm:p-5">
+        <div className="ck-live-needs-footer-gap flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl lg:rounded-[2rem] lg:p-2 lg:pl-6 bg-stone-100/70 dark:bg-zinc-900/60 border border-stone-200/70 dark:border-zinc-800 p-4 sm:p-5">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-[var(--ck-home-accent,#b04a15)]/10 flex items-center justify-center text-[var(--ck-home-ink,#b04a15)] shrink-0">
               <CheckCircle2 className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200">
-                Have gently-used goods at home?
-              </p>
-              <p className="text-3xs sm:text-xs text-stone-500 dark:text-stone-400">
-                Browse our complete live request directory or post an offer directly.
-              </p>
+              <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200"><LandingText>
+                Have something you no longer use?
+              </LandingText></p>
+              <p className="text-3xs sm:text-xs text-stone-500 dark:text-stone-400"><LandingText>
+                See what people near you need, and give it to someone who will use it.
+              </LandingText></p>
             </div>
           </div>
 
           <Link
             href="/requests"
-            className="inline-flex items-center gap-2 rounded-xl bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 shrink-0"
+            className="inline-flex items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 lg:min-h-12 lg:px-7 text-xs uppercase tracking-wider transition-all lg:duration-500 lg:ease-[cubic-bezier(0.32,0.72,0,1)] shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 lg:active:scale-[0.98] shrink-0"
           >
-            <span>See all open requests</span>
+            <span><LandingText>See all needs</LandingText></span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

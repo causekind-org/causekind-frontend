@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { Reveal } from "@/components/Reveal";
@@ -140,7 +140,7 @@ export function ContactPageClient() {
                 Get in touch
               </p>
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.05]">
-                No bots. No middlemen.<br />Just us.
+                Questions about CauseKind?<br />We’re here to help.
               </h1>
             </div>
             <p className="text-sm text-stone-400 font-medium leading-relaxed max-w-xs lg:text-right lg:pb-1">
@@ -200,13 +200,13 @@ export function ContactPageClient() {
             <dl className="space-y-3 sm:space-y-4">
               <div>
                 <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Name</dt>
-                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Atharva Raorane</dd>
+                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Gaurav Yadav</dd>
               </div>
               <div>
                 <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Email</dt>
                 {/* break-words over break-all — same reason as the channel rows:
                     break-all chops the domain mid-word. */}
-                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100 break-words [overflow-wrap:anywhere]">Atharvaraorane147@gmail.com</dd>
+                <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100 break-words [overflow-wrap:anywhere]">gaurav@causekind.com</dd>
               </div>
               <div>
                 <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Response time</dt>

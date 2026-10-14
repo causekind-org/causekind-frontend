@@ -1,168 +1,24 @@
+
+import { LandingText } from "@/components/LandingTranslation";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight, HandCoins, Plus, Package } from "lucide-react";
+import { ArrowRight, HandCoins } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon, { ICON_MOTION_PARENT_PROPS } from "./AnimatedCategoryIcon";
 import { useAuth } from "@/hooks/useAuth";
-import { getMyItemRequests, getAvailableDonorListings, type ItemRequest, type ItemListing } from "@/lib/api";
-
-function NgoDonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
-  const [myRequests, setMyRequests] = useState<ItemRequest[]>([]);
-  const [donorListings, setDonorListings] = useState<ItemListing[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    Promise.all([
-      getMyItemRequests().catch(() => []),
-      getAvailableDonorListings().catch(() => []),
-    ]).then(([mine, donorItems]) => {
-      if (alive) {
-        setMyRequests(mine);
-        setDonorListings(donorItems);
-        setLoading(false);
-      }
-    });
-    return () => { alive = false; };
-  }, []);
-
-  return (
-    <div className="grid grid-cols-12 gap-8">
-      {/* ── Left Column: NGO's Own Requests / Campaigns (col-span-6) ── */}
-      <section className="col-span-6 flex flex-col justify-between" aria-labelledby="donate-mega-ngo-requests">
-        <div>
-          <div className="flex items-center justify-between border-b border-stone-200/70 dark:border-white/10 pb-2">
-            <h3 id="donate-mega-ngo-requests" className="text-xs font-semibold uppercase tracking-wider text-[var(--ck-role-accent)]">
-              Your Organization&apos;s Requests
-            </h3>
-            <Link
-              href="/requests/new"
-              onClick={onNavigate}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ck-role-accent)] px-3 py-1 text-2xs font-bold text-white hover:brightness-110 transition-all shadow-xs"
-            >
-              <Plus className="h-3 w-3" />
-              Post Request
-            </Link>
-          </div>
-          <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
-            Physical items and campaigns requested by your organization.
-          </p>
-
-          <div className="mt-3 space-y-2">
-            {myRequests.slice(0, 3).map((req) => (
-              <Link
-                key={req.id}
-                href="/requests"
-                onClick={onNavigate}
-                className="group flex items-center justify-between rounded-xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 hover:border-[var(--ck-role-accent)]/40 hover:bg-stone-50/80 dark:hover:bg-zinc-800/60 transition-all shadow-2xs"
-              >
-                <div className="min-w-0 pr-3">
-                  <p className="truncate text-xs font-bold text-stone-800 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors">
-                    {req.title}
-                  </p>
-                  <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    {req.category} · Qty {req.quantity} · {req.city}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full px-2 py-0.5 text-4xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  {req.status === "FULFILLED" ? "Received" : req.status === "PUBLIC_REQUEST" ? "Live" : "Active"}
-                </span>
-              </Link>
-            ))}
-
-            {myRequests.length === 0 && !loading && (
-              <div className="rounded-xl border border-dashed border-stone-200 dark:border-zinc-800 p-4 text-center">
-                <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">
-                  No active requests posted yet
-                </p>
-                <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5 max-w-xs mx-auto">
-                  Post a request for equipment, medical supplies, or relief packages to connect with donors.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <Link
-          href="/requests"
-          onClick={onNavigate}
-          className="group mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--ck-role-accent)] hover:underline"
-        >
-          View all your requests
-          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
-        </Link>
-      </section>
-
-      {/* ── Right Column: Available Donor Listings (col-span-6) ── */}
-      <section className="col-span-6 flex flex-col justify-between" aria-labelledby="donate-mega-donor-listings">
-        <div>
-          <div className="border-b border-stone-200/70 dark:border-white/10 pb-2">
-            <h3 id="donate-mega-donor-listings" className="text-xs font-semibold uppercase tracking-wider text-[var(--ck-role-accent)]">
-              Available Donor Listings
-            </h3>
-          </div>
-          <p className="mt-1.5 text-xs text-stone-500 dark:text-stone-400">
-            Real items recently listed by verified donors on CauseKind available to match.
-          </p>
-
-          <div className="mt-3 space-y-2">
-            {donorListings.slice(0, 3).map((item) => (
-              <Link
-                key={item.id}
-                href="/requests"
-                onClick={onNavigate}
-                className="group flex items-center justify-between rounded-xl border border-stone-200/60 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 hover:border-[var(--ck-role-accent)]/40 hover:bg-stone-50/80 dark:hover:bg-zinc-800/60 transition-all shadow-2xs"
-              >
-                <div className="min-w-0 pr-3">
-                  <p className="truncate text-xs font-bold text-stone-800 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors">
-                    {item.title}
-                  </p>
-                  <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    {item.category} · {item.city} · Donated by {item.donorName}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full px-2 py-0.5 text-4xs font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                  Available
-                </span>
-              </Link>
-            ))}
-
-            {donorListings.length === 0 && !loading && (
-              <div className="rounded-xl border border-dashed border-stone-200 dark:border-zinc-800 p-4 text-center">
-                <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">
-                  Browse donor offerings
-                </p>
-                <p className="text-3xs text-stone-500 dark:text-stone-400 mt-0.5 max-w-xs mx-auto">
-                  Explore verified in-kind items on the community board to request a match.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <Link
-          href="/requests"
-          onClick={onNavigate}
-          className="group mt-4 inline-flex items-center gap-1.5 text-xs font-bold text-[var(--ck-role-accent)] hover:underline"
-        >
-          Explore all donor items
-          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-1" />
-        </Link>
-      </section>
-    </div>
-  );
-}
+import NgoRequestsDropdown from "@/components/ngo-landing/NgoRequestsDropdown";
+import { isNgoRole } from "@/lib/isNgoRole";
 
 export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void }) {
   const t = useTranslations();
   const { user } = useAuth();
-  const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
+  const isNgo = isNgoRole(user?.role);
 
   if (isNgo) {
-    return <NgoDonateMegaMenu onNavigate={onNavigate} />;
+    return <NgoRequestsDropdown onNavigate={onNavigate} />;
   }
 
   return (
@@ -180,19 +36,19 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
             <span className="shrink-0 rounded-lg bg-[var(--ck-role-accent)]/10 p-2 text-[var(--ck-role-accent)]">
               <HandCoins className="h-4 w-4" />
             </span>
-            <span className="text-sm font-semibold text-stone-800 dark:text-stone-100">
+            <span className="text-sm font-semibold text-stone-800 dark:text-stone-100"><LandingText>
               Fund the trust directly
-            </span>
+            </LandingText></span>
           </span>
 
-          <span className="mt-3 block text-xs leading-relaxed text-stone-500 dark:text-stone-400">
+          <span className="mt-3 block text-xs leading-relaxed text-stone-500 dark:text-stone-400"><LandingText>
             Give money to Sahas Charitable Trust — 12AA and 80G certified, funding
             education, healthcare and social welfare. Every rupee is accounted for.
-          </span>
+          </LandingText></span>
 
-          <span className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold text-[var(--ck-role-accent)]">
+          <span className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold text-[var(--ck-role-accent)]"><LandingText>
             Donate money
-            <ArrowRight
+            </LandingText><ArrowRight
               className="h-3.5 w-3.5 transition-transform duration-300 ease-out group-hover:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
               aria-hidden="true"
             />
@@ -204,10 +60,10 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
       <section className="col-span-8" aria-labelledby="donate-mega-inkind">
         <SectionHeading id="donate-mega-inkind">{t("nav.inKindDonation")}</SectionHeading>
 
-        <p className="mt-1 text-xs leading-snug text-stone-500 dark:text-stone-400">
+        <p className="mt-1 text-xs leading-snug text-stone-500 dark:text-stone-400"><LandingText>
           Every category has its own quiet rules — what genuinely helps, what ends
           up thrown away, and how to prepare an item so it arrives ready to use.
-        </p>
+        </LandingText></p>
 
         {/* Same nine categories, same order. Tighter than before: p-2 rather
             than p-3 and a smaller icon well, so two sections fit the panel
@@ -227,10 +83,10 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
                   </span>
                   <span className="min-w-0">
                     <span className="block text-xs font-semibold text-stone-800 dark:text-stone-100">
-                      {cat.name}
+                      <LandingText>{cat.name}</LandingText>
                     </span>
                     <span className="mt-0.5 block text-3xs leading-snug text-stone-500 dark:text-stone-400">
-                      {cat.tagline}
+                      <LandingText>{cat.tagline}</LandingText>
                     </span>
                   </span>
                 </Link>
@@ -305,9 +161,9 @@ function BrowseAllLink({ onNavigate }: { onNavigate?: () => void }) {
         }}
         animate={reduceMotion ? undefined : { backgroundPosition: ["140% 0%", "-40% 0%"] }}
         transition={{ duration: 2.4, repeat: Infinity, repeatDelay: 2.4, ease: "easeInOut" }}
-      >
+      ><LandingText>
         Browse all live needs
-      </motion.span>
+      </LandingText></motion.span>
 
       <ArrowRight
         className="w-3.5 h-3.5 transition-transform duration-300 ease-out group-hover:translate-x-1 group-focus-visible:translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"

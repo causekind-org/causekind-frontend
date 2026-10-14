@@ -1,12 +1,13 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { useRouter } from "next/navigation";
 import { getCampaigns, type Campaign } from "@/lib/api";
@@ -521,7 +522,7 @@ function CampaignsPageInner() {
       );
     } else if (sort === "newest") {
       result = [...result].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        (a, b) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime()
       );
     } else if (sort === "funded") {
       result = [...result].sort(

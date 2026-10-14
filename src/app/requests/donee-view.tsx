@@ -1,7 +1,8 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import {
   Stethoscope, BookOpen, Sprout, Users, Home, Package,
@@ -57,7 +58,7 @@ function getStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
     PENDING_VERIFICATION:      { label: "Under Review",    variant: "outline"      },
     VERIFIED_PRIVATE_MATCHING: { label: "Finding a donor", variant: "secondary"    },
-    POTENTIAL_MATCH_FOUND:     { label: "Confirming a possible donor", variant: "secondary" },
+    POTENTIAL_MATCH_FOUND:     { label: "Finding a donor", variant: "secondary"    },
     AWAITING_MATCH_APPROVAL:   { label: "Approval Pending",variant: "secondary"    },
     PUBLIC_REQUEST:            { label: "Visible to donors", variant: "default"    },
     FULFILMENT_IN_PROGRESS:    { label: "In Progress",     variant: "secondary"    },
@@ -103,7 +104,7 @@ function heroStatusPill(status: string): { label: string; cls: string; dot: stri
 }
 
 function byNewest(a: ItemRequest, b: ItemRequest) {
-  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  return serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime();
 }
 
 function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; publicRequests: ItemRequest[] }) {

@@ -2,6 +2,11 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
 
+// NGO signup is off unless NEXT_PUBLIC_NGO_ENABLED is "true" (production shows
+// "Coming soon"). The suites exercise the NGO flows, so they run with it on;
+// the off state has its own test (register/NgoComingSoon.test.tsx).
+process.env.NEXT_PUBLIC_NGO_ENABLED ??= "true";
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
@@ -101,3 +106,16 @@ Object.defineProperty(navigator, "geolocation", {
     clearWatch: vi.fn(),
   },
 });
+
+/**
+ * next/font/google loaders only run inside Next's compiler; under Vitest every
+ * one of them is undefined, so any component that declares a font at module
+ * level throws on import. A suite that mocks next/font/google itself still
+ * wins over this default.
+ */
+vi.mock("next/font/google", () => new Proxy({}, {
+  has: (_target, name) => typeof name === "string" && name !== "then",
+  get: (_target, name) => typeof name === "string" && name !== "then"
+    ? () => ({ className: "", variable: `font-${name}`, style: { fontFamily: name } })
+    : undefined,
+}));

@@ -8,14 +8,15 @@ interface AvatarUploadProps {
   imageDataUrl: string | null;
   initials: string;
   onImageChange: (dataUrl: string | null) => void;
-  /** copper (default, donor) or navy (donee dashboard palette) */
-  tone?: "copper" | "navy";
+  /** copper (default, donor), navy (donee dashboard), or indigo (ngo partner) */
+  tone?: "copper" | "navy" | "indigo";
 }
 
 const MAX_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export function AvatarUpload({ imageDataUrl, initials, onImageChange, tone = "copper" }: AvatarUploadProps) {
   const navy = tone === "navy";
+  const indigo = tone === "indigo";
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -58,7 +59,7 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange, tone = "co
             className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-white dark:border-zinc-900 shadow-md"
           />
         ) : (
-          <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr ${navy ? "from-[#0d1e36] to-[#3a6aa8]" : "from-[#b04a15] to-[#e07b3a]"} border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center`}>
+          <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr ${indigo ? "from-ngo-800 to-ngo-600" : navy ? "from-[#0d1e36] to-[#3a6aa8]" : "from-[#b04a15] to-[#e07b3a]"} border-4 border-white dark:border-zinc-900 shadow-md flex items-center justify-center`}>
             <span className="text-white text-2xl sm:text-3xl font-bold uppercase select-none">
               {initials}
             </span>
@@ -70,7 +71,7 @@ export function AvatarUpload({ imageDataUrl, initials, onImageChange, tone = "co
           type="button"
           onClick={() => fileInputRef.current?.click()}
           aria-label="Upload profile photo"
-          className={`absolute bottom-0 right-0 w-8 h-8 rounded-full ${navy ? "bg-[#1e3a60] hover:bg-[#162d4a] focus-visible:ring-[#1e3a60]/40" : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15]/40"} text-white flex items-center justify-center shadow-md border-2 border-white dark:border-zinc-900 transition-colors focus:outline-none focus-visible:ring-2`}
+          className={`absolute bottom-0 right-0 w-8 h-8 rounded-full ${indigo ? "bg-ngo-700 hover:bg-ngo-600 focus-visible:ring-ngo-700/40" : navy ? "bg-[#1e3a60] hover:bg-[#162d4a] focus-visible:ring-[#1e3a60]/40" : "bg-[#b04a15] hover:bg-[#963c0d] focus-visible:ring-[#b04a15]/40"} text-white flex items-center justify-center shadow-md border-2 border-white dark:border-zinc-900 transition-colors focus:outline-none focus-visible:ring-2`}
         >
           <Camera className="w-3.5 h-3.5" />
         </button>

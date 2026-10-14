@@ -1,11 +1,9 @@
 "use client";
 
-import { MoneyHero } from "@/components/money-donation/MoneyHero";
 import { MoneyFlowStory } from "@/components/money-donation/MoneyFlowStory";
 import { MoneyDonationForm } from "@/components/money-donation/MoneyDonationForm";
 import { AboutSahas } from "@/components/money-donation/AboutSahas";
 import { ImpactCarousel } from "@/components/money-donation/ImpactCarousel";
-import { TrustCredibility } from "@/components/money-donation/TrustCredibility";
 
 import { Suspense } from "react";
 import { DonateScrollOnArrival } from "@/components/donate/DonateScrollOnArrival";
@@ -13,7 +11,7 @@ import { DonateScrollOnArrival } from "@/components/donate/DonateScrollOnArrival
 
 export default function MoneyDonateClient() {
   return (
-    <div className="relative min-h-screen bg-[#fffbf5] dark:bg-[#1a0b04]">
+    <div className="relative min-h-screen overflow-clip bg-[#fffbf5] dark:bg-[#1a0b04]">
       {/* Honours ?scroll=donate-form from a "Donate Now" button elsewhere on the
           site. In Suspense because useSearchParams opts the subtree into CSR
           bailout — without the boundary that would pull this whole page out of
@@ -21,7 +19,7 @@ export default function MoneyDonateClient() {
       <Suspense fallback={null}>
         <DonateScrollOnArrival />
       </Suspense>
-      <MoneyHero />
+
       
       {/* "See Sahas in Action" — the impact videos, second on the page at
           Sushil's request: proof of the work lands immediately after the hero,
@@ -32,11 +30,14 @@ export default function MoneyDonateClient() {
           WhatsApp exports), and at position two nearly every visitor now pays
           that cost rather than only those who scroll past the form. Compressing
           the files in public/videos is the fix, not moving the section. */}
+      {/* Owner, 2026-10-08: Hero, About Sahas, carousel, form, flow story —
+          one continuous block on the page background, no Trust section. */}
+      {/* Owner, 2026-10-08: the impact carousel is the hero now (it carries the
+          old hero's wording); About Sahas follows it. */}
       <ImpactCarousel />
-      <MoneyFlowStory />
-      <MoneyDonationForm />
       <AboutSahas />
-      <TrustCredibility />
+      <MoneyDonationForm />
+      <MoneyFlowStory />
     </div>
   );
 }

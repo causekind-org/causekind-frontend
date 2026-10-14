@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { formatServerTime } from "@/lib/serverTime";
 import {
   getChatMessages,
   getChatMessagesSince,
@@ -14,6 +15,13 @@ interface Props {
   currentUserEmail: string;
   locked?: boolean;
   className?: string;
+  /**
+   * Inside a host card that has its own header and border (the handover hub):
+   * no frame, no "Messages" header, and the list fills the height it is given.
+   */
+  embedded?: boolean;
+  /** Shown while the thread is empty. */
+  emptyText?: string;
 }
 
 const POLL_INTERVAL_MS = 5_000;
@@ -29,7 +37,7 @@ const POLL_INTERVAL_MS = 5_000;
  */
 const EPOCH_SINCE = "1970-01-01T00:00:00";
 
-export default function ChatWindow({ offerId, currentUserEmail, locked = false, className = "" }: Props) {
+export default function ChatWindow({ offerId, currentUserEmail, locked = false, className = "", embedded = false, emptyText = "No messages yet." }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -152,9 +160,11 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
   }
 
   return (
-    <div className={`flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${className}`}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
+    <div className={embedded
+      ? `flex min-h-0 flex-col ${className}`
+      : `flex flex-col rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 ${className}`}>
+      {/* Header (the host card has its own when embedded) */}
+      {!embedded && <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
           Offer Messages
         </span>
@@ -163,12 +173,12 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
             Closed
           </span>
         )}
-      </div>
+      </div>}
 
       {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3" style={{ maxHeight: 380 }}>
+      <div ref={listRef} className={`flex-1 overflow-y-auto px-4 py-3 space-y-3 ${embedded ? "min-h-0" : ""}`} style={embedded ? undefined : { maxHeight: 380 }}>
         {messages.length === 0 && (
-          <p className="text-center text-sm text-gray-400 py-6">No messages yet.</p>
+          <p className="text-center text-sm text-gray-400 py-6">{emptyText}</p>
         )}
         {messages.map((msg) => {
           const isMe = msg.senderEmail === currentUserEmail;
@@ -198,7 +208,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
                   {msg.content}
                 </div>
                 <p className={`mt-0.5 text-3xs text-gray-400 ${isMe ? "text-right" : ""}`}>
-                  {new Date(msg.sentAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  {formatServerTime(msg.sentAt)}
                   {msg.readAt && isMe && " · Read"}
                 </p>
               </div>
@@ -217,7 +227,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               rows={1}
-              placeholder="Type a message... (Enter to send)"
+              placeholder="Type a message"
               className="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 outline-none focus:border-[var(--ck-role-accent)] placeholder:text-gray-400"
             />
             <button

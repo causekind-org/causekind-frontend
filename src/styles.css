@@ -100,6 +100,19 @@
 }
 
 @theme inline {
+  /* NGO components use this palette directly, including primary button backgrounds. */
+  --color-ngo-50: #f0f9f4;
+  --color-ngo-100: #dcf0e4;
+  --color-ngo-200: #bce1ce;
+  --color-ngo-300: #86cfae;
+  --color-ngo-400: #55b58c;
+  --color-ngo-500: #34a578;
+  --color-ngo-600: #248a63;
+  --color-ngo-700: #1e6b4f;
+  --color-ngo-800: #185740;
+  --color-ngo-900: #123d2e;
+  --color-ngo-950: #0b2e22;
+
   /* ── Fluid type scale ───────────────────────────────────────────────────
      Redefining Tailwind's --text-* here makes every text-xs … text-9xl
      utility on the site fluid from one place — no component file needs to
@@ -2608,6 +2621,24 @@ body.mobile-menu-open {
     is what put these two back into a stack.
   */
   .ck-showcase-hero .ck-hero-actions[data-guest="true"] .ck-hero-action-arrow { display: none; }
+  /*
+    Signed-in primary ("List an item" / "Request an item"): filled like the
+    guest's "Sign up now". The rule above this block strips the fill from every
+    primary below lg and only the guest rule put it back, so a signed-in donor
+    or donee got a bare text link. Fixed colours rather than --ck-home-accent:
+    in dark mode that token lifts to a pale tint that white type can't sit on.
+  */
+  .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta {
+    padding: 0.625rem 1rem;
+    border-radius: 0.75rem;
+    background: #b04a15;
+    color: #fff6ed;
+    font-weight: 800;
+    box-shadow: 0 6px 20px rgb(0 0 0 / 0.18);
+  }
+  .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta:hover { background: #963c0d; }
+  [data-ck-role-theme="donee"] .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta { background: #1e3a60; }
+  [data-ck-role-theme="donee"] .ck-showcase-hero .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta:hover { background: #2d5a96; }
   .ck-showcase-hero .ck-hero-photo-image { animation: none; transform: none; object-position: 50% top; }
   .ck-showcase-hero .ck-hero-category-rail { display: none; }
   .ck-mobile-hero-trust {
@@ -2774,10 +2805,11 @@ body.mobile-menu-open {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* ── Stacking context z-index fix for searchable selects inside Reveal/grid ── */
-div:has(.searchable-select-open) {
-  z-index: 99 !important;
-  position: relative !important;
+/* Raise only the select's immediate field container. Matching every ancestor
+   also changed fixed dialog content to relative/z-99, beneath its z-100 overlay. */
+div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .searchable-select-open) {
+  z-index: 99;
+  position: relative;
 }
 
 /* ── Reading Tools and Font/Theme Modes (from globals.css) ── */
@@ -3704,6 +3736,9 @@ div:has(.searchable-select-open) {
   --ck-role-on-accent: #ffffff;
   --ck-role-soft: oklch(0.96 0.035 55);
   --ck-role-on-soft: oklch(0.28 0.10 45);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(176, 74, 21, 0.4);
+  --ck-role-shadow-rgb: 176, 74, 21;
   --ck-role-ring: #b04a15;
   --ck-role-gradient: linear-gradient(135deg, #b04a15 0%, #e07b3a 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #e07b3a 0%, #f0b97a 100%);
@@ -3719,6 +3754,9 @@ div:has(.searchable-select-open) {
   --ck-role-soft: oklch(0.95 0.03 250);
   /* Readable text ON --ck-role-soft. Dark navy on the pale blue: ~13:1. */
   --ck-role-on-soft: oklch(0.26 0.08 255);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(30, 58, 96, 0.4);
+  --ck-role-shadow-rgb: 30, 58, 96;
   /* Ring is the HOVER blue, not the accent: #1e3a60 against a white page is a
      dark ring that reads as a border, and focus must be unmistakable. */
   --ck-role-ring: #2d5a96;
@@ -3726,6 +3764,43 @@ div:has(.searchable-select-open) {
   --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #7fb0e8 100%);
 }
 
+[data-ck-role-theme="ngo"] {
+  --ck-role-accent: #1e6b4f;
+  --ck-role-deep: #123d2e;
+  --ck-role-hover: #248a63;
+  --ck-role-secondary: #34a578;
+  --ck-role-highlight: #86cfae;
+  --ck-role-on-accent: #ffffff;
+  --ck-role-soft: #e8f5ee;
+  --ck-role-on-soft: #123d2e;
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(30, 107, 79, 0.4);
+  --ck-role-shadow-rgb: 30, 107, 79;
+  --ck-role-ring: #248a63;
+  --ck-role-gradient: linear-gradient(135deg, #1e6b4f 0%, #34a578 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #34a578 0%, #86cfae 100%);
+  --primary: var(--ck-role-accent);
+  --primary-foreground: var(--ck-role-on-accent);
+  --ring: var(--ck-role-ring);
+}
+
+.dark[data-ck-role-theme="ngo"],
+.dark [data-ck-role-theme="ngo"] {
+  --ck-role-accent: #86cfae;
+  --ck-role-deep: #185740;
+  --ck-role-hover: #a7dec5;
+  --ck-role-highlight: #a7dec5;
+  --ck-role-on-accent: #0b2e22;
+  --ck-role-soft: #123d2e;
+  --ck-role-on-soft: #e8f5ee;
+  --ck-role-glow: rgba(134, 207, 174, 0.4);
+  --ck-role-shadow-rgb: 134, 207, 174;
+  --ck-role-ring: #86cfae;
+  --ck-role-gradient: linear-gradient(135deg, #248a63 0%, #86cfae 100%);
+  --ck-role-gradient-soft: linear-gradient(135deg, #34a578 0%, #a7dec5 100%);
+}
+
+.dark:not([data-ck-role-theme]),
 .dark [data-ck-role-theme="donor"],
 .dark[data-ck-role-theme="donor"] {
   --ck-role-accent: #e07b3a;
@@ -3734,6 +3809,9 @@ div:has(.searchable-select-open) {
   --ck-role-on-accent: #1a1207;
   --ck-role-soft: oklch(0.26 0.05 50);
   --ck-role-on-soft: oklch(0.94 0.03 60);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(224, 123, 58, 0.4);
+  --ck-role-shadow-rgb: 224, 123, 58;
   --ck-role-ring: #e07b3a;
 }
 
@@ -3745,9 +3823,13 @@ div:has(.searchable-select-open) {
   --ck-role-accent: #7fb0e8;
   --ck-role-deep: #3f6c9e;
   --ck-role-hover: #a3c8f2;
+  --ck-role-highlight: #a3c8f2;
   --ck-role-on-accent: #0b1929;
   --ck-role-soft: oklch(0.26 0.05 250);
   --ck-role-on-soft: oklch(0.93 0.02 250);
+  --ck-role-border: color-mix(in srgb, var(--ck-role-accent) 20%, transparent);
+  --ck-role-glow: rgba(127, 176, 232, 0.4);
+  --ck-role-shadow-rgb: 127, 176, 232;
   --ck-role-ring: #7fb0e8;
   --ck-role-gradient: linear-gradient(135deg, #2d5a96 0%, #7fb0e8 100%);
   --ck-role-gradient-soft: linear-gradient(135deg, #4a7fc1 0%, #a3c8f2 100%);
@@ -3960,6 +4042,19 @@ div:has(.searchable-select-open) {
   --color-orange-950: #0b1929;
 }
 
+/* Shared home accents track every signed-in palette, including dark mode. */
+[data-ck-role-theme]:has(.ck-home-page) {
+  --ck-home-accent: var(--ck-role-accent);
+  --ck-home-ink: var(--ck-role-accent);
+  --ck-home-hover: var(--ck-role-hover);
+  --ck-home-deep: var(--ck-role-deep);
+  --ck-home-highlight: var(--ck-role-highlight);
+  --ck-home-soft: var(--ck-role-soft);
+  --ck-home-surface: var(--ck-role-soft);
+  --ck-home-shadow-rgb: var(--ck-role-shadow-rgb);
+  --rust-action: var(--ck-role-accent);
+}
+
 /* Category colours are semantic elsewhere; on the home page only, the two
    warm categories follow the recipient accent, including their hover states. */
 [data-ck-role-theme="donee"]:has(.ck-home-page) {
@@ -3998,6 +4093,7 @@ div:has(.searchable-select-open) {
       already lifted to #e07b3a; this gives guests the same treatment.
    ═════════════════════════════════════════════════════════════════════════ */
 
+@layer components {
 .ck-donate-cta {
   --ck-donate-acc: var(--ck-role-accent, #b04a15);
   --ck-donate-hov: var(--ck-role-hover, #c45520);
@@ -4248,4 +4344,720 @@ div:has(.searchable-select-open) {
 .ck-below-nav {
   min-height: calc(100svh - max(var(--ck-nav-h, 0px), 3.5rem));
   min-height: calc(100dvh - max(var(--ck-nav-h, 0px), 3.5rem));
+}
+
+}
+/* ══════════════════════════════════════════════════════════════════════════
+   MOBILE LANDING (< 768px) — shared primitives
+   Used by src/components/home/mobile/primitives.tsx. Everything that moves
+   here moves on transform and opacity only; nothing animates a box's size or
+   position, and nothing listens to scroll — reveals and carousel dots are
+   IntersectionObserver-driven, carousels are native scroll-snap.
+   ══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --ck-m-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --ck-m-dur: 500ms;
+  --ck-m-stagger: 70ms;
+  --ck-fab-size: 48px;
+}
+
+/* Section rhythm. The 100svh min-heights the sections carry for desktop are
+   dropped — on a phone they were most of the empty scroll — and every section
+   ends with room for the bottom dock — its height plus the safe-area inset —
+   so its last line is never under the nav. */
+@media (max-width: 767.98px) {
+  .ck-m-section {
+    min-height: 0 !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: calc(var(--ck-dock-h) + var(--ck-bottom-inset)) !important;
+  }
+}
+
+/* ── Reveal once ─────────────────────────────────────────────────────────
+   `armed` is only ever set by JS, so without JS (or before hydration) the
+   content is simply visible. will-change exists only in the `in` state, i.e.
+   while the transition runs; `done` drops it again. */
+[data-reveal="armed"] [data-reveal-item] {
+  opacity: 0;
+  transform: translate3d(0, 16px, 0);
+}
+[data-reveal="armed"] [data-reveal-item="scale"] {
+  transform: scale(0.94);
+}
+[data-reveal="armed"] [data-reveal-item="left"] {
+  transform: translate3d(24px, 0, 0);
+}
+[data-reveal="in"] [data-reveal-item] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--ck-m-dur) var(--ck-m-ease),
+    transform var(--ck-m-dur) var(--ck-m-ease);
+  transition-delay: calc(min(var(--i, 0), 6) * var(--ck-m-stagger));
+  will-change: transform, opacity;
+}
+
+/* ── Scroll-snap carousel ────────────────────────────────────────────────
+   Full-bleed inside a 20px-gutter section; each slide is 85% wide so ~15% of
+   the next one peeks in. The peek also lands under the support button, so the
+   button sits over the edge of the next card, not the text being read. */
+.ck-snap {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 1.25rem;
+  padding-inline: 1.25rem;
+  margin-inline: -1.25rem;
+  padding-block: 0.25rem 0.5rem;
+  scrollbar-width: none;
+  position: relative;
+}
+.ck-snap::-webkit-scrollbar {
+  display: none;
+}
+.ck-snap > .ck-snap-item {
+  flex: 0 0 85%;
+  max-width: 22rem;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+}
+.ck-snap > .ck-snap-item > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* The same row, but only below 768px — for a list that is a grid everywhere
+   else (Live needs), so its cards render once and the grid is untouched. */
+@media (max-width: 767.98px) {
+  .ck-snap-m {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 1.25rem;
+    padding-inline: 1.25rem;
+    margin-inline: -1.25rem;
+    padding-block: 0.25rem 0.5rem;
+    scrollbar-width: none;
+    position: relative;
+  }
+  .ck-snap-m::-webkit-scrollbar {
+    display: none;
+  }
+  .ck-snap-m > * {
+    flex: 0 0 85%;
+    max-width: 22rem;
+    min-width: 0;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+}
+.ck-snap:focus-visible,
+.ck-snap-m:focus-visible {
+  outline: 2px solid var(--ck-home-accent, #b5470f);
+  outline-offset: 2px;
+  border-radius: 1rem;
+}
+
+.ck-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+}
+.ck-dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+}
+.ck-dot::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background: currentColor;
+  opacity: 0.25;
+  transform: scale(0.75);
+  transition:
+    opacity 300ms var(--ck-m-ease),
+    transform 300ms var(--ck-m-ease);
+}
+.ck-dot[aria-current="true"]::before {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
+/* ── Segmented tabs ──────────────────────────────────────────────────────
+   The thumb slides on translateX(index * 100%) — never on width or left. */
+.ck-seg {
+  position: relative;
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  padding: 0.25rem;
+  border-radius: 9999px;
+}
+.ck-seg-thumb {
+  position: absolute;
+  top: 0.25rem;
+  bottom: 0.25rem;
+  left: 0.25rem;
+  width: calc((100% - 0.5rem) / var(--n, 2));
+  border-radius: 9999px;
+  transform: translate3d(calc(var(--idx, 0) * 100%), 0, 0);
+  transition: transform 400ms var(--ck-m-ease), background-color 300ms ease;
+}
+
+/* ── Stacked panels ──────────────────────────────────────────────────────
+   All panels share one grid cell, so the box is always as tall as the tallest
+   panel and switching never changes the page height — it only cross-fades. */
+.ck-stack {
+  display: grid;
+}
+.ck-stack > * {
+  grid-area: 1 / 1;
+  transition:
+    opacity 400ms var(--ck-m-ease),
+    transform 400ms var(--ck-m-ease),
+    visibility 0s linear 0s;
+}
+.ck-stack > [data-active="false"] {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 300ms var(--ck-m-ease),
+    transform 300ms var(--ck-m-ease),
+    visibility 0s linear 300ms;
+}
+
+/* ── Flip card ───────────────────────────────────────────────────────────── */
+.ck-flip {
+  perspective: 1200px;
+}
+.ck-flip-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 600ms var(--ck-m-ease);
+}
+.ck-flip[data-animating="true"] .ck-flip-inner {
+  will-change: transform;
+}
+.ck-flip-inner > * {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.ck-flip-back {
+  transform: rotateY(180deg);
+}
+.ck-flip[data-flipped="true"] .ck-flip-inner {
+  transform: rotateY(180deg);
+}
+/* The hidden face leaves the accessibility tree once the turn is over. */
+.ck-flip-inner > [aria-hidden="true"] {
+  visibility: hidden;
+  transition: visibility 0s linear 300ms;
+}
+
+/* Honour reduced motion: no transitions, content in its final state at once. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] [data-reveal-item] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .ck-dot::before,
+  .ck-seg-thumb,
+  .ck-stack > *,
+  .ck-flip-inner {
+    transition: none !important;
+  }
+  .ck-stack > [data-active="false"] {
+    transform: none;
+  }
+}
+
+/* ── Support button: 48px, parked directly above the dock ──────────────────
+   It used to sit at a fixed 7.25rem that ignored the safe-area inset, so on a
+   notched phone it drifted into the dock and, everywhere else, floated over
+   card text. It is now derived from the same --ck-bottom-chrome the dock and
+   the page padding use. Desktop keeps its own classes (lg:). */
+@media (max-width: 1023.98px) {
+  .ck-support-fab {
+    width: var(--ck-fab-size);
+    height: var(--ck-fab-size);
+    right: 1rem;
+    bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
+  }
+  .ck-support-panel {
+    right: 1rem;
+    bottom: calc(var(--ck-bottom-chrome) + var(--ck-fab-size) + 1rem);
+  }
+}
+/* The idle ripple animated box-shadow forever — a repaint every frame on a
+   fixed layer. Phones get the button still. */
+@media (max-width: 767.98px) {
+  .ck-support-fab.support-btn-ripple {
+    animation: none;
+  }
+}
+
+/* ── Hero with the landing film underneath (HeroFilm) ──────────────────────
+   One grid cell, two layers: the film (its pinned Chapter 1 stage first) and
+   the hero on top of it. The cell is as tall as the film, the hero keeps its
+   own height at the top, and the film's stage — pinned from the first scroll —
+   is revealed as the hero scrolls off it. The shadow is the hero's trailing
+   edge as it slides away; it never moves on its own. Wired in HeroFilm.tsx. */
+.ck-hero-film {
+  display: grid;
+}
+.ck-hero-film > * {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+.ck-hero-film-hero {
+  position: relative;
+  z-index: 20;
+  align-self: start;
+  box-shadow: 0 22px 40px -22px rgb(28 20 16 / 0.45);
+}
+.ck-hero-film-stage {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+/* Reduced motion: the film is a still, so it follows the hero instead of
+   hiding under it. */
+@media (prefers-reduced-motion: reduce) {
+  .ck-hero-film > * {
+    grid-area: auto;
+  }
+  .ck-hero-film-hero {
+    box-shadow: none;
+  }
+}
+
+/* ── Compositor-only loops ─────────────────────────────────────────────────
+   These replace Framer Motion `repeat: Infinity` loops, which ran JavaScript on
+   every frame for the life of the page — including inside elements hidden at
+   the current breakpoint. A CSS transform animation runs on the compositor and
+   does not run at all under display:none. Timings match the originals. */
+@keyframes ck-cat-loop {
+  0%, 60%, 100% { transform: none; }
+  30% { transform: scale(1.1) rotate(-5deg); }
+}
+.ck-cat-icon-loop {
+  animation: ck-cat-loop 4s ease-in-out infinite;
+}
+@keyframes ck-float-4 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.ck-hero-callout-float {
+  animation: ck-float-4 3.8s ease-in-out infinite;
+}
+@keyframes ck-heartbeat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+.ck-heartbeat {
+  animation: ck-heartbeat 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-cat-icon-loop,
+  .ck-hero-callout-float,
+  .ck-heartbeat {
+    animation: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-ck-role-theme="donor"] .ck-guest-desktop,
+  [data-ck-role-theme="donee"] .ck-guest-desktop {
+    display: none !important;
+  }
+
+  [data-ck-role-theme="donor"] .ck-role-restoring-placeholder,
+  [data-ck-role-theme="donee"] .ck-role-restoring-placeholder {
+    display: block !important;
+  }
+}
+
+
+/* Landing film grain (2026-10-05, high-end pass round 1). A fixed,
+   pointer-events-none layer so it never repaints with scroll. Homepage only:
+   the div lives in HomeClient. Static, so no reduced-motion guard needed. */
+@layer components {
+  .ck-home-grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .dark .ck-home-grain {
+    opacity: 0.05;
+  }
+}
+
+/* Desktop hero — high-end pass round 2 (2026-10-05). lg only; the mobile hero's
+   measured fit (Mobile Landing Layout note) is untouched. Unlayered on purpose:
+   it must beat the unlayered .ck-hero-headline / arrow rules above. */
+@media (min-width: 1024px) {
+  .ck-showcase-hero .ck-hero-headline {
+    font-family: var(--font-source-serif-4), Georgia, serif;
+    font-weight: 600;
+    font-stretch: normal;
+    letter-spacing: -0.035em;
+    line-height: 0.96;
+    /* Serif sets ~25% wider than Impact and both lines are nowrap — smaller
+       clamp so the second line stays clear of the photo. Re-measure at 1280. */
+    font-size: clamp(2.4rem, min(3.3vw, 6.4vh), 5.6rem);
+  }
+
+  /* Button-in-button: the trailing arrow sits in its own circle, flush to
+     the pill's right padding. */
+  .ck-showcase-hero .ck-hero-primary-cta,
+  .ck-showcase-hero .ck-hero-secondary-cta {
+    padding-right: 0.375rem;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+    transition-duration: 500ms;
+  }
+  .ck-showcase-hero .ck-hero-action-arrow {
+    box-sizing: content-box;
+    padding: 0.5rem;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.16);
+    stroke-width: 1.5;
+    transition: transform 500ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .ck-showcase-hero .ck-hero-secondary-cta .ck-hero-action-arrow {
+    background: rgb(176 74 21 / 0.08);
+  }
+  .dark .ck-showcase-hero .ck-hero-secondary-cta .ck-hero-action-arrow {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .ck-showcase-hero .group:hover .ck-hero-action-arrow {
+    transform: translate(0.25rem, -1px) scale(1.05);
+  }
+}
+
+/* Desktop hero — high-end pass round 2 (2026-10-05). lg only; the mobile hero's
+   measured fit (Mobile Landing Layout note) is untouched. Unlayered on purpose:
+   it must beat the unlayered .ck-hero-headline / arrow rules above. */
+@media (min-width: 1024px) {
+  .ck-showcase-hero .ck-hero-headline {
+    font-family: var(--font-source-serif-4), Georgia, serif;
+    font-weight: 600;
+    font-stretch: normal;
+    letter-spacing: -0.035em;
+    line-height: 0.96;
+    /* Serif sets wider than Impact and both lines are nowrap — smaller clamp
+       so the second line stays clear of the photo. Re-measure at 1280. */
+    font-size: clamp(2.4rem, min(3.3vw, 6.4vh), 5.6rem);
+  }
+
+  /* Button-in-button: the trailing arrow sits in its own circle, flush to
+     the pill's right padding. */
+  .ck-showcase-hero .ck-hero-primary-cta,
+  .ck-showcase-hero .ck-hero-secondary-cta {
+    padding-right: 0.375rem;
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+    transition-duration: 500ms;
+  }
+  .ck-showcase-hero .ck-hero-action-arrow {
+    box-sizing: content-box;
+    padding: 0.5rem;
+    border-radius: 9999px;
+    background: rgb(255 255 255 / 0.16);
+    stroke-width: 1.5;
+    transition: transform 500ms cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .ck-showcase-hero .ck-hero-secondary-cta .ck-hero-action-arrow {
+    background: rgb(176 74 21 / 0.08);
+  }
+  .dark .ck-showcase-hero .ck-hero-secondary-cta .ck-hero-action-arrow {
+    background: rgb(255 255 255 / 0.08);
+  }
+  .ck-showcase-hero .group:hover .ck-hero-action-arrow {
+    transform: translate(0.25rem, -1px) scale(1.05);
+  }
+}
+
+/* Donate Money hero: ripples of impact (2026-10-08). Rings spread out from
+   behind the headline, one after another. Stills under reduced motion. */
+@keyframes ck-ripple {
+  0%   { transform: translate(-50%, -50%) scale(0.15); opacity: 0; }
+  15%  { opacity: 0.55; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+}
+.ck-ripple {
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: min(1500px, 160vw);
+  aspect-ratio: 1;
+  border-radius: 9999px;
+  border: 2px solid #e3a37a;
+  animation: ck-ripple 9s cubic-bezier(.2, .6, .3, 1) infinite;
+}
+.ck-ripple-2 { animation-delay: -3s; }
+.ck-ripple-3 { animation-delay: -6s; }
+.dark .ck-ripple { border-color: rgba(224, 123, 58, 0.45); }
+@media (prefers-reduced-motion: reduce) {
+  .ck-ripple { animation: none; opacity: 0.22; transform: translate(-50%, -50%) scale(0.5); }
+  .ck-ripple-2 { transform: translate(-50%, -50%) scale(0.7); }
+  .ck-ripple-3 { transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* ── Navratri hero (11–20 Oct 2026; src/lib/navratri.ts) ──────────────────────
+   HeroSection with the garba illustration in place of the handover photo.
+   Below lg it is the normal mobile photo hero with a portrait illustration.
+   From lg it is a light, cream island in every theme: the illustration is
+   light, so the copy stays dark and the role colours keep their light-mode
+   values even in dark mode, and the illustration spans the full hero width
+   — the left floral border pinned to the left edge, the dancers and the right
+   border to the right, the same cream (#faf1e4) between — so the dancers are
+   never cropped whatever the hero's aspect ratio. Unlayered, so it outranks
+   the Tailwind utilities on the shared markup. */
+/* Desktop only: the cream island with dark copy. Below lg the Navratri hero is
+   the normal photo hero (dark ground, white copy) with the portrait image. */
+@media (min-width: 1024px) {
+  .ck-hero-navratri .ck-lead-hero-stage {
+    background: #faf1e4;
+    color-scheme: light;
+  }
+  .dark .ck-hero-navratri .ck-lead-hero-stage {
+    --ck-role-accent: #b04a15;
+    --ck-role-hover: #c45520;
+    --ck-role-highlight: #f0b97a;
+    --ck-role-on-accent: #ffffff;
+    --ck-role-ring: #b04a15;
+    --ck-role-shadow-rgb: 176, 74, 21;
+    --ck-home-accent: #b04a15;
+    --ck-home-ink: #b04a15;
+    --ck-home-hover: #c45520;
+    --ck-home-highlight: #f0b97a;
+    --ck-home-shadow-rgb: 176, 74, 21;
+  }
+  .dark[data-ck-role-theme="donee"] .ck-hero-navratri .ck-lead-hero-stage {
+    --ck-role-accent: #1e3a60;
+    --ck-role-hover: #2d5a96;
+    --ck-role-highlight: #7fb0e8;
+    --ck-role-ring: #2d5a96;
+    --ck-role-shadow-rgb: 30, 58, 96;
+    --ck-home-accent: #1e3a60;
+    --ck-home-ink: #1e3a60;
+    --ck-home-hover: #2d5a96;
+    --ck-home-highlight: #7fb0e8;
+    --ck-home-shadow-rgb: 30, 58, 96;
+  }
+  .dark .ck-hero-navratri .ck-lead-hero-stage .ck-donate-cta {
+    --ck-donate-acc: var(--ck-role-accent);
+    --ck-donate-hov: var(--ck-role-hover);
+    --ck-donate-on: #ffffff;
+  }
+  .ck-hero-navratri .ck-hero-headline { color: #100c06; }
+  .ck-hero-navratri .ck-hero-headline .ck-hero-headline-accent { color: var(--ck-home-ink, #c54805); }
+  .ck-hero-navratri .ck-hero-subtext { color: #34322f; }
+  .ck-hero-navratri .ck-hero-eyebrow {
+    background: color-mix(in srgb, var(--ck-home-accent, #b04a15) 7%, transparent);
+    color: var(--ck-home-ink, #c54805);
+    --tw-ring-color: color-mix(in srgb, var(--ck-home-accent, #b04a15) 15%, transparent);
+  }
+  .ck-hero-navratri .ck-hero-secondary-cta { color: var(--ck-home-ink, #b04a15); }
+
+  /* The illustration's foot melts into the page colour below, so the cream ends
+     softly on the dark sections in dark mode (and invisibly in light mode). */
+  .ck-navratri-art::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 9%;
+    pointer-events: none;
+    background: linear-gradient(to bottom, transparent, var(--surface-cream));
+  }
+}
+
+/* Phones and tablets: the normal mobile photo hero, with the portrait
+   illustration as its photo. Both dancers are in the image's top half, so it
+   is pinned to the top and only nudged sideways to keep them both in frame
+   on narrow screens. Only the slow zoom runs here. */
+@media (max-width: 1023px) {
+  .ck-navratri-art { display: none; }
+  .ck-showcase-hero .ck-navratri-mobile-photo {
+    object-position: 58% top;
+    transform-origin: 50% 25%;
+    animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* A little taller than the photo hero, still leaving the category bar on
+     the first screen at 1366x657. */
+  .ck-hero-navratri .ck-lead-hero-stage {
+    min-height: clamp(25rem, calc(100svh - max(var(--ck-nav-h, 0px), 5.5rem) - clamp(6rem, 18svh - 2rem, 9.5rem)), 68rem);
+  }
+  .ck-hero-navratri .ck-hero-copy {
+    padding-left: clamp(3rem, 6vw, 7rem);
+  }
+  /* The whole stage, gutters included, is the illustration: cream, the two
+     floral borders (with the slow drift), then the dancers in front. */
+  .ck-navratri-art {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--ck-hero-side-gutter, 0px));
+    right: calc(-1 * var(--ck-hero-side-gutter, 0px));
+    overflow: hidden;
+    pointer-events: none;
+    background: #faf1e4;
+    container-type: size;
+  }
+  .ck-navratri-art::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      url("/images/navratri-hero-border-left.webp") no-repeat left top / auto 100%,
+      url("/images/navratri-hero-border-right.webp") no-repeat right top / auto 100%;
+    animation: ck-hero-image-drift 14s ease-in-out infinite alternate;
+  }
+  .ck-navratri-art::after { z-index: 2; }
+  /*
+    The dancers take the room the copy leaves. --L is where the widest copy
+    line (the guest's three buttons, ~40rem) ends plus a comfortable gap;
+    --R the width from there to the right border's inner edge; --H the stage
+    height between the top and the category bar that overlaps its foot. They
+    grow to fit whichever runs out first, so they are as large as the hero
+    allows and are never cropped, never under the copy.
+  */
+  .ck-navratri-figure {
+    --L: calc(var(--ck-hero-side-gutter, 0px) + clamp(3rem, 6vw, 7rem) + 42rem);
+    --R: calc(100cqw - var(--L) - clamp(1.5rem, 3.5vw, 4rem));
+    --B: calc(clamp(1.75rem, 3.7vh, 2.75rem) + 0.5rem);
+    --H: calc(100cqh - var(--B) - 3cqh);
+    --W: min(var(--R), var(--H) * 1.008);
+    position: absolute;
+    z-index: 1;
+    bottom: var(--B);
+    left: calc(var(--L) + (var(--R) - var(--W)) * 0.25);
+    width: var(--W);
+    aspect-ratio: 1290 / 1280;
+    animation: ck-navratri-enter 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ck-navratri-dancers {
+    display: block;
+    width: 100%;
+    height: auto;
+    transform-origin: 50% 100%;
+    animation: ck-navratri-sway 6s ease-in-out infinite alternate;
+  }
+  .ck-navratri-accents {
+    position: absolute;
+    inset: 0;
+  }
+  .ck-navratri-accent {
+    position: absolute;
+    line-height: 0;
+    opacity: 0.9;
+    animation: ck-navratri-float 4s ease-in-out infinite alternate;
+  }
+}
+
+/* Navratri desktop copy, scaled up (~15–25%) to balance the larger dancers.
+   Fluid between 1024px and 1920px; the photo hero is untouched. */
+@media (min-width: 1024px) {
+  .ck-hero-navratri .ck-hero-eyebrow {
+    gap: 0.6rem;
+    padding: clamp(0.25rem, 0.15rem + 0.2vw, 0.35rem) clamp(0.8rem, 0.6rem + 0.35vw, 1rem);
+  }
+  .ck-hero-navratri .ck-hero-eyebrow p { font-size: clamp(0.7rem, 0.6rem + 0.18vw, 0.8rem); }
+  .ck-hero-navratri .ck-hero-headline {
+    margin-top: clamp(0.95rem, 2.4vh, 2rem);
+    font-size: clamp(2.9rem, min(4vw, 7.8vh), 6.8rem);
+  }
+  .ck-hero-navratri .ck-hero-subtext {
+    margin-top: clamp(0.85rem, 2.1vh, 1.65rem);
+    /* In em, so the measure grows with the type and it stays three lines. */
+    max-width: 23.5em;
+    font-size: clamp(1.1rem, 0.85rem + 0.5vw, 1.5rem);
+  }
+  /* The photo needed this gutter; here the dancers keep their own distance. */
+  .ck-hero-navratri .ck-hero-copy { padding-right: 0; }
+  .ck-hero-navratri .ck-hero-actions { margin-top: clamp(1.2rem, 3.1vh, 2.6rem); }
+
+  /* Buttons: height, padding, label and icons ~18% up; spacing between unchanged. */
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder,
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    min-height: clamp(3.75rem, 2.9rem + 1.35vw, 4.25rem);
+    gap: 0.85rem;
+  }
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder {
+    padding-left: clamp(1.6rem, 1.3rem + 0.45vw, 1.9rem);
+  }
+  .ck-hero-navratri .ck-hero-primary-cta,
+  .ck-hero-navratri .ck-hero-auth-placeholder {
+    font-size: clamp(0.62rem, 0.48rem + 0.23vw, 0.72rem);
+  }
+  .ck-hero-navratri .ck-hero-secondary-cta,
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    font-size: clamp(0.8rem, 0.6rem + 0.3vw, 0.92rem);
+  }
+  .ck-hero-navratri .ck-hero-actions .ck-hero-donate-cta {
+    padding-inline: clamp(1.6rem, 1.3rem + 0.45vw, 1.9rem);
+  }
+  .ck-hero-navratri .ck-hero-cta-icon { width: 1.2rem; height: 1.2rem; }
+  .ck-hero-navratri .ck-hero-action-arrow { width: 1.45rem; height: 1.45rem; padding: 0.6rem; }
+  .ck-hero-navratri .ck-hero-donate-cta .ck-donate-heart svg { width: 1.2rem; height: 1.2rem; }
+  .ck-hero-navratri .ck-hero-donate-cta .ck-donate-arrow svg { width: 1.45rem; height: 1.45rem; }
+
+  /* The dancers start where the larger button row ends (see .ck-navratri-figure). */
+  .ck-hero-navratri .ck-navratri-figure {
+    --L: calc(var(--ck-hero-side-gutter, 0px) + clamp(3rem, 6vw, 7rem) + 49rem + 1.2vw);
+    --R: calc(100cqw - var(--L) - clamp(0.5rem, 1vw, 1.5rem));
+  }
+}
+
+@keyframes ck-navratri-enter {
+  from { opacity: 0; transform: translate3d(0, 24px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ck-navratri-sway {
+  from { transform: translate3d(0, 0, 0) rotate(-0.45deg); }
+  to { transform: translate3d(0, -5px, 0) rotate(0.45deg); }
+}
+@keyframes ck-navratri-float {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(0, -7px, 0); }
+}
+
+/* Off screen (the film has the page): every Navratri loop holds still. */
+.ck-navratri-art[data-offscreen]::before,
+.ck-navratri-art[data-offscreen] .ck-navratri-dancers,
+.ck-navratri-art[data-offscreen] .ck-navratri-accent {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-navratri-mobile-photo,
+  .ck-navratri-art::before,
+  .ck-navratri-figure,
+  .ck-navratri-dancers,
+  .ck-navratri-accent {
+    animation: none;
+  }
 }

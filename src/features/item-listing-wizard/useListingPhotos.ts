@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   deleteListingPhoto, getListingPhotos, retryListingPhoto, uploadListingPhoto,
   type ListingPhoto,
@@ -86,6 +86,8 @@ export function useListingPhotos(options: {
   const listingIdRef = useRef<number | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartedAtRef = useRef<number>(0);
+  /** Polling gave up (POLL_TIMEOUT_MS): the photos keep their last state, but nobody is waiting on them now. */
+  const [pollGaveUp, setPollGaveUp] = useState(false);
 
   const upload = useCallback(
     async (file: File) => {
@@ -146,7 +148,7 @@ export function useListingPhotos(options: {
         moderationCode: remote.moderationCode,
         // Only an approved photo has a url; anything else keeps whatever local
         // preview it had rather than being blanked mid-screening.
-        remoteUrl: remote.url ?? p.remoteUrl,
+        remoteUrl: remote.url || p.remoteUrl,
       };
     }));
   }, [setPhotos]);
@@ -170,10 +172,12 @@ export function useListingPhotos(options: {
     if (pollTimerRef.current) return; // already polling
 
     pollStartedAtRef.current = Date.now();
+    setPollGaveUp(false);
     pollTimerRef.current = setInterval(() => {
       if (Date.now() - pollStartedAtRef.current > POLL_TIMEOUT_MS) {
         if (pollTimerRef.current) clearInterval(pollTimerRef.current);
         pollTimerRef.current = null;
+        setPollGaveUp(true);
         return; // the photo keeps its last known state, which still blocks
       }
       getListingPhotos(listingId).then(mergeServerState).catch(() => {
@@ -230,5 +234,12 @@ export function useListingPhotos(options: {
       })));
   }, [setPhotos]);
 
-  return { ...kit, retryScreening, hydrate };
+  /**
+   * Photos are being screened and we are still polling for the verdict: the
+   * wizard holds Continue. False once polling gives up, so a stuck photo shows
+   * the step's own "finish checking" error instead of an endless spinner.
+   */
+  const screening = pendingCount > 0 && !pollGaveUp;
+
+  return { ...kit, retryScreening, hydrate, screening };
 }

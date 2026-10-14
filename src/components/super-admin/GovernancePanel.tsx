@@ -1,5 +1,6 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
   superAdminAuditExport,
@@ -230,7 +231,7 @@ export function GovernancePanel({ isDark }: { isDark: boolean }) {
                   {r.targetUserId != null ? `user ${r.targetUserId}` : `guest donation ${r.targetDonationId}`}
                 </p>
                 <p className={`text-xs ${t.muted}`}>
-                  {new Date(r.revealedAt).toLocaleString()}
+                  {serverDate(r.revealedAt).toLocaleString()}
                   {r.caseId ? ` · case ${r.caseId}` : ""}
                 </p>
                 {/* The stated reason is the point of the record. Shown in full,

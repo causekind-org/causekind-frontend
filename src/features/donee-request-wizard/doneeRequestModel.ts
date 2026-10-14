@@ -1,8 +1,10 @@
-/** Three request stages; reusable household facts and identity documents live in the profile. */
+/** Request stages; reusable household facts and identity documents live in the profile. */
 
 export const DONEE_REQUEST_STEPS = [
   "need-details",
+  "location",
   "household-situation",
+  "review",
   "declarations",
 ] as const;
 
@@ -10,13 +12,17 @@ export type DoneeRequestStep = (typeof DONEE_REQUEST_STEPS)[number];
 
 export const STEP_LABELS: Record<DoneeRequestStep, string> = {
   "need-details": "Need Details",
+  "location": "Location",
   "household-situation": "Request context & evidence",
+  "review": "Review Request",
   "declarations": "Declarations",
 };
 
 export const STEP_INTROS: Record<DoneeRequestStep, string> = {
   "need-details": "What do you need, and why?",
+  "location": "Where should the item reach you? We look for donors within 10 km of this pin.",
   "household-situation": "Tell us who needs the item and add evidence specific to this request",
+  "review": "Review your request details before submitting",
   "declarations": "Final confirmation",
 };
 

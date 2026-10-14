@@ -1,22 +1,155 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 
-import Image from "next/image";
+
+import { useEffect, useRef } from "react";
+import Image, { getImageProps } from "next/image";
 import { Anton } from "next/font/google";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
-import { MotionConfig, motion } from "framer-motion";
+import { MotionConfig } from "framer-motion";
 import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { TrustBand } from "@/components/home/TrustBand";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavratriCampaign } from "@/hooks/useNavratriCampaign";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
 const mobileDisplay = Anton({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-hero-mobile" });
 const HERO_FOREGROUND = "/images/causekind-hero-foreground.png";
+
+/** Navratri hero copy (11–20 Oct 2026, see src/lib/navratri.ts). Same for every role. */
+const NAVRATRI_COPY = {
+  headlineTop: "This Navratri,",
+  headlineAccent: "Let Kindness Shine.",
+  subtext:
+    "Celebrate the spirit of giving. Connect with someone nearby and make this festive season brighter through meaningful donations.",
+  alt: "Illustration of a woman and a man dancing garba with dandiya sticks",
+};
+
+/**
+ * Festive accents floating around the dancers: marigold petals and diya
+ * sparkles, drawn here rather than shipped as images. Positions are percent of
+ * the dancers' own box, so they can never drift over the copy. Desktop only.
+ */
+const NAVRATRI_ACCENTS = [
+  { kind: "petal", top: "6%", left: "8%", size: 14, rotate: -24, delay: 0 },
+  { kind: "spark", top: "18%", left: "-3%", size: 12, rotate: 0, delay: 0.6 },
+  { kind: "petal", top: "44%", left: "-5%", size: 12, rotate: 38, delay: 1.3 },
+  { kind: "spark", top: "3%", left: "62%", size: 10, rotate: 0, delay: 2.1 },
+  { kind: "petal", top: "30%", left: "97%", size: 13, rotate: 112, delay: 0.9 },
+  { kind: "spark", top: "60%", left: "100%", size: 11, rotate: 0, delay: 1.8 },
+  { kind: "petal", top: "74%", left: "3%", size: 11, rotate: -70, delay: 2.6 },
+] as const;
+
+function NavratriAccent({ kind, size }: { kind: "petal" | "spark"; size: number }) {
+  return kind === "petal" ? (
+    <svg viewBox="0 0 20 28" width={size} height={size * 1.4}>
+      <path d="M10 1C15 7 18 13 17 18c-1 5-4 8-7 9-3-1-6-4-7-9C2 13 5 7 10 1Z" fill="#f28c1b" />
+      <path d="M10 5c2 5 2 13 0 19" stroke="#ffd27a" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+    </svg>
+  ) : (
+    <svg viewBox="0 0 20 20" width={size} height={size}>
+      <path d="M10 0c1 6 4 9 10 10-6 1-9 4-10 10-1-6-4-9-10-10C6 9 9 6 10 0Z" fill="#f5b52e" />
+    </svg>
+  );
+}
+
+/** A 1x1 transparent GIF: the <picture> source for the breakpoint that must not fetch. */
+const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+
+/**
+ * The phone and tablet Navratri ground: the portrait illustration in the normal
+ * mobile hero's own photo shell, so the scrim, the seam fade, the transparent
+ * header and every button style are the photo hero's, untouched. Hidden from
+ * lg, where NavratriArt takes over, and the blank source keeps a desktop from
+ * fetching it.
+ */
+function NavratriMobilePhoto() {
+  const { props } = getImageProps({
+    src: "/images/navratri-hero-mobile.webp",
+    alt: NAVRATRI_COPY.alt,
+    fill: true,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "(max-width: 1023px) 100vw, 1px",
+  });
+  return (
+    <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:hidden">
+      <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[#2a0f14]">
+        <picture>
+          <source media="(min-width: 1024px)" srcSet={BLANK_PIXEL} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in props */}
+          <LandingAttributes><img {...props} className="ck-hero-photo-image ck-navratri-mobile-photo object-cover" /></LandingAttributes>
+        </picture>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The Navratri illustration. Layered: the floral borders and cream are the
+ * stage's own background (CSS, desktop only, with the slow drift), and the
+ * dancers are a transparent cut-out in front of them — sized from the room the
+ * copy leaves, so they grow as large as the hero allows without touching the
+ * buttons (styles.css, "Navratri hero"). One image for every width: next/image
+ * serves phones a small rendition from the srcset, and there is no preload, so
+ * a phone never fetches a desktop-sized file. Loops pause while the hero is
+ * off screen.
+ */
+function NavratriArt() {
+  const artRef = useRef<HTMLDivElement>(null);
+  const { props: desktopProps } = getImageProps({
+    src: "/images/navratri-hero-dancers.webp",
+    alt: NAVRATRI_COPY.alt,
+    width: 1290,
+    height: 1280,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "(min-width: 1024px) 48vw, 1px",
+  });
+
+  useEffect(() => {
+    const art = artRef.current;
+    if (!art || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) delete art.dataset.offscreen;
+      else art.dataset.offscreen = "";
+    });
+    io.observe(art);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <div ref={artRef} className="ck-navratri-art">
+      <div className="ck-navratri-figure">
+        <picture>
+          {/* Below lg this layer is hidden and the portrait photo is the hero
+              (NavratriMobilePhoto); the blank source keeps phones from
+              fetching the desktop cut-out at all. */}
+          <source media="(max-width: 1023px)" srcSet={BLANK_PIXEL} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in desktopProps */}
+          <LandingAttributes><img {...desktopProps} className="ck-navratri-dancers" /></LandingAttributes>
+        </picture>
+        <span className="ck-navratri-accents" aria-hidden>
+          {NAVRATRI_ACCENTS.map((a, i) => (
+            <span
+              key={i}
+              className="ck-navratri-accent"
+              style={{ top: a.top, left: a.left, rotate: `${a.rotate}deg`, animationDelay: `${a.delay}s` }}
+            >
+              <NavratriAccent kind={a.kind} size={a.size} />
+            </span>
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Keep the reference's primary orange CTA useful for every auth state. During
@@ -99,7 +232,7 @@ function ConnectionPins() {
   ];
 
   return (
-    <div
+    <LandingAttributes><div
       className="pointer-events-none absolute inset-0 z-20"
       aria-label={t("connectionLabel")}
       role="group"
@@ -134,26 +267,24 @@ function ConnectionPins() {
       </svg>
 
       {callouts.map(({ lead, rest, className, delay }) => (
-        <motion.div
+        <div
           key={lead}
-          className={`ck-hero-callout absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
-          initial={false}
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 3.8, ease: "easeInOut", repeat: Infinity, delay }}
+          className={`ck-hero-callout ck-hero-callout-float absolute hidden w-[clamp(5.6rem,6.4vw,6.9rem)] text-center lg:block ${className}`}
+          style={{ animationDelay: `${delay}s` }}
         >
           <span className="absolute -top-7 left-1/2 z-10 -translate-x-1/2 drop-shadow-[0_5px_8px_rgba(var(--ck-home-shadow-rgb,114,43,8),0.25)]">
             <LocationMarker />
           </span>
           <div className="relative rounded-[0.9rem] bg-[#fffdf9]/96 px-2.5 py-3 shadow-[0_10px_26px_rgba(var(--ck-home-shadow-rgb,75,42,19),0.18),0_0_0_1px_rgba(var(--ck-home-shadow-rgb,103,58,27),0.05)] backdrop-blur-[2px] dark:bg-stone-900/96">
             <p className="text-[clamp(0.64rem,0.8vw,0.82rem)] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]">
-              {lead}
+              <LandingText>{lead}</LandingText>
             </p>
             <p className="mt-0.5 text-[clamp(0.61rem,0.76vw,0.78rem)] font-bold leading-[1.28] text-[#231d18] dark:text-stone-100">
-              {rest}
+              <LandingText>{rest}</LandingText>
             </p>
             <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#fffdf9] dark:bg-stone-900" aria-hidden />
           </div>
-        </motion.div>
+        </div>
       ))}
 
       {/* Desktop-only now. These were the phone's version of the callouts, sat
@@ -167,12 +298,12 @@ function ConnectionPins() {
             className="relative w-[8.2rem] rounded-xl bg-[#fffdf9]/94 px-3 py-2.5 text-center shadow-[0_8px_22px_rgba(var(--ck-home-shadow-rgb,75,42,19),0.18)] backdrop-blur-[2px] dark:bg-stone-900/94"
           >
             <MapPin className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 fill-[var(--ck-home-accent,#c54805)] text-white" aria-hidden />
-            <p className="text-[0.65rem] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]">{lead}</p>
-            <p className="mt-0.5 text-[0.62rem] font-bold leading-tight text-stone-800 dark:text-stone-100">{rest}</p>
+            <p className="text-[0.65rem] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]"><LandingText>{lead}</LandingText></p>
+            <p className="mt-0.5 text-[0.62rem] font-bold leading-tight text-stone-800 dark:text-stone-100"><LandingText>{rest}</LandingText></p>
           </div>
         ))}
       </div>
-    </div>
+    </div></LandingAttributes>
   );
 }
 
@@ -181,6 +312,10 @@ export function HeroSection() {
   const t = useTranslations("hero");
   const primaryAction = usePrimaryAction();
   const { user, isRestoring } = useAuth();
+  const navratri = useNavratriCampaign();
+  const headlineTop = navratri ? NAVRATRI_COPY.headlineTop : t("headlineTop");
+  const headlineAccent = navratri ? NAVRATRI_COPY.headlineAccent : t("headlineAccent");
+  const subtext = navratri ? NAVRATRI_COPY.subtext : t("subtext");
 
   return (
     <MotionConfig reducedMotion="user">
@@ -188,7 +323,7 @@ export function HeroSection() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className="ck-showcase-hero relative isolate overflow-hidden bg-[#fdf5ed] px-3 pb-3 pt-3 text-[#100c06] dark:bg-[#15110f] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0"
+        className={`${navratri ? "ck-hero-navratri " : ""}ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
 
@@ -208,7 +343,7 @@ export function HeroSection() {
               No height of its own: `.ck-showcase-hero` already stands the
               section at 100svh minus the header, so the stage only has to grow
               into it. Setting a second height here fought that one. */}
-          <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[#fdf5ed]">
+          <div className="ck-lead-hero-stage relative flex min-w-0 flex-1 flex-col bg-[#241b14] dark:bg-[#1a1512] lg:grid lg:flex-none lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:bg-[var(--surface-cream)] dark:lg:bg-[var(--surface-cream)]">
             {/* Heaviest at the foot where the copy lands, lifted again at the
                 top so the header stays legible over a bright frame. */}
             <div
@@ -220,12 +355,13 @@ export function HeroSection() {
               {/* The flanking rules here and the heart divider below are
                   desktop ornament: on a phone the two pairs cost roughly 70px
                   of an 844px screen and say nothing. */}
-              <div className="hidden items-center gap-3 text-[var(--ck-home-ink,#c54805)] lg:flex dark:text-[var(--ck-home-highlight,#f29a65)]">
-                <span className="h-px w-8 bg-current opacity-55 sm:w-12" aria-hidden />
-                <p className="text-[0.65rem] font-extrabold uppercase tracking-[0.16em] sm:text-xs lg:text-[clamp(0.68rem,0.78vw,0.92rem)]">
+              {/* Desktop eyebrow is a microscopic pill (high-end pass,
+                  2026-10-05) — it replaced the flanking-rule treatment. */}
+              <div className="ck-hero-eyebrow hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex dark:bg-white/5 dark:text-[var(--ck-home-highlight,#f29a65)] dark:ring-white/10">
+                <span className="size-1.5 rounded-full bg-current" aria-hidden />
+                <p className="text-[0.65rem] font-medium uppercase tracking-[0.2em]">
                   {t("eyebrow")}
                 </p>
-                <span className="h-px w-8 bg-current opacity-55 sm:w-12" aria-hidden />
               </div>
 
               {/* The phone composition gets its own compact signature. Desktop
@@ -242,52 +378,49 @@ export function HeroSection() {
               >
                 {/* Mobile copy wraps naturally with the bundled condensed font;
                     desktop retains the existing two-line composition. */}
-                <span className="block lg:whitespace-nowrap">{t("headlineTop")}</span>
-                <span className="block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
-                  {t("headlineAccent")}
+                <span className="block lg:whitespace-nowrap"><LandingText>{headlineTop}</LandingText></span>
+                <span className="ck-hero-headline-accent block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
+                  <LandingText>{headlineAccent}</LandingText>
                 </span>
               </h1>
 
-              <div className="mt-[clamp(0.75rem,2.1vh,1.55rem)] hidden items-center gap-3 text-[var(--ck-home-ink,#c54805)] lg:flex dark:text-[var(--ck-home-highlight,#f29a65)]" aria-hidden>
-                <span className="h-px w-[clamp(3.5rem,8vw,8.5rem)] bg-current opacity-55" />
-                <Heart className="size-4 fill-current sm:size-5" strokeWidth={0} />
-                <span className="h-px w-[clamp(3.5rem,8vw,8.5rem)] bg-current opacity-55" />
-              </div>
-
-              <p className="mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
-                {t("subtext")}
+              <p className="ck-hero-subtext mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
+                <LandingText>{subtext}</LandingText>
               </p>
 
               <div data-guest={!user && !isRestoring ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
                 {primaryAction.href ? (
                   <NewRequestLink
                     href={primaryAction.href}
-                    className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#fdf5ed]/70 shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a60] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-[0.9rem] lg:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#fdf5ed]/70 shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
-                    {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden">{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</span>}
-                    <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
+                    {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden"><LandingText>{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</LandingText></span>}
+                    <span className="relative z-[1] min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>
                     <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                   </NewRequestLink>
                 ) : (
                   <span
                     aria-hidden
-                    className="ck-hero-auth-placeholder inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-[0.9rem] lg:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="ck-hero-auth-placeholder inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="size-4 shrink-0 sm:size-5" />
-                    <span className="min-w-0 text-center">{primaryAction.label}</span>
+                    <span className="min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>
                     <ArrowRight className="ck-hero-action-arrow size-4 shrink-0 sm:size-5" />
                   </span>
                 )}
 
+                {/* Donees do not browse other people's needs: no board link for them. */}
+                {user?.role !== "DONEE" && (
                 <Link
                   href="/requests"
-                  className="ck-hero-secondary-cta group relative isolate order-1 inline-flex min-h-14 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#fdf5ed] px-5 text-[0.95rem] font-extrabold leading-tight text-[#1a130d] shadow-none lg:order-2 lg:min-h-12 lg:bg-transparent lg:px-2 lg:text-[0.56rem] lg:uppercase lg:tracking-[0.02em] lg:text-[var(--ck-home-ink,#b04a15)] lg:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.82),0_10px_22px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:text-[var(--ck-home-ink,#e07b3a)] dark:hover:bg-white/5 dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-[0.9rem] lg:px-6 lg:text-xs lg:tracking-[0.04em]"
+                  className="ck-hero-secondary-cta group relative isolate order-1 inline-flex min-h-14 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[#fdf5ed] px-5 text-[0.95rem] font-extrabold leading-tight text-[#1a130d] shadow-none lg:order-2 lg:min-h-12 lg:bg-transparent lg:px-2 lg:text-[0.56rem] lg:uppercase lg:tracking-[0.02em] lg:text-[var(--ck-home-ink,#b04a15)] lg:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.62)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-white/55 hover:shadow-[inset_0_0_0_1.5px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.82),0_10px_22px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.11)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-home-accent,#b04a15)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:text-[var(--ck-home-ink,#e07b3a)] dark:hover:bg-white/5 dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 lg:text-xs lg:tracking-[0.04em]"
                 >
                   <UsersRound className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
                   <span className="relative z-[1] min-w-0 text-center">{t("ctaBrowse")}</span>
                   <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                 </Link>
+                )}
 
                 {/* Money donation stays last on desktop and is hidden for donees. */}
                 <DonateNowButton
@@ -300,18 +433,18 @@ export function HeroSection() {
               </div>
             </div>
 
-            <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
+            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
                 <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
-                <Image
+                <LandingAttributes><Image
                   src={HERO_IMAGE}
                   alt={t("photoAlt")}
                   fill
                   priority
                   sizes="(max-width: 1023px) 100vw, (max-width: 1919px) 62vw, 1180px"
                   className="ck-hero-photo-image object-cover object-center"
-                />
+                /></LandingAttributes>
                 </picture>
                 <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[17%] bg-gradient-to-t from-[var(--ck-home-deep,#5d2608)]/18 to-transparent" aria-hidden />
@@ -320,16 +453,16 @@ export function HeroSection() {
                 className="ck-hero-photo-breakout pointer-events-none absolute inset-0 z-[5] hidden lg:block"
                 aria-hidden
               >
-                <Image
+                <LandingAttributes><Image
                   src={HERO_FOREGROUND}
                   alt=""
                   fill
                   sizes="(min-width: 1920px) 1180px, 62vw"
                   className="ck-hero-photo-image object-cover object-center"
-                />
+                /></LandingAttributes>
               </div>
               <ConnectionPins />
-            </div>
+            </div>}
 
             {/* Melts the hero's bottom edge into the section below it, so the
                 photograph and the cream read as one surface rather than two

@@ -1,8 +1,9 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import {
   X, CheckCircle2, AlertCircle, Clock, Circle,
   MapPin, Package, Wrench, Tag, Layers, FileText,
@@ -223,11 +224,12 @@ interface Props {
   match?: ItemMatch | null;
   onClose: () => void;
   onAction: (id: number, action: "pause" | "resume" | "withdraw") => Promise<void>;
+  onWithdrawPrompt?: (id: number) => void;
   onDelete?: (id: number) => Promise<void>;
   actionLoading: number | null;
 }
 
-export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete, actionLoading }: Props) {
+export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdrawPrompt, onDelete, actionLoading }: Props) {
   // Lock body scroll while open
   useEffect(() => {
     if (listing) {
@@ -247,7 +249,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete
 
   if (!listing) return null;
 
-  const photos = [
+  const photos = listing.photoUrls?.length ? listing.photoUrls : [
     listing.imageUrl,
     ...(listing.imageUrls ? listing.imageUrls.split("|") : []),
   ].filter(Boolean) as string[];
@@ -458,7 +460,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete
             <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Item Details</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <Detail icon={Tag}      label="Condition"      value={listing.condition} />
-              <Detail icon={Layers}   label="Age"            value={listing.approximateAge} />
+              <Detail icon={Layers}   label="Item age"       value={listing.approximateAge} />
               <Detail icon={Wrench}   label="Working Status" value={listing.workingStatus?.replace(/_/g, " ")} />
               <Detail icon={Package}  label="Quantity"       value={String(listing.quantity)} />
               {listing.brand && <Detail icon={Tag}   label="Brand"  value={listing.brand} />}
@@ -529,7 +531,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete
           {listing.submittedAt && (
             <div className="px-5 py-3 border-b border-stone-100 dark:border-zinc-800">
               <p className="text-3xs text-stone-400">
-                Submitted on {new Date(listing.submittedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                Submitted on {serverDate(listing.submittedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
           )}
@@ -579,7 +581,13 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onDelete
             )}
             {canWithdrawListing(listing.status) && (
               <button
-                onClick={() => { if (confirm("Withdraw this listing? This cannot be undone.")) onAction(listing.id, "withdraw"); }}
+                onClick={() => {
+                  if (onWithdrawPrompt) {
+                    onWithdrawPrompt(listing.id);
+                  } else if (confirm("Withdraw this listing? This cannot be undone.")) {
+                    onAction(listing.id, "withdraw");
+                  }
+                }}
                 disabled={actionLoading === listing.id}
                 className="text-sm font-semibold py-2.5 px-4 rounded-xl border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
               >

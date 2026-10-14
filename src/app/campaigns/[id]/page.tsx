@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { FEATURES } from "@/lib/features";
 import { ComingSoon } from "@/components/ComingSoon";
 
@@ -7,7 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslations, TranslatedText } from "@/hooks/useDynamicTranslation";
-import Link from "next/link";
+import Link from "@/components/AppLink";
 import Image from "next/image";
 import { toast } from "@/lib/toast";
 import { getCampaign, getProfile, initiateDonation, getCampaignDonations, type Campaign, type UserProfile, type Donation } from "@/lib/api";
@@ -538,7 +539,7 @@ function CampaignDetailPageInner() {
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[#8C3D1D]">{u.userName}</span>
                         <span className="text-xs text-stone-400">
-                          {new Date(u.createdAt).toLocaleDateString("en-IN", {
+                          {serverDate(u.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",

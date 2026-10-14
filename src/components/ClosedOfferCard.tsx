@@ -1,8 +1,9 @@
 "use client";
 
+import { serverDate } from "@/lib/serverTime";
 import { useState } from "react";
-import Link from "next/link";
-import { ChevronDown, EyeOff, Loader2 } from "lucide-react";
+import Link from "@/components/AppLink";
+import { ChevronDown, Trash2, Loader2 } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
@@ -29,6 +30,14 @@ const CLOSED_LABELS: Record<string, { label: string; tone: string }> = {
   DONEE_DECLINED: { label: "Recipient declined", tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
   CANCELLED:      { label: "Cancelled", tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
   WITHDRAWN:      { label: "Withdrawn", tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
+};
+
+/** What happened, in plain words — so the panel is never empty (2026-10-08). */
+const CLOSED_EXPLAINED: Record<string, string> = {
+  WITHDRAWN: "You withdrew this offer. Nothing was handed over, and the request stays open for other donors.",
+  CANCELLED: "This offer was cancelled before the handover, so nothing changed hands.",
+  DONEE_DECLINED: "The recipient decided this item was not right for them. Your item is still yours.",
+  ADMIN_REJECTED: "Our team could not approve this offer.",
 };
 
 const NEXT_STEPS = [
@@ -140,7 +149,7 @@ export function ClosedOfferCard({ offer, onChanged }: {
                 title="Remove from dashboard"
                 className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
               >
-                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <EyeOff className="h-3.5 w-3.5" />}
+                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
               </button>
             </div>
           </div>
@@ -148,6 +157,20 @@ export function ClosedOfferCard({ offer, onChanged }: {
           {/* Detail — the full reason and next steps, only once asked for */}
           {expanded && (
             <div className="space-y-3 border-t border-stone-100 px-3 py-3 dark:border-zinc-800">
+              <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
+                {CLOSED_EXPLAINED[offer.status] ?? "This offer is closed."}
+              </p>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-2xs sm:grid-cols-3">
+                <div><dt className="text-stone-400">Request</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestTitle}</dd></div>
+                {offer.requestCity && <div><dt className="text-stone-400">Where</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestCity}</dd></div>}
+                <div><dt className="text-stone-400">Offered on</dt><dd className="font-semibold text-stone-700 dark:text-stone-300">{serverDate(offer.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</dd></div>
+              </dl>
+              {offer.status !== "ADMIN_REJECTED" && (
+                <Link href={`/requests/${offer.requestId}/offer`}
+                  className="inline-flex items-center gap-1 text-2xs font-bold text-[var(--ck-role-accent)] hover:underline">
+                  Offer to this request again →
+                </Link>
+              )}
               {reason && (
                 <div className="rounded-lg bg-stone-50 px-3 py-2 text-xs leading-relaxed text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
                   <span className="font-semibold">Reason: </span>{reason}

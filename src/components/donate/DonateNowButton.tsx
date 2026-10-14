@@ -1,10 +1,13 @@
-import Link from "next/link";
+
+import { LandingText } from "@/components/LandingTranslation";
+import Link from "@/components/AppLink";
 import { DONATE_HREF } from "@/lib/donateScroll";
 
 /**
  * The animated "Donate Now" call to action.
  *
- * <p>Deliberately a SERVER component — no "use client", no hooks, no auth read.
+ * <p>The button shell has no "use client", hooks or auth read. Its label uses
+ * the small LandingText client boundary to translate on landing routes.
  * Everything that varies is CSS:
  *
  * <ul>
@@ -18,9 +21,8 @@ import { DONATE_HREF } from "@/lib/donateScroll";
  *       disappear, and no placement can forget the check.</li>
  * </ul>
  *
- * <p>That is why this ships no client JavaScript at all: five placements, one
- * of them in the navbar on every page, and none of them costs a hydration
- * boundary.
+ * <p>The shared label translator reuses the same Google cache across placements,
+ * including the navbar. The shell and its role visibility remain CSS-driven.
  *
  * <p>The motion lives in styles.css under "Donate Now". Idle motion is the
  * point — a phone has no hover, so breathe / sheen / heartbeat run unprompted
@@ -34,6 +36,7 @@ export function DonateNowButton({
   fullWidth = false,
   className = "",
   href = DONATE_HREF,
+  direct = false,
 }: {
   size?: "sm" | "md" | "lg";
   variant?: "solid" | "outline";
@@ -43,13 +46,22 @@ export function DonateNowButton({
   className?: string;
   /** Override only for a placement that must land somewhere else. */
   href?: string;
+  /**
+   * Go straight to `href`. Without it a click opens the In-Kind / Money choice
+   * (DonateChoice, mounted in the root layout) — set it only where the copy
+   * around the button already says "money".
+   */
+  direct?: boolean;
 }) {
   const iconPx = size === "sm" ? 14 : size === "lg" ? 19 : 17;
 
   return (
     <Link
       href={href}
+      // The arrival handler owns scrolling for the donation deep link.
+      scroll={href === DONATE_HREF ? false : undefined}
       data-donate-cta={size}
+      data-donate-direct={direct || undefined}
       className={[
         "ck-donate-cta",
         `ck-donate-${size}`,
@@ -72,7 +84,7 @@ export function DonateNowButton({
         </svg>
       </span>
 
-      <span className="ck-donate-label">{label}</span>
+      <span className="ck-donate-label"><LandingText>{label}</LandingText></span>
 
       {showArrow && (
         <span className="ck-donate-arrow" aria-hidden="true">
