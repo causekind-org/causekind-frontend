@@ -92,13 +92,27 @@ describe("NgoDrivesSection", () => {
     mockGetNgoDrives.mockResolvedValue(SAMPLE_DRIVES);
   });
 
-  it("renders the NGO drives section when live drives exist", async () => {
+  it("renders the NGO drives section with header, trust card, cards, and bottom banner", async () => {
     render(<NgoDrivesSection />);
 
-    expect(await screen.findByText("NGO drives")).toBeInTheDocument();
+    // Header badge & title
+    expect(await screen.findByText("VERIFIED INITIATIVES")).toBeInTheDocument();
+    expect(screen.getByText(/Real organisations\./i)).toBeInTheDocument();
+    expect(screen.getByText(/Real impact\./i)).toBeInTheDocument();
+
+    // Trust card
+    expect(screen.getByText("Every NGO is verified")).toBeInTheDocument();
+    expect(screen.getByText(/Registration, address and contact person checked/i)).toBeInTheDocument();
+
+    // Drive cards
     expect(screen.getByText("Primary School Uniforms")).toBeInTheDocument();
     expect(screen.getByText("Flood Relief Medicine Kits")).toBeInTheDocument();
     expect(screen.getByText("Blankets for Shelter")).toBeInTheDocument();
+
+    // Bottom banner
+    expect(screen.getByText("Want to see every drive?")).toBeInTheDocument();
+    const seeAllLink = screen.getByRole("link", { name: /SEE ALL DRIVES/i });
+    expect(seeAllLink).toHaveAttribute("href", "/requests?source=ngo");
   });
 
   it("hides the whole section when zero live drives exist", async () => {
@@ -107,50 +121,49 @@ describe("NgoDrivesSection", () => {
 
     // Waits for load to settle and component to unmount/return null
     await vi.waitFor(() => {
-      expect(screen.queryByText("NGO drives")).toBeNull();
+      expect(screen.queryByText(/Real organisations\./i)).toBeNull();
     });
 
     expect(container.firstChild).toBeNull();
   });
 
-  it("renders disabled Money chip with 'Coming soon' badge", async () => {
+  it("renders category chips with counts and disables zero-count categories", async () => {
     render(<NgoDrivesSection />);
 
-    const moneyButton = await screen.findByRole("button", { name: /Money/i });
-    expect(moneyButton).toBeDisabled();
-    expect(screen.getByText("Coming soon")).toBeInTheDocument();
+    // Education has 1 drive -> enabled with count badge
+    const eduChip = await screen.findByRole("button", { name: /Education/i });
+    expect(eduChip).toBeEnabled();
+    expect(eduChip).toHaveTextContent("1");
+
+    // Medical aid has 1 drive -> enabled with count badge
+    const medChip = screen.getByRole("button", { name: /Medical aid/i });
+    expect(medChip).toBeEnabled();
+    expect(medChip).toHaveTextContent("1");
+
+    // Categories with 0 drives are muted and disabled
+    const sportsChip = screen.getByRole("button", { name: /^Sports$/i });
+    expect(sportsChip).toBeDisabled();
+    expect(sportsChip).toHaveAttribute("aria-disabled", "true");
   });
 
-  it("maps CRITICAL to 'Urgent' chip and filters accordingly", async () => {
+  it("filters cards when a category chip is selected", async () => {
     const user = userEvent.setup();
     render(<NgoDrivesSection />);
 
     expect(await screen.findByText("Flood Relief Medicine Kits")).toBeInTheDocument();
 
-    const urgentChip = screen.getByRole("button", { name: "Urgent" });
-    await user.click(urgentChip);
+    const eduChip = screen.getByRole("button", { name: /Education/i });
+    await user.click(eduChip);
 
-    // Only critical drive is shown
-    expect(screen.getByText("Flood Relief Medicine Kits")).toBeInTheDocument();
-    expect(screen.queryByText("Primary School Uniforms")).toBeNull();
+    // Only education drive is shown
+    expect(screen.getByText("Primary School Uniforms")).toBeInTheDocument();
+    expect(screen.queryByText("Flood Relief Medicine Kits")).toBeNull();
     expect(screen.queryByText("Blankets for Shelter")).toBeNull();
-  });
 
-  it("shows empty state with 'Clear filters' when filter matches nothing", async () => {
-    const user = userEvent.setup();
-    // Only normal and high, no urgent
-    mockGetNgoDrives.mockResolvedValue([SAMPLE_DRIVES[0]]);
-    render(<NgoDrivesSection />);
-
-    expect(await screen.findByText("Primary School Uniforms")).toBeInTheDocument();
-
-    const urgentChip = screen.getByRole("button", { name: "Urgent" });
-    await user.click(urgentChip);
-
-    expect(screen.getByText("No live drives match your filters")).toBeInTheDocument();
-    const clearBtns = screen.getAllByRole("button", { name: /Clear filters/i });
-    await user.click(clearBtns[0]);
-
+    // Switch back to All Categories
+    const allChip = screen.getByRole("button", { name: /All Categories/i });
+    await user.click(allChip);
+    expect(screen.getByText("Flood Relief Medicine Kits")).toBeInTheDocument();
     expect(screen.getByText("Primary School Uniforms")).toBeInTheDocument();
   });
 

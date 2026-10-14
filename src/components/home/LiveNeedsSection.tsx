@@ -20,6 +20,9 @@ import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import LetterSwap from "@/components/LetterSwap";
 import { LiveNeedCard } from "@/components/home/LiveNeedCard";
+import { LiveBoardHeader } from "@/components/home/LiveBoardHeader";
+import { CategoryChipsRow } from "@/components/home/CategoryChipsRow";
+import { LiveBoardBanner } from "@/components/home/LiveBoardBanner";
 
 const NEEDS_SHOWN = 6;
 
@@ -154,113 +157,25 @@ export function LiveNeedsSection({
 
       <div className="relative mx-auto max-w-7xl px-0 lg:px-8">
         {/* ── Section Header ── */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
-          <div className="max-w-2xl min-w-0">
-            <p className="mb-5 hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--ck-home-ink,#b04a15)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:inline-flex dark:bg-white/5 dark:text-[var(--ck-home-ink,#e07b3a)] dark:ring-white/10">
-              <span className="size-1.5 rounded-full bg-current" aria-hidden />
-              Live board
-            </p>
-            <h2
-              id="live-needs-heading"
-              className="text-[1.625rem] lg:text-6xl font-semibold [font-family:var(--font-source-serif-4),Georgia,serif] tracking-[-0.03em] lg:tracking-[-0.035em] text-stone-900 dark:text-stone-50 leading-[1.12] lg:leading-[1.02]"
-            >
-              {/* Two runs, not one: the accent half has to keep its own colour,
-                  and LetterSwap emits a single coloured span. */}
-              {animateHeading ? <LetterSwap text="Real people. Real needs." /> : "Real people. Real needs."}{" "}
-              <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)]">
-                {animateHeading ? <LetterSwap text="Right now." /> : "Right now."}
-              </span>
-            </h2>
-
-            <p className="mt-3 text-sm sm:text-base text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
-              Every request here is posted by a verified individual or community school in India. No cash,
-              no guesswork — offer the exact item they are waiting for today.
-            </p>
-          </div>
-
-          {/*
-            One claim we can stand behind, rather than a pair of counters.
-
-            This was "100% VERIFIED DONEES" beside "0+ NEEDS FULFILLED", where
-            the second number came from `stats?.totalDonations ?? 0`. A zero
-            rendered as proof reads as "nothing has ever happened here" — the
-            opposite of what a trust badge is for. Put numbers back when they
-            argue for us.
-          */}
-          <div className="flex items-center gap-3.5 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-sm border border-stone-200/80 dark:border-zinc-800 rounded-[1.25rem] p-4 shrink-0 lg:shadow-xs">
-            <div className="w-10 h-10 rounded-xl bg-[var(--ck-home-accent,#b04a15)]/10 dark:bg-[var(--ck-home-accent,#b04a15)]/20 flex items-center justify-center text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] shrink-0">
-              <ShieldCheck className="w-5 h-5" aria-hidden="true" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm font-black text-stone-900 dark:text-stone-100 leading-tight">
-                Every donee is verified
-              </p>
-              <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
-                ID and address checked before a need is posted
-              </p>
-            </div>
-          </div>
-        </div>
+        <LiveBoardHeader
+          headingId="live-needs-heading"
+          badgeLabel="Live board"
+          headlinePrimary="Real people. Real needs."
+          headlineAccent="Right now."
+          animateHeading={animateHeading}
+          subtitle="Every request here is posted by a verified individual or community school in India. No cash, no guesswork — offer the exact item they are waiting for today."
+          trustCard={{
+            title: "Every donee is verified",
+            description: "ID and address checked before a need is posted",
+          }}
+        />
 
         {/* ── Category Filter Pills Row ── */}
-        <div className="relative ck-live-needs-filters">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
-            <button
-              type="button"
-              onClick={() => setSelectedCategory("All")}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                selectedCategory === "All"
-                  ? "bg-[var(--ck-home-accent,#b04a15)] text-white shadow-sm shadow-[var(--ck-home-deep,#431407)]/20 ring-2 ring-[var(--ck-home-accent,#b04a15)]/30"
-                  : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              All Categories
-            </button>
-
-            {ALL_REQUEST_CATEGORIES.map((cat) => {
-              const visual = CATEGORY_VISUALS[cat];
-              const isSelected = selectedCategory === cat;
-              const count = categoryCounts[cat] ?? 0;
-              // Still clickable when empty — the empty state explains itself and
-              // is a legitimate place to land — but it no longer looks like the
-              // same offer as a category that has something waiting.
-              const isEmpty = count === 0 && !isSelected;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                    isSelected
-                      ? "bg-[var(--ck-home-accent,#b04a15)] text-white shadow-sm shadow-[var(--ck-home-deep,#431407)]/20 ring-2 ring-[var(--ck-home-accent,#b04a15)]/30"
-                      : isEmpty
-                        ? "bg-transparent text-stone-400 dark:text-stone-600 border border-stone-200/70 dark:border-zinc-800/70 hover:bg-stone-50 dark:hover:bg-zinc-900"
-                        : "bg-white/80 dark:bg-zinc-900/80 text-stone-600 dark:text-stone-300 border border-stone-200/80 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800"
-                  }`}
-                >
-                  <span
-                    className={`inline-flex items-center justify-center ${
-                      isSelected ? "text-white" : isEmpty ? "text-stone-300 dark:text-stone-700" : visual?.text ?? "text-stone-500"
-                    }`}
-                  >
-                    <AnimatedCategoryIcon category={cat} iconClassName="w-3.5 h-3.5" />
-                  </span>
-                  {cat}
-                  {count > 0 && (
-                    <span
-                      className={`rounded-full px-1.5 text-3xs font-black tabular-nums ${
-                        isSelected ? "bg-white/25 text-white" : "bg-stone-100 text-stone-500 dark:bg-zinc-800 dark:text-stone-400"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+        <CategoryChipsRow
+          selectedCategory={selectedCategory}
+          onSelectCategory={setSelectedCategory}
+          categoryCounts={categoryCounts}
+        />
 
         {/* ── The needs themselves ────────────────────────────────────────────
             A grid, not a carousel. The carousel was a fixed-height stage
@@ -388,29 +303,12 @@ export function LiveNeedsSection({
         )}
 
         {/* ── Footer Link: Explore All Needs ── */}
-        <div className="ck-live-needs-footer-gap flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl lg:rounded-[2rem] lg:p-2 lg:pl-6 bg-stone-100/70 dark:bg-zinc-900/60 border border-stone-200/70 dark:border-zinc-800 p-4 sm:p-5">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[var(--ck-home-accent,#b04a15)]/10 flex items-center justify-center text-[var(--ck-home-ink,#b04a15)] shrink-0">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs sm:text-sm font-bold text-stone-800 dark:text-stone-200">
-                Have something you no longer use?
-              </p>
-              <p className="text-3xs sm:text-xs text-stone-500 dark:text-stone-400">
-                See what people near you need, and give it to someone who will use it.
-              </p>
-            </div>
-          </div>
-
-          <Link
-            href="/requests"
-            className="inline-flex items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold px-5 py-2.5 lg:min-h-12 lg:px-7 text-xs uppercase tracking-wider transition-all lg:duration-500 lg:ease-[cubic-bezier(0.32,0.72,0,1)] shadow-md shadow-[var(--ck-home-deep,#431407)]/20 active:scale-95 lg:active:scale-[0.98] shrink-0"
-          >
-            <span>See all needs</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
+        <LiveBoardBanner
+          heading="Have something you no longer use?"
+          subtext="See what people near you need, and give it to someone who will use it."
+          buttonLabel="See all needs"
+          buttonHref="/requests"
+        />
       </div>
     </section>
   );
