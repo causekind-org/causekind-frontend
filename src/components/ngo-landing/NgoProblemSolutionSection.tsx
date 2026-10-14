@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 import { motion } from "framer-motion";
 import { XCircle, CheckCircle2 } from "lucide-react";
@@ -56,18 +58,18 @@ export function NgoProblemSolutionSection() {
           transition={{ duration: 0.6 }}
           className="text-center max-w-3xl mx-auto mb-12 sm:mb-16"
         >
-          <NgoSectionLabel align="center">Sound familiar?</NgoSectionLabel>
+          <NgoSectionLabel align="center"><LandingText>Sound familiar?</LandingText></NgoSectionLabel>
 
           <h2
             className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-tight mb-4"
             style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
-          >
-            You post your needs. <span className="italic text-ngo-700 dark:text-ngo-300">Then what?</span>
+          ><LandingText>
+            You post your needs. </LandingText><span className="italic text-ngo-700 dark:text-ngo-300"><LandingText>Then what?</LandingText></span>
           </h2>
 
-          <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed">
+          <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed"><LandingText>
             Most community outreach gets lost in noise. You share wishlists on social groups with zero transparency, vague drop-offs, and no official record of who gave what.
-          </p>
+          </LandingText></p>
         </motion.div>
 
         {/* Contrast Comparison Grid */}
@@ -77,11 +79,11 @@ export function NgoProblemSolutionSection() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-3 border-b border-stone-200/80 dark:border-zinc-800 text-center md:text-left font-black uppercase text-2xs sm:text-xs tracking-wider">
             <div className="flex items-center justify-center md:justify-start gap-2 text-stone-500 dark:text-stone-400">
               <span className="h-2 w-2 rounded-full bg-red-500" />
-              <span>The Usual Way</span>
+              <span><LandingText>The Usual Way</LandingText></span>
             </div>
             <div className="flex items-center justify-center md:justify-start gap-2 text-ngo-700 dark:text-ngo-300">
               <span className="h-2 w-2 rounded-full bg-ngo-700 dark:bg-ngo-300" />
-              <span>The CauseKind Way</span>
+              <span><LandingText>The CauseKind Way</LandingText></span>
             </div>
           </div>
 
@@ -100,7 +102,7 @@ export function NgoProblemSolutionSection() {
                 <div className="flex items-start gap-3 text-stone-500 dark:text-stone-400">
                   <XCircle className="w-4 h-4 text-red-500/80 shrink-0 mt-0.5" />
                   <span className="text-sm sm:text-[0.9rem] font-medium leading-snug">
-                    {row.usual}
+                    <LandingText>{row.usual}</LandingText>
                   </span>
                 </div>
 
@@ -108,7 +110,7 @@ export function NgoProblemSolutionSection() {
                 <div className="flex items-start gap-3 text-stone-900 dark:text-stone-100 font-semibold bg-ngo-50/70 dark:bg-ngo-900/30 p-2 sm:p-2.5 rounded-xl border border-ngo-300/40 dark:border-ngo-700/40">
                   <CheckCircle2 className="w-4 h-4 text-ngo-700 dark:text-ngo-300 shrink-0 mt-0.5" />
                   <span className="text-sm sm:text-[0.9rem] leading-snug">
-                    {row.causeKind}
+                    <LandingText>{row.causeKind}</LandingText>
                   </span>
                 </div>
               </motion.div>
@@ -125,9 +127,9 @@ export function NgoProblemSolutionSection() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="text-center"
         >
-          <p className="text-sm sm:text-base font-medium text-stone-600 dark:text-stone-300 italic">
+          <p className="text-sm sm:text-base font-medium text-stone-600 dark:text-stone-300 italic"><LandingText>
             "We built CauseKind so verified organizations get exactly what they need, delivered right to their doorstep."
-          </p>
+          </LandingText></p>
         </motion.div>
 
       </div>

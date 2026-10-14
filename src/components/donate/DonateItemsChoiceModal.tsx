@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -96,7 +98,7 @@ export function DonateItemsChoiceModal() {
 
   const cards = (
     <>
-      <DesktopOption
+      <LandingAttributes><DesktopOption
         tone="items"
         icon={PackagePlus}
         title="List an item"
@@ -104,8 +106,8 @@ export function DonateItemsChoiceModal() {
         text="Have something you no longer use? List it in 5 short steps and we'll match it with someone nearby who needs it."
         points={["Takes about 5 minutes", "We save as you go", "Matched to verified people nearby"]}
         onSelect={() => go(LIST_ITEM_HREF)}
-      />
-      <DesktopOption
+      /></LandingAttributes>
+      <LandingAttributes><DesktopOption
         tone="need"
         icon={HandHeart}
         title="Fulfil a need"
@@ -114,11 +116,11 @@ export function DonateItemsChoiceModal() {
         points={["Every request is verified", "See exactly what's needed", "OTP-confirmed handover"]}
         cta="Browse needs"
         onSelect={() => go(NEEDS_HREF)}
-      />
+      /></LandingAttributes>
     </>
   );
 
-  const eyebrow = <span className={POPUP.eyebrow}>Donate items</span>;
+  const eyebrow = <span className={POPUP.eyebrow}><LandingText>Donate items</LandingText></span>;
   const subtitle = "List something you no longer need, or give exactly what someone has asked for.";
 
   if (isPhone) {
@@ -136,33 +138,33 @@ export function DonateItemsChoiceModal() {
               className="flex size-11 items-center justify-center rounded-full text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-stone-400 dark:hover:bg-white/10 dark:hover:text-white"
             >
               <XIcon className="size-5" aria-hidden />
-              <span className="sr-only">Close</span>
+              <span className="sr-only"><LandingText>Close</LandingText></span>
             </DrawerClose>
           </div>
           {/* Scrolls on short screens; dragging stays on the grab handle. */}
           <div data-vaul-no-drag className="min-h-0 overflow-y-auto overscroll-contain px-4">
             <div className="mt-1 flex flex-col gap-1">
-              {eyebrow}
-              <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50">
+              <LandingText>{eyebrow}</LandingText>
+              <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50"><LandingText>
                 How would you like to donate?
-              </DrawerTitle>
-              <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400">{subtitle}</DrawerDescription>
+              </LandingText></DrawerTitle>
+              <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400"><LandingText>{subtitle}</LandingText></DrawerDescription>
             </div>
             <div className="mt-4 flex flex-col gap-3">
-              <PhoneOption
+              <LandingAttributes><PhoneOption
                 tone="items"
                 icon={PackagePlus}
                 title="List an item"
                 text="Something you no longer use? List it in 5 short steps; we match it nearby."
                 onSelect={() => go(LIST_ITEM_HREF)}
-              />
-              <PhoneOption
+              /></LandingAttributes>
+              <LandingAttributes><PhoneOption
                 tone="need"
                 icon={HandHeart}
                 title="Fulfil a need"
                 text="Browse verified requests near you and give exactly what's asked for."
                 onSelect={() => go(NEEDS_HREF)}
-              />
+              /></LandingAttributes>
             </div>
           </div>
         </DrawerContent>
@@ -179,9 +181,9 @@ export function DonateItemsChoiceModal() {
             onClick={back}
             className="-mb-1 -mt-4 [@media(max-height:720px)]:-mb-1.5 [@media(max-height:720px)]:-mt-3"
           />
-          {eyebrow}
-          <DialogTitle className={POPUP.title}>How would you like to donate?</DialogTitle>
-          <DialogDescription className={POPUP.subtitle}>{subtitle}</DialogDescription>
+          <LandingText>{eyebrow}</LandingText>
+          <DialogTitle className={POPUP.title}><LandingText>How would you like to donate?</LandingText></DialogTitle>
+          <DialogDescription className={POPUP.subtitle}><LandingText>{subtitle}</LandingText></DialogDescription>
         </div>
 
         <div className={POPUP.grid}>{cards}</div>
@@ -197,8 +199,8 @@ function BackButton({ onClick, className = "" }: { onClick: () => void; classNam
       onClick={onClick}
       className={`-ml-2 inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full px-2 text-sm font-bold text-stone-600 transition-colors hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-stone-300 dark:hover:text-white ${className}`}
     >
-      <ArrowLeft className="size-4" aria-hidden />
+      <ArrowLeft className="size-4" aria-hidden /><LandingText>
       Back
-    </button>
+    </LandingText></button>
   );
 }

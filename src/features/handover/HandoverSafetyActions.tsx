@@ -16,7 +16,7 @@ import {
   cancelMatch, getMatchCancellationOptions, getOfferCancellationOptions,
   reportPostDeliveryIssue, reportMatchIssue, confirmNoIssue,
   reportNgoDriveOfferIssue,
-  CANCELLATION_REASONS,
+  cancellationReasonsFor,
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
@@ -151,6 +151,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
         vm.flow === "OFFER"
           ? <CancelOfferDialog
               offerId={vm.id}
+              role={vm.role}
               option={option}
               open={cancelOpen}
               onOpenChange={setCancelOpen}
@@ -197,7 +198,8 @@ export function CancelMatchDialog({ matchId, role, option, open, onOpenChange, o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const selected = CANCELLATION_REASONS.find((r) => r.value === reason);
+  const reasons = cancellationReasonsFor(role);
+  const selected = reasons.find((r) => r.value === reason);
   const needsDetail = selected?.needsDetail ?? false;
   const canSubmit = !busy &&
     (!option.requiresReason || (reason !== "" && (!needsDetail || details.trim().length > 0)));
@@ -245,7 +247,7 @@ export function CancelMatchDialog({ matchId, role, option, open, onOpenChange, o
                     <SelectValue placeholder="Choose a reason…" />
                   </SelectTrigger>
                   <SelectContent className={scope}>
-                    {CANCELLATION_REASONS.map((r) => (
+                    {reasons.map((r) => (
                       <SelectItem key={r.value} value={r.value} className={handoverSelectItem}>
                         {r.label}
                       </SelectItem>

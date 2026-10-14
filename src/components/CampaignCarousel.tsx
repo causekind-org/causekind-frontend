@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "@/components/AppLink";
@@ -90,14 +92,14 @@ function HorizontalCampaignCard({
           />
         ) : (
           <>
-            <Image
+            <LandingAttributes><Image
               src={campaign.imageUrl || getCardImage(campaign.category, campaign.id)}
               alt={campaign.title}
               fill
               unoptimized
               sizes="(max-width: 768px) 100vw, 280px"
               className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            />
+            /></LandingAttributes>
             {/* Pulsating Play Button overlay (image-only fallback) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="glass-pill w-10 h-10 rounded-full flex items-center justify-center text-white transition-all duration-300 group-hover:scale-110">
@@ -124,11 +126,11 @@ function HorizontalCampaignCard({
           <div className="flex items-center gap-2.5 text-white/90 shrink-0">
             <div className="flex items-center gap-0.5 text-4xs font-black">
               <Heart className="w-3 h-3 fill-white text-white" />
-              <span className="drop-shadow-md">{likes}</span>
+              <span className="drop-shadow-md"><LandingText>{likes}</LandingText></span>
             </div>
             <div className="flex items-center gap-0.5 text-4xs font-black">
               <MessageCircle className="w-3 h-3 fill-white text-white" />
-              <span className="drop-shadow-md">{comments}</span>
+              <span className="drop-shadow-md"><LandingText>{comments}</LandingText></span>
             </div>
           </div>
         </div>
@@ -171,9 +173,9 @@ function HorizontalCampaignCard({
         <div className="space-y-5">
           <div className="space-y-2">
             <div className="flex justify-between text-xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider">
-              <span>Fundraising Progress</span>
+              <span><LandingText>Fundraising Progress</LandingText></span>
               <span className="text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-extrabold">
-                {pct}%
+                <LandingText>{pct}</LandingText>%
               </span>
             </div>
             {/* Thick Progress Bar track */}
@@ -187,22 +189,22 @@ function HorizontalCampaignCard({
 
           <div className="flex justify-between items-center text-xs border-y border-stone-100 dark:border-zinc-800/50 py-3.5">
             <div className="flex flex-col">
-              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
+              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5"><LandingText>
                 Amount Raised
-              </span>
+              </LandingText></span>
               <span className="font-extrabold text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] text-lg tabular-nums">
                 {formatINR(campaign.amountRaised)}
               </span>
             </div>
 
             <div className="flex items-center gap-1.5 bg-[var(--ck-home-accent,#b04a15)]/10 dark:bg-[var(--ck-home-accent,#e07b3a)]/10 text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-black px-3 py-1 rounded-full text-3xs tracking-wider uppercase border border-[var(--ck-home-accent,#b04a15)]/20 dark:border-[var(--ck-home-accent,#e07b3a)]/20">
-              {pct}% Funded
-            </div>
+              <LandingText>{pct}</LandingText><LandingText>% Funded
+            </LandingText></div>
 
             <div className="flex flex-col items-end">
-              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5">
+              <span className="text-3xs text-stone-400 dark:text-stone-500 font-bold uppercase tracking-wider mb-0.5"><LandingText>
                 Campaign Goal
-              </span>
+              </LandingText></span>
               <span className="font-bold text-stone-700 dark:text-stone-300 text-base tabular-nums">
                 {formatINR(campaign.targetAmount)}
               </span>
@@ -214,8 +216,8 @@ function HorizontalCampaignCard({
               className="btn-3d btn-donate-interactive w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white rounded-xl py-6 font-extrabold text-sm shadow-md flex items-center justify-center gap-2"
               asChild
             >
-              <Link href={`/campaigns/${campaign.id}`}>
-                Donate Now <ArrowRight className="w-4 h-4" />
+              <Link href={`/campaigns/${campaign.id}`}><LandingText>
+                Donate Now </LandingText><ArrowRight className="w-4 h-4" />
               </Link>
             </Button>
           </div>
@@ -313,7 +315,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
         {/* ── Nav arrows — inside stage so inset-y-0 centers on the card area ── */}
         {hasMultiple && (
           <div className="pointer-events-none absolute inset-y-0 left-1/2 -translate-x-1/2 w-[96%] max-w-[1300px] z-30 flex items-center justify-between px-2 sm:px-4">
-            <button
+            <LandingAttributes><button
               onClick={prev}
               aria-label="Previous"
               className="glass-pill glass-pill-hover pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
@@ -321,8 +323,8 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
                          transition-all duration-300 ease-out"
             >
               <ChevronLeft className="h-6 w-6" />
-            </button>
-            <button
+            </button></LandingAttributes>
+            <LandingAttributes><button
               onClick={next}
               aria-label="Next"
               className="glass-pill glass-pill-hover pointer-events-auto flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full
@@ -330,7 +332,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
                          transition-all duration-300 ease-out"
             >
               <ChevronRight className="h-6 w-6" />
-            </button>
+            </button></LandingAttributes>
           </div>
         )}
       </div>
@@ -339,7 +341,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
       {campaigns.length > 1 && (
         <div className="pb-6 flex justify-center items-center gap-2">
           {campaigns.map((_, i) => (
-            <button
+            <LandingAttributes key={i}><button
               key={i}
               onClick={() => go(i, i > idx ? "right" : "left")}
               aria-label={`Slide ${i + 1}`}
@@ -349,7 +351,7 @@ export function CampaignCarousel({ campaigns }: { campaigns: Campaign[] }) {
                   ? "w-8 h-2 bg-[var(--ck-home-accent,#b04a15)]"
                   : "w-2 h-2 bg-stone-300 dark:bg-zinc-700 hover:bg-[var(--ck-home-hover,#e07b3a)]",
               ].join(" ")}
-            />
+            /></LandingAttributes>
           ))}
         </div>
       )}
@@ -373,19 +375,19 @@ export function LatestActiveCampaignsSection({
     <section className="w-full py-20 bg-[#faf8f5] dark:bg-zinc-950 text-stone-900 dark:text-stone-100">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10 px-6 sm:px-10 max-w-7xl mx-auto">
         <div className="space-y-2">
-          <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
+          <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white"><LandingText>
             Latest active campaigns
-          </h2>
-          <p className="text-base text-stone-500 dark:text-stone-400 font-medium">
+          </LandingText></h2>
+          <p className="text-base text-stone-500 dark:text-stone-400 font-medium"><LandingText>
             Support the latest vetted fundraising efforts across India.
-          </p>
+          </LandingText></p>
         </div>
         <Link href="/campaigns" className="shrink-0 inline-flex">
           <Button
             variant="outline"
             className="btn-3d border-[var(--ck-home-soft,#fed7aa)] dark:border-stone-850 hover:bg-[var(--ck-home-surface,#fff7ed)] dark:hover:bg-zinc-900 rounded-xl font-bold px-5 py-5 text-sm gap-2 text-stone-700 dark:text-stone-200"
-          >
-            Browse All Campaigns <ArrowRight className="h-4 w-4" />
+          ><LandingText>
+            Browse All Campaigns </LandingText><ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
       </div>
@@ -396,12 +398,12 @@ export function LatestActiveCampaignsSection({
         </div>
       )}
       {error && (
-        <p className="text-center text-red-500 py-20 px-10 font-semibold">{error}</p>
+        <p className="text-center text-red-500 py-20 px-10 font-semibold"><LandingText>{error}</LandingText></p>
       )}
       {!loading && !error && latestCampaigns.length === 0 && (
-        <p className="text-center text-stone-400 py-20 mx-10 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--ck-home-surface,#ffedd5)] dark:border-stone-850 shadow-xs">
+        <p className="text-center text-stone-400 py-20 mx-10 font-medium bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--ck-home-surface,#ffedd5)] dark:border-stone-850 shadow-xs"><LandingText>
           No approved campaigns yet — check back soon!
-        </p>
+        </LandingText></p>
       )}
       {!loading && !error && latestCampaigns.length > 0 && (
         <CampaignCarousel campaigns={latestCampaigns} />

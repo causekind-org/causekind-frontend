@@ -106,3 +106,16 @@ Object.defineProperty(navigator, "geolocation", {
     clearWatch: vi.fn(),
   },
 });
+
+/**
+ * next/font/google loaders only run inside Next's compiler; under Vitest every
+ * one of them is undefined, so any component that declares a font at module
+ * level throws on import. A suite that mocks next/font/google itself still
+ * wins over this default.
+ */
+vi.mock("next/font/google", () => new Proxy({}, {
+  has: (_target, name) => typeof name === "string" && name !== "then",
+  get: (_target, name) => typeof name === "string" && name !== "then"
+    ? () => ({ className: "", variable: `font-${name}`, style: { fontFamily: name } })
+    : undefined,
+}));

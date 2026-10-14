@@ -81,7 +81,7 @@ export function WithdrawFlowButton({ kind, id, role, onChanged, className = "" }
         {option.actionLabel || "Withdraw"}
       </button>
       {kind === "offer" ? (
-        <CancelOfferDialog offerId={id} option={option} open={open} onOpenChange={setOpen} onCancelled={changed} />
+        <CancelOfferDialog offerId={id} role={role} option={option} open={open} onOpenChange={setOpen} onCancelled={changed} />
       ) : (
         <CancelMatchDialog matchId={id} role={role} option={option} open={open} onOpenChange={setOpen} onCancelled={changed} />
       )}

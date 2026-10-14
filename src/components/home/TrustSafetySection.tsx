@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes, useLandingTranslation } from "@/components/LandingTranslation";
+
 
 import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
@@ -97,23 +99,23 @@ const TRUST_STATS = [
 function TrustSafetyMobile({ seamless = false }: { seamless?: boolean }) {
   const ref = useRevealOnce<HTMLElement>();
   return (
-    <section
+    <LandingAttributes><section
       ref={ref}
       id="trust"
       aria-label="Trust and Safety"
       className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-stone-200/80 dark:border-stone-800/80 "}px-5`}
     >
-      <div data-reveal-item style={stagger(0)} className={m.eyebrow}>
+      <div data-reveal-item style={stagger(0)} className={m.eyebrow}><LandingText>
         Trust &amp; safety
-      </div>
-      <h2 data-reveal-item style={stagger(1)} className={m.title}>
-        Built on trust, <em>for everyone.</em>
+      </LandingText></div>
+      <h2 data-reveal-item style={stagger(1)} className={m.title}><LandingText>
+        Built on trust, </LandingText><em><LandingText>for everyone.</LandingText></em>
       </h2>
-      <p data-reveal-item style={stagger(2)} className={m.lede}>
+      <p data-reveal-item style={stagger(2)} className={m.lede}><LandingText>
         Clear verification, complete privacy protection, and transparent community handovers.
-      </p>
+      </LandingText></p>
 
-      <ol className={m.stack} aria-label="Trust and safety for each role">
+      <LandingAttributes><ol className={m.stack} aria-label="Trust and safety for each role">
         {TRUST_CARDS.map((card, idx) => {
           const IconComponent = card.icon;
           return (
@@ -127,47 +129,47 @@ function TrustSafetyMobile({ seamless = false }: { seamless?: boolean }) {
                   <span className={m.headIcon} aria-hidden="true">
                     <IconComponent className="w-3.5 h-3.5" />
                   </span>
-                  <span className={m.headLabel}>{card.roleTitle}</span>
-                  <span className={m.headNum} aria-hidden="true">0{idx + 1}</span>
+                  <span className={m.headLabel}><LandingText>{card.roleTitle}</LandingText></span>
+                  <span className={m.headNum} aria-hidden="true">0<LandingText>{idx + 1}</LandingText></span>
                 </header>
                 <div className={m.body}>
-                  <h3 className={m.cardTitle}>{card.roleSubtitle}</h3>
+                  <h3 className={m.cardTitle}><LandingText>{card.roleSubtitle}</LandingText></h3>
                   <ul className={m.points}>
                     {card.points.map((point) => (
                       <li key={point} className={m.point}>
                         <span className={m.check} aria-hidden="true">
                           <Check className="w-3 h-3 stroke-[3]" />
                         </span>
-                        <span>{point}</span>
+                        <span><LandingText>{point}</LandingText></span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 <footer className={m.foot}>
                   <span className={m.footLabel}>
-                    <BadgeCheck className="w-3.5 h-3.5" aria-hidden="true" />
+                    <BadgeCheck className="w-3.5 h-3.5" aria-hidden="true" /><LandingText>
                     Guaranteed protocol
-                  </span>
-                  <span className={m.footIndex}>0{idx + 1} / 03</span>
+                  </LandingText></span>
+                  <span className={m.footIndex}>0<LandingText>{idx + 1}</LandingText> / 03</span>
                 </footer>
               </article>
             </li>
           );
         })}
-      </ol>
+      </ol></LandingAttributes>
 
       <div data-reveal-item style={stagger(6)} className={m.ticketWrap}>
         <dl className={m.ticket}>
           {TRUST_STATS.map((st) => (
             <div key={st.label} className={m.cell}>
-              <dt className={m.label}>{st.label}</dt>
-              <dd className={`${m.value} ${st.color}`}>{st.value}</dd>
+              <dt className={m.label}><LandingText>{st.label}</LandingText></dt>
+              <dd className={`${m.value} ${st.color}`}><LandingText>{st.value}</LandingText></dd>
             </div>
           ))}
         </dl>
       </div>
 
-    </section>
+    </section></LandingAttributes>
   );
 }
 
@@ -212,6 +214,7 @@ function TrustSafetyFull({
   const [stat1, setStat1] = useState(0);
   const [stat2, setStat2] = useState(0);
   const [typedZero, setTypedZero] = useState("");
+  const localizedZero = useLandingTranslation("Zero");
 
   useEffect(() => {
     // Check for prefers-reduced-motion
@@ -325,7 +328,7 @@ function TrustSafetyFull({
   }, [variant]);
 
   return (
-    <section
+    <LandingAttributes><section
       ref={sectionRef}
       id="trust"
       aria-label="Trust and Safety"
@@ -346,17 +349,17 @@ function TrustSafetyFull({
             className={tone === "donee"
               ? `${DONEE_PILL_EYEBROW} mb-3 sm:mb-4`
               : "inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] border border-[var(--ck-role-accent,#B5480F)]/20 bg-[var(--ck-role-accent,#B5480F)]/5 mb-3 sm:mb-4"}
-          >
+          ><LandingText>
             TRUST & SAFETY
-          </div>
+          </LandingText></div>
 
           {/* Section Heading */}
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 dark:text-stone-100 tracking-tight"><LandingText>
             Built on trust, for everyone.
-          </h2>
-          <p className="mt-1 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto">
+          </LandingText></h2>
+          <p className="mt-1 text-xs sm:text-sm text-stone-600 dark:text-stone-400 max-w-xl mx-auto"><LandingText>
             Clear verification, complete privacy protection, and transparent community handovers.
-          </p>
+          </LandingText></p>
         </div>
 
         {/* ================= 3 CARDS DEALING GRID ================= */}
@@ -393,7 +396,7 @@ function TrustSafetyFull({
                       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold tracking-wider ${card.accentBg}`}
                     >
                       <IconComponent className="w-3.5 h-3.5" aria-hidden="true" />
-                      {card.roleTitle}
+                      <LandingText>{card.roleTitle}</LandingText>
                     </span>
                     <span
                       className="w-2 h-2 rounded-full"
@@ -402,7 +405,7 @@ function TrustSafetyFull({
                     />
                   </div>
                   <h3 className="text-sm font-semibold text-stone-800 dark:text-stone-200 mb-3">
-                    {card.roleSubtitle}
+                    <LandingText>{card.roleSubtitle}</LandingText>
                   </h3>
 
                   {/* Bullet Points */}
@@ -416,7 +419,7 @@ function TrustSafetyFull({
                         >
                           <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </span>
-                        <span>{point}</span>
+                        <span><LandingText>{point}</LandingText></span>
                       </li>
                     ))}
                   </ul>
@@ -424,8 +427,8 @@ function TrustSafetyFull({
 
                 {/* Card Subtle Bottom Indicator */}
                 <div className="mt-4 pt-3 border-t border-stone-100 dark:border-stone-800/80 flex items-center justify-between text-[11px] font-medium text-stone-600 dark:text-stone-300">
-                  <span>Guaranteed protocol</span>
-                  <span className="font-mono text-[10px] text-stone-600 dark:text-stone-300">0{idx + 1}/03</span>
+                  <span><LandingText>Guaranteed protocol</LandingText></span>
+                  <span className="font-mono text-[10px] text-stone-600 dark:text-stone-300">0<LandingText>{idx + 1}</LandingText>/03</span>
                 </div>
               </div>
             );
@@ -442,33 +445,33 @@ function TrustSafetyFull({
             <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[var(--ck-role-accent,#B5480F)] font-mono tracking-tight">
               {stat1}%
             </div>
-            <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
+            <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5"><LandingText>
               Admin-verified listings
-            </div>
+            </LandingText></div>
           </div>
 
           {/* Stat 2: 10 km */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-l border-stone-200/60 dark:border-stone-800/60">
             <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[var(--ck-role-accent)] font-mono tracking-tight">
-              {stat2} km
-            </div>
-            <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
+              {stat2}<LandingText> km
+            </LandingText></div>
+            <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5"><LandingText>
               Local matching radius
-            </div>
+            </LandingText></div>
           </div>
 
           {/* Stat 3: Zero */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-l border-stone-200/60 dark:border-stone-800/60">
             <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-stone-800 dark:text-stone-100 font-mono tracking-tight min-h-[1.75rem] flex items-center justify-center">
-              {typedZero || "\u00A0"}
+              {(typedZero && localizedZero !== "Zero" ? localizedZero : typedZero) || "\u00A0"}
             </div>
-            <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5">
+            <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5"><LandingText>
               Middlemen or warehouses
-            </div>
+            </LandingText></div>
           </div>
         </div>
 
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }

@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 import Link from "next/link";
 import { motion, type MotionProps } from "framer-motion";
@@ -69,20 +71,20 @@ export function LiveNeedCard({
             } ${visual?.text ?? "text-stone-700"}`}
           >
             <AnimatedCategoryIcon category={need.category} iconClassName="w-3.5 h-3.5" />
-            {need.category}
+            <LandingText>{need.category}</LandingText>
           </span>
 
           {need.isDrive && (
-            <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+            <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300"><LandingText>
               NGO drive
-            </span>
+            </LandingText></span>
           )}
 
           {need.urgent && (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-red-600 dark:text-red-400">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /><LandingText>
               Urgent
-            </span>
+            </LandingText></span>
           )}
         </div>
 
@@ -112,17 +114,17 @@ export function LiveNeedCard({
           </div>
 
           <div className="flex items-center gap-2 shrink-0 font-medium">
-            <span>
-              Qty:{" "}
+            <span><LandingText>
+              Qty:</LandingText>{" "}
               <strong className="text-stone-800 dark:text-stone-200 font-bold">
-                {need.quantity}
+                <LandingText>{need.quantity}</LandingText>
               </strong>
             </span>
             {need.byName && (
               <>
                 <span className="text-stone-300 dark:text-stone-700">·</span>
-                <span className="truncate text-stone-400 dark:text-stone-500 text-3xs">
-                  By {need.byName}
+                <span className="truncate text-stone-400 dark:text-stone-500 text-3xs"><LandingText>
+                  By </LandingText>{need.byName}
                 </span>
               </>
             )}
@@ -135,7 +137,7 @@ export function LiveNeedCard({
           className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
         >
           {locked && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
-          <span>{ctaLabel}</span>
+          <span><LandingText>{ctaLabel}</LandingText></span>
           <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
         </Link>
         )}

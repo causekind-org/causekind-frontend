@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 import { ShieldCheck, Handshake, Camera, MapPin } from "lucide-react";
 
@@ -53,10 +55,10 @@ export function NgoHeroTrustCard() {
                 {/* Text Content */}
                 <div className="min-w-0 flex-1">
                   <p className="text-xs sm:text-[0.82rem] font-bold text-ngo-950 dark:text-stone-100 tracking-tight leading-snug">
-                    {item.title}
+                    <LandingText>{item.title}</LandingText>
                   </p>
                   <p className="text-3xs sm:text-2xs text-stone-500 dark:text-stone-400 mt-0.5 leading-tight">
-                    {item.subtitle}
+                    <LandingText>{item.subtitle}</LandingText>
                   </p>
                 </div>
               </li>

@@ -9,7 +9,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import {
-  cancelOffer, CANCELLATION_REASONS,
+  cancelOffer, cancellationReasonsFor,
   type CancellationOption, type CancellationReason,
 } from "@/lib/api";
 
@@ -23,9 +23,11 @@ import {
  * left waiting.
  */
 export function CancelOfferDialog({
-  offerId, option, open, onOpenChange, onCancelled,
+  offerId, role = "DONOR", option, open, onOpenChange, onCancelled,
 }: {
   offerId: number;
+  /** Whose reasons to offer; the donee gets recipient-side wording. */
+  role?: "DONOR" | "DONEE";
   option: CancellationOption;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,7 +38,8 @@ export function CancelOfferDialog({
   const [busy, setBusy] = useState(false);
   const submittingRef = useRef(false);
 
-  const selected = CANCELLATION_REASONS.find(r => r.value === reason);
+  const reasons = cancellationReasonsFor(role);
+  const selected = reasons.find(r => r.value === reason);
   const needsDetail = selected?.needsDetail ?? false;
   const canSubmit =
     !busy &&
@@ -91,7 +94,7 @@ export function CancelOfferDialog({
               className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
             >
               <option value="">Select a reason…</option>
-              {CANCELLATION_REASONS.map(r => (
+              {reasons.map(r => (
                 <option key={r.value} value={r.value}>{r.label}</option>
               ))}
             </select>

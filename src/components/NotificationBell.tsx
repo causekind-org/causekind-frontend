@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/AppLink";
@@ -55,8 +57,8 @@ function NotifItem({ n }: { n: AppNotification }) {
             </div>
             <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
             {n.link && (
-              <span className="inline-flex items-center gap-1 mt-2 text-2xs font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/50 rounded-full px-2.5 py-1 group-hover:gap-1.5 transition-all">
-                Take action <ArrowRight className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1 mt-2 text-2xs font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-900/50 rounded-full px-2.5 py-1 group-hover:gap-1.5 transition-all"><LandingText>
+                Take action </LandingText><ArrowRight className="w-3 h-3" />
               </span>
             )}
           </div>
@@ -158,7 +160,7 @@ export function NotificationBell() {
   return (
     <div ref={ref} className="relative">
       {/* Bell trigger */}
-      <button
+      <LandingAttributes><button
         onClick={toggle}
         aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ""}`}
         className="glass-pill glass-3d relative flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full text-stone-700 dark:text-stone-300"
@@ -170,7 +172,7 @@ export function NotificationBell() {
             {unread > 9 ? "9+" : unread}
           </span>
         )}
-      </button>
+      </button></LandingAttributes>
 
       {/* Dropdown panel.
           On mobile it is centred on the screen rather than hung off the bell —
@@ -194,7 +196,7 @@ export function NotificationBell() {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3 border-b border-stone-100 dark:border-zinc-800">
-          <p className="text-sm sm:text-sm font-extrabold text-stone-900 dark:text-stone-100">Notifications</p>
+          <p className="text-sm sm:text-sm font-extrabold text-stone-900 dark:text-stone-100"><LandingText>Notifications</LandingText></p>
           <button onClick={() => setOpen(false)} className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors">
             <X className="w-4 h-4" />
           </button>
@@ -207,8 +209,8 @@ export function NotificationBell() {
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center mb-2.5 sm:mb-3">
                 <Bell className="w-5 h-5 text-stone-300 dark:text-zinc-600" />
               </div>
-              <p className="text-sm font-semibold text-stone-500 dark:text-stone-400">No notifications yet</p>
-              <p className="text-xs text-stone-400 dark:text-stone-500 mt-1">We&apos;ll let you know when something happens.</p>
+              <p className="text-sm font-semibold text-stone-500 dark:text-stone-400"><LandingText>No notifications yet</LandingText></p>
+              <p className="text-xs text-stone-400 dark:text-stone-500 mt-1"><LandingText>We&apos;ll let you know when something happens.</LandingText></p>
             </div>
           ) : (
             notifications.map(n => <NotifItem key={n.id} n={n} />)
@@ -218,12 +220,12 @@ export function NotificationBell() {
         {/* Footer */}
         {notifications.length > 0 && (
           <div className="border-t border-stone-100 dark:border-zinc-800 px-3 py-2 sm:px-4 sm:py-2.5 flex items-center justify-between">
-            <Link href="/dashboard" onClick={() => setOpen(false)} className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline dark:text-[var(--ck-role-secondary)]">
+            <Link href="/dashboard" onClick={() => setOpen(false)} className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline dark:text-[var(--ck-role-secondary)]"><LandingText>
               View dashboard
-            </Link>
+            </LandingText></Link>
             <button onClick={markAllRead} className="flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600 transition-colors font-medium">
-              <CheckCheck className="w-3.5 h-3.5" /> Mark read
-            </button>
+              <CheckCheck className="w-3.5 h-3.5" /><LandingText> Mark read
+            </LandingText></button>
           </div>
         )}
       </div>

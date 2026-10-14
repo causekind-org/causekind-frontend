@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 /**
  * Mobile landing primitives (< 768px).
@@ -158,18 +160,18 @@ export function CarouselDots({
 
   if (count < 2) return null;
   return (
-    <div className={`ck-dots ${colorClass} ${className}`} role="group" aria-label={`${label} slides`}>
+    <LandingAttributes><div className={`ck-dots ${colorClass} ${className}`} role="group" aria-label={`${label} slides`}>
       {Array.from({ length: count }, (_, i) => (
-        <button
+        <LandingAttributes key={i}><button
           key={i}
           type="button"
           className="ck-dot"
           aria-label={`Show ${i + 1} of ${count}`}
           aria-current={i === active ? "true" : "false"}
           onClick={() => goTo(i)}
-        />
+        /></LandingAttributes>
       ))}
-    </div>
+    </div></LandingAttributes>
   );
 }
 
@@ -203,7 +205,7 @@ export function SnapCarousel({
 
   return (
     <div className={className}>
-      <div
+      <LandingAttributes><div
         ref={scrollerRef}
         className="ck-snap"
         role="region"
@@ -212,7 +214,7 @@ export function SnapCarousel({
         tabIndex={0}
       >
         {items.map((child, i) => (
-          <div
+          <LandingAttributes key={i}><div
             key={i}
             className="ck-snap-item"
             role="group"
@@ -220,9 +222,9 @@ export function SnapCarousel({
             aria-label={`${i + 1} of ${items.length}`}
           >
             {child}
-          </div>
+          </div></LandingAttributes>
         ))}
-      </div>
+      </div></LandingAttributes>
       <CarouselDots
         scrollerRef={scrollerRef}
         count={items.length}
@@ -267,7 +269,7 @@ export function SegmentedTabs<T extends string>({
   };
 
   return (
-    <div
+    <LandingAttributes><div
       ref={listRef}
       role="tablist"
       aria-label={label}
@@ -292,12 +294,12 @@ export function SegmentedTabs<T extends string>({
               selected ? "text-white" : "text-stone-600 dark:text-stone-400"
             }`}
           >
-            {t.icon}
-            {t.label}
+            <LandingText>{t.icon}</LandingText>
+            <LandingText>{t.label}</LandingText>
           </button>
         );
       })}
-    </div>
+    </div></LandingAttributes>
   );
 }
 
@@ -329,7 +331,7 @@ export function StackedPanels<T extends string>({
             data-active={active ? "true" : "false"}
             aria-hidden={!active}
           >
-            {p.content}
+            <LandingText>{p.content}</LandingText>
           </div>
         );
       })}
@@ -390,7 +392,7 @@ export function FlipCard({
             <path d="M21 12a9 9 0 1 1-2.64-6.36" />
             <path d="M21 3v6h-6" />
           </svg>
-          {flipped ? toFrontLabel : toBackLabel}
+          <LandingText>{flipped ? toFrontLabel : toBackLabel}</LandingText>
         </button>
       </div>
     </div>

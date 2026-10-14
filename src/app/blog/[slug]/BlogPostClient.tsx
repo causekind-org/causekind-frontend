@@ -11,7 +11,7 @@ import DOMPurify from "isomorphic-dompurify";
 import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { fetchBlogTranslation, getBlogTranslation, type BlogTranslation } from "@/data/blogTranslations";
+import { fetchBlogTranslation, getBlogTranslation, preloadBlogTranslations, type BlogTranslation } from "@/data/blogTranslations";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
@@ -134,31 +134,28 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const [fontMode, setFontMode] = useState("font-serif-mode");
   const [copied, setCopied] = useState(false);
 
-  // Statically pre-translated content (see scripts/generate-blog-translations.mjs),
-  // fetched on demand from public/blog-translations/<locale>.json — not a
-  // live per-pageview translation call (no quota risk), and not bundled
-  // into the JS build either (13 locales of full article HTML is too much
-  // to ship to every visitor, or to hand the compiler in one module graph).
-  // Locales without a generated file (or posts not yet covered) fall back
-  // to the original English.
+  // Google-backed translations reuse the server cache. Only this article's
+  // HTML is translated; related-card metadata is warmed separately.
   const locale = useLocale();
   const t = useTranslations("blog_page");
-  const [translation, setTranslation] = useState<BlogTranslation | null>(null);
+  const [translatedArticle, setTranslatedArticle] = useState<{
+    locale: string; slug: string; source: string; value: BlogTranslation | null;
+  } | null>(null);
+  const [, setTranslationsVersion] = useState(0);
+  const translation = translatedArticle && translatedArticle.locale === locale && translatedArticle.slug === slug &&
+    translatedArticle.source === content ? translatedArticle.value : null;
 
   useEffect(() => {
-    setTranslation(null);
     if (!post || locale === "en") return;
     let cancelled = false;
-    // Fetching this post's translation warms the whole locale file in
-    // memory (see loadLocale in blogTranslations/index.ts) — the Read Next
-    // cards and live search results below read from that same cache via
-    // the synchronous getBlogTranslation, so no separate fetch is needed
-    // for them; they just pick up translated data on the next render.
-    fetchBlogTranslation(locale, post.slug).then((t) => {
-      if (!cancelled) setTranslation(t);
+    fetchBlogTranslation(locale, post.slug, content).then((value) => {
+      if (!cancelled) setTranslatedArticle({ locale, slug: post.slug, source: content, value });
+    });
+    preloadBlogTranslations(locale).then(() => {
+      if (!cancelled) setTranslationsVersion((value) => value + 1);
     });
     return () => { cancelled = true; };
-  }, [locale, post]);
+  }, [locale, post, content]);
 
   const translatePost = (p: (typeof blogPosts)[number]) => {
     const tr = getBlogTranslation(locale, p.slug);
@@ -444,7 +441,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
       />
       {/* Main Content Area */}
       <main className="pb-24">
-        <article>
+        <article lang={translation ? `${locale}-x-mtfrom-en` : "en"}>
           {/* Back button */}
           <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 mb-4 md:mb-6">
             <Link

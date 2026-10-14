@@ -24,6 +24,8 @@ vi.mock("@/hooks/useNeedProfileGate", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/hooks/useDynamicTranslation", () => ({
   TranslatedText: ({ text }: { text: string }) => <>{text}</>,
+  useDynamicTranslation: (text: string) => text,
+  useDynamicTranslations: (texts: string[]) => texts,
 }));
 
 const { LiveNeedsSection } = await import("./LiveNeedsSection");

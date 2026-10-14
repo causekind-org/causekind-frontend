@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, useLandingTranslation, splitLandingHeading } from "@/components/LandingTranslation";
+
 
 /**
  * "About CauseKind" — The Living Ecosystem.
@@ -454,7 +456,7 @@ function Ecosystem() {
             ["--enter-delay" as string]: `${label.enterDelay}s`,
           } as React.CSSProperties}
         >
-          {label.text}
+          <LandingText>{label.text}</LandingText>
         </span>
       ))}
 
@@ -468,7 +470,7 @@ function Ecosystem() {
         onMouseLeave={() => setHoveredChar(null)}
         style={{ ["--enter-delay" as string]: "0.3s" } as React.CSSProperties}
       >
-        <div className={styles.characterTooltip}>{charTooltips.donor}</div>
+        <div className={styles.characterTooltip}><LandingText>{charTooltips.donor}</LandingText></div>
         <div
           className={styles.characterBody}
           style={{
@@ -478,9 +480,9 @@ function Ecosystem() {
         >
           <DonorSvg size={52} />
         </div>
-        <span className={styles.characterName} style={{ color: "#B5480F" }}>
+        <span className={styles.characterName} style={{ color: "#B5480F" }}><LandingText>
           Donor
-        </span>
+        </LandingText></span>
       </div>
 
       {/* Donee */}
@@ -491,7 +493,7 @@ function Ecosystem() {
         onMouseLeave={() => setHoveredChar(null)}
         style={{ ["--enter-delay" as string]: "0.45s" } as React.CSSProperties}
       >
-        <div className={styles.characterTooltip}>{charTooltips.donee}</div>
+        <div className={styles.characterTooltip}><LandingText>{charTooltips.donee}</LandingText></div>
         <div
           className={styles.characterBody}
           style={{
@@ -501,9 +503,9 @@ function Ecosystem() {
         >
           <DoneeSvg size={52} />
         </div>
-        <span className={styles.characterName} style={{ color: "#1e3a60" }}>
+        <span className={styles.characterName} style={{ color: "#1e3a60" }}><LandingText>
           Donee
-        </span>
+        </LandingText></span>
       </div>
 
       {/* NGO */}
@@ -514,7 +516,7 @@ function Ecosystem() {
         onMouseLeave={() => setHoveredChar(null)}
         style={{ ["--enter-delay" as string]: "0.55s" } as React.CSSProperties}
       >
-        <div className={styles.characterTooltip}>{charTooltips.ngo}</div>
+        <div className={styles.characterTooltip}><LandingText>{charTooltips.ngo}</LandingText></div>
         <div
           className={styles.characterBody}
           style={{
@@ -567,7 +569,7 @@ export function WhoAreWeSection() {
   const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
   const reduceMotion = useReducedMotion();
 
-  const labelText = "ABOUT CAUSEKIND";
+  const labelText = useLandingTranslation("ABOUT CAUSEKIND");
 
   return (
     <section
@@ -584,7 +586,7 @@ export function WhoAreWeSection() {
           <div className={styles.eyebrow}>
             <span className={styles.eyebrowLine} />
             <p className={styles.eyebrowText} style={{ display: "flex", overflow: "hidden" }}>
-              {labelText.split("").map((char, index) => (
+              {splitLandingHeading(labelText).map((char, index) => (
                 <motion.span
                   key={index}
                   initial={{ opacity: 0, y: 5 }}
@@ -607,8 +609,8 @@ export function WhoAreWeSection() {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: reduceMotion ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className={styles.headlineHighlight}>Things you don&apos;t use.</span>{" "}
-            <span className={styles.doneeHighlight}>Someone else needs.</span>
+            <span className={styles.headlineHighlight}><LandingText>Things you don&apos;t use.</LandingText></span>{" "}
+            <span className={styles.doneeHighlight}><LandingText>Someone else needs.</LandingText></span>
           </motion.h2>
 
           {/* Subhead */}
@@ -617,12 +619,12 @@ export function WhoAreWeSection() {
             initial={{ opacity: 0, y: 15 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.3 }}
-          >
-            CauseKind helps you give useful things to people and NGOs near you who{" "}
-            <span className={styles.doneeHighlight} style={{ fontWeight: 600 }}>
+          ><LandingText>
+            CauseKind helps you give useful things to people and NGOs near you who</LandingText>{" "}
+            <span className={styles.doneeHighlight} style={{ fontWeight: 600 }}><LandingText>
               need them
-            </span>. We check who you&apos;re giving to.
-          </motion.p>
+            </LandingText></span><LandingText>. We check who you&apos;re giving to.
+          </LandingText></motion.p>
 
           {/* Supporting detail */}
           <motion.p
@@ -630,12 +632,12 @@ export function WhoAreWeSection() {
             initial={{ opacity: 0, y: 12 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.5, delay: reduceMotion ? 0 : 0.4 }}
-          >
+          ><LandingText>
             Give books, clothes, furniture, electronics and more. CauseKind is
             free to use. You give items directly to the person or NGO.
-          </motion.p>
-          <Link href="/about" className={styles.aboutLink}>
-            About us <ArrowRight size={16} aria-hidden="true" />
+          </LandingText></motion.p>
+          <Link href="/about" className={styles.aboutLink}><LandingText>
+            About us </LandingText><ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
 

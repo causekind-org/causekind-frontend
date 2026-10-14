@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React, { useState } from "react";
 import { Heart } from "lucide-react";
@@ -86,7 +88,7 @@ export function WhatsAppTellAFriendButton({
         </div>
       )}
 
-      <button
+      <LandingAttributes><button
         type="button"
         onClick={onClick}
         aria-label="Tell a friend on WhatsApp"
@@ -109,8 +111,8 @@ export function WhatsAppTellAFriendButton({
             }`}
           />
         </span>
-        <span>Tell a friend on WhatsApp</span>
-      </button>
+        <span><LandingText>Tell a friend on WhatsApp</LandingText></span>
+      </button></LandingAttributes>
     </div>
   );
 }

@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,19 +38,19 @@ export function NgoVerifiedWelcomeModal() {
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-bold leading-tight">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-ngo-700 dark:text-ngo-300" aria-hidden />
-              <span>You&apos;re verified</span>
+              <span><LandingText>You&apos;re verified</LandingText></span>
             </p>
-            <p className="mt-1 pl-6 text-xs text-stone-600 dark:text-stone-300">You can now start drives.</p>
+            <p className="mt-1 pl-6 text-xs text-stone-600 dark:text-stone-300"><LandingText>You can now start drives.</LandingText></p>
           </div>
 
-          <button
+          <LandingAttributes><button
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Close verified welcome notification"
             className="-mr-1 -mt-0.5 p-1 rounded-lg text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
-          </button>
+          </button></LandingAttributes>
         </div>
       </motion.div>
     </AnimatePresence>

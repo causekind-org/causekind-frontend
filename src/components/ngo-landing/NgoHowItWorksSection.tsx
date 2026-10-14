@@ -1,4 +1,6 @@
 "use client";
+import { LandingText } from "@/components/LandingTranslation";
+
 
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -78,7 +80,7 @@ export function NgoHowItWorksSection() {
           transition={{ duration: 0.55 }}
           className="text-center max-w-3xl mx-auto"
         >
-          <NgoSectionLabel align="center">For NGOs and trusts</NgoSectionLabel>
+          <NgoSectionLabel align="center"><LandingText>For NGOs and trusts</LandingText></NgoSectionLabel>
 
           <div className="mt-1 flex justify-center">
             <TrueFocus
@@ -89,9 +91,9 @@ export function NgoHowItWorksSection() {
               style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
             />
           </div>
-          <p className="text-sm sm:text-base text-stone-600 dark:text-stone-400 mt-2 max-w-xl mx-auto">
+          <p className="text-sm sm:text-base text-stone-600 dark:text-stone-400 mt-2 max-w-xl mx-auto"><LandingText>
             From legal verification to community handovers, here is how CauseKind supports your mission.
-          </p>
+          </LandingText></p>
         </motion.div>
 
         {/* Single-Track NGO Workflow Container */}
@@ -160,36 +162,36 @@ export function NgoHowItWorksSection() {
 
                       {isCompleted && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-4xs font-bold text-emerald-800 dark:text-emerald-300">
-                          <Check className="w-3 h-3" /> Completed
-                        </span>
+                          <Check className="w-3 h-3" /><LandingText> Completed
+                        </LandingText></span>
                       )}
 
                       {isUnderReview && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 px-2.5 py-0.5 text-4xs font-bold text-amber-800 dark:text-amber-300">
-                          <Clock className="w-3 h-3 animate-spin" /> In review…
-                        </span>
+                          <Clock className="w-3 h-3 animate-spin" /><LandingText> In review…
+                        </LandingText></span>
                       )}
 
                       {isStep1IncompleteCurrent && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-ngo-100 dark:bg-ngo-900/60 px-2.5 py-0.5 text-4xs font-bold text-ngo-800 dark:text-ngo-200">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-ngo-100 dark:bg-ngo-900/60 px-2.5 py-0.5 text-4xs font-bold text-ngo-800 dark:text-ngo-200"><LandingText>
                           Current Step
-                        </span>
+                        </LandingText></span>
                       )}
 
                       {isVerified && isStep2or3 && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-ngo-100 dark:bg-ngo-900/60 px-2.5 py-0.5 text-4xs font-bold text-ngo-800 dark:text-ngo-200">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-ngo-100 dark:bg-ngo-900/60 px-2.5 py-0.5 text-4xs font-bold text-ngo-800 dark:text-ngo-200"><LandingText>
                           Unlocked ✓
-                        </span>
+                        </LandingText></span>
                       )}
                     </div>
 
                     <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2 mb-2">
-                      <span>{step.title}</span>
+                      <span><LandingText>{step.title}</LandingText></span>
                       <Icon className="w-4 h-4 text-ngo-700 dark:text-ngo-300 shrink-0" />
                     </h3>
 
                     <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-relaxed">
-                      {step.desc}
+                      <LandingText>{step.desc}</LandingText>
                     </p>
                   </div>
                 </div>
@@ -200,26 +202,26 @@ export function NgoHowItWorksSection() {
           {/* Action Footer */}
           <div className="mt-8 pt-6 border-t border-stone-200/80 dark:border-zinc-800 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 text-center sm:text-left">
-              {isVerified
+              <LandingText>{isVerified
                 ? "Your organization is verified. Start a drive to reach donors nearby."
                 : status === "under_review"
                 ? "Your documents are currently being checked by our team."
-                : "Complete your 6-step registration to start receiving in-kind gifts."}
+                : "Complete your 6-step registration to start receiving in-kind gifts."}</LandingText>
             </p>
 
             {isVerified && !canPostRequest ? (
               <div className="flex flex-col items-start gap-1.5">
                 <button type="button" disabled className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-stone-200 text-stone-500 font-bold px-7 py-3 text-xs sm:text-sm cursor-not-allowed">
-                  <span>Start a Drive</span>
+                  <span><LandingText>Start a Drive</LandingText></span>
                 </button>
-                <p className="text-xs text-stone-500 dark:text-stone-400">{lockReason}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400"><LandingText>{lockReason}</LandingText></p>
               </div>
             ) : (
             <Link
               href={ctaHref}
               className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 text-white font-bold px-7 py-3 text-xs sm:text-sm shadow-lg shadow-ngo-700/25 transition-all duration-200"
             >
-              <span>{ctaLabel}</span>
+              <span><LandingText>{ctaLabel}</LandingText></span>
               <ArrowRight className="w-4 h-4" />
             </Link>
             )}

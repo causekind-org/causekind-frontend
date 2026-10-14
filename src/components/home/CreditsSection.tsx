@@ -1,3 +1,5 @@
+
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 import Image from "next/image";
 import { DoneeSectionHeading, DONEE_HEADING_GAP } from "./DoneeSectionHeading";
 
@@ -23,34 +25,34 @@ export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "don
       className="w-full bg-[#F8F6F2] dark:bg-[#0E0C0A] px-5 py-12 sm:py-16 lg:px-[120px]"
     >
       {variant === "donee" ? (
-        <DoneeSectionHeading
+        <LandingAttributes><DoneeSectionHeading
           id="credits-heading"
           eyebrow="Our partners"
           title="The people behind CauseKind."
           lede="CauseKind is made possible by these organisations."
-        />
+        /></LandingAttributes>
       ) : (
         <p
           id="credits-heading"
           className="mb-6 text-center text-xs font-extrabold uppercase tracking-[0.28em] text-[var(--ck-role-accent,#B04A15)] dark:text-[var(--ck-role-accent,#F4A25B)] sm:mb-8"
-        >
+        ><LandingText>
           The people behind CauseKind
-        </p>
+        </LandingText></p>
       )}
 
       <div className={`mx-auto grid max-w-[1040px] grid-cols-1 border-y ${line} md:grid-cols-2${variant === "donee" ? ` ${DONEE_HEADING_GAP}` : ""}`}>
         <div className={`flex items-center gap-5 border-b ${line} py-8 md:border-b-0 md:border-r md:py-10 md:pr-10`}>
-          <Image
+          <LandingAttributes><Image
             src="/images/money-donation/sahas-logo-transparent.png"
             alt="Sahas Charitable Trust logo"
             width={84}
             height={84}
             className="h-16 w-16 shrink-0 object-contain sm:h-[84px] sm:w-[84px]"
-          />
+          /></LandingAttributes>
           <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--ck-role-accent,#B04A15)] dark:text-[var(--ck-role-accent,#F4A25B)]">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--ck-role-accent,#B04A15)] dark:text-[var(--ck-role-accent,#F4A25B)]"><LandingText>
               An initiative by
-            </p>
+            </LandingText></p>
             <p className="text-xl font-extrabold tracking-tight text-[#1C1410] dark:text-stone-100 sm:text-[26px]">
               Sahas Charitable Trust
             </p>
@@ -59,21 +61,21 @@ export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "don
 
         <div className="flex items-center gap-5 py-8 md:py-10 md:pl-12">
           <span className="flex shrink-0 items-center rounded-xl dark:bg-white dark:px-2 dark:py-1">
-            <Image
+            <LandingAttributes><Image
               src="/images/partners/rmh-advisors-logo.png"
               alt="RMH Advisors logo"
               width={150}
               height={70}
               className="h-14 w-auto object-contain sm:h-[70px]"
-            />
+            /></LandingAttributes>
           </span>
           <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--ck-role-accent,#B04A15)] dark:text-[var(--ck-role-accent,#F4A25B)]">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-[var(--ck-role-accent,#B04A15)] dark:text-[var(--ck-role-accent,#F4A25B)]"><LandingText>
               Funded by
-            </p>
-            <p className="text-xl font-extrabold tracking-tight text-[#1C1410] dark:text-stone-100 sm:text-[26px]">
+            </LandingText></p>
+            <p className="text-xl font-extrabold tracking-tight text-[#1C1410] dark:text-stone-100 sm:text-[26px]"><LandingText>
               RMH Advisors Pvt Ltd.
-            </p>
+            </LandingText></p>
           </div>
         </div>
       </div>

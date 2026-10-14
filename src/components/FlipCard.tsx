@@ -1,3 +1,5 @@
+
+import { LandingAttributes } from "@/components/LandingTranslation";
 import React, {
   useEffect,
   useRef,
@@ -258,7 +260,7 @@ const FlipCard: React.FC<FlipCardProps> = ({
   } as MotionStyle;
 
   return (
-    <div
+    <LandingAttributes><div
       ref={rootRef}
       role="button"
       tabIndex={disabled ? -1 : 0}
@@ -333,7 +335,7 @@ const FlipCard: React.FC<FlipCardProps> = ({
           ) : null}
         </div>
       </motion.div>
-    </div>
+    </div></LandingAttributes>
   );
 };
 

@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useEffect, useRef } from "react";
 import Image, { getImageProps } from "next/image";
@@ -82,7 +84,7 @@ function NavratriMobilePhoto() {
         <picture>
           <source media="(min-width: 1024px)" srcSet={BLANK_PIXEL} />
           {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in props */}
-          <img {...props} className="ck-hero-photo-image ck-navratri-mobile-photo object-cover" />
+          <LandingAttributes><img {...props} className="ck-hero-photo-image ck-navratri-mobile-photo object-cover" /></LandingAttributes>
         </picture>
       </div>
     </div>
@@ -131,7 +133,7 @@ function NavratriArt() {
               fetching the desktop cut-out at all. */}
           <source media="(max-width: 1023px)" srcSet={BLANK_PIXEL} />
           {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in desktopProps */}
-          <img {...desktopProps} className="ck-navratri-dancers" />
+          <LandingAttributes><img {...desktopProps} className="ck-navratri-dancers" /></LandingAttributes>
         </picture>
         <span className="ck-navratri-accents" aria-hidden>
           {NAVRATRI_ACCENTS.map((a, i) => (
@@ -230,7 +232,7 @@ function ConnectionPins() {
   ];
 
   return (
-    <div
+    <LandingAttributes><div
       className="pointer-events-none absolute inset-0 z-20"
       aria-label={t("connectionLabel")}
       role="group"
@@ -275,10 +277,10 @@ function ConnectionPins() {
           </span>
           <div className="relative rounded-[0.9rem] bg-[#fffdf9]/96 px-2.5 py-3 shadow-[0_10px_26px_rgba(var(--ck-home-shadow-rgb,75,42,19),0.18),0_0_0_1px_rgba(var(--ck-home-shadow-rgb,103,58,27),0.05)] backdrop-blur-[2px] dark:bg-stone-900/96">
             <p className="text-[clamp(0.64rem,0.8vw,0.82rem)] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]">
-              {lead}
+              <LandingText>{lead}</LandingText>
             </p>
             <p className="mt-0.5 text-[clamp(0.61rem,0.76vw,0.78rem)] font-bold leading-[1.28] text-[#231d18] dark:text-stone-100">
-              {rest}
+              <LandingText>{rest}</LandingText>
             </p>
             <span className="absolute -bottom-1.5 left-1/2 size-3 -translate-x-1/2 rotate-45 bg-[#fffdf9] dark:bg-stone-900" aria-hidden />
           </div>
@@ -296,12 +298,12 @@ function ConnectionPins() {
             className="relative w-[8.2rem] rounded-xl bg-[#fffdf9]/94 px-3 py-2.5 text-center shadow-[0_8px_22px_rgba(var(--ck-home-shadow-rgb,75,42,19),0.18)] backdrop-blur-[2px] dark:bg-stone-900/94"
           >
             <MapPin className="absolute -top-3 left-1/2 size-5 -translate-x-1/2 fill-[var(--ck-home-accent,#c54805)] text-white" aria-hidden />
-            <p className="text-[0.65rem] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]">{lead}</p>
-            <p className="mt-0.5 text-[0.62rem] font-bold leading-tight text-stone-800 dark:text-stone-100">{rest}</p>
+            <p className="text-[0.65rem] font-extrabold leading-tight text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#f29a65)]"><LandingText>{lead}</LandingText></p>
+            <p className="mt-0.5 text-[0.62rem] font-bold leading-tight text-stone-800 dark:text-stone-100"><LandingText>{rest}</LandingText></p>
           </div>
         ))}
       </div>
-    </div>
+    </div></LandingAttributes>
   );
 }
 
@@ -376,14 +378,14 @@ export function HeroSection() {
               >
                 {/* Mobile copy wraps naturally with the bundled condensed font;
                     desktop retains the existing two-line composition. */}
-                <span className="block lg:whitespace-nowrap">{headlineTop}</span>
+                <span className="block lg:whitespace-nowrap"><LandingText>{headlineTop}</LandingText></span>
                 <span className="ck-hero-headline-accent block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
-                  {headlineAccent}
+                  <LandingText>{headlineAccent}</LandingText>
                 </span>
               </h1>
 
               <p className="ck-hero-subtext mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
-                {subtext}
+                <LandingText>{subtext}</LandingText>
               </p>
 
               <div data-guest={!user && !isRestoring ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
@@ -393,8 +395,8 @@ export function HeroSection() {
                     className="ck-hero-primary-cta ck-cta-live group relative isolate order-2 inline-flex min-h-11 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-transparent px-2 text-[0.84rem] font-semibold leading-tight text-[#fdf5ed]/70 shadow-none lg:order-1 lg:min-h-12 lg:bg-[var(--ck-home-accent,#b04a15)] lg:text-[0.58rem] lg:font-extrabold lg:uppercase lg:tracking-[0.035em] lg:text-white lg:shadow-[0_11px_25px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.27)] transition-[transform,background-color,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:bg-[var(--ck-home-hover,#c45520)] hover:shadow-[0_15px_30px_rgba(var(--ck-home-shadow-rgb,176,74,21),0.33)] active:translate-y-0 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#fdf5ed] dark:focus-visible:ring-[var(--ck-home-highlight,#f29a65)] dark:focus-visible:ring-offset-[#1a1512] lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="ck-hero-cta-icon relative z-[1] hidden size-4 shrink-0 lg:block" strokeWidth={2} aria-hidden />
-                    {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden">{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</span>}
-                    <span className="relative z-[1] min-w-0 text-center">{primaryAction.label}</span>
+                    {!user && !isRestoring && <span aria-hidden="true" className="ck-hero-signup-prompt lg:hidden"><LandingText>{t.has("givingPrompt") ? t("givingPrompt") : "Have something to give?"}</LandingText></span>}
+                    <span className="relative z-[1] min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>
                     <ArrowRight className="ck-hero-action-arrow relative z-[1] size-4 shrink-0 transition-transform duration-200 ease-out group-hover:translate-x-1 sm:size-5" aria-hidden />
                   </NewRequestLink>
                 ) : (
@@ -403,7 +405,7 @@ export function HeroSection() {
                     className="ck-hero-auth-placeholder inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="size-4 shrink-0 sm:size-5" />
-                    <span className="min-w-0 text-center">{primaryAction.label}</span>
+                    <span className="min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>
                     <ArrowRight className="ck-hero-action-arrow size-4 shrink-0 sm:size-5" />
                   </span>
                 )}
@@ -435,14 +437,14 @@ export function HeroSection() {
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
                 <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
-                <Image
+                <LandingAttributes><Image
                   src={HERO_IMAGE}
                   alt={t("photoAlt")}
                   fill
                   priority
                   sizes="(max-width: 1023px) 100vw, (max-width: 1919px) 62vw, 1180px"
                   className="ck-hero-photo-image object-cover object-center"
-                />
+                /></LandingAttributes>
                 </picture>
                 <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[17%] bg-gradient-to-t from-[var(--ck-home-deep,#5d2608)]/18 to-transparent" aria-hidden />
@@ -451,13 +453,13 @@ export function HeroSection() {
                 className="ck-hero-photo-breakout pointer-events-none absolute inset-0 z-[5] hidden lg:block"
                 aria-hidden
               >
-                <Image
+                <LandingAttributes><Image
                   src={HERO_FOREGROUND}
                   alt=""
                   fill
                   sizes="(min-width: 1920px) 1180px, 62vw"
                   className="ck-hero-photo-image object-cover object-center"
-                />
+                /></LandingAttributes>
               </div>
               <ConnectionPins />
             </div>}
