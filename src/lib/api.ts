@@ -5038,26 +5038,48 @@ export async function uploadNgoHandoverProof(kind: NgoHandover["kind"], id: numb
 
 // ── NGO Drives ──────────────────────────────────────────────────────────────
 
+export type DrivePhotoItem = {
+  url: string;
+  storageKey?: string;
+};
+
 export type CreateNgoDrivePayload = {
   driveType: "ITEMS";
   title: string;
+  tagline?: string;
   category: string;
   itemName: string;
   quantity: number;
   unit: "PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS";
   condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED" | "SEALED_ONLY" | "USED_WORKING" | "ANY_USABLE";
+  mustBeWorking?: boolean;
   details: string;
+  photos?: DrivePhotoItem[];
   referencePhotoUrl?: string;
-  description: string;
+  whoFor?: string;
+  whyNow?: string;
+  whatChanges?: string;
+  description?: string;
+  locationArea: string;
+  locationCity: string;
   urgency: "NORMAL" | "HIGH" | "CRITICAL";
   beneficiaryGroup: string;
   beneficiaryCount: number;
+  beneficiaryDescription: string;
   neededBy: string;          // ISO date YYYY-MM-DD
   availableDays: ("MON"|"TUE"|"WED"|"THU"|"FRI"|"SAT"|"SUN")[];
   availableFrom: string;     // "HH:mm"
   availableTo: string;       // "HH:mm"
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH";
+  changemakerName: string;
+  changemakerRole: string;
+  changemakerPhotoUrl?: string;
+  changemakerPhotoKey?: string;
+  changemakerWhy: string;
   contactName: string;
   contactPhone: string;
+  altContact?: string;
+  pastWorkUrl?: string;
   declarations: {
     accurate: boolean;
     usedOnlyForBeneficiaries: boolean;
@@ -5076,10 +5098,18 @@ export async function createNgoDrive(payload: CreateNgoDrivePayload): Promise<{ 
   });
 }
 
+export type NgoDrivePhotoItem = {
+  id?: number;
+  url: string;
+  storageKey?: string;
+  sortOrder?: number;
+};
+
 export type NgoDrive = {
   id: number;
   ngoUser: { id: number; fullName: string };
   title: string;
+  tagline?: string | null;
   category: string;
   itemName: string;
   quantityNeeded: number;
@@ -5087,20 +5117,37 @@ export type NgoDrive = {
   quantityReceived: number;
   unit: string;
   itemCondition: string;
+  mustBeWorking?: boolean;
   description: string;
+  whoFor?: string | null;
+  whyNow?: string | null;
+  whatChanges?: string | null;
+  locationArea?: string | null;
+  locationCity?: string | null;
   urgency: string;
   beneficiaryGroup: string;
   beneficiaryCount: number;
+  beneficiaryDescription?: string | null;
   neededBy: string; // ISO Date
   availableDays: string;
   availableFrom: string; // "HH:mm"
   availableTo: string;   // "HH:mm"
+  handoverMode?: string;
+  changemakerName?: string | null;
+  changemakerRole?: string | null;
+  changemakerPhotoUrl?: string | null;
+  changemakerPhotoKey?: string | null;
+  changemakerWhy?: string | null;
   contactName: string;
   contactPhone: string;
+  altContact?: string | null;
+  pastWorkUrl?: string | null;
   status: string;
   adminReason?: string;
   details?: string | null;
   referencePhotoUrl?: string | null;
+  referencePhotoKey?: string | null;
+  photos?: NgoDrivePhotoItem[];
   createdAt: string;
   submittedAt?: string;
   reviewedAt?: string;
@@ -5109,12 +5156,34 @@ export type NgoDrive = {
   proofDueAt?: string | null;
   distributionProofSubmittedAt?: string | null;
   beneficiariesReached?: number | null;
+  donorCount?: number;
+  driveType?: string;
+  taxBenefit?: boolean;
+};
+
+export type PublicNgoTrackRecord = {
+  completedDrives: number;
+  itemsReceived: number;
+  drivesWithApprovedProof: number;
+};
+
+export type PublicNgoInfo = {
+  organizationName: string;
+  city?: string | null;
+  legalStructure?: string | null;
+  registrationNumber?: string | null;
+  yearOfEstablishment?: string | null;
+  registeredOfficeAddress?: string | null;
+  verifiedAt?: string | null;
+  website?: string | null;
+  trackRecord?: PublicNgoTrackRecord | null;
 };
 
 /** A LIVE drive as the public sees it (GET /api/v1/drives). */
 export type PublicNgoDrive = {
   id: number;
   title: string;
+  tagline?: string | null;
   category: string;
   itemName: string;
   quantityNeeded: number;
@@ -5126,21 +5195,39 @@ export type PublicNgoDrive = {
   conditionRule?: string | null;
   details?: string;
   referencePhotoUrl?: string | null;
+  photoUrls?: string[] | null;
   description?: string;
-  urgency: string;
+  whoFor?: string | null;
+  whyNow?: string | null;
+  whatChanges?: string | null;
+  mustBeWorking?: boolean | null;
+  locationArea?: string | null;
+  locationCity?: string | null;
+  urgency?: string | null;
   beneficiaryGroup?: string;
   beneficiaryCount?: number;
-  neededBy: string;
+  beneficiaryDescription?: string | null;
+  neededBy?: string | null;
   availableDays?: string[];
   availableFrom?: string;
   availableTo?: string;
+  handoverMode?: string | null;
+  changemakerName?: string | null;
+  changemakerRole?: string | null;
+  changemakerPhotoUrl?: string | null;
+  changemakerWhy?: string | null;
+  pastWorkUrl?: string | null;
   quantityPledged: number;
   quantityReceived: number;
-  stillNeeded: number;
+  stillNeeded?: number;
   status: string;
   ngoOrganizationName?: string | null;
   ngoCity?: string | null;
-  verified: boolean;
+  verified?: boolean;
+  ngo?: PublicNgoInfo | null;
+  donorCount?: number;
+  driveType?: string;
+  taxBenefit?: boolean;
 };
 
 // ── Admin: NGO drives, drive offers, distribution proofs ────────────────────

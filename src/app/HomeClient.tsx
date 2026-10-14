@@ -79,6 +79,7 @@ import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
+import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -310,8 +311,9 @@ export default function HomeClient({
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       {showLiveNeeds && (
-        <div className="ck-home-paper hidden lg:block relative z-10">
+        <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
           <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+          <NgoDrivesSection />
         </div>
       )}
 
@@ -521,7 +523,12 @@ export default function HomeClient({
         )}
 
         {/* SECTION 6 — LIVE NEEDS */}
-        {showLiveNeeds && <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />}
+        {showLiveNeeds && (
+          <div className="space-y-8">
+            <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+            <NgoDrivesSection />
+          </div>
+        )}
 
         {/* SECTION 5 — CAN I TRUST YOU */}
         <div className="-mx-5">

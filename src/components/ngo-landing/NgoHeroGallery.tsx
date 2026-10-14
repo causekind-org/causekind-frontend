@@ -5,22 +5,24 @@ import { ContainerScroll, ContainerSticky, GalleryCol, GalleryContainer } from "
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
 /** Free-licence photos from Pexels, stored as WebP in public/images/ngo-hero. */
+// Order: columns take 4 each (desktop) or 6 each (phones); similar photos (the two
+// donation boxes, the two clothes boxes) sit far apart. pos = focal point so faces stay in frame.
 const PHOTOS = [
-  { src: "temple-donation-box.webp", alt: "Red donation box outside a temple entrance in India" },
-  { src: "volunteers-sorting-aid.webp", alt: "Volunteers sorting food and aid boxes for a donation drive" },
-  { src: "woman-clothes-donation.webp", alt: "Smiling volunteer holding a box of donated clothes" },
-  { src: "volunteer-carrying-box.webp", alt: "Volunteer carrying a box of donated items" },
-  { src: "rural-aid-package.webp", alt: "Elderly women and a child receiving an aid package in a village" },
-  { src: "volunteers-collecting-clothes.webp", alt: "Two young volunteers collecting clothes for donation" },
-  { src: "clothes-donation-box.webp", alt: "Donation box filled with colourful clothes" },
-  { src: "volunteers-handing-box.webp", alt: "Volunteers handing over a box of clothes and toys" },
-  { src: "temple-donation-box-ground.webp", alt: "Donation box on the ground outside a temple in India" },
-  { src: "volunteers-outdoor-boxes.webp", alt: "Volunteers organising donation boxes outdoors" },
-  { src: "volunteers-checking-goods.webp", alt: "Volunteers checking donated goods in a box" },
-  { src: "volunteers-sorting-donations.webp", alt: "Group of volunteers sorting donations indoors" },
+  { src: "temple-donation-box.webp", alt: "Red donation box outside a temple entrance in India", pos: "50% 60%" },
+  { src: "volunteers-sorting-aid.webp", alt: "Volunteers sorting food and aid boxes for a donation drive", pos: "center top" },
+  { src: "woman-clothes-donation.webp", alt: "Smiling volunteer holding a box of donated clothes", pos: "50% 20%" },
+  { src: "volunteer-carrying-box.webp", alt: "Volunteer carrying a box of donated items", pos: "50% 20%" },
+  { src: "rural-aid-package.webp", alt: "Elderly women and a child receiving an aid package in a village", pos: "50% 25%" },
+  { src: "volunteers-collecting-clothes.webp", alt: "Two young volunteers collecting clothes for donation", pos: "50% 15%" },
+  { src: "volunteers-outdoor-boxes.webp", alt: "Volunteers organising donation boxes outdoors", pos: "center top" },
+  { src: "volunteers-handing-box.webp", alt: "Volunteers handing over a box of clothes and toys", pos: "50% 20%" },
+  { src: "volunteers-checking-goods.webp", alt: "Volunteers checking donated goods in a box", pos: "50% 20%" },
+  { src: "clothes-donation-box.webp", alt: "Donation box filled with colourful clothes", pos: "center" },
+  { src: "volunteers-sorting-donations.webp", alt: "Group of volunteers sorting donations indoors", pos: "center top" },
+  { src: "temple-donation-box-ground.webp", alt: "Donation box on the ground outside a temple in India", pos: "50% 60%" },
 ];
 
-function Photo({ src, alt }: { src: string; alt: string }) {
+function Photo({ src, alt, pos }: { src: string; alt: string; pos: string }) {
   return (
     // eslint-disable-next-line @next/next/no-img-element -- static local WebP, lazy-loaded
     <img
@@ -28,7 +30,8 @@ function Photo({ src, alt }: { src: string; alt: string }) {
       alt={alt}
       loading="lazy"
       decoding="async"
-      className="aspect-video block h-auto max-h-full w-full rounded-md object-cover shadow ring-1 ring-black/5 dark:ring-white/10 dark:brightness-90"
+      style={{ objectPosition: pos }}
+      className="aspect-[4/3] block h-auto max-h-full w-full rounded-md object-cover shadow ring-1 ring-black/5 dark:ring-white/10 dark:brightness-90"
     />
   );
 }

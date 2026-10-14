@@ -18,7 +18,7 @@ const serif = Fraunces({
 
 const hand = Caveat({
   subsets: ["latin"],
-  weight: ["500", "600"],
+  weight: "variable",
   display: "swap",
   variable: "--font-sg-hand",
 });

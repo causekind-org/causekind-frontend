@@ -43,6 +43,8 @@ export type GiveState =
   | { kind: "wrong-role"; reason: string }
   | { kind: "closed"; reason: string };
 
+export type GiveStateResult = GiveState;
+
 /** What the Give button does for this viewer. Only donor accounts give to drives. */
 export function giveState(
   drive: PublicNgoDrive,

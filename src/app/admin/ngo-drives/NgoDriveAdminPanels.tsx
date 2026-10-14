@@ -139,6 +139,7 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
         <section aria-label="Drive details" className={card}>
           {!d ? <p className="text-sm text-stone-500">Select a drive to review it.</p> : <>
             <h2 className="text-2xl font-bold">{d.title}</h2>
+            {d.tagline && <p className="mt-1 text-sm italic text-stone-500">{d.tagline}</p>}
             <p className="mt-1 text-sm capitalize">{label(d.status)}</p>
             {ngo && (
               <p className="mt-2 text-sm">
@@ -149,18 +150,62 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
             )}
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               {Object.entries({
+                Location: [d.locationArea, d.locationCity].filter(Boolean).join(", "),
                 Category: d.category, Item: d.itemName, Quantity: `${d.quantityNeeded} ${label(d.unit)}`,
-                "Condition accepted": [driveConditionLabel(d.itemCondition), driveConditionRule(d.itemCondition)].filter(Boolean).join(" · "),
+                "Condition accepted": [
+                  driveConditionLabel(d.itemCondition),
+                  driveConditionRule(d.itemCondition),
+                  d.mustBeWorking ? "(Must be in working order)" : null,
+                ].filter(Boolean).join(" · "),
                 Urgency: label(d.urgency),
-                "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}`,
-                "Needed by": d.neededBy, "Available days": (d.availableDays || "").split(",").join(", "),
+                "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}${d.beneficiaryDescription ? ` (${d.beneficiaryDescription})` : ""}`,
+                "Needed by": d.neededBy,
+                "Handover mode": label(d.handoverMode || "BOTH"),
+                "Available days": (d.availableDays || "").split(",").join(", "),
                 Hours: `${(d.availableFrom || "").slice(0, 5)} – ${(d.availableTo || "").slice(0, 5)}`,
                 Contact: `${d.contactName} · ${d.contactPhone}`,
-              }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
+                "Alt contact": d.altContact,
+                "Past work": d.pastWorkUrl,
+              }).filter(([, v]) => v).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
             </dl>
-            <div className="mt-5 text-sm"><p className="text-stone-500">Why it&apos;s needed</p><p className="mt-1 whitespace-pre-wrap">{d.description}</p></div>
+            {d.whoFor || d.whyNow || d.whatChanges ? (
+              <div className="mt-5 space-y-2 text-sm border-t border-stone-100 pt-4 dark:border-zinc-800">
+                <p className="text-stone-500 font-semibold">Drive Story</p>
+                {d.whoFor && <div><span className="text-xs text-stone-500 font-medium">Who is this for:</span><p className="whitespace-pre-wrap">{d.whoFor}</p></div>}
+                {d.whyNow && <div><span className="text-xs text-stone-500 font-medium">Why now:</span><p className="whitespace-pre-wrap">{d.whyNow}</p></div>}
+                {d.whatChanges && <div><span className="text-xs text-stone-500 font-medium">What will change:</span><p className="whitespace-pre-wrap">{d.whatChanges}</p></div>}
+              </div>
+            ) : (
+              <div className="mt-5 text-sm"><p className="text-stone-500">Why it&apos;s needed</p><p className="mt-1 whitespace-pre-wrap">{d.description}</p></div>
+            )}
             {d.details && <div className="mt-4 text-sm"><p className="text-stone-500">Details</p><p className="mt-1 whitespace-pre-wrap">{d.details}</p></div>}
-            {d.referencePhotoUrl && <div className="mt-4 text-sm"><p className="mb-1 text-stone-500">Reference photo</p><Photo src={d.referencePhotoUrl} alt="Reference" /></div>}
+            {(d.changemakerName || d.changemakerWhy) && (
+              <div className="mt-4 text-sm space-y-2 border-t border-stone-100 pt-3 dark:border-zinc-800">
+                <p className="text-stone-500 font-semibold">Who is behind the drive</p>
+                <div className="flex items-start gap-3">
+                  {d.changemakerPhotoUrl && <Photo src={d.changemakerPhotoUrl} alt={d.changemakerName || "Changemaker"} />}
+                  <div>
+                    <p className="font-medium">{d.changemakerName} {d.changemakerRole ? `(${d.changemakerRole})` : ""}</p>
+                    {d.changemakerWhy && <p className="mt-1 text-xs text-stone-600 dark:text-stone-400 italic whitespace-pre-wrap">{d.changemakerWhy}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+            {Array.isArray(d.photos) && d.photos.length > 0 ? (
+              <div className="mt-4 text-sm">
+                <p className="mb-2 text-stone-500 font-semibold">Photos ({d.photos.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {d.photos.map((p, idx) => (
+                    <div key={p.url || idx} className="relative">
+                      <Photo src={p.url} alt={`Photo ${idx + 1}`} />
+                      {idx === 0 && <span className="absolute bottom-1 left-1 bg-ngo-700 text-white text-[9px] px-1 py-0.5 rounded font-bold uppercase">Cover</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : d.referencePhotoUrl ? (
+              <div className="mt-4 text-sm"><p className="mb-1 text-stone-500">Reference photo</p><Photo src={d.referencePhotoUrl} alt="Reference" /></div>
+            ) : null}
             {d.adminReason && <p className="mt-4 rounded-lg bg-stone-50 p-3 text-sm dark:bg-zinc-800"><strong>Last reason given:</strong> {d.adminReason}</p>}
             {d.status === "PENDING_REVIEW" && (
               <div className="mt-6 space-y-4 border-t border-stone-200 pt-6 dark:border-zinc-700">

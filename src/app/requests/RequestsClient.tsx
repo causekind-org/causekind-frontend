@@ -7,7 +7,7 @@ import { createPortal } from "react-dom";
 import { toast } from "@/lib/toast";
 import { useTranslations } from "next-intl";
 import { useDynamicTranslation, TranslatedText } from "@/hooks/useDynamicTranslation";
-import { getItemRequests, getPublicItemRequests, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicItemRequest, type UserProfile } from "@/lib/api";
+import { getItemRequests, getPublicItemRequests, getNgoDrives, donateToRequest, getMyProfile, updateLocation, analyzeItemImage, type ItemRequest, type PublicItemRequest, type PublicNgoDrive, type UserProfile } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { NgoDrivesRedirect } from "@/components/ngo-landing/NgoDrivesRedirect";
@@ -29,9 +29,17 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 import { ALL_REQUEST_CATEGORIES as ITEM_REQ_CATEGORIES } from "@/lib/categoryVisuals";
-import { audienceFromUrlType, urlTypeFromAudience, type AudienceUrlType } from "@/lib/requestAudience";
+import { audienceFromUrlType, urlTypeFromAudience, type AudienceUrlType, readUrlAudience } from "@/lib/requestAudience";
 import AudienceDialog from "@/components/requests/AudienceDialog";
 import { RequestDirectory, type LocationState } from "./RequestDirectory";
+import {
+  interleaveNeeds,
+  mapNgoCategoryToRequestCategory,
+  sortNgoDrives,
+  type UnifiedNeedItem,
+} from "@/features/ngo-drives/ngoDriveFilters";
+
+export { readUrlAudience };
 
 /*
   Both of these are split out of the guest's download, not just deferred.
@@ -49,13 +57,6 @@ const DoneeRequestsPage = dynamic(
 );
 
 type ReqSortValue = "nearest" | "urgent" | "newest" | "qty";
-
-/** `?type=` on the signed-in directory; anything unknown is Everyone. */
-function readUrlAudience(): AudienceUrlType {
-  if (typeof window === "undefined") return "all";
-  const t = new URLSearchParams(window.location.search).get("type");
-  return t === "people" || t === "ngos" ? t : "all";
-}
 
 /** `?page=` (1-based); anything missing or invalid is page 1. */
 function readUrlPage(): number {
@@ -253,6 +254,8 @@ export default function RequestsClient({
   // only renders after auth restoration, so nothing server-rendered depends
   // on them, and a mount-time sync would trip the page-reset effect below.
   const [audience, setAudienceState] = useState<AudienceUrlType>(() => readUrlAudience());
+  const [ngoDrives, setNgoDrives]    = useState<PublicNgoDrive[]>([]);
+  const [drivesLoading, setDrivesLoading] = useState(true);
   const [page, setPage] = useState(() => readUrlPage());
   const [loadFailed, setLoadFailed] = useState(false);
   const [retryTick, setRetryTick] = useState(0);
@@ -357,6 +360,16 @@ export default function RequestsClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRestoring, user?.id, user?.role, user ? gpsCoords : null, retryTick]);
 
+  // Fetch live NGO drives for everyone and donors
+  useEffect(() => {
+    if (isRestoring || user?.role === "DONEE") return;
+    setDrivesLoading(true);
+    getNgoDrives()
+      .then(list => setNgoDrives(list.filter(d => d.status === "LIVE")))
+      .catch(() => setNgoDrives([]))
+      .finally(() => setDrivesLoading(false));
+  }, [isRestoring, user?.role, retryTick]);
+
   // Audience and page live in the URL (`type`, `page`); follow Back/Forward.
   useEffect(() => {
     const sync = () => {
@@ -372,6 +385,7 @@ export default function RequestsClient({
     if (next.type !== undefined) {
       if (next.type === "all") url.searchParams.delete("type");
       else url.searchParams.set("type", next.type);
+      url.searchParams.delete("source");
     }
     if (next.page !== undefined) {
       if (next.page <= 1) url.searchParams.delete("page");
@@ -389,7 +403,6 @@ export default function RequestsClient({
   // Search and urgency apply first; the audience tabs are counted over that set
   // (before audience and category), and the category rail over that set plus
   // the audience. Every count therefore says what its control would show.
-  const audienceOf = (r: ItemRequest): AudienceUrlType => (r.requesterType === "NGO" ? "ngos" : "people");
   const baseFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return requests.filter(r => {
@@ -404,21 +417,52 @@ export default function RequestsClient({
     });
   }, [requests, search, selectedUrgencies, user]);
 
+  const baseFilteredDrives = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return ngoDrives.filter(d => {
+      const mQ = !q
+        || d.title.toLowerCase().includes(q)
+        || (d.ngoCity ?? "").toLowerCase().includes(q)
+        || (d.ngoOrganizationName ?? "").toLowerCase().includes(q)
+        || (d.category ?? "").toLowerCase().includes(q)
+        || (d.itemName ?? "").toLowerCase().includes(q)
+        || (d.description ?? "").toLowerCase().includes(q);
+      const driveUrgency = (d.urgency ?? "NORMAL").toUpperCase();
+      const mU = selectedUrgencies.length === 0
+        || selectedUrgencies.includes(driveUrgency)
+        || (selectedUrgencies.includes("CRITICAL") && (driveUrgency === "CRITICAL" || driveUrgency === "URGENT"));
+      return mQ && mU;
+    });
+  }, [ngoDrives, search, selectedUrgencies]);
+
   const typeCounts = useMemo(() => {
-    const inCats = baseFiltered.filter(r => selectedCategories.length === 0 || selectedCategories.includes(r.category));
+    const inReqCats = baseFiltered.filter(r => selectedCategories.length === 0 || selectedCategories.includes(r.category));
+    const inDriveCats = baseFilteredDrives.filter(d => {
+      if (selectedCategories.length === 0) return true;
+      const mapped = mapNgoCategoryToRequestCategory(d.category);
+      return mapped !== null && selectedCategories.includes(mapped);
+    });
     return {
-      PERSON: inCats.filter(r => audienceOf(r) === "people").length,
-      NGO: inCats.filter(r => audienceOf(r) === "ngos").length,
+      PERSON: inReqCats.length,
+      NGO: inDriveCats.length,
     };
-  }, [baseFiltered, selectedCategories]);
+  }, [baseFiltered, baseFilteredDrives, selectedCategories]);
 
   const directoryCatCounts = useMemo(() => {
     const c: Record<string, number> = {};
-    baseFiltered
-      .filter(r => audience === "all" || audienceOf(r) === audience)
-      .forEach(r => { c[r.category] = (c[r.category] || 0) + 1; });
+    if (audience === "all" || audience === "people") {
+      baseFiltered.forEach(r => { c[r.category] = (c[r.category] || 0) + 1; });
+    }
+    if (audience === "all" || audience === "ngos") {
+      baseFilteredDrives.forEach(d => {
+        const mapped = mapNgoCategoryToRequestCategory(d.category);
+        if (mapped) {
+          c[mapped] = (c[mapped] || 0) + 1;
+        }
+      });
+    }
     return c;
-  }, [baseFiltered, audience]);
+  }, [baseFiltered, baseFilteredDrives, audience]);
 
   // Nearest needs a real location: the one the visitor just shared, else the
   // one saved on their profile. Without either, the option is not offered.
@@ -427,8 +471,8 @@ export default function RequestsClient({
 
   const filtered = useMemo(() => {
     let out = baseFiltered.filter(r =>
-      (selectedCategories.length === 0 || selectedCategories.includes(r.category))
-      && (audience === "all" || audienceOf(r) === audience));
+      selectedCategories.length === 0 || selectedCategories.includes(r.category)
+    );
     // Every sort ends on id, newest first, so ties have one fixed order and
     // paging over them never repeats or skips a card.
     const tie = (a: ItemRequest, b: ItemRequest) => b.id - a.id;
@@ -453,14 +497,33 @@ export default function RequestsClient({
     }
     return out;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseFiltered, selectedCategories, audience, sort, nearOrigin?.lat, nearOrigin?.lng]);
+  }, [baseFiltered, selectedCategories, sort, nearOrigin?.lat, nearOrigin?.lng]);
+
+  const filteredDrives = useMemo(() => {
+    let out = baseFilteredDrives.filter(d => {
+      if (selectedCategories.length === 0) return true;
+      const mapped = mapNgoCategoryToRequestCategory(d.category);
+      return mapped !== null && selectedCategories.includes(mapped);
+    });
+    return sortNgoDrives(out, sort);
+  }, [baseFilteredDrives, selectedCategories, sort]);
+
+  const unifiedItems = useMemo((): UnifiedNeedItem[] => {
+    if (audience === "ngos") {
+      return filteredDrives.map(d => ({ kind: "drive" as const, data: d }));
+    }
+    if (audience === "people") {
+      return filtered.map(r => ({ kind: "request" as const, data: r }));
+    }
+    return interleaveNeeds(filtered, filteredDrives);
+  }, [audience, filtered, filteredDrives]);
 
   // ── Paging (12 per page over the filtered list; `?page`) ──
   const DIRECTORY_PAGE_SIZE = 12;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / DIRECTORY_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(unifiedItems.length / DIRECTORY_PAGE_SIZE));
   // Clamp rather than store: a shrinking list never leaves an empty page.
   const currentPage = Math.min(page, totalPages);
-  const pageItems = filtered.slice((currentPage - 1) * DIRECTORY_PAGE_SIZE, currentPage * DIRECTORY_PAGE_SIZE);
+  const pageItems = unifiedItems.slice((currentPage - 1) * DIRECTORY_PAGE_SIZE, currentPage * DIRECTORY_PAGE_SIZE);
 
   // Any change to what is listed starts again at page 1 (skipping the first
   // run, so a shared ?page=3 survives arrival).
@@ -486,7 +549,7 @@ export default function RequestsClient({
 
   const setAudience = (next: AudienceUrlType) => {
     setAudienceState(next);
-    writeBrowseUrl({ type: next, page: 1 }, "replace");
+    writeBrowseUrl({ type: next, page: 1 }, "push");
   };
 
   // "Who would you like to help?" — asked once
@@ -520,6 +583,7 @@ export default function RequestsClient({
     }
     setSelectedUrgencies([]);
     setSearch("");
+    setAudience("all");
   };
 
 
@@ -659,8 +723,8 @@ export default function RequestsClient({
       {/* ── Category Directory ── */}
       <div id="request-directory" className="scroll-mt-20">
         <RequestDirectory
-          requests={pageItems}
-          total={filtered.length}
+          items={pageItems}
+          total={unifiedItems.length}
           counts={directoryCatCounts}
           typeCounts={typeCounts}
           categories={selectedCategories}
@@ -682,7 +746,7 @@ export default function RequestsClient({
           location={locationState}
           onUseLocation={requestGps}
           reset={resetFilters}
-          loading={loading}
+          loading={loading || drivesLoading}
           failed={loadFailed}
           onRetry={() => setRetryTick(t => t + 1)}
           page={currentPage}

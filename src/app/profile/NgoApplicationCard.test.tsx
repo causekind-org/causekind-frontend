@@ -96,7 +96,6 @@ describe("/profile NGO application card", { timeout: 20000 }, () => {
     await waitFor(() => expect(screen.queryByText("CK-NGO-2026-TESTAPP")).not.toBeInTheDocument());
   });
 });
-});
 
 describe("applicationSteps", () => {
   it("PENDING_VERIFICATION: step 1 in progress asking to verify the email", () => {

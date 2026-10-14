@@ -14,6 +14,8 @@ import { AUDIENCE_OPTIONS, type AudienceUrlType } from "@/lib/requestAudience";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { LiveNeedCard, LiveNeedCardSkeleton } from "@/components/home/LiveNeedCard";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
+import { NgoDriveCard } from "@/features/ngo-drives/components/NgoDriveCard";
+import type { UnifiedNeedItem } from "@/features/ngo-drives/ngoDriveFilters";
 
 /**
  * The signed-in Category Directory: category rail (desktop) / chip row (phone)
@@ -29,8 +31,10 @@ export type DirectorySort = "nearest" | "urgent" | "newest" | "qty";
 export type LocationState = "off" | "locating" | "on" | "denied";
 
 type Props = {
-  /** The current page of filtered, sorted requests. */
-  requests: ItemRequest[];
+  /** The current page of filtered, sorted items (requests and/or drives). */
+  items?: UnifiedNeedItem[];
+  /** Legacy fallback for any caller */
+  requests?: ItemRequest[];
   /** How many match the current filters across all pages. */
   total: number;
   /** Category counts across the audience/search/urgency-filtered set. */
@@ -71,7 +75,7 @@ type Props = {
 const GUEST_GRID = "grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3";
 
 const URGENCIES = [
-  { value: "CRITICAL", label: "Critical" },
+  { value: "CRITICAL", label: "Urgent" },
   { value: "HIGH", label: "High" },
   { value: "NORMAL", label: "Normal" },
 ];
@@ -79,14 +83,17 @@ const URGENCIES = [
 export function RequestDirectory(props: Props) {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const {
-    requests, total, counts, typeCounts, categories, toggleCategory, clearCategories,
-    audience, setAudience, urgencies, toggleUrgency, search, setSearch, sort, setSort,
-    location, onUseLocation, reset, loading, failed, onRetry, page, totalPages, onPage,
-    canOffer, onOffer, guest = false,
+    items, requests = [], total, counts, typeCounts, categories, toggleCategory, clearCategories,
+    audience, setAudience, urgencies, toggleUrgency,
+    search, setSearch, sort, setSort, location, onUseLocation, reset, loading, failed, onRetry,
+    page, totalPages, onPage, canOffer, onOffer, guest = false,
   } = props;
 
-  const allCount = Object.values(counts).reduce((a, b) => a + b, 0);
-  const narrowing = categories.length > 0 || urgencies.length > 0 || search.trim().length > 0;
+  const renderedItems: UnifiedNeedItem[] =
+    items ?? requests.map(r => ({ kind: "request" as const, data: r }));
+
+  const allCount = categories.length === 0 ? total : Object.values(counts).reduce((a, b) => a + b, 0);
+  const narrowing = categories.length > 0 || urgencies.length > 0 || search.trim().length > 0 || audience !== "all";
   const tabCount: Record<AudienceUrlType, number> = {
     all: typeCounts.PERSON + typeCounts.NGO,
     people: typeCounts.PERSON,
@@ -249,7 +256,17 @@ export function RequestDirectory(props: Props) {
             </h2>
             <div className="flex items-center gap-3">
               <span role="status" className="text-xs text-stone-500 dark:text-stone-400">
-                {loading ? "Loading requests…" : failed ? "" : `${total} ${total === 1 ? "request" : "requests"}`}
+                {loading
+                  ? "Loading needs…"
+                  : failed
+                  ? ""
+                  : `${total} ${
+                      audience === "ngos"
+                        ? total === 1 ? "drive" : "drives"
+                        : audience === "people"
+                        ? total === 1 ? "request" : "requests"
+                        : total === 1 ? "need" : "needs"
+                    }`}
               </span>
               {narrowing && (
                 <button type="button" onClick={reset} className="min-h-11 text-xs font-semibold text-[var(--ck-role-accent)] underline underline-offset-4">
@@ -286,65 +303,61 @@ export function RequestDirectory(props: Props) {
                 <RefreshCw className="size-4" aria-hidden /> Try again
               </button>
             </div>
-          ) : requests.length === 0 ? (
+          ) : renderedItems.length === 0 ? (
             <div className="rounded-xl border border-stone-200 bg-white px-5 py-10 text-center dark:border-zinc-800 dark:bg-zinc-900">
               <SearchX className="mx-auto mb-3 size-7 text-stone-400" aria-hidden />
-              {audience === "ngos" && !narrowing ? (
-                <>
-                  <h3 className="text-sm font-semibold">No open NGO requests right now.</h3>
-                  <button type="button" onClick={() => setAudience("all")} className="mt-3 min-h-11 text-sm font-semibold text-[var(--ck-role-accent)] underline underline-offset-4">See all requests</button>
-                </>
-              ) : guest && (narrowing || audience !== "all") ? (
-                <>
-                  <h3 className="text-sm font-semibold">No needs match these filters</h3>
-                  <p className="mt-1 text-xs text-stone-500">Try another category, urgency or search term.</p>
-                  <button type="button" onClick={() => { reset(); setAudience("all"); }} className="mt-3 min-h-11 text-sm font-semibold text-[var(--ck-role-accent)] underline underline-offset-4">
-                    Clear filters
-                  </button>
-                </>
-              ) : narrowing || audience !== "all" ? (
-                <>
-                  <h3 className="text-sm font-semibold">No matching needs</h3>
-                  <p className="mt-1 text-xs text-stone-500">Try another category, urgency or search term.</p>
-                  <button type="button" onClick={narrowing ? reset : () => setAudience("all")} className="mt-3 min-h-11 text-sm font-semibold text-[var(--ck-role-accent)] underline underline-offset-4">
-                    {narrowing ? "Clear filters" : "See all requests"}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <h3 className="text-sm font-semibold">No needs posted yet</h3>
-                  <p className="mt-1 text-xs text-stone-500">Community requests will appear here when available.</p>
-                </>
-              )}
+              <h3 className="text-sm font-semibold">No needs match your filters</h3>
+              <p className="mt-1 text-xs text-stone-500">Try another category, urgency or search term.</p>
+              <button
+                type="button"
+                onClick={reset}
+                className="mt-3 min-h-11 text-sm font-semibold text-[var(--ck-role-accent)] underline underline-offset-4"
+              >
+                Clear filters
+              </button>
             </div>
           ) : (
             <>
               {guest ? (
                 <ul className={GUEST_GRID}>
-                  {requests.map(r => (
-                    <li key={r.id} className="flex">
-                      <LiveNeedCard
-                        className="w-full"
-                        need={{
-                          category: r.category,
-                          title: r.title,
-                          description: r.description,
-                          city: r.city,
-                          quantity: r.quantity,
-                          urgent: r.urgency === "CRITICAL" || r.isEmergency,
-                          byName: r.requesterType === "NGO" ? r.organizationName : r.doneeName || null,
-                        }}
-                        href={registerUrlPreserving(`/requests/${r.id}/offer`)}
-                        ctaLabel="Log in to offer this item"
-                        locked
-                        onCardClick={() => onOffer(r)}
-                      />
-                    </li>
-                  ))}
+                  {renderedItems.map(item =>
+                    item.kind === "request" ? (
+                      <li key={`req-${item.data.id}`} className="flex">
+                        <LiveNeedCard
+                          className="w-full"
+                          need={{
+                            category: item.data.category,
+                            title: item.data.title,
+                            description: item.data.description,
+                            city: item.data.city,
+                            quantity: item.data.quantity,
+                            urgent: item.data.urgency === "CRITICAL" || item.data.isEmergency,
+                            byName: item.data.requesterType === "NGO" ? item.data.organizationName : item.data.doneeName || null,
+                          }}
+                          href={registerUrlPreserving(`/requests/${item.data.id}/offer`)}
+                          ctaLabel="Log in to offer this item"
+                          locked
+                          onCardClick={() => onOffer(item.data)}
+                        />
+                      </li>
+                    ) : (
+                      <li key={`drive-${item.data.id}`} className="flex">
+                        <NgoDriveCard drive={item.data} className="w-full" />
+                      </li>
+                    )
+                  )}
                 </ul>
               ) : (
                 <ul className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {requests.map(r => <DirectoryCard key={r.id} request={r} canOffer={canOffer} onOffer={onOffer} />)}
+                  {renderedItems.map(item =>
+                    item.kind === "request" ? (
+                      <DirectoryCard key={`req-${item.data.id}`} request={item.data} canOffer={canOffer} onOffer={onOffer} />
+                    ) : (
+                      <li key={`drive-${item.data.id}`} className="flex">
+                        <NgoDriveCard drive={item.data} className="w-full" />
+                      </li>
+                    )
+                  )}
                 </ul>
               )}
 

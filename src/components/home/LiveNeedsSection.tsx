@@ -15,49 +15,13 @@ import {
 } from "lucide-react";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { loginUrlFor } from "@/lib/safeRedirect";
-import { getNgoDrives, type PlatformStats, type PublicItemRequest, type PublicNgoDrive } from "@/lib/api";
+import { type PlatformStats, type PublicItemRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import LetterSwap from "@/components/LetterSwap";
 import { LiveNeedCard } from "@/components/home/LiveNeedCard";
 
-/**
- * How many needs the homepage grid shows before handing off to /requests.
- *
- * The same number at every breakpoint, deliberately. A smaller mobile cap
- * would make any "N more" wording wrong at one width or the other, and the
- * component cannot know the viewport without a media-query hook. Six compact
- * cards make a long mobile section; that is what a feed looks like.
- */
 const NEEDS_SHOWN = 6;
-
-/** A live NGO drive shaped like an item request, so one grid renders both. */
-type NeedCard = PublicItemRequest & { ngoDriveId?: number; ngoName?: string | null };
-
-function driveAsNeed(d: PublicNgoDrive): NeedCard {
-  return {
-    id: d.id,
-    title: d.title,
-    category: d.category,
-    description: d.description ?? "",
-    urgency: d.urgency,
-    emergency: false,
-    city: d.ngoCity ?? "",
-    quantity: d.stillNeeded ?? d.quantityNeeded,
-    ngoDriveId: d.id,
-    ngoName: d.ngoOrganizationName,
-  } as unknown as NeedCard;
-}
-
-/** Requests and drives alternate, so drives are not all pushed to later pages. */
-function interleave(requests: NeedCard[], drives: NeedCard[]): NeedCard[] {
-  const out: NeedCard[] = [];
-  for (let i = 0; i < Math.max(requests.length, drives.length); i++) {
-    if (i < requests.length) out.push(requests[i]);
-    if (i < drives.length) out.push(drives[i]);
-  }
-  return out;
-}
 
 export function LiveNeedsSection({
   initialRequests = [],
@@ -110,18 +74,8 @@ export function LiveNeedsSection({
         ? { href: "/requests/new", label: "Post a need" }
         : null;
 
-  // Purely backend-driven now — whatever the API returns (including an empty
-  // array) is what renders. No local fallback/dummy data masking a real empty state.
-  // LIVE NGO drives (public endpoint, no location filter yet) mixed into the grid.
-  const [drives, setDrives] = useState<NeedCard[]>([]);
-  useEffect(() => {
-    let active = true;
-    getNgoDrives()
-      .then((rows) => { if (active) setDrives((rows ?? []).map(driveAsNeed)); })
-      .catch(() => { /* drives are optional here; requests still render */ });
-    return () => { active = false; };
-  }, []);
-  const allNeeds = useMemo(() => interleave(initialRequests ?? [], drives), [initialRequests, drives]);
+  // Donee requests only on the landing page live needs board.
+  const allNeeds = initialRequests ?? [];
 
   /*
    * The filtered list and the six we show are derived separately, on purpose.
@@ -358,14 +312,11 @@ export function LiveNeedsSection({
               const isUrgent = need.urgency === "CRITICAL" || need.emergency;
               const isDonor = role === "DONOR";
               const isDonee = role === "DONEE";
-              const isDrive = need.ngoDriveId !== undefined;
-              const offerUrl = isDrive
-                ? `/drives/${need.ngoDriveId}`
-                : isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
+              const offerUrl = isDonor ? `/requests/${need.id}/offer` : loginUrlFor(`/requests/${need.id}/offer`);
 
               return (
                 <LiveNeedCard
-                  key={isDrive ? `drive-${need.ngoDriveId}` : `request-${need.id}`}
+                  key={`request-${need.id}`}
                   motionProps={{
                     initial: reduceMotion ? { opacity: 0 } : { opacity: 0, y: 14 },
                     animate: isInView ? { opacity: 1, y: 0 } : undefined,
@@ -378,13 +329,13 @@ export function LiveNeedsSection({
                     city: need.city,
                     quantity: need.quantity,
                     urgent: isUrgent,
-                    isDrive,
-                    byName: isDrive ? need.ngoName : need.doneeFirstName,
+                    isDrive: false,
+                    byName: need.doneeFirstName,
                   }}
                   href={offerUrl}
-                  ctaLabel={isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}
-                  locked={!isDonor && !isDrive}
-                  showCta={isDrive || !isDonee}
+                  ctaLabel={isDonor ? "Offer this item" : "Log in to offer this item"}
+                  locked={!isDonor}
+                  showCta={!isDonee}
                 />
               );
             })}
