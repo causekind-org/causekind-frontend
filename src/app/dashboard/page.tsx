@@ -58,6 +58,8 @@ import { ListingDetailPanel } from "@/components/ListingDetailPanel";
 import MatchChatPopup from "@/components/MatchChatPopup";
 import { OfferJourney, donorJourneyIndex, buildDonorJourney } from "@/components/OfferJourney";
 import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
+import { DoneeOfferCard } from "@/components/donee/DoneeOfferCard";
+import { DonorOfferCard } from "@/components/donor/DonorOfferCard";
 import { findMatchForListing, isCompletedMatch, getListingCompletionDate } from "@/lib/matchedDonations";
 import { formatMatchProximity } from "@/lib/matchDistance";
 import {
@@ -932,6 +934,30 @@ function OfferStageCard({
      meta.action === "certificate" ? `/certificate?offerId=${offer.id}` :
      meta.action === "browse"      ? `/requests` : null);
 
+  // Request offers that are still moving use the redesigned card (owner-approved
+  // canvas "Donor Offer Card", 2026-10-15). Drive offers, finished and rejected
+  // offers keep the layout below, which carries their certificate / next-step blocks.
+  if (offer._type !== "DRIVE_OFFER" && !isTerminal) {
+    return (
+      <DonorOfferCard
+        offer={offer}
+        statusLabel={meta.label}
+        needsYou={OFFER_NEEDS_DONOR.includes(offer.status)}
+        explanation={meta.explanation}
+        actionHref={meta.action === "reconfirm" ? null : actionHref}
+        actionLabel={meta.actionLabel}
+        onReconfirm={() => onReconfirm(offer.id)}
+        noButton={
+          <ReconfirmDeclineButton offerId={offer.id} onCancelled={onCancelled}
+            label={offer.flowType === "WILL_PURCHASE" ? "I can't buy it anymore" : "It's no longer available"}
+            className="min-h-12 w-full rounded-xl border border-[#D9C8BA] bg-white text-[15px] font-bold text-[#1F1A17] transition-colors hover:bg-stone-50 dark:border-zinc-600 dark:bg-transparent dark:text-stone-200 dark:hover:bg-zinc-700" />
+        }
+        exit={<OfferCancelAction offerId={offer.id} onCancelled={onCancelled} />}
+        extra={offer.status === "ISSUE_RAISED" ? <WithdrawReportedIssue offerId={offer.id} onChanged={onCancelled} /> : undefined}
+      />
+    );
+  }
+
   const isCompleted = offer.status === "COMPLETED";
   const cardBorderClass = isCompleted
     ? "border-stone-100 dark:border-zinc-800 bg-white dark:bg-zinc-900"
@@ -1159,7 +1185,9 @@ function DriveOfferCancelAction({ offerId, status, onCancelled }: { offerId: num
 }
 
 /** "Item is no longer available" on a reconfirmation prompt — same dialog, red styling. */
-function ReconfirmDeclineButton({ offerId, onCancelled }: { offerId: number; onCancelled: () => void }) {
+function ReconfirmDeclineButton({ offerId, onCancelled, label, className }: {
+  offerId: number; onCancelled: () => void; label?: string; className?: string;
+}) {
   const [option, setOption] = useState<CancellationOption | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -1177,9 +1205,9 @@ function ReconfirmDeclineButton({ offerId, onCancelled }: { offerId: number; onC
       <button
         type="button"
         onClick={() => setDialogOpen(true)}
-        className="w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 py-2 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+        className={className ?? "w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 py-2 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"}
       >
-        ✕ Item is no longer available
+        {label ?? "✕ Item is no longer available"}
       </button>
       <CancelOfferDialog offerId={offerId} option={option} open={dialogOpen}
         onOpenChange={setDialogOpen} onCancelled={onCancelled} />
@@ -1247,18 +1275,21 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
   const needsAction = active.filter(o => OFFER_NEEDS_DONOR.includes(o.status));
 
   return (
-    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
-      <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
-        <div>
-          <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-            <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation Offers
-          </CardTitle>
-          <p className="text-xs text-stone-400 mt-0.5">Offers you made to fulfil specific requests</p>
+    <Card className="relative bg-white dark:bg-zinc-900 border-[#EADFD6] dark:border-zinc-800 rounded-[20px] shadow-sm overflow-hidden"
+      style={{ fontFamily: "var(--font-nunito), system-ui, sans-serif" }}>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-[#F1E8E0] pb-3 sm:pb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <CardTitle className="text-[18px] sm:text-[20px] font-extrabold">Your donation offers</CardTitle>
+          {needsAction.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF3E0] px-2.5 py-1 text-[13px] font-bold text-[#8A4B00]">
+              <span aria-hidden className="size-[7px] rounded-full bg-amber-600" />
+              {needsAction.length} need{needsAction.length === 1 ? "s" : ""} you
+            </span>
+          )}
         </div>
         {offers.length > 0 && (
-          <Link href="/offers">
-            <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
+          <Link href="/offers" className="inline-flex min-h-11 items-center text-[15px] font-bold text-[var(--ck-role-accent)] hover:underline">
+            View all offers <span aria-hidden className="ms-1">›</span>
           </Link>
         )}
       </CardHeader>
@@ -1283,9 +1314,8 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
         {/* Needs action — shown first and highlighted */}
         {needsAction.length > 0 && (
           <div className="space-y-3">
-            <p className="text-3xs font-black uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
-              <AlertTriangle className="w-3 h-3" /> Action Required
-            </p>
+            {/* Ordered first; the "needs you" count in the header and each card's
+                "Your turn" pill replace the old "Action Required" label. */}
             {needsAction.map(o => (
               <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
             ))}
@@ -2242,15 +2272,23 @@ function DoneeDashboard({
                 {/* Live donation offers are flows in progress too (owner, 2026-10-07). */}
                 {activeOffers.length > 0 && (
                 <div className="mb-4">
-            <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
-              <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
-                <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation Offers Received
-                </CardTitle>
+            <Card className="relative bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+              <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b pb-3 sm:pb-4">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <CardTitle className="text-base sm:text-lg font-extrabold">Donation offers</CardTitle>
+                  {(() => {
+                    const toReview = activeOffers.filter(o => o.status === "PENDING_DONEE_REVIEW").length;
+                    return toReview > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                        <span aria-hidden className="size-1.5 rounded-full bg-amber-500" />
+                        {toReview} need{toReview === 1 ? "s" : ""} your review
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
                 {incomingOffers.length > 0 && (
-                  <Link href="/donee/offers">
-                    <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
+                  <Link href="/donee/offers" className="inline-flex min-h-11 items-center text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
+                    View all offers <span aria-hidden className="ms-1">›</span>
                   </Link>
                 )}
               </CardHeader>
@@ -2337,113 +2375,45 @@ function DoneeDashboard({
                     }
 
                     return (
-                      <div key={offer.id} className="rounded-xl sm:rounded-2xl border border-stone-100 dark:border-zinc-800 p-3 sm:p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className={`inline-flex items-center gap-1.5 rounded-full border border-current/20 px-2.5 py-0.5 text-xs font-semibold ${statusColor}`}>
-                                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                                {statusLabel}
-                              </span>
-                              {offer.compatibilityIndicator && (
-                                <span className="text-xs text-stone-400">
-                                  {offer.compatibilityIndicator === "STRONG_MATCH" ? "Strong match" :
-                                    offer.compatibilityIndicator === "POSSIBLE_MATCH" ? "Possible match" :
-                                      offer.compatibilityIndicator.replace(/_/g, " ").toLowerCase().replace(/^./, c => c.toUpperCase())}
-                                </span>
-                              )}
-                            </div>
-                            <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{offer.requestTitle}</p>
-                            {offer.itemDetails && (
-                              <p className="text-xs text-stone-500 mt-0.5">
-                                <span className="font-semibold text-stone-700 dark:text-stone-300">
-                                  {offer.receivedQuantity != null
-                                    ? `Received ${offer.receivedQuantity} of ${offer.itemDetails.quantity} offered`
-                                    : `Offering ${offer.itemDetails.quantity} of the ${offer.requestQuantity} you asked for`}
-                                </span>
-                                {" · "}{offer.itemDetails.condition ?? "Condition not specified"}
-                                {offer.itemDetails.pickupCity ? ` · ${offer.itemDetails.pickupCity}` : ""}
-                              </p>
-                            )}
-                          </div>
-                          {offer.media?.[0] && (
-                            <div className="relative h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-                              <Image src={offer.media[0].mediaUrl} alt="" fill className="object-cover" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Item details for pending review */}
-                        {isPendingReview && offer.itemDetails && (
-                          <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 text-xs text-stone-600 dark:text-stone-400 space-y-1">
-                            {offer.itemDetails.knownDefects && offer.itemDetails.knownDefects !== "None" && (
-                              <div className="text-orange-600 dark:text-orange-400">Disclosed defects: {offer.itemDetails.knownDefects}</div>
-                            )}
-                            {offer.itemDetails.accessoriesIncluded && <div>Accessories: {offer.itemDetails.accessoriesIncluded}</div>}
-                            {offer.itemDetails.workingStatus && <div>Working status: {offer.itemDetails.workingStatus}</div>}
-                          </div>
-                        )}
-
-                        {/* Same two-level journey the donor card uses, worded for the recipient. */}
-                        {!isWithdrawn && <OfferJourney status={offer.status} role="donee" />}
-
-
-                        {/* Actions */}
-                        {isPendingReview && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleOfferAction(offer.id, "ACCEPT")}
-                              disabled={offerActionLoading === offer.id}
-                              className="flex-1 rounded-xl bg-[var(--ck-role-accent)] py-2 text-xs font-semibold text-white hover:bg-[var(--ck-role-hover)] transition-colors disabled:opacity-50"
-                            >
-                              {offerActionLoading === offer.id ? "..." : "Accept Offer"}
-                            </button>
-                            <button
-                              onClick={() => {
-                                const reason = window.prompt("Reason for declining (optional):");
-                                handleOfferAction(offer.id, "DECLINE", reason ?? undefined);
-                              }}
-                              disabled={offerActionLoading === offer.id}
-                              className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 py-2 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 disabled:opacity-50"
-                            >
-                              Decline
-                            </button>
-                            <Link href={`/donee/offers?offerId=${offer.id}`} className="rounded-xl border border-stone-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800">
-                              Details
-                            </Link>
-                          </div>
-                        )}
-                        {(isApproved || isHandover) && (
-                          <Link href={`/offers/${offer.id}/handover`} className="block w-full rounded-xl bg-blue-600 py-2 text-center text-xs font-semibold text-white hover:bg-blue-700">
-                            Open Handover Hub →
-                          </Link>
-                        )}
-                        <WithdrawFlowButton kind="offer" id={offer.id} role="DONEE" className="w-full" />
-                        {isIssueWindow && (
-                          <div className="space-y-1.5">
-                            <ShortDeliveryNote offer={offer} />
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleConfirmNoIssue(offer.id)}
-                                disabled={offerActionLoading === offer.id}
-                                className="flex-1 rounded-xl bg-green-600 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                              >
-                                {offerActionLoading === offer.id ? "..." : "Everything's fine — Complete"}
-                              </button>
-                              <Link href={`/offers/${offer.id}/issues`} className="flex-1 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 py-2 text-center text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors">
-                                Report a problem
-                              </Link>
-                            </div>
-                            <p className="text-3xs text-stone-400 text-center">Marking complete ends the issue window — you won&apos;t be able to report a problem afterward.</p>
-                          </div>
-                        )}
-                        {isIssueRaised && (
+                      <DoneeOfferCard
+                        key={offer.id}
+                        offer={offer}
+                        statusLabel={statusLabel}
+                        statusClassName={statusColor}
+                        busy={offerActionLoading === offer.id}
+                        onAccept={() => handleOfferAction(offer.id, "ACCEPT")}
+                        onDecline={() => {
+                          const reason = window.prompt("Reason for declining (optional):");
+                          // Cancel on the prompt means "don't decline".
+                          if (reason === null) return;
+                          handleOfferAction(offer.id, "DECLINE", reason || undefined);
+                        }}
+                        actions={
                           <>
-                            <p className="text-center text-xs text-stone-400 dark:text-stone-500">Our team is reviewing your report.</p>
-                            <WithdrawReportedIssue offerId={offer.id} onChanged={onRefresh} />
+                            {isIssueWindow && (
+                              <div className="space-y-2">
+                                <ShortDeliveryNote offer={offer} />
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmNoIssue(offer.id)}
+                                  disabled={offerActionLoading === offer.id}
+                                  className="min-h-12 w-full rounded-xl bg-[var(--ck-role-accent)] text-sm font-extrabold text-white hover:bg-[var(--ck-role-hover)] disabled:opacity-60"
+                                >
+                                  {offerActionLoading === offer.id ? "Saving…" : "Everything's fine — complete"}
+                                </button>
+                                <Link href={`/offers/${offer.id}/issues`} className="flex min-h-11 w-full items-center justify-center rounded-xl border border-amber-300 bg-amber-50 text-sm font-bold text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                                  Report a problem
+                                </Link>
+                                <p className="text-center text-3xs text-stone-500 dark:text-stone-400">Completing ends the issue window — you can&apos;t report a problem afterwards.</p>
+                              </div>
+                            )}
+                            {isIssueRaised && <WithdrawReportedIssue offerId={offer.id} onChanged={onRefresh} />}
+                            {/* Cancelling after accepting. Hidden while the offer awaits
+                                review: Decline above is the one way to say no then. */}
+                            {!isPendingReview && <WithdrawFlowButton kind="offer" id={offer.id} role="DONEE" className="w-full" />}
                           </>
-                        )}
-                      </div>
+                        }
+                      />
                     );
                   })}
 

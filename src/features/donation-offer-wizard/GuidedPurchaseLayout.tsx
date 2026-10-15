@@ -38,7 +38,7 @@ export function GuidedPurchaseLayout({
       <p className="break-words text-base font-semibold text-stone-900 dark:text-stone-100">{title}</p>
       {requestedQuantity != null && <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">Quantity requested: {requestedQuantity}</p>}
       <p className="mt-4 border-t border-stone-200 pt-4 text-sm leading-relaxed text-stone-600 dark:border-zinc-700 dark:text-stone-300">
-        Buy only after the recipient accepts your offer. No payment is taken by CauseKind.
+        Buy only once your offer is accepted and shows Ready to buy. You can hand it over in person or ship it straight to the recipient. CauseKind never takes payment.
       </p>
     </>
   );
@@ -80,7 +80,7 @@ export function GuidedPurchaseLayout({
         <div className="mb-6 max-w-xl">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-[var(--ck-role-accent)]">Give something new</p>
           <h2 className="text-[28px] font-bold leading-tight tracking-tight sm:text-4xl">Turn a need into a delivery.</h2>
-          <p className="mt-3 text-sm leading-relaxed text-stone-600 dark:text-stone-400">Tell the recipient what you plan to buy. We save your progress as you go.</p>
+          <p className="mt-3 text-sm leading-relaxed text-stone-600 dark:text-stone-400">Choose how it will reach them, then tell the recipient what you plan to buy. We save your progress as you go.</p>
         </div>
 
         <details className="mb-5 rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">

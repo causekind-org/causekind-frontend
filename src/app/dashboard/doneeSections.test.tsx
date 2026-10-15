@@ -95,7 +95,7 @@ describe("donee dashboard sections", () => {
     render(<DashboardPage />);
 
     await openTab(/Matches/);
-    expect(screen.getByRole("button", { name: "Accept Offer" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accept offer" })).toBeInTheDocument();
     // Only the open section is on the page.
     expect(screen.queryByText("Every need travels the same road: posted, verified, matched, received.")).toBeNull();
   });
@@ -105,7 +105,7 @@ describe("donee dashboard sections", () => {
 
     await openTab(/Your Requests/);
     expect(screen.getByText("4 / 10")).toBeInTheDocument();
-    expect(screen.queryByText("Donation Offers Received")).toBeNull();
+    expect(screen.queryByText("Donation offers")).toBeNull();
   });
 
   it("switching tabs shows only that section and remembers it in the URL", async () => {

@@ -6,8 +6,8 @@ import { useLocale } from "next-intl";
 import { translateTextStrict } from "@/lib/translation/client";
 
 /**
- * Page-wide fallback translator for hardcoded English that next-intl does not
- * cover. Mounted once in the root layout.
+ * Opt-in fallback translator for static English marked data-auto-translate="true". It does not
+ * send unmarked content such as private messages or account data.
  *
  * Safety rule: it never inserts, removes or wraps DOM nodes (what makes
  * Chrome's built-in translator crash React). It only rewrites the value of
@@ -41,7 +41,10 @@ function shouldTranslate(text: string): boolean {
 }
 
 function isSkipped(element: Element | null): boolean {
-  return !element || Boolean(element.closest(SKIP_SELECTOR));
+  // Only explicitly opted-in static interface copy may leave the page.
+  // Never opt in a container that can render user content or account data.
+  return !element || !element.closest('[data-auto-translate="true"]')
+    || Boolean(element.closest(SKIP_SELECTOR));
 }
 
 type TranslationRecord = { source: string; shown: string };

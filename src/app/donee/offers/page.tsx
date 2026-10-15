@@ -3,6 +3,8 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import Link from "next/link";
+import { purchaseMethodLabel, purchaseTimelineLabel } from "@/features/donation-offer-wizard/offerModel";
 import { motion, useReducedMotion } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getOffersForMyRequests, doneeReviewOffer, type DonationOffer } from "@/lib/api";
@@ -297,10 +299,37 @@ function DoneeOffersView() {
               {/* Flow type */}
               <div className="text-xs text-gray-400">
                 {offer.flowType === "ALREADY_OWN" && "Donor already owns this item"}
-                {offer.flowType === "WILL_PURCHASE" && "Donor plans to purchase this item"}
+                {offer.flowType === "WILL_PURCHASE" && !offer.purchaseCommitment && "Donor plans to purchase this item"}
                 {offer.flowType === "SIMILAR_ITEM" && "Donor has a similar item — see notes"}
                 {offer.itemDetails?.specNotes && <span className="block mt-0.5 text-gray-500">{offer.itemDetails.specNotes}</span>}
               </div>
+
+              {/* Purchase promise — the donee accepts the method and plan, not an item that exists yet */}
+              {offer.flowType === "WILL_PURCHASE" && offer.purchaseCommitment && (
+                <div className="rounded-xl border border-orange-200 bg-orange-50/60 p-3 text-xs text-gray-700 dark:border-orange-900 dark:bg-orange-950/20 dark:text-gray-300">
+                  <p className="mb-1 font-semibold text-gray-900 dark:text-gray-100">
+                    Promise to buy · {purchaseMethodLabel(offer.purchaseCommitment.fulfilmentMethod)}
+                  </p>
+                  <p>The donor hasn&apos;t bought it yet. They buy only after you accept.</p>
+                  <p className="mt-1">
+                    {[offer.purchaseCommitment.proposedBrand, offer.purchaseCommitment.proposedModel].filter(Boolean).join(" ") || "Brand not decided"}
+                    {" · "}{purchaseTimelineLabel(offer.purchaseCommitment.purchaseTimeline)} after you accept
+                  </p>
+                  {offer.purchaseCommitment.fulfilmentMethod === "DIRECT_DELIVERY" && (
+                    <p className="mt-1">If you accept, you&apos;ll be asked to share a delivery address with this donor.</p>
+                  )}
+                  {offer.purchaseCommitment.productUrl && /^https?:\/\//i.test(offer.purchaseCommitment.productUrl) && (
+                    <a href={offer.purchaseCommitment.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="mt-1 inline-block text-[var(--ck-role-accent)] underline">
+                      View product
+                    </a>
+                  )}
+                  {offer.status !== "PENDING_DONEE_REVIEW" && offer.purchaseCommitment.acceptedAt && (
+                    <Link href={`/offers/${offer.id}/purchase`} className="mt-2 flex min-h-11 items-center justify-center rounded-xl bg-[var(--ck-role-accent)] px-3 text-sm font-semibold text-white">
+                      Open purchase
+                    </Link>
+                  )}
+                </div>
+              )}
 
               {/* Actions */}
               {offer.status === "PENDING_DONEE_REVIEW" && (
@@ -328,7 +357,7 @@ function DoneeOffersView() {
               {offer.status === "DONEE_ACCEPTED" && (
                 <p className="text-sm text-green-600">✓ You accepted this offer. Waiting for donor to reconfirm.</p>
               )}
-              {offer.status === "ADMIN_APPROVED" && (
+              {offer.status === "ADMIN_APPROVED" && offer.flowType !== "WILL_PURCHASE" && (
                 <p className="text-sm text-blue-600">✓ Admin approved. Handover scheduling will begin shortly.</p>
               )}
             </div>

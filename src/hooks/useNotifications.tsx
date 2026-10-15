@@ -143,7 +143,9 @@ async function deriveNotifications(rawRole: string): Promise<IncomingNotificatio
       if (o.status === "DONOR_RECONFIRMED") {
         notifs.push({ id: `offer-reconfirmed-${o.id}`, title: "Donor confirmed availability", body: `The donor reconfirmed their item for "${o.requestTitle}" — pending admin approval`, type: "info", link: "/donee/offers", timestamp: ts });
       }
-      if (o.status === "ADMIN_APPROVED") {
+      if (o.status === "ADMIN_APPROVED" && o.flowType === "WILL_PURCHASE") {
+        notifs.push({ id: `offer-admin-approved-${o.id}`, title: "Purchase approved", body: `The donor can now buy the item for "${o.requestTitle}". Check if anything is needed from you.`, type: "approved", link: `/offers/${o.id}/purchase`, timestamp: ts });
+      } else if (o.status === "ADMIN_APPROVED") {
         notifs.push({ id: `offer-admin-approved-${o.id}`, title: "Donation approved!", body: `The donation for "${o.requestTitle}" has been approved. Handover will be scheduled.`, type: "approved", link: `/offers/${o.id}/handover`, timestamp: ts });
       }
       if (o.status === "HANDOVER_IN_PROGRESS") {
@@ -246,7 +248,10 @@ async function deriveNotifications(rawRole: string): Promise<IncomingNotificatio
       if (o.status === "DONEE_ACCEPTED" || o.status === "DONOR_RECONFIRMATION_REQUIRED") {
         notifs.push({ id: `offer-reconfirm-${o.id}`, title: "Recipient accepted your offer!", body: `Please reconfirm your item is available for "${o.requestTitle}"`, type: "match", link: "/offers", timestamp: ts });
       }
-      if (o.status === "ADMIN_APPROVED") {
+      if (o.status === "ADMIN_APPROVED" && o.flowType === "WILL_PURCHASE") {
+        // A purchase offer is bought before any handover, so it lands on the purchase hub.
+        notifs.push({ id: `offer-approved-${o.id}`, title: "Offer approved — open your purchase", body: `See whether you can buy the item for "${o.requestTitle}" now`, type: "approved", link: `/offers/${o.id}/purchase`, timestamp: ts });
+      } else if (o.status === "ADMIN_APPROVED") {
         notifs.push({ id: `offer-approved-${o.id}`, title: "Offer approved! Schedule handover", body: `Your donation for "${o.requestTitle}" was approved — schedule the handover now`, type: "approved", link: `/offers/${o.id}/handover`, timestamp: ts });
       }
       if (o.status === "DONEE_DECLINED") {

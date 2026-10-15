@@ -8,6 +8,7 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { toast } from "@/lib/toast";
 import Link from "@/components/AppLink";
 import { ChevronLeft } from "lucide-react";
+import { purchaseMethodLabel } from "@/features/donation-offer-wizard/offerModel";
 
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
@@ -156,7 +157,11 @@ export default function OffersClient() {
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[offer.status] ?? "bg-gray-100 text-gray-600"}`}>
                       {offer.status.replace(/_/g, " ")}
                     </span>
-                    <span className="text-xs text-gray-400">{offer.flowType?.replace(/_/g, " ")}</span>
+                    <span className="text-xs text-gray-400">
+                      {offer.flowType === "WILL_PURCHASE"
+                        ? `Promise to buy · ${purchaseMethodLabel(offer.purchaseCommitment?.fulfilmentMethod)}`
+                        : offer.flowType?.replace(/_/g, " ")}
+                    </span>
                     {offer.hiddenByDonor && (
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-3xs font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                         Archived
@@ -167,7 +172,7 @@ export default function OffersClient() {
                   <p className="text-xs text-gray-500 mt-0.5">{offer.requestCategory} · {offer.requestCity}</p>
                   {offer.itemDetails && (
                     <p className="text-xs text-gray-400 mt-1">
-                      {offer.itemDetails.quantity}× · {offer.itemDetails.condition ?? "Condition not set"}
+                      {offer.itemDetails.quantity}× · {offer.flowType === "WILL_PURCHASE" ? "New item" : offer.itemDetails.condition ?? "Condition not set"}
                     </p>
                   )}
                   {offer.submittedAt && (
@@ -175,7 +180,16 @@ export default function OffersClient() {
                   )}
                 </div>
                 <div className="flex flex-col gap-2 flex-shrink-0">
-                  {(offer.status === "ADMIN_APPROVED" || offer.status === "HANDOVER_IN_PROGRESS" || offer.status === "HANDOVER_AT_RISK") && (
+                  {/* Purchase offers go through the purchase hub, which links on to the
+                      handover only once the item photo is approved (physical) — and
+                      never for direct delivery. */}
+                  {offer.flowType === "WILL_PURCHASE" && offer.purchaseCommitment?.acceptedAt && offer.status !== "COMPLETED" && (
+                    <Link href={`/offers/${offer.id}/purchase`}
+                      className="rounded-lg bg-[#b04a15] px-3 py-1.5 text-xs font-semibold text-white text-center">
+                      Purchase
+                    </Link>
+                  )}
+                  {offer.flowType !== "WILL_PURCHASE" && (offer.status === "ADMIN_APPROVED" || offer.status === "HANDOVER_IN_PROGRESS" || offer.status === "HANDOVER_AT_RISK") && (
                     <Link href={`/offers/${offer.id}/handover`}
                       className="rounded-lg bg-[#b04a15] px-3 py-1.5 text-xs font-semibold text-white text-center">
                       Handover Hub

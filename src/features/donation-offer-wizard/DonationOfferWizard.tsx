@@ -53,7 +53,7 @@ const STEP_LABELS: Record<OfferStep, string> = {
 const STEP_INTROS: Record<OfferStep, string> = {
   location: "We check that you are close enough to the person who needs this.",
   photos: "A few good photos do most of the work.",
-  purchasePlan: "Tell the recipient what you plan to buy, and how soon.",
+  purchasePlan: "Choose how it reaches the recipient, what you plan to buy, and how soon.",
   details: "What are you giving, and how much of it?",
   condition: "How is it doing, and what should the recipient know?",
   pickup: "Where would this be collected from?",
@@ -85,7 +85,7 @@ const STEP_COUNT_WORD: Record<number, string> = { 3: "Three", 4: "Four", 5: "Fiv
 function evidencedStepIndex(m: OfferModel, steps: readonly OfferStep[]): number {
   const touched: Partial<Record<OfferStep, boolean>> = {
     photos: uploadedOfferPhotos(m.photos).length > 0,
-    purchasePlan: !!m.purchaseTimeline,
+    purchasePlan: !!(m.fulfilmentMethod || m.purchaseTimeline),
     details: !!(m.approximateAge.trim() || m.accessoriesIncluded.trim() || m.specNotes.trim()),
     condition: !!m.condition,
     location: m.latitude != null && m.longitude != null,
