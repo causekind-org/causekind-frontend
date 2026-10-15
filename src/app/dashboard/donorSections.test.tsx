@@ -85,7 +85,7 @@ const openTab = (name: RegExp) => screen.findByRole("tab", { name, selected: tru
 
 const INVENTORY_BLURB = /Only our matching engine sees these/;
 const MATCHES_BLURB = /Verified needs your items can fulfil/;
-const OFFERS_BLURB = /Offers you made to fulfil specific requests/;
+const OFFERS_BLURB = /Your donation offers/;
 
 /*
  * Tabs since 2026-10-07: Your Inventory (items not yet in a live flow, plus the

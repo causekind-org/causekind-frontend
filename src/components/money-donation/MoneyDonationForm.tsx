@@ -293,7 +293,7 @@ export function MoneyDonationForm() {
       // Attach the card photo now that the donation exists. Best-effort: the
       // donation must not fail over the photo, the typed PAN is what counts.
       if (panPhoto) {
-        uploadTrustDonationPanPhoto(order.donationId, panPhoto).catch(() => { /* optional */ });
+        uploadTrustDonationPanPhoto(order.donationId, panPhoto, order.panUploadToken).catch(() => { /* optional */ });
       }
 
       const rzp = new window.Razorpay({

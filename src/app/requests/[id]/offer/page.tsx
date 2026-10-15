@@ -39,7 +39,7 @@ import {
 import Link from "@/components/AppLink";
 import {
   MapPin, Package, Tag, ShieldCheck, Share2, Clock, ArrowLeft,
-  ShoppingBag, Loader2, Sparkles, type LucideIcon,
+  ShoppingBag, Loader2, type LucideIcon,
   Camera, ImagePlus, CheckCircle2, Eye, Info, ShieldAlert,
   Users, Home, UserRound, Wallet, BadgeCheck, Siren,
 } from "lucide-react";
@@ -60,7 +60,6 @@ const FLOW_OPTIONS: {
   iconBg: string;
   iconText: string;
   tags: string[];
-  comingSoon?: boolean;
 }[] = [
   {
     type: "ALREADY_OWN",
@@ -80,11 +79,9 @@ const FLOW_OPTIONS: {
     icon: ShoppingBag,
     iconBg: "bg-blue-100 dark:bg-blue-950",
     iconText: "text-blue-600 dark:text-blue-400",
-    // "Receipt may be asked" was true while this was a plan. It is not now:
-    // a photo of the item and a receipt are both required before handover.
-    tags: ["Buy after approval", "Choose your timeline", "Photo + receipt required"],
-    // Paused (owner, 2026-10-09): shown, not selectable.
-    comingSoon: true,
+    // Re-enabled (owner, 2026-10-15). Hand over in person or ship straight to
+    // the recipient; a receipt is optional and private, never a public field.
+    tags: ["Buy after acceptance", "Choose your timeline", "Hand over or ship direct"],
   },
 ];
 
@@ -409,7 +406,6 @@ export default function OfferWizardPage() {
   const [blockedByOther, setBlockedByOther] = useState(false);
   // This donor already completed a donation to this request — they can give more.
   const [donatedBefore, setDonatedBefore] = useState(false);
-  const [nudged, setNudged] = useState<DonorFlowType | null>(null);
 
   // ── Location check before the offer (owner, 2026-10-10) ──
   // "Offer this item" opens with the donor's location check, not a form step.
@@ -421,7 +417,6 @@ export default function OfferWizardPage() {
   const [offersChecked, setOffersChecked] = useState(false);
   /** Review's "Change location": the check again, over the open form. */
   const [recheckingLocation, setRecheckingLocation] = useState(false);
-  const nudgeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   /** Whether the "resume straight into step 2" courtesy has already been spent. */
@@ -503,14 +498,6 @@ export default function OfferWizardPage() {
         donorDropOffAvailable: d?.donorDropOffAvailable ?? false,
       },
     });
-  }
-
-  // Locked flow types: wiggle the card and explain instead of creating a draft
-  function handleComingSoon(flowType: DonorFlowType) {
-    setNudged(flowType);
-    if (nudgeTimer.current) clearTimeout(nudgeTimer.current);
-    nudgeTimer.current = setTimeout(() => setNudged(null), 650);
-    toast.info("This option is coming soon — for now, offer an item you already own.");
   }
 
   // ── Step 1: Select flow type — opens the form, creates nothing ────────────
@@ -855,43 +842,8 @@ export default function OfferWizardPage() {
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2">
-                  {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags, comingSoon }, i) => {
+                  {FLOW_OPTIONS.map(({ type, title, desc, badge, icon: Icon, iconBg, iconText, tags }, i) => {
                     const isSelecting = loading && form.flowType === type;
-
-                    if (comingSoon) {
-                      return (
-                        <Tilt3DCard
-                          key={type}
-                          onClick={() => handleComingSoon(type)}
-                          style={{ animationDelay: `${i * 100}ms`, animationFillMode: "backwards" }}
-                          className={`cs-flow-card group relative flex animate-in fade-in slide-in-from-bottom-2 flex-col items-center overflow-hidden rounded-xl sm:rounded-2xl border border-dashed border-gray-300 bg-white p-4 sm:p-6 text-center shadow-sm transition-shadow duration-300 hover:shadow-lg dark:border-gray-600 dark:bg-gray-900 ${nudged === type ? "cs-card-nudge" : ""}`}
-                        >
-                          <span aria-hidden className="cs-card-sheen" />
-                          <span style={{ transform: "translateZ(30px)" }} className="absolute right-4 top-4 inline-flex items-center gap-1">
-                            <Sparkles className="cs-badge-spark h-3 w-3 text-amber-500" />
-                            <span className="cs-badge-shimmer text-3xs font-bold uppercase tracking-widest">Coming soon</span>
-                          </span>
-                          <div style={{ transform: "translateZ(36px)" }} className={`cs-icon-drift mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl ${iconBg} opacity-70 saturate-50 transition-all duration-300 group-hover:opacity-100 group-hover:saturate-100`}>
-                            <Icon className={`h-6 w-6 ${iconText}`} />
-                          </div>
-                          <div style={{ transform: "translateZ(20px)" }} className="font-semibold text-gray-500 transition-colors duration-300 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200">
-                            {title}
-                          </div>
-                          <div style={{ transform: "translateZ(12px)" }} className="mt-1.5 text-xs leading-relaxed text-gray-400 dark:text-gray-500">
-                            {desc}
-                          </div>
-                          <div className="mt-3 max-w-[15rem] text-3xs font-medium leading-relaxed text-gray-300 dark:text-gray-600">
-                            {tags.join(" · ")}
-                          </div>
-                          <div style={{ transform: "translateZ(16px)" }} className="mt-3 inline-flex items-center gap-1.5 text-3xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                            In the works
-                            <span className="cs-dot" />
-                            <span className="cs-dot" style={{ animationDelay: "0.2s" }} />
-                            <span className="cs-dot" style={{ animationDelay: "0.4s" }} />
-                          </div>
-                        </Tilt3DCard>
-                      );
-                    }
 
                     return (
                       <Tilt3DCard

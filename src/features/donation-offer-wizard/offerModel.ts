@@ -148,37 +148,82 @@ export const OFFER_DECLARATION_GROUPS = [
  * cannot be true of them is worse than showing none — it makes the whole block
  * something to click past.
  *
- * <p>What replaces them is the commitment itself: that they will actually buy
- * it, within the window they chose, and evidence it.
+ * <p>Written per fulfilment method (2026-10-15 rebuild): a direct-delivery
+ * donor never holds the item, so asking them to promise a photo of it would be
+ * a promise they cannot keep.
  */
-export const PURCHASE_DECLARATION_GROUPS = [
-  {
-    key: "ownership",
-    items: [
-      "I intend to buy this item myself, with my own money.",
-      "I will buy it within the timeframe I selected, once the recipient accepts.",
-      "The brand, model and cost above are my honest expectation.",
-    ],
-  },
+const PURCHASE_OWNERSHIP = {
+  key: "ownership",
+  items: [
+    "I will buy this item myself, with my own money.",
+    "I will not buy anything until the offer shows as ready to buy.",
+    "The brand, model and cost above are my honest expectation.",
+  ],
+} as const;
+
+export const HAND_OVER_DECLARATION_GROUPS = [
+  PURCHASE_OWNERSHIP,
   {
     key: "disclosure",
     items: [
-      "I will provide a photo of the item and a receipt once I have bought it.",
+      "Once bought, I will upload a real photo of the item for review.",
       "I will not request payment or reimbursement for the item.",
     ],
   },
   {
     key: "process",
     items: [
-      "I understand that the donation is subject to donee and admin approval.",
-      "I understand that if I do not buy it in time, the offer may be released to someone else.",
-      "I agree to follow the CauseKind handover process.",
+      "I understand that if I do not buy it in time, the reserved quantity is released.",
+      "I agree to follow the CauseKind handover process, including the handover code.",
     ],
   },
 ] as const;
 
-export function declarationGroupsFor(flowType: string | null | undefined) {
-  return isPurchaseFlow(flowType) ? PURCHASE_DECLARATION_GROUPS : OFFER_DECLARATION_GROUPS;
+export const DIRECT_DELIVERY_DECLARATION_GROUPS = [
+  PURCHASE_OWNERSHIP,
+  {
+    key: "disclosure",
+    items: [
+      "I will only place a prepaid order — the recipient never pays on delivery.",
+      "I will use the recipient's address only for this order and share it with no one else.",
+      "I will upload the order confirmation with payment details hidden.",
+    ],
+  },
+  {
+    key: "process",
+    items: [
+      "I understand the donation completes only when the recipient confirms receipt.",
+      "I understand that if I do not order in time, the reserved quantity is released.",
+    ],
+  },
+] as const;
+
+export function declarationGroupsFor(flowType: string | null | undefined, method?: string | null) {
+  if (!isPurchaseFlow(flowType)) return OFFER_DECLARATION_GROUPS;
+  return method === "DIRECT_DELIVERY" ? DIRECT_DELIVERY_DECLARATION_GROUPS : HAND_OVER_DECLARATION_GROUPS;
+}
+
+/**
+ * How the purchased item reaches the recipient. Chosen before the proposal is
+ * submitted, because the donee accepts the method together with the item.
+ */
+export const PURCHASE_METHODS = [
+  {
+    value: "BUY_AND_HAND_OVER",
+    label: "Buy and hand over",
+    desc: "Buy it yourself, then hand it over in person with the usual handover code.",
+  },
+  {
+    value: "DIRECT_DELIVERY",
+    label: "Buy and deliver directly",
+    desc: "Order it online, prepaid, and ship it to the address the recipient shares after accepting.",
+  },
+] as const;
+
+export type PurchaseMethod = (typeof PURCHASE_METHODS)[number]["value"];
+
+export function purchaseMethodLabel(value: string | null | undefined): string {
+  return PURCHASE_METHODS.find(m => m.value === value)?.label ?? "Method not chosen";
 }
 
 export const OFFER_GROUP_TITLES: Record<string, string> = {
@@ -198,6 +243,8 @@ export type OfferModel = {
   // NOT NULL on the backend, but the donor is buying the item this request
   // asked for — so it is filled from the request title at serialization time
   // rather than asked for a second time in a second place.
+  fulfilmentMethod: "" | PurchaseMethod;
+  productUrl: string;
   proposedBrand: string;
   proposedModel: string;
   estimatedCost: string;
@@ -231,6 +278,8 @@ export type OfferModel = {
 
 export const emptyOfferModel: OfferModel = {
   photos: [],
+  fulfilmentMethod: "",
+  productUrl: "",
   proposedBrand: "",
   proposedModel: "",
   estimatedCost: "",
@@ -300,7 +349,12 @@ export function photosFromOffer(offer: DonationOffer | null | undefined): Wizard
 function purchasePlanFrom(offer: DonationOffer | null | undefined) {
   const c = offer?.purchaseCommitment;
   if (!c) return null;
+  // A legacy commitment has no method and hydrates as "", so the donor must
+  // choose one before the proposal can be submitted.
+  const method = PURCHASE_METHODS.find(m => m.value === c.fulfilmentMethod)?.value ?? "";
   return {
+    fulfilmentMethod: method as OfferModel["fulfilmentMethod"],
+    productUrl: c.productUrl ?? "",
     proposedBrand: c.proposedBrand ?? "",
     proposedModel: c.proposedModel ?? "",
     estimatedCost: c.estimatedCost != null ? String(c.estimatedCost) : "",
@@ -377,7 +431,7 @@ export function firstIncompleteOfferStep(
   if (opts?.location && (model.latitude == null || model.longitude == null || !model.pickupCity.trim())) return "location";
 
   if (purchase) {
-    if (!model.purchaseTimeline) return "purchasePlan";
+    if (!model.fulfilmentMethod || !model.purchaseTimeline) return "purchasePlan";
   } else if (uploadedOfferPhotos(model.photos).length < MIN_OFFER_PHOTOS) {
     return "photos";
   }

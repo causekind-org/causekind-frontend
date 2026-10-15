@@ -252,7 +252,10 @@ export function LiveNeedsSection({
 
         {/* ── Category Filter Pills Row ── */}
         <div className="relative ck-live-needs-filters">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
+          {/* Phones swipe one row; from md up the pills wrap, because a
+              hidden-scrollbar row clipped the last pill (Sports) with no cue
+              that more existed — worse once counts and translations widen it. */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none snap-x md:flex-wrap md:overflow-visible">
             <button
               type="button"
               onClick={() => setSelectedCategory("All")}

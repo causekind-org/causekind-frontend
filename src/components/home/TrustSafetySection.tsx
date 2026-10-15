@@ -103,7 +103,7 @@ function TrustSafetyMobile({ seamless = false }: { seamless?: boolean }) {
       ref={ref}
       id="trust"
       aria-label="Trust and Safety"
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-stone-200/80 dark:border-stone-800/80 "}px-5`}
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-stone-200/80 dark:border-stone-800/80 "}px-5`}
     >
       <div data-reveal-item style={stagger(0)} className={m.eyebrow}><LandingText>
         Trust &amp; safety
@@ -332,13 +332,10 @@ function TrustSafetyFull({
       ref={sectionRef}
       id="trust"
       aria-label="Trust and Safety"
-      className="relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
+      className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
     >
-      {/* Background Subtle Gradient Glows */}
-      <div
-        className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-b from-[#B5480F]/5 via-[#1e3a60]/5 to-transparent rounded-full blur-3xl pointer-events-none"
-        aria-hidden="true"
-      />
+      {/* The terracotta→navy glow that sat here read as a grey smudge on the
+          cream (owner, 2026-10-13); the section is plain theme cream now. */}
 
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 w-full flex flex-col justify-between h-full gap-4 sm:gap-6 lg:gap-5">
         {/* ================= HEADER ================= */}

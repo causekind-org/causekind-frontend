@@ -551,6 +551,7 @@ export function rejectCampaign(id: number, reason: string) {
 // ── Donations ─────────────────────────────────────────────────────────────────
 
 export type DonationOrder = {
+  panUploadToken?: string;
   donationId: number;
   razorpayOrderId: string;
   amountInPaise: number;
@@ -639,9 +640,10 @@ export function readPanCard(file: File) {
 }
 
 /** Attaches the PAN card photo to a trust donation once it exists (stored privately). */
-export function uploadTrustDonationPanPhoto(donationId: number, file: File) {
+export function uploadTrustDonationPanPhoto(donationId: number, file: File, uploadToken?: string) {
   const fd = new FormData();
   fd.append("file", file);
+  if (uploadToken) fd.append("uploadToken", uploadToken);
   return fetch(`${BASE_URL}/api/v1/donations/trust/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
     .then((res) => { if (!res.ok) throw new Error("PAN photo upload failed"); });
 }
@@ -2216,11 +2218,66 @@ export type PurchaseCommitmentDetails = {
   /** Serialized from a BigDecimal, so it arrives as a number. */
   estimatedCost: number | null;
   purchaseTimeline: string;
-  purchaseStatus: "INTENT_DECLARED" | "ORDER_PLACED" | "PROOF_UPLOADED" | "DELIVERED" | null;
+  purchaseStatus: PurchaseStatus | null;
   intendedStore: string | null;
   notes: string | null;
   createdAt: string;
+  /** Null on legacy commitments made before the 2026-10 rebuild. */
+  fulfilmentMethod: PurchaseFulfilmentMethod | null;
+  productUrl: string | null;
+  /** Set at donee acceptance; null before. */
+  purchaseDeadline: string | null;
+  acceptedAt: string | null;
 };
+
+export type PurchaseFulfilmentMethod = "BUY_AND_HAND_OVER" | "DIRECT_DELIVERY";
+
+export type PurchaseStatus =
+  | "INTENT_DECLARED" | "READY_TO_BUY" | "ORDER_PLACED" | "PROOF_UPLOADED" | "READY_FOR_HANDOVER"
+  | "SHIPPED" | "AWAITING_RECEIPT" | "PARTIALLY_RECEIVED" | "RECEIPT_CONFIRMED" | "ISSUE_RAISED"
+  | "CANCELLED" | "EXPIRED" | "DELIVERED";
+
+/**
+ * GET /api/v1/offers/{id}/purchase — role-filtered on the server. `address` is
+ * only present for the donee, an admin, or the donor after consent;
+ * `orderReference` never reaches the donee. Evidence URLs expire in 10 minutes.
+ */
+export type PurchaseView = {
+  offerId: number;
+  method: PurchaseFulfilmentMethod | null;
+  status: PurchaseStatus | null;
+  readyToBuy: boolean;
+  acceptedAt: string | null;
+  deadline: string | null;
+  acceptedQuantity: number | null;
+  orderedAt: string | null;
+  orderedQuantity: number | null;
+  receivedQuantity: number | null;
+  expectedDeliveryAt: string | null;
+  trackingUrl: string | null;
+  trackingReference: string | null;
+  address: {
+    address: string; contactName: string | null; contactPhone: string | null;
+    /** Optional map pin the recipient dropped; null when they skipped it. */
+    latitude: number | null; longitude: number | null;
+    consentVersion: string; consentedAt: string;
+  } | null;
+  retailer: string | null;
+  orderReference: string | null;
+  evidence: {
+    id: number; type: PurchaseProofType; url: string; uploadedAt: string;
+    screeningAvailable: boolean | null; prohibited: boolean | null;
+  }[];
+  extensionRequestedUntil: string | null;
+  extensionDecidedAt: string | null;
+  issueWindowExpiresAt: string | null;
+  version: number | null;
+};
+
+export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT";
+export type PurchaseReceiptCondition = "GOOD" | "PARTIAL" | "DAMAGED" | "WRONG_ITEM";
+export type PurchaseIssueType = "ITEM_NOT_RECEIVED" | "ITEM_DAMAGED" | "WRONG_ITEM" | "QUANTITY_MISMATCH" | "OTHER";
+export const PURCHASE_CONSENT_VERSION = "purchase-delivery-v1";
 
 export type OfferAssessmentDetails = {
   modelVersion: string | null;
@@ -2813,6 +2870,7 @@ export function doneeReviewOffer(
 export function saveFlowBCommitment(offerId: number, data: {
   itemName: string; proposedBrand?: string; proposedModel?: string;
   estimatedCost?: number; purchaseTimeline: string; intendedStore?: string; notes?: string;
+  fulfilmentMethod: PurchaseFulfilmentMethod; productUrl?: string;
 }) {
   return request<object>(`/api/v1/offers/${offerId}/flow-b/commitment`, {
     method: "POST",
@@ -2820,7 +2878,97 @@ export function saveFlowBCommitment(offerId: number, data: {
   });
 }
 
-export function uploadFlowBProof(offerId: number, proofType: string, file?: File,
+// ── Purchase lifecycle (2026-10 rebuild) ────────────────────────────────────
+// Participant actions on /api/v1/offers/{id}/purchase; the server checks the
+// actor, method and stage on every call, so the UI only decides what to show.
+
+/** "Fill from link": suggestions read from a product page. Nothing is saved. */
+export type ProductLinkPreview = {
+  found: boolean; productName: string | null; brand: string | null; model: string | null;
+  priceInr: number | null; retailer: string | null; source: "page" | "ai" | "page+ai" | "none";
+};
+
+export function previewProductLink(url: string) {
+  return request<ProductLinkPreview>(`/api/v1/purchase/product-preview`, {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+}
+
+export function getPurchase(offerId: number) {
+  return request<PurchaseView>(`/api/v1/offers/${offerId}/purchase`);
+}
+
+export function sharePurchaseAddress(offerId: number, address: {
+  address: string; contactName: string; contactPhone: string; latitude?: number; longitude?: number;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/delivery-address`, {
+    method: "POST",
+    body: JSON.stringify({ address, consent: true, consentVersion: PURCHASE_CONSENT_VERSION }),
+  });
+}
+
+export function revokePurchaseAddress(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/delivery-address`, { method: "DELETE" });
+}
+
+/** `expectedDeliveryAt` is a local ISO date-time without zone (Java LocalDateTime). */
+export function recordPurchaseOrder(offerId: number, data: {
+  idempotencyKey: string; retailer: string; reference?: string; quantity: number;
+  expectedDeliveryAt: string; prepaid: true;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/order`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function updatePurchaseShipment(offerId: number, data: {
+  trackingUrl?: string; reference?: string; expectedDeliveryAt: string; deliveredByRetailer: boolean;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/shipment`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+export function confirmPurchaseReceipt(offerId: number, data: {
+  cumulativeQuantity: number; condition: PurchaseReceiptCondition; closeRemainder: boolean;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/receipt`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function confirmPurchaseNoIssue(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/confirm-no-issue`, { method: "POST" });
+}
+
+export function reportPurchaseIssue(offerId: number, data: { type: PurchaseIssueType; description: string }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/issues`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function requestPurchaseExtension(offerId: number, data: { requestedUntil: string; reason: string }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/extension`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function decidePurchaseExtension(offerId: number, data: { approve: boolean; reason: string }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/extension/decision`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function adminGetPurchase(offerId: number) {
+  return request<PurchaseView>(`/api/v1/admin/offers/${offerId}/purchase`);
+}
+
+export function adminListPurchases(page = 0) {
+  return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}`);
+}
+
+export function adminReviewPurchaseProof(offerId: number, data: { approve: boolean; reason: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/proof-review`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function adminResolvePurchaseIssue(offerId: number, data: { action: "RETRY_DELIVERY" | "CANCEL_REMAINDER"; reason: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function adminProcessPurchaseDeadlines(offerId: number) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/process-deadlines`, { method: "POST" });
+}
+
+export function uploadFlowBProof(offerId: number, proofType: PurchaseProofType, file: File,
                                    trackingNumber?: string, notes?: string) {
   const formData = new FormData();
   formData.append("proofType", proofType);

@@ -406,7 +406,7 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
       id="about-causekind"
       aria-label="About CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#F8F6F2] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
+      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#FAF8F5] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
     >
       {/* Decorative ambient background subtle radial glows */}
       <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20" aria-hidden="true">
