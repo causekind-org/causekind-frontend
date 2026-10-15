@@ -1,5 +1,7 @@
 "use client";
 
+import { ListingDetailModal } from "@/components/super-admin/ListingDetailModal";
+import { RequestDetailModal } from "@/components/super-admin/RequestDetailModal";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -700,6 +702,9 @@ function RecordsTab({ userId, t, isDark }: { userId: number; t: SaTheme; isDark:
   const [data, setData] = useState<SaPage<SaRecordSummary> | null>(null);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  // Listings and requests open a full-detail modal (fields + photos).
+  const [open, setOpen] = useState<SaRecordSummary | null>(null);
+  const clickable = (r: SaRecordSummary) => r.type === "LISTING" || r.type === "REQUEST";
 
   useEffect(() => {
     setLoading(true);
@@ -747,7 +752,12 @@ function RecordsTab({ userId, t, isDark }: { userId: number; t: SaTheme; isDark:
             </thead>
             <tbody className={`divide-y ${t.divide}`}>
               {data.items.map((r) => (
-                <tr key={`${r.type}-${r.id}`}>
+                <tr
+                  key={`${r.type}-${r.id}`}
+                  onClick={clickable(r) ? () => setOpen(r) : undefined}
+                  className={clickable(r) ? `cursor-pointer ${t.rowHover}` : undefined}
+                  title={clickable(r) ? "View full details and photos" : undefined}
+                >
                   <td className={`px-3 py-2 text-xs tabular-nums ${t.dim}`}>{r.id}</td>
                   <td className={`px-3 py-2 text-xs font-semibold ${t.heading}`}>{r.title}</td>
                   <td className="px-3 py-2">
@@ -771,6 +781,23 @@ function RecordsTab({ userId, t, isDark }: { userId: number; t: SaTheme; isDark:
       )}
 
       <SaPagination page={data} onPageChange={setPage} label="records" isDark={isDark} />
+
+      {open?.type === "LISTING" && (
+        <ListingDetailModal
+          row={{ id: open.id, title: open.title, status: open.status }}
+          isDark={isDark}
+          onClose={() => setOpen(null)}
+        />
+      )}
+      {open?.type === "REQUEST" && (
+        <RequestDetailModal
+          requestId={Number(open.id)}
+          status={open.status}
+          title={open.title}
+          isDark={isDark}
+          onClose={() => setOpen(null)}
+        />
+      )}
     </div>
   );
 }

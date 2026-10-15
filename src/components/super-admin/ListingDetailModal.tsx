@@ -9,7 +9,7 @@ import {
 import { saTheme, type SaTheme } from "@/components/super-admin/saTheme";
 import { Loader2, X } from "lucide-react";
 
-function fmt(v: unknown): string {
+export function fmt(v: unknown): string {
   if (v === null || v === undefined || v === "") return "—";
   if (typeof v === "boolean") return v ? "Yes" : "No";
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
@@ -18,7 +18,7 @@ function fmt(v: unknown): string {
   return String(v);
 }
 
-function Row({ label, value, t }: { label: string; value: unknown; t: SaTheme }) {
+export function Row({ label, value, t }: { label: string; value: unknown; t: SaTheme }) {
   return (
     <div className={`flex justify-between gap-3 border-b py-1.5 last:border-0 ${t.cardFlat}`}>
       <span className={`shrink-0 text-xs ${t.muted}`}>{label}</span>
@@ -27,7 +27,7 @@ function Row({ label, value, t }: { label: string; value: unknown; t: SaTheme })
   );
 }
 
-function Section({ title, t, children }: { title: string; t: SaTheme; children: React.ReactNode }) {
+export function Section({ title, t, children }: { title: string; t: SaTheme; children: React.ReactNode }) {
   return (
     <div className="px-5 py-3">
       <p className={`mb-1 text-[11px] font-bold uppercase tracking-wide ${t.muted}`}>{title}</p>
@@ -51,7 +51,8 @@ export function ListingDetailModal({
   row: SuperAdminRow;
   isDark: boolean;
   onClose: () => void;
-  onOpenProfile: (donorId: number) => void;
+  /** Omitted where the donor profile is already open (User 360). */
+  onOpenProfile?: (donorId: number) => void;
 }) {
   const t = saTheme(isDark);
   const id = Number(row.id);
@@ -211,7 +212,7 @@ export function ListingDetailModal({
           )}
         </div>
 
-        {donorId != null && (
+        {donorId != null && onOpenProfile && (
           <div className={`shrink-0 px-5 py-3.5 border-t ${t.cardFlat}`}>
             <button
               onClick={() => onOpenProfile(Number(donorId))}

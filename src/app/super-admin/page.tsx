@@ -23,6 +23,7 @@ import { GovernancePanel } from "@/components/super-admin/GovernancePanel";
 import { OperationsPanel } from "@/components/super-admin/OperationsPanel";
 import { DonationDetailModal } from "@/components/super-admin/DonationDetailModal";
 import { ListingDetailModal } from "@/components/super-admin/ListingDetailModal";
+import { RequestDetailModal } from "@/components/super-admin/RequestDetailModal";
 import type { SaInterventionEntity } from "@/lib/api";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
@@ -486,6 +487,7 @@ export default function SuperAdminPage() {
   const [viewingDonation, setViewingDonation] = useState<SuperAdminRow | null>(null);
   // Listing details modal — opened by clicking a row in the Listings table.
   const [viewingListing, setViewingListing] = useState<SuperAdminRow | null>(null);
+  const [viewingRequest, setViewingRequest] = useState<SuperAdminRow | null>(null);
 
   function handleNavClick(key: SectionKey) {
     if (key === "sql" && !sqlAck) {
@@ -557,7 +559,8 @@ export default function SuperAdminPage() {
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;
       case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} isDark={isDark} enrich={enrichDonations}
                               onRowClick={(row) => setViewingDonation(row)} />;
-      case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark} />;
+      case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark}
+                              onRowClick={(row) => setViewingRequest(row)} />;
       case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark}
                               onRowClick={(row) => setViewingListing(row)} />;
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
@@ -735,6 +738,16 @@ export default function SuperAdminPage() {
           isDark={isDark}
           onClose={() => setViewingDonation(null)}
           onOpenProfile={(donorId) => { setViewingDonation(null); openUser(donorId); }}
+        />
+      )}
+
+      {viewingRequest && (
+        <RequestDetailModal
+          requestId={Number(viewingRequest.id)}
+          status={typeof viewingRequest.status === "string" ? viewingRequest.status : null}
+          title={typeof viewingRequest.title === "string" ? viewingRequest.title : null}
+          isDark={isDark}
+          onClose={() => setViewingRequest(null)}
         />
       )}
 
