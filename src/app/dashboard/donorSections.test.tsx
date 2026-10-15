@@ -192,7 +192,7 @@ describe("donor dashboard sections", () => {
 
     await openTab(/History/);
     expect(screen.getByText("Donation history")).toBeInTheDocument();
-    expect(screen.getByText("No completed donations yet.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing here yet.")).toBeInTheDocument();
   });
 });
 
@@ -346,7 +346,7 @@ describe("donation history & fulfilled inventory", () => {
 
     expect(screen.getByText("Donation history")).toBeInTheDocument();
     expect(screen.getAllByText("Fulfilled Study Earbuds").length).toBeGreaterThan(0);
-    expect(screen.getByText("Matched for you")).toBeInTheDocument();
+    expect(screen.getByText("Donated · matched")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Certificate/i })).toHaveAttribute("href", "/certificate?matchId=50");
   });
 
