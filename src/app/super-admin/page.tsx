@@ -22,6 +22,7 @@ import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPane
 import { GovernancePanel } from "@/components/super-admin/GovernancePanel";
 import { OperationsPanel } from "@/components/super-admin/OperationsPanel";
 import { DonationDetailModal } from "@/components/super-admin/DonationDetailModal";
+import { ListingDetailModal } from "@/components/super-admin/ListingDetailModal";
 import type { SaInterventionEntity } from "@/lib/api";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package,
@@ -483,6 +484,8 @@ export default function SuperAdminPage() {
 
   // Donation details modal — opened by clicking a row in the Donations table.
   const [viewingDonation, setViewingDonation] = useState<SuperAdminRow | null>(null);
+  // Listing details modal — opened by clicking a row in the Listings table.
+  const [viewingListing, setViewingListing] = useState<SuperAdminRow | null>(null);
 
   function handleNavClick(key: SectionKey) {
     if (key === "sql" && !sqlAck) {
@@ -555,7 +558,8 @@ export default function SuperAdminPage() {
       case "donations":     return <EntityTable entity="donations"     title="Donations"     columns={DONATION_COLS} isDark={isDark} enrich={enrichDonations}
                               onRowClick={(row) => setViewingDonation(row)} />;
       case "item-requests": return <EntityTable entity="item-requests" title="Item Requests" columns={REQUEST_COLS}   isDark={isDark} />;
-      case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark} />;
+      case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark}
+                              onRowClick={(row) => setViewingListing(row)} />;
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
       case "whatsapp":      return <WhatsAppPanel />;
       case "admin-permissions": return <AdminPermissionsPanel />;
@@ -731,6 +735,15 @@ export default function SuperAdminPage() {
           isDark={isDark}
           onClose={() => setViewingDonation(null)}
           onOpenProfile={(donorId) => { setViewingDonation(null); openUser(donorId); }}
+        />
+      )}
+
+      {viewingListing && (
+        <ListingDetailModal
+          row={viewingListing}
+          isDark={isDark}
+          onClose={() => setViewingListing(null)}
+          onOpenProfile={(donorId) => { setViewingListing(null); openUser(donorId); }}
         />
       )}
 
