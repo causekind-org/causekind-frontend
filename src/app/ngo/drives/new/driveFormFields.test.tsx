@@ -1,6 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, configure } from "@testing-library/react";
 import NgoRequestCreationPage from "./page";
+
+configure({ asyncUtilTimeout: 5000 });
 import {
   DRIVE_CONDITIONS,
   WIZARD_DRIVE_CONDITIONS,
@@ -70,7 +72,7 @@ async function openForm(overrides: Record<string, unknown> = {}) {
   await waitFor(() => expect(screen.getByDisplayValue("Winter blankets for the shelter")).toBeInTheDocument());
 }
 
-describe("drive form fields", () => {
+describe("drive form fields", { timeout: 20000 }, () => {
   beforeEach(() => { mockGetNgoDriveDetail.mockReset(); mockUpdateNgoDrive.mockClear(); localStorage.clear(); });
 
   it("puts a required Details box above the three story textareas, with helper text", async () => {

@@ -21,6 +21,8 @@ function parseFormState(raw: any): NGOFormState {
     ...INITIAL_NGO_FORM,
     organizationName: fieldText(raw.organizationName),
     legalStructure: raw.legalStructure || "",
+    panNumber: fieldText(raw.panNumber),
+    organizationPhone: fieldText(raw.organizationPhone),
     registrationNumber: fieldText(raw.registrationNumber),
     registeredOfficeAddress: fieldText(raw.registeredOfficeAddress),
     yearOfEstablishment: fieldText(raw.yearOfEstablishment),
@@ -130,8 +132,14 @@ export function useNgoStatus(): NgoStatusData {
   const [hasShownWelcome, setHasShownWelcome] = useState(true);
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
+  // Depend on who the user is, not on the object: a new user object with the same
+  // identity (each re-render, e.g. the hero gallery's slideshow) must not restart the load.
+  const userRef = useRef(user);
+  userRef.current = user;
+  const userKey = user ? `${user.id}|${user.role}|${user.fullName ?? ""}` : "";
 
   const refresh = useCallback(async () => {
+    const user = userRef.current;
     const request = ++sequence.current;
     if (authLoading) return;
     if (!user || !["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) {
@@ -157,7 +165,8 @@ export function useNgoStatus(): NgoStatusData {
         setStatus("incomplete"); // Cached approval is never a permission fallback.
       }
     } finally { if (request === sequence.current) setLoading(false); }
-  }, [user, authLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- userKey stands for user
+  }, [userKey, authLoading]);
 
   useEffect(() => {
     void refresh();

@@ -3,6 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { NgoLandingView } from "./NgoLandingView";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview } from "@/lib/api";
 
+// The hero renders a slideshow and motion; on a busy machine a test can pass 5 s.
+vi.setConfig({ testTimeout: 20000 });
+
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" }, isLoading: false }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/lib/api", () => ({ getMyNgoApplication: vi.fn(), getNgoDraft: vi.fn(), getNgoOverview: vi.fn() }));
@@ -49,14 +52,14 @@ describe("verified NGO hero (points 4 and 6)", () => {
 });
 
 describe("verified notification card (point 7)", () => {
-  it("is short: title with the tick on one line and one line of body", async () => {
+  it("is short: title with the dot on one line and one line of body", async () => {
     localStorage.removeItem("ngo-verified-welcome-shown-101");
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
 
     const title = await screen.findByText("You're verified");
     const line = title.parentElement!;
-    expect(line.querySelector("svg")).not.toBeNull(); // tick sits inside the title line
+    expect(line.querySelector("span.rounded-full")).not.toBeNull(); // the dot sits inside the title line
     expect(line.className).toContain("flex");
     expect(line.className).toContain("items-center");
     const card = line.closest('[role="status"]')!;

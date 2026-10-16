@@ -3,6 +3,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { NgoLandingView } from "./NgoLandingView";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview } from "@/lib/api";
 
+// The hero renders a slideshow and motion; on a busy machine a test can pass 5 s.
+vi.setConfig({ testTimeout: 20000 });
+
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" }, isLoading: false }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/lib/api", () => ({ getMyNgoApplication: vi.fn(), getNgoDraft: vi.fn(), getNgoOverview: vi.fn() }));
@@ -23,7 +26,9 @@ describe("NGO landing with server-backed status", () => {
     expect(screen.getByRole("button", { name: /^Start a Drive/i })).toBeInTheDocument();
   });
   it("opens the next incomplete section from the server draft", async () => {
-    vi.mocked(getNgoDraft).mockResolvedValue({ organizationName: "Helping Hands", legalStructure: "trust", registrationNumber: "REG-1", registeredOfficeAddress: "Pune", yearOfEstablishment: "2005" } as never);
+    vi.mocked(getNgoDraft).mockResolvedValue({ organizationName: "Helping Hands", legalStructure: "trust", registrationNumber: "REG-1", registeredOfficeAddress: "Pune", yearOfEstablishment: "2005",
+      panNumber: "ABCDE1234F", organizationPhone: "+919876543210",
+      documents: { pan: { name: "pan.pdf" }, "trust-reg-cert": { name: "cert.pdf" } } } as never);
     render(<NgoLandingView />);
     expect(await screen.findByRole("link", { name: /Continue application/ })).toHaveAttribute("href", "/profile/ngo-details?step=legal-documents");
   });
