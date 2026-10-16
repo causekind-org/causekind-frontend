@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { Heart, ShieldCheck, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -14,7 +16,7 @@ export function TrustBand() {
   ];
 
   return (
-    <section
+    <LandingAttributes><section
       aria-label={t("label")}
       className="rounded-[1.25rem] bg-[#faf1e8]/84 px-1 py-2 backdrop-blur-[2px] dark:bg-[#231a15]/86 sm:px-3 sm:py-3 lg:rounded-none lg:bg-transparent lg:px-[clamp(1rem,3vw,4rem)] lg:py-[clamp(0.45rem,1.25vh,1rem)] lg:backdrop-blur-none lg:dark:bg-transparent"
     >
@@ -32,15 +34,15 @@ export function TrustBand() {
 
             <div className="min-w-0">
               <p className="text-[0.58rem] font-extrabold leading-tight text-[#211b17] dark:text-stone-100 sm:text-xs lg:text-[clamp(0.72rem,0.9vw,1.05rem)]">
-                {title}
+                <LandingText>{title}</LandingText>
               </p>
               <p className="mt-0.5 hidden text-[0.65rem] leading-snug text-[#49423d] dark:text-stone-400 sm:block lg:text-[clamp(0.64rem,0.72vw,0.86rem)]">
-                {body}
+                <LandingText>{body}</LandingText>
               </p>
             </div>
           </li>
         ))}
       </ul>
-    </section>
+    </section></LandingAttributes>
   );
 }

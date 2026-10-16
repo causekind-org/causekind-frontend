@@ -85,7 +85,7 @@ const openTab = (name: RegExp) => screen.findByRole("tab", { name, selected: tru
 
 const INVENTORY_BLURB = /Only our matching engine sees these/;
 const MATCHES_BLURB = /Verified needs your items can fulfil/;
-const OFFERS_BLURB = /Offers you made to fulfil specific requests/;
+const OFFERS_BLURB = /Your donation offers/;
 
 /*
  * Tabs since 2026-10-07: Your Inventory (items not yet in a live flow, plus the
@@ -192,7 +192,7 @@ describe("donor dashboard sections", () => {
 
     await openTab(/History/);
     expect(screen.getByText("Donation history")).toBeInTheDocument();
-    expect(screen.getByText("No completed donations yet.")).toBeInTheDocument();
+    expect(screen.getByText("Nothing here yet.")).toBeInTheDocument();
   });
 });
 
@@ -346,7 +346,7 @@ describe("donation history & fulfilled inventory", () => {
 
     expect(screen.getByText("Donation history")).toBeInTheDocument();
     expect(screen.getAllByText("Fulfilled Study Earbuds").length).toBeGreaterThan(0);
-    expect(screen.getByText("Matched for you")).toBeInTheDocument();
+    expect(screen.getByText("Donated · matched")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Certificate/i })).toHaveAttribute("href", "/certificate?matchId=50");
   });
 

@@ -1,3 +1,5 @@
+
+import { LandingText } from "@/components/LandingTranslation";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { DONATE_HREF } from "@/lib/donateScroll";
@@ -24,12 +26,12 @@ export function DonorTwoDoors() {
           <h2
             id="donor-two-doors-title"
             className="m-0 text-[38px] font-extrabold leading-[1.02] tracking-[-0.03em] text-stone-900 dark:text-white sm:text-5xl lg:text-[64px] lg:leading-none"
-          >
+          ><LandingText>
             Ready to help?
-          </h2>
-          <p className="m-0 max-w-[380px] text-[15px] leading-relaxed text-stone-600 dark:text-stone-300 sm:text-[17px]">
+          </LandingText></h2>
+          <p className="m-0 max-w-[380px] text-[15px] leading-relaxed text-stone-600 dark:text-stone-300 sm:text-[17px]"><LandingText>
             Pick one way to help today.
-          </p>
+          </LandingText></p>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
@@ -54,20 +56,20 @@ export function DonorTwoDoors() {
               <path d="M3 8v8l9 5 9-5V8" />
               <path d="M12 13v8" />
             </svg>
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] md:text-[13px]">Items</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] md:text-[13px]"><LandingText>Items</LandingText></span>
             <span className="flex flex-col gap-[18px] md:flex-row md:items-end md:justify-between md:gap-6">
               <span className="flex flex-col gap-1.5 md:gap-2.5">
-                <span className="text-[28px] font-extrabold leading-[1.05] tracking-[-0.02em] md:text-[40px]">List an item</span>
-                <span className="max-w-[360px] text-[15px] leading-normal text-white/90 md:text-[17px]">
+                <span className="text-[28px] font-extrabold leading-[1.05] tracking-[-0.02em] md:text-[40px]"><LandingText>List an item</LandingText></span>
+                <span className="max-w-[360px] text-[15px] leading-normal text-white/90 md:text-[17px]"><LandingText>
                   Add something you don&apos;t use. We&apos;ll match it with someone near you.
-                </span>
+                </LandingText></span>
               </span>
               <span
                 className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-full bg-white px-5 text-[15px] font-semibold md:h-[52px] md:self-auto md:px-[22px]"
                 style={{ color: accent }}
-              >
+              ><LandingText>
                 List an item
-                <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none md:size-[18px]" aria-hidden="true" />
+                </LandingText><ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none md:size-[18px]" aria-hidden="true" />
               </span>
             </span>
           </Link>
@@ -94,17 +96,17 @@ export function DonorTwoDoors() {
             >
               <path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21.2l8.8-8.8a5.5 5.5 0 0 0 0-7.8z" />
             </svg>
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] md:text-[13px]" style={{ color: accent }}>Money</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.14em] md:text-[13px]" style={{ color: accent }}><LandingText>Money</LandingText></span>
             <span className="flex flex-col gap-[18px] md:flex-row md:items-end md:justify-between md:gap-6">
               <span className="flex flex-col gap-1.5 md:gap-2.5">
-                <span className="text-[28px] font-extrabold leading-[1.05] tracking-[-0.02em] md:text-[40px]">Give money</span>
-                <span className="max-w-[360px] text-[15px] leading-normal text-stone-600 dark:text-stone-300 md:text-[17px]">
+                <span className="text-[28px] font-extrabold leading-[1.05] tracking-[-0.02em] md:text-[40px]"><LandingText>Give money</LandingText></span>
+                <span className="max-w-[360px] text-[15px] leading-normal text-stone-600 dark:text-stone-300 md:text-[17px]"><LandingText>
                   Help our work with money.
-                </span>
+                </LandingText></span>
               </span>
-              <span className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-full border-[1.5px] border-stone-900 px-5 text-[15px] font-semibold dark:border-white md:h-[52px] md:self-auto md:px-[22px]">
+              <span className="inline-flex h-12 shrink-0 items-center gap-2 self-start rounded-full border-[1.5px] border-stone-900 px-5 text-[15px] font-semibold dark:border-white md:h-[52px] md:self-auto md:px-[22px]"><LandingText>
                 Donate
-                <ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none md:size-[18px]" aria-hidden="true" />
+                </LandingText><ArrowUpRight className="size-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none md:size-[18px]" aria-hidden="true" />
               </span>
             </span>
           </Link>

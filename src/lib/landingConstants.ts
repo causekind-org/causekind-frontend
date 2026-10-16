@@ -77,15 +77,17 @@ export const OPERATING_CITIES = [
   "Delhi NCR",
 ] as const;
 
+import { SOCIAL_LINKS } from "@/config/social";
+
 export const CONTACT_INFO = {
   email: "support@causekind.com",
   phone: "+91 7719938619",
-  whatsappUrl: "https://wa.me/917719938619",
+  whatsappUrl: SOCIAL_LINKS.find((s) => s.id === "whatsapp")?.url ?? "https://api.whatsapp.com/send/?phone=917719938619",
   socials: {
-    instagram: "https://www.instagram.com/causekind",
-    linkedin: "https://www.linkedin.com/company/causekind/",
-    twitter: "https://x.com/causekind", // placeholder
-    youtube: "https://youtube.com/@causekind", // placeholder
+    instagram: SOCIAL_LINKS.find((s) => s.id === "instagram")?.url ?? "https://instagram.com/causekind",
+    linkedin: SOCIAL_LINKS.find((s) => s.id === "linkedin")?.url ?? "https://www.linkedin.com/company/causekind/",
+    twitter: SOCIAL_LINKS.find((s) => s.id === "x")?.url ?? "https://x.com/causekind_",
+    youtube: SOCIAL_LINKS.find((s) => s.id === "youtube")?.url ?? "https://www.youtube.com/@causekind_org",
   },
 } as const;
 

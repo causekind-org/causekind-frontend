@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 /**
  * "Where does my support go?" — real photographs from CauseKind drives, laid
@@ -69,7 +71,7 @@ function Print({ photo, depth, sizes }: { photo: Photo; depth: string; sizes: st
         </>
       )}
       <span className={styles.img} data-depth={depth} style={{ aspectRatio: `${photo.w} / ${photo.h}` }}>
-        <Image src={photo.src} alt={photo.alt} fill sizes={sizes} draggable={false} />
+        <LandingAttributes><Image src={photo.src} alt={photo.alt} fill sizes={sizes} draggable={false} /></LandingAttributes>
       </span>
     </span>
   );
@@ -268,10 +270,10 @@ function Table({
 
 
       <h2 className={styles.title}>
-        <span>Where does</span>
-        <span>my support</span>
+        <span><LandingText>Where does</LandingText></span>
+        <span><LandingText>my support</LandingText></span>
         <span>
-          <em>go?</em>
+          <em><LandingText>go?</LandingText></em>
         </span>
       </h2>
 
@@ -299,7 +301,7 @@ function Table({
             <div className={styles.par}>
               <div className={styles.enter} data-enter={i === photos.length - 1 ? "last" : s.enter}>
                 <div className={styles.pose} style={{ transform: poseFor(i) }}>
-                  <button
+                  <LandingAttributes><button
                     type="button"
                     className={styles.photo}
                     aria-pressed={isActive}
@@ -308,14 +310,14 @@ function Table({
                   >
                     <Print photo={p} depth={s.depth} sizes="(min-width: 768px) 60vw, 80vw" />
                     <span className={styles.tab} aria-hidden>
-                      <span className={styles.mono}>{p.category}</span>
-                      <span className={`${styles.tabCaption} ${styles.serif}`}>{p.caption}</span>
+                      <span className={styles.mono}><LandingText>{p.category}</LandingText></span>
+                      <span className={`${styles.tabCaption} ${styles.serif}`}><LandingText>{p.caption}</LandingText></span>
                     </span>
-                  </button>
+                  </button></LandingAttributes>
                 </div>
                 {p.note && (
                   <span className={`${styles.note} ${styles.hand}`} data-pos={s.note} aria-hidden>
-                    {s.note === "left" || s.note.endsWith("right") ? null : <Squiggle />} {p.note}{" "}
+                    {s.note === "left" || s.note.endsWith("right") ? null : <Squiggle />} <LandingText>{p.note}</LandingText>{" "}
                     {s.note === "left" || s.note.endsWith("right") ? <Squiggle /> : null}
                   </span>
                 )}
@@ -326,7 +328,7 @@ function Table({
       })}
 
       {activePhoto && lift && (
-        <div
+        <LandingAttributes key={activePhoto.id}><div
           key={activePhoto.id}
           className={styles.card}
           style={{ left: lift.cardLeft, top: lift.cardTop }}
@@ -335,20 +337,20 @@ function Table({
           aria-label={`${activePhoto.category} — ${activePhoto.caption}`}
         >
           <p className={`${styles.cardCat} ${styles.mono}`}>
-            {two(active! + 1)} · {activePhoto.category}
+            {two(active! + 1)} · <LandingText>{activePhoto.category}</LandingText>
           </p>
-          <p className={`${styles.cardCaption} ${styles.serif}`}>{activePhoto.caption}</p>
-          {activePhoto.detail && <p className={styles.cardDetail}>{activePhoto.detail}</p>}
-          <button type="button" className={`${styles.cardClose} ${styles.mono}`} onClick={() => setActive(null)}>
-            Put it back <span aria-hidden>↩</span>
+          <p className={`${styles.cardCaption} ${styles.serif}`}><LandingText>{activePhoto.caption}</LandingText></p>
+          {activePhoto.detail && <p className={styles.cardDetail}><LandingText>{activePhoto.detail}</LandingText></p>}
+          <button type="button" className={`${styles.cardClose} ${styles.mono}`} onClick={() => setActive(null)}><LandingText>
+            Put it back </LandingText><span aria-hidden>↩</span>
           </button>
-        </div>
+        </div></LandingAttributes>
       )}
 
-      <ol className={styles.index} aria-label="Photographs">
+      <LandingAttributes><ol className={styles.index} aria-label="Photographs">
         {photos.map((p, i) => (
           <li key={p.id}>
-            <button
+            <LandingAttributes><button
               type="button"
               className={`${styles.indexBtn} ${styles.mono}`}
               aria-current={i === active}
@@ -357,10 +359,10 @@ function Table({
             >
               {two(i + 1)}
               <span className={styles.indexLine} aria-hidden />
-            </button>
+            </button></LandingAttributes>
           </li>
         ))}
-      </ol>
+      </ol></LandingAttributes>
     </div>
   );
 }
@@ -405,14 +407,14 @@ function Pile({
     <div ref={rootRef}>
 
       <h2 className={`${styles.mTitle} mt-3`}>
-        <span>Where does</span>
-        <span>my support</span>
+        <span><LandingText>Where does</LandingText></span>
+        <span><LandingText>my support</LandingText></span>
         <span>
-          <em>go?</em>
+          <em><LandingText>go?</LandingText></em>
         </span>
       </h2>
 
-      <div
+      <LandingAttributes><div
         className={styles.pile}
         role="region"
         aria-roledescription="photo pile"
@@ -436,7 +438,7 @@ function Pile({
           const pos = rel < PILE.length ? PILE[rel] : rel === n - 1 && dir === 1 ? PILE_GONE : PILE_HIDDEN;
           const visible = rel < PILE.length;
           return (
-            <button
+            <LandingAttributes key={p.id}><button
               key={p.id}
               type="button"
               className={styles.card2}
@@ -462,25 +464,25 @@ function Pile({
               }
             >
               <Print photo={p} depth="front" sizes="80vw" />
-            </button>
+            </button></LandingAttributes>
           );
         })}
-      </div>
+      </div></LandingAttributes>
 
       <div className={styles.mCaption} aria-live="polite">
         <div key={top.id}>
           <p className={`${styles.mono} text-[11px] text-[var(--sg-accent)]`}>
-            {two(active + 1)} · {top.category}
+            {two(active + 1)} · <LandingText>{top.category}</LandingText>
           </p>
-          <p className={`${styles.serif} mt-1.5 text-[1.3rem] leading-snug`}>{top.caption}</p>
-          {top.detail && <p className="mt-1.5 text-sm leading-relaxed text-[var(--sg-ink)]">{top.detail}</p>}
+          <p className={`${styles.serif} mt-1.5 text-[1.3rem] leading-snug`}><LandingText>{top.caption}</LandingText></p>
+          {top.detail && <p className="mt-1.5 text-sm leading-relaxed text-[var(--sg-ink)]"><LandingText>{top.detail}</LandingText></p>}
         </div>
       </div>
 
-      <ol className={styles.mIndex} aria-label="Photographs">
+      <LandingAttributes><ol className={styles.mIndex} aria-label="Photographs">
         {photos.map((p, i) => (
           <li key={p.id}>
-            <button
+            <LandingAttributes><button
               type="button"
               className={`${styles.mIndexBtn} ${styles.mono}`}
               aria-current={i === active}
@@ -489,10 +491,10 @@ function Pile({
             >
               {two(i + 1)}
               <span className={styles.indexLine} aria-hidden />
-            </button>
+            </button></LandingAttributes>
           </li>
         ))}
-      </ol>
+      </ol></LandingAttributes>
     </div>
   );
 }
@@ -501,7 +503,7 @@ function Pile({
 
 export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
   return (
-    <section
+    <LandingAttributes><section
       id="where-support-goes"
       aria-label="Where does my support go? Photographs from CauseKind drives"
       className={`${styles.section} ${galleryFonts} ck-m-section`}
@@ -512,6 +514,6 @@ export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
       <div className="relative px-5 md:hidden">
         <Pile photos={photos} />
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }

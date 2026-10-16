@@ -15,6 +15,7 @@ import {
   MapPin, ShieldCheck, AlertTriangle, Loader2, RefreshCw, Phone, Bot,
 } from "lucide-react";
 import { ReasonField } from "@/components/ReasonField";
+import { PurchaseQueuePanel } from "./PurchaseQueuePanel";
 import { isMeaningfulReason, REASON_HINT } from "@/lib/rejectionReason";
 
 // Offers where AI screening hasn't reached a reviewable outcome yet — either never
@@ -87,6 +88,8 @@ export function OffersQueuePanel() {
     load();
   });
   const [filter, setFilter] = useState<string>("PENDING");
+  // Purchase commitments have their own lifecycle and queue endpoint.
+  const [showPurchases, setShowPurchases] = useState(false);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [expandedData, setExpandedData] = useState<ExpandedOffer | null>(null);
   const [expandLoading, setExpandLoading] = useState(false);
@@ -262,8 +265,20 @@ export function OffersQueuePanel() {
       ? `Nothing needs you right now — ${openCount} offer${openCount > 1 ? "s" : ""} moving through the pipeline`
       : "No open offers";
 
+  const purchaseToggle = (
+    <div className="flex gap-2">
+      <button onClick={() => setShowPurchases(false)} className={`rounded-full px-4 py-1.5 text-xs font-bold ${!showPurchases ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>All offers</button>
+      <button onClick={() => setShowPurchases(true)} className={`rounded-full px-4 py-1.5 text-xs font-bold ${showPurchases ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>Purchases</button>
+    </div>
+  );
+
+  if (showPurchases) {
+    return <div className="space-y-3 sm:space-y-4">{purchaseToggle}<PurchaseQueuePanel /></div>;
+  }
+
   return (
     <div className="space-y-3 sm:space-y-4">
+      {purchaseToggle}
       {/* Header strip */}
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm text-stone-500">{headline}</p>

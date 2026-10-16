@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React from "react";
 import { PenLine, ShieldCheck, HandHeart, PackageCheck } from "lucide-react";
@@ -24,12 +26,12 @@ export function HowReceivingWorksSection() {
       className={DONEE_SECTION}
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <DoneeSectionHeading
+        <LandingAttributes><DoneeSectionHeading
           id="how-receiving-works-heading"
           eyebrow="How it works"
           title="Getting help is simple."
           lede="From posting your need to receiving it, here's what happens."
-        />
+        /></LandingAttributes>
 
         <ol className={`relative ${DONEE_HEADING_GAP} mx-auto grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-8 max-w-xl lg:max-w-none`}>
           {/* Desktop connector: runs between the first and last badge centres. */}
@@ -54,16 +56,16 @@ export function HowReceivingWorksSection() {
                     <Icon className="w-6 h-6" aria-hidden="true" />
                   </div>
                   <span className="absolute -top-1.5 -right-1.5 w-6 h-6 rounded-full bg-white dark:bg-zinc-900 border border-[var(--ck-role-border)]! text-[11px] font-black text-[var(--ck-role-accent)] flex items-center justify-center">
-                    {i + 1}
+                    <LandingText>{i + 1}</LandingText>
                   </span>
                 </div>
                 <div className="pt-1.5 lg:pt-5 min-w-0">
                   <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100">
-                    <span className="sr-only">Step {i + 1}: </span>
-                    {step.title}
+                    <span className="sr-only"><LandingText>Step </LandingText><LandingText>{i + 1}</LandingText>: </span>
+                    <LandingText>{step.title}</LandingText>
                   </h3>
                   <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed lg:max-w-[16rem] lg:mx-auto">
-                    {step.text}
+                    <LandingText>{step.text}</LandingText>
                   </p>
                 </div>
               </li>

@@ -11,6 +11,9 @@ export default defineConfig({
   resolve: {
     alias: {
       vitest: path.resolve(realRoot, "node_modules/vitest"),
+      // tsconfig has allowJs: false, so vite-tsconfig-paths skips .jsx files
+      // (StaggeredMenu.jsx) and their "@/..." imports fail to resolve.
+      "@": path.resolve(realRoot, "src"),
     },
   },
   server: {

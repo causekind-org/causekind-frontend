@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -134,18 +136,18 @@ export function GiftJourneyTracker() {
           SECTION HEADER: NGO Perspective
           ───────────────────────────────────────────────────────────── */}
       <div className="text-center max-w-3xl mx-auto">
-        <NgoSectionLabel align="center">After you post</NgoSectionLabel>
+        <NgoSectionLabel align="center"><LandingText>After you post</LandingText></NgoSectionLabel>
 
         <h2
           className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-tight"
           style={{ fontFamily: "var(--font-source-serif-4), var(--font-lora), serif" }}
-        >
+        ><LandingText>
           What happens after you post
-        </h2>
+        </LandingText></h2>
 
-        <p className="text-xs sm:text-sm md:text-base text-stone-600 dark:text-stone-400 mt-3 max-w-2xl mx-auto leading-relaxed">
+        <p className="text-xs sm:text-sm md:text-base text-stone-600 dark:text-stone-400 mt-3 max-w-2xl mx-auto leading-relaxed"><LandingText>
           From starting a drive to donor handover, every step is direct, transparent, and closed with photo proof.
-        </p>
+        </LandingText></p>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
@@ -156,18 +158,18 @@ export function GiftJourneyTracker() {
         {/* Journey Summary Bar */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-6 mb-8 border-b border-stone-100 dark:border-zinc-800 text-left">
           <div>
-            <span className="text-3xs font-semibold text-stone-500 dark:text-stone-400">
+            <span className="text-3xs font-semibold text-stone-500 dark:text-stone-400"><LandingText>
               Sample drive
-            </span>
-            <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 mt-0.5">
+            </LandingText></span>
+            <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 mt-0.5"><LandingText>
               Illustrative journey · 40 blankets
-            </h3>
+            </LandingText></h3>
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-emerald-700 dark:text-emerald-300 text-3xs font-mono font-bold">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /><LandingText>
               CK-REQ-8821
-            </span>
+            </LandingText></span>
           </div>
         </div>
 
@@ -232,14 +234,14 @@ export function GiftJourneyTracker() {
                               : "text-stone-500 dark:text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200"
                           }`}
                         >
-                          {idx + 1}. {step.title}
+                          <LandingText>{idx + 1}</LandingText>. <LandingText>{step.title}</LandingText>
                         </span>
                         <span className="text-4xs sm:text-3xs text-stone-400 dark:text-stone-500 font-mono">
                           {step.timestamp}
                         </span>
                       </div>
                       <p className="text-2xs sm:text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed">
-                        {step.description}
+                        <LandingText>{step.description}</LandingText>
                       </p>
                     </div>
                   </button>
@@ -259,13 +261,13 @@ export function GiftJourneyTracker() {
               <div className="flex items-center justify-between pb-3.5 border-b border-stone-200/70 dark:border-zinc-800/80">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-3xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                  <span className="text-3xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400"><LandingText>
                     Live Workflow Preview
-                  </span>
+                  </LandingText></span>
                 </div>
-                <span className="text-3xs font-mono font-semibold text-stone-400">
-                  Step {activeStepIndex + 1} of 5
-                </span>
+                <span className="text-3xs font-mono font-semibold text-stone-400"><LandingText>
+                  Step </LandingText><LandingText>{activeStepIndex + 1}</LandingText><LandingText> of 5
+                </LandingText></span>
               </div>
 
               {/* Dynamic Step Status Display */}
@@ -282,17 +284,17 @@ export function GiftJourneyTracker() {
                   </div>
                   <div>
                     <span className="inline-block px-2 py-0.5 rounded text-4xs font-black uppercase tracking-wider bg-ngo-700 text-white">
-                      {activeStep.statusBadge}
+                      <LandingText>{activeStep.statusBadge}</LandingText>
                     </span>
                     <h4 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 mt-1">
-                      {activeStep.title}
+                      <LandingText>{activeStep.title}</LandingText>
                     </h4>
                   </div>
                 </div>
 
-                <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-normal bg-white/90 dark:bg-zinc-900/90 p-3.5 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm">
-                  &ldquo;{activeStep.description}&rdquo;
-                </p>
+                <p className="text-xs sm:text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-normal bg-white/90 dark:bg-zinc-900/90 p-3.5 rounded-xl border border-stone-200/80 dark:border-zinc-800 shadow-sm"><LandingText>
+                  &ldquo;</LandingText><LandingText>{activeStep.description}</LandingText><LandingText>&rdquo;
+                </LandingText></p>
 
                 {/* Handover Image */}
                 {activeStep.image && (
@@ -305,30 +307,30 @@ export function GiftJourneyTracker() {
                     <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-r from-ngo-700 via-ngo-500 to-emerald-500 opacity-30 blur-sm animate-pulse" />
 
                     <div className="relative w-full h-full bg-stone-100 dark:bg-zinc-900">
-                      <Image
+                      <LandingAttributes><Image
                         src={activeStep.image}
                         alt={activeStep.title}
                         fill
                         loading="lazy"
                         sizes="(max-width: 768px) 100vw, 400px"
                         className="object-cover"
-                      />
+                      /></LandingAttributes>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
                       {/* Top Chip */}
                       <div className="absolute top-2.5 left-2.5">
                         <span className="inline-flex items-center gap-1.5 rounded-md bg-black/60 dark:bg-zinc-950/80 backdrop-blur-md px-2.5 py-1 text-3xs uppercase tracking-wider font-bold text-white shadow-lg">
                           <Camera className="w-3.5 h-3.5 text-emerald-400" />
-                          {activeStep.proofBadge}
+                          <LandingText>{activeStep.proofBadge}</LandingText>
                         </span>
                       </div>
 
                       {/* Bottom Verified Note */}
                       <div className="absolute bottom-2.5 left-2.5 right-2.5 text-white">
                         <p className="text-2xs font-bold drop-shadow-sm flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" /><LandingText>
                           Direct verified handover with certificates
-                        </p>
+                        </LandingText></p>
                       </div>
                     </div>
                   </motion.div>
@@ -358,7 +360,7 @@ export function GiftJourneyTracker() {
                   className="inline-flex items-center gap-1.5 text-3xs sm:text-2xs font-bold text-ngo-700 dark:text-ngo-300 hover:text-ngo-600 transition-colors focus:outline-none"
                 >
                   <RotateCcw className="w-3 h-3" />
-                  <span>Replay journey</span>
+                  <span><LandingText>Replay journey</LandingText></span>
                 </button>
               </div>
 

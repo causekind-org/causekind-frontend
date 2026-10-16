@@ -48,6 +48,7 @@ export {
   CareNestLogo,
   SiteHeader,
   SiteFooter,
+  Footer,
 } from "./components/Navbar";
 export { NotificationBell } from "./components/NotificationBell";
 export { ParticleBackground } from "./components/ParticleBackground";

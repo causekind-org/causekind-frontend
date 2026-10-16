@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -54,8 +56,8 @@ function ResultRow({
         <p className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-snug truncate">
           <Highlight text={item.title} query={query} />
         </p>
-        <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate">
-          Request · {item.city} · Qty: {item.quantity}
+        <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 truncate"><LandingText>
+          Request · </LandingText>{item.city}<LandingText> · Qty: </LandingText>{item.quantity}
         </p>
       </div>
       <ArrowRight className={`w-3.5 h-3.5 shrink-0 transition-opacity ${active ? "opacity-100 text-[var(--ck-role-accent)]" : "opacity-0"}`} />
@@ -161,23 +163,23 @@ export function GlobalSearch() {
         {/* Search input row */}
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-stone-100 dark:border-zinc-800">
           <Search className="w-4.5 h-4.5 text-stone-400 shrink-0" />
-          <input
+          <LandingAttributes><input
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search requests…"
             className="flex-1 bg-transparent text-sm text-stone-900 dark:text-stone-100 placeholder:text-stone-400 outline-none font-medium"
-          />
+          /></LandingAttributes>
           {loading && <Loader2 className="w-4 h-4 text-stone-400 animate-spin shrink-0" />}
           {query && !loading && (
             <button onClick={() => setQuery("")} className="text-stone-400 hover:text-stone-600 transition-colors shrink-0">
               <X className="w-4 h-4" />
             </button>
           )}
-          <kbd className="hidden sm:flex items-center gap-0.5 text-3xs text-stone-400 border border-stone-200 dark:border-zinc-700 rounded px-1.5 py-0.5 font-mono shrink-0">
+          <kbd className="hidden sm:flex items-center gap-0.5 text-3xs text-stone-400 border border-stone-200 dark:border-zinc-700 rounded px-1.5 py-0.5 font-mono shrink-0"><LandingText>
             ESC
-          </kbd>
+          </LandingText></kbd>
         </div>
 
         {/* Results */}
@@ -185,24 +187,24 @@ export function GlobalSearch() {
           {results.length === 0 && !loading ? (
             !user ? (
               <div className="py-10 text-center space-y-2">
-                <p className="text-sm text-stone-400 font-medium">Live requests are visible to members only.</p>
+                <p className="text-sm text-stone-400 font-medium"><LandingText>Live requests are visible to members only.</LandingText></p>
                 <button
                   onClick={() => { setOpen(false); router.push("/login"); }}
                   className="text-sm font-bold text-[var(--ck-role-accent)] hover:underline"
-                >
+                ><LandingText>
                   Log in to search requests →
-                </button>
+                </LandingText></button>
               </div>
             ) : (
               <div className="py-10 text-center text-sm text-stone-400 font-medium">
-                {query ? `No results for "${query}"` : "Type to search"}
+                {query ? <><LandingText>No results for</LandingText> “{query}”</> : <LandingText>Type to search</LandingText>}
               </div>
             )
           ) : (
             <>
               {/* Label */}
               <p className="px-4 py-1.5 text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500">
-                {query ? `${results.length} result${results.length !== 1 ? "s" : ""}` : "Recent"}
+                {query ? <>{results.length} <LandingText>{results.length === 1 ? "result" : "results"}</LandingText></> : <LandingText>Recent</LandingText>}
               </p>
               {results.map((r, i) => (
                 <ResultRow
@@ -219,9 +221,9 @@ export function GlobalSearch() {
 
         {/* Footer hint */}
         <div className="border-t border-stone-100 dark:border-zinc-800 px-4 py-2 flex items-center gap-4 text-3xs text-stone-400 font-medium">
-          <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">↑↓</kbd> navigate</span>
-          <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">↵</kbd> open</span>
-          <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">ESC</kbd> close</span>
+          <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">↑↓</kbd><LandingText> navigate</LandingText></span>
+          <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono">↵</kbd><LandingText> open</LandingText></span>
+          <span className="flex items-center gap-1"><kbd className="border border-stone-200 dark:border-zinc-700 rounded px-1 py-0.5 font-mono"><LandingText>ESC</LandingText></kbd><LandingText> close</LandingText></span>
         </div>
       </div>
     </div>
@@ -235,7 +237,7 @@ export function SearchTrigger({ className = "" }: { className?: string }) {
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true, bubbles: true }));
   }
   return (
-    <button
+    <LandingAttributes><button
       onClick={open}
       aria-label="Search"
       title="Search (Ctrl+K)"
@@ -243,6 +245,6 @@ export function SearchTrigger({ className = "" }: { className?: string }) {
       {...tilt}
     >
       <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-    </button>
+    </button></LandingAttributes>
   );
 }

@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React from "react";
 import Link from "@/components/AppLink";
@@ -66,12 +68,12 @@ export function HandoverTipsSection() {
       className={DONEE_SECTION}
     >
       <div className="mx-auto max-w-6xl px-5 sm:px-8">
-        <DoneeSectionHeading
+        <LandingAttributes><DoneeSectionHeading
           id="handover-tips-heading"
           eyebrow="Stay safe"
           title="Receiving safely on CauseKind."
           lede="A few simple habits that keep every handover safe and smooth."
-        />
+        /></LandingAttributes>
 
         <ul className={`${DONEE_HEADING_GAP} grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5`}>
           {TIPS.map((tip) => {
@@ -82,8 +84,8 @@ export function HandoverTipsSection() {
                   <Icon className="w-5 h-5" aria-hidden="true" />
                 </span>
                 <div className="min-w-0">
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">{tip.title}</h3>
-                  <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed">{tip.text}</p>
+                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100"><LandingText>{tip.title}</LandingText></h3>
+                  <p className="mt-1 text-sm text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>{tip.text}</LandingText></p>
                 </div>
               </li>
             );
@@ -91,13 +93,13 @@ export function HandoverTipsSection() {
         </ul>
 
         <div className="mt-6 sm:mt-8 rounded-2xl bg-[var(--ck-role-soft)] px-5 py-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-[var(--ck-role-on-soft)]">
+          <p className="text-sm font-semibold text-[var(--ck-role-on-soft)]"><LandingText>
             Something not right with a handover? We&apos;re here to help.
-          </p>
+          </LandingText></p>
           <Link href={REPORT_HREF} className={`${DONEE_PILL_BUTTON} self-start sm:self-auto`}>
-            <Flag className="w-4 h-4" aria-hidden="true" />
+            <Flag className="w-4 h-4" aria-hidden="true" /><LandingText>
             Report a problem
-          </Link>
+          </LandingText></Link>
         </div>
       </div>
     </section>

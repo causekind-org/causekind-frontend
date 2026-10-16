@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Check, CircleDot, Route, TriangleAlert } from "lucide-react";
 import {
@@ -203,17 +204,39 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
         </p>
       )}
 
+      <OfferJourneyDrawer status={status} role={role}>
+        <button
+          type="button"
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-600 transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-transparent dark:text-stone-300 dark:hover:bg-zinc-800"
+        >
+          <Route className="h-3.5 w-3.5" aria-hidden />
+          View full journey
+          <span aria-hidden className="text-stone-400">›</span>
+        </button>
+      </OfferJourneyDrawer>
+    </div>
+  );
+}
+
+/**
+ * The full-journey bottom sheet on its own, opened by whatever trigger the
+ * caller passes (one focusable element). The donee offer card uses it behind a
+ * plain "See every step" link instead of the compact rail.
+ */
+export function OfferJourneyDrawer({
+  status, role = "donor", children,
+}: { status: string; role?: "donor" | "donee"; children: ReactNode }) {
+  const reduce = useReducedMotion();
+  const stages = role === "donee" ? buildDoneeJourney(status) : buildDonorJourney(status);
+  const idx = stages.findIndex(s => s.statuses.includes(status));
+  if (idx < 0) return null;
+  const atRisk = isAtRiskStatus(status);
+  const current = stages[idx];
+  const accent = atRisk ? "text-amber-600 dark:text-amber-400" : "text-[var(--ck-role-accent)]";
+
+  return (
       <Drawer>
-        <DrawerTrigger asChild>
-          <button
-            type="button"
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-600 transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-transparent dark:text-stone-300 dark:hover:bg-zinc-800"
-          >
-            <Route className="h-3.5 w-3.5" aria-hidden />
-            View full journey
-            <span aria-hidden className="text-stone-400">›</span>
-          </button>
-        </DrawerTrigger>
+        <DrawerTrigger asChild>{children}</DrawerTrigger>
 
         <DrawerContent className="max-h-[85dvh] overflow-hidden">
           <DrawerHeader>
@@ -295,7 +318,6 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
           </div>
         </DrawerContent>
       </Drawer>
-    </div>
   );
 }
 

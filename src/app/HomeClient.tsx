@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 /**
  * HomeClient — landing page orchestrator.
@@ -347,14 +349,14 @@ export default function HomeClient({
                 <div className="grid lg:grid-cols-[1fr_auto] gap-6 items-end">
                   <div>
                     <div className="flex items-center gap-4 mb-3">
-                      <span className="text-2xs font-black uppercase tracking-widest text-[var(--ck-home-ink,#b04a15)]">In-Kind Giving</span>
+                      <span className="text-2xs font-black uppercase tracking-widest text-[var(--ck-home-ink,#b04a15)]"><LandingText>In-Kind Giving</LandingText></span>
                       <span className="h-px flex-1 bg-[var(--ck-home-accent,#b04a15)]/20" />
                     </div>
                     <h2 className="text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white leading-[1.05]">
-                      {selectedCategory ? `${selectedCategory} Needs Near You` : t("inkindSection.title")}
+                      <LandingText>{selectedCategory ? `${selectedCategory} Needs Near You` : t("inkindSection.title")}</LandingText>
                     </h2>
                     <p className="text-base text-stone-500 dark:text-stone-400 font-medium mt-3 max-w-xl">
-                      {selectedCategory ? `Showing ${(selectedCategory ?? "").toLowerCase()} requests sorted by distance.` : t("inkindSection.subtitle")}
+                      <LandingText>{selectedCategory ? `Showing ${(selectedCategory ?? "").toLowerCase()} requests sorted by distance.` : t("inkindSection.subtitle")}</LandingText>
                     </p>
                   </div>
                   <Link href="/requests" className="inline-flex shrink-0">
@@ -380,7 +382,7 @@ export default function HomeClient({
                           <HoverCardTrigger asChild>
                             <Card className={`card-glow inkind-card-featured bg-white dark:bg-zinc-900 rounded-2xl border border-[var(--ck-home-surface,#ffedd5)] dark:border-zinc-800 overflow-hidden flex flex-col cursor-pointer group transition-all duration-300 ${isFeatured ? "lg:min-h-[320px]" : isTall ? "min-h-[280px]" : "min-h-[220px]"}`}>
                               <div className={`relative w-full bg-stone-100 dark:bg-zinc-950 shrink-0 overflow-hidden ${isFeatured ? "h-40 sm:h-52" : "h-28 sm:h-36"}`}>
-                                <Image src={req.imageUrl || getMobileCardImage(req.category, req.id)} alt={req.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 33vw" />
+                                <LandingAttributes><Image src={req.imageUrl || getMobileCardImage(req.category, req.id)} alt={req.title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 640px) 50vw, 33vw" /></LandingAttributes>
                                 {isFeatured && <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />}
                                 <div className="absolute top-2 right-2">
                                   <span className={`text-5xs sm:text-4xs font-black px-1.5 py-0.5 rounded-full uppercase border ${req.urgency === "CRITICAL" ? "bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400" : req.urgency === "HIGH" ? "bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400" : "bg-stone-100/90 dark:bg-zinc-800/90 border-stone-200 dark:border-zinc-700 text-stone-500 dark:text-stone-400"}`}>
@@ -389,7 +391,7 @@ export default function HomeClient({
                                 </div>
                                 {isFeatured && (
                                   <div className="absolute bottom-3 left-3">
-                                    <span className="text-3xs font-black text-white/80 uppercase tracking-wider bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-1">{req.category}</span>
+                                    <span className="text-3xs font-black text-white/80 uppercase tracking-wider bg-black/30 backdrop-blur-sm rounded-full px-2.5 py-1"><LandingText>{req.category}</LandingText></span>
                                   </div>
                                 )}
                               </div>
@@ -398,8 +400,8 @@ export default function HomeClient({
                                   <h3 className={`font-bold text-stone-900 dark:text-stone-100 leading-snug line-clamp-2 ${isFeatured ? "text-sm sm:text-base" : "text-xs sm:text-sm"}`}>
                                     <TranslatedText text={req.title} />
                                   </h3>
-                                  <p className="text-3xs sm:text-xs text-stone-400 font-semibold mt-0.5 truncate">
-                                    By {req.doneeName} · <TranslatedText text={req.city} />
+                                  <p className="text-3xs sm:text-xs text-stone-400 font-semibold mt-0.5 truncate"><LandingText>
+                                    By </LandingText>{req.doneeName} · <TranslatedText text={req.city} />
                                   </p>
                                 </div>
                                 {req.description && isFeatured && (
@@ -408,11 +410,11 @@ export default function HomeClient({
                                   </p>
                                 )}
                                 <div className="mt-auto pt-2 border-t border-[var(--ck-home-surface,#fff7ed)] dark:border-zinc-800 flex justify-between items-center">
-                                  <span className="text-3xs sm:text-xs text-stone-400 font-semibold">
-                                    Qty: <span className="text-stone-700 dark:text-stone-300 font-black">{req.quantity}</span>
+                                  <span className="text-3xs sm:text-xs text-stone-400 font-semibold"><LandingText>
+                                    Qty: </LandingText><span className="text-stone-700 dark:text-stone-300 font-black"><LandingText>{req.quantity}</LandingText></span>
                                   </span>
                                   <Link href="/requests" className="inline-flex">
-                                    <span className="text-[var(--ck-home-ink,#b04a15)] font-extrabold uppercase text-4xs sm:text-3xs tracking-wider hover:underline">Give →</span>
+                                    <span className="text-[var(--ck-home-ink,#b04a15)] font-extrabold uppercase text-4xs sm:text-3xs tracking-wider hover:underline"><LandingText>Give →</LandingText></span>
                                   </Link>
                                 </div>
                               </CardContent>
@@ -422,7 +424,7 @@ export default function HomeClient({
                             <div className="space-y-2">
                               <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight"><TranslatedText text={req.title} /></h4>
                               <p className="text-sm text-stone-500 dark:text-stone-400">{req.description ? <TranslatedText text={req.description} /> : `Requested by ${req.doneeName}. Qty ${req.quantity} needed.`}</p>
-                              <div className="text-xs text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-bold">Requested by: {req.doneeName}</div>
+                              <div className="text-xs text-[var(--ck-home-ink,#b04a15)] dark:text-[var(--ck-home-ink,#e07b3a)] font-bold"><LandingText>Requested by: </LandingText>{req.doneeName}</div>
                             </div>
                           </HoverCardContent>
                         </HoverCard>
@@ -511,8 +513,8 @@ export default function HomeClient({
                   {statItems.map(item => (
                     <span key={item.label + copy} className="flex items-center gap-2 text-white">
                       <item.icon className="w-3.5 h-3.5 opacity-80" />
-                      <span className="text-xs font-bold">{item.value}</span>
-                      <span className="text-3xs opacity-75 font-medium">{item.label}</span>
+                      <span className="text-xs font-bold"><LandingText>{item.value}</LandingText></span>
+                      <span className="text-3xs opacity-75 font-medium"><LandingText>{item.label}</LandingText></span>
                       <span className="opacity-40 mx-2">·</span>
                     </span>
                   ))}
@@ -576,7 +578,7 @@ export default function HomeClient({
                 <div key={campaign.id} className="bg-white dark:bg-zinc-900 rounded-[1.25rem] p-3.5 border border-[var(--ck-home-soft,#e8e2d5)] dark:border-zinc-800 flex gap-3.5 w-[310px] sm:w-[325px] snap-start shrink-0">
                   <div className="w-[100px] flex-shrink-0 flex flex-col justify-start">
                     <div className="relative h-18 w-full rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-950">
-                      <Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" />
+                      <LandingAttributes><Image src={campaign.imageUrl || getMobileCardImage(campaign.category, campaign.id)} alt={campaign.title} fill className="object-contain object-center" sizes="100px" /></LandingAttributes>
                     </div>
                     <p className="text-3xs font-black text-stone-800 dark:text-stone-100 mt-2 line-clamp-2 leading-snug"><TranslatedText text={campaign.title} /></p>
                   </div>
@@ -589,12 +591,12 @@ export default function HomeClient({
                     </div>
                     <div className="mt-2.5 space-y-1">
                       <div className="flex justify-between items-center text-4xs font-extrabold text-stone-400 uppercase">
-                        <span>Progress</span><span className="text-[var(--ck-home-ink,#b04a15)]">{pct}% Funded</span>
+                        <span><LandingText>Progress</LandingText></span><span className="text-[var(--ck-home-ink,#b04a15)]"><LandingText>{pct}</LandingText><LandingText>% Funded</LandingText></span>
                       </div>
                       <div className="w-full bg-stone-100 dark:bg-zinc-800 rounded-full h-1 overflow-hidden">
                         <div className="bg-[var(--ck-home-accent,#b04a15)] h-full rounded-full" style={{ width: `${pct}%` }} />
                       </div>
-                      <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)} of ₹{formatINR(campaign.targetAmount)}</p>
+                      <p className="text-4xs text-stone-500 dark:text-stone-400 font-extrabold mt-1">₹{formatINR(campaign.amountRaised)}<LandingText> of ₹</LandingText>{formatINR(campaign.targetAmount)}</p>
                     </div>
                     <Link href={`/campaigns/${campaign.id}`} className="block w-full mt-2.5">
                       <button className="w-full bg-[var(--ck-home-accent,#b04a15)] hover:bg-[var(--ck-home-hover,#963c0d)] text-white font-extrabold py-2 rounded-lg text-4xs tracking-wide uppercase transition-all shadow-sm active:scale-95"><TranslatedText text="Donate Now" /></button>

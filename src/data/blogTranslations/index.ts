@@ -1,123 +1,156 @@
-// Pre-translated blog content (see scripts/generate-blog-translations.mjs)
-// is fetched on demand from public/blog-translations/<locale>.json rather
-// than statically imported — 13 locales x ~9 translated articles is ~3.5MB
-// of JSON, and importing all of it directly into blog/page.tsx and
-// blog/[slug]/page.tsx (both client components) shipped that whole payload
-// to every visitor's bundle regardless of their selected language, and was
-// large enough to crash the dev compiler outright. Fetching only the active
-// locale, cached in memory + sessionStorage, avoids both problems.
+﻿"use client";
 
-export type BlogTranslation = {
-  title: string;
-  description: string;
-  category: string;
-  content: string;
-};
+import { blogPosts, insiderTips } from "@/data/blogData";
+import { locales, type Locale } from "@/i18n/config";
+import { translateTextStrict } from "@/lib/translation/client";
+import { translateHtmlStrict } from "@/hooks/useDynamicTranslation";
 
-export type InsiderTipTranslation = {
-  title: string;
-  description: string;
-};
+export type BlogTranslation = { title: string; description: string; category: string; content: string };
+export type InsiderTipTranslation = { title: string; description: string };
 
-// Reserved key scripts/generate-blog-translations.mjs stores the Insider
-// Tips carousel data under, alongside the per-slug post entries — can't
-// collide with a real post slug since blog slugs are plain kebab-case.
+const posts = new Map<string, BlogTranslation>();
+const tips = new Map<string, InsiderTipTranslation>();
+const pendingPosts = new Map<string, Promise<BlogTranslation | null>>();
+const pendingTips = new Map<string, Promise<InsiderTipTranslation | null>>();
+const articles = new Map<string, BlogTranslation>();
+const pendingArticles = new Map<string, Promise<BlogTranslation | null>>();
+const supported = (locale: string) => locale !== "en" && locales.includes(locale as Locale);
+const postKey = (locale: string, post: (typeof blogPosts)[number]) =>
+  JSON.stringify([locale, post.slug, post.title, post.description, post.category]);
+const tipKey = (locale: string, tip: (typeof insiderTips)[number]) =>
+  JSON.stringify([locale, tip.slug, tip.title, tip.description]);
+
+// Pre-translated files in public/blog-translations/<locale>.json come first:
+// free, and already reviewed in production. Google only covers posts/tips
+// missing from them (e.g. articles added after the last file generation).
+type StaticBlogFile = Record<string, BlogTranslation | Record<string, InsiderTipTranslation>>;
 const TIPS_KEY = "__insider_tips__";
+const staticFiles = new Map<string, Promise<StaticBlogFile>>();
 
-// Bump whenever public/blog-translations/*.json is regenerated.
-//
-// The sessionStorage entries below outlive a deploy: a reader who opened the
-// blog before new posts were translated kept being served the pre-deploy JSON
-// for the rest of their browser session, so newly translated articles rendered
-// in English no matter how many times they reloaded. Including a version in the
-// key means a regenerated payload lands under a name the old entry can't
-// satisfy, and the stale one is dropped rather than returned.
-const CACHE_VERSION = "3";
-
-const cacheKey = (locale: string) => `blog-translations:v${CACHE_VERSION}:${locale}`;
-
-/** Clears entries written by earlier CACHE_VERSIONs, which would otherwise sit
- *  in sessionStorage until the tab closed. */
-function dropStaleCaches(locale: string) {
-  try {
-    const keep = cacheKey(locale);
-    for (let i = sessionStorage.length - 1; i >= 0; i--) {
-      const k = sessionStorage.key(i);
-      if (k && k.startsWith("blog-translations:") && k !== keep) sessionStorage.removeItem(k);
-    }
-  } catch {}
+function loadStaticFile(locale: string): Promise<StaticBlogFile> {
+  let file = staticFiles.get(locale);
+  if (!file) {
+    file = fetch(`/blog-translations/${locale}.json`)
+      .then((response) => response.ok ? response.json() as Promise<StaticBlogFile> : {})
+      .catch(() => ({}));
+    staticFiles.set(locale, file);
+  }
+  return file;
 }
 
-type LocaleData = Record<string, BlogTranslation | Record<string, InsiderTipTranslation>>;
+async function staticPost(locale: string, slug: string): Promise<BlogTranslation | null> {
+  const entry = (await loadStaticFile(locale))[slug] as BlogTranslation | undefined;
+  return entry && typeof entry.title === "string" && typeof entry.content === "string" ? entry : null;
+}
 
-const memCache = new Map<string, LocaleData>();
-const inFlight = new Map<string, Promise<LocaleData | null>>();
+async function staticTip(locale: string, slug: string): Promise<InsiderTipTranslation | null> {
+  const entry = ((await loadStaticFile(locale))[TIPS_KEY] as Record<string, InsiderTipTranslation> | undefined)?.[slug];
+  return entry && typeof entry.title === "string" ? entry : null;
+}
 
-async function loadLocale(locale: string): Promise<LocaleData | null> {
-  if (locale === "en") return null;
-  if (memCache.has(locale)) return memCache.get(locale)!;
-
-  const existing = inFlight.get(locale);
+async function loadPost(locale: string, post: (typeof blogPosts)[number]): Promise<BlogTranslation | null> {
+  if (!supported(locale)) return null;
+  const key = postKey(locale, post);
+  const cached = posts.get(key);
+  if (cached) return cached;
+  const existing = pendingPosts.get(key);
   if (existing) return existing;
-
   const promise = (async () => {
-    dropStaleCaches(locale);
-
     try {
-      const stored = sessionStorage.getItem(cacheKey(locale));
-      if (stored) {
-        const data = JSON.parse(stored) as LocaleData;
-        memCache.set(locale, data);
-        return data;
+      const fromFile = await staticPost(locale, post.slug);
+      if (fromFile) {
+        const result = { title: fromFile.title, description: fromFile.description, category: fromFile.category, content: "" };
+        posts.set(key, result);
+        return result;
       }
-    } catch {}
-
-    try {
-      const res = await fetch(`/blog-translations/${locale}.json`);
-      if (!res.ok) return null;
-      const data = (await res.json()) as LocaleData;
-      memCache.set(locale, data);
-      try { sessionStorage.setItem(cacheKey(locale), JSON.stringify(data)); } catch {}
-      return data;
-    } catch {
-      return null;
-    } finally {
-      inFlight.delete(locale);
-    }
+      const [title, description, category] = await Promise.all(
+        [post.title, post.description, post.category].map((text) => translateTextStrict(text, locale)),
+      );
+      const result = { title, description, category, content: "" };
+      posts.set(key, result);
+      return result;
+    } catch { return null; }
   })();
-
-  inFlight.set(locale, promise);
-  return promise;
+  pendingPosts.set(key, promise);
+  try { return await promise; }
+  finally { pendingPosts.delete(key); }
 }
 
-/** Kicks off (and caches) the fetch for a locale, resolving once it's ready
- *  so callers rendering many posts at once (e.g. the blog listing page) can
- *  await one fetch and then use the synchronous getBlogTranslation /
- *  getInsiderTipTranslation reads below for every post, instead of a
- *  separate fetch per card. Safe to call redundantly — cached/in-flight. */
-export function preloadBlogTranslations(locale: string): Promise<LocaleData | null> {
-  return loadLocale(locale);
+async function loadTip(locale: string, tip: (typeof insiderTips)[number]): Promise<InsiderTipTranslation | null> {
+  if (!supported(locale)) return null;
+  const key = tipKey(locale, tip);
+  const cached = tips.get(key);
+  if (cached) return cached;
+  const existing = pendingTips.get(key);
+  if (existing) return existing;
+  const promise = (async () => {
+    try {
+      const fromFile = await staticTip(locale, tip.slug);
+      if (fromFile) { tips.set(key, fromFile); return fromFile; }
+      const [title, description] = await Promise.all(
+        [tip.title, tip.description].map((text) => translateTextStrict(text, locale)),
+      );
+      const result = { title, description };
+      tips.set(key, result);
+      return result;
+    } catch { return null; }
+  })();
+  pendingTips.set(key, promise);
+  try { return await promise; }
+  finally { pendingTips.delete(key); }
 }
 
-export async function fetchBlogTranslation(locale: string, slug: string): Promise<BlogTranslation | null> {
-  const data = await loadLocale(locale);
-  return (data?.[slug] as BlogTranslation) ?? null;
+/** Warm card metadata only. Article HTML never loads on the listing page. */
+export async function preloadBlogTranslations(locale: string): Promise<void> {
+  if (!supported(locale)) return;
+  await Promise.all([
+    ...blogPosts.map((post) => loadPost(locale, post)),
+    ...insiderTips.map((tip) => loadTip(locale, tip)),
+  ]);
+}
+
+/** The reader passes only the current article's already-loaded English HTML. */
+export async function fetchBlogTranslation(locale: string, slug: string, content?: string): Promise<BlogTranslation | null> {
+  const post = blogPosts.find((candidate) => candidate.slug === slug);
+  if (!post || !supported(locale)) return null;
+  if (!content) return loadPost(locale, post);
+  const key = JSON.stringify([postKey(locale, post), content]);
+  const cached = articles.get(key);
+  if (cached) return cached;
+  const existing = pendingArticles.get(key);
+  if (existing) return existing;
+  const promise = (async () => {
+    try {
+      const fromFile = await staticPost(locale, slug);
+      if (fromFile) {
+        if (articles.size >= 8) articles.delete(articles.keys().next().value!);
+        articles.set(key, fromFile);
+        return fromFile;
+      }
+      const [metadata, html] = await Promise.all([loadPost(locale, post), translateHtmlStrict(content, locale)]);
+      if (!metadata) return null;
+      const result = { ...metadata, content: html };
+      if (articles.size >= 8) articles.delete(articles.keys().next().value!);
+      articles.set(key, result);
+      return result;
+    } catch { return null; } // Never keep fallback HTML as a successful translation.
+  })();
+  pendingArticles.set(key, promise);
+  try { return await promise; }
+  finally { pendingArticles.delete(key); }
 }
 
 export async function fetchInsiderTipTranslation(locale: string, slug: string): Promise<InsiderTipTranslation | null> {
-  const data = await loadLocale(locale);
-  const tips = data?.[TIPS_KEY] as Record<string, InsiderTipTranslation> | undefined;
-  return tips?.[slug] ?? null;
+  const tip = insiderTips.find((candidate) => candidate.slug === slug);
+  return tip ? loadTip(locale, tip) : null;
 }
 
-/** Synchronous read of whatever's already cached in memory for a locale —
- *  returns null before the fetch resolves. Pair with preloadBlogTranslations
- *  + a re-render (e.g. a state bump) once the fetch completes. */
 export function getBlogTranslation(locale: string, slug: string): BlogTranslation | null {
-  return (memCache.get(locale)?.[slug] as BlogTranslation) ?? null;
+  const post = blogPosts.find((candidate) => candidate.slug === slug);
+  return post ? posts.get(postKey(locale, post)) ?? null : null;
 }
 
 export function getInsiderTipTranslation(locale: string, slug: string): InsiderTipTranslation | null {
-  const tips = memCache.get(locale)?.[TIPS_KEY] as Record<string, InsiderTipTranslation> | undefined;
-  return tips?.[slug] ?? null;
+  const tip = insiderTips.find((candidate) => candidate.slug === slug);
+  return tip ? tips.get(tipKey(locale, tip)) ?? null : null;
 }

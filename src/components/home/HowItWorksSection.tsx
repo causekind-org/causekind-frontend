@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes, useLandingTranslation, splitLandingHeading } from "@/components/LandingTranslation";
+
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FEATURES } from "@/lib/features";
@@ -252,8 +254,8 @@ function StepCard({
                 backgroundColor: roleBgSoft,
                 color: roleColor,
               }}
-            >
-              Step {step.number}
+            ><LandingText>
+              Step </LandingText><LandingText>{step.number}</LandingText>
             </span>
 
             {/* Micro-animated icon container */}
@@ -276,11 +278,11 @@ function StepCard({
           </div>
 
           <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 tracking-tight leading-snug mb-1.5">
-            {step.title}
+            <LandingText>{step.title}</LandingText>
           </h3>
 
           <p className="text-[11px] sm:text-xs text-stone-600 dark:text-stone-300 font-medium leading-relaxed">
-            {step.description}
+            <LandingText>{step.description}</LandingText>
           </p>
         </div>
       </div>
@@ -298,14 +300,14 @@ function MobileStepCard({ step }: { step: StepData }) {
   return (
     <article className={mStyles.card}>
       <span className={mStyles.numeral} aria-hidden>
-        {step.number}
+        <LandingText>{step.number}</LandingText>
       </span>
       <div>
         <h3 className={mStyles.title}>
-          <span className="sr-only">Step {step.number}: </span>
-          {step.title}
+          <span className="sr-only"><LandingText>Step </LandingText><LandingText>{step.number}</LandingText>: </span>
+          <LandingText>{step.title}</LandingText>
         </h3>
-        <p className={mStyles.desc}>{step.description}</p>
+        <p className={mStyles.desc}><LandingText>{step.description}</LandingText></p>
       </div>
       <span className={mStyles.icon} aria-hidden>
         <IconComp className="w-[1.05rem] h-[1.05rem]" />
@@ -393,7 +395,7 @@ export function HowItWorksSection() {
   }, [isInView, hasScrolledIn]);
 
   const currentTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
-  const labelText = "HOW IT WORKS";
+  const labelText = useLandingTranslation("HOW IT WORKS");
 
   // Keyboard navigation for accessible tabs (Left/Right Arrow)
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -422,13 +424,8 @@ export function HowItWorksSection() {
         } as React.CSSProperties
       }
     >
-      {/* Morphing ambient background glow */}
-      <div className="max-md:hidden absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[450px] rounded-full blur-3xl transition-colors duration-700"
-          style={{ backgroundColor: currentTabConfig.roleGlow }}
-        />
-      </div>
+      {/* Role-coloured ambient glow removed (2026-10-13), as in
+          HowItWorksDesktop: it read as a grey patch on the cream. */}
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full">
         {/* Eyebrow / Letter-by-letter typing label */}
@@ -441,7 +438,7 @@ export function HowItWorksSection() {
             className="text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] flex overflow-hidden transition-colors duration-500"
             style={{ color: "var(--role-color)" }}
           >
-            {labelText.split("").map((char, index) => (
+            {splitLandingHeading(labelText).map((char, index) => (
               <motion.span
                 key={index}
                 initial={{ opacity: 0, y: 4 }}
@@ -463,14 +460,14 @@ export function HowItWorksSection() {
           <h2
             id="how-it-works-heading"
             className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-snug"
-          >
-            Simple steps. <span style={{ color: "var(--role-color)" }} className="transition-colors duration-500">Whoever you are.</span>
+          ><LandingText>
+            Simple steps. </LandingText><span style={{ color: "var(--role-color)" }} className="transition-colors duration-500"><LandingText>Whoever you are.</LandingText></span>
           </h2>
         </div>
 
         {/* Three Accessible Tabs Switcher */}
         <div className="flex justify-center mb-3 md:mb-6">
-          <div
+          <LandingAttributes><div
             ref={tabListRef}
             role="tablist"
             onPointerEnter={pauseOnHover}
@@ -503,11 +500,11 @@ export function HowItWorksSection() {
                       transition={{ type: "spring", stiffness: 380, damping: 28 }}
                     />
                   )}
-                  <span className="relative z-10">{tab.label}</span>
+                  <span className="relative z-10"><LandingText>{tab.label}</LandingText></span>
                 </button>
               );
             })}
-          </div>
+          </div></LandingAttributes>
         </div>
 
         {/* Phone: one progress segment per role; the active one fills while
@@ -577,7 +574,7 @@ export function HowItWorksSection() {
               const rel = (ti - activeIndex + TABS.length) % TABS.length;
               const state = rel === 0 ? "active" : rel === 1 ? "after" : "before";
               return (
-                <ol
+                <LandingAttributes key={tab.id}><ol
                   key={tab.id}
                   className={mStyles.panel}
                   data-state={state}
@@ -590,7 +587,7 @@ export function HowItWorksSection() {
                       <MobileStepCard step={step} />
                     </li>
                   ))}
-                </ol>
+                </ol></LandingAttributes>
               );
             })}
           </div>
@@ -612,14 +609,14 @@ export function HowItWorksSection() {
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <span>{currentTabConfig.buttonText}</span>
+                <span><LandingText>{currentTabConfig.buttonText}</LandingText></span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </motion.button>
             </Link> : <span aria-disabled="true"
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white opacity-70 cursor-not-allowed"
                 style={{ backgroundColor: currentTabConfig.roleColor }}
               >
-                {currentTabConfig.buttonText}
+                <LandingText>{currentTabConfig.buttonText}</LandingText>
               </span>}
           </motion.div>
         </div>

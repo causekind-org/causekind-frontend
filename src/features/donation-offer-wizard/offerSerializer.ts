@@ -129,12 +129,27 @@ export type PurchaseCommitmentBody = {
   purchaseTimeline: string;
   intendedStore?: string;
   notes?: string;
+  fulfilmentMethod: "BUY_AND_HAND_OVER" | "DIRECT_DELIVERY";
+  productUrl?: string;
 };
+
+/** True for an http(s) link the backend's safeUrl() would accept. */
+export function isSafeWebLink(value: string): boolean {
+  try {
+    const u = new URL(value.trim());
+    return (u.protocol === "http:" || u.protocol === "https:") && !!u.hostname && !u.username;
+  } catch {
+    return false;
+  }
+}
 
 export function serializePurchaseCommitment(
   model: OfferModel, requestTitle: string | null,
 ): PurchaseCommitmentBody | null {
-  if (!model.purchaseTimeline) return null;
+  // Both are required by the endpoint; posting without them would 400 inside
+  // the autosave loop, so nothing is sent until the donor has chosen both.
+  if (!model.purchaseTimeline || !model.fulfilmentMethod) return null;
+  const link = model.productUrl.trim();
 
   const cost = Number(model.estimatedCost.trim());
   const brand = model.proposedBrand.trim();
@@ -148,6 +163,10 @@ export function serializePurchaseCommitment(
     // autosave loop if it ever is.
     itemName: (requestTitle ?? "").trim() || "Requested item",
     purchaseTimeline: model.purchaseTimeline,
+    fulfilmentMethod: model.fulfilmentMethod,
+    // A half-typed link is held back rather than sent: the backend rejects it
+    // and the inline error already tells the donor.
+    ...(link && isSafeWebLink(link) ? { productUrl: link } : {}),
     ...(brand ? { proposedBrand: brand } : {}),
     ...(modelName ? { proposedModel: modelName } : {}),
     ...(store ? { intendedStore: store } : {}),
@@ -184,6 +203,7 @@ export function offerMaterialDigest(model: OfferModel): string {
     // The purchase plan is material: it is the substance of what the donee is
     // being asked to accept, so changing it after ticking the declarations has
     // to void them exactly as changing the item would.
+    model.fulfilmentMethod, model.productUrl,
     model.proposedBrand, model.proposedModel, model.estimatedCost,
     model.intendedStore, model.purchaseTimeline, model.purchaseNotes,
     model.quantity, model.approximateAge, model.accessoriesIncluded, model.specNotes,

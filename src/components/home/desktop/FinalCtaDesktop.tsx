@@ -108,7 +108,7 @@ export function FinalCtaDesktop({
   }, [reduce, variant]);
 
   // WhatsApp Notify URL with pre-filled message
-  const whatsappNotifyUrl = `https://wa.me/917719938619?text=${encodeURIComponent(
+  const whatsappNotifyUrl = `https://wa.me/917887890208?text=${encodeURIComponent(
     "Hi CauseKind! Please notify me when online donations and fundraising launch."
   )}`;
 
@@ -117,7 +117,7 @@ export function FinalCtaDesktop({
       ref={sectionRef}
       id="join"
       aria-label="Join CauseKind"
-      className="relative w-full bg-[#FAF7F2] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
+      className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 overflow-hidden"
     >
       <div className="relative max-w-6xl mx-auto px-4 sm:px-6 w-full flex flex-col justify-center h-full">
         {/* Main CTA Card */}

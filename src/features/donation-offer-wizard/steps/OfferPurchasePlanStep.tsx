@@ -1,29 +1,38 @@
 "use client";
 
-import { ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { Check, Handshake, Loader2, ShieldCheck, Truck, Wand2 } from "lucide-react";
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
-import { PURCHASE_TIMELINES, type OfferModel } from "../offerModel";
+import { previewProductLink } from "@/lib/api";
+import { isSafeWebLink } from "../offerSerializer";
+import { PURCHASE_METHODS, PURCHASE_TIMELINES, type OfferModel } from "../offerModel";
+
+const METHOD_ICON = { BUY_AND_HAND_OVER: Handshake, DIRECT_DELIVERY: Truck } as const;
+
+/** What happens after acceptance, per method — shown under the chosen card. */
+const METHOD_NEXT: Record<string, string[]> = {
+  BUY_AND_HAND_OVER: [
+    "The recipient accepts your proposal and our team approves it.",
+    "You buy the item and upload a real photo of it.",
+    "Once the photo is approved, you arrange the handover with the handover code.",
+  ],
+  DIRECT_DELIVERY: [
+    "The recipient accepts and chooses to share a delivery address with you.",
+    "You place a prepaid order and upload the order confirmation (payment details hidden).",
+    "The recipient confirms in CauseKind what actually arrived.",
+  ],
+};
 
 /**
- * Step 1 of the WILL_PURCHASE flow, in the slot the photos step occupies for a
- * donor who already owns the item.
+ * Step 1 of the WILL_PURCHASE flow (rebuilt 2026-10-15).
  *
- * <p>Two things about this screen are load-bearing rather than decorative.
+ * <p>The donor proposes *how* the item will reach the recipient before anything
+ * else, because the method decides every step after acceptance: a physical
+ * handover with an item photo and handover code, or a prepaid retailer order
+ * shipped to an address the recipient shares only after accepting.
  *
- * <p>**The request stays on screen while they type.** The donor is promising to
- * buy a specific thing for a specific need; the need should not be one screen
- * back. Everything here is a claim about how well the purchase will match it,
- * and none of those claims can be judged against a memory.
- *
- * <p>**Only the timeline is required.** It is the field a scheduler acts on.
- * Brand, model and store are how the donee judges the promise, but a donor who
- * has not chosen a shop yet is still making a real commitment — making those
- * required would only teach them to type something.
- *
- * <p>There is deliberately no image upload here, and adding one later would be
- * a mistake worth arguing about: having nothing to screen before acceptance is
- * what keeps this flow cheap, and the screening gate moves to proof time, where
- * there is a real item to look at.
+ * <p>No photo upload here: the item does not exist yet. Evidence is collected in
+ * the purchase hub (`/offers/[id]/purchase`) once the offer is ready to buy.
  */
 export function OfferPurchasePlanStep({
   model, errors, onChange, requestTitle,
@@ -33,10 +42,85 @@ export function OfferPurchasePlanStep({
   onChange: <K extends keyof OfferModel>(key: K, value: OfferModel[K]) => void;
   requestTitle: string | null;
 }) {
+  const direct = model.fulfilmentMethod === "DIRECT_DELIVERY";
+  const [fill, setFill] = useState<{ kind: "idle" | "loading" } | { kind: "filled" | "empty"; message: string }>({ kind: "idle" });
+
+  /**
+   * Reads the pasted product page on the server and fills only the fields the
+   * donor left empty — never overwrites what they typed. Suggestions, not facts:
+   * the donor reviews them before sending.
+   */
+  async function fillFromLink() {
+    setFill({ kind: "loading" });
+    try {
+      const p = await previewProductLink(model.productUrl.trim());
+      const filled: string[] = [];
+      const put = <K extends "proposedBrand" | "proposedModel" | "estimatedCost" | "intendedStore">(key: K, value: string | null | undefined, label: string) => {
+        if (value && !model[key].trim()) { onChange(key, value.slice(0, key === "intendedStore" ? 200 : 100)); filled.push(label); }
+      };
+      if (p.found) {
+        put("proposedBrand", p.brand, "brand");
+        put("proposedModel", p.model ?? p.productName, "model");
+        put("estimatedCost", p.priceInr != null ? String(Math.round(p.priceInr)) : null, "cost");
+      }
+      put("intendedStore", p.retailer, direct ? "retailer" : "store");
+      setFill(filled.length
+        ? { kind: "filled", message: `Filled ${filled.join(", ")} from the link — please check before sending.` }
+        : p.found
+          ? { kind: "empty", message: "Nothing new to fill — your fields already have values." }
+          : { kind: "empty", message: "Couldn't read this page. Please fill in the details yourself." });
+    } catch (e) {
+      setFill({ kind: "empty", message: e instanceof Error ? e.message : "Couldn't read this page. Please fill in the details yourself." });
+    }
+  }
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      <fieldset data-field="fulfilmentMethod">
+        <legend className="mb-1 text-sm font-semibold text-stone-900 dark:text-stone-100">
+          How will the item reach the recipient? <span className="text-red-600" aria-hidden>*</span>
+        </legend>
+        <p className="mb-3 text-xs text-stone-500 dark:text-stone-400">The recipient accepts this together with the item.</p>
+        <div role="radiogroup" aria-label="Fulfilment method" className="grid gap-3 sm:grid-cols-2">
+          {PURCHASE_METHODS.map(m => {
+            const Icon = METHOD_ICON[m.value];
+            const selected = model.fulfilmentMethod === m.value;
+            return (
+              <button
+                key={m.value} type="button" role="radio" aria-checked={selected}
+                onClick={() => onChange("fulfilmentMethod", m.value)}
+                className={`relative flex min-h-11 flex-col items-start gap-2 rounded-xl border p-4 text-left transition-colors ${
+                  selected
+                    ? "border-[var(--ck-role-accent)] bg-orange-50/70 ring-1 ring-[var(--ck-role-accent)] dark:bg-orange-950/20"
+                    : "border-stone-200 bg-white hover:border-stone-300 dark:border-zinc-700 dark:bg-zinc-900"
+                }`}
+              >
+                <span className="flex w-full items-center justify-between gap-2">
+                  <span className="flex size-9 items-center justify-center rounded-lg bg-orange-100 text-[var(--ck-role-accent)] dark:bg-orange-950/40">
+                    <Icon className="size-5" aria-hidden />
+                  </span>
+                  {selected && <Check className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}
+                </span>
+                <span className="text-sm font-semibold text-stone-900 dark:text-stone-100">{m.label}</span>
+                <span className="text-xs leading-relaxed text-stone-600 dark:text-stone-400">{m.desc}</span>
+              </button>
+            );
+          })}
+        </div>
+        {errors.fulfilmentMethod && (
+          <p role="alert" className="mt-2 text-xs font-medium text-red-600 dark:text-red-400">{errors.fulfilmentMethod}</p>
+        )}
+        {model.fulfilmentMethod && (
+          <ol className="mt-3 space-y-1.5 rounded-xl bg-stone-50 p-3 text-xs leading-relaxed text-stone-600 dark:bg-zinc-950/40 dark:text-stone-300">
+            {METHOD_NEXT[model.fulfilmentMethod].map((line, i) => (
+              <li key={i} className="flex gap-2"><span className="font-semibold text-[var(--ck-role-accent)]">{i + 1}.</span>{line}</li>
+            ))}
+          </ol>
+        )}
+      </fieldset>
+
       <WizardField
-        label="How soon can you buy it?"
+        label={direct ? "How soon can you place the order?" : "How soon can you buy it?"}
         required
         hint="Counted from the day the recipient accepts, not from today."
         error={errors.purchaseTimeline}
@@ -45,11 +129,11 @@ export function OfferPurchasePlanStep({
           <select
             id={id} name="purchaseTimeline" data-field="purchaseTimeline"
             value={model.purchaseTimeline}
-            onChange={e => onChange("purchaseTimeline", e.target.value as OfferModel["purchaseTimeline"])}
+            onChange={e => onChange("purchaseTimeline", e.target.value)}
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
           >
-            <option value="" disabled hidden>Choose your purchase timeline</option>
+            <option value="" disabled hidden>Choose your timeline</option>
             {PURCHASE_TIMELINES.map(opt => <option key={opt.value} value={opt.value}>{opt.label} after acceptance</option>)}
           </select>
         )}
@@ -57,25 +141,53 @@ export function OfferPurchasePlanStep({
 
       <div className="flex items-start gap-2 rounded-xl bg-orange-50 p-3 text-sm leading-relaxed text-stone-700 dark:bg-orange-950/30 dark:text-stone-300">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--ck-role-accent)]" aria-hidden />
-        <p>Buy {requestTitle ? <strong>{requestTitle}</strong> : "the item"} only after the recipient accepts. Nothing is charged here.</p>
+        <p>
+          Please wait until your offer is accepted and shows <strong>Ready to buy</strong> before purchasing{" "}
+          {requestTitle ? <strong>{requestTitle}</strong> : "the item"}. CauseKind never takes payment.
+          {direct && " Direct delivery must be prepaid — the recipient must never pay on delivery."}
+        </p>
       </div>
 
-      {/* Everything below is optional and says so, so the donor can submit a
-          real commitment before they have shopped around. */}
+      <WizardField label="Product link" hint="Optional — the exact listing you plan to buy" error={errors.productUrl}>
+        {({ id, describedBy, invalid }) => (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="url" inputMode="url" id={id} name="productUrl" data-field="productUrl" maxLength={2000}
+              value={model.productUrl}
+              onChange={e => { onChange("productUrl", e.target.value); setFill({ kind: "idle" }); }}
+              aria-describedby={describedBy} aria-invalid={invalid}
+              className={`${controlClass} sm:flex-1`}
+              placeholder="https://"
+            />
+            <button
+              type="button" onClick={() => void fillFromLink()}
+              disabled={!/^https:\/\//i.test(model.productUrl.trim()) || !isSafeWebLink(model.productUrl) || fill.kind === "loading"}
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)] px-4 text-sm font-semibold text-[var(--ck-role-accent)] hover:bg-orange-50 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-orange-950/30"
+            >
+              {fill.kind === "loading" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Wand2 className="size-4" aria-hidden />}
+              Fill from link
+            </button>
+          </div>
+        )}
+      </WizardField>
+      {fill.kind !== "idle" && fill.kind !== "loading" && (
+        <p role="status" className={`-mt-3 text-xs ${fill.kind === "filled" ? "text-green-700 dark:text-green-400" : "text-stone-600 dark:text-stone-400"}`}>
+          {"message" in fill ? fill.message : null}
+        </p>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
-        <WizardField label="Brand you have in mind" hint="Optional" error={errors.proposedBrand}>
+        <WizardField label="Brand" hint="Optional" error={errors.proposedBrand}>
           {({ id, describedBy, invalid }) => (
             <input
               type="text" id={id} name="proposedBrand" maxLength={100}
               value={model.proposedBrand}
               onChange={e => onChange("proposedBrand", e.target.value)}
               aria-describedby={describedBy} aria-invalid={invalid}
-              className={controlClass}
-              placeholder="Not decided yet is fine"
+              className={controlClass} placeholder="Not decided yet is fine"
             />
           )}
         </WizardField>
-
         <WizardField label="Model or variant" hint="Optional" error={errors.proposedModel}>
           {({ id, describedBy, invalid }) => (
             <input
@@ -83,69 +195,53 @@ export function OfferPurchasePlanStep({
               value={model.proposedModel}
               onChange={e => onChange("proposedModel", e.target.value)}
               aria-describedby={describedBy} aria-invalid={invalid}
-              className={controlClass}
-              placeholder="Not decided yet is fine"
+              className={controlClass} placeholder="Not decided yet is fine"
             />
           )}
         </WizardField>
       </div>
 
-      <WizardField
-        label="Roughly what will it cost?"
-        hint="Optional — in rupees. Helps the recipient judge the fit; nothing is charged here."
-        error={errors.estimatedCost}
-      >
-        {({ id, describedBy, invalid }) => (
-          <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">
-              ₹
-            </span>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <WizardField label="Estimated cost" hint="Optional — in rupees" error={errors.estimatedCost}>
+          {({ id, describedBy, invalid }) => (
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">₹</span>
+              <input
+                type="text" inputMode="decimal" id={id} name="estimatedCost"
+                value={model.estimatedCost}
+                onChange={e => onChange("estimatedCost", e.target.value)}
+                aria-describedby={describedBy} aria-invalid={invalid}
+                className={`${controlClass} pl-7`} placeholder="0"
+              />
+            </div>
+          )}
+        </WizardField>
+        <WizardField label={direct ? "Retailer" : "Store"} hint="Optional" error={errors.intendedStore}>
+          {({ id, describedBy, invalid }) => (
             <input
-              type="text" inputMode="decimal" id={id} name="estimatedCost"
-              value={model.estimatedCost}
-              onChange={e => onChange("estimatedCost", e.target.value)}
+              type="text" id={id} name="intendedStore" maxLength={200}
+              value={model.intendedStore}
+              onChange={e => onChange("intendedStore", e.target.value)}
               aria-describedby={describedBy} aria-invalid={invalid}
-              className={`${controlClass} pl-7`}
-              placeholder="0"
+              className={controlClass}
+              placeholder={direct ? "Amazon, Flipkart…" : "Local shop, market…"}
             />
-          </div>
-        )}
-      </WizardField>
+          )}
+        </WizardField>
+      </div>
 
-      <WizardField label="Where will you buy it?" hint="Optional — a shop, a market, or an online store" error={errors.intendedStore}>
-        {({ id, describedBy, invalid }) => (
-          <input
-            type="text" id={id} name="intendedStore" maxLength={200}
-            value={model.intendedStore}
-            onChange={e => onChange("intendedStore", e.target.value)}
-            aria-describedby={describedBy} aria-invalid={invalid}
-            className={controlClass}
-            placeholder="Local shop, Amazon, Flipkart…"
-          />
-        )}
-      </WizardField>
-
-      <WizardField
-        label="Anything the recipient should know?"
-        hint="Optional"
-        error={errors.purchaseNotes}
-      >
+      <WizardField label="Anything the recipient should know?" hint="Optional" error={errors.purchaseNotes}>
         {({ id, describedBy, invalid }) => (
           <textarea
-            id={id} name="purchaseNotes" rows={2}
+            id={id} name="purchaseNotes" rows={2} maxLength={2000}
             value={model.purchaseNotes}
             onChange={e => onChange("purchaseNotes", e.target.value)}
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
-            placeholder="Waiting on a sale, buying it on my way back from work…"
+            placeholder="Colour, size, why you chose this one…"
           />
         )}
       </WizardField>
-
-      <p className="px-1 text-2xs leading-relaxed text-stone-500 dark:text-stone-400">
-        After the recipient accepts, you&apos;ll be asked for a photo of the item and a
-        receipt before the handover is arranged.
-      </p>
     </div>
   );
 }

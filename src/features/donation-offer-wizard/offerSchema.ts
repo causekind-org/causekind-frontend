@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  MIN_OFFER_PHOTOS, PURCHASE_TIMELINES, isPurchaseFlow,
+  MIN_OFFER_PHOTOS, PURCHASE_METHODS, PURCHASE_TIMELINES, isPurchaseFlow,
   offerStepsFor, type OfferModel, type OfferStep,
 } from "./offerModel";
 
@@ -20,6 +20,8 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
   return z
   .object({
     photos: z.array(z.any()),
+    fulfilmentMethod: z.string(),
+    productUrl: z.string(),
     proposedBrand: z.string(),
     proposedModel: z.string(),
     estimatedCost: z.string(),
@@ -62,6 +64,29 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
     // donor who has not picked a shop yet is still making a real commitment,
     // and demanding the detail would only push them to invent it.
     if (purchase) {
+      // The method decides the whole journey after acceptance, and the backend
+      // refuses a commitment without one.
+      if (!PURCHASE_METHODS.some(m => m.value === v.fulfilmentMethod)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["fulfilmentMethod"],
+          message: "Choose how the item will reach the recipient.",
+        });
+      }
+
+      // HTTP(S) only — the backend rejects anything else, and a javascript:
+      // link must never become something the donee can click.
+      const url = v.productUrl.trim();
+      if (url !== "") {
+        let ok = false;
+        try { const u = new URL(url); ok = (u.protocol === "http:" || u.protocol === "https:") && !!u.hostname && !u.username; } catch { ok = false; }
+        if (!ok) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom, path: ["productUrl"],
+            message: "Paste a full web link starting with https://, or leave it blank.",
+          });
+        }
+      }
+
       if (!v.purchaseTimeline) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["purchaseTimeline"],
@@ -153,6 +178,7 @@ export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]
   pickup: ["deliveryCostBornBy"],
   photos: ["photos"],
   purchasePlan: [
+    "fulfilmentMethod", "productUrl",
     "purchaseTimeline", "estimatedCost", "proposedBrand", "proposedModel",
     "intendedStore", "purchaseNotes",
   ],

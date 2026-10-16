@@ -113,6 +113,13 @@ describe("category strip", () => {
   });
 });
 
+// The Navratri hero (11–20 Oct 2026) swaps the photo for festival art; these
+// cases describe the everyday hero, so pin the campaign off whatever the date.
+vi.mock("@/lib/navratri", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/navratri")>()),
+  isNavratriCampaignActive: () => false,
+}));
+
 describe("hero", () => {
   it("renders the signup prompt with an older message bundle", () => {
     messageState.missingGivingPrompt = true;

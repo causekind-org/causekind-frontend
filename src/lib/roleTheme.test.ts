@@ -9,9 +9,8 @@ describe("roleTheme Suite", () => {
   });
 
   describe("themeForRole", () => {
-    it("maps NGO and NGO_PARTNER to 'ngo'", () => {
-      expect(themeForRole("NGO_PARTNER")).toBe("ngo");
-      expect(themeForRole("ngo")).toBe("ngo");
+    it("maps NGO_PARTNER (any case) to 'ngo', and the retired NGO role to nothing", () => {
+      expect(themeForRole("ngo")).toBeNull();
       expect(themeForRole("NGO_PARTNER")).toBe("ngo");
       expect(themeForRole("ngo_partner")).toBe("ngo");
     });

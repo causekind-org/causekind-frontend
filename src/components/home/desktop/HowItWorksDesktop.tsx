@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes, useLandingTranslation, splitLandingHeading } from "@/components/LandingTranslation";
+
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { FEATURES } from "@/lib/features";
@@ -251,8 +253,8 @@ function StepCard({
                 backgroundColor: roleBgSoft,
                 color: roleColor,
               }}
-            >
-              Step {step.number}
+            ><LandingText>
+              Step </LandingText><LandingText>{step.number}</LandingText>
             </span>
 
             {/* Micro-animated icon container */}
@@ -276,11 +278,11 @@ function StepCard({
           </div>
 
           <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100 tracking-tight leading-snug mb-1.5">
-            {step.title}
+            <LandingText>{step.title}</LandingText>
           </h3>
 
           <p className="text-[11px] sm:text-xs text-stone-600 dark:text-stone-300 font-medium leading-relaxed">
-            {step.description}
+            <LandingText>{step.description}</LandingText>
           </p>
         </div>
       </div>
@@ -399,14 +401,16 @@ export function HowItWorksDesktop() {
   };
 
   const currentTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
-  const labelText = "HOW IT WORKS";
+  const labelText = useLandingTranslation("HOW IT WORKS");
 
   return (
     <section
       ref={sectionRef}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
+      // Content-sized (2026-10-13): the full-viewport min-height centred a
+      // shorter block and left a large empty band before the Live Board.
+      className="relative w-full flex flex-col justify-center py-12 lg:py-14 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
       style={
         {
           "--role-color": currentTabConfig.roleColor,
@@ -417,13 +421,9 @@ export function HowItWorksDesktop() {
         } as React.CSSProperties
       }
     >
-      {/* Morphing ambient background glow */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[450px] rounded-full blur-3xl transition-colors duration-700"
-          style={{ backgroundColor: currentTabConfig.roleGlow }}
-        />
-      </div>
+      {/* The role-coloured ambient glow is gone (2026-10-13): on the cream it
+          read as a grey patch, and once the section became content-sized it
+          was cut off at the section edge as a hard band. */}
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full">
         {/* Eyebrow / Letter-by-letter typing label */}
@@ -436,7 +436,7 @@ export function HowItWorksDesktop() {
             className="text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] flex overflow-hidden transition-colors duration-500"
             style={{ color: "var(--role-color)" }}
           >
-            {labelText.split("").map((char, index) => (
+            {splitLandingHeading(labelText).map((char, index) => (
               <motion.span
                 key={index}
                 initial={{ opacity: 0, y: 4 }}
@@ -458,14 +458,14 @@ export function HowItWorksDesktop() {
           <h2
             id="how-it-works-heading"
             className="text-xl sm:text-2xl lg:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-snug"
-          >
-            Simple steps. <span style={{ color: "var(--role-color)" }} className="transition-colors duration-500">Whoever you are.</span>
+          ><LandingText>
+            Simple steps. </LandingText><span style={{ color: "var(--role-color)" }} className="transition-colors duration-500"><LandingText>Whoever you are.</LandingText></span>
           </h2>
         </div>
 
         {/* Three Accessible Tabs Switcher */}
         <div className="flex justify-center mb-5 sm:mb-6">
-          <div
+          <LandingAttributes><div
             ref={tabListRef}
             role="tablist"
             aria-label="User role journey selector"
@@ -497,11 +497,11 @@ export function HowItWorksDesktop() {
                       transition={{ type: "spring", stiffness: 450, damping: 32 }}
                     />
                   )}
-                  <span className="relative z-10">{tab.label}</span>
+                  <span className="relative z-10"><LandingText>{tab.label}</LandingText></span>
                 </button>
               );
             })}
-          </div>
+          </div></LandingAttributes>
         </div>
 
         {/* Steps Grid with Connecting Path */}
@@ -573,14 +573,14 @@ export function HowItWorksDesktop() {
                 whileHover={{ scale: 1.03, y: -2 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <span>{currentTabConfig.buttonText}</span>
+                <span><LandingText>{currentTabConfig.buttonText}</LandingText></span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
               </motion.button>
             </Link> : <span aria-disabled="true"
                 className="inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white opacity-70 cursor-not-allowed"
                 style={{ backgroundColor: currentTabConfig.roleColor }}
               >
-                {currentTabConfig.buttonText}
+                <LandingText>{currentTabConfig.buttonText}</LandingText>
               </span>}
           </motion.div>
         </div>

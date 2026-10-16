@@ -7,7 +7,7 @@ import type { CompatibilityCheck } from "@/lib/api";
 import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 import {
   OFFER_GROUP_TITLES, declarationGroupsFor,
-  isPurchaseFlow, purchaseTimelineLabel, uploadedOfferPhotos,
+  isPurchaseFlow, purchaseMethodLabel, purchaseTimelineLabel, uploadedOfferPhotos,
   type OfferModel, type OfferStep,
 } from "../offerModel";
 
@@ -57,7 +57,12 @@ export function OfferReviewStep({
 
       {purchase ? (
         <ReviewSection title="What you'll buy" onEdit={() => onEdit("purchasePlan")}>
+          <p className="mb-2 rounded-lg bg-orange-50 p-2 text-2xs font-semibold text-stone-700 dark:bg-orange-950/30 dark:text-stone-200">
+            Please wait until your offer is accepted and ready to buy before purchasing.
+          </p>
+          <ReviewRow label="Delivery" value={purchaseMethodLabel(model.fulfilmentMethod)} />
           <ReviewRow label="Buying by" value={purchaseTimelineLabel(model.purchaseTimeline)} />
+          {model.productUrl && <ReviewRow label="Product link" value={model.productUrl} />}
           <ReviewRow label="Brand" value={model.proposedBrand || "Not decided"} />
           <ReviewRow label="Model" value={model.proposedModel || "Not decided"} />
           <ReviewRow label="Estimated cost" value={model.estimatedCost ? `₹${model.estimatedCost}` : "Not given"} />
@@ -125,13 +130,15 @@ export function OfferReviewStep({
         <ReviewRow label="City" value={model.pickupCity} />
         <ReviewRow label="Locality" value={model.pickupLocality} />
         <ReviewRow label="PIN code" value={model.pickupPincode} />
-        <ReviewRow label="Handover" value={model.donorDropOffAvailable
+        <ReviewRow label="Handover" value={model.fulfilmentMethod === "DIRECT_DELIVERY"
+          ? "Shipped by the retailer to the recipient"
+          : model.donorDropOffAvailable
           ? "You'll take it to the recipient's area if they can't come"
           : "Within 10 km of the recipient"} />
       </ReviewSection>}
 
       <DeclarationsBlock
-        groups={declarationGroups ?? declarationGroupsFor(flowType)}
+        groups={declarationGroups ?? declarationGroupsFor(flowType, model.fulfilmentMethod)}
         groupTitles={OFFER_GROUP_TITLES}
         confirmed={model.declarationsConfirmed}
         onConfirmedChange={v => onChange("declarationsConfirmed", v)}

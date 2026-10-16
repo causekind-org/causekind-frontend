@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React, { useEffect, useId, useRef } from "react";
 import Image from "next/image";
@@ -15,11 +17,11 @@ import { DoneeSectionHeading, DONEE_HEADING_GAP } from "./DoneeSectionHeading";
 /** The donee page's centered heading block for this section (donee tone only). */
 function FoundersDoneeHeading() {
   return (
-    <DoneeSectionHeading
+    <LandingAttributes><DoneeSectionHeading
       eyebrow="Why we built CauseKind"
       title="Neighbours helping neighbours."
       lede="A note from our founder."
-    />
+    /></LandingAttributes>
   );
 }
 
@@ -105,30 +107,30 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
   const signoffRef = useRevealOnce<HTMLElement>();
   const ringId = useId();
   return (
-    <section
+    <LandingAttributes><section
       ref={ref}
       id="founders-note"
       aria-label="Why We Built CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-b border-stone-200/80 dark:border-stone-800/80 "}px-5${isDonee ? ` ${fm.donee}` : ""}`}
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : ""}px-5${isDonee ? ` ${fm.donee}` : ""}`}
     >
       {isDonee ? (
         <FoundersDoneeHeading />
       ) : (
-        <p data-reveal-item style={stagger(0)} className={fm.eyebrow}>
+        <p data-reveal-item style={stagger(0)} className={fm.eyebrow}><LandingText>
           Why we built CauseKind
-        </p>
+        </LandingText></p>
       )}
       <div className={isDonee ? `${fm.masthead} ${fm.mastheadPrintOnly}` : fm.masthead}>
         {!isDonee && (
-          <h2 data-reveal-item style={stagger(1)} className={fm.title}>
-            Neighbours helping <em>neighbours.</em>
+          <h2 data-reveal-item style={stagger(1)} className={fm.title}><LandingText>
+            Neighbours helping </LandingText><em><LandingText>neighbours.</LandingText></em>
           </h2>
         )}
         <figure data-reveal-item="scale" style={stagger(3)} className={fm.print}>
           <div className={fm.printPhoto}>
             {FOUNDER.photo ? (
-              <Image src={FOUNDER.photo} alt={`${FOUNDER.name}, founder of CauseKind`} fill sizes="130px" className="object-cover object-top" />
+              <LandingAttributes><Image src={FOUNDER.photo} alt={`${FOUNDER.name}, founder of CauseKind`} fill sizes="130px" className="object-cover object-top" /></LandingAttributes>
             ) : (
               <div className="absolute inset-0" aria-hidden="true">
                 <FounderAvatarPlaceholder tone={tone} />
@@ -142,12 +144,12 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
         <div data-reveal-item style={stagger(2)} className={fm.envelope} aria-hidden="true" />
         <article data-reveal-item style={stagger(2)} className={fm.letter}>
           <span className={fm.printSpacer} aria-hidden="true" />
-          <p className={fm.salutation}>Dear neighbour,</p>
+          <p className={fm.salutation}><LandingText>Dear neighbour,</LandingText></p>
 
           <div className={fm.body}>
-            <p>
+            <p><LandingText>
               Every home has things it no longer needs. And just a few streets away, someone is waiting for exactly those things.
-              {FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}
+              </LandingText><LandingText>{FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}</LandingText>
             </p>
 
             <div ref={doodleRef} className={fm.doodle} aria-hidden="true">
@@ -168,22 +170,22 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
                 </svg>
                 <span className={fm.ink} />
               </div>
-              <span className={fm.doodleNote}>just a few streets away</span>
+              <span className={fm.doodleNote}><LandingText>just a few streets away</LandingText></span>
             </div>
 
-            <p>
+            <p><LandingText>
               We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
-            </p>
+            </LandingText></p>
           </div>
 
           <footer ref={signoffRef} className={fm.signoff}>
             <div className={fm.signRow}>
               <div className="min-w-0">
-                <p className={fm.valediction}>With warmth,</p>
+                <p className={fm.valediction}><LandingText>With warmth,</LandingText></p>
                 <span className={fm.sig}>
                   {FOUNDER.signature ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={FOUNDER.signature} alt="" aria-hidden className={fm.sigImg} />
+                    <LandingAttributes><img src={FOUNDER.signature} alt="" aria-hidden className={fm.sigImg} /></LandingAttributes>
                   ) : (
                     <span aria-hidden="true">{FOUNDER.name}</span>
                   )}
@@ -212,12 +214,12 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
                   <circle cx="40" cy="40" r="34" stroke="currentColor" strokeWidth="2" />
                   <circle cx="40" cy="40" r="21.5" stroke="currentColor" strokeWidth="1.2" />
                   <text fontSize="7.2" letterSpacing="0.6">
-                    <textPath href={`#${ringId}`} textLength="168" lengthAdjust="spacingAndGlyphs">
+                    <textPath href={`#${ringId}`} textLength="168" lengthAdjust="spacingAndGlyphs"><LandingText>
                       NEIGHBOURHOOD POST • CAUSEKIND •
-                    </textPath>
+                    </LandingText></textPath>
                   </text>
-                  <text x="40" y="38" fontSize="6.5" textAnchor="middle" letterSpacing="0.8">WITHIN</text>
-                  <text x="40" y="50" fontSize="10.5" fontWeight="700" textAnchor="middle">10 KM</text>
+                  <text x="40" y="38" fontSize="6.5" textAnchor="middle" letterSpacing="0.8"><LandingText>WITHIN</LandingText></text>
+                  <text x="40" y="50" fontSize="10.5" fontWeight="700" textAnchor="middle"><LandingText>10 KM</LandingText></text>
                   <path
                     d="M76 28q5.25-4 10.5 0t10.5 0t10.5 0t10.5 0M76 40q5.25-4 10.5 0t10.5 0t10.5 0t10.5 0M76 52q5.25-4 10.5 0t10.5 0t10.5 0t10.5 0"
                     stroke="currentColor"
@@ -229,12 +231,12 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
             </div>
             <p className={fm.nameLine}>
               <span className={fm.name}>{FOUNDER.name}</span>
-              <span className={fm.role}>{FOUNDER.title}</span>
+              <span className={fm.role}><LandingText>{FOUNDER.title}</LandingText></span>
             </p>
           </footer>
         </article>
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }
 
@@ -428,12 +430,12 @@ function FoundersNoteFull({
   }, [svgSignature, variant]);
 
   return (
-    <section
+    <LandingAttributes><section
       ref={sectionRef}
       id="founders-note"
       aria-label="Why We Built CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className={`relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-b border-stone-200/80 dark:border-stone-800/80 "}min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors`}
+      className={`relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] flex flex-col justify-center py-10 sm:py-12 lg:py-14 overflow-hidden transition-colors`}
     >
       {/* Ambient background glow */}
       {isDonee ? (
@@ -475,14 +477,14 @@ function FoundersNoteFull({
                 className="relative w-[190px] sm:w-[240px] xl:w-[280px] aspect-[4/5] rounded-2xl sm:rounded-3xl overflow-hidden border border-stone-200/90 dark:border-stone-800 shadow-lg bg-white dark:bg-zinc-900"
               >
                 {FOUNDER.photo ? (
-                  <Image
+                  <LandingAttributes><Image
                     src={FOUNDER.photo}
                     alt={`${FOUNDER.name}, founder of CauseKind`}
                     fill
                     sizes="(max-width: 640px) 190px, (max-width: 1024px) 240px, 280px"
                     className="object-cover object-top"
                     priority={false}
-                  />
+                  /></LandingAttributes>
                 ) : (
                   <FounderAvatarPlaceholder tone={tone} />
                 )}
@@ -498,16 +500,16 @@ function FoundersNoteFull({
                 {/* Eyebrow Label */}
                 <div className="founder-anim-item flex items-center justify-center lg:justify-start gap-2 mb-2">
                   <span className={`h-0.5 w-6 rounded-full ${accent.line}`} />
-                  <p className={`text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] ${accent.eyebrow}`}>
+                  <p className={`text-3xs sm:text-2xs font-black uppercase tracking-[0.2em] ${accent.eyebrow}`}><LandingText>
                     WHY WE BUILT CAUSEKIND
-                  </p>
+                  </LandingText></p>
                   <span className={`h-0.5 w-6 rounded-full ${accent.line} lg:hidden`} />
                 </div>
 
                 {/* Section Heading */}
-                <h2 className="founder-anim-item text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight">
+                <h2 className="founder-anim-item text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100 leading-tight"><LandingText>
                   Neighbours helping neighbours.
-                </h2>
+                </LandingText></h2>
               </>
             )}
 
@@ -522,13 +524,13 @@ function FoundersNoteFull({
 
             {/* Note Paragraphs */}
             <div className="founder-anim-item space-y-3 text-sm sm:text-base lg:text-lg text-stone-700 dark:text-stone-300 font-medium leading-relaxed max-w-2xl mx-auto lg:mx-0">
-              <p>
+              <p><LandingText>
                 Every home has things it no longer needs. And just a few streets away, someone is waiting for exactly those things.
-                {FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}
+                </LandingText><LandingText>{FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}</LandingText>
               </p>
-              <p>
+              <p><LandingText>
                 We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
-              </p>
+              </LandingText></p>
             </div>
 
             {/* ── Sign-off: Signature, Name & Title ── */}
@@ -549,13 +551,13 @@ function FoundersNoteFull({
 
               {/* Founder Title */}
               <p className={`text-xs sm:text-sm font-semibold ${accent.title} mt-0.5`}>
-                {FOUNDER.title}
+                <LandingText>{FOUNDER.title}</LandingText>
               </p>
             </div>
           </div>
 
         </div>
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }

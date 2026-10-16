@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React, { useEffect, useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
@@ -38,7 +40,7 @@ export function GoogleReviewsSection() {
   const isPaused = expandedCount > 0;
 
   return (
-    <section className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] py-16 sm:py-24 overflow-hidden transition-colors">
+    <section className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] pt-8 pb-16 sm:pt-10 sm:pb-24 overflow-hidden transition-colors">
       <style>{`
         @keyframes scroll-left {
           0% { transform: translateX(0%); }
@@ -58,9 +60,9 @@ export function GoogleReviewsSection() {
       `}</style>
 
       <div className="max-w-6xl mx-auto px-5 sm:px-8 w-full flex flex-col items-center">
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-3 text-center">
+        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-stone-900 dark:text-white mb-3 text-center"><LandingText>
           Reviews from Google Maps
-        </h2>
+        </LandingText></h2>
         
         {/* Rating Pill */}
         <a 
@@ -76,13 +78,13 @@ export function GoogleReviewsSection() {
             ))}
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm text-stone-900 dark:text-stone-100">{data.overallRating}</span>
-            <span className="text-xs text-stone-500 dark:text-stone-400">({data.totalReviews} reviews)</span>
+            <span className="font-bold text-sm text-stone-900 dark:text-stone-100"><LandingText>{data.overallRating}</LandingText></span>
+            <span className="text-xs text-stone-500 dark:text-stone-400">(<LandingText>{data.totalReviews}</LandingText><LandingText> reviews)</LandingText></span>
           </div>
           <ExternalLink className="w-3.5 h-3.5 text-stone-400 group-hover:text-stone-600 dark:group-hover:text-stone-300 transition-colors" />
         </a>
 
-        <p className="mt-4 text-sm text-stone-600 dark:text-stone-300 text-center">Up to 5 reviews, ordered by relevance by Google. <a href={data.mapsUrl} target="_blank" rel="noopener noreferrer" className="underline">See all reviews</a></p>
+        <p className="mt-4 text-sm text-stone-600 dark:text-stone-300 text-center"><LandingText>Up to 5 reviews, ordered by relevance by Google. </LandingText><a href={data.mapsUrl} target="_blank" rel="noopener noreferrer" className="underline"><LandingText>See all reviews</LandingText></a></p>
         {data.attributions.map((attribution, index) => (
           <p key={index} className="text-sm text-stone-600 dark:text-stone-300">
             {attribution.providerUri ? <a href={attribution.providerUri} target="_blank" rel="noopener noreferrer">{attribution.provider}</a> : attribution.provider}
@@ -166,14 +168,14 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
       
       <div className="flex-1 mb-4">
         <p className={`text-sm text-stone-600 dark:text-stone-300 leading-relaxed ${!expanded ? 'line-clamp-4' : ''}`}>
-          {review.text || 'This reviewer left a rating without a comment.'}
+          <LandingText>{review.text || 'This reviewer left a rating without a comment.'}</LandingText>
         </p>
         {review.text.length > 150 && (
           <button 
             onClick={handleToggle}
             className="mt-1 text-xs font-semibold text-[#b04a15] hover:underline"
           >
-            {expanded ? "See less" : "See more"}
+            <LandingText>{expanded ? "See less" : "See more"}</LandingText>
           </button>
         )}
       </div>
@@ -182,13 +184,13 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
 
       <div className="flex items-center gap-3">
         {review.avatarUrl && failedAvatarUrl !== review.avatarUrl ? (
-          <img
+          <LandingAttributes><img
             src={review.avatarUrl}
             alt={review.name}
             referrerPolicy="no-referrer"
             onError={() => setFailedAvatarUrl(review.avatarUrl ?? null)}
             className="w-10 h-10 shrink-0 rounded-full object-cover"
-          />
+          /></LandingAttributes>
         ) : (
           <div className={`w-10 h-10 shrink-0 rounded-full flex items-center justify-center text-white font-bold text-sm ${getAvatarColor(review.name)}`}>
             {getInitial(review.name)}
@@ -197,7 +199,7 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
         <div className="flex flex-col">
           {review.authorUrl ? <a href={review.authorUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-stone-900 dark:text-stone-100 hover:underline">{review.name}</a> : <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{review.name}</span>}
           <span className="text-xs text-stone-500 dark:text-stone-400">{review.date}</span>
-          {review.reviewUrl && <a href={review.reviewUrl} target="_blank" rel="noopener noreferrer" aria-label={`View ${review.name}'s review on Google Maps (opens in a new tab)`} className="text-xs underline text-stone-600 dark:text-stone-300">View Review</a>}
+          {review.reviewUrl && <LandingAttributes><a href={review.reviewUrl} target="_blank" rel="noopener noreferrer" aria-label={`View ${review.name}'s review on Google Maps (opens in a new tab)`} className="text-xs underline text-stone-600 dark:text-stone-300"><LandingText>View Review</LandingText></a></LandingAttributes>}
         </div>
       </div>
     </div>

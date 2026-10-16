@@ -1,4 +1,6 @@
 "use client";
+import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+
 
 import React, { useEffect, useRef, useState, useCallback, useId } from "react";
 import Link from "next/link";
@@ -146,14 +148,14 @@ function HoverFlipCard({ title, desc, icon: Icon, variant = "donor" }: { title: 
               <Icon className={badgeIconClass} />
             </div>
             <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">
-              {title}
+              <LandingText>{title}</LandingText>
             </h3>
           </div>
         }
         back={
           <div className={`w-full h-full flex flex-col items-start justify-center text-left rounded-2xl p-5 sm:p-6 border shadow-sm transition-shadow ${faceClass}`}>
             <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-snug">
-              {desc}
+              <LandingText>{desc}</LandingText>
             </p>
           </div>
         }
@@ -222,9 +224,9 @@ function MobileEcosystem() {
         </div>
 
         {/* Micro labels */}
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "8%", top: "48%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>GIVE</span>
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", right: "8%", top: "50%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>VERIFY</span>
-        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "42%", top: "70%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}>MATCH</span>
+        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "8%", top: "48%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}><LandingText>GIVE</LandingText></span>
+        <span data-reveal-item style={{ ...stagger(5), position: "absolute", right: "8%", top: "50%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}><LandingText>VERIFY</LandingText></span>
+        <span data-reveal-item style={{ ...stagger(5), position: "absolute", left: "42%", top: "70%", fontSize: "0.4375rem", fontWeight: 800, textTransform: "uppercase" as const, letterSpacing: "0.15em", color: "rgba(120,113,108,0.45)" }}><LandingText>MATCH</LandingText></span>
 
         {/* Donor */}
         <div data-reveal-item style={stagger(2)} className="absolute flex flex-col items-center" aria-hidden>
@@ -232,7 +234,7 @@ function MobileEcosystem() {
             <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #FBEDE3, #F9DCC4)", boxShadow: "0 3px 12px -3px rgba(181,72,15,0.2)" }}>
               <DonorSvg size={38} />
             </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#B5480F]">Donor</span>
+            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#B5480F]"><LandingText>Donor</LandingText></span>
           </div>
         </div>
 
@@ -242,7 +244,7 @@ function MobileEcosystem() {
             <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "linear-gradient(135deg, #E3F2EF, #C5E8E0)", boxShadow: "0 3px 12px -3px rgba(30,58,96,0.2)" }}>
               <DoneeSvg size={38} />
             </div>
-            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#1e3a60]">Donee</span>
+            <span className="mt-1 text-[9px] font-extrabold uppercase tracking-widest text-[#1e3a60]"><LandingText>Donee</LandingText></span>
           </div>
         </div>
 
@@ -399,12 +401,12 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
   // Unused GSAP and RAF hooks removed
 
   return (
-    <section
+    <LandingAttributes><section
       ref={sectionRef}
       id="about-causekind"
       aria-label="About CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#F8F6F2] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
+      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#FAF8F5] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
     >
       {/* Decorative ambient background subtle radial glows */}
       <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20" aria-hidden="true">
@@ -428,33 +430,33 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
             ========================================================================= */}
             <div className="relative w-full select-none py-1 flex items-center justify-start gap-3 mb-6">
               <span className="w-10 sm:w-12 h-[3px] bg-[var(--ck-role-accent,#B5480F)] rounded-full" />
-              <h2 className="text-xl sm:text-2xl font-extrabold uppercase tracking-[0.2em] text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)]">
+              <h2 className="text-xl sm:text-2xl font-extrabold uppercase tracking-[0.2em] text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)]"><LandingText>
                 About CauseKind
-              </h2>
+              </LandingText></h2>
             </div>
 
             {/* Heading with Living Words & Marker Underlines */}
             <h2 className="text-2xl sm:text-3xl lg:text-[clamp(1.75rem,2.2vw+0.2rem,2.6rem)] font-extrabold tracking-tight leading-[1.3] text-stone-900 dark:text-stone-100 max-w-3xl">
-              <span>We connect people who have </span>
+              <span><LandingText>We connect people who have </LandingText></span>
               {/* "extra things": static marker underline (hover burst removed 2026-10-06) */}
-              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold">
+              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold"><LandingText>
                 extra things
-                <span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
+                </LandingText><span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
               </span>
-              <span> with people nearby who </span>
+              <span><LandingText> with people nearby who </LandingText></span>
               {/* "need them.": static marker underline (hover burst removed 2026-10-06) */}
-              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold">
+              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold"><LandingText>
                 need them.
-                <span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
+                </LandingText><span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
               </span>
             </h2>
 
             {/* Paragraph Text (Exact unaltered wording) */}
-            <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 font-normal sm:font-medium leading-relaxed mt-6 max-w-2xl">
+            <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 font-normal sm:font-medium leading-relaxed mt-6 max-w-2xl"><LandingText>
               CauseKind is a free platform in India where donors give useful items — books, clothes,
               furniture, electronics and more — directly to verified people and NGOs near them. No cash.
               No middlemen. Just real things reaching real people.
-            </p>
+            </LandingText></p>
 
             {/* ── "Know More" Button ── */}
             <div className="mt-8 sm:mt-10 flex justify-start w-full">
@@ -463,7 +465,7 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
                 href="/about"
                 className={`inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full bg-[var(--ck-role-accent,#B5480F)] hover:bg-[var(--ck-role-hover,#C95413)] ${isDonee ? "text-[var(--ck-role-on-accent)]" : "text-white"} font-extrabold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all duration-200 group active:scale-95`}
               >
-                <span>Know more</span>
+                <span><LandingText>Know more</LandingText></span>
                 <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             </div>
@@ -472,39 +474,39 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
           {/* RIGHT COLUMN: 2x2 Grid of Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full mt-10 lg:mt-0">
             {/* Card 1 */}
-            <HoverFlipCard
+            <LandingAttributes><HoverFlipCard
               title="Direct Giving"
               variant={variant}
               desc="Donors give items directly to people or NGOs nearby — no warehouses, no delays."
               icon={Gift}
-            />
+            /></LandingAttributes>
 
             {/* Card 2 */}
-            <HoverFlipCard
+            <LandingAttributes><HoverFlipCard
               title="Verified & Safe"
               variant={variant}
               desc="Every request is admin-reviewed, and every handover is confirmed with a one-time code."
               icon={ShieldCheck}
-            />
+            /></LandingAttributes>
 
             {/* Card 3 */}
-            <HoverFlipCard
+            <LandingAttributes><HoverFlipCard
               title="Zero Cash, No Middlemen"
               variant={variant}
               desc="Only in-kind items change hands — books, clothes, furniture, electronics, and more."
               icon={HeartHandshake}
-            />
+            /></LandingAttributes>
 
             {/* Card 4 */}
-            <HoverFlipCard
+            <LandingAttributes><HoverFlipCard
               title="Local Matching"
               variant={variant}
               desc="Donors and recipients are matched within 10km, so help reaches people nearby, fast."
               icon={MapPin}
-            />
+            /></LandingAttributes>
           </div>
         </div>
       </div>
-    </section>
+    </section></LandingAttributes>
   );
 }
