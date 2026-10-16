@@ -1,5 +1,6 @@
 import type { NgoDriveOfferResponse } from "@/lib/api";
 import { emptyOfferModel, offerModelFrom, type OfferModel } from "@/features/donation-offer-wizard/offerModel";
+import { mapLegacyAgeToAgeRange, formatAgeRange } from "./driveOfferAge";
 
 /**
  * The drive wizard reuses the donation-offer steps, but a drive offer is a different
@@ -15,6 +16,10 @@ export type DriveOfferPatch = {
   quantity?: number;
   condition: string;
   approximateAge: string;
+  sizeSpec?: string;
+  ageRange?: string;
+  confirmedWorking?: boolean;
+  confirmedClean?: boolean;
   knownDefects: string;
   notesForNgo: string;
   matchesRequirements: boolean;
@@ -30,7 +35,11 @@ export function serializeDriveOffer(model: OfferModel, opts: { maxQuantity?: num
     // rest of the autosave is not refused with it (the inline error explains it).
     ...(Number.isInteger(qty) && qty >= 1 && withinNeed ? { quantity: qty } : {}),
     condition: model.condition,
-    approximateAge: model.approximateAge.trim(),
+    approximateAge: formatAgeRange(model.ageRange) || model.approximateAge.trim(),
+    sizeSpec: model.sizeSpec?.trim() || undefined,
+    ageRange: model.ageRange || undefined,
+    confirmedWorking: model.confirmedWorking,
+    confirmedClean: model.confirmedClean,
     // "None" when the donor says there are no defects (same rule as donation offers).
     knownDefects: model.hasKnownDefects ? model.knownDefects.trim() : "None",
     notesForNgo: [model.accessoriesIncluded.trim(), model.specNotes.trim()].filter(Boolean).join("\n"),
@@ -50,6 +59,10 @@ export function driveOfferModelFrom(offer: NgoDriveOfferResponse | null | undefi
     quantity: offer.quantity != null ? String(offer.quantity) : base.quantity,
     condition: offer.condition ?? "",
     approximateAge: offer.approximateAge ?? "",
+    sizeSpec: offer.sizeSpec ?? "",
+    ageRange: offer.ageRange || mapLegacyAgeToAgeRange(offer.approximateAge, offer.condition),
+    confirmedWorking: offer.confirmedWorking ?? false,
+    confirmedClean: offer.confirmedClean ?? false,
     hasKnownDefects: defects !== "" && defects.toLowerCase() !== "none",
     knownDefects: defects.toLowerCase() === "none" ? "" : defects,
     accessoriesIncluded: offer.notesForNgo ?? "",
@@ -70,7 +83,9 @@ export function driveOfferSnapshotKey(model: OfferModel, opts: { maxQuantity?: n
 export function driveOfferMaterialDigest(model: OfferModel): string {
   return JSON.stringify([
     model.photos.filter(p => p.status === "uploaded").map(p => p.remoteUrl),
-    model.quantity, model.approximateAge, model.accessoriesIncluded, model.specNotes,
+    model.quantity, model.approximateAge, model.sizeSpec, model.ageRange,
+    model.confirmedWorking, model.confirmedClean,
+    model.accessoriesIncluded, model.specNotes,
     model.condition, model.hasKnownDefects, model.knownDefects,
   ]);
 }

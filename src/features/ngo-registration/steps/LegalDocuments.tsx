@@ -54,9 +54,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
           Legal Documents
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          Upload your organization&apos;s legal documents. Required documents are tagged{" "}
-          <span className="font-bold text-ngo-700 dark:text-ngo-300">Required</span>. Your PAN card and
-          registration certificate were uploaded in Step 1.
+          Upload your organization&apos;s legal documents.
         </p>
       </div>
 

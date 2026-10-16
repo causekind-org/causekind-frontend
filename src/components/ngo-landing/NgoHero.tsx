@@ -166,7 +166,7 @@ export function NgoHero() {
                   variants={itemVariants}
                   className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border shadow-sm mb-5 lg:mb-[1.6vh] bg-ngo-700 text-white border-ngo-800"
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-white/90" aria-hidden="true" />
                   <span className="text-3xs sm:text-2xs font-bold tracking-tight">
                     Verified by CauseKind
                   </span>

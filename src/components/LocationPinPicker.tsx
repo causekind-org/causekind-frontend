@@ -40,7 +40,7 @@ declare global {
 
 export type LatLng = { lat: number; lng: number };
 /** Role colours for the pin: donor orange, donee navy. */
-export type PinTone = "donor" | "donee" | "neutral";
+export type PinTone = "donor" | "donee" | "neutral" | "ngo";
 
 // The handover pin's starting spot (it always shows a pin): New Delhi.
 const DEFAULT_CENTER = { lat: 28.6139, lng: 77.209 };
@@ -69,6 +69,11 @@ const TONES: Record<PinTone, { pin?: { background: string; borderColor: string; 
     pin: { background: "#1e3a60", borderColor: "#12253f", glyphColor: "#ffffff" },
     ink: "text-[#1e3a60] dark:text-[#7fb0e8]",
     button: "border-[#1e3a60]/30 bg-[#1e3a60]/5 text-[#1e3a60] hover:bg-[#1e3a60]/10 dark:text-[#7fb0e8]",
+  },
+  ngo: {
+    pin: { background: "#1e6b4f", borderColor: "#134a36", glyphColor: "#ffffff" },
+    ink: "text-[#1e6b4f] dark:text-[#6ee7b7]",
+    button: "border-[#1e6b4f]/30 bg-[#1e6b4f]/5 text-[#1e6b4f] hover:bg-[#1e6b4f]/10 dark:text-[#6ee7b7]",
   },
   neutral: {
     ink: "text-[var(--handover-accent,#b04a15)]",

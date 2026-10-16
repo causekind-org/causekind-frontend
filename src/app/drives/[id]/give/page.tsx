@@ -90,7 +90,7 @@ export default function DriveGivePage() {
   if (view.kind === "error") return <DriveLoadError message={view.message} onRetry={() => void load()} />;
   if (view.kind === "submitted") {
     return (
-      <main className="min-h-[70vh] bg-stone-50 px-4 py-12 dark:bg-zinc-950">
+      <main data-ck-role-theme="ngo" className="min-h-[70vh] bg-stone-50 px-4 py-12 dark:bg-zinc-950">
         <div className="mx-auto max-w-lg rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-8">
           <p className="text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Offer sent</p>
           <h1 className="mt-1 text-2xl font-black text-stone-900 dark:text-stone-100">
@@ -121,7 +121,7 @@ export default function DriveGivePage() {
 
   if (view.kind === "blocked") {
     return (
-      <main className="min-h-[60vh] bg-stone-50 px-4 py-16 dark:bg-zinc-950">
+      <main data-ck-role-theme="ngo" className="min-h-[60vh] bg-stone-50 px-4 py-16 dark:bg-zinc-950">
         <div className="mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100">{view.title}</h1>
           <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">{view.body}</p>
@@ -137,13 +137,16 @@ export default function DriveGivePage() {
 
   const { drive, offer } = view;
   return (
-    <main className="min-h-screen bg-stone-50 dark:bg-zinc-950">
+    <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 dark:bg-zinc-950">
       <NgoDriveOfferWizard
         offerId={offer.id}
         offer={offer}
         driveId={drive.id}
         ngoName={drive.ngoOrganizationName || "Verified NGO"}
         driveUnit={drive.unit}
+        driveCategory={drive.category}
+        mustBeWorking={Boolean(drive.mustBeWorking)}
+        requireClean={Boolean(drive.requireClean)}
         acceptedConditions={drive.acceptedConditions?.length ? drive.acceptedConditions : driveAcceptedConditions(drive.condition)}
         initialQuantityReceived={drive.quantityReceived}
         initialQuantityPledged={drive.quantityPledged}

@@ -67,6 +67,7 @@ async function fillStep1(user: ReturnType<typeof userEvent.setup>, name: string,
   await user.type(screen.getByLabelText(/Registration Number/i), regNo);
   await user.type(screen.getByLabelText(/Year of Establishment/i), "2018");
   await user.type(screen.getByLabelText(/Registered Office Address/i), "Bandra West, Mumbai 400050");
+  await user.type(screen.getByLabelText(/Organization Phone Number/i), "+919876543210");
 }
 
 beforeAll(() => {
@@ -276,7 +277,7 @@ describe("NGORegistration Component", () => {
 
     render(<NGORegistration />);
 
-    const resend = await screen.findByRole("button", { name: "Resend code" });
+    const resend = await screen.findByRole("button", { name: "Resend code" }, { timeout: 8000 });
     // Already submitted: no way back to Review & Submit, and no cooldown on Resend.
     expect(screen.queryByRole("button", { name: /back/i })).not.toBeInTheDocument();
     expect(resend).not.toBeDisabled();

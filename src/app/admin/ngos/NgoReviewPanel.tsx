@@ -268,7 +268,8 @@ export function NgoReviewPanel({
                 "Registration number": detail.application.registrationNumber,
                 "Registered address": detail.application.registeredOfficeAddress, "Established": detail.application.yearOfEstablishment,
                 "Representative": detail.application.representativeName, "Designation": detail.application.designation,
-                "Phone": detail.application.mobileNumber, "Contact email": detail.application.officialEmail,
+                "Organization phone": detail.application.organizationPhone || detail.application.mobileNumber,
+                "Phone": detail.application.mobileNumber, "Official email (account)": detail.application.officialEmail,
                 "Account email verified": detail.application.verifiedAt ? serverDate(detail.application.verifiedAt).toLocaleString() : "Pending",
               }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
             </dl>
@@ -288,12 +289,12 @@ export function NgoReviewPanel({
                       <p className="mt-1 font-mono text-xs">{r.mobileNumber}</p>
                       <p className="mt-1 break-all text-xs">{r.email}{" "}
                         {r.emailVerified
-                          ? <span className="font-semibold text-emerald-700 dark:text-emerald-300">✓ verified</span>
+                          ? <span className="font-semibold text-emerald-700 dark:text-emerald-300">verified</span>
                           : <span className="font-semibold text-red-700">not verified</span>}
                       </p>
                       <p className="mt-1 text-xs">PAN: <span className="font-mono">{r.panNumber || "Not given"}</span>
                         {r.panNumber && r.panValidFormat === false && <span className="ml-1 font-semibold text-red-700">· not a valid PAN</span>}
-                        {r.panPersonal === true && <span className="ml-1 text-emerald-700 dark:text-emerald-300">· personal PAN ✓</span>}
+                        {r.panPersonal === true && <span className="ml-1 text-emerald-700 dark:text-emerald-300">· personal PAN</span>}
                         {r.panPersonal === false && <span className="ml-1 font-semibold text-red-700">· not a personal PAN (4th letter is not P)</span>}
                       </p>
                       <p className="mt-1 text-xs">ID proof: {idProof ? (idProof.name || "uploaded") : <span className="text-red-700">missing</span>}</p>

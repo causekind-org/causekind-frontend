@@ -4,22 +4,37 @@ import { useReducedMotion } from "framer-motion";
 import { ContainerScroll, ContainerSticky, GalleryCol, GalleryContainer } from "@/components/ui/animated-gallery";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 
-/** Free-licence photos from Pexels, stored as WebP in public/images/ngo-hero. */
-// Order: columns take 4 each (desktop) or 6 each (phones); similar photos (the two
-// donation boxes, the two clothes boxes) sit far apart. pos = focal point so faces stay in frame.
+/**
+ * Free-licence photos (Pexels licence), stored as WebP in public/images/ngo-hero.
+ * Credits:
+ *  - food-for-children: pexels.com/photo/5909876 (Plato Terentev)
+ *  - classroom-school-bags: pexels.com/photo/18012456 (Swastik Arora)
+ *  - serving-community-meal: pexels.com/photo/36739564 (Vijay Krishnawat)
+ *  - temple-donation-box: pexels.com/photo/19167496 (Shantanu Kumar)
+ *  - langar-volunteers: pexels.com/photo/12540563 (Malcolm Hill)
+ *  - children-learning-slates: pexels.com/photo/35558791 (Harshad Pendse)
+ *  - children-community-meal: pexels.com/photo/35247605 (TEGHRA DACCHIN TOLA)
+ *  - rural-classroom: pexels.com/photo/15119089 (Pallav Suthar)
+ *  - temple-kitchen-volunteers: pexels.com/photo/36773178 (pierre matile)
+ *  - children-lesson: pexels.com/photo/1895114 (Balljinder Singh)
+ *  - schoolgirls-in-class: pexels.com/photo/3231359 (Yogendra Singh)
+ *  - temple-donation-box-steps: pexels.com/photo/19167492 (Shantanu Kumar)
+ * Order: columns take 4 each (desktop) or 6 each (phones); the two donation boxes never
+ * share a row at either width. pos = focal point so faces stay in frame.
+ */
 const PHOTOS = [
+  { src: "food-for-children.webp", alt: "A woman serving food to children seated on the ground in India", pos: "50% 40%" },
+  { src: "classroom-school-bags.webp", alt: "Indian schoolchildren in uniform at their desks with school bags", pos: "50% 30%" },
+  { src: "serving-community-meal.webp", alt: "A volunteer in a sari serving plates at a community meal", pos: "50% 25%" },
   { src: "temple-donation-box.webp", alt: "Red donation box outside a temple entrance in India", pos: "50% 60%" },
-  { src: "volunteers-sorting-aid.webp", alt: "Volunteers sorting food and aid boxes for a donation drive", pos: "center top" },
-  { src: "woman-clothes-donation.webp", alt: "Smiling volunteer holding a box of donated clothes", pos: "50% 20%" },
-  { src: "volunteer-carrying-box.webp", alt: "Volunteer carrying a box of donated items", pos: "50% 20%" },
-  { src: "rural-aid-package.webp", alt: "Elderly women and a child receiving an aid package in a village", pos: "50% 25%" },
-  { src: "volunteers-collecting-clothes.webp", alt: "Two young volunteers collecting clothes for donation", pos: "50% 15%" },
-  { src: "volunteers-outdoor-boxes.webp", alt: "Volunteers organising donation boxes outdoors", pos: "center top" },
-  { src: "volunteers-handing-box.webp", alt: "Volunteers handing over a box of clothes and toys", pos: "50% 20%" },
-  { src: "volunteers-checking-goods.webp", alt: "Volunteers checking donated goods in a box", pos: "50% 20%" },
-  { src: "clothes-donation-box.webp", alt: "Donation box filled with colourful clothes", pos: "center" },
-  { src: "volunteers-sorting-donations.webp", alt: "Group of volunteers sorting donations indoors", pos: "center top" },
-  { src: "temple-donation-box-ground.webp", alt: "Donation box on the ground outside a temple in India", pos: "50% 60%" },
+  { src: "langar-volunteers.webp", alt: "Volunteers serving a free community meal at a gurdwara", pos: "50% 30%" },
+  { src: "children-learning-slates.webp", alt: "Children in a rural Indian school writing on slates", pos: "50% 30%" },
+  { src: "children-community-meal.webp", alt: "Children sharing a free meal at a community centre in India", pos: "center" },
+  { src: "rural-classroom.webp", alt: "Children listening in a rural classroom in Gujarat", pos: "50% 70%" },
+  { src: "temple-donation-box-steps.webp", alt: "Donation box on the ground outside a temple in India", pos: "50% 60%" },
+  { src: "temple-kitchen-volunteers.webp", alt: "Women volunteers preparing food together at an Indian temple", pos: "50% 30%" },
+  { src: "children-lesson.webp", alt: "Young children sitting together for a lesson at an Indian school", pos: "50% 90%" },
+  { src: "schoolgirls-in-class.webp", alt: "Indian schoolgirls in uniform listening in class", pos: "50% 30%" },
 ];
 
 function Photo({ src, alt, pos }: { src: string; alt: string; pos: string }) {

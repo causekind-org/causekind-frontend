@@ -53,7 +53,7 @@ export function giveState(
 ): GiveState {
   const giveHref = `/drives/${drive.id}/give`;
   if (!user) return { kind: "login", href: `/login?next=${encodeURIComponent(giveHref)}` };
-  const role = (user.role ?? "").toUpperCase();
+  const role = (user.role ?? "").toUpperCase().replace(/^ROLE_/, "");
   if (role !== "DONOR") {
     return {
       kind: "wrong-role",
@@ -75,6 +75,10 @@ export function giveState(
 
 export function isNotFound(e: unknown) {
   return e instanceof ApiError && e.status === 404;
+}
+
+export function isForbidden(e: unknown) {
+  return e instanceof ApiError && e.status === 403;
 }
 
 export function errorMessage(e: unknown, fallback: string) {

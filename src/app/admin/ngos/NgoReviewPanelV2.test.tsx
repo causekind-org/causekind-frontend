@@ -75,8 +75,8 @@ describe("admin NGO review: current wizard", { timeout: 20000 }, () => {
     const reps = screen.getAllByTestId("representative");
     expect(reps).toHaveLength(2);
     expect(reps[0]).toHaveTextContent("1. Ananya Sharma");
-    expect(reps[0]).toHaveTextContent("✓ verified");
-    expect(reps[0]).toHaveTextContent("personal PAN ✓");
+    expect(reps[0]).toHaveTextContent("verified");
+    expect(reps[0]).toHaveTextContent("personal PAN");
     expect(reps[0]).toHaveTextContent("ananya-id.pdf");
     expect(reps[1]).toHaveTextContent(/not a personal PAN/);
   });

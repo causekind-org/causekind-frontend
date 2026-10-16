@@ -46,7 +46,7 @@ type Props = {
    * <p>Optional so the celebration still renders (in the donor palette, the
    * historical default) if a caller has no view model to hand.
    */
-  role?: HandoverRole;
+  role?: HandoverRole | "NGO";
 };
 
 const TIP_PRESETS = [20, 50, 100];
@@ -187,6 +187,9 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
   const [tipLoading, setTipLoading] = useState(false);
   const [tipDone, setTipDone] = useState(false);
 
+  // The tip step is for donors and donees as before; NGO drive handovers skip it.
+  const canShowTip = role !== "NGO";
+
   const effectiveTipAmount = useMemo(() => {
     if (customTip.trim()) {
       const n = Number(customTip);
@@ -204,13 +207,14 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
           contextId,
           rating,
           note: note.trim() || undefined,
+          submitterRole: role === "NGO" ? "NGO" : role === "DONOR" ? "DONOR" : undefined,
         });
       }
-      setStep("tip");
+      setStep(canShowTip ? "tip" : "done");
     } catch {
       // Never block the user on a feedback failure — move on regardless.
       toast.error("Couldn't save your feedback, but thanks anyway!");
-      setStep("tip");
+      setStep(canShowTip ? "tip" : "done");
     } finally {
       setSubmittingFeedback(false);
     }
@@ -334,7 +338,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
                 />
                 <div className="mt-5 flex gap-2">
                   <button
-                    onClick={() => setStep("tip")}
+                    onClick={() => setStep(canShowTip ? "tip" : "done")}
                     className="flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
                     Skip
@@ -350,7 +354,7 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
               </motion.div>
             )}
 
-            {step === "tip" && (
+            {step === "tip" && canShowTip && (
               <motion.div key="tip" initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }} transition={{ duration: 0.25 }}>
                 {/* Thank-you note design + slider (owner, 2026-10-08,
                     https://claude.ai/artifact/Ref3xfQpRJP28c3d99K5zZ). The header

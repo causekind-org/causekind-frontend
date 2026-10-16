@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
 import { ArrowLeft, TriangleAlert, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
-  submitNgoDriveOffer, updateNgoDriveOfferItem,
+  submitNgoDriveOffer, updateNgoDriveOfferItem, saveNgoDriveOfferLocation,
   getNgoDriveOfferVideoCapability, createNgoDriveOfferVideoSlot, finalizeNgoDriveOfferVideo,
   getNgoDriveOfferVideoStatus, getNgoDriveOfferVideoPlayback, deleteNgoDriveOfferVideo,
   type NgoDriveOfferResponse, type CompatibilityCheck, type OfferVideoStatus, type OfferVideoStatusName,
@@ -22,9 +23,10 @@ import { StepCardStack } from "@/features/wizard-kit/StepCardStack";
 import { WizardBorderGlow } from "@/features/wizard-kit/WizardBorderGlow";
 import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import { useWizardDraft } from "@/features/wizard-kit/useWizardDraft";
+import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 
 import { OfferPhotosStep, type ScreeningState } from "@/features/donation-offer-wizard/steps/OfferPhotosStep";
-import { OfferDetailsStep } from "@/features/donation-offer-wizard/steps/OfferDetailsStep";
+import { DriveOfferDetailsStep as OfferDetailsStep } from "@/features/ngo-drives/components/DriveOfferDetailsStep";
 import { OfferConditionStep, type CompatState } from "@/features/donation-offer-wizard/steps/OfferConditionStep";
 import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferReviewStep";
 import { useDriveOfferPhotos } from "./useDriveOfferPhotos";
@@ -34,6 +36,8 @@ import {
 } from "@/features/donation-offer-wizard/offerModel";
 import { offerStepForField, validateOfferStep } from "@/features/donation-offer-wizard/offerSchema";
 import { ApiError } from "@/lib/api";
+import { LocationStep, type LocationStepHandle } from "@/features/item-listing-wizard/steps/LocationStep";
+import { useLocationPinHandlers, type LocationFields } from "@/hooks/useLocationPinHandlers";
 
 /**
  * The server's field errors ({field, message}) keyed by form field, plus one summary
@@ -52,25 +56,67 @@ export function driveOfferErrors(e: unknown, fallback: string): { fields: Record
 import {
   driveOfferModelFrom, driveOfferSnapshotKey, driveOfferMaterialDigest, serializeDriveOffer, DRIVE_OFFER_DECLARATION_GROUPS,
 } from "../driveOfferSerializer";
+import { mapLegacyAgeToAgeRange } from "../driveOfferAge";
 
 /**
- * The drive give form has four steps. Pickup & delivery is not asked here: the donor
+ * The drive give form has five steps; the first asks where the items are. Pickup & delivery is not asked here: the donor
  * chooses drop-off or NGO pickup, and gives the pickup address, on the handover page
  * once the NGO has accepted the offer.
  */
-export const DRIVE_OFFER_STEPS = ["photos", "details", "condition", "review"] as const satisfies readonly OfferStep[];
+export const DRIVE_OFFER_STEPS = ["location", "photos", "details", "condition", "review"] as const satisfies readonly OfferStep[];
 type DriveOfferStep = (typeof DRIVE_OFFER_STEPS)[number];
 const driveStepIndex = (s: OfferStep) => (DRIVE_OFFER_STEPS as readonly OfferStep[]).indexOf(s);
 
 /** Every error the four steps can show (none for pickup fields, which this form never asks). */
-function validateDriveOfferAll(model: OfferModel, maxQuantity?: number | null): Record<string, string> {
-  return Object.assign({}, ...DRIVE_OFFER_STEPS.map(s => validateOfferStep(s, model, null, maxQuantity)));
+function validateDriveOfferAll(
+  model: OfferModel,
+  maxQuantity?: number | null,
+  options?: { driveCategory?: string | null; mustBeWorking?: boolean; requireClean?: boolean },
+): Record<string, string> {
+  const errors = Object.assign({}, ...DRIVE_OFFER_STEPS.filter(s => s !== "location").map(s => validateOfferStep(s, model, null, maxQuantity)));
+  const isClothing = (options?.driveCategory ?? "").trim().toLowerCase() === "clothing";
+  if (isClothing && !model.sizeSpec?.trim()) {
+    errors.sizeSpec = "Size or specification is required for clothing and footwear.";
+  } else if (model.sizeSpec && model.sizeSpec.length > 100) {
+    errors.sizeSpec = "Size / specification cannot exceed 100 characters.";
+  }
+  const effectiveAge = model.ageRange || mapLegacyAgeToAgeRange(model.approximateAge, model.condition);
+  if (!effectiveAge) {
+    errors.ageRange = "Choose how old the item is.";
+  }
+  if (options?.mustBeWorking && !model.confirmedWorking) {
+    errors.confirmedWorking = "Please confirm that the item is tested and works.";
+  }
+  if (options?.requireClean && !model.confirmedClean) {
+    errors.confirmedClean = "Please confirm that the item is washed and clean.";
+  }
+  return errors;
 }
 
 /** Where a resumed draft opens: the shared rule, with its pickup step mapped to Review. */
-function firstIncompleteDriveStep(model: OfferModel): DriveOfferStep {
+function firstIncompleteDriveStep(model: OfferModel, hasLocation: boolean): DriveOfferStep {
+  if (!hasLocation) return "location";
   const s = firstIncompleteOfferStep(model);
   return (DRIVE_OFFER_STEPS as readonly OfferStep[]).includes(s) ? (s as DriveOfferStep) : "review";
+}
+
+/** Errors for the "Where are the items?" step. Country/state are checked only when edited. */
+export function driveLocationErrors(loc: LocationFields, edited: boolean): Record<string, string> {
+  const e: Record<string, string> = {};
+  if (edited && !loc.countryIso) e.countryIso = "Choose the country";
+  if (edited && !loc.stateIso) e.stateIso = "Choose the state";
+  if (!loc.city.trim()) e.city = "Enter the city";
+  if (!/^[1-9][0-9]{5}$/.test(loc.pincode.trim())) e.pincode = "Enter a 6-digit PIN code";
+  if (loc.latitude == null || loc.longitude == null) e.latitude = "Drop the pin on the map";
+  return e;
+}
+
+function locationFrom(offer: NgoDriveOfferResponse | null): LocationFields {
+  return {
+    countryIso: "IN", stateIso: "", city: offer?.donorCity ?? "", locality: offer?.donorLocality ?? "",
+    pincode: offer?.donorPincode ?? "",
+    latitude: offer?.donorLatitude ?? undefined, longitude: offer?.donorLongitude ?? undefined,
+  };
 }
 
 /** "PIECES" → "pieces", for "This drive needs only N more pieces." */
@@ -98,7 +144,7 @@ const DRIVE_VIDEO_ENDPOINTS: Omit<VideoEndpoints, "current"> = {
 };
 
 const STEP_LABELS: Record<OfferStep, string> = {
-  location: "Check your location",
+  location: "Where are the items?",
   photos: "Show the item",
   details: "Tell us about the item",
   purchasePlan: "What you'll buy",
@@ -108,7 +154,7 @@ const STEP_LABELS: Record<OfferStep, string> = {
 };
 
 const STEP_INTROS: Record<OfferStep, string> = {
-  location: "",
+  location: "We'll check if the NGO can pick them up from you.",
   photos: "A few good photos do most of the work.",
   details: "What are you giving, and how much of it?",
   purchasePlan: "Tell the recipient what you plan to buy, and how soon.",
@@ -118,7 +164,7 @@ const STEP_INTROS: Record<OfferStep, string> = {
 };
 
 /**
- * The four-step drive give form (photos, details, condition, review).
+ * The five-step drive give form (location, photos, details, condition, review).
  *
  * <p>Composed from the same primitives as the listing wizard — the stack, the
  * glow, the motion variants, the autosave queue — so the two flows animate and
@@ -129,15 +175,18 @@ const STEP_INTROS: Record<OfferStep, string> = {
  * `offerId` is non-null for the whole lifetime of this component.
  */
 export function NgoDriveOfferWizard({
-  offerId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
-  driveUnit, acceptedConditions,
+  offerId, driveId: propDriveId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  driveUnit, acceptedConditions, driveCategory: propDriveCategory, mustBeWorking: propMustBeWorking, requireClean: propRequireClean,
 }: {
   offerId: number;
   /** Donor conditions the drive accepts; null/empty shows every condition. */
   acceptedConditions?: readonly string[] | null;
-  driveId: number;
+  driveId?: number;
   ngoName: string;
   driveUnit: string;
+  driveCategory?: string | null;
+  mustBeWorking?: boolean;
+  requireClean?: boolean;
   initialQuantityReceived: number;
   initialQuantityPledged: number;
   /** Hydration source — a resumed DRAFT or NEEDS_INFORMATION offer. */
@@ -157,6 +206,10 @@ export function NgoDriveOfferWizard({
   const reduced = !!useReducedMotion();
   const locale = useLocale();
   const isRtl = locale === "ar" || locale === "ur";
+  const driveId = propDriveId ?? offer?.driveId;
+  const driveCategory = propDriveCategory ?? (offer as any)?.driveCategory ?? (offer as any)?.category ?? null;
+  const mustBeWorking = Boolean(propMustBeWorking ?? (offer as any)?.mustBeWorking ?? (offer as any)?.driveMustBeWorking);
+  const requireClean = Boolean(propRequireClean ?? (offer as any)?.requireClean ?? (offer as any)?.driveRequireClean);
 
   const showSpecNotes = needsSpecNotes((offer as any)?.flowType);
   const serializerOpts = useMemo(
@@ -166,7 +219,29 @@ export function NgoDriveOfferWizard({
 
   const [model, setModel] = useState<OfferModel>(() => offer ? driveOfferModelFrom(offer) : emptyOfferModel);
   const [step, setStep] = useState<OfferStep>(() =>
-    offer ? firstIncompleteDriveStep(driveOfferModelFrom(offer)) : "photos");
+    offer ? firstIncompleteDriveStep(driveOfferModelFrom(offer), offer.donorLatitude != null) : "location");
+  // Step 1: where the items are, saved through its own endpoint.
+  const [loc, setLoc] = useState<LocationFields>(() => locationFrom(offer));
+  const locRef = useRef<LocationFields>(loc);
+  const locEditedRef = useRef(false);
+  const locStepRef = useRef<LocationStepHandle>(null);
+  const [locSaved, setLocSaved] = useState(offer?.donorLatitude != null);
+  const [locResult, setLocResult] = useState<{ distanceKm: number | null; dropOffOnly: boolean | null } | null>(
+    () => offer?.donorLatitude != null ? { distanceKm: offer.distanceKm ?? null, dropOffOnly: offer.dropOffOnly ?? null } : null);
+  const [outsideOpen, setOutsideOpen] = useState(false);
+  const commitLoc = useCallback((next: LocationFields) => {
+    locRef.current = next; locEditedRef.current = true;
+    setLoc(next); setLocSaved(false); setLocResult(null);
+  }, []);
+  const clearLocPinError = useCallback(() => {
+    setErrors(e => (e.latitude ? { ...e, latitude: "" } : e));
+  }, []);
+  const { lookup: locLookup, handlePin: handleLocPin, handleGeocodeTyped: handleLocGeocode } = useLocationPinHandlers({
+    modelRef: locRef, commit: commitLoc, clearPinError: clearLocPinError, profileCenter: null,
+  });
+  const setLocField = useCallback(<K extends keyof LocationFields>(key: K, value: LocationFields[K]) => {
+    commitLoc({ ...locRef.current, [key]: value });
+  }, [commitLoc]);
   const [direction, setDirection] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -423,12 +498,66 @@ export function NgoDriveOfferWizard({
   }, [errors, overNeedMessage]);
 
   const handleContinue = useCallback(async () => {
+    if (step === "location") {
+      if (locStepRef.current && !(await locStepRef.current.flush())) return;
+      const current = locRef.current;
+      const locErrors = driveLocationErrors(current, locEditedRef.current);
+      if (Object.keys(locErrors).length > 0) {
+        setErrors(locErrors);
+        focusField(Object.keys(locErrors)[0]);
+        return;
+      }
+      let result = locResult;
+      if (!locSaved || !result) {
+        setAdvancing(true);
+        try {
+          const saved = await saveNgoDriveOfferLocation(offerId, {
+            country: current.countryIso, state: current.stateIso, city: current.city.trim(),
+            locality: current.locality.trim(), pincode: current.pincode.trim(),
+            latitude: current.latitude as number, longitude: current.longitude as number,
+          });
+          result = { distanceKm: saved.distanceKm ?? null, dropOffOnly: saved.dropOffOnly ?? null };
+          setLocResult(result);
+          setLocSaved(true);
+          locEditedRef.current = false;
+        } catch (e) {
+          const { fields, message } = driveOfferErrors(e, "We couldn't save your location. Try again.");
+          setErrors(fields);
+          toast.error(message);
+          return;
+        } finally {
+          setAdvancing(false);
+        }
+      }
+      if (result.dropOffOnly) { setOutsideOpen(true); return; }
+      if (result.dropOffOnly === false) toast.success("You're within the NGO's pickup area. You can choose pickup or drop-off later.");
+      goTo("photos", 1);
+      return;
+    }
     const stepErrors = validateOfferStep(step, model, null, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
       setErrors({ photos: "Remove the photo we cannot accept before continuing." });
       return;
     }
-    if (step === "details" && overNeedMessage) stepErrors.quantity = overNeedMessage;
+    if (step === "details") {
+      if (overNeedMessage) stepErrors.quantity = overNeedMessage;
+      const isClothing = (driveCategory ?? "").trim().toLowerCase() === "clothing";
+      if (isClothing && !model.sizeSpec?.trim()) {
+        stepErrors.sizeSpec = "Size or specification is required for clothing and footwear.";
+      } else if (model.sizeSpec && model.sizeSpec.length > 100) {
+        stepErrors.sizeSpec = "Size / specification cannot exceed 100 characters.";
+      }
+      const effectiveAge = model.ageRange || mapLegacyAgeToAgeRange(model.approximateAge, model.condition);
+      if (!effectiveAge) {
+        stepErrors.ageRange = "Choose how old the item is.";
+      }
+      if (mustBeWorking && !model.confirmedWorking) {
+        stepErrors.confirmedWorking = "Please confirm that the item is tested and works.";
+      }
+      if (requireClean && !model.confirmedClean) {
+        stepErrors.confirmedClean = "Please confirm that the item is washed and clean.";
+      }
+    }
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors);
       focusField(Object.keys(stepErrors)[0]);
@@ -451,7 +580,7 @@ export function NgoDriveOfferWizard({
         setAdvancing(false);
       }
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity, showSaveFailure, overNeedMessage]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity, showSaveFailure, overNeedMessage, offerId, locSaved, locResult]);
 
   /** Field errors next to their fields (jumping to that step), the summary in a toast. */
   function showSaveFailure(fallback: string) {
@@ -474,7 +603,7 @@ export function NgoDriveOfferWizard({
     submitLockRef.current = true;
     setSubmitError(null);
 
-    const allErrors = validateDriveOfferAll(model, stillNeededQuantity);
+    const allErrors = validateDriveOfferAll(model, stillNeededQuantity, { driveCategory, mustBeWorking, requireClean });
     if (Object.keys(allErrors).length > 0) {
       const first = Object.keys(allErrors)[0];
       const target = offerStepForField(first);
@@ -534,24 +663,29 @@ export function NgoDriveOfferWizard({
   }, [flush, model, onExit, onSaveExit]);
 
   // ── Step availability ─────────────────────────────────────────────────────
+  const reachedKey = offerId != null ? `ck-drive-offer-reached-${offerId}` : null;
+  const reached = useFurthestStep(reachedKey, DRIVE_OFFER_STEPS, step);
+
   const availability = useMemo(() => {
     const out = {} as Record<OfferStep, StepAvailability>;
     const savedSnapshot = draft.isSnapshotSaved(model);
     for (const s of DRIVE_OFFER_STEPS) {
-      const complete = Object.keys(validateOfferStep(s, model, null, stillNeededQuantity)).length === 0;
+      const i = driveStepIndex(s);
+      const valid = s === "location" ? locSaved : Object.keys(validateOfferStep(s, model, null, stillNeededQuantity)).length === 0;
+      const complete = i < reached && valid;
       // Only a completed step whose data the server has confirmed is safe to
       // jump back to; otherwise the donor could edit an unsaved earlier answer.
       out[s] = { complete, canNavigate: complete && savedSnapshot };
     }
     return out;
-  }, [model, draft]);
+  }, [model, draft, reached, stillNeededQuantity, locSaved]);
 
   const isLast = step === "review";
 
   return (
     <MotionConfig reducedMotion={reduced ? "always" : "never"}>
-      <div className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] lg:mb-0 dark:bg-zinc-950 lg:min-h-[100dvh] lg:flex-row">
-        <aside className="hidden w-[300px] shrink-0 flex-col justify-between bg-gradient-to-b from-[#1c0905] via-[#3a1d0e] to-[#241206] p-7 text-white lg:flex">
+      <div data-ck-role-theme="ngo" data-testid="drive-give-wizard" className="flex min-h-[calc(100svh-3.5rem)] flex-col justify-between bg-[#faf8f5] -mb-[calc(var(--ck-bottom-chrome)+0.5rem)] lg:mb-0 dark:bg-zinc-950 lg:min-h-[100dvh] lg:flex-row">
+        <aside className="hidden w-[300px] shrink-0 flex-col justify-between bg-gradient-to-b from-[#0b2e22] via-[#123d2e] to-[#0f3326] p-7 text-white lg:flex">
           <div>
             <button
               type="button"
@@ -563,7 +697,17 @@ export function NgoDriveOfferWizard({
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
               Give to this drive
             </h2>
-            <p className="mb-8 text-sm text-white/50">Four short steps. We save as you go.</p>
+            <p className="mb-3 text-sm text-white/50">Five short steps. We save as you go.</p>
+            {driveId && (
+              <div className="mb-8">
+                <Link
+                  href={`/drives/${driveId}`}
+                  className="inline-flex items-center text-xs text-white/70 underline underline-offset-2 transition-colors hover:text-white"
+                >
+                  View full drive details
+                </Link>
+              </div>
+            )}
             <WizardProgressRail
               current={step} steps={DRIVE_OFFER_STEPS} navLabel="Donation offer progress"
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
@@ -591,6 +735,14 @@ export function NgoDriveOfferWizard({
               >
                 <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
               </button>
+              {driveId && (
+                <Link
+                  href={`/drives/${driveId}`}
+                  className="text-xs font-semibold text-emerald-700 underline underline-offset-2 dark:text-emerald-400"
+                >
+                  View full drive details
+                </Link>
+              )}
               <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
             </div>
             <WizardProgressBar
@@ -651,6 +803,21 @@ export function NgoDriveOfferWizard({
                         />
                       </div>
 
+                      {step === "location" && (
+                        <div className="space-y-3">
+                          <LocationStep
+                            model={loc} errors={errors} lookup={locLookup} profileCenter={null}
+                            onChange={setLocField} onPin={handleLocPin} onGeocodeTyped={handleLocGeocode}
+                            controlRef={locStepRef} tone="ngo"
+                          />
+                          {locResult?.dropOffOnly === false && (
+                            <p data-testid="drive-pickup-inside" role="status"
+                              className="rounded-xl border border-ngo-200 bg-ngo-50 p-3 text-xs font-semibold text-ngo-800 dark:border-ngo-900 dark:bg-ngo-950/30 dark:text-ngo-200">
+                              You&apos;re within the NGO&apos;s pickup area. You can choose pickup or drop-off later.
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {step === "photos" && (
                         <OfferPhotosStep
                           photos={model.photos} error={errors.photos} screening={screening}
@@ -669,6 +836,9 @@ export function NgoDriveOfferWizard({
                           model={model} errors={shownErrors} onChange={setField}
                           requestedQuantity={requestedQuantity} stillNeededQuantity={stillNeededQuantity}
                           showSpecNotes={showSpecNotes}
+                          driveCategory={driveCategory}
+                          mustBeWorking={mustBeWorking}
+                          requireClean={requireClean}
                         />
                       )}
                       {step === "condition" && (
@@ -684,6 +854,7 @@ export function NgoDriveOfferWizard({
                             onChange={setField} onEdit={s => goTo(s, -1)}
                             declarationGroups={DRIVE_OFFER_DECLARATION_GROUPS}
                             hidePickup
+                            driveDetails
                             photoGallery={photos => (
                               <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label="Your photos">
                                 {photos.map((p, i) => (
@@ -755,6 +926,30 @@ export function NgoDriveOfferWizard({
             className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/90 text-stone-900">
             <X className="h-5 w-5" aria-hidden />
           </button>
+        </div>
+      )}
+      {outsideOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4">
+          <div role="alertdialog" aria-modal="true" aria-labelledby="drive-outside-title" data-testid="drive-outside-dialog"
+            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl dark:bg-zinc-900">
+            <h2 id="drive-outside-title" className="text-base font-bold text-stone-900 dark:text-stone-100">
+              You&apos;re about {locResult?.distanceKm ?? "?"} km away
+            </h2>
+            <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">
+              This NGO picks up only within {offer?.pickupRadiusKm ?? "?"} km of {[offer?.driveLocationArea, offer?.driveLocationCity].filter(Boolean).join(", ") || "the drive"}.
+              {" "}You can still give by dropping the items off at the NGO.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              <button type="button" autoFocus onClick={() => { setOutsideOpen(false); goTo("photos", 1); }}
+                className="min-h-11 rounded-full bg-ngo-700 px-4 text-sm font-semibold text-white hover:bg-ngo-800">
+                Continue with drop-off
+              </button>
+              <button type="button" onClick={() => setOutsideOpen(false)}
+                className="min-h-11 rounded-full border border-stone-300 px-4 text-sm font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-200">
+                Change location
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </MotionConfig>

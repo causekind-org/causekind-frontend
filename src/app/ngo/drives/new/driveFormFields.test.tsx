@@ -52,7 +52,7 @@ const sentBack = (overrides: Record<string, unknown> = {}) => {
     whyNow: "Winter is beginning this month",
     whatChanges: "They stay warm through the night",
     locationArea: "Kandivali East",
-    locationCity: "Mumbai",
+    locationCity: "Mumbai", locationCountry: "IN", locationState: "MH", locationPincode: "400101", locationLatitude: 19.2, locationLongitude: 72.87, pickupRadiusKm: 20,
     urgency: "NORMAL", beneficiaryGroup: "Elderly", beneficiaryCount: 30,
     beneficiaryDescription: "Senior citizens living in the shelter",
     handoverMode: "BOTH",
@@ -97,19 +97,19 @@ describe("drive form fields", () => {
 
   it("an older drive without details must add them before continuing", async () => {
     await openForm({ details: null });
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 2/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));
     expect((await screen.findAllByText("Add the details donors need")).length).toBeGreaterThan(0);
     expect(screen.getByRole("textbox", { name: /^Details/ })).toHaveAttribute("aria-invalid", "true");
     expect(screen.queryByRole("spinbutton", { name: /How many people will benefit/ })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("textbox", { name: /^Details/ }), { target: { value: "Warm blankets, any colour." } });
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 2/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));
     expect(await screen.findByRole("spinbutton", { name: /How many people will benefit/ })).toBeInTheDocument();
   });
 
   it("step 2 asks how many people will benefit and about the beneficiaries", async () => {
     await openForm();
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 2/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));
     const people = await screen.findByRole("spinbutton", { name: /How many people will benefit\?/ });
     expect(people).toHaveValue(30);
     expect(people.getAttribute("placeholder")).toBeNull();
@@ -142,7 +142,7 @@ describe("drive form fields", () => {
       whyNow: "Sudden cold wave",
       whatChanges: "No illness this winter",
       locationArea: "Kandivali East",
-      locationCity: "Mumbai",
+      locationCity: "Mumbai", locationCountry: "IN", locationState: "MH", locationPincode: "400101", locationLatitude: 19.2, locationLongitude: 72.87, pickupRadiusKm: 20,
       handoverMode: "BOTH",
       changemakerName: "Priya Nair",
       changemakerRole: "Coordinator",
@@ -167,11 +167,10 @@ describe("drive form fields", () => {
     expect(screen.getByDisplayValue("Elders in Kandivali")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Sudden cold wave")).toBeInTheDocument();
     expect(screen.getByDisplayValue("No illness this winter")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Kandivali East")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Mumbai")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /5. Drive address for donors/ })).toBeInTheDocument();
 
     // Navigate to Step 2
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 2/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));
     expect(await screen.findByDisplayValue("Priya Nair")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Coordinator")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Serving elders has been my mission for over five years.")).toBeInTheDocument();
@@ -199,7 +198,7 @@ describe("drive form fields", () => {
       whyNow: "Sudden cold wave",
       whatChanges: "No illness this winter",
       locationArea: "Kandivali East",
-      locationCity: "Mumbai",
+      locationCity: "Mumbai", locationCountry: "IN", locationState: "MH", locationPincode: "400101", locationLatitude: 19.2, locationLongitude: 72.87, pickupRadiusKm: 20,
       handoverMode: "BOTH",
       changemakerName: "Priya Nair",
       changemakerRole: "Coordinator",
@@ -224,7 +223,7 @@ describe("drive form fields", () => {
     expect(screen.getByText("(1/5)")).toBeInTheDocument();
 
     // Navigate to Step 2 and Step 3
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 2/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));
     fireEvent.click(await screen.findByRole("button", { name: /Save & Continue/ }));
     expect(await screen.findByText("Drive summary")).toBeInTheDocument();
 

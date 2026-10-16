@@ -21,14 +21,43 @@ function SelectValue(
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
+interface SelectTriggerProps extends React.ComponentProps<typeof SelectPrimitive.Trigger> {
+  size?: "sm" | "default";
+  variant?: "default" | "wizard";
+}
+
 function SelectTrigger({
   className,
   size = "default",
+  variant = "default",
   children,
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Trigger> & {
-  size?: "sm" | "default";
-}) {
+}: SelectTriggerProps) {
+  if (variant === "wizard") {
+    return (
+      <SelectPrimitive.Trigger
+        data-slot="select-trigger"
+        data-variant="wizard"
+        className={cn(
+          "flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-stone-200 bg-white px-3.5 text-sm text-stone-900 transition-colors cursor-pointer outline-none",
+          "placeholder:text-stone-400 data-[placeholder]:text-stone-400",
+          "focus-visible:border-ngo-700 focus-visible:ring-2 focus-visible:ring-ngo-700/40",
+          "aria-[invalid=true]:border-red-400",
+          "disabled:cursor-not-allowed disabled:opacity-50",
+          "dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100 dark:data-[placeholder]:text-stone-500",
+          "*:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center *:data-[slot=select-value]:gap-2",
+          className
+        )}
+        {...props}
+      >
+        {children}
+        <SelectPrimitive.Icon asChild>
+          <ChevronDownIcon className="size-4 shrink-0 text-stone-500 dark:text-stone-400" />
+        </SelectPrimitive.Icon>
+      </SelectPrimitive.Trigger>
+    );
+  }
+
   return (
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
@@ -83,12 +112,49 @@ function SelectScrollDownButton({
   );
 }
 
+interface SelectContentProps extends React.ComponentProps<typeof SelectPrimitive.Content> {
+  variant?: "default" | "wizard";
+}
+
 function SelectContent({
   className,
   children,
   position = "popper",
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: SelectContentProps) {
+  if (variant === "wizard") {
+    return (
+      <SelectPrimitive.Portal>
+        <SelectPrimitive.Content
+          data-slot="select-content"
+          data-variant="wizard"
+          className={cn(
+            "relative z-[100] max-h-60 overflow-x-hidden overflow-y-auto rounded-xl border border-stone-200 bg-white p-1.5 shadow-xl transition-all dark:border-zinc-800 dark:bg-zinc-900",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            position === "popper" &&
+              "w-[var(--radix-select-trigger-width)] min-w-[var(--radix-select-trigger-width)] data-[side=bottom]:translate-y-1.5 data-[side=top]:-translate-y-1.5",
+            className
+          )}
+          position={position}
+          {...props}
+        >
+          <SelectScrollUpButton />
+          <SelectPrimitive.Viewport
+            className={cn(
+              "p-0.5",
+              position === "popper" &&
+                "w-full min-w-[var(--radix-select-trigger-width)]"
+            )}
+          >
+            {children}
+          </SelectPrimitive.Viewport>
+          <SelectScrollDownButton />
+        </SelectPrimitive.Content>
+      </SelectPrimitive.Portal>
+    );
+  }
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -131,11 +197,37 @@ function SelectLabel({
   );
 }
 
+interface SelectItemProps extends React.ComponentProps<typeof SelectPrimitive.Item> {
+  variant?: "default" | "wizard";
+}
+
 function SelectItem({
   className,
   children,
+  variant = "default",
   ...props
-}: React.ComponentProps<typeof SelectPrimitive.Item>) {
+}: SelectItemProps) {
+  if (variant === "wizard") {
+    return (
+      <SelectPrimitive.Item
+        data-slot="select-item"
+        data-variant="wizard"
+        className={cn(
+          "relative flex h-10 min-h-[40px] w-full cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm text-stone-800 outline-none transition-colors",
+          "hover:bg-stone-100 focus:bg-stone-100 focus:text-stone-900",
+          "data-[state=checked]:bg-ngo-50 data-[state=checked]:text-ngo-800 data-[state=checked]:font-bold",
+          "dark:text-stone-200 dark:hover:bg-zinc-800 dark:focus:bg-zinc-800 dark:focus:text-stone-50",
+          "dark:data-[state=checked]:bg-ngo-950/40 dark:data-[state=checked]:text-ngo-300",
+          "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+          className
+        )}
+        {...props}
+      >
+        <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      </SelectPrimitive.Item>
+    );
+  }
+
   return (
     <SelectPrimitive.Item
       data-slot="select-item"

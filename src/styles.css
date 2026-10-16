@@ -3664,6 +3664,26 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   --handover-rail: #4a7fc1;
 }
 
+.handover-ngo-drive {
+  --handover-accent: #047857;
+  --handover-accent-hover: #065f46;
+  --handover-on-accent: #ffffff;
+  --handover-soft: oklch(0.96 0.035 155);
+  --handover-on-soft: oklch(0.28 0.10 155);
+  --handover-ring: #059669;
+  --handover-rail: #10b981;
+}
+
+.dark .handover-ngo-drive {
+  --handover-accent: #34d399;
+  --handover-accent-hover: #6ee7b7;
+  --handover-on-accent: #064e3b;
+  --handover-soft: oklch(0.26 0.05 155);
+  --handover-on-soft: oklch(0.94 0.03 155);
+  --handover-ring: #34d399;
+  --handover-rail: #059669;
+}
+
 /* ⚠️ PORTALS ESCAPE THIS SCOPE.
    Radix Dialog, Select and vaul all portal to <body>, which is OUTSIDE the
    .handover-donor / .handover-donee element. A portalled dialog therefore

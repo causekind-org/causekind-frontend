@@ -20,6 +20,7 @@ import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/
 import { DriveQuantityBar } from "@/features/ngo-drives/components/DriveQuantityBar";
 import { errorMessage, isNotFound } from "@/features/ngo-drives/driveGiveState";
 import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
+import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 
 type Tab = "review" | "handovers" | "proof" | "close";
 const CLOSED_OFFER = new Set(["NGO_DECLINED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "ENDED", "DRAFT"]);
@@ -244,7 +245,25 @@ export default function NgoDriveManagePage() {
                       <h3 className="font-bold text-stone-900 dark:text-stone-100">{offer.donorDisplayName || "Donor"}</h3>
                       <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
                         {offer.quantity} {humanize(drive.unit)} · {offer.condition || "Condition not given"} · {humanize(offer.handoverMethod) || "Handover to agree"}
+                        {(formatAgeRange(offer.ageRange) || offer.approximateAge) ? ` · Age: ${formatAgeRange(offer.ageRange) || offer.approximateAge}` : ""}
+                        {offer.sizeSpec ? ` · Size: ${offer.sizeSpec}` : ""}
                       </p>
+                      {(offer.confirmedWorking || offer.confirmedClean) && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-3 text-xs font-medium text-stone-700 dark:text-stone-300">
+                          {offer.confirmedWorking && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                              Tested and works
+                            </span>
+                          )}
+                          {offer.confirmedClean && (
+                            <span className="inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                              Washed and clean
+                            </span>
+                          )}
+                        </div>
+                      )}
                       {offer.notesForNgo && <p className="mt-2 rounded border border-amber-100 bg-white/60 p-2 text-xs text-stone-600 dark:border-amber-900/30 dark:bg-black/20 dark:text-stone-300">&ldquo;{offer.notesForNgo}&rdquo;</p>}
                       {offer.media && offer.media.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-2">

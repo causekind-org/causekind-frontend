@@ -139,6 +139,12 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                 {data.registeredOfficeAddress || "—"}
               </dd>
             </div>
+            <div className="sm:col-span-2">
+              <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Phone Number</dt>
+              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+                {data.organizationPhone || "—"}
+              </dd>
+            </div>
           </dl>
         </section>
 
@@ -221,7 +227,14 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                 </p>
                 <p className="mt-0.5 text-stone-600 dark:text-stone-300">
                   <span className="font-mono">{card.mobileNumber || "—"}</span> · {card.email || "—"}{" "}
-                  {card.emailVerified ? <span className="font-bold text-emerald-700">✓ verified</span> : <span className="font-bold text-red-600">not verified</span>}
+                  {card.emailVerified ? (
+                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />
+                      verified
+                    </span>
+                  ) : (
+                    <span className="font-bold text-red-600 dark:text-red-400">not verified</span>
+                  )}
                 </p>
                 <p className="mt-0.5 text-stone-500">
                   PAN: <span className="font-mono">{normalizePan(card.panNumber) || "—"}</span> · ID proof: {card.idProof?.name ?? "not uploaded"}

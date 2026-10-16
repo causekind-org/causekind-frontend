@@ -289,7 +289,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
       <div className="mt-6 pt-4 border-t border-stone-200/70 dark:border-zinc-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />
             <span className="font-medium">Legally Verified NGOs</span>
           </div>
           <div className="flex items-center gap-2">

@@ -34,7 +34,8 @@ vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn()
 import { NgoDriveOfferWizard } from "./NgoDriveOfferWizard";
 
 const photo = (id: number) => ({ id, mediaUrl: `https://cdn.test/ngo-drive-offers/9/${id}.png`, mediaType: "IMAGE", status: "APPROVED", sortOrder: id });
-const emptyDraft = { id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust", media: [] };
+const LOC = { donorCity: "Pune", donorLocality: "Kothrud", donorPincode: "411038", donorLatitude: 18.5, donorLongitude: 73.8, distanceKm: 4, dropOffOnly: false };
+const emptyDraft = { id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust", media: [], ...LOC };
 const withPhotos = { ...emptyDraft, quantity: null, media: [photo(1), photo(2)] };
 
 const heading = () => screen.getAllByRole("heading").map(h => h.textContent).join(" | ");
@@ -79,12 +80,12 @@ afterEach(() => {
   delete (window as { matchMedia?: unknown }).matchMedia;
 });
 
-describe("drive give form: four steps, no pickup, no progress card", { timeout: 20000 }, () => {
-  it("shows four steps and no progress card", async () => {
+describe("drive give form: five steps, no pickup, no progress card", { timeout: 20000 }, () => {
+  it("shows five steps and no progress card", async () => {
     renderWizard();
     await waitFor(() => expect(heading()).toMatch(/Show the item/));
-    expect(screen.getByText("Four short steps. We save as you go.")).toBeInTheDocument();
-    expect(screen.getAllByText("Step 1 of 4").length).toBeGreaterThan(0);
+    expect(screen.getByText("Five short steps. We save as you go.")).toBeInTheDocument();
+    expect(screen.getAllByText("Step 2 of 5").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Pickup & delivery/)).not.toBeInTheDocument();
     expect(screen.queryByText(/still needed/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/on the way/i)).not.toBeInTheDocument();

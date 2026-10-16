@@ -42,4 +42,13 @@ describe("shared offer steps without the drive-only props (donor↔donee flow)",
     expect(screen.queryByRole("list", { name: "Your photos" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Enlarge photo/ })).not.toBeInTheDocument();
   });
+
+  it("OfferReviewStep without driveDetails shows no drive-only rows (size, age, working, clean)", () => {
+    const model = { ...emptyOfferModel, quantity: "1", sizeSpec: "Adult Large", ageRange: "Y1_2", confirmedWorking: true, confirmedClean: true } as never;
+    render(<OfferReviewStep model={model} errors={{}} requestTitle={null} compat={null}
+      declarationsInvalidated={false} onChange={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.queryByText("Adult Large")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tested and works/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Washed and clean/)).not.toBeInTheDocument();
+  });
 });

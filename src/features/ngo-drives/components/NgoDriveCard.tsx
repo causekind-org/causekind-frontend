@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MapPin, ShieldCheck, Heart, Package, Award, ArrowRight } from "lucide-react";
-import type { PublicNgoDrive } from "@/lib/api";
+import type { PublicNgoDrive, NgoDriveOfferResponse } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
@@ -16,14 +16,15 @@ export type NgoDriveCardProps = {
   drive: PublicNgoDrive;
   /** Optional custom click handler or link */
   className?: string;
+  offers?: NgoDriveOfferResponse[];
 };
 
-export function NgoDriveCard({ drive, className = "" }: NgoDriveCardProps) {
+export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCardProps) {
   const router = useRouter();
   const { user } = useAuth();
 
   // Reuse existing giveState logic
-  const state = giveState(drive, user, []);
+  const state = giveState(drive, user, offers);
 
   const needed = drive.stillNeeded ?? stillNeeded(drive);
   const total = Math.max(1, drive.quantityNeeded);
@@ -48,17 +49,16 @@ export function NgoDriveCard({ drive, className = "" }: NgoDriveCardProps) {
   const isDoneeOrNgo = roleUpper === "DONEE" || roleUpper === "NGO" || roleUpper === "NGO_PARTNER";
 
   // Button text and target
-  let ctaLabel = "Give to this drive";
-  let ctaHref = `/drives/${drive.id}/give`;
+  let ctaLabel = "View drive & give";
+  let ctaHref = `/drives/${drive.id}`;
   let ctaDisabled = false;
 
   if (isDoneeOrNgo) {
     ctaLabel = "View drive";
     ctaHref = `/drives/${drive.id}`;
-  } else if (state.kind === "login") {
-    ctaHref = state.href;
-  } else if (state.kind === "give") {
-    ctaHref = state.href;
+  } else if (state.kind === "login" || state.kind === "give") {
+    ctaLabel = "View drive & give";
+    ctaHref = `/drives/${drive.id}`;
   } else if (state.kind === "continue") {
     ctaLabel = "Continue offer";
     ctaHref = state.href;
@@ -68,22 +68,28 @@ export function NgoDriveCard({ drive, className = "" }: NgoDriveCardProps) {
   } else if (state.kind === "closed") {
     ctaLabel = needed === 0 ? "Fully offered" : "Drive closed";
     ctaDisabled = true;
+    ctaHref = `/drives/${drive.id}`;
   }
 
-  const handleCtaClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!ctaDisabled) {
-      router.push(ctaHref);
-    }
-  };
+  const isDefaultTarget = !ctaDisabled && ctaHref === `/drives/${drive.id}`;
 
   return (
-    <Link
-      href={`/drives/${drive.id}`}
-      className={`group relative flex min-w-0 flex-col rounded-[1.25rem] overflow-hidden bg-white dark:bg-zinc-900/95 border border-stone-200/90 dark:border-zinc-800 lg:rounded-[2rem] lg:border-0 lg:bg-black/[0.03] lg:p-1.5 lg:ring-1 lg:ring-black/[0.05] dark:lg:bg-white/[0.04] dark:lg:ring-white/10 lg:transition-transform lg:duration-700 lg:ease-[cubic-bezier(0.32,0.72,0,1)] lg:hover:-translate-y-1 ${className}`}
+    <article
       data-testid={`ngo-drive-card-${drive.id}`}
+      className={`group relative flex min-w-0 flex-col cursor-pointer rounded-[1.25rem] overflow-hidden bg-white dark:bg-zinc-900/95 border border-stone-200/90 dark:border-zinc-800 lg:rounded-[2rem] lg:border-0 lg:bg-black/[0.03] lg:p-1.5 lg:ring-1 lg:ring-black/[0.05] dark:lg:bg-white/[0.04] dark:lg:ring-white/10 lg:transition-transform lg:duration-700 lg:ease-[cubic-bezier(0.32,0.72,0,1)] lg:hover:-translate-y-1 ${className}`}
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest("a, button")) return;
+        router.push(`/drives/${drive.id}`);
+      }}
     >
+      {!isDefaultTarget && (
+        <Link
+          href={`/drives/${drive.id}`}
+          className="absolute inset-0 z-0 rounded-[1.25rem] lg:rounded-[2rem]"
+          aria-label={`View drive: ${drive.title}`}
+          tabIndex={-1}
+        />
+      )}
       {/* Double-bezel inner core at lg matching Live Board */}
       <div className="flex flex-col grow overflow-hidden lg:rounded-[calc(2rem-0.375rem)] lg:bg-white lg:shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_24px_48px_-28px_rgba(6,78,59,0.18)] dark:lg:bg-zinc-900">
         {/* ── Top Photo Section (16:9) ── */}
@@ -138,9 +144,10 @@ export function NgoDriveCard({ drive, className = "" }: NgoDriveCardProps) {
             ) : !isMoney ? (
               <span
                 data-testid="drive-verified-badge"
-                className="inline-flex items-center gap-1 rounded-full bg-stone-900/80 backdrop-blur-md px-2.5 py-1 text-4xs font-bold tracking-wide text-white shadow-sm dark:bg-zinc-800/90"
+                className="inline-flex items-center gap-1.5 rounded-full bg-stone-900/80 backdrop-blur-md px-2.5 py-1 text-4xs font-bold tracking-wide text-white shadow-sm dark:bg-zinc-800/90"
               >
-                <ShieldCheck className="size-3 text-emerald-400" aria-hidden="true" /> Verified by CauseKind
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+                Verified by CauseKind
               </span>
             ) : null}
           </div>
@@ -262,26 +269,43 @@ export function NgoDriveCard({ drive, className = "" }: NgoDriveCardProps) {
 
           {/* CTA Button */}
           <div className="mt-auto pt-4">
-            <button
-              type="button"
-              onClick={handleCtaClick}
-              disabled={ctaDisabled}
-              data-testid="drive-cta-button"
-              className={`flex w-full items-center justify-center gap-2 rounded-full py-2.5 px-3.5 text-xs font-bold transition-all duration-200 shadow-2xs group/btn active:scale-[0.98] ${
-                ctaDisabled
-                  ? "cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-zinc-800 dark:text-stone-500 shadow-none border border-transparent"
-                  : isDoneeOrNgo
-                  ? "border border-stone-200 bg-stone-50 text-stone-800 hover:bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-200"
-                  : "bg-emerald-50 hover:bg-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-700 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 hover:text-white dark:text-emerald-300 dark:hover:text-white"
-              }`}
-            >
-              <span>{ctaLabel}</span>
-              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" aria-hidden="true" />
-            </button>
+            {ctaDisabled ? (
+              <button
+                type="button"
+                disabled
+                data-testid="drive-cta-button"
+                className="relative z-10 flex w-full items-center justify-center gap-2 rounded-full py-2.5 px-3.5 text-xs font-bold transition-all duration-200 shadow-none border border-transparent cursor-not-allowed bg-stone-100 text-stone-400 dark:bg-zinc-800 dark:text-stone-500"
+              >
+                <span>{ctaLabel}</span>
+                <ArrowRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              </button>
+            ) : isDefaultTarget ? (
+              <Link
+                href={ctaHref}
+                data-testid="drive-cta-button"
+                className={`before:absolute before:inset-0 before:z-0 flex w-full items-center justify-center gap-2 rounded-full py-2.5 px-3.5 text-xs font-bold transition-all duration-200 shadow-2xs group/btn active:scale-[0.98] ${
+                  isDoneeOrNgo
+                    ? "border border-stone-200 bg-stone-50 text-stone-800 hover:bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-200"
+                    : "bg-emerald-50 hover:bg-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-700 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 hover:text-white dark:text-emerald-300 dark:hover:text-white"
+                }`}
+              >
+                <span className="relative z-10">{ctaLabel}</span>
+                <ArrowRight className="relative z-10 w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" aria-hidden="true" />
+              </Link>
+            ) : (
+              <Link
+                href={ctaHref}
+                data-testid="drive-cta-button"
+                className="relative z-10 flex w-full items-center justify-center gap-2 rounded-full py-2.5 px-3.5 text-xs font-bold transition-all duration-200 shadow-2xs group/btn active:scale-[0.98] bg-emerald-50 hover:bg-emerald-700 dark:bg-emerald-950/40 dark:hover:bg-emerald-700 border border-emerald-200 dark:border-emerald-800/60 text-emerald-800 hover:text-white dark:text-emerald-300 dark:hover:text-white"
+              >
+                <span>{ctaLabel}</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" aria-hidden="true" />
+              </Link>
+            )}
           </div>
         </div>
       </div>
-    </Link>
+    </article>
   );
 }
 

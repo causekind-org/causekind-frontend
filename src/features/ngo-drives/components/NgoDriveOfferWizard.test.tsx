@@ -29,13 +29,18 @@ import { driveOfferModelFrom, serializeDriveOffer } from "../driveOfferSerialize
 /** The exact JSON the wizard sends for the form filled below (also used by the backend test and walk.py). */
 // No handover method or pickup address: the four-step form leaves those to the handover page.
 export const WIZARD_ITEM_DETAILS = {
-  quantity: 3, condition: "Like New", approximateAge: "1 year", knownDefects: "None", notesForNgo: "Washed and folded",
+  quantity: 3, condition: "Like New", approximateAge: "1-2 years", ageRange: "Y1_2",
+  sizeSpec: undefined, confirmedWorking: false, confirmedClean: false,
+  knownDefects: "None", notesForNgo: "Washed and folded",
   matchesRequirements: true,
 };
-const DTO_KEYS = ["quantity", "condition", "approximateAge", "knownDefects", "notesForNgo", "matchesRequirements"].sort();
+const DTO_KEYS = [
+  "quantity", "condition", "approximateAge", "ageRange", "sizeSpec",
+  "confirmedWorking", "confirmedClean", "knownDefects", "notesForNgo", "matchesRequirements"
+].sort();
 
 const draftOffer = {
-  id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust",
+  id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust", donorCity: "Pune", donorPincode: "411038", donorLatitude: 18.5, donorLongitude: 73.8, dropOffOnly: false,
   media: [
     { id: 1, mediaUrl: "https://cdn.test/ngo-drive-offers/9/a.png", mediaType: "IMAGE", status: "APPROVED", sortOrder: 0 },
     { id: 2, mediaUrl: "https://cdn.test/ngo-drive-offers/9/b.png", mediaType: "IMAGE", status: "APPROVED", sortOrder: 1 },
@@ -164,7 +169,7 @@ describe("drive offer mapping", () => {
   it("a saved draft reopens with all its data and serializes back to the same body", () => {
     const saved = { ...draftOffer, ...WIZARD_ITEM_DETAILS, matchesRequirements: undefined } as never;
     const model = driveOfferModelFrom(saved);
-    expect(model).toMatchObject({ quantity: "3", condition: "Like New", approximateAge: "1 year", hasKnownDefects: false,
+    expect(model).toMatchObject({ quantity: "3", condition: "Like New", approximateAge: "1-2 years", ageRange: "Y1_2", hasKnownDefects: false,
       accessoriesIncluded: "Washed and folded" });
     expect(model.photos).toHaveLength(2);
     expect(serializeDriveOffer({ ...model, declarationsConfirmed: true }, { maxQuantity: 50 })).toEqual(WIZARD_ITEM_DETAILS);

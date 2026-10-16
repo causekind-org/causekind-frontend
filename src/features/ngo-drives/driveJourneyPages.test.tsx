@@ -135,12 +135,32 @@ describe("donor drive handover page", () => {
     api.getNgoDriveOffer.mockRejectedValueOnce(await apiError(404, "The requested item was not found."));
     render(<P />);
     expect(await screen.findByText("Handover not found")).toBeInTheDocument();
+    expect(screen.getByText("This handover could not be found. It may have been removed, or it belongs to another account.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to your dashboard" })).toHaveAttribute("href", "/dashboard");
   });
 });
 
 describe("NGO drive handover page", () => {
   const Page = async () => (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
   beforeEach(() => { auth.user = { email: "ngo@x.test", role: "NGO_PARTNER" }; });
+
+  it("shows friendly not-found screen when offer is missing (404) or belongs to another account (403)", async () => {
+    api.getNgoDriveOfferForNgo.mockRejectedValueOnce(await apiError(404, "Not found"));
+    api.getNgoDriveOfferHandover.mockResolvedValueOnce(null);
+    const P = await Page();
+    const { unmount } = render(<P />);
+    expect(await screen.findByText("Handover not found")).toBeInTheDocument();
+    expect(screen.getByText("This handover could not be found. It may have been removed, or it belongs to another account.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to drive" })).toHaveAttribute("href", "/ngo/drives/7");
+    expect(screen.getByRole("link", { name: "Back to dashboard" })).toHaveAttribute("href", "/dashboard/ngo");
+    unmount();
+
+    api.getNgoDriveOfferForNgo.mockRejectedValueOnce(await apiError(403, "Forbidden"));
+    api.getNgoDriveOfferHandover.mockResolvedValueOnce(null);
+    render(<P />);
+    expect(await screen.findByText("Handover not found")).toBeInTheDocument();
+    expect(screen.getByText("This handover could not be found. It may have been removed, or it belongs to another account.")).toBeInTheDocument();
+  });
 
   it("waiting for the donor's plan", async () => {
     api.getNgoDriveOfferForNgo.mockResolvedValue(offer("NGO_ACCEPTED"));

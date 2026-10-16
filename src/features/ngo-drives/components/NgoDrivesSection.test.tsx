@@ -167,13 +167,27 @@ describe("NgoDrivesSection", () => {
     expect(screen.getByText("Primary School Uniforms")).toBeInTheDocument();
   });
 
-  it("shows 'View drive' for DONEE and NGO accounts instead of 'Give to this drive'", async () => {
+  it("shows 'View drive' for DONEE and NGO accounts instead of 'View drive & give'", async () => {
     mockUser = { role: "ROLE_DONEE", id: 99 };
     render(<NgoDrivesSection />);
 
-    const viewButtons = await screen.findAllByRole("button", { name: "View drive" });
-    expect(viewButtons.length).toBeGreaterThan(0);
-    expect(screen.queryByRole("button", { name: "Give to this drive" })).toBeNull();
+    const viewLinks = await screen.findAllByRole("link", { name: /^View drive$/i });
+    expect(viewLinks.length).toBeGreaterThan(0);
+    expect(screen.queryByText("Give to this drive")).toBeNull();
+    expect(screen.queryByText("View drive & give")).toBeNull();
+  });
+
+  it("shows 'View drive & give' linking to /drives/{id} for guest or donor accounts", async () => {
+    mockUser = null; // Guest
+    render(<NgoDrivesSection />);
+
+    const defaultLinks = await screen.findAllByRole("link", { name: /View drive & give/i });
+    expect(defaultLinks.length).toBe(3);
+    const hrefs = defaultLinks.map((l) => l.getAttribute("href"));
+    expect(hrefs).toContain("/drives/1");
+    expect(hrefs).toContain("/drives/2");
+    expect(hrefs).toContain("/drives/3");
+    expect(screen.queryByText("Give to this drive")).toBeNull();
   });
 
   it("renders amber days left for <= 3 days and hides donorCount when 0", async () => {

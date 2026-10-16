@@ -497,10 +497,8 @@ export function NgoProfileView() {
           userProf?.fullName ||
           user.email.split("@")[0].replace(/[^a-zA-Z0-9]/g, " ");
 
-        const resolvedEmail =
-          draft?.officialEmail ||
-          userProf?.email ||
-          user.email;
+        // The official email is the account's own email (the final step's code goes there).
+        const resolvedEmail = userProf?.email || user.email;
 
         const resolvedPhone =
           draft?.mobileNumber ||
@@ -893,7 +891,7 @@ export function NgoProfileView() {
               <div className="self-start sm:self-auto">
                 {application.status === "APPROVED" ? (
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-300 dark:border-emerald-800/60 px-3.5 py-1.5 text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 shadow-sm">
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
                     Approved & Verified
                   </span>
                 ) : application.status === "REJECTED" ? (

@@ -31,6 +31,7 @@ vi.mock("@/lib/api", () => ({
   resendNgoOtp: vi.fn(),
   getNgoDraft: vi.fn().mockResolvedValue(null),
   saveNgoDraft: vi.fn().mockResolvedValue({ status: "SAVED" }),
+  checkNgoPanLetters: vi.fn().mockResolvedValue({ warnings: [] }),
 }));
 
 beforeAll(() => {
@@ -58,6 +59,7 @@ describe("NGORegistration Component - Demo Mode ON", () => {
     await waitFor(() => expect(screen.queryAllByRole("button", { name: /Mark as uploaded ✓/i })).toHaveLength(0));
     await user.type(screen.getByLabelText(/Registration Number/i), "MH/TRU/2026/DEMO");
     await user.type(screen.getByLabelText(/Registered Office Address/i), "Demo Street, Mumbai");
+    await user.type(screen.getByLabelText(/Organization Phone Number/i), "+919876543210");
     await user.type(screen.getByLabelText(/Year of Establishment/i), "2020");
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 

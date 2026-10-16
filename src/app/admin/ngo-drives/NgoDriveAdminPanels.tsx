@@ -12,6 +12,7 @@ import {
   type AdminPendingDriveOffer, type AdminProofDrive, type NgoDrive,
 } from "@/lib/api";
 import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
+import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 
 const field = "w-full rounded-lg border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
@@ -148,9 +149,20 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
                   View NGO application ({label(ngo.applicationStatus)})</Link></>}
               </p>
             )}
+            {d.locationLatitude != null && d.locationLongitude != null && (
+              <div className="mt-4">
+                <iframe
+                  title="Drive location on the map"
+                  className="h-48 w-full rounded-lg border border-stone-200 dark:border-zinc-700"
+                  loading="lazy"
+                  src={`https://maps.google.com/maps?q=${d.locationLatitude},${d.locationLongitude}&z=15&output=embed`}
+                />
+              </div>
+            )}
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               {Object.entries({
-                Location: [d.locationArea, d.locationCity].filter(Boolean).join(", "),
+                Location: [d.locationArea, d.locationCity, d.locationPincode].filter(Boolean).join(", "),
+                "Pickup radius": d.pickupRadiusKm != null ? `${d.pickupRadiusKm} km` : "Not set (older drive)",
                 Category: d.category, Item: d.itemName, Quantity: `${d.quantityNeeded} ${label(d.unit)}`,
                 "Condition accepted": [
                   driveConditionLabel(d.itemCondition),
@@ -300,12 +312,38 @@ export function NgoDriveOffersPanel() {
           <h2 className="text-lg font-bold">{o.donorName || "Donor"} → {o.driveTitle}</h2>
           <p className="mt-1 text-sm text-stone-500">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${serverDate(o.submittedAt).toLocaleString()}` : ""}</p>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            {Object.entries({
-              Offering: `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}`,
-              Condition: label(o.condition), "Item age": o.approximateAge, "Known defects": o.knownDefects,
-              Handover: label(o.handoverMethod), "Donor city": o.donorCity,
-              Compatibility: label(o.compatibilityIndicator), "Notes for NGO": o.notesForNgo,
-            }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
+            {([
+              ["Offering", `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}`],
+              ["Condition", label(o.condition)],
+              ["Item age", formatAgeRange(o.ageRange) || o.approximateAge],
+              ["Size / spec", o.sizeSpec],
+              ["Tested working", o.confirmedWorking != null ? (
+                o.confirmedWorking ? (
+                  <span className="inline-flex items-center gap-1.5 text-stone-800 dark:text-stone-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                    Tested and works
+                  </span>
+                ) : "No"
+              ) : undefined],
+              ["Washed & clean", o.confirmedClean != null ? (
+                o.confirmedClean ? (
+                  <span className="inline-flex items-center gap-1.5 text-stone-800 dark:text-stone-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                    Washed and clean
+                  </span>
+                ) : "No"
+              ) : undefined],
+              ["Known defects", o.knownDefects],
+              ["Handover", label(o.handoverMethod)],
+              ["Donor city", o.donorCity],
+              ["Compatibility", label(o.compatibilityIndicator)],
+              ["Notes for NGO", o.notesForNgo],
+            ] as [string, React.ReactNode][]).filter(([_, value]) => value !== undefined).map(([name, value]) => (
+              <div key={name}>
+                <dt className="text-stone-500">{name}</dt>
+                <dd className="mt-1 break-words">{value || "Not provided"}</dd>
+              </div>
+            ))}
           </dl>
           <button className={`${button} mt-4`} aria-expanded={detail?.id === o.id} onClick={() => void open(o.id)}>
             {detail?.id === o.id ? "Hide details" : "View details"}

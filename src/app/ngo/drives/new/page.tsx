@@ -40,11 +40,15 @@ import {
   type DriveCondition,
 } from "@/features/ngo-drives/driveConditions";
 import { DriveDetailView } from "@/features/ngo-drives/components/DriveDetailView";
+import { DriveLocationStep, RADIUS_PRESETS, radiusKm } from "@/features/ngo-drives/components/DriveLocationStep";
+import type { LocationStepHandle } from "@/features/item-listing-wizard/steps/LocationStep";
+import { useLocationPinHandlers, type LocationFields } from "@/hooks/useLocationPinHandlers";
 
 /** Matches the backend's limit on drive details. */
 const DETAILS_MAX = 500;
 
 export const WORKING_ORDER_CATEGORIES = ["Electronics", "Household"] as const;
+export const REQUIRE_CLEAN_CATEGORIES = ["Clothing", "Household", "Furniture"] as const;
 
 export const HANDOVER_MODES = [
   { value: "DROP_OFF", label: "Drop-off only" },
@@ -61,17 +65,19 @@ export function formatDateDDMMYYYY(dateStr?: string | null): string {
   return dateStr;
 }
 
-type NgoDriveStep = "drive-type" | "drive-details" | "beneficiaries-handover" | "review-declarations";
+type NgoDriveStep = "drive-type" | "drive-location" | "drive-details" | "beneficiaries-handover" | "review-declarations";
 
-const NGO_DRIVE_STEPS: NgoDriveStep[] = ["drive-details", "beneficiaries-handover", "review-declarations"];
+const NGO_DRIVE_STEPS: NgoDriveStep[] = ["drive-location", "drive-details", "beneficiaries-handover", "review-declarations"];
 const STEP_LABELS: Record<NgoDriveStep, string> = {
   "drive-type": "Drive Type",
-  "drive-details": "1 Drive details",
-  "beneficiaries-handover": "2 Beneficiaries & handover",
-  "review-declarations": "3 Review & declarations",
+  "drive-location": "1 Where is this drive?",
+  "drive-details": "2 Drive details",
+  "beneficiaries-handover": "3 Beneficiaries & handover",
+  "review-declarations": "4 Review & declarations",
 };
 const STEP_INTROS: Record<NgoDriveStep, string> = {
   "drive-type": "Choose what to collect",
+  "drive-location": "Donors near this place will see that you can pick up their items.",
   "drive-details": "Tell givers exactly what you need.",
   "beneficiaries-handover": "Donors near you pledge the items.",
   "review-declarations": "Review and confirm.",
@@ -131,7 +137,7 @@ function NewNgoDriveForm() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // ?type=items comes from the "Start a Drive" popup, which already chose the type.
-  const [step, setStep] = useState<NgoDriveStep>(searchParams?.get("type") === "items" ? "drive-details" : "drive-type");
+  const [step, setStep] = useState<NgoDriveStep>(searchParams?.get("type") === "items" ? "drive-location" : "drive-type");
   const [direction, setDirection] = useState(1);
   const reduced = !!useReducedMotion();
 
@@ -159,6 +165,7 @@ function NewNgoDriveForm() {
   const [urgency, setUrgency] = useState<"NORMAL" | "HIGH" | "CRITICAL">("NORMAL");
   const [condition, setCondition] = useState<DriveCondition>("NEW_ONLY");
   const [mustBeWorking, setMustBeWorking] = useState(false);
+  const [requireClean, setRequireClean] = useState(false);
 
   // Step 1: Drive story & details
   const [details, setDetails] = useState("");
@@ -170,6 +177,46 @@ function NewNgoDriveForm() {
   // Step 1: Drive location
   const [locationArea, setLocationArea] = useState("");
   const [locationCity, setLocationCity] = useState("");
+  // Step 1: where the drive is (shared location step) and how far the NGO picks up from.
+  const [driveLoc, setDriveLoc] = useState<LocationFields>({ countryIso: "IN", stateIso: "", city: "", locality: "", pincode: "" });
+  const driveLocRef = useRef<LocationFields>(driveLoc);
+  const [radiusChoice, setRadiusChoice] = useState("10");
+  const [customRadius, setCustomRadius] = useState("");
+  const locationStepRef = useRef<LocationStepHandle>(null);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const commitDriveLoc = useCallback((next: LocationFields) => {
+    driveLocRef.current = next;
+    setDriveLoc(next);
+    // The drive's area and city are the location step's locality and city.
+    setLocationArea(next.locality);
+    setLocationCity(next.city);
+  }, []);
+  const clearDrivePinError = useCallback(() => {
+    setFieldErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
+  }, []);
+  const { lookup: driveLookup, handlePin: handleDrivePin, handleGeocodeTyped: handleDriveGeocodeTyped } = useLocationPinHandlers({
+    modelRef: driveLocRef, commit: commitDriveLoc, clearPinError: clearDrivePinError, profileCenter: null,
+  });
+  const setDriveLocField = useCallback(<K extends keyof LocationFields>(key: K, value: LocationFields[K]) => {
+    commitDriveLoc({ ...driveLocRef.current, [key]: value });
+  }, [commitDriveLoc]);
+  /** Restores a saved location (draft or drive being edited). */
+  const restoreDriveLoc = useCallback((d: Record<string, unknown>) => {
+    commitDriveLoc({
+      countryIso: (d.locationCountry as string) || "IN",
+      stateIso: (d.locationState as string) || "",
+      city: (d.locationCity as string) || "",
+      locality: (d.locationArea as string) || "",
+      pincode: (d.locationPincode as string) || "",
+      latitude: typeof d.locationLatitude === "number" ? d.locationLatitude : undefined,
+      longitude: typeof d.locationLongitude === "number" ? d.locationLongitude : undefined,
+    });
+    const r = typeof d.pickupRadiusKm === "number" ? d.pickupRadiusKm : null;
+    if (r != null) {
+      if ((RADIUS_PRESETS as readonly number[]).includes(r)) { setRadiusChoice(String(r)); setCustomRadius(""); }
+      else { setRadiusChoice("custom"); setCustomRadius(String(r)); }
+    }
+  }, [commitDriveLoc]);
 
   // Step 2: Beneficiaries
   const [beneficiaryGroup, setBeneficiaryGroup] = useState("");
@@ -213,19 +260,27 @@ function NewNgoDriveForm() {
         setNgoApp(app);
         const appData = app as any;
         if (appData.representativeName) setNgoContactName(appData.representativeName);
-        if (appData.mobileNumber) setNgoContactPhone(appData.mobileNumber);
+        const contactPhone = appData.organizationPhone || appData.mobileNumber || user?.phone;
+        if (contactPhone) setNgoContactPhone(contactPhone);
         if (appData.registeredOfficeAddress) setRegisteredOfficeAddress(appData.registeredOfficeAddress);
-        if (appData.city) setLocationCity(prev => prev || appData.city);
-        if (appData.area) setLocationArea(prev => prev || appData.area);
+        if (appData.city || appData.area) commitDriveLoc({
+          ...driveLocRef.current,
+          city: driveLocRef.current.city || appData.city || "",
+          locality: driveLocRef.current.locality || appData.area || "",
+        });
       } else if (IS_NGO_DEMO_MODE) {
         try {
           const appObj = JSON.parse(localStorage.getItem(`ngo-application-${userIdentifier}`) || localStorage.getItem(`ngo-demo-application-${userIdentifier}`) || "{}");
           setNgoApp(appObj);
           if (appObj.representativeName) setNgoContactName(appObj.representativeName);
-          if (appObj.mobileNumber) setNgoContactPhone(appObj.mobileNumber);
+          const demoPhone = appObj.organizationPhone || appObj.mobileNumber || user?.phone;
+          if (demoPhone) setNgoContactPhone(demoPhone);
           if (appObj.registeredOfficeAddress) setRegisteredOfficeAddress(appObj.registeredOfficeAddress);
-          if (appObj.city) setLocationCity(prev => prev || appObj.city);
-          if (appObj.area) setLocationArea(prev => prev || appObj.area);
+          if (appObj.city || appObj.area) commitDriveLoc({
+            ...driveLocRef.current,
+            city: driveLocRef.current.city || appObj.city || "",
+            locality: driveLocRef.current.locality || appObj.area || "",
+          });
         } catch {}
       }
     }).catch(() => {});
@@ -251,6 +306,7 @@ function NewNgoDriveForm() {
       setUrgency((d.urgency as typeof urgency) || "NORMAL");
       setCondition(normalizeLegacyCondition(d.itemCondition));
       setMustBeWorking(Boolean(d.mustBeWorking));
+      setRequireClean(Boolean(d.requireClean));
       setDetails(d.details || "");
 
       // Photos migration
@@ -271,8 +327,7 @@ function NewNgoDriveForm() {
       }
 
       // Location
-      setLocationArea(d.locationArea || "");
-      setLocationCity(d.locationCity || "");
+      restoreDriveLoc(d as unknown as Record<string, unknown>);
 
       // Beneficiaries
       setBeneficiaryGroup(d.beneficiaryGroup || "");
@@ -299,7 +354,8 @@ function NewNgoDriveForm() {
       setAltContact(d.altContact || "");
       setPastWorkUrl(d.pastWorkUrl || "");
 
-      setStep("drive-details");
+      // A drive that already has its location opens at the details; older drives add it first.
+      setStep(d.locationLatitude != null && d.pickupRadiusKm != null ? "drive-details" : "drive-location");
       setDraftLoaded(true);
     }).catch(() => { if (active) setEditLoadError("We couldn't load this drive. Please try again."); });
     return () => { active = false; };
@@ -320,6 +376,7 @@ function NewNgoDriveForm() {
         setUrgency(p.urgency || "NORMAL");
         setCondition(normalizeLegacyCondition(p.condition));
         setMustBeWorking(Boolean(p.mustBeWorking));
+        setRequireClean(Boolean(p.requireClean));
         setDetails(p.details || "");
 
         // Photos draft migration
@@ -340,8 +397,7 @@ function NewNgoDriveForm() {
         }
 
         // Location
-        setLocationArea(p.locationArea || "");
-        setLocationCity(p.locationCity || "");
+        restoreDriveLoc(p as unknown as Record<string, unknown>);
 
         // Beneficiaries
         setBeneficiaryGroup(p.beneficiaryGroup || "");
@@ -396,8 +452,11 @@ function NewNgoDriveForm() {
     setSaveStatus("saving");
     try {
       const saveObj = {
-        title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, details,
+        title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
         photos, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity,
+        locationCountry: driveLoc.countryIso, locationState: driveLoc.stateIso, locationPincode: driveLoc.pincode,
+        locationLatitude: driveLoc.latitude, locationLongitude: driveLoc.longitude,
+        pickupRadiusKm: radiusKm(radiusChoice, customRadius),
         beneficiaryGroup, beneficiaryCount, beneficiaryDescription,
         neededBy, availableDays, availableFrom, availableTo, handoverMode,
         changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
@@ -410,8 +469,8 @@ function NewNgoDriveForm() {
       setSaveStatus("error");
     }
   }, [
-    draftLoaded, title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, details,
-    photos, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity,
+    draftLoaded, title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
+    photos, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity, driveLoc, radiusChoice, customRadius,
     beneficiaryGroup, beneficiaryCount, beneficiaryDescription,
     neededBy, availableDays, availableFrom, availableTo, handoverMode,
     changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
@@ -516,6 +575,15 @@ function NewNgoDriveForm() {
 
   function validateStep(s: NgoDriveStep): boolean {
     const e: Record<string, string> = {};
+    if (s === "drive-location") {
+      if (!driveLoc.countryIso) e.countryIso = "Choose the country";
+      if (!driveLoc.stateIso) e.stateIso = "Choose the state";
+      if (!driveLoc.city.trim() || driveLoc.city.length > 100) e.city = "Enter the city";
+      if (driveLoc.locality.length > 100) e.locality = "Locality cannot exceed 100 characters";
+      if (!/^[1-9][0-9]{5}$/.test(driveLoc.pincode.trim())) e.pincode = "Enter a 6-digit PIN code";
+      if (driveLoc.latitude == null || driveLoc.longitude == null) e.latitude = "Drop the pin on the map";
+      if (radiusKm(radiusChoice, customRadius) == null) e.pickupRadiusKm = "Choose a distance from 1 to 500 km";
+    }
     if (s === "drive-details") {
       if (!title.trim() || title.length < 10 || title.length > 80) e.title = "Title must be 10-80 characters";
       if (tagline.trim() && tagline.length > 100) e.tagline = "Tagline cannot exceed 100 characters";
@@ -530,8 +598,6 @@ function NewNgoDriveForm() {
       if (!whoFor.trim() || whoFor.length < 10 || whoFor.length > 300) e.whoFor = "Who is this for must be 10-300 characters";
       if (!whyNow.trim() || whyNow.length < 10 || whyNow.length > 300) e.whyNow = "Why now must be 10-300 characters";
       if (!whatChanges.trim() || whatChanges.length < 10 || whatChanges.length > 300) e.whatChanges = "What will change must be 10-300 characters";
-      if (!locationArea.trim() || locationArea.length > 100) e.locationArea = "Area is required (up to 100 characters)";
-      if (!locationCity.trim() || locationCity.length > 100) e.locationCity = "City is required (up to 100 characters)";
     }
     if (s === "beneficiaries-handover") {
       if (!beneficiaryGroup) e.beneficiaryGroup = "Beneficiary group is required";
@@ -568,7 +634,8 @@ function NewNgoDriveForm() {
     return Object.keys(e).length === 0;
   }
 
-  function handleNext() {
+  async function handleNext() {
+    if (step === "drive-location" && locationStepRef.current && !(await locationStepRef.current.flush())) return;
     if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
     const i = ngoStepIndex(step);
     if (i < NGO_DRIVE_STEPS.length - 1) goToStep(NGO_DRIVE_STEPS[i + 1], 1);
@@ -599,14 +666,21 @@ function NewNgoDriveForm() {
         unit,
         condition,
         mustBeWorking,
+        requireClean,
         details: details.trim(),
         photos: photos.map((p, idx) => ({ url: p.url, storageKey: p.storageKey, sortOrder: idx })),
         referencePhotoUrl: photos[0]?.url || undefined,
         whoFor: whoFor.trim(),
         whyNow: whyNow.trim(),
         whatChanges: whatChanges.trim(),
-        locationArea: locationArea.trim(),
-        locationCity: locationCity.trim(),
+        locationArea: driveLoc.locality.trim(),
+        locationCity: driveLoc.city.trim(),
+        locationCountry: driveLoc.countryIso,
+        locationState: driveLoc.stateIso,
+        locationPincode: driveLoc.pincode.trim(),
+        locationLatitude: driveLoc.latitude,
+        locationLongitude: driveLoc.longitude,
+        pickupRadiusKm: radiusKm(radiusChoice, customRadius),
         urgency,
         beneficiaryGroup,
         beneficiaryCount: Number(beneficiaryCount),
@@ -771,7 +845,7 @@ function NewNgoDriveForm() {
             <p className="text-stone-500 text-sm">Choose the category of drive you want to organize.</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
-            <button onClick={() => goToStep("drive-details", 1)} className="text-left bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 hover:border-ngo-600 dark:hover:border-ngo-500 rounded-2xl p-6 transition-all hover:shadow-md group">
+            <button onClick={() => goToStep("drive-location", 1)} className="text-left bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 hover:border-ngo-600 dark:hover:border-ngo-500 rounded-2xl p-6 transition-all hover:shadow-md group">
               <div className="w-10 h-10 rounded-xl bg-ngo-50 dark:bg-ngo-900/30 text-ngo-700 dark:text-ngo-300 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                 <Layers className="w-5 h-5" />
               </div>
@@ -811,6 +885,7 @@ function NewNgoDriveForm() {
   const maxDateStr = new Date(today.getTime() + 90 * 86400000).toISOString().split("T")[0];
 
   const showWorkingOrderOption = WORKING_ORDER_CATEGORIES.includes(category as any);
+  const showRequireCleanOption = REQUIRE_CLEAN_CATEGORIES.includes(category as any);
 
   const step1 = (
     <div className="grid items-start gap-5 md:grid-cols-2">
@@ -967,21 +1042,8 @@ function NewNgoDriveForm() {
 
         {/* 5. Drive Location */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="location-heading">
-          <h3 id="location-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Drive Location</h3>
+          <h3 id="location-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Drive address for donors</h3>
           
-          <div className="grid grid-cols-2 gap-4">
-            <WizardField label="Area" required error={fieldErrors.locationArea} hint={`${locationArea.length}/100`}>
-              {({ id, describedBy, invalid }) => (
-                <Input id={id} name="locationArea" maxLength={100} placeholder="e.g. Andheri East" value={locationArea} onChange={e => setLocationArea(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
-              )}
-            </WizardField>
-            <WizardField label="City" required error={fieldErrors.locationCity} hint={`${locationCity.length}/100`}>
-              {({ id, describedBy, invalid }) => (
-                <Input id={id} name="locationCity" maxLength={100} placeholder="e.g. Mumbai" value={locationCity} onChange={e => setLocationCity(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
-              )}
-            </WizardField>
-          </div>
-
           <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 text-xs">
             <span className="font-semibold text-stone-700 dark:text-stone-300 block mb-0.5">Registered office address</span>
             <p className="text-stone-600 dark:text-stone-400">{registeredOfficeAddress || "Registered address on file"}</p>
@@ -1037,6 +1099,20 @@ function NewNgoDriveForm() {
               />
               <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">
                 Items must be in working order
+              </span>
+            </label>
+          )}
+
+          {showRequireCleanOption && (
+            <label className="flex items-center gap-2.5 cursor-pointer pt-1">
+              <input
+                type="checkbox"
+                checked={requireClean}
+                onChange={e => setRequireClean(e.target.checked)}
+                className="w-4 h-4 rounded border-slate-300 text-ngo-600 focus:ring-ngo-500"
+              />
+              <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">
+                Items must be washed and clean
               </span>
             </label>
           )}
@@ -1307,6 +1383,7 @@ function NewNgoDriveForm() {
             <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
               {driveConditionLabel(condition)}
               {mustBeWorking && <span className="block text-2xs text-amber-600 dark:text-amber-400">Must be in working order</span>}
+              {requireClean && <span className="block text-2xs text-sky-600 dark:text-sky-400">Items must be washed and clean</span>}
             </span>
           </div>
 
@@ -1421,6 +1498,7 @@ function NewNgoDriveForm() {
     whyNow: whyNow || null,
     whatChanges: whatChanges || null,
     mustBeWorking: mustBeWorking,
+    requireClean: requireClean,
     locationArea: locationArea || null,
     locationCity: locationCity || null,
     urgency: urgency,
@@ -1543,6 +1621,16 @@ function NewNgoDriveForm() {
                     <StepErrorSummary errors={Object.fromEntries(Object.entries(fieldErrors).filter(([, v]) => v))} onFocusField={focusField} />
                   </div>
 
+                  {step === "drive-location" && (
+                    <DriveLocationStep
+                      model={driveLoc} errors={fieldErrors} lookup={driveLookup} profileCenter={null}
+                      onChange={setDriveLocField} onPin={handleDrivePin} onGeocodeTyped={handleDriveGeocodeTyped}
+                      controlRef={locationStepRef} onBusyChange={setLocationBusy}
+                      radiusChoice={radiusChoice} customRadius={customRadius}
+                      onRadiusChoice={setRadiusChoice} onCustomRadius={setCustomRadius}
+                      registeredOfficeAddress={registeredOfficeAddress}
+                    />
+                  )}
                   {step === "drive-details" && step1}
                   {step === "beneficiaries-handover" && step2}
                   {step === "review-declarations" && step3}
@@ -1553,18 +1641,21 @@ function NewNgoDriveForm() {
         </div>
 
         {/* BOTTOM ACTION BUTTONS */}
-        {step === "drive-details" ? (
+        {step === "drive-location" || step === "drive-details" ? (
           <div className="mx-auto w-full max-w-[1040px] px-4 sm:px-8 lg:px-10 pb-6 mt-auto">
             <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
+              {step === "drive-details" && (
+                <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 1</button>
+              )}
               <button type="button" onClick={() => void saveDraft()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {saveStatus === "saving" ? "Saving…" : "Save Draft"}
               </button>
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-ngo-700 px-5 text-xs font-bold text-white transition-colors hover:bg-ngo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed">Continue to Step 2 →</button>
+              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-ngo-700 px-5 text-xs font-bold text-white transition-colors hover:bg-ngo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed">Continue to Step {step === "drive-location" ? 2 : 3} →</button>
             </div>
           </div>
         ) : step === "beneficiaries-handover" ? (
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
-            <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 1</button>
+            <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 2</button>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{saveStatus === "saving" ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
             </div>

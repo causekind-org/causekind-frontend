@@ -208,6 +208,10 @@ export type OfferModel = {
   // Details
   quantity: string;
   approximateAge: string;
+  sizeSpec: string;
+  ageRange: string;
+  confirmedWorking: boolean;
+  confirmedClean: boolean;
   accessoriesIncluded: string;
   specNotes: string;
 
@@ -239,6 +243,10 @@ export const emptyOfferModel: OfferModel = {
   purchaseNotes: "",
   quantity: "1",
   approximateAge: "",
+  sizeSpec: "",
+  ageRange: "",
+  confirmedWorking: false,
+  confirmedClean: false,
   accessoriesIncluded: "",
   specNotes: "",
   condition: "",

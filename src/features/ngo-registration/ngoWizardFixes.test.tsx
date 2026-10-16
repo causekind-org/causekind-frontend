@@ -34,35 +34,38 @@ describe("NGO wizard has no example placeholders (point 1)", () => {
 describe("prefill from signup (point 2)", () => {
   const user = { fullName: "Hope Welfare Trust", phone: "+919876543210", email: "hope@ngo.test" };
 
-  it("fills the empty organization name, mobile and official email", () => {
+  it("fills the empty organization name, organization phone, mobile and official email", () => {
     const form = prefillNgoFormWithUser(INITIAL_NGO_FORM, user);
     expect(form.organizationName).toBe("Hope Welfare Trust");
+    expect(form.organizationPhone).toBe("+919876543210");
     expect(form.mobileNumber).toBe("+919876543210");
     expect(form.officialEmail).toBe("hope@ngo.test");
   });
 
   it("never overwrites what the NGO typed", () => {
-    const typed = { ...INITIAL_NGO_FORM, organizationName: "Typed", mobileNumber: "9000000000", officialEmail: "typed@ngo.test" };
-    expect(prefillNgoFormWithUser(typed, user)).toMatchObject({ organizationName: "Typed", mobileNumber: "9000000000", officialEmail: "typed@ngo.test" });
+    const typed = { ...INITIAL_NGO_FORM, organizationName: "Typed", organizationPhone: "9000000000", mobileNumber: "9000000000", officialEmail: "typed@ngo.test" };
+    expect(prefillNgoFormWithUser(typed, user)).toMatchObject({ organizationName: "Typed", organizationPhone: "9000000000", mobileNumber: "9000000000", officialEmail: "typed@ngo.test" });
   });
 
   it("leaves fields flagged for correction empty, and does nothing without a user", () => {
-    const form = prefillNgoFormWithUser(INITIAL_NGO_FORM, user, ["organizationName", "mobileNumber"]);
+    const form = prefillNgoFormWithUser(INITIAL_NGO_FORM, user, ["organizationName", "organizationPhone", "mobileNumber"]);
     expect(form.organizationName).toBe("");
+    expect(form.organizationPhone).toBe("");
     expect(form.mobileNumber).toBe("");
     expect(form.officialEmail).toBe("hope@ngo.test");
     expect(prefillNgoFormWithUser(INITIAL_NGO_FORM, null)).toBe(INITIAL_NGO_FORM);
   });
 
   it("treats whitespace as empty", () => {
-    expect(prefillNgoFormWithUser({ ...INITIAL_NGO_FORM, mobileNumber: "  " }, user).mobileNumber).toBe("+919876543210");
+    expect(prefillNgoFormWithUser({ ...INITIAL_NGO_FORM, organizationPhone: "  ", mobileNumber: "  " }, user).organizationPhone).toBe("+919876543210");
   });
 
-  it("starts Representative 1 with the signup email and mobile, still to be verified", () => {
+  it("starts Representative 1 with the signup email, while representative mobile starts empty", () => {
     const rep = prefillNgoFormWithUser(INITIAL_NGO_FORM, user).representatives[0];
-    expect(rep).toMatchObject({ email: "hope@ngo.test", mobileNumber: "+919876543210", emailVerified: false });
-    const typed = { ...INITIAL_NGO_FORM, representatives: [{ ...INITIAL_NGO_FORM.representatives[0], email: "rep@ngo.test" }] };
+    expect(rep).toMatchObject({ email: "hope@ngo.test", mobileNumber: "", emailVerified: false });
+    const typed = { ...INITIAL_NGO_FORM, representatives: [{ ...INITIAL_NGO_FORM.representatives[0], email: "rep@ngo.test", mobileNumber: "+919111122222" }] };
     expect(prefillNgoFormWithUser(typed, user).representatives[0].email).toBe("rep@ngo.test");
+    expect(prefillNgoFormWithUser(typed, user).representatives[0].mobileNumber).toBe("+919111122222");
     expect(prefillNgoFormWithUser(INITIAL_NGO_FORM, user, ["representatives.0.email"]).representatives[0].email).toBe("");
   });
 });

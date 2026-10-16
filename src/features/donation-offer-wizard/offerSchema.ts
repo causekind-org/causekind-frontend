@@ -156,7 +156,7 @@ export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]
     "purchaseTimeline", "estimatedCost", "proposedBrand", "proposedModel",
     "intendedStore", "purchaseNotes",
   ],
-  details: ["quantity", "approximateAge", "accessoriesIncluded", "specNotes"],
+  details: ["quantity", "approximateAge", "sizeSpec", "ageRange", "confirmedWorking", "confirmedClean", "accessoriesIncluded", "specNotes"],
   condition: ["condition", "hasKnownDefects", "knownDefects"],
   review: ["declarationsConfirmed"],
 };

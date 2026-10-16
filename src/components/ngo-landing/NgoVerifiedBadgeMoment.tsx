@@ -35,10 +35,10 @@ export function NgoVerifiedWelcomeModal() {
         <div className="flex items-start gap-3">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-bold leading-tight">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-ngo-700 dark:text-ngo-300" aria-hidden />
+              <span className="h-2 w-2 rounded-full bg-ngo-700 dark:bg-ngo-300 shrink-0" aria-hidden />
               <span>You&apos;re verified</span>
             </p>
-            <p className="mt-1 pl-6 text-xs text-stone-600 dark:text-stone-300">You can now start drives.</p>
+            <p className="mt-1 pl-4 text-xs text-stone-600 dark:text-stone-300">You can now start drives.</p>
           </div>
 
           <button

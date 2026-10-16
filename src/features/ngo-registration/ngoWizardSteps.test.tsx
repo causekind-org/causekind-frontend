@@ -45,7 +45,7 @@ describe("Step 1: Organization", () => {
     render(<Harness initial={INITIAL_NGO_FORM} step="org" onForm={() => {}} />);
     const labels = [...document.querySelectorAll("label, [aria-label^='Upload ']")].map((el) =>
       (el.getAttribute("aria-label") ?? el.textContent ?? "").replace("*", "").trim());
-    const order = ["Organization Name", "Legal Structure", "Upload PAN card", "PAN Number", "Registration Number", "Year of Establishment", "Registered Office Address"];
+    const order = ["Organization Name", "Legal Structure", "Upload PAN card", "PAN Number", "Registration Number", "Year of Establishment", "Registered Office Address", "Organization Phone Number"];
     const positions = order.map((l) => labels.findIndex((x) => x.startsWith(l)));
     expect(positions.every((p) => p >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);

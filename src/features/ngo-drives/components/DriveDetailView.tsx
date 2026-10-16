@@ -23,6 +23,8 @@ import {
   Truck,
   Eye,
   FileCheck2,
+  Heart,
+  Flame,
 } from "lucide-react";
 import type { PublicNgoDrive, NgoDriveProofResponse } from "@/lib/api";
 import { getNgoDriveProof } from "@/lib/api";
@@ -120,11 +122,32 @@ export function DriveDetailView({
   const total = Math.max(1, drive.quantityNeeded);
   const receivedPct = Math.min(100, ((drive.quantityReceived ?? 0) / total) * 100);
   const onTheWayPct = Math.min(100 - receivedPct, ((drive.quantityPledged ?? 0) / total) * 100);
+  const totalOffered = (drive.quantityReceived ?? 0) + (drive.quantityPledged ?? 0);
+  const totalOfferedPct = Math.min(100, Math.round((totalOffered / total) * 100));
 
   const urgent =
     (drive.urgency ?? "").toUpperCase() === "HIGH" ||
     (drive.urgency ?? "").toUpperCase() === "URGENT" ||
     (drive.urgency ?? "").toUpperCase() === "CRITICAL";
+
+  const isHighOrCritical =
+    (drive.urgency ?? "").toUpperCase() === "HIGH" ||
+    (drive.urgency ?? "").toUpperCase() === "CRITICAL";
+
+  const deadlineInfo = React.useMemo(() => {
+    if (!drive.neededBy) return null;
+    const target = new Date(drive.neededBy);
+    if (Number.isNaN(target.getTime())) return null;
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfTarget = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+    const diffDays = Math.round((startOfTarget.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return null;
+    const formatted = formatDdMmYyyy(drive.neededBy);
+    const label = diffDays === 0 ? "Ends today" : diffDays === 1 ? "1 day left" : `${diffDays} days left`;
+    const isUrgent = diffDays <= 3;
+    return { formatted, label, isUrgent };
+  }, [drive.neededBy]);
 
   const days = (drive.availableDays ?? []).map((d) => DAY[d] ?? d).join(", ");
 
@@ -173,7 +196,7 @@ export function DriveDetailView({
             <div className="flex flex-wrap items-center gap-2">
               {drive.verified && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-600 bg-emerald-950/40 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-100">
-                  <ShieldCheck className="h-4 w-4" aria-hidden="true" /> Verified NGO
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" aria-hidden="true" /> Verified NGO
                 </span>
               )}
               <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-emerald-50">
@@ -223,6 +246,12 @@ export function DriveDetailView({
                 {displayLocation}
               </li>
             )}
+            {drive.pickupRadiusKm != null && (
+              <li className="flex items-center gap-2" data-testid="drive-pickup-radius">
+                <Truck className="h-4 w-4" aria-hidden="true" />
+                Pickup available within {drive.pickupRadiusKm} km
+              </li>
+            )}
             <li className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4" aria-hidden="true" />
               Needed by {formatDdMmYyyy(drive.neededBy)}
@@ -234,7 +263,7 @@ export function DriveDetailView({
       {/* ── Main Content Grid ── */}
       <div className="mx-auto mt-8 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:gap-8">
         {/* Main column */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="order-2 lg:order-1 space-y-6 lg:col-span-2">
           {/* 1. Gallery */}
           {photos.length === 0 ? (
             <div className="flex aspect-video w-full items-center justify-center rounded-2xl border border-stone-200 bg-gradient-to-br from-emerald-50 to-stone-100 p-6 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950">
@@ -389,6 +418,11 @@ export function DriveDetailView({
                     Items must be in working order
                   </span>
                 )}
+                {drive.requireClean && (
+                  <span className="mt-1.5 ml-1.5 inline-flex items-center gap-1 rounded-md bg-sky-50 px-2 py-0.5 text-xs font-bold text-sky-800 dark:bg-sky-950/40 dark:text-sky-300">
+                    Items must be washed and clean
+                  </span>
+                )}
               </Fact>
 
               {drive.beneficiaryCount != null && (
@@ -513,7 +547,7 @@ export function DriveDetailView({
                 {drive.verified && (
                   <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
                     <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
                       <span>
                         Verified by CauseKind
                         {drive.ngo?.verifiedAt && ` on ${formatDdMmYyyy(drive.ngo.verifiedAt)}`}
@@ -795,44 +829,165 @@ export function DriveDetailView({
         </div>
 
         {/* Side card (Progress and CTA) */}
-        <aside className="lg:col-span-1">
-          <div className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:sticky lg:top-24">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-              Progress
-            </h2>
-            <p className="mt-2 text-2xl font-black text-stone-900 dark:text-stone-100">
-              {drive.quantityReceived + drive.quantityPledged}{" "}
-              <span className="text-base font-semibold text-stone-500 dark:text-stone-400">
-                of {drive.quantityNeeded} {humanize(drive.unit)} offered
+        <aside className="order-1 lg:order-2 lg:col-span-1">
+          <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:sticky lg:top-24">
+            {/* Header: Label + Urgency chip */}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                Progress
               </span>
-            </p>
+              {isHighOrCritical && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2.5 py-0.5 text-3xs font-bold uppercase tracking-wider text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-400">
+                  <Flame className="h-3 w-3 shrink-0" aria-hidden="true" /> High priority
+                </span>
+              )}
+            </div>
 
+            {/* Circular Ring SVG visual with percentage in center */}
+            <div className="mt-4 flex flex-col items-center justify-center">
+              <div className="relative flex h-36 w-36 items-center justify-center">
+                <svg className="h-full w-full -rotate-90 transform" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r={40}
+                    className="stroke-stone-100 dark:stroke-zinc-800"
+                    strokeWidth="9"
+                    fill="transparent"
+                  />
+                  {receivedPct > 0 && (
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r={40}
+                      className="stroke-emerald-600 transition-all duration-500 ease-out"
+                      strokeWidth="9"
+                      strokeDasharray={251.327}
+                      strokeDashoffset={251.327 - (receivedPct / 100) * 251.327}
+                      strokeLinecap="round"
+                      fill="transparent"
+                    />
+                  )}
+                  {onTheWayPct > 0 && (
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r={40}
+                      className="stroke-emerald-400 dark:stroke-emerald-500 transition-all duration-500 ease-out"
+                      strokeWidth="9"
+                      strokeDasharray={251.327}
+                      strokeDashoffset={251.327 - (onTheWayPct / 100) * 251.327}
+                      style={{
+                        transform: `rotate(${(receivedPct / 100) * 360}deg)`,
+                        transformOrigin: "50% 50%",
+                      }}
+                      strokeLinecap="round"
+                      fill="transparent"
+                    />
+                  )}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                  <span className="text-3xl font-black tracking-tight text-stone-900 dark:text-stone-100">
+                    {totalOfferedPct}%
+                  </span>
+                  <span className="text-3xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                    offered
+                  </span>
+                </div>
+              </div>
+
+              {/* Strong headline number and status line */}
+              <div className="mt-2 text-center">
+                <p className="text-xl font-black text-stone-900 dark:text-stone-100">
+                  {totalOffered}{" "}
+                  <span className="text-sm font-semibold text-stone-500 dark:text-stone-400">
+                    of {drive.quantityNeeded} {humanize(drive.unit)} offered
+                  </span>
+                </p>
+                <p className="mt-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                  {needed <= 0 ? "Fully offered" : `${needed} still needed`}
+                </p>
+              </div>
+            </div>
+
+            {/* Segmented bar for clear linear proportion and progressbar accessibility */}
             <div
-              className="mt-4 flex h-3 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-zinc-800"
+              className="mt-4 flex h-3 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-zinc-800"
               role="progressbar"
               aria-label="Drive progress"
               aria-valuemin={0}
               aria-valuemax={drive.quantityNeeded}
               aria-valuenow={drive.quantityReceived + drive.quantityPledged}
             >
-              <div className="h-full bg-emerald-600" style={{ width: `${receivedPct}%` }} />
+              <div className="h-full bg-emerald-600 transition-all duration-500" style={{ width: `${receivedPct}%` }} />
               <div
-                className="h-full bg-emerald-300 dark:bg-emerald-700"
+                className="h-full bg-emerald-400 dark:bg-emerald-500 transition-all duration-500"
                 style={{ width: `${onTheWayPct}%` }}
               />
             </div>
 
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-              <Stat label="Received" value={drive.quantityReceived} swatch="bg-emerald-600" />
-              <Stat
-                label="On the way"
-                value={drive.quantityPledged}
-                swatch="bg-emerald-300 dark:bg-emerald-700"
-              />
-              <Stat label="Still needed" value={needed} swatch="bg-stone-300 dark:bg-zinc-600" />
-            </dl>
+            {/* Stat tiles with small icons */}
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-100 bg-emerald-50/60 p-2.5 dark:border-emerald-950/50 dark:bg-emerald-950/20">
+                <div className="flex items-center gap-1 text-3xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  <span>Received</span>
+                </div>
+                <span className="mt-1 text-base font-black text-stone-900 dark:text-stone-100">
+                  {drive.quantityReceived}
+                </span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-xl border border-emerald-100/70 bg-emerald-50/30 p-2.5 dark:border-emerald-950/30 dark:bg-emerald-950/10">
+                <div className="flex items-center gap-1 text-3xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  <Truck className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  <span>On way</span>
+                </div>
+                <span className="mt-1 text-base font-black text-stone-900 dark:text-stone-100">
+                  {drive.quantityPledged}
+                </span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-xl border border-stone-200/80 bg-stone-50 p-2.5 dark:border-zinc-800 dark:bg-zinc-800/50">
+                <div className="flex items-center gap-1 text-3xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
+                  <Package className="h-3 w-3 shrink-0" aria-hidden="true" />
+                  <span>Needed</span>
+                </div>
+                <span className="mt-1 text-base font-black text-stone-900 dark:text-stone-100">
+                  {needed}
+                </span>
+              </div>
+            </div>
 
-            <div className="mt-6 border-t border-stone-100 pt-5 dark:border-zinc-800">
+            {/* Deadline row */}
+            {deadlineInfo && (
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-stone-200/80 bg-stone-50/70 px-3 py-2 text-xs dark:border-zinc-800 dark:bg-zinc-850">
+                <span className="flex items-center gap-1.5 font-medium text-stone-700 dark:text-stone-300">
+                  <CalendarClock className="h-3.5 w-3.5 text-stone-400" aria-hidden="true" />
+                  Needed by {deadlineInfo.formatted}
+                </span>
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-3xs font-bold ${
+                    deadlineInfo.isUrgent
+                      ? "border border-amber-300 bg-amber-100 text-amber-900 dark:border-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                      : "bg-stone-200/80 text-stone-700 dark:bg-zinc-700 dark:text-stone-300"
+                  }`}
+                >
+                  {deadlineInfo.label}
+                </span>
+              </div>
+            )}
+
+            {/* Donor count with a heart icon */}
+            {drive.donorCount != null && drive.donorCount > 0 && (
+              <div className="mt-3 flex items-center justify-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
+                <Heart className="h-3.5 w-3.5 fill-rose-500 text-rose-500" aria-hidden="true" />
+                <span>
+                  {drive.donorCount} {drive.donorCount === 1 ? "donor has" : "donors have"} backed this drive
+                </span>
+              </div>
+            )}
+
+            {/* CTA action area */}
+            <div className="mt-5 border-t border-stone-100 pt-5 dark:border-zinc-800">
               {isFulfilled && !isPreview && (
                 <Link
                   href={`/drives/${drive.id}/proof`}
@@ -921,6 +1076,17 @@ export function DriveDetailView({
                 <p className="text-sm text-stone-600 dark:text-stone-400">
                   {giveStateResult?.reason}
                 </p>
+              )}
+
+              {/* Share button secondary action */}
+              {!isPreview && (
+                <div className="mt-3 flex justify-center">
+                  <ShareButton
+                    title={drive.title}
+                    path={`/drives/${drive.id}`}
+                    className="inline-flex min-h-[40px] w-full items-center justify-center gap-1.5 rounded-xl border border-stone-200 bg-stone-50/70 px-4 text-xs font-bold text-stone-700 hover:bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-stone-300 dark:hover:bg-zinc-800"
+                  />
+                </div>
               )}
             </div>
           </div>

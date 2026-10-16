@@ -4,6 +4,7 @@ import { WizardPhotoImage } from "@/features/wizard-kit/WizardPhotoImage";
 import { DeclarationsBlock } from "@/features/wizard-kit/DeclarationsBlock";
 import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
 import type { CompatibilityCheck } from "@/lib/api";
+import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 import {
   OFFER_GROUP_TITLES, declarationGroupsFor,
   isPurchaseFlow, purchaseTimelineLabel, uploadedOfferPhotos,
@@ -12,7 +13,7 @@ import {
 
 export function OfferReviewStep({
   model, errors, requestTitle, compat, declarationsInvalidated, onChange, onEdit, flowType, declarationGroups,
-  hidePickup = false, photoGallery, video, onChangeLocation,
+  hidePickup = false, photoGallery, video, onChangeLocation, driveDetails = false,
 }: {
   model: OfferModel;
   errors: Record<string, string>;
@@ -25,6 +26,11 @@ export function OfferReviewStep({
   declarationGroups?: readonly any[];
   /** Optional. Leaves out the location section (a flow without a location, e.g. NGO drives). */
   hidePickup?: boolean;
+  /**
+   * NGO drive give form only: show size/specification, the age range and the
+   * working/clean confirmations. Off (the default) keeps this step exactly as before.
+   */
+  driveDetails?: boolean;
   /** "Your location"'s Edit: back to the location check that opens the offer. */
   onChangeLocation?: () => void;
   /**
@@ -82,7 +88,15 @@ export function OfferReviewStep({
         {/* Age is not collected on a purchase offer, so it must not be summarised
             on one either — a review row for a field the donor was never shown
             invites them to "correct" something the form will not accept. */}
-        {!purchase && <ReviewRow label="Item age" value={model.approximateAge} />}
+        {!driveDetails && !purchase && <ReviewRow label="Item age" value={model.approximateAge} />}
+        {driveDetails && (
+          <>
+            {model.sizeSpec && <ReviewRow label="Size / specification" value={model.sizeSpec} />}
+            {!purchase && <ReviewRow label="Item age" value={formatAgeRange(model.ageRange) || model.approximateAge} />}
+            {model.confirmedWorking && <ReviewRow label="Working order" value="Tested and works" />}
+            {model.confirmedClean && <ReviewRow label="Cleanliness" value="Washed and clean" />}
+          </>
+        )}
         <ReviewRow
           label={purchase ? "Comes with" : "Accessories"}
           value={model.accessoriesIncluded}

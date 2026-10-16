@@ -267,6 +267,7 @@ export interface NGOFormState {
   panNumber: string;
   registrationNumber: string;
   registeredOfficeAddress: string;
+  organizationPhone: string;
   yearOfEstablishment: string;
 
   // Steps 1–2 — documents keyed by DocDefinition.id
@@ -302,6 +303,7 @@ export const INITIAL_NGO_FORM: NGOFormState = {
   panNumber: "",
   registrationNumber: "",
   registeredOfficeAddress: "",
+  organizationPhone: "",
   yearOfEstablishment: "",
   documents: {},
   representatives: [EMPTY_REPRESENTATIVE],
@@ -452,6 +454,7 @@ export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): strin
       const cert = getRegistrationCertificateDoc(data.legalStructure);
       if (cert && !data.documents?.[cert.id]) missing.push(cert.label);
       if (!fieldText(data.registrationNumber)) missing.push("Registration number");
+      if (!isValidMobile(data.organizationPhone ?? "")) missing.push("Organization phone number (10 digits)");
       if (!fieldText(data.yearOfEstablishment) || !/^(18|19|20)\d{2}$/.test(fieldText(data.yearOfEstablishment))) missing.push("Valid year of establishment (4 digits)");
       if (!fieldText(data.registeredOfficeAddress)) missing.push("Registered office address");
       break;
@@ -543,22 +546,21 @@ export function prefillNgoFormWithUser(
 ): NGOFormState {
   if (!user) return form;
   const skipped = new Set(skip);
-  const fill = (key: "organizationName" | "mobileNumber" | "officialEmail", value: string | null | undefined) =>
+  const fill = (key: "organizationName" | "organizationPhone" | "mobileNumber" | "officialEmail", value: string | null | undefined) =>
     skipped.has(key) || fieldText(form[key]) ? form[key] : fieldText(value);
-  // Representative 1 starts with the signup email and mobile (the email still needs its code).
+  // Representative 1 starts with the signup email (the email still needs its code).
+  // The representative mobile number starts empty so the representative enters their own number.
   const reps = form.representatives?.length ? [...form.representatives] : [{ ...EMPTY_REPRESENTATIVE }];
   const first = { ...reps[0] };
   if (!skipped.has("representatives.0.email") && !fieldText(first.email) && fieldText(user.email)) {
     first.email = fieldText(user.email);
     first.emailVerified = false;
   }
-  if (!skipped.has("representatives.0.mobileNumber") && !fieldText(first.mobileNumber) && fieldText(user.phone)) {
-    first.mobileNumber = fieldText(user.phone);
-  }
   reps[0] = first;
   return {
     ...form,
     organizationName: fill("organizationName", user.fullName),
+    organizationPhone: fill("organizationPhone", user.phone),
     mobileNumber: fill("mobileNumber", user.phone),
     officialEmail: fill("officialEmail", user.email),
     representatives: reps,
@@ -572,6 +574,7 @@ const CORRECTION_FIELD_LABELS: Record<string, string> = {
   legalStructure: "Legal structure",
   registrationNumber: "Registration number",
   registeredOfficeAddress: "Registered office address",
+  organizationPhone: "Organization phone number",
   yearOfEstablishment: "Year of establishment",
   representativeName: "Representative name",
   designation: "Designation",
@@ -605,7 +608,7 @@ export function correctionFieldLabel(field: string): string {
 
 /** Step 1 fields, including the PAN card and the registration certificate. */
 const ORG_DETAILS_FIELDS = [
-  "organizationName", "legalStructure", "panNumber", "registrationNumber", "registeredOfficeAddress", "yearOfEstablishment",
+  "organizationName", "legalStructure", "panNumber", "registrationNumber", "registeredOfficeAddress", "organizationPhone", "yearOfEstablishment",
   "documents.pan", "documents.trust-pan", "documents.society-pan", "documents.company-pan",
   "documents.trust-reg-cert", "documents.society-reg-cert", "documents.coi",
 ];

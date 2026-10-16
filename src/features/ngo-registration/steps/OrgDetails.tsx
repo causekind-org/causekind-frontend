@@ -7,6 +7,7 @@ import {
   PAN_DOC,
   STRUCTURE_INDEPENDENT_DOC_IDS,
   getRegistrationCertificateDoc,
+  isValidMobile,
   isValidPan,
   legalStructureLabel,
   normalizePan,
@@ -72,6 +73,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
     if (!isValidPan(pan)) next.panNumber = "Enter the 10-character PAN (5 letters, 4 digits, 1 letter).";
     if (!fieldText(data.registrationNumber)) next.registrationNumber = "Registration number is required.";
     if (!fieldText(data.registeredOfficeAddress)) next.registeredOfficeAddress = "Registered office address is required.";
+    if (!isValidMobile(data.organizationPhone ?? "")) next.organizationPhone = "Valid 10-digit mobile number is required.";
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -309,6 +311,25 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
             className={cn(controlClass, "resize-none", errors.registeredOfficeAddress && "border-red-400 focus-visible:border-red-400 focus-visible:outline-red-400")}
           />
           {field("registeredOfficeAddress")}
+        </div>
+
+        {/* 9. Organization Phone Number */}
+        <div className="space-y-1">
+          <label htmlFor="ngo-org-phone" className={label}>Organization Phone Number {required}</label>
+          <input
+            id="ngo-org-phone"
+            type="tel"
+            inputMode="tel"
+            autoComplete="tel"
+            value={data.organizationPhone}
+            aria-invalid={!!errors.organizationPhone}
+            onChange={(e) => {
+              onChange({ organizationPhone: e.target.value });
+              if (errors.organizationPhone) setErrors((p) => ({ ...p, organizationPhone: "" }));
+            }}
+            className={cn(controlClass, errors.organizationPhone && "border-red-400 focus-visible:border-red-400 focus-visible:outline-red-400")}
+          />
+          {field("organizationPhone")}
         </div>
       </div>
 

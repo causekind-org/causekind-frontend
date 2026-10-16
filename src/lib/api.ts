@@ -731,7 +731,7 @@ export type PlatformTipOrder = {
   razorpayKeyId: string;
 };
 
-export type HandoverFeedbackContextType = "OFFER" | "MATCH";
+export type HandoverFeedbackContextType = "OFFER" | "MATCH" | "NGO_DRIVE_OFFER";
 
 export function initiatePlatformTip(
   amount: number,
@@ -750,6 +750,7 @@ export function submitHandoverFeedback(params: {
   rating: number;
   note?: string;
   tipId?: number;
+  submitterRole?: "DONOR" | "NGO";
 }) {
   return request<void>("/api/v1/handover-feedback", {
     method: "POST",
@@ -4626,6 +4627,7 @@ export interface NgoDraftDto {
   panNumber?: string;
   registrationNumber?: string;
   registeredOfficeAddress?: string;
+  organizationPhone?: string;
   yearOfEstablishment?: string;
   representativeName?: string;
   designation?: string;
@@ -4826,6 +4828,7 @@ export function submitNgoApplication(payload: {
   panNumber: string;
   registrationNumber: string;
   registeredOfficeAddress: string;
+  organizationPhone?: string;
   yearOfEstablishment: string;
   representativeName: string;
   designation: string;
@@ -4879,6 +4882,8 @@ export async function resendNgoOtp(applicationId: string) {
 export type NgoApplicationStatusResponse = {
   applicationId: string;
   organizationName: string;
+  organizationPhone?: string | null;
+  mobileNumber?: string | null;
   status: string;
   submittedAt: string | null;
   verifiedAt: string | null;
@@ -4954,7 +4959,7 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
 // NGO staff review uses the same server capability as request review.
 export type NgoReviewApplication = NgoApplicationStatusResponse & {
   id: number; userId: number | null; legalStructure: string; registrationNumber: string;
-  registeredOfficeAddress: string; yearOfEstablishment: string; representativeName: string;
+  registeredOfficeAddress: string; organizationPhone?: string | null; yearOfEstablishment: string; representativeName: string;
   designation: string; mobileNumber: string; officialEmail: string; reviewedAt: string | null;
   aiScreeningVerdict: string | null; aiScreeningNotes: string | null;
   /** The organization PAN typed in step 1 (null on applications from before the current wizard). */
@@ -5053,6 +5058,7 @@ export type CreateNgoDrivePayload = {
   unit: "PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS";
   condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED" | "SEALED_ONLY" | "USED_WORKING" | "ANY_USABLE";
   mustBeWorking?: boolean;
+  requireClean?: boolean;
   details: string;
   photos?: DrivePhotoItem[];
   referencePhotoUrl?: string;
@@ -5118,12 +5124,20 @@ export type NgoDrive = {
   unit: string;
   itemCondition: string;
   mustBeWorking?: boolean;
+  requireClean?: boolean;
   description: string;
   whoFor?: string | null;
   whyNow?: string | null;
   whatChanges?: string | null;
   locationArea?: string | null;
   locationCity?: string | null;
+  locationCountry?: string | null;
+  locationState?: string | null;
+  locationPincode?: string | null;
+  locationLatitude?: number | null;
+  locationLongitude?: number | null;
+  /** Pickup available within this distance (km); null on older drives. */
+  pickupRadiusKm?: number | null;
   urgency: string;
   beneficiaryGroup: string;
   beneficiaryCount: number;
@@ -5201,8 +5215,11 @@ export type PublicNgoDrive = {
   whyNow?: string | null;
   whatChanges?: string | null;
   mustBeWorking?: boolean | null;
+  requireClean?: boolean | null;
   locationArea?: string | null;
   locationCity?: string | null;
+  /** Pickup available within this distance (km); null on older drives. */
+  pickupRadiusKm?: number | null;
   urgency?: string | null;
   beneficiaryGroup?: string;
   beneficiaryCount?: number;
@@ -5270,6 +5287,7 @@ export type AdminPendingDriveOffer = {
   driveUnit?: string; ngoName?: string; donorName?: string; donorCity?: string | null;
   quantity?: number; condition?: string; approximateAge?: string; knownDefects?: string;
   notesForNgo?: string; handoverMethod?: string;
+  sizeSpec?: string | null; ageRange?: string | null; confirmedWorking?: boolean | null; confirmedClean?: boolean | null;
 };
 export function adminGetPendingNgoDriveOffers() {
   return request<AdminPendingDriveOffer[]>("/api/v1/admin/ngo-drive-offers/pending");
@@ -5350,12 +5368,29 @@ export type NgoDriveOfferResponse = {
   quantity?: number;
   condition?: string;
   approximateAge?: string;
+  sizeSpec?: string | null;
+  ageRange?: string | null;
+  confirmedWorking?: boolean | null;
+  confirmedClean?: boolean | null;
   knownDefects?: string;
   notesForNgo?: string;
   handoverMethod?: string;
   pickupCity?: string;
   pickupLocality?: string;
   pickupPincode?: string;
+  /** Where the items are (step 1). The NGO sees only city, locality and distance. */
+  donorCity?: string | null;
+  donorLocality?: string | null;
+  donorPincode?: string | null;
+  donorLatitude?: number | null;
+  donorLongitude?: number | null;
+  /** Distance to the drive in km; null when the drive has no pickup radius. */
+  distanceKm?: number | null;
+  /** True when the items are outside the NGO's pickup radius: drop-off only. */
+  dropOffOnly?: boolean | null;
+  driveLocationArea?: string | null;
+  driveLocationCity?: string | null;
+  pickupRadiusKm?: number | null;
   rejectionReason?: string;
   ngoDeclineReason?: string;
   /** Photos the NGO took of the items it received at the handover. */
@@ -5393,6 +5428,16 @@ export type NgoDriveOfferResponse = {
     availableHours?: string | null;
   };
 };
+
+export type DriveOfferLocation = {
+  country: string; state: string; city: string; locality: string; pincode: string;
+  latitude: number; longitude: number;
+};
+
+/** Saves where the items are; the server works out the distance and the pickup rule. */
+export async function saveNgoDriveOfferLocation(offerId: number, loc: DriveOfferLocation): Promise<NgoDriveOfferResponse> {
+  return request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/location`, { method: "PUT", body: JSON.stringify(loc) });
+}
 
 export async function createNgoDriveOfferDraft(driveId: number): Promise<{ id: number }> {
   return await request<{ id: number }>(`/api/v1/drives/${driveId}/offers/draft`, {

@@ -130,7 +130,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified, resumed 
           Verify Official Email
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          We sent a 6-digit verification code to your account signup email:
+          We&apos;ll send a verification code to:
         </p>
         <p className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-stone-800 dark:text-stone-200 mt-1">
           <Mail className="h-3.5 w-3.5 text-ngo-700 dark:text-ngo-300" />

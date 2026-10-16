@@ -48,7 +48,8 @@ export type HandoverState =
  * doesn't carry the class resolves `var(--handover-accent)` to nothing and comes
  * out colourless. See the note in styles.css.
  */
-export function handoverScope(role: HandoverRole): string {
+export function handoverScope(role: HandoverRole | "NGO"): string {
+  if (role === "NGO") return "handover-ngo-drive";
   return role === "DONOR" ? "handover-donor" : "handover-donee";
 }
 

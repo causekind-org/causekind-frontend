@@ -39,6 +39,7 @@ const signupDraft = {
   currentStep: "org-details",
   organizationName: "Hope Welfare Trust",
   registeredOfficeAddress: "Pune, Maharashtra, India",
+  organizationPhone: "+919876543210",
   mobileNumber: "+919876543210",
   officialEmail: "contact@hope.test",
 } as unknown as NgoDraftDto;
@@ -51,10 +52,11 @@ beforeEach(() => {
 });
 
 describe("NGO wizard prefilled from signup", { timeout: 30000 }, () => {
-  it("pre-fills organization name and address, and keeps them after a reload", async () => {
+  it("pre-fills organization name, address and phone, and keeps them after a reload", async () => {
     const { unmount } = render(<NGORegistration />);
     await waitFor(() => expect(input("ngo-org-name").value).toBe("Hope Welfare Trust"));
     expect((document.getElementById("ngo-address") as HTMLTextAreaElement).value).toBe("Pune, Maharashtra, India");
+    expect(input("ngo-org-phone").value).toBe("+919876543210");
     expect(input("ngo-year").value).toBe("");
     expect(screen.queryByRole("button", { pressed: true })).toBeNull(); // no structure chosen at signup any more
 
@@ -63,13 +65,14 @@ describe("NGO wizard prefilled from signup", { timeout: 30000 }, () => {
     render(<NGORegistration />);
     await waitFor(() => expect(input("ngo-org-name").value).toBe("Hope Welfare Trust"));
     expect((document.getElementById("ngo-address") as HTMLTextAreaElement).value).toBe("Pune, Maharashtra, India");
+    expect(input("ngo-org-phone").value).toBe("+919876543210");
   });
 
-  it("pre-fills the official email and phone", async () => {
+  it("pre-fills the official email in Step 3, while representative mobile starts empty", async () => {
     vi.mocked(getNgoDraft).mockResolvedValue({ ...signupDraft, currentStep: "authorized-rep" } as NgoDraftDto);
     render(<NGORegistration />);
     await waitFor(() => expect(input("rep-0-email").value).toBe("contact@hope.test"));
-    expect(input("rep-0-mobile").value).toContain("9876543210");
+    expect(input("rep-0-mobile").value).toBe("");
   });
 
   it("never replaces a value the NGO already saved in its draft", async () => {

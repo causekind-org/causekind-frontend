@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   DESIGNATIONS,
   EMPTY_REPRESENTATIVE,
@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
 import { NgoOtpInput } from "@/features/ngo-registration/components/NgoOtpInput";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { WizardSelect } from "@/features/ngo-registration/components/WizardSelect";
 
 interface AuthorizedRepresentativeProps {
   data: NGOFormState;
@@ -254,11 +255,13 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
         </div>
         <div className="space-y-1">
           <label htmlFor={`${prefix}-designation`} className={labelClass}>Designation / role {required}</label>
-          <input id={`${prefix}-designation`} type="text" list={`${prefix}-designations`} value={card.designation}
-            onChange={(e) => onChange({ designation: e.target.value })} className={controlClass} />
-          <datalist id={`${prefix}-designations`}>
-            {DESIGNATIONS.filter((d) => d !== "Other").map((d) => <option key={d} value={d} />)}
-          </datalist>
+          <WizardSelect
+            id={`${prefix}-designation`}
+            value={card.designation}
+            onChange={(val) => onChange({ designation: val })}
+            options={DESIGNATIONS}
+            aria-label="Designation / role"
+          />
           {note("designation")}
         </div>
         <div className="space-y-1">
@@ -303,8 +306,9 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
             }}
             className={cn(controlClass, "min-w-0 flex-1")} />
           {card.emailVerified ? (
-            <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" aria-hidden /> Verified
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />
+              Verified
             </span>
           ) : (
             <button type="button" onClick={sendCode} disabled={!isValidEmail(card.email) || busy !== null}
