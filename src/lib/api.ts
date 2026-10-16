@@ -5529,3 +5529,96 @@ export type NgoDriveProofResponse = {
 export async function getNgoDriveProof(driveId: number): Promise<NgoDriveProofResponse> {
   return await request<NgoDriveProofResponse>(`/api/v1/drives/${driveId}/proof`);
 }
+
+// ── Fundraising applications (Phase A, 2026-10-16) ──────────────────────────
+// Backend: FundraisingApplicationController / AdminFundraisingApplicationController.
+// Every call 404s while the backend's fundraising.enabled is false.
+
+export type FundraisingStatus =
+  | "DRAFT" | "SUBMITTED" | "IN_REVIEW" | "INFORMATION_REQUESTED" | "RESUBMITTED"
+  | "APPROVED" | "NOT_APPROVED" | "WITHDRAWN" | "EXPIRED";
+export type FundraisingCategory = "MEDICAL" | "EDUCATION" | "EMERGENCY_HOUSEHOLD" | "OTHER";
+export type FundraisingEvidenceType =
+  | "ORGANISER_ID" | "ADDRESS_PROOF" | "MEDICAL_REPORT" | "TREATMENT_ESTIMATE" | "ENROLMENT_PROOF"
+  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "OTHER";
+export type FundraisingScope = "THIS_NEED" | "ACCOUNT";
+
+export type FundraisingCostItem = { expense: string; amount: number | null; reference: string | null };
+export type FundraisingEvidence = {
+  id: number; type: FundraisingEvidenceType; fileName: string | null; fromProfile: boolean;
+  superseded: boolean; uploadedAt: string; viewUrl: string | null;
+};
+export type FundraisingInfoRequest = {
+  id: number; section: string; question: string; response: string | null; askedAt: string; respondedAt: string | null;
+};
+export type FundraisingApplication = {
+  id: number; reference: string; version: number; status: FundraisingStatus; category: FundraisingCategory | null;
+  forSelf: boolean; beneficiaryLegalName: string | null; beneficiaryDisplayName: string | null;
+  beneficiaryAgeRange: string | null; relationship: string | null; authorityExplanation: string | null;
+  whatHappened: string | null; urgency: string | null; requestedAmount: number | null; insuranceAmount: number | null;
+  ownContribution: number | null; grantsAmount: number | null; otherFundraisingAmount: number | null;
+  amountDifferenceReason: string | null; linkedItemRequestId: number | null;
+  costItems: FundraisingCostItem[]; totalCosts: number; outstandingGap: number;
+  declaredAccurate: boolean; declaredAuthority: boolean; declaredUseOfFunds: boolean; declaredVerificationConsent: boolean;
+  evidence: FundraisingEvidence[]; infoRequests: FundraisingInfoRequest[];
+  decisionScope: FundraisingScope | null; decisionConditions: string | null; decisionReason: string | null;
+  resubmissionAllowed: boolean | null; decidedAt: string | null; submittedAt: string | null;
+  createdAt: string; updatedAt: string; missing: string[];
+};
+export type FundraisingSave = Partial<Omit<FundraisingApplication,
+  "id" | "reference" | "version" | "status" | "totalCosts" | "outstandingGap" | "evidence" | "infoRequests" |
+  "decisionScope" | "decisionConditions" | "decisionReason" | "resubmissionAllowed" | "decidedAt" | "submittedAt" |
+  "createdAt" | "updatedAt" | "missing">>;
+export type FundraisingAdminApplication = {
+  application: FundraisingApplication; applicantId: number; applicantName: string; applicantEmail: string;
+  internalNote: string | null; decidedBy: string | null;
+};
+export type FundraisingQueueRow = {
+  id: number; reference: string; applicantName: string; forSelf: boolean; category: FundraisingCategory | null;
+  requestedAmount: number | null; submittedAt: string | null; status: FundraisingStatus; openQuestions: number;
+};
+
+const FR = "/api/v1/fundraising/applications";
+const FR_ADMIN = "/api/v1/admin/fundraising/applications";
+
+export const fundraising = {
+  mine: () => request<FundraisingApplication[]>(FR),
+  create: () => request<FundraisingApplication>(FR, { method: "POST" }),
+  get: (id: number) => request<FundraisingApplication>(`${FR}/${id}`),
+  save: (id: number, body: FundraisingSave) =>
+    request<FundraisingApplication>(`${FR}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  submit: (id: number) => request<FundraisingApplication>(`${FR}/${id}/submit`, { method: "POST" }),
+  withdraw: (id: number) => request<FundraisingApplication>(`${FR}/${id}/withdraw`, { method: "POST" }),
+  answer: (id: number, requestId: number, response: string) =>
+    request<FundraisingApplication>(`${FR}/${id}/info-requests/${requestId}`, { method: "PUT", body: JSON.stringify({ response }) }),
+  resubmit: (id: number) => request<FundraisingApplication>(`${FR}/${id}/resubmit`, { method: "POST" }),
+  removeEvidence: (id: number, evidenceId: number) =>
+    request<FundraisingApplication>(`${FR}/${id}/evidence/${evidenceId}`, { method: "DELETE" }),
+  useProfileDocument: (id: number, profileDocumentId: number, type: FundraisingEvidenceType) =>
+    request<FundraisingApplication>(`${FR}/${id}/evidence/from-profile/${profileDocumentId}?type=${type}`, { method: "POST" }),
+  /** Multipart, so it bypasses request() (which forces a JSON content type). */
+  async uploadEvidence(id: number, type: FundraisingEvidenceType, file: File, replacesId?: number) {
+    const fd = new FormData();
+    fd.append("type", type);
+    fd.append("file", file);
+    if (replacesId != null) fd.append("replacesId", String(replacesId));
+    const res = await fetch(`${BASE_URL}${FR}/${id}/evidence`, { method: "POST", credentials: "include", body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? "Upload failed. The file is still on your device — try again.", body);
+    }
+    invalidateRequestCache();
+    return (await res.json()) as FundraisingApplication;
+  },
+  admin: {
+    queue: (status?: FundraisingStatus) => request<FundraisingQueueRow[]>(status ? `${FR_ADMIN}?status=${status}` : FR_ADMIN),
+    get: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}`),
+    startReview: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/start-review`, { method: "POST" }),
+    requestInformation: (id: number, body: { expectedVersion: number; questions: { section: string; question: string }[]; internalNote?: string }) =>
+      request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/request-information`, { method: "POST", body: JSON.stringify(body) }),
+    approve: (id: number, body: { expectedVersion: number; scope: FundraisingScope; conditions?: string; reason: string; internalNote?: string }) =>
+      request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/approve`, { method: "POST", body: JSON.stringify(body) }),
+    notApprove: (id: number, body: { expectedVersion: number; reason: string; internalNote: string; resubmissionAllowed: boolean }) =>
+      request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/not-approve`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
