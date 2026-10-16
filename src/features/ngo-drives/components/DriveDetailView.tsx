@@ -1,5 +1,7 @@
 "use client";
 
+import { AboutNgoContent } from "./AboutNgoCard";
+import { BackButton } from "@/components/BackButton";
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import {
@@ -52,28 +54,7 @@ const DAY: Record<string, string> = {
 const humanize = (v?: string | null) =>
   v ? v.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : "";
 
-const FAQ_ITEMS = [
-  {
-    q: "How do you verify NGOs and drives?",
-    a: "NGOs are checked with their official registration documents and address. Every drive is reviewed by our team before it goes live to confirm the need is genuine.",
-  },
-  {
-    q: "Will my address and contact details be shared?",
-    a: "No. Only your area is shown publicly. Handover details are shared only between you and the NGO once your offer is accepted.",
-  },
-  {
-    q: "What condition should donated items be in?",
-    a: "Items should match the condition requested on this drive. If marked as working order, items must be fully functional.",
-  },
-  {
-    q: "How does the handover work?",
-    a: "You meet in person or arrange drop-off/pickup, and confirm handover in the app with a 6-digit code.",
-  },
-  {
-    q: "Is CauseKind free to use?",
-    a: "Yes. It's completely free for donors and NGOs.",
-  },
-];
+
 
 export type DriveDetailViewProps = {
   drive: PublicNgoDrive;
@@ -115,7 +96,6 @@ export function DriveDetailView({
   }, [isFulfilled, isPreview, drive.id]);
 
   // FAQ accordion state
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Compute progress numbers
   const needed = drive.stillNeeded ?? stillNeeded(drive);
@@ -176,6 +156,11 @@ export function DriveDetailView({
 
   return (
     <div className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
+      {!isPreview && (
+        <div className="mx-auto max-w-6xl px-4 pt-3 sm:px-6">
+          <BackButton />
+        </div>
+      )}
       {/* ── Preview Mode Banner ── */}
       {isPreview && (
         <div
@@ -275,6 +260,7 @@ export function DriveDetailView({
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-950">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
                 src={photos[0]}
                 alt={`Photo for ${drive.title}`}
                 className="h-full w-full object-cover"
@@ -286,6 +272,7 @@ export function DriveDetailView({
               <div className="group relative aspect-video w-full overflow-hidden rounded-2xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-950">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
                   src={photos[activePhotoIdx]}
                   alt={`Photo ${activePhotoIdx + 1} of ${photos.length} for ${drive.title}`}
                   loading={activePhotoIdx === 0 ? "eager" : "lazy"}
@@ -344,6 +331,7 @@ export function DriveDetailView({
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
                       src={url}
                       alt={`Thumbnail ${idx + 1}`}
                       loading="lazy"
@@ -453,6 +441,7 @@ export function DriveDetailView({
                 {drive.changemakerPhotoUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
                     src={drive.changemakerPhotoUrl}
                     alt={drive.changemakerName || "Changemaker"}
                     className="size-16 shrink-0 rounded-2xl object-cover ring-2 ring-stone-200 dark:ring-zinc-800"
@@ -511,7 +500,7 @@ export function DriveDetailView({
                         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" /> Open in Maps
                       </a>
                       <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-                        The NGO&apos;s phone number is shared after it accepts your offer.
+                        The drive contact person&apos;s phone number is shared after the NGO accepts your offer.
                       </p>
                     </div>
                   ) : (
@@ -520,7 +509,7 @@ export function DriveDetailView({
                         Drop off at the NGO or ask for a pickup.
                       </p>
                       <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
-                        The NGO&apos;s phone number is shared after it accepts your offer.
+                        The drive contact person&apos;s phone number is shared after the NGO accepts your offer.
                       </p>
                     </div>
                   )}
@@ -530,35 +519,24 @@ export function DriveDetailView({
           </Card>
 
           {/* 6. NGO Card */}
-          <Card title="About the organisation">
+          <Card title="About the NGO">
             <div className="space-y-4">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">
-                    {drive.ngo?.organizationName || drive.ngoOrganizationName || "Verified NGO"}
-                  </h3>
-                  {(drive.ngo?.city || drive.ngoCity) && (
-                    <span className="text-xs text-stone-500 dark:text-stone-400">
-                      • {drive.ngo?.city || drive.ngoCity}
-                    </span>
-                  )}
-                </div>
-
-                {drive.verified && (
-                  <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3.5 dark:border-emerald-900/60 dark:bg-emerald-950/20">
-                    <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden="true" />
-                      <span>
-                        Verified by CauseKind
-                        {drive.ngo?.verifiedAt && ` on ${formatDdMmYyyy(drive.ngo.verifiedAt)}`}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
-                      What we checked: Registration, Address, Contact person
-                    </p>
-                  </div>
-                )}
-              </div>
+              <AboutNgoContent ngo={{
+                organizationName: drive.ngo?.organizationName || drive.ngoOrganizationName || "Verified NGO",
+                founderName: drive.ngo?.founderName,
+                founderDesignation: drive.ngo?.founderDesignation,
+                yearOfEstablishment: drive.ngo?.yearOfEstablishment,
+                verified: drive.verified,
+                aboutUs: drive.ngo?.aboutUs,
+                slug: isPreview ? null : drive.ngo?.slug,
+              }} />
+              {drive.verified && (
+                <p className="text-xs text-stone-500 dark:text-stone-400">
+                  {drive.ngo?.verifiedAt && `Verified on ${formatDdMmYyyy(drive.ngo.verifiedAt)}. `}
+                  What we checked: registration, address, contact person.
+                  {(drive.ngo?.city || drive.ngoCity) && ` Based in ${drive.ngo?.city || drive.ngoCity}.`}
+                </p>
+              )}
 
               {/* Organisation Facts */}
               <dl className="grid gap-4 pt-1 sm:grid-cols-2">
@@ -584,16 +562,6 @@ export function DriveDetailView({
                   </div>
                 )}
 
-                {drive.ngo?.yearOfEstablishment && (
-                  <div>
-                    <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-                      Established
-                    </dt>
-                    <dd className="mt-0.5 text-sm font-semibold text-stone-800 dark:text-stone-200">
-                      {drive.ngo.yearOfEstablishment}
-                    </dd>
-                  </div>
-                )}
 
                 {drive.ngo?.website && (
                   <div>
@@ -706,6 +674,7 @@ export function DriveDetailView({
                         >
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
+                            onError={(e) => { e.currentTarget.style.display = "none"; }}
                             src={m.mediaUrl}
                             alt={`Distribution photo ${idx + 1}`}
                             className="h-full w-full object-cover"
@@ -787,45 +756,12 @@ export function DriveDetailView({
                 Giving safely checklist
               </Link>
               <span>•</span>
-              <Link href="/faq" className="font-bold text-emerald-700 hover:underline dark:text-emerald-400">
+              <Link href="/faq?category=ngo-drives" className="font-bold text-emerald-700 hover:underline dark:text-emerald-400">
                 Frequently asked questions
               </Link>
             </div>
           </Card>
 
-          {/* 9. FAQ Accordion */}
-          <Card title="Frequently Asked Questions">
-            <div className="space-y-3">
-              {FAQ_ITEMS.map((item, idx) => {
-                const isOpen = openFaqIndex === idx;
-                return (
-                  <div
-                    key={idx}
-                    className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 transition-colors dark:border-zinc-800 dark:bg-zinc-900/40"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                      aria-expanded={isOpen}
-                      className="flex w-full items-center justify-between text-left text-sm font-bold text-stone-900 hover:text-emerald-700 dark:text-stone-100 dark:hover:text-emerald-400"
-                    >
-                      <span>{item.q}</span>
-                      {isOpen ? (
-                        <ChevronUp className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 shrink-0 text-stone-400" aria-hidden="true" />
-                      )}
-                    </button>
-                    {isOpen && (
-                      <p className="mt-2 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-                        {item.a}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </Card>
         </div>
 
         {/* Side card (Progress and CTA) */}

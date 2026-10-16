@@ -60,6 +60,7 @@ describe("NGORegistration Component - Demo Mode ON", () => {
     await user.type(screen.getByLabelText(/Registration Number/i), "MH/TRU/2026/DEMO");
     await user.type(screen.getByLabelText(/Registered Office Address/i), "Demo Street, Mumbai");
     await user.type(screen.getByLabelText(/Organization Phone Number/i), "+919876543210");
+  await user.type(screen.getByLabelText(/^About us/i), "We collect school bags and books for children in rural Pune and run weekend reading classes for them.");
     await user.type(screen.getByLabelText(/Year of Establishment/i), "2020");
     await user.click(screen.getByRole("button", { name: /Continue/i }));
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { isDriveGiveFlowPath } from "@/lib/driveFlowPaths";
 import { useEffect, useState, useCallback } from "react";
 import { HandHeart, Sparkles, X, Terminal, ShieldCheck, Database, Lock, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -352,7 +353,8 @@ export function WelcomeOverlay() {
   const pathname = usePathname();
   const [show, setShow] = useState(false);
   const [exiting, setExiting] = useState(false);
-  const isAdminDash = !!pathname?.startsWith("/admin/dashboard");
+  // The drive page / give form pause it too (it stays pending for the next page).
+  const isAdminDash = !!pathname?.startsWith("/admin/dashboard") || isDriveGiveFlowPath(pathname);
 
   const dismiss = useCallback(() => {
     setExiting(true);

@@ -68,6 +68,7 @@ async function fillStep1(user: ReturnType<typeof userEvent.setup>, name: string,
   await user.type(screen.getByLabelText(/Year of Establishment/i), "2018");
   await user.type(screen.getByLabelText(/Registered Office Address/i), "Bandra West, Mumbai 400050");
   await user.type(screen.getByLabelText(/Organization Phone Number/i), "+919876543210");
+  await user.type(screen.getByLabelText(/^About us/i), "We collect school bags and books for children in rural Pune and run weekend reading classes for them.");
 }
 
 beforeAll(() => {

@@ -4792,6 +4792,8 @@ export interface NgoDraftDto {
   registrationNumber?: string;
   registeredOfficeAddress?: string;
   organizationPhone?: string;
+  /** What the NGO does, how, and its causes (100-2000 characters). */
+  aboutUs?: string;
   yearOfEstablishment?: string;
   representativeName?: string;
   designation?: string;
@@ -4993,6 +4995,7 @@ export function submitNgoApplication(payload: {
   registrationNumber: string;
   registeredOfficeAddress: string;
   organizationPhone?: string;
+  aboutUs?: string;
   yearOfEstablishment: string;
   representativeName: string;
   designation: string;
@@ -5047,6 +5050,14 @@ export type NgoApplicationStatusResponse = {
   applicationId: string;
   organizationName: string;
   organizationPhone?: string | null;
+  /** About us; null on applications from before it existed. */
+  aboutUs?: string | null;
+  yearOfEstablishment?: string | null;
+  /** The first authorized representative (shown as founder / trustee). */
+  founderName?: string | null;
+  founderDesignation?: string | null;
+  /** The public page address, once approved. */
+  publicSlug?: string | null;
   mobileNumber?: string | null;
   status: string;
   submittedAt: string | null;
@@ -5355,7 +5366,117 @@ export type PublicNgoInfo = {
   verifiedAt?: string | null;
   website?: string | null;
   trackRecord?: PublicNgoTrackRecord | null;
+  aboutUs?: string | null;
+  /** The first authorized representative, shown as founder / trustee. */
+  founderName?: string | null;
+  founderDesignation?: string | null;
+  /** The public page address, /ngos/{slug}. */
+  slug?: string | null;
 };
+
+/** The public NGO page, /ngos/{slug}. Name + designation only for representatives. */
+export type PublicNgoProfile = {
+  slug: string;
+  organizationName: string;
+  logoUrl?: string | null;
+  photoUrls?: string[];
+  verifiedAt?: string | null;
+  city?: string | null;
+  state?: string | null;
+  yearOfEstablishment?: string | null;
+  aboutUs?: string | null;
+  legalStructure?: string | null;
+  registrationNumber?: string | null;
+  registeredOfficeAddress?: string | null;
+  website?: string | null;
+  organizationPhone?: string | null;
+  officialEmail?: string | null;
+  representatives?: { fullName: string; designation?: string | null }[];
+  /** Registration certificate, 12A, 80G: short-lived links. */
+  documents?: { label: string; url: string }[];
+  trackRecord?: PublicNgoTrackRecord | null;
+  activities?: { id: number; title: string; activityDate: string; description?: string | null; media: { mediaType: "IMAGE" | "VIDEO"; url: string }[] }[];
+  liveDrives?: PublicNgoDrive[];
+};
+
+export function getPublicNgo(slug: string) {
+  return request<PublicNgoProfile>(`/api/v1/ngos/${encodeURIComponent(slug)}`);
+}
+
+export function getPublicNgoSlugs() {
+  return request<{ slugs: string[] }>("/api/v1/ngos");
+}
+
+/** An approved NGO edits its About us (100-2000 characters, or empty to clear). */
+export function updateNgoAboutUs(aboutUs: string) {
+  return request<{ aboutUs?: string }>("/api/v1/ngo/about-us", { method: "PUT", body: JSON.stringify({ aboutUs }) });
+}
+
+export type NgoActivityStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type NgoActivityMedia = { id: number; mediaType: "IMAGE" | "VIDEO"; url: string | null; status: string };
+export type NgoActivity = {
+  id: number; title: string; activityDate: string; description?: string | null; consentGiven: boolean;
+  status: NgoActivityStatus; rejectionReason?: string | null; sortOrder: number; media: NgoActivityMedia[];
+};
+export type NgoActivityInput = { title: string; activityDate: string; description?: string; consentGiven: boolean };
+
+export function getMyNgoActivities() {
+  return request<NgoActivity[]>("/api/v1/ngo/activities");
+}
+export function createNgoActivity(body: NgoActivityInput) {
+  return request<NgoActivity>("/api/v1/ngo/activities", { method: "POST", body: JSON.stringify(body) });
+}
+export function updateNgoActivity(id: number, body: NgoActivityInput) {
+  return request<NgoActivity>(`/api/v1/ngo/activities/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export function deleteNgoActivity(id: number) {
+  return request<void>(`/api/v1/ngo/activities/${id}`, { method: "DELETE" });
+}
+export function reorderNgoActivities(ids: number[]) {
+  return request<NgoActivity[]>("/api/v1/ngo/activities/order", { method: "PUT", body: JSON.stringify({ ids }) });
+}
+export async function uploadNgoActivityPhoto(id: number, file: File): Promise<NgoActivity> {
+  const form = new FormData();
+  form.append("file", file);
+  // Native fetch: request() would set a JSON content type.
+  const res = await fetch(`${BASE_URL}/api/v1/ngo/activities/${id}/photos`, { method: "POST", body: form, credentials: "include" });
+  if (!res.ok) {
+    let message = res.statusText;
+    try { const b = await res.json(); message = b?.fieldErrors?.[0]?.message || b?.detail || message; } catch { /* keep statusText */ }
+    throw new Error(message || "Upload failed");
+  }
+  return res.json();
+}
+export function removeNgoActivityMedia(id: number, mediaId: number) {
+  return request<NgoActivity>(`/api/v1/ngo/activities/${id}/media/${mediaId}`, { method: "DELETE" });
+}
+export function getNgoActivityVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/ngo/activities/video/capability");
+}
+export function createNgoActivityVideoSlot(id: number, contentLength: number, contentType?: string) {
+  const type = contentType ? `&contentType=${encodeURIComponent(contentType)}` : "";
+  return request<OfferVideoSlot>(`/api/v1/ngo/activities/${id}/video/slot?contentLength=${contentLength}${type}`, { method: "POST" });
+}
+export function finalizeNgoActivityVideo(id: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/ngo/activities/${id}/video/${mediaId}/finalize`, { method: "POST" });
+}
+export function getNgoActivityVideoStatus(id: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/ngo/activities/${id}/video/${mediaId}`);
+}
+export function deleteNgoActivityVideo(id: number, mediaId: number) {
+  return request<void>(`/api/v1/ngo/activities/${id}/video/${mediaId}`, { method: "DELETE" });
+}
+
+export type AdminNgoActivity = { activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
+export function getPendingNgoActivities() {
+  return request<AdminNgoActivity[]>("/api/v1/admin/ngo-activities");
+}
+export function approveNgoActivity(id: number) {
+  return request<NgoActivity>(`/api/v1/admin/ngo-activities/${id}/approve`, { method: "PATCH" });
+}
+export function rejectNgoActivity(id: number, reason: string) {
+  return request<NgoActivity>(`/api/v1/admin/ngo-activities/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
+}
 
 /** A LIVE drive as the public sees it (GET /api/v1/drives). */
 export type PublicNgoDrive = {
@@ -5602,6 +5723,22 @@ export type DriveOfferLocation = {
 export async function saveNgoDriveOfferLocation(offerId: number, loc: DriveOfferLocation): Promise<NgoDriveOfferResponse> {
   return request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/location`, { method: "PUT", body: JSON.stringify(loc) });
 }
+
+/** The donor's drive offers the NGO has accepted, not yet completed (Matches tab, NGO segment). */
+export function getMyAcceptedNgoDriveOffers() {
+  return request<NgoDriveOfferResponse[]>("/api/v1/drive-offers/mine/accepted");
+}
+
+/** Chat between a drive offer's donor and the drive's NGO; same message shape as the match chat. */
+export const driveOfferChat = {
+  messages: (offerId: number) => request<ChatMessage[]>(`/api/v1/drive-offers/${offerId}/chat/messages`),
+  since: (offerId: number, since: string) =>
+    request<ChatMessage[]>(`/api/v1/drive-offers/${offerId}/chat/messages/since?since=${encodeURIComponent(since)}`),
+  send: (offerId: number, content: string) =>
+    request<ChatMessage>(`/api/v1/drive-offers/${offerId}/chat/messages`, { method: "POST", body: JSON.stringify({ content }) }),
+  markRead: (offerId: number) => request<void>(`/api/v1/drive-offers/${offerId}/chat/messages/read`, { method: "POST" }),
+  unreadCount: (offerId: number) => request<{ count: number }>(`/api/v1/drive-offers/${offerId}/chat/messages/unread-count`),
+};
 
 export async function createNgoDriveOfferDraft(driveId: number): Promise<{ id: number }> {
   return await request<{ id: number }>(`/api/v1/drives/${driveId}/offers/draft`, {

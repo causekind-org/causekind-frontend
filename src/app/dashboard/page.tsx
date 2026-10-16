@@ -25,6 +25,9 @@ import { ListingDetailsPanel } from "@/components/listings/ListingDetailsPanel";
 import { RequestDetailsPanel } from "@/components/requests/RequestDetailsPanel";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
+import {
+  MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers, type AcceptedDriveOffer, type MatchSegment,
+} from "@/components/matches/NgoAcceptedOffers";
 import { DonorMatchReviewInline } from "@/components/matches/DonorMatchReviewInline";
 import { DoneeMatchReviewCard } from "@/components/matches/DoneeMatchReviewCard";
 import { DoneeMatchReviewInline } from "@/components/matches/DoneeMatchReviewInline";
@@ -2558,6 +2561,7 @@ async function loadAllDonationOffers(): Promise<any[]> {
 }
 
 export default function DashboardPage() {
+  const [matchSegment, setMatchSegment] = useState<MatchSegment>("donee");
   const t = useTranslations("dashboard");
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -2851,6 +2855,8 @@ export default function DashboardPage() {
     />
   );
   const liveDonorOffers = donationOffers.filter(isLiveDonorOffer);
+  // Matches tab, NGO segment: drive offers the NGO has accepted, not yet finished.
+  const acceptedNgoOffers = acceptedDriveOffers(donationOffers as { _type?: string; status: string }[]) as unknown as AcceptedDriveOffer[];
   const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));
   const donorMatchesNeedYou = activeDonorMatches.some(m => MATCH_NEEDS_DONOR.has(m.status));
   const donorItemsNeedYou = itemListings.some(l => l.status === "NEEDS_INFORMATION");
@@ -3121,10 +3127,19 @@ export default function DashboardPage() {
                 {/* Donor Matches */}
                 <TabsContent value="matches" className="mt-0">
                   <section>
-                    <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
-                      <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Match Opportunities</p>
-                      <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
+                      <div>
+                        <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Match Opportunities</p>
+                        <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
+                      </div>
+                      <MatchSegmentControl value={matchSegment} onChange={setMatchSegment}
+                        doneeCount={flowDonorMatches.length + liveDonorOffers.length} ngoCount={acceptedNgoOffers.length} />
                     </div>
+                    {matchSegment === "ngo" ? (
+                      <div className="pt-3.5 sm:pt-5">
+                        <NgoAcceptedOffersList offers={acceptedNgoOffers} />
+                      </div>
+                    ) : (
                     <div className="pt-3.5 sm:pt-5 space-y-3 sm:space-y-4">
                       {/* Live offers to requests are donations in progress too. */}
                       {liveDonorOffers.length > 0 && (
@@ -3293,6 +3308,7 @@ export default function DashboardPage() {
                       )}
 
                     </div>
+                    )}
                   </section>
                 </TabsContent>
               </Tabs>

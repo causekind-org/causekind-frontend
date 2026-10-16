@@ -18,6 +18,9 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => mockRedirect(url),
 }));
 
+// The approved NGO's About / past-activity sections have their own tests.
+vi.mock("@/features/ngo-profile/NgoActivitiesManager", () => ({ NgoActivitiesManager: () => null }));
+vi.mock("@/features/ngo-profile/NgoAboutSection", () => ({ NgoAboutSection: () => null }));
 vi.mock("@/lib/api", () => ({
   getProfile: vi.fn(),
   updateProfile: vi.fn(),

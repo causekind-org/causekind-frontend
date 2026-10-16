@@ -204,17 +204,32 @@ describe("NGO drive handover page", () => {
   });
 });
 
-describe("give success screen", () => {
-  it("after submitting, explains what happens next", async () => {
+describe("give success popup", () => {
+  it("after submitting, goes back to the drive page and shows what happens next in a popup", async () => {
     api.getNgoDrive.mockResolvedValue({ id: 7, title: "Winter blankets", unit: "PIECES", status: "LIVE", quantityNeeded: 10,
       quantityReceived: 0, quantityPledged: 0, ngoOrganizationName: "Hope Trust" });
     api.getMyNgoDriveOffers.mockResolvedValue([offer("DRAFT", { driveId: 7 })]);
+    sessionStorage.clear();
     const P = (await import("@/app/drives/[id]/give/page")).default;
-    render(<P />);
+    const { unmount } = render(<P />);
     fireEvent.click(await screen.findByRole("button", { name: "Submit offer" }));
-    expect(await screen.findByText(/3 pieces reserved for this drive/)).toBeInTheDocument();
-    expect(screen.getByText("The NGO accepts or declines")).toBeInTheDocument();
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/drives/7?offerSent=1"));
+    expect(JSON.parse(sessionStorage.getItem("ck-drive-offer-sent-7") ?? "{}")).toMatchObject({ quantity: 3, driveTitle: "Winter blankets" });
+    unmount();
+
+    // The drive page shows the same success content as a popup.
+    window.history.replaceState(null, "", "/drives/7?offerSent=1");
+    const D = (await import("@/app/drives/[id]/page")).default;
+    render(<D />);
+    const popup = await screen.findByTestId("drive-offer-sent");
+    expect(popup).toHaveTextContent("Offer sent");
+    expect(popup).toHaveTextContent(/3 pieces reserved for this drive/);
+    expect(popup).toHaveTextContent("The NGO accepts or declines");
     expect(screen.getByRole("link", { name: "Track it on your dashboard" })).toHaveAttribute("href", "/dashboard");
+    fireEvent.click(screen.getByRole("button", { name: "Back to the drive" }));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/drives/7"));
+    expect(sessionStorage.getItem("ck-drive-offer-sent-7")).toBeNull();
+    window.history.replaceState(null, "", "/");
   });
 });
 

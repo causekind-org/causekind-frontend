@@ -1138,7 +1138,20 @@
     "q13": "Is CauseKind free?",
     "a13": "Yes. It's completely free for donors, donees and NGOs.",
     "q14": "Do you accept money?",
-    "a14": "Not yet. We're starting with items only. Online donations and fundraising are coming soon."
+    "a14": "Not yet. We're starting with items only. Online donations and fundraising are coming soon.",
+    "ngoDrivesCategory": "NGO drives",
+    "ngoDriveQ1": "How do you verify NGOs and drives?",
+    "ngoDriveA1": "NGOs are checked with their official registration documents and address. Every drive is reviewed by our team before it goes live to confirm the need is genuine.",
+    "ngoDriveQ2": "Will my address and contact details be shared?",
+    "ngoDriveA2": "No. Only your area is shown publicly. Handover details are shared only between you and the NGO once your offer is accepted.",
+    "ngoDriveQ3": "Can I see the NGO's phone number?",
+    "ngoDriveA3": "The organization phone is on the NGO's public page. The drive contact person's phone number is shared after the NGO accepts your offer.",
+    "ngoDriveQ4": "What condition should donated items be in?",
+    "ngoDriveA4": "Items should match the condition requested on this drive. If marked as working order, items must be fully functional.",
+    "ngoDriveQ5": "How does the handover work?",
+    "ngoDriveA5": "You meet in person or arrange drop-off/pickup, and confirm handover in the app with a 6-digit code.",
+    "ngoDriveQ6": "Is CauseKind free to use?",
+    "ngoDriveA6": "Yes. It's completely free for donors and NGOs."
   },
   "forgotPassword": {
     "title": "Forgot your password?",

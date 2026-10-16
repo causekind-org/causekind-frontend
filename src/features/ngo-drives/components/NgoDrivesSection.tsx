@@ -76,7 +76,7 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
     <section
       id="ngo-drives-section"
       aria-labelledby="ngo-drives-heading"
-      className={`ck-m-section relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors ${className}`}
+      className={`ck-m-section ck-drives-donor-tone relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors ${className}`}
       data-testid="ngo-drives-section"
     >
       <div className="relative mx-auto max-w-7xl px-0 lg:px-8">

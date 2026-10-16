@@ -620,7 +620,8 @@ export function SiteHeader() {
   const isNgoDashboard =
     isNgo ||
     pathname?.startsWith("/dashboard/ngo") ||
-    pathname?.startsWith("/ngo");
+    // "/ngo" and "/ngo/…" only: the public NGO pages ("/ngos/…") are for everyone.
+    pathname === "/ngo" || pathname?.startsWith("/ngo/");
 
   const [ngoApplicationState, setNgoApplicationState] = useState("CHECKING");
   useEffect(() => {
@@ -1078,7 +1079,8 @@ export function SiteHeader() {
               <DonateNowButton size="sm" label="Donate" showArrow={false} />
             )}
 
-            {isNgoDashboard && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
+            {/* The NGO status pill is only ever for a signed-in NGO account. */}
+            {isNgo && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
               <Link href="/profile/ngo-details">
                 <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
                   <LandingText>{ngoApplicationLabel}</LandingText>

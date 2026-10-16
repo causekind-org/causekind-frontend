@@ -273,6 +273,12 @@ export function NgoReviewPanel({
                 "Account email verified": detail.application.verifiedAt ? serverDate(detail.application.verifiedAt).toLocaleString() : "Pending",
               }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
             </dl>
+            <section aria-label="About us" className="mt-5 text-sm">
+              <h3 className="text-stone-500">About us</h3>
+              <p data-testid="admin-about-us" className="mt-1 whitespace-pre-line break-words">
+                {(detail.application as { aboutUs?: string | null }).aboutUs || "Not provided"}
+              </p>
+            </section>
             {!detail.wizardV2 && (
               <p className="mt-3 text-xs text-stone-500">Submitted with the earlier application form (one representative, no PAN number).</p>
             )}

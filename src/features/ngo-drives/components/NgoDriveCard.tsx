@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -22,6 +24,8 @@ export type NgoDriveCardProps = {
 export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCardProps) {
   const router = useRouter();
   const { user } = useAuth();
+  // A cover that fails to load (expired link, missing file) falls back to the category icon.
+  const [coverFailed, setCoverFailed] = useState(false);
 
   // Reuse existing giveState logic
   const state = giveState(drive, user, offers);
@@ -94,10 +98,11 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
       <div className="flex flex-col grow overflow-hidden lg:rounded-[calc(2rem-0.375rem)] lg:bg-white lg:shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_24px_48px_-28px_rgba(6,78,59,0.18)] dark:lg:bg-zinc-900">
         {/* ── Top Photo Section (16:9) ── */}
         <div className="relative aspect-[16/9] w-full overflow-hidden bg-stone-100 dark:bg-zinc-950">
-          {drive.referencePhotoUrl ? (
+          {drive.referencePhotoUrl && !coverFailed ? (
             <Image
               src={drive.referencePhotoUrl}
               alt={drive.title}
+              onError={() => setCoverFailed(true)}
               fill
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-cover transition-transform duration-500 group-hover:scale-105"
@@ -146,7 +151,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
                 data-testid="drive-verified-badge"
                 className="inline-flex items-center gap-1.5 rounded-full bg-stone-900/80 backdrop-blur-md px-2.5 py-1 text-4xs font-bold tracking-wide text-white shadow-sm dark:bg-zinc-800/90"
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
+                <span className="h-1.5 w-1.5 rounded-full bg-ngo-400" aria-hidden="true" />
                 Verified by CauseKind
               </span>
             ) : null}

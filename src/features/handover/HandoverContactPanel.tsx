@@ -40,7 +40,7 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
   );
 }
 
-function CallAction({ phone, label, lockedMessage }: {
+export function CallAction({ phone, label, lockedMessage }: {
   phone: string | null; label: string; lockedMessage: string;
 }) {
   if (phone) {

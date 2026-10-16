@@ -1,10 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { render, screen, waitFor, act, configure } from "@testing-library/react";
+
+configure({ asyncUtilTimeout: 5000 });
 import { SiteHeader } from "./Navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyNgoApplication, getMyProfile, getMyMatches } from "@/lib/api";
 
 const mockReplace = vi.fn();
+const mockPath = vi.hoisted(() => ({ current: "/" }));
 const mockPush = vi.fn();
 
 vi.mock("next/navigation", () => ({
@@ -12,7 +15,7 @@ vi.mock("next/navigation", () => ({
     replace: mockReplace,
     push: mockPush,
   }),
-  usePathname: () => "/",
+  usePathname: () => mockPath.current,
 }));
 
 vi.mock("@/lib/api", () => ({
@@ -53,6 +56,28 @@ describe("Navbar - NGO Profile Button States", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockPath.current = "/";
+  });
+
+  it.each(["/ngos/hope-trust", "/drives/5", "/ngo/drives/new", "/"])("a donor never sees the NGO status pill (%s)", async (path) => {
+    mockPath.current = path;
+    vi.mocked(useAuth).mockReturnValue({
+      user: { id: 301, email: "donor@example.test", role: "DONOR" },
+      isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn(),
+    });
+    render(<SiteHeader />);
+    await act(async () => { await Promise.resolve(); });
+    for (const label of [/Checking Application/i, /Complete Profile/i, /Application Under Review/i, /NGO Approved/i, /View Application/i])
+      expect(screen.queryByText(label)).not.toBeInTheDocument();
+    expect(getMyNgoApplication).not.toHaveBeenCalled();
+  });
+
+  it("a guest on an NGO's public page sees no NGO status pill", async () => {
+    mockPath.current = "/ngos/hope-trust";
+    vi.mocked(useAuth).mockReturnValue({ user: null, isLoading: false, isRestoring: false, setUser: vi.fn(), logout: vi.fn(), setAuth: vi.fn() } as never);
+    render(<SiteHeader />);
+    await act(async () => { await Promise.resolve(); });
+    expect(screen.queryByText(/Checking Application/i)).not.toBeInTheDocument();
   });
 
   it("shows 'Complete Profile' button for incomplete NGO profile", async () => {
@@ -172,8 +197,8 @@ describe("Navbar - NGO Profile Button States", () => {
     const before = Date.now();
     const { unmount } = render(<SiteHeader />);
     expect(await screen.findByRole("link", { name: "NGO Approved" })).toBeInTheDocument();
-    const firstSeen = Number(localStorage.getItem("ck_ngo_approved_seen_901"));
-    expect(firstSeen).toBeGreaterThanOrEqual(before);
+    // The first-seen time is written by an effect right after the pill renders.
+    await waitFor(() => expect(Number(localStorage.getItem("ck_ngo_approved_seen_901"))).toBeGreaterThanOrEqual(before));
     unmount();
 
     // Seen 2 minutes ago: gone, and it stays gone on later visits.

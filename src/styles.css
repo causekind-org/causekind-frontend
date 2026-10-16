@@ -3664,24 +3664,25 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   --handover-rail: #4a7fc1;
 }
 
+/* The NGO's side of a drive handover: the NGO green (same tokens as [data-ck-role-theme="ngo"]). */
 .handover-ngo-drive {
-  --handover-accent: #047857;
-  --handover-accent-hover: #065f46;
+  --handover-accent: #1e6b4f;
+  --handover-accent-hover: #248a63;
   --handover-on-accent: #ffffff;
-  --handover-soft: oklch(0.96 0.035 155);
-  --handover-on-soft: oklch(0.28 0.10 155);
-  --handover-ring: #059669;
-  --handover-rail: #10b981;
+  --handover-soft: #e8f5ee;
+  --handover-on-soft: #123d2e;
+  --handover-ring: #248a63;
+  --handover-rail: #34a578;
 }
 
 .dark .handover-ngo-drive {
-  --handover-accent: #34d399;
-  --handover-accent-hover: #6ee7b7;
-  --handover-on-accent: #064e3b;
-  --handover-soft: oklch(0.26 0.05 155);
-  --handover-on-soft: oklch(0.94 0.03 155);
-  --handover-ring: #34d399;
-  --handover-rail: #059669;
+  --handover-accent: #86cfae;
+  --handover-accent-hover: #a7dec5;
+  --handover-on-accent: #0b2e22;
+  --handover-soft: #123d2e;
+  --handover-on-soft: #e8f5ee;
+  --handover-ring: #86cfae;
+  --handover-rail: #34a578;
 }
 
 /* ⚠️ PORTALS ESCAPE THIS SCOPE.
@@ -5081,4 +5082,24 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   .ck-navratri-accent {
     animation: none;
   }
+}
+
+
+/* Home page "Real organisations. Real impact." (NGO drives for donors and guests):
+   the donor terracotta, like the rest of the donor landing. The drive card and
+   section use emerald utilities; inside this section those resolve to the brand
+   scale. The "Verified by CauseKind" dot uses the ngo-* token (inlined by @theme inline), so it stays green.
+   Everywhere else (drive pages, NGO pages) the card keeps its green. */
+.ck-drives-donor-tone {
+  --color-emerald-50: var(--color-brand-50);
+  --color-emerald-100: var(--color-brand-100);
+  --color-emerald-200: var(--color-brand-200);
+  --color-emerald-300: var(--color-brand-300);
+  --color-emerald-400: var(--color-brand-300);
+  --color-emerald-500: var(--color-brand-400);
+  --color-emerald-600: var(--color-brand-500);
+  --color-emerald-700: var(--color-brand-500);
+  --color-emerald-800: var(--color-brand-600);
+  --color-emerald-900: var(--color-brand-700);
+  --color-emerald-950: var(--color-brand-900);
 }

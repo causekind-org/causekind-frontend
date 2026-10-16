@@ -268,6 +268,13 @@ export interface NGOFormState {
   registrationNumber: string;
   registeredOfficeAddress: string;
   organizationPhone: string;
+  /** About us: what the NGO does, how, and its causes (100-2000 characters). */
+  aboutUs: string;
+  /**
+   * A corrections resubmission: About us is optional there (as on the server), so
+   * an application from before it existed can still be fixed and resubmitted.
+   */
+  aboutUsOptional?: boolean;
   yearOfEstablishment: string;
 
   // Steps 1–2 — documents keyed by DocDefinition.id
@@ -304,6 +311,7 @@ export const INITIAL_NGO_FORM: NGOFormState = {
   registrationNumber: "",
   registeredOfficeAddress: "",
   organizationPhone: "",
+  aboutUs: "",
   yearOfEstablishment: "",
   documents: {},
   representatives: [EMPTY_REPRESENTATIVE],
@@ -443,6 +451,22 @@ export function getRepresentativeIssues(card: RepresentativeCard, index: number)
   return issues;
 }
 
+export const ABOUT_US_MIN = 100;
+export const ABOUT_US_MAX = 2000;
+
+/** About us is 100 to 2000 characters once trimmed. */
+export function isValidAboutUs(text: string): boolean {
+  const n = (text ?? "").trim().length;
+  return n >= ABOUT_US_MIN && n <= ABOUT_US_MAX;
+}
+
+/** Required on a new application; on a corrections resubmission only checked when filled in. */
+export function aboutUsMissing(data: Pick<NGOFormState, "aboutUs" | "aboutUsOptional">): boolean {
+  const text = (data.aboutUs ?? "").trim();
+  if (!text && data.aboutUsOptional) return false;
+  return !isValidAboutUs(text);
+}
+
 export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): string[] {
   const missing: string[] = [];
   switch (step) {
@@ -455,6 +479,7 @@ export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): strin
       if (cert && !data.documents?.[cert.id]) missing.push(cert.label);
       if (!fieldText(data.registrationNumber)) missing.push("Registration number");
       if (!isValidMobile(data.organizationPhone ?? "")) missing.push("Organization phone number (10 digits)");
+      if (aboutUsMissing(data)) missing.push(`About us (${ABOUT_US_MIN} to ${ABOUT_US_MAX} characters)`);
       if (!fieldText(data.yearOfEstablishment) || !/^(18|19|20)\d{2}$/.test(fieldText(data.yearOfEstablishment))) missing.push("Valid year of establishment (4 digits)");
       if (!fieldText(data.registeredOfficeAddress)) missing.push("Registered office address");
       break;
@@ -575,6 +600,7 @@ const CORRECTION_FIELD_LABELS: Record<string, string> = {
   registrationNumber: "Registration number",
   registeredOfficeAddress: "Registered office address",
   organizationPhone: "Organization phone number",
+  aboutUs: "About us",
   yearOfEstablishment: "Year of establishment",
   representativeName: "Representative name",
   designation: "Designation",
@@ -608,7 +634,7 @@ export function correctionFieldLabel(field: string): string {
 
 /** Step 1 fields, including the PAN card and the registration certificate. */
 const ORG_DETAILS_FIELDS = [
-  "organizationName", "legalStructure", "panNumber", "registrationNumber", "registeredOfficeAddress", "organizationPhone", "yearOfEstablishment",
+  "organizationName", "legalStructure", "panNumber", "registrationNumber", "registeredOfficeAddress", "organizationPhone", "aboutUs", "yearOfEstablishment",
   "documents.pan", "documents.trust-pan", "documents.society-pan", "documents.company-pan",
   "documents.trust-reg-cert", "documents.society-reg-cert", "documents.coi",
 ];

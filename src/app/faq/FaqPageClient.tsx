@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { NGO_DRIVE_FAQ_CATEGORY_KEY, NGO_DRIVE_FAQ_KEYS } from "@/features/ngo-drives/ngoDriveFaq";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { Reveal } from "@/components/Reveal";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
@@ -15,6 +16,12 @@ type FaqItem = { q: string; a: string; num: string };
 export function FaqPageClient() {
   const t = useTranslations("faq");
   const [activeCategory, setActiveCategory] = useState(0);
+  // /faq?category=ngo-drives (the drive page's link) opens the NGO drives category.
+  useEffect(() => {
+    try {
+      if (new URLSearchParams(window.location.search).get("category") === "ngo-drives") setActiveCategory(3);
+    } catch { /* no window */ }
+  }, []);
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   // Real, already-approved FAQ copy (next-intl `faq` namespace) grouped into
@@ -47,6 +54,10 @@ export function FaqPageClient() {
         { num: "12", q: t("q5"), a: t("a5") },
         { num: "13", q: t("q13"), a: t("a13") },
       ],
+    },
+    {
+      label: t(NGO_DRIVE_FAQ_CATEGORY_KEY),
+      items: NGO_DRIVE_FAQ_KEYS.map((k, i) => ({ num: String(14 + i), q: t(k.q), a: t(k.a) })),
     },
   ];
 

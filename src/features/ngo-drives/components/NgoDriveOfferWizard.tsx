@@ -25,7 +25,8 @@ import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import { useWizardDraft } from "@/features/wizard-kit/useWizardDraft";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 
-import { OfferPhotosStep, type ScreeningState } from "@/features/donation-offer-wizard/steps/OfferPhotosStep";
+import { type ScreeningState } from "@/features/donation-offer-wizard/steps/OfferPhotosStep";
+import { DriveOfferPhotosStep } from "./DriveOfferPhotosStep";
 import { DriveOfferDetailsStep as OfferDetailsStep } from "@/features/ngo-drives/components/DriveOfferDetailsStep";
 import { OfferConditionStep, type CompatState } from "@/features/donation-offer-wizard/steps/OfferConditionStep";
 import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferReviewStep";
@@ -819,7 +820,7 @@ export function NgoDriveOfferWizard({
                         </div>
                       )}
                       {step === "photos" && (
-                        <OfferPhotosStep
+                        <DriveOfferPhotosStep
                           photos={model.photos} error={errors.photos} screening={screening}
                           onAddFiles={photoApi.addFiles}
                           onRetryPhoto={photoApi.retryPhoto}

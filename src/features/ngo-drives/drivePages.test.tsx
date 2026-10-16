@@ -18,6 +18,12 @@ const api = vi.hoisted(() => ({
   uploadDistributionProof: vi.fn(),
   closeNgoDrive: vi.fn(),
 }));
+// The drive page FAQ reads the shared "faq" keys: real English strings.
+vi.mock("next-intl", async () => {
+  const en = (await import("../../../messages/en.json")).default as Record<string, Record<string, unknown>>;
+  const t = (ns?: string) => (k: string) => { const v = ns ? en[ns]?.[k] : undefined; return typeof v === "string" ? v : k; };
+  return { useLocale: () => "en", useTranslations: t };
+});
 vi.mock("@/lib/api", async (importOriginal) => ({ ...(await importOriginal<Record<string, unknown>>()), ...api }));
 
 const auth = vi.hoisted(() => ({ user: null as null | { email: string; role: string } }));

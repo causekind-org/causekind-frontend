@@ -1239,7 +1239,7 @@ function NewNgoDriveForm() {
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="handover-heading">
           <h3 id="handover-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">3. Handover Availability</h3>
           <div className="p-3 bg-ngo-50 dark:bg-ngo-900/20 border border-ngo-100 dark:border-ngo-800 rounded-lg text-xs text-ngo-800 dark:text-ngo-200 leading-relaxed mb-4">
-            Your address is shown on the drive page. Your phone number is shared only after a donor pledges.
+            Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.
           </div>
 
           <fieldset className="space-y-1">
@@ -1455,15 +1455,6 @@ function NewNgoDriveForm() {
       <section className="space-y-4">
         <h3 className="text-sm font-bold text-stone-800 dark:text-stone-100">Final confirmation</h3>
 
-        {/* Master Tick All Checkbox */}
-        <label className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-colors ${allDeclarationsChecked ? 'border-ngo-500 bg-ngo-50 dark:bg-ngo-900/20' : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'}`}>
-          <div className={`mt-0.5 flex w-5 h-5 shrink-0 items-center justify-center rounded-full border ${allDeclarationsChecked ? 'border-ngo-600 bg-ngo-600' : 'border-stone-300 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
-            {allDeclarationsChecked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
-          </div>
-          <span className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-relaxed">Tick all declarations</span>
-          <input type="checkbox" className="sr-only" checked={allDeclarationsChecked} onChange={e => toggleAllDeclarations(e.target.checked)} />
-        </label>
-
         {DECLARATIONS.map(d => (
           <label key={d.id} className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-colors ${d.checked ? 'border-ngo-500 bg-ngo-50 dark:bg-ngo-900/20' : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'}`}>
             <div className={`mt-0.5 flex w-5 h-5 shrink-0 items-center justify-center rounded-full border ${d.checked ? 'border-ngo-600 bg-ngo-600' : 'border-stone-300 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
@@ -1473,6 +1464,16 @@ function NewNgoDriveForm() {
             <input type="checkbox" className="sr-only" checked={d.checked} onChange={() => d.setter(!d.checked)} />
           </label>
         ))}
+        <div className="border-t border-slate-200 pt-4 dark:border-slate-700">
+          {/* Master "Tick all", after the last declaration (keyboard order: declarations, Tick all, Submit) */}
+          <label className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-colors ${allDeclarationsChecked ? 'border-ngo-500 bg-ngo-50 dark:bg-ngo-900/20' : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'}`}>
+            <div className={`mt-0.5 flex w-5 h-5 shrink-0 items-center justify-center rounded-full border ${allDeclarationsChecked ? 'border-ngo-600 bg-ngo-600' : 'border-stone-300 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
+              {allDeclarationsChecked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+            </div>
+            <span className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-relaxed">Tick all declarations</span>
+            <input type="checkbox" className="sr-only" checked={allDeclarationsChecked} onChange={e => toggleAllDeclarations(e.target.checked)} />
+          </label>
+        </div>
         <div className="text-center pt-2">
            {!allDeclarationsChecked && <p className="text-xs text-stone-500">Tick all declarations to submit.</p>}
         </div>
@@ -1580,7 +1581,7 @@ function NewNgoDriveForm() {
               </div>
               <div>
                 <p className="text-white text-xs font-bold leading-tight">Privacy first</p>
-                <p className="text-white/50 text-3xs">Your address is shown on the drive page. Your phone number is shared only after a donor pledges.</p>
+                <p className="text-white/50 text-3xs">Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.</p>
               </div>
             </div>
           </div>

@@ -17,7 +17,7 @@ import { IN_KIND_CATEGORIES } from '@/lib/inKindCategories';
  * <p>Blog posts are derived from blogData rather than listed by hand, so a new
  * article appears here automatically the moment it is added.
  */
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.causekind.com';
 
   // Root is '', not '/'. Next normalises the homepage's canonical tag to
@@ -79,6 +79,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     });
   });
 
+  // Verified NGOs' public pages. Only approved NGOs have a slug the API lists; if
+  // the API is unreachable at build time the sitemap still renders, without them.
+  for (const slug of await publicNgoSlugs()) {
+    sitemapEntries.push({
+      url: `${baseUrl}/ngos/${slug}`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.6,
+    });
+  }
+
   return sitemapEntries;
+}
+
+async function publicNgoSlugs(): Promise<string[]> {
+  try {
+    const api = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+    const res = await fetch(`${api}/api/v1/ngos`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const body = (await res.json()) as { slugs?: unknown };
+    return Array.isArray(body.slugs) ? body.slugs.filter((s): s is string => typeof s === 'string' && /^[a-z0-9-]+$/.test(s)) : [];
+  } catch {
+    return [];
+  }
 }
 

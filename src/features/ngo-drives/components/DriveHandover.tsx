@@ -1,5 +1,7 @@
 "use client";
 
+import { CallAction } from "@/features/handover/HandoverContactPanel";
+import { DriveOfferChatPanel } from "./DriveOfferChatPanel";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -298,7 +300,7 @@ export function DriveHandover({
   const roleClass = role === "NGO" ? "handover-ngo-drive" : "handover-donor";
 
   return (
-    <main className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-16`}>
+    <main data-ck-role-theme={role === "NGO" ? "ngo" : undefined} className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-16`}>
       <div className="mx-auto max-w-6xl px-4 pt-5">
         {/* ── Context Header (Donee Reference style) ───────────────────────── */}
         <header className="mb-5">
@@ -618,10 +620,14 @@ export function DriveHandover({
                     {!offer.handoverDetails?.contactName && !offer.handoverDetails?.registeredOfficeAddress && (
                       <p className="text-stone-500 dark:text-stone-400">NGO details will appear once accepted.</p>
                     )}
+                    {!isEnded && (
+                      <CallAction phone={offer.handoverDetails?.contactPhone?.replace(/[^\d+]/g, "") || null}
+                        label="Call NGO" lockedMessage="The NGO's number isn't available yet. Use the chat for now." />
+                    )}
                   </div>
                 ) : (
                   <p className="text-sm text-stone-500 dark:text-stone-400">
-                    Contact details are shared once the NGO accepts your offer.
+                    The drive contact person&apos;s phone number is shared after the NGO accepts your offer.
                   </p>
                 )
               ) : (
@@ -634,6 +640,10 @@ export function DriveHandover({
                   </p>
                 </div>
               )}
+            </Panel>
+
+            <Panel title="Messages">
+              <DriveOfferChatPanel offerId={offer.id} status={status} role={role === "NGO" ? "NGO" : "DONOR"} />
             </Panel>
 
             {/* Offered Item Details Panel */}
@@ -677,6 +687,22 @@ export function DriveHandover({
                   <p className="mt-2 rounded bg-stone-50 p-2 text-xs italic text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
                     &ldquo;{offer.notesForNgo}&rdquo;
                   </p>
+                )}
+                {(offer.media ?? []).some(m => m.status === "APPROVED") && (
+                  <div className="pt-2" data-testid="handover-item-media">
+                    <ul className="flex flex-wrap gap-2" aria-label="Item photos">
+                      {(offer.media ?? []).filter(m => m.mediaType !== "VIDEO" && m.status === "APPROVED").map(m => (
+                        <li key={m.id}>
+                          {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
+                          <img src={m.mediaUrl} alt="Item photo" className="h-16 w-16 rounded-md border border-stone-200 object-cover dark:border-zinc-700" />
+                        </li>
+                      ))}
+                    </ul>
+                    {(offer.media ?? []).filter(m => m.mediaType === "VIDEO" && m.playbackUrl).map(m => (
+                      <video key={m.id} controls preload="metadata" src={m.playbackUrl as string} aria-label="Donor's item video"
+                        className="mt-2 aspect-video w-full max-w-sm rounded-lg border border-stone-200 bg-black object-contain dark:border-zinc-700" />
+                    ))}
+                  </div>
                 )}
               </div>
             </Panel>

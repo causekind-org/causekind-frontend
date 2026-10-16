@@ -1,4 +1,6 @@
 "use client";
+import { isDriveGiveFlowPath } from "@/lib/driveFlowPaths";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -92,6 +94,8 @@ const BACKDROP_EMBERS = [
 export function DonorCategoryModal() {
   const { user, isLoading } = useAuth();
   const [show, setShow] = useState(false);
+  // Paused on the drive page / give form so the give flow and its success popup stay on top.
+  const pausedForDriveFlow = isDriveGiveFlowPath(usePathname());
 
   const [tempSelected, setTempSelected] = useState<string[]>(
     []
@@ -296,7 +300,7 @@ useEffect(() => {
   ======================================================= */
 
 
-  if (!show || !user || user.role !== "DONOR" ) {
+  if (!show || pausedForDriveFlow || !user || user.role !== "DONOR" ) {
     return null;
   }
 

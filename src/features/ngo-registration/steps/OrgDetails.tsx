@@ -8,6 +8,9 @@ import {
   STRUCTURE_INDEPENDENT_DOC_IDS,
   getRegistrationCertificateDoc,
   isValidMobile,
+  aboutUsMissing,
+  ABOUT_US_MIN,
+  ABOUT_US_MAX,
   isValidPan,
   legalStructureLabel,
   normalizePan,
@@ -74,6 +77,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
     if (!fieldText(data.registrationNumber)) next.registrationNumber = "Registration number is required.";
     if (!fieldText(data.registeredOfficeAddress)) next.registeredOfficeAddress = "Registered office address is required.";
     if (!isValidMobile(data.organizationPhone ?? "")) next.organizationPhone = "Valid 10-digit mobile number is required.";
+    if (aboutUsMissing(data)) next.aboutUs = `Write ${ABOUT_US_MIN} to ${ABOUT_US_MAX} characters about your NGO.`;
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -330,6 +334,32 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
             className={cn(controlClass, errors.organizationPhone && "border-red-400 focus-visible:border-red-400 focus-visible:outline-red-400")}
           />
           {field("organizationPhone")}
+        </div>
+
+        {/* 10. About us */}
+        <div className="space-y-1 sm:col-span-2">
+          <label htmlFor="ngo-about-us" className={label}>About us {!data.aboutUsOptional && required}</label>
+          <p id="ngo-about-us-hint" className="text-xs text-stone-500 dark:text-stone-400">
+            What your NGO does, how you do it, your purpose and the causes you work for. Donors read this on your page.
+          </p>
+          <textarea
+            id="ngo-about-us"
+            rows={5}
+            maxLength={ABOUT_US_MAX}
+            value={data.aboutUs ?? ""}
+            aria-invalid={!!errors.aboutUs}
+            aria-describedby="ngo-about-us-hint ngo-about-us-count"
+            onChange={(e) => {
+              onChange({ aboutUs: e.target.value });
+              if (errors.aboutUs) setErrors((p) => ({ ...p, aboutUs: "" }));
+            }}
+            className={cn(controlClass, "min-h-[120px] resize-y", errors.aboutUs && "border-red-400 focus-visible:border-red-400 focus-visible:outline-red-400")}
+          />
+          <p id="ngo-about-us-count" aria-live="polite" className={cn("text-right text-xs",
+            (data.aboutUs ?? "").trim().length < ABOUT_US_MIN ? "text-stone-500 dark:text-stone-400" : "text-ngo-700 dark:text-ngo-300")}>
+            {(data.aboutUs ?? "").trim().length} / {ABOUT_US_MAX}{(data.aboutUs ?? "").trim().length < ABOUT_US_MIN ? ` (at least ${ABOUT_US_MIN})` : ""}
+          </p>
+          {field("aboutUs")}
         </div>
       </div>
 

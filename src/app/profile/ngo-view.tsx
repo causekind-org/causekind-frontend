@@ -1,5 +1,7 @@
 "use client";
 
+import { NgoAboutSection } from "@/features/ngo-profile/NgoAboutSection";
+import { NgoActivitiesManager } from "@/features/ngo-profile/NgoActivitiesManager";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -1026,6 +1028,21 @@ export function NgoProfileView() {
                 <ArrowRight className="h-3.5 w-3.5" />
               </Link>
             </div>
+          </div>
+        )}
+
+        {application?.status === "APPROVED" && (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <NgoAboutSection ngo={{
+              organizationName: application.organizationName,
+              founderName: application.founderName,
+              founderDesignation: application.founderDesignation,
+              yearOfEstablishment: application.yearOfEstablishment,
+              verified: true,
+              aboutUs: application.aboutUs,
+              slug: application.publicSlug,
+            }} />
+            <NgoActivitiesManager />
           </div>
         )}
 

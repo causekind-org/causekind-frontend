@@ -145,6 +145,12 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                 {data.organizationPhone || "—"}
               </dd>
             </div>
+            <div className="sm:col-span-2">
+              <dt className="text-stone-400 text-3xs uppercase font-semibold">About us</dt>
+              <dd className="mt-0.5 whitespace-pre-line text-stone-800 dark:text-stone-200">
+                {data.aboutUs?.trim() || "—"}
+              </dd>
+            </div>
           </dl>
         </section>
 

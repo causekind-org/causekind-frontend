@@ -5,6 +5,12 @@ import type { PublicNgoDrive } from "@/lib/api";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the next/navigation hooks
+// The drive page FAQ reads the shared "faq" keys: real English strings.
+vi.mock("next-intl", async () => {
+  const en = (await import("../../../../messages/en.json")).default as Record<string, Record<string, unknown>>;
+  const t = (ns?: string) => (k: string) => { const v = ns ? en[ns]?.[k] : undefined; return typeof v === "string" ? v : k; };
+  return { useLocale: () => "en", useTranslations: t };
+});
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "1" }),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
@@ -176,11 +182,12 @@ describe("DriveDetailPage", () => {
       "href",
       expect.stringContaining("google.com/maps")
     );
-    expect(screen.getByText("The NGO's phone number is shared after it accepts your offer.")).toBeInTheDocument();
+    expect(screen.getByText("The drive contact person's phone number is shared after the NGO accepts your offer.")).toBeInTheDocument();
 
     // 7. NGO Card with Verified badge date & checklist
-    expect(screen.getByText("Verified by CauseKind on 15-01-2024")).toBeInTheDocument();
-    expect(screen.getByText("What we checked: Registration, Address, Contact person")).toBeInTheDocument();
+    expect(screen.getByText("Verified by CauseKind")).toBeInTheDocument();
+    expect(screen.getByText(/Verified on 15-01-2024/)).toBeInTheDocument();
+    expect(screen.getByText(/What we checked: registration, address, contact person/)).toBeInTheDocument();
     expect(screen.getByText("Trust")).toBeInTheDocument();
     expect(screen.getByText("TR-12345/2015")).toBeInTheDocument();
     expect(screen.getByText("2015")).toBeInTheDocument();

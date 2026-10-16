@@ -23,6 +23,8 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
 import { HandoverPhotoLog } from "../HandoverPhotoLog";
 import { NgoReviewPanel } from "../ngos/NgoReviewPanel";
+import { NgoActivityModerationPanel } from "../ngos/NgoActivityModerationPanel";
+import { getPendingNgoActivities } from "@/lib/api";
 import { NgoDriveReviewPanel, NgoDriveOffersPanel, NgoDriveProofsPanel } from "../ngo-drives/NgoDriveAdminPanels";
 import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel";
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
@@ -39,7 +41,7 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -52,6 +54,8 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   "ngo-drives": "REQUEST_REVIEW",
   "drive-offers": "OFFER_REVIEW",
   "drive-proofs": "REQUEST_REVIEW",
+  // Same capability the backend checks on /api/v1/admin/ngo-activities.
+  "ngo-activities": "REQUEST_REVIEW",
   listings: "LISTING_REVIEW",
   matches: "MATCH_INTERVENE",
   offers: "OFFER_REVIEW",
@@ -67,8 +71,9 @@ const NGO_TAB_LINKS: Record<string, TabKey> = {
   "ngo-drives": "ngo-drives",
   "drive-offers": "drive-offers", "ngo-drive-offers": "drive-offers",
   "drive-proofs": "drive-proofs", "ngo-proofs": "drive-proofs",
+  "ngo-activities": "ngo-activities", "past-activity": "ngo-activities",
 };
-const NGO_TAB_KEYS: TabKey[] = ["ngo-applications", "ngo-drives", "drive-offers", "drive-proofs"];
+const NGO_TAB_KEYS: TabKey[] = ["ngo-applications", "ngo-drives", "drive-offers", "drive-proofs", "ngo-activities"];
 
 type RejectType = "campaign" | "listing" | "match";
 type DetailSelection =
@@ -257,10 +262,12 @@ export default function AdminDashboardPage() {
   const [drivesPending, setDrivesPending] = useState(0);
   const [driveOffersPending, setDriveOffersPending] = useState(0);
   const [driveProofsPending, setDriveProofsPending] = useState(0);
+  const [activitiesPending, setActivitiesPending] = useState(0);
   const loadDriveCounts = useCallback(() => {
     adminGetNgoDrives("PENDING_REVIEW").then(r => setDrivesPending(r.length)).catch(() => setDrivesPending(0));
     adminGetPendingNgoDriveOffers().then(r => setDriveOffersPending(r.length)).catch(() => setDriveOffersPending(0));
     adminGetNgoDriveProofs().then(r => setDriveProofsPending(r.length)).catch(() => setDriveProofsPending(0));
+    getPendingNgoActivities().then(r => setActivitiesPending(r.length)).catch(() => setActivitiesPending(0));
   }, []);
   useEffect(() => { loadDriveCounts(); }, [loadDriveCounts]);
 
@@ -570,6 +577,7 @@ export default function AdminDashboardPage() {
     { key: "ngo-drives" as TabKey, label: "NGO Drives", count: drivesPending, icon: ClipboardList, color: "#2f8f6a" },
     { key: "drive-offers" as TabKey, label: "Drive Offers", count: driveOffersPending, icon: Gift, color: "#e05f9b" },
     { key: "drive-proofs" as TabKey, label: "Distribution Proofs", count: driveProofsPending, icon: Package, color: "#c98a1b" },
+    { key: "ngo-activities" as TabKey, label: "Past activity", count: activitiesPending, icon: Camera, color: "#1e6b4f" },
   ].filter(t => canSeeTab(t.key));
   const ngoTotal = NGO_TABS.reduce((sum, t) => sum + t.count, 0);
   const ngoGroupOpen = ngoExpanded || NGO_TAB_KEYS.includes(tab);
@@ -590,6 +598,7 @@ export default function AdminDashboardPage() {
     : tab === "ngo-drives" ? "NGO Drives"
     : tab === "drive-offers" ? "Drive Offers"
     : tab === "drive-proofs" ? "Distribution Proofs"
+    : tab === "ngo-activities" ? "Past activity"
     : tab === "match-history" ? "Match History"
     : tab === "handover-photos" ? "Handover Photo Log"
     : tab === "ai-logs" ? "AI Screening Logs"
@@ -604,6 +613,8 @@ export default function AdminDashboardPage() {
     ? `${drivesPending} drive${drivesPending !== 1 ? "s" : ""} awaiting review · approval makes a drive live for donors`
     : tab === "drive-offers"
     ? `${driveOffersPending} donor offer${driveOffersPending !== 1 ? "s" : ""} to drives in handover · monitor only, the NGO accepts offers`
+    : tab === "ngo-activities"
+    ? `${activitiesPending} past-activit${activitiesPending !== 1 ? "ies" : "y"} awaiting review · approval shows it on the NGO's public page`
     : tab === "drive-proofs"
     ? `${driveProofsPending} distribution proof${driveProofsPending !== 1 ? "s" : ""} awaiting review · approval completes the drive`
     : tab === "handover-photos"
@@ -903,6 +914,7 @@ export default function AdminDashboardPage() {
           {/* ── NGO APPLICATIONS TAB — /admin/ngos redirects here. Approving
                  creates the NGO profile, which unlocks requests and drives. ── */}
           {tab === "ngo-applications" && <NgoReviewPanel initialApplicationId={ngoDeepLink} onDecision={loadNgoCount} />}
+          {tab === "ngo-activities" && <NgoActivityModerationPanel onChange={loadDriveCounts} />}
 
           {/* ── NGO DRIVE QUEUES ── */}
           {tab === "ngo-drives" && <NgoDriveReviewPanel onChange={loadDriveCounts} />}

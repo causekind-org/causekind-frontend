@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { DriveOfferSentModal, offerSentKey, type DriveOfferSent } from "@/features/ngo-drives/components/DriveOfferSentModal";
 import { useAuth } from "@/hooks/useAuth";
 import { getNgoDrive, getMyNgoDriveOffers, type PublicNgoDrive, type NgoDriveOfferResponse } from "@/lib/api";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
@@ -21,6 +22,22 @@ export default function DriveDetailPage() {
   const [offersError, setOffersError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const isDonor = (user?.role ?? "").toUpperCase() === "DONOR";
+  // Right after the donor submits an offer: the success popup, once.
+  const router = useRouter();
+  const [sent, setSent] = useState<DriveOfferSent | null>(null);
+  useEffect(() => {
+    if (Number.isNaN(id)) return;
+    try {
+      if (new URLSearchParams(window.location.search).get("offerSent") !== "1") return;
+      const raw = sessionStorage.getItem(offerSentKey(id));
+      if (raw) setSent(JSON.parse(raw) as DriveOfferSent);
+    } catch { /* no popup */ }
+  }, [id]);
+  const closeSent = useCallback(() => {
+    setSent(null);
+    try { sessionStorage.removeItem(offerSentKey(id)); } catch { /* ignore */ }
+    router.replace(`/drives/${id}`);
+  }, [id, router]);
 
   const loadDrive = useCallback(async () => {
     if (Number.isNaN(id)) return;
@@ -78,12 +95,15 @@ export default function DriveDetailPage() {
   const state = giveState(drive, user, offers);
 
   return (
-    <DriveDetailView
-      drive={drive}
-      mode="live"
-      giveStateResult={state}
-      offersError={offersError}
-      onRetryOffers={() => void loadOffers()}
-    />
+    <>
+      <DriveDetailView
+        drive={drive}
+        mode="live"
+        giveStateResult={state}
+        offersError={offersError}
+        onRetryOffers={() => void loadOffers()}
+      />
+      {sent && <DriveOfferSentModal sent={sent} onClose={closeSent} />}
+    </>
   );
 }

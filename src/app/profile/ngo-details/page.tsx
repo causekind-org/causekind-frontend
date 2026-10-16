@@ -84,6 +84,10 @@ function NgoDetailsEditor() {
   const [correctionItems, setCorrectionItems] = useState<NgoCorrectionItem[]>([]);
   const flaggedFields = useRef<string[]>([]);
   const corrections: NgoCorrections = Object.fromEntries(correctionItems.map((i) => [i.field, i.note]));
+  // A corrections resubmission: About us is optional (it may predate the field).
+  useEffect(() => {
+    if (correctionItems.length > 0) setData((d) => (d.aboutUsOptional ? d : { ...d, aboutUsOptional: true }));
+  }, [correctionItems.length]);
   const flaggedSteps = new Set(correctionItems.map((i) => correctionFieldStep(i.field)));
 
   const userIdentifier =

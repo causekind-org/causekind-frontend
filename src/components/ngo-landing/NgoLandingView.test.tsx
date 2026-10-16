@@ -28,6 +28,7 @@ describe("NGO landing with server-backed status", () => {
   it("opens the next incomplete section from the server draft", async () => {
     vi.mocked(getNgoDraft).mockResolvedValue({ organizationName: "Helping Hands", legalStructure: "trust", registrationNumber: "REG-1", registeredOfficeAddress: "Pune", yearOfEstablishment: "2005",
       panNumber: "ABCDE1234F", organizationPhone: "+919876543210",
+      aboutUs: "We collect school bags and books for children in rural Pune and run weekend reading classes for them.",
       documents: { pan: { name: "pan.pdf" }, "trust-reg-cert": { name: "cert.pdf" } } } as never);
     render(<NgoLandingView />);
     expect(await screen.findByRole("link", { name: /Continue application/ })).toHaveAttribute("href", "/profile/ngo-details?step=legal-documents");

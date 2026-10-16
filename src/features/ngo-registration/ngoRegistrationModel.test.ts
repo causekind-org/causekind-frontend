@@ -85,11 +85,14 @@ describe("ngoRegistrationModel", () => {
 
   it("step 1 needs the PAN card, PAN number and registration certificate", () => {
     const base = { ...INITIAL_NGO_FORM, organizationName: "Hope", legalStructure: "trust" as const, registrationNumber: "R1",
-      yearOfEstablishment: "2019", registeredOfficeAddress: "Pune", organizationPhone: "+919876543210" };
+      yearOfEstablishment: "2019", registeredOfficeAddress: "Pune", organizationPhone: "+919876543210",
+      aboutUs: "We collect school bags and books for children in rural Pune and run weekend reading classes for them." };
     expect(getNgoStillNeededItems("org-details", base)).toEqual(
       ["PAN card upload", "Organization PAN number (10 characters)", "Trust Registration Certificate"]);
     expect(getNgoStillNeededItems("org-details", { ...base, organizationPhone: "" })).toContain(
       "Organization phone number (10 digits)");
+    expect(getNgoStillNeededItems("org-details", { ...base, aboutUs: "Too short" })).toContain(
+      "About us (100 to 2000 characters)");
     const done = { ...base, panNumber: "AAATH1234K", documents: { pan: { name: "p.pdf", documentId: 1 }, "trust-reg-cert": { name: "c.pdf", documentId: 2 } } };
     expect(getNgoStillNeededItems("org-details", done)).toEqual([]);
   });

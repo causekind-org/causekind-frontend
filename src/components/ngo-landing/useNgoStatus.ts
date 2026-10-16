@@ -23,6 +23,7 @@ function parseFormState(raw: any): NGOFormState {
     legalStructure: raw.legalStructure || "",
     panNumber: fieldText(raw.panNumber),
     organizationPhone: fieldText(raw.organizationPhone),
+    aboutUs: typeof raw.aboutUs === "string" ? raw.aboutUs : "",
     registrationNumber: fieldText(raw.registrationNumber),
     registeredOfficeAddress: fieldText(raw.registeredOfficeAddress),
     yearOfEstablishment: fieldText(raw.yearOfEstablishment),
