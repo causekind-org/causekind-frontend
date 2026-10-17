@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  fundraising, getDoneeNeedProfile, ApiError,
+  fundraising, getDoneeNeedProfile, getProfile, ApiError,
   type DoneeNeedProfile, type FundraisingApplication, type FundraisingCategory,
   type FundraisingCostItem, type FundraisingEvidence, type FundraisingEvidenceType, type FundraisingSave,
 } from "@/lib/api";
@@ -123,6 +123,10 @@ function Heading({ title, sub }: { title: string; sub: string }) {
 // and donee profile, and the handoff says never ask for them twice.
 function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNext: () => void }) {
   const { user } = useAuth();
+  const [city, setCity] = useState<string | null>(null);
+  useEffect(() => { getProfile().then((p) => setCity(p.city)).catch(() => {}); }, []);
+  // Landmark is optional on the donee profile; the account city always exists.
+  const address = profile?.details?.addressLandmark?.trim() || city || "";
   return (
     <>
       <Heading title="About you" sub="We filled in what we already know from your account and donee profile. Check it, and correct anything out of date." />
@@ -131,7 +135,9 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
           <div><label className={s.lbl} htmlFor="nm">Legal name <span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="nm" className={s.in} value={user?.fullName ?? ""} readOnly /><p className={s.hint}>As it appears on your government ID.</p></div>
           <div><label className={s.lbl} htmlFor="age">Age <span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="age" className={s.in} value={profile?.details?.age ?? ""} readOnly /></div>
         </div>
-        <div><label className={s.lbl} htmlFor="ad">Current address <span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="ad" className={s.in} value={profile?.details?.addressLandmark ?? ""} readOnly /><p className={s.hint}>Changing your address may mean we ask for a new residence proof.</p></div>
+        <div><label className={s.lbl} htmlFor="ad">Current address <span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="ad" className={s.in} value={address} placeholder="Not in your profile yet" readOnly />{address
+            ? <p className={s.hint}>Changing your address may mean we ask for a new residence proof.</p>
+            : <p className={s.hint}>Not in your profile yet. <Link href="/profile/need-details">Add your address</Link> — your application is saved.</p>}</div>
         <div className={s.grid2}>
           <div><label className={s.lbl} htmlFor="em">Email <span className={`${s.chip} ${s.cOk}`}><Icon name="check" />Verified</span></label><input id="em" className={s.in} value={user?.email ?? ""} readOnly style={{ background: "#f7f3ee" }} /><p className={s.hint}>Verified with a code when you signed up.</p></div>
           <div><label className={s.lbl} htmlFor="ph">Phone <span className={`${s.chip} ${s.cM}`}><Icon name="alert" />Not verified</span></label><input id="ph" className={s.in} value={user?.phone ?? ""} readOnly /><p className={s.hint}>We may ask you to verify this later.</p></div>
