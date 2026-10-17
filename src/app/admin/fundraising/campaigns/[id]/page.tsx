@@ -1,0 +1,166 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "@/components/AppLink";
+import { FEATURES } from "@/lib/features";
+import { fundraisingCampaigns, ApiError, type FundraisingAdminCampaign } from "@/lib/api";
+import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
+import a from "@/features/fundraising/admin.module.css";
+
+type Decision = "changes" | "approve" | "decline";
+
+/** F19 — publication review workspace; F20 — publication decision dialog. */
+export default function AdminCampaignReviewPage() {
+  const { id } = useParams<{ id: string }>();
+  const cid = Number(id);
+  const [data, setData] = useState<FundraisingAdminCampaign | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [decision, setDecision] = useState<Decision | null>(null);
+
+  const load = useCallback(() => {
+    fundraisingCampaigns.admin.get(cid).then(setData).catch(() => setError("Couldn't load this campaign."));
+  }, [cid]);
+  useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
+
+  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
+  if (!data) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}>{error ? <p role="alert" className={a.err}>{error}</p> : <div className={a.skel} style={{ width: "40%" }} />}</main></div>;
+
+  const c = data.campaign;
+  const reviewing = c.status === "PUBLICATION_REVIEW";
+  const differs = (x: unknown, y: unknown) => String(x ?? "") !== String(y ?? "");
+
+  return (
+    <div className={a.root}>
+      <div style={{ background: "#fff", borderBottom: "1px solid #e4ddd5", padding: "16px 28px", display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 420px", minWidth: 0 }}>
+          <Link href="/admin/fundraising/campaigns" className={a.small}>← Publication review</Link>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: 4 }}>
+            <h1 className={a.serif} style={{ fontSize: 22 }}>{c.title || "Untitled campaign"}</h1><CampaignChip status={c.status} />
+          </div>
+          <p className={a.muted}>Organiser {data.applicantName} · from {c.applicationReference} · submitted {formatDate(c.submittedAt)}</p>
+        </div>
+        <button type="button" className={`${a.btn} ${a.bs}`} disabled={!reviewing} onClick={() => setDecision("changes")}>Request changes</button>
+        <button type="button" className={`${a.btn} ${a.bs}`} style={{ color: "#8f1d1d" }} disabled={!reviewing} onClick={() => setDecision("decline")}>Decline publication</button>
+        <button type="button" className={`${a.btn} ${a.bp}`} disabled={!reviewing} onClick={() => setDecision("approve")}>Approve for publication</button>
+      </div>
+      {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
+
+      <main style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
+          <section className={a.card} style={{ overflowX: "auto" }} aria-labelledby="cmp">
+            <div className={a.pane} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+              <h2 id="cmp" className={a.h}>Approved application vs public draft</h2>
+              <span className={`${a.small} ${a.muted}`}>{c.hasMaterialChanges ? "Differs from application" : "No material changes"}</span>
+            </div>
+            <table className={a.table}>
+              <thead><tr><th style={{ width: 170 }}>Item</th><th>Approved application</th><th>Public draft</th><th style={{ width: 130 }}>Check</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Category</strong></td><td colSpan={2}>{c.category ? CATEGORY_LABEL[c.category] : "—"}</td><td>Locked</td></tr>
+                <tr style={{ background: differs(c.targetAmount, c.approvedTarget) ? "#fffaf0" : undefined }}><td><strong>Target</strong></td><td>{formatINR(c.approvedTarget)}</td><td>{formatINR(c.targetAmount)}</td><td>{differs(c.targetAmount, c.approvedTarget) ? <span className={a.err}>Changed</span> : "Matches"}</td></tr>
+                {c.costItems.map((r, i) => (
+                  <tr key={i} style={{ background: r.changed ? "#fffaf0" : undefined }}>
+                    <td><strong>{r.expense}</strong></td><td>{r.approvedAmount != null ? formatINR(r.approvedAmount) : "Not in application"}</td><td>{formatINR(r.amount)}</td><td>{r.changed ? <span className={a.err}>Changed</span> : "Matches"}</td>
+                  </tr>
+                ))}
+                <tr><td><strong>End date</strong></td><td>—</td><td>{formatDate(c.endDate)}</td><td>Review</td></tr>
+                <tr><td><strong>Shown as</strong></td><td>—</td><td>&ldquo;{c.beneficiaryDisplayName ?? "—"}&rdquo; ({(c.beneficiaryNameVisibility ?? "").toLowerCase().replace("_", " ")}) · {(c.locationVisibility ?? "").toLowerCase()}</td><td>Within privacy</td></tr>
+                <tr><td><strong>Cover photo</strong></td><td>—</td><td>{c.coverUrl ? "1 photo" : "None"} · {c.coverAltText ? "description" : "no description"} · {c.coverConsent ? "permission ticked" : "permission not ticked"}</td><td>Review</td></tr>
+                <tr><td><strong>Public documents</strong></td><td>Private</td><td>{c.publicEvidenceIds.length ? `${c.publicEvidenceIds.length} chosen · redaction needed` : "None"}</td><td>{c.publicEvidenceIds.length ? "Redact" : "—"}</td></tr>
+              </tbody>
+            </table>
+            {c.changeReason && <p className={a.small} style={{ padding: "12px 16px" }}><span className={a.muted}>Organiser&apos;s reason for the change:</span> {c.changeReason}</p>}
+          </section>
+
+          <section className={`${a.card} ${a.pane}`} aria-labelledby="pv">
+            <h2 id="pv" className={a.h}>Public preview</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "240px minmax(0,1fr)", gap: 16 }}>
+              {c.coverUrl
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={c.coverUrl} alt={c.coverAltText ?? ""} style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 6 }} />
+                : <div style={{ aspectRatio: "16 / 9", borderRadius: 6, background: "#e4dbd0" }} />}
+              <div><p className={a.serif} style={{ fontSize: 18 }}>{c.title || "Untitled"}</p><p className={`${a.small} ${a.muted}`}>Organised by {c.organiserName} · {formatINR(c.targetAmount)} target</p></div>
+            </div>
+            <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{c.story}</p>
+          </section>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <section className={`${a.card} ${a.pane}`} aria-labelledby="pre">
+            <h2 id="pre" className={a.h}>Launch prerequisites</h2>
+            <p className={a.small}><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Application approved</p>
+            <p className={a.small}><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Payment setup (requirements to be defined)</p>
+            <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>Approving now results in <strong>Approved — setup incomplete</strong>. It will not go live or show a Donate button.</p>
+          </section>
+          <section className={`${a.card} ${a.pane}`} aria-labelledby="dr">
+            <h2 id="dr" className={a.h}>Decision record</h2>
+            {c.decidedAt ? <p className={a.small}>{data.decidedBy} · {formatDate(c.decidedAt)}<br />{c.reviewerMessage}</p> : <p className={`${a.small} ${a.muted}`}>No decision yet.</p>}
+            {data.internalNote && <p className={a.small}><span className={a.muted}>Internal note:</span> {data.internalNote}</p>}
+          </section>
+        </div>
+      </main>
+
+      {decision && <DecisionDialog data={data} initial={decision} onClose={() => setDecision(null)} onDone={(d) => { setData(d); setDecision(null); }}
+        onStale={() => { setDecision(null); setError("This campaign changed since you opened it. Refresh before deciding."); }} />}
+    </div>
+  );
+}
+
+function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
+  data: FundraisingAdminCampaign; initial: Decision; onClose: () => void; onDone: (d: FundraisingAdminCampaign) => void; onStale: () => void;
+}) {
+  const c = data.campaign;
+  const [mode, setMode] = useState<Decision>(initial);
+  const [message, setMessage] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const valid = mode === "approve" ? note.trim() !== "" : message.trim() !== "" && (mode === "changes" || note.trim() !== "");
+
+  async function submit() {
+    setBusy(true); setError(null);
+    try {
+      const v = c.version;
+      if (mode === "approve") onDone(await fundraisingCampaigns.admin.approve(c.id, { expectedVersion: v, message: message || undefined, internalNote: note }));
+      else if (mode === "decline") onDone(await fundraisingCampaigns.admin.decline(c.id, { expectedVersion: v, reason: message, internalNote: note }));
+      else onDone(await fundraisingCampaigns.admin.requestChanges(c.id, { expectedVersion: v, message, internalNote: note || undefined }));
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 409) { onStale(); return; }
+      setError(e instanceof ApiError ? e.message : "Couldn't record the decision."); setBusy(false);
+    }
+  }
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(31,26,23,.55)", display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "48px 16px", zIndex: 60, overflowY: "auto" }}>
+      <section role="dialog" aria-modal="true" aria-labelledby="dt" className={a.card} style={{ padding: 28, width: "100%", maxWidth: 680, display: "flex", flexDirection: "column", gap: 18, boxShadow: "0 24px 60px rgba(0,0,0,.25)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+          <div><h2 id="dt" className={a.serif} style={{ fontSize: 24 }}>Publication decision</h2><p className={a.muted}>{c.title || "Untitled campaign"}</p></div>
+          <button type="button" className={`${a.btn} ${a.bs}`} aria-label="Close" onClick={onClose}>✕</button>
+        </div>
+        <div className={a.seg} role="radiogroup" aria-label="Decision">
+          {([["changes", "Request changes"], ["approve", "Approve for publication"], ["decline", "Decline publication"]] as const).map(([k, l]) => (
+            <button key={k} type="button" role="radio" aria-checked={mode === k} className={`${a.segBtn} ${mode === k ? a.segOn : ""}`} onClick={() => setMode(k)}>{l}</button>
+          ))}
+        </div>
+        {mode === "approve" && (
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: "#efebe6" }}>
+            <strong>Result: Approved — setup incomplete</strong>
+            <p className={a.small}>Payment setup isn&apos;t met, so the page stays private and can&apos;t take donations.</p>
+          </div>
+        )}
+        <div><label className={a.lbl} htmlFor="m">{mode === "changes" ? "What to change (organiser-facing, required)" : mode === "decline" ? "Reason (organiser-facing, required)" : "Message to the organiser (optional)"}</label>
+          <textarea id="m" className={a.in} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} /></div>
+        <div><label className={a.lbl} htmlFor="n">Internal note {mode === "changes" ? "(optional)" : "(required)"}</label>
+          <textarea id="n" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+        <p className={`${a.small} ${a.muted}`}>Recorded with your name and the time in the review history.</p>
+        {error && <p role="alert" className={a.err}>{error}</p>}
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, flexWrap: "wrap" }}>
+          <button type="button" className={`${a.btn} ${a.bs}`} onClick={onClose}>Cancel</button>
+          <button type="button" className={`${a.btn} ${mode === "decline" ? a.bx : a.bp}`} disabled={!valid || busy} onClick={submit}>
+            {busy ? "Saving…" : mode === "approve" ? "Approve for publication" : mode === "decline" ? "Decline publication" : "Send change request"}
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
