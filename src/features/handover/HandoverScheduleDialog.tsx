@@ -12,7 +12,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { HandoverLocationField } from "./HandoverLocationField";
-import { methodNeedsCourierFields } from "./adapters";
 import { handoverScope, type HandoverViewModel } from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverInput, handoverLabel,
@@ -62,7 +61,6 @@ export function HandoverScheduleDialog({
   const [lat, setLat] = useState<number | null>(vm.schedule?.latitude ?? null);
   const [lng, setLng] = useState<number | null>(vm.schedule?.longitude ?? null);
   const [notes, setNotes] = useState(vm.schedule?.notes ?? "");
-  const [courierName, setCourierName] = useState("");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   /** The map or the address box is still working out the location. */
@@ -93,7 +91,6 @@ export function HandoverScheduleDialog({
     setError(null);
   }, [open, vm.schedule, vm.methodOptions]);
 
-  const needsCourier = methodNeedsCourierFields(method);
   // A reschedule costs the other person a trip, so it has to say why.
   const reasonRequired = isReschedule;
   const hasPin = lat != null && lng != null;
@@ -128,7 +125,6 @@ export function HandoverScheduleDialog({
         address: address.trim() || undefined,
         ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
         notes: notes.trim() || undefined,
-        courierName: needsCourier && courierName.trim() ? courierName.trim() : undefined,
         reason: reasonRequired ? reason.trim() : undefined,
       });
       onOpenChange(false);
@@ -219,18 +215,6 @@ export function HandoverScheduleDialog({
             )}
           </Field>
 
-          {needsCourier && (
-            <Field label="Courier or service name (optional)" htmlFor="ho-courier">
-              <Input
-                id="ho-courier"
-                type="text"
-                value={courierName}
-                onChange={(e) => setCourierName(e.target.value)}
-                disabled={busy}
-                className={handoverInput}
-              />
-            </Field>
-          )}
 
           {vm.flow === "MATCH" && (
             <Field label="Anything else they should know? (optional)" htmlFor="ho-notes">

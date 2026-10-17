@@ -108,7 +108,6 @@ describe("recipient", () => {
 
     await userEvent.click(screen.getByRole("button", { name: /Use my profile details/ }));
     expect(await screen.findByDisplayValue("Flat 4, Sai Krupa, Virar, 401303")).toBeInTheDocument();
-    expect(screen.getByDisplayValue("Asha Devi")).toBeInTheDocument();
 
     await userEvent.click(send);
     expect(a.submit).toHaveBeenCalledWith({
@@ -117,14 +116,15 @@ describe("recipient", () => {
     });
   });
 
-  it("can type it by hand, and a short phone number isn't accepted", async () => {
+  it("can type it by hand, and a short address isn't accepted", async () => {
     const a = actions();
     nextAction(vm("DONEE"), a);
-    await userEvent.type(screen.getByLabelText(/Name for the courier/), "Asha");
-    await userEvent.type(screen.getByLabelText(/Phone number/), "12345");
-    await userEvent.type(screen.getByLabelText(/Full delivery address/), "Room 2, Gandhi Chawl, Virar East 401305");
-    expect(screen.getByText("Enter 10 to 15 digits.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Send to donor/ })).toBeDisabled();
+    const send = screen.getByRole("button", { name: /Send to donor/ });
+    expect(send).toBeDisabled();
+    await userEvent.type(screen.getByLabelText(/Full delivery address/), "Room 2");
+    expect(send).toBeDisabled();
+    await userEvent.type(screen.getByLabelText(/Full delivery address/), ", Gandhi Chawl, Virar East 401305");
+    expect(send).toBeEnabled();
   });
 
   it("can add the address before the donor asks", () => {

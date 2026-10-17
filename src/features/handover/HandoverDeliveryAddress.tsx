@@ -112,7 +112,7 @@ function DonorRequest({ vm, actions }: { vm: HandoverViewModel; actions: Deliver
         secondary={state !== "awaiting"}
       />
       <p className="text-xs text-stone-500 dark:text-stone-400">
-        They&apos;ll be asked for the full address, a map pin and a phone number for the courier.
+        They&apos;ll be asked for the full delivery address and an optional map pin.
       </p>
     </div>
   );
@@ -163,9 +163,7 @@ function DeliveryAddressForm({ vm, actions, onDone, onCancel }: {
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const digits = phone.replace(/\D/g, "").length;
-  const phoneValid = /^\+?[0-9\s-]+$/.test(phone.trim()) && digits >= 10 && digits <= 15;
-  const valid = name.trim() !== "" && phoneValid && address.trim().length >= 10;
+  const valid = address.trim().length >= 10;
 
   async function fillFromProfile() {
     if (busy) return;
@@ -193,8 +191,8 @@ function DeliveryAddressForm({ vm, actions, onDone, onCancel }: {
     try {
       await actions.submit({
         address: address.trim(),
-        contactName: name.trim(),
-        contactPhone: phone.trim(),
+        ...(name.trim() ? { contactName: name.trim() } : {}),
+        ...(phone.trim() ? { contactPhone: phone.trim() } : {}),
         ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
       });
       onDone?.();
@@ -216,23 +214,7 @@ function DeliveryAddressForm({ vm, actions, onDone, onCancel }: {
       </Button>
       {note && <p role="status" className="text-xs text-stone-600 dark:text-stone-300">{note}</p>}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
-          <label htmlFor="da-name" className={handoverLabel}>Name for the courier <span className="text-red-500" aria-hidden>*</span></label>
-          <Input id="da-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={120}
-            autoComplete="name" disabled={busy !== null} className={handoverInput} />
-        </div>
-        <div className="space-y-1.5">
-          <label htmlFor="da-phone" className={handoverLabel}>Phone number <span className="text-red-500" aria-hidden>*</span></label>
-          <Input id="da-phone" type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-            maxLength={20} autoComplete="tel" disabled={busy !== null} className={handoverInput}
-            aria-invalid={phone.trim() !== "" && !phoneValid}
-            aria-describedby={phone.trim() !== "" && !phoneValid ? "da-phone-err" : undefined} />
-          {phone.trim() !== "" && !phoneValid && (
-            <p id="da-phone-err" className="text-xs text-red-600 dark:text-red-400">Enter 10 to 15 digits.</p>
-          )}
-        </div>
-      </div>
+
 
       <div className="space-y-1.5">
         <label htmlFor="da-address" className={handoverLabel}>Full delivery address <span className="text-red-500" aria-hidden>*</span></label>
@@ -313,7 +295,7 @@ function CopyButton({ text }: { text: string }) {
       }}
       className="inline-flex min-h-[40px] items-center gap-1.5 rounded-md border border-stone-200 px-3 text-sm font-semibold text-stone-600 hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)] dark:border-zinc-700 dark:text-stone-300 dark:hover:bg-zinc-800">
       {copied ? <Check className="size-4" aria-hidden /> : <Copy className="size-4" aria-hidden />}
-      {copied ? "Copied" : "Copy for the courier"}
+      {copied ? "Copied" : "Copy address"}
     </button>
   );
 }

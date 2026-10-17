@@ -239,7 +239,7 @@ export function PurchaseHub({
                     <MapPin className="size-4" aria-hidden /> Open pin in Maps
                   </a>
                 )}
-                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Use it only for this order. Prepaid only — never cash on delivery. Never ask for the courier&apos;s OTP.</p>
+                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Use it only for this order. Prepaid only — never cash on delivery. Never ask for delivery OTP.</p>
               </Panel>
             )}
 
@@ -281,7 +281,7 @@ export function PurchaseHub({
                     </>
                   )}
                 </ol>
-                {direct && <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Never share the courier&apos;s delivery OTP here. It&apos;s only for the courier.</p>}
+                {direct && <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Never share delivery OTP here.</p>}
               </Panel>
             )}
 
@@ -460,7 +460,7 @@ function AddressPanel({ view, busy, onShare, onRevoke }: {
 
   const editingShared = !!shared && line1 === shared;
   const placeOk = editingShared || (city.trim().length >= 2 && /^\d{6}$/.test(pin.trim()));
-  const valid = line1.trim().length >= 5 && placeOk && name.trim().length >= 2 && /^[0-9+\s-]{10,15}$/.test(phone.trim()) && consent;
+  const valid = line1.trim().length >= 5 && placeOk && consent;
   const joined = editingShared
     ? line1.trim()
     : [line1.trim(), area.trim(), landmark.trim() && `Near ${landmark.trim()}`, [city.trim(), pin.trim()].filter(Boolean).join(" - ")]
@@ -486,21 +486,21 @@ function AddressPanel({ view, busy, onShare, onRevoke }: {
         )}
         <div className="space-y-1.5 sm:col-span-2">
           <span className="text-[14px] font-bold text-stone-900 dark:text-stone-100">Pin the exact spot <span className="font-semibold text-[#5B6575]">(optional)</span></span>
-          <p className="text-[13px] text-[#5B6575] dark:text-stone-400">Helps the courier find your door. Your typed address is still what goes on the order.</p>
+          <p className="text-[13px] text-[#5B6575] dark:text-stone-400">Helps find your door. Your typed address is still what goes on the order.</p>
           <HandoverMapPinField lat={lat} lng={lng} disabled={busy !== null} onChange={(a, b) => { setLat(a); setLng(b); void fillFromPin(a, b); }} />
           {pinFill && <p role="status" className="text-[13px] font-semibold text-[#3D4756] dark:text-stone-300">{pinFill}</p>}
         </div>
-        <Field label="Name for the courier"><input className={input} value={name} maxLength={100} autoComplete="name" onChange={e => setName(e.target.value)} /></Field>
-        <Field label="Phone for the courier"><input className={input} inputMode="tel" value={phone} maxLength={15} autoComplete="tel" onChange={e => setPhone(e.target.value)} /></Field>
       </div>
       <label className="mt-5 flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm leading-relaxed text-stone-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-300">
         <input type="checkbox" className="mt-0.5 size-5 shrink-0" checked={consent} onChange={e => setConsent(e.target.checked)} />
-        <span>I agree to share this address, name and phone with this donor only, so they can enter it at the shop for this order. If I stop sharing later, the donor won&apos;t see it again — but it can&apos;t undo what they or the shop have already seen.</span>
+        <span>I agree to share this address with this donor only, so they can enter it at the shop for this order. If I stop sharing later, the donor won&apos;t see it again — but it can&apos;t undo what they or the shop have already seen.</span>
       </label>
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button type="button" className={primary} disabled={!valid || !!busy}
           onClick={() => void onShare({
-            address: joined, contactName: name.trim(), contactPhone: phone.trim(),
+            address: joined,
+            ...(name.trim() ? { contactName: name.trim() } : {}),
+            ...(phone.trim() ? { contactPhone: phone.trim() } : {}),
             ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
           }).then(ok => ok && setConsent(false))}>
           {busy === "address" && <Loader2 className="size-4 animate-spin" aria-hidden />} {view.address ? "Update and share" : "Share with the donor"}
@@ -508,7 +508,7 @@ function AddressPanel({ view, busy, onShare, onRevoke }: {
         {view.address && (
           <button type="button" className={secondary} disabled={!!busy} onClick={() => void onRevoke()}>Stop sharing</button>
         )}
-        <span className="text-xs text-stone-500 dark:text-stone-400">Delivery is prepaid — you never pay the courier.</span>
+        <span className="text-xs text-stone-500 dark:text-stone-400">Delivery is prepaid — you never pay on delivery.</span>
       </div>
     </Panel>
   );
