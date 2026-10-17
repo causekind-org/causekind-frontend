@@ -42,3 +42,12 @@
 .segBtn:first-child { border-left: 0; }
 .segOn { background: #1f1a17; color: #fff; }
 .err { color: #8f1d1d; font-weight: 600; font-size: 13px; }
+
+/* Applications / Publication review switch (owner, 2026-10-17: bordered buttons) */
+.switch { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.switchBtn {
+  display: inline-flex; align-items: center; min-height: 40px; padding: 0 16px; border-radius: 8px;
+  border: 1px solid #d6ccc1; background: #fff; color: #1f140c !important; font-weight: 600; font-size: 14px; text-decoration: none;
+}
+.switchBtn:hover { border-color: #b04a15; }
+.switchOn { background: #1f1a17; border-color: #1f1a17; color: #fff !important; }

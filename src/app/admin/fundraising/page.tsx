@@ -44,7 +44,7 @@ export default function AdminFundraisingQueuePage() {
   return (
     <div className={a.root}>
       <main className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
-        <div style={{ display: "flex", gap: 14 }} className={a.small}><strong>Applications</strong><Link href="/admin/fundraising/campaigns">Publication review</Link></div>
+        <nav className={a.switch} aria-label="Fundraising review"><span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Applications</span><Link href="/admin/fundraising/campaigns" className={a.switchBtn}>Publication review</Link></nav>
         <div><h1 className={a.serif} style={{ fontSize: 28 }}>Fundraising applications</h1><p className={a.muted}>Decide whether a donee can proceed with fundraising.</p></div>
         <nav className={a.tabs} aria-label="Filter by state">
           {FILTERS.map((f, i) => (
