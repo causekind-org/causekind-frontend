@@ -18,7 +18,7 @@ export function CampaignStatusView({ c }: { c: FundraisingCampaign }) {
     <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 22, maxWidth: 900 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <Link href="/fundraising" className={s.small} style={{ textDecoration: "none" }}>← Back to fundraisers</Link>
-        <CampaignChip status={c.status} />
+        <span style={{ alignSelf: "flex-start" }}><CampaignChip status={c.status} /></span>
         {c.status === "PUBLICATION_REVIEW" && <h1 className={s.serif} style={{ fontSize: 30 }}>Your fundraiser is being reviewed for publication.</h1>}
         {c.status === "APPROVED_SETUP_INCOMPLETE" && <h1 className={s.serif} style={{ fontSize: 30 }}>Your page is approved. One step left before it goes live.</h1>}
         {c.status === "PUBLICATION_DECLINED" && <h1 className={s.serif} style={{ fontSize: 30 }}>This page wasn&apos;t approved for publication</h1>}

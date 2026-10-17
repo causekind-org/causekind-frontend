@@ -41,7 +41,7 @@ export function StatusView({ app, onChange, justSubmitted }: { app: FundraisingA
         )}
         {!justSubmitted && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <StatusChip status={app.status} />
+            <span style={{ alignSelf: "flex-start" }}><StatusChip status={app.status} /></span>
             <h1 className={s.serif} style={{ fontSize: 30 }}>
               {app.status === "APPROVED" ? "Your application has been approved" :
                app.status === "INFORMATION_REQUESTED" ? "The reviewer has some questions" :
@@ -130,7 +130,7 @@ function NotApproved({ app }: { app: FundraisingApplication }) {
     <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24, maxWidth: 880 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <Link href="/fundraising" className={s.small} style={{ textDecoration: "none" }}>← Back to fundraisers</Link>
-        <StatusChip status="NOT_APPROVED" />
+        <span style={{ alignSelf: "flex-start" }}><StatusChip status="NOT_APPROVED" /></span>
         <h1 className={s.serif} style={{ fontSize: 32 }}>We couldn&apos;t approve this application</h1>
         <p className={s.muted}>Application {app.reference}{app.category ? ` · ${CATEGORY_LABEL[app.category]}` : ""} · decided {formatDate(app.decidedAt)}</p>
       </div>
