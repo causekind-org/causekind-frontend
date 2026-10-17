@@ -87,7 +87,7 @@ export default function AdminFundraisingReviewPage() {
           <section className={`${a.card} ${a.pane}`} aria-labelledby="need">
             <h2 id="need" className={a.h}>The need</h2>
             <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{app.whatHappened ?? "—"}</p>
-            <p className={`${a.small} ${a.muted}`}>Urgency: {app.urgency ?? "—"}</p>
+            <p className={`${a.small} ${a.muted}`}>Needed by: {app.urgency && /^\d{4}-\d{2}-\d{2}$/.test(app.urgency) ? formatDate(app.urgency) : app.urgency ?? "—"}</p>
           </section>
         </div>
 

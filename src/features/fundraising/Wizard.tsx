@@ -243,10 +243,12 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
         </fieldset>
         <div><label className={s.lbl} htmlFor="wh">What happened, and what help is needed?</label><textarea id="wh" className={s.in} rows={4} value={app.whatHappened ?? ""} onChange={(e) => set({ whatHappened: e.target.value })} maxLength={8000} style={{ resize: "vertical" }} /></div>
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="ur">How soon is it needed?</label>
-            <select id="ur" className={s.in} value={app.urgency ?? ""} onChange={(e) => set({ urgency: e.target.value })}>
-              <option value="">Choose</option>{["Within a week", "Within a month", "Within three months", "Not urgent"].map((o) => <option key={o}>{o}</option>)}
-            </select></div>
+          <div><label className={s.lbl} htmlFor="ur">When is the money needed by?</label>
+            {/* Stored as an ISO date (yyyy-mm-dd) in the urgency field. */}
+            <input id="ur" type="date" className={s.in} min={new Date().toISOString().slice(0, 10)}
+              value={/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? app.urgency! : ""}
+              onChange={(e) => set({ urgency: e.target.value })} />
+            <p className={s.hint}>The date of the surgery, fee deadline or bill — as exact as you can.</p></div>
           <div><label className={s.lbl} htmlFor="rq">Related CauseKind item request <span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span></label><input id="rq" className={s.in} inputMode="numeric" placeholder="Request number" value={app.linkedItemRequestId ?? ""} onChange={(e) => set({ linkedItemRequestId: num(e.target.value) })} /></div>
         </div>
 
