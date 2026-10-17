@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { FEATURES } from "@/lib/features";
-import { fundraising, type FundraisingQueueRow, type FundraisingStatus } from "@/lib/api";
+import { fundraising, ApiError, type FundraisingQueueRow, type FundraisingStatus } from "@/lib/api";
 import { CATEGORY_LABEL, StatusChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import a from "@/features/fundraising/admin.module.css";
 
@@ -23,11 +23,13 @@ export default function AdminFundraisingQueuePage() {
   const [filter, setFilter] = useState(0);
   const [rows, setRows] = useState<FundraisingQueueRow[] | null>(null);
   const [failed, setFailed] = useState(false);
+  const [serverOff, setServerOff] = useState(false);
   const [search, setSearch] = useState("");
 
   const load = useCallback(() => {
     setRows(null); setFailed(false);
-    fundraising.admin.queue(FILTERS[filter].status).then(setRows).catch(() => setFailed(true));
+    fundraising.admin.queue(FILTERS[filter].status).then(setRows)
+      .catch((e) => { setServerOff(e instanceof ApiError && e.status === 404); setFailed(true); });
   }, [filter]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
 
@@ -55,7 +57,9 @@ export default function AdminFundraisingQueuePage() {
 
         {failed ? (
           <div className={a.card} role="alert" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start", borderColor: "#e9b8b3" }}>
-            <strong className={a.err}>Couldn&apos;t load applications</strong><p className={a.muted}>Your filters are kept. Try again.</p>
+            {serverOff
+              ? <><strong className={a.err}>Fundraising is switched off on the server</strong><p className={a.muted}>Set FUNDRAISING_ENABLED=true for the backend and restart it.</p></>
+              : <><strong className={a.err}>Couldn&apos;t load applications</strong><p className={a.muted}>Your filters are kept. Try again.</p></>}
             <button type="button" className={`${a.btn} ${a.bs}`} onClick={load}>Retry</button>
           </div>
         ) : rows === null ? (
