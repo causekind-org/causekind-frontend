@@ -5582,6 +5582,7 @@ const FR = "/api/v1/fundraising/applications";
 const FR_ADMIN = "/api/v1/admin/fundraising/applications";
 
 export const fundraising = {
+  categories: () => request<FundraisingCategory[]>(`${FR}/categories`),
   mine: () => request<FundraisingApplication[]>(FR),
   create: () => request<FundraisingApplication>(FR, { method: "POST" }),
   get: (id: number) => request<FundraisingApplication>(`${FR}/${id}`),

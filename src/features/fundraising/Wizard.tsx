@@ -199,10 +199,12 @@ function WhoNeedsHelp({ app, set, onBack, onNext }: { app: FundraisingApplicatio
 
 // F05 — A3 The need and funding gap
 const CATEGORIES: FundraisingCategory[] = ["MEDICAL", "EDUCATION", "EMERGENCY_HOUSEHOLD", "OTHER"];
-const OPEN: FundraisingCategory[] = ["MEDICAL", "EDUCATION"];
 
 function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; set: SetFn; onBack: () => void; onNext: () => void }) {
   const [tried, setTried] = useState(false);
+  // Which categories are open is the backend's fundraising.categories setting.
+  const [OPEN, setOpen] = useState<FundraisingCategory[]>([]);
+  useEffect(() => { fundraising.categories().then(setOpen).catch(() => setOpen([])); }, []);
   const costs = app.costItems.length ? app.costItems : [{ expense: "", amount: null, reference: null }];
   const setCosts = (next: FundraisingCostItem[]) => set({ costItems: next.filter((c) => c.expense.trim() !== "" || c.amount != null) });
   const edit = (i: number, patch: Partial<FundraisingCostItem>) => setCosts(costs.map((c, j) => (j === i ? { ...c, ...patch } : c)));
@@ -250,6 +252,9 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
           <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}>Cost breakdown</h2>
+          <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
+            <span>Expense</span><span style={{ textAlign: "right" }}>Estimated amount (₹)</span><span>Supporting reference</span><span />
+          </div>
           {costs.map((c, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, alignItems: "start" }}>
               <input className={s.in} aria-label={`Expense ${i + 1}`} value={c.expense} onChange={(e) => edit(i, { expense: e.target.value })} maxLength={160} />
