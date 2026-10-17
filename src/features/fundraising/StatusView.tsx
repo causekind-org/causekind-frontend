@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "@/components/AppLink";
-import { fundraising, ApiError, type FundraisingApplication } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { fundraising, fundraisingCampaigns, ApiError, type FundraisingApplication } from "@/lib/api";
 import { CATEGORY_LABEL, Icon, StatusChip, formatDate } from "./ui";
 import s from "./fundraising.module.css";
 
@@ -55,8 +56,7 @@ export function StatusView({ app, onChange, justSubmitted }: { app: FundraisingA
             <h2 id="ap" style={{ fontSize: 16, fontWeight: 700 }}>Finish your fundraiser page and submit it for publication.</h2>
             {app.decisionReason && <p>{app.decisionReason}</p>}
             {app.decisionConditions && <p className={s.small}><strong>Condition:</strong> {app.decisionConditions}</p>}
-            <div><span className={`${s.btn} ${s.bp}`} aria-disabled="true">Prepare fundraiser</span></div>
-            <p className={`${s.muted} ${s.small}`}>Preparing the campaign page arrives in the next release.</p>
+            <div><PrepareButton applicationId={app.id} /></div>
           </section>
         )}
 
@@ -155,5 +155,23 @@ function NotApproved({ app }: { app: FundraisingApplication }) {
       </section>
       <p className={`${s.muted} ${s.small}`}>This decision doesn&apos;t change any earlier approval you hold, or any campaign already live.</p>
     </main>
+  );
+}
+
+/** Opens the campaign draft for this approved application, creating it the first time. */
+function PrepareButton({ applicationId }: { applicationId: number }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function go() {
+    setBusy(true); setError(null);
+    try { const c = await fundraisingCampaigns.fromApplication(applicationId); router.push(`/fundraising/campaigns/${c.id}`); }
+    catch (e) { setError(e instanceof ApiError ? e.message : "Couldn't open the campaign. Try again."); setBusy(false); }
+  }
+  return (
+    <>
+      <button type="button" className={`${s.btn} ${s.bp}`} onClick={go} disabled={busy}>{busy ? "Opening…" : "Prepare fundraiser"}</button>
+      {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
+    </>
   );
 }

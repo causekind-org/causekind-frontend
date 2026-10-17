@@ -5623,3 +5623,73 @@ export const fundraising = {
       request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/not-approve`, { method: "POST", body: JSON.stringify(body) }),
   },
 };
+
+// ── Fundraising campaigns (Phase B, 2026-10-17) ─────────────────────────────
+// Backend: FundraisingCampaignController / AdminFundraisingCampaignController.
+
+export type CampaignFlowStatus =
+  | "DRAFT" | "PUBLICATION_REVIEW" | "CHANGES_REQUESTED" | "PUBLICATION_DECLINED"
+  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED";
+export type NameVisibility = "FULL" | "FIRST_NAME" | "HIDDEN";
+export type LocationVisibility = "CITY" | "STATE" | "HIDDEN";
+export type CampaignCostRow = { expense: string; amount: number | null; reference: string | null; approvedAmount: number | null; changed: boolean };
+export type FundraisingCampaign = {
+  id: number; version: number; status: CampaignFlowStatus; applicationId: number | null; applicationReference: string | null;
+  category: FundraisingCategory | null; title: string | null; story: string | null; beneficiaryDisplayName: string | null;
+  organiserName: string; city: string | null; state: string | null;
+  coverUrl: string | null; coverAltText: string | null; coverConsent: boolean;
+  targetAmount: number | null; approvedTarget: number | null; endDate: string | null;
+  costItems: CampaignCostRow[]; totalCosts: number; otherHelp: number; remainingGap: number;
+  changeReason: string | null; hasMaterialChanges: boolean;
+  beneficiaryNameVisibility: NameVisibility | null; organiserNameVisibility: NameVisibility | null;
+  locationVisibility: LocationVisibility | null; publicEvidenceIds: number[];
+  selectableEvidence: { evidenceId: number; type: string; fileName: string | null }[];
+  reviewerMessage: string | null; submittedAt: string | null; decidedAt: string | null;
+  paymentSetupComplete: boolean; missing: string[]; createdAt: string; updatedAt: string;
+};
+export type FundraisingCampaignSave = {
+  title?: string; story?: string; beneficiaryDisplayName?: string; coverAltText?: string; coverConsent?: boolean;
+  targetAmount?: number | null; endDate?: string | null; costItems?: FundraisingCostItem[]; changeReason?: string;
+  beneficiaryNameVisibility?: NameVisibility; organiserNameVisibility?: NameVisibility;
+  locationVisibility?: LocationVisibility; publicEvidenceIds?: number[];
+};
+export type FundraisingAdminCampaign = {
+  campaign: FundraisingCampaign; applicantName: string; applicantEmail: string; internalNote: string | null; decidedBy: string | null;
+};
+export type FundraisingCampaignQueueRow = {
+  id: number; title: string | null; organiserName: string; category: FundraisingCategory | null;
+  targetAmount: number | null; submittedAt: string | null; status: CampaignFlowStatus; hasMaterialChanges: boolean;
+};
+
+const FC = "/api/v1/fundraising/campaigns";
+const FC_ADMIN = "/api/v1/admin/fundraising/campaigns";
+
+export const fundraisingCampaigns = {
+  mine: () => request<FundraisingCampaign[]>(FC),
+  fromApplication: (applicationId: number) => request<FundraisingCampaign>(`${FC}/from-application/${applicationId}`, { method: "POST" }),
+  get: (id: number) => request<FundraisingCampaign>(`${FC}/${id}`),
+  save: (id: number, body: FundraisingCampaignSave) => request<FundraisingCampaign>(`${FC}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  submit: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/submit`, { method: "POST" }),
+  cancel: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/cancel`, { method: "POST" }),
+  async uploadCover(id: number, file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${FC}/${id}/cover`, { method: "POST", credentials: "include", body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? "Upload failed. The photo is still on your device — try again.", body);
+    }
+    invalidateRequestCache();
+    return (await res.json()) as FundraisingCampaign;
+  },
+  admin: {
+    queue: (status?: CampaignFlowStatus) => request<FundraisingCampaignQueueRow[]>(status ? `${FC_ADMIN}?status=${status}` : FC_ADMIN),
+    get: (id: number) => request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}`),
+    requestChanges: (id: number, body: { expectedVersion: number; message: string; internalNote?: string }) =>
+      request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}/request-changes`, { method: "POST", body: JSON.stringify(body) }),
+    approve: (id: number, body: { expectedVersion: number; message?: string; internalNote: string }) =>
+      request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}/approve`, { method: "POST", body: JSON.stringify(body) }),
+    decline: (id: number, body: { expectedVersion: number; reason: string; internalNote: string }) =>
+      request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}/decline`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};

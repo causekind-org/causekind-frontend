@@ -92,3 +92,37 @@ export const CATEGORY_LABEL = {
   EMERGENCY_HOUSEHOLD: "Emergency household support",
   OTHER: "Other",
 } as const;
+
+/** Campaign status chip per handoff §3.3. */
+const CAMPAIGN: Record<string, { label: string; tone: string; icon: "check" | "alert" | "clock" | "x" | "edit" | "search" }> = {
+  DRAFT: { label: "Draft", tone: s.cW, icon: "edit" },
+  PUBLICATION_REVIEW: { label: "Publication review", tone: s.cN, icon: "search" },
+  CHANGES_REQUESTED: { label: "Changes requested", tone: s.cW, icon: "edit" },
+  PUBLICATION_DECLINED: { label: "Publication declined", tone: s.cM, icon: "x" },
+  APPROVED_SETUP_INCOMPLETE: { label: "Approved — setup incomplete", tone: s.cOk, icon: "check" },
+  APPROVED: { label: "Live", tone: s.cOk, icon: "check" },
+  CANCELLED: { label: "Cancelled", tone: s.cM, icon: "x" },
+  PENDING_APPROVAL: { label: "Pending approval", tone: s.cN, icon: "clock" },
+  REJECTED: { label: "Rejected", tone: s.cM, icon: "x" },
+};
+
+export function CampaignChip({ status }: { status: string }) {
+  const c = CAMPAIGN[status] ?? { label: status, tone: s.cM, icon: "clock" as const };
+  return <span className={`${s.chip} ${c.tone}`}><Icon name={c.icon} />{c.label}</span>;
+}
+
+export const CAMPAIGN_STEPS = ["Basics", "Story", "Target", "Privacy", "Preview"] as const;
+
+export function CampaignStepper({ current }: { current: number }) {
+  return (
+    <nav aria-label="Campaign steps">
+      <ol className={s.steps}>
+        {CAMPAIGN_STEPS.map((label, i) => (
+          <li key={label} className={`${s.st} ${i === current ? s.stOn : ""} ${i < current ? s.stDone : ""}`} aria-current={i === current ? "step" : undefined}>
+            <b>{i < current ? "✓" : i + 1}</b>{label}
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}

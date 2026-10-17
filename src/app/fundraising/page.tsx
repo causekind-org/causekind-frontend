@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
-import { fundraising, type FundraisingApplication } from "@/lib/api";
+import { fundraising, fundraisingCampaigns, type FundraisingApplication, type FundraisingCampaign } from "@/lib/api";
 import { DoneeGate } from "@/features/fundraising/DoneeGate";
-import { Icon, StatusChip, CATEGORY_LABEL, formatDate } from "@/features/fundraising/ui";
+import { CampaignChip, Icon, StatusChip, CATEGORY_LABEL, formatDate } from "@/features/fundraising/ui";
 import s from "@/features/fundraising/fundraising.module.css";
 
 /** F01 — Donee dashboard fundraising area (canvas artboard Main.dc.html). */
@@ -20,8 +20,11 @@ function Dashboard() {
   const [apps, setApps] = useState<FundraisingApplication[] | null>(null);
   const [failed, setFailed] = useState(false);
 
+  const [campaigns, setCampaigns] = useState<FundraisingCampaign[] | null>(null);
+
   useEffect(() => {
     fundraising.mine().then(setApps).catch(() => setFailed(true));
+    fundraisingCampaigns.mine().then(setCampaigns).catch(() => setCampaigns([]));
   }, []);
 
   // Reusable-eligibility variant (handoff §3.2): the panel cites the approval
@@ -92,11 +95,28 @@ function Dashboard() {
       )}
 
       <section aria-labelledby="camps" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        <h2 id="camps" className={s.serif} style={{ fontSize: 22 }}>Campaigns</h2>
-        <div className={s.card} style={{ padding: "24px 20px", textAlign: "center", display: "flex", flexDirection: "column", gap: 6, alignItems: "center", background: "#fbf8f4", borderStyle: "dashed" }}>
-          <strong>No campaigns yet</strong>
-          <p className={`${s.muted} ${s.small}`}>After your application is approved, your campaigns will appear here.</p>
-        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}><h2 id="camps" className={s.serif} style={{ fontSize: 22 }}>Campaigns</h2>{campaigns && campaigns.length > 0 && <span className={`${s.muted} ${s.small}`}>Needs your action first</span>}</div>
+        {campaigns && campaigns.length > 0 ? (
+          <div className={s.card} style={{ overflow: "hidden" }}>
+            {[...campaigns].sort((x, y) => rank(x.status) - rank(y.status)).map((c) => (
+              <div key={c.id} className={s.row}>
+                <CampaignChip status={c.status} />
+                <div className={s.grow}>
+                  <strong>{c.title || "Untitled campaign"}</strong>
+                  <div className={`${s.muted} ${s.small}`}>{CAMPAIGN_DETAIL[c.status] ?? ""}{c.status === "DRAFT" && c.missing.length ? ` · ${c.missing.length} thing(s) left` : ""}</div>
+                </div>
+                <Link href={`/fundraising/campaigns/${c.id}`} className={`${s.btn} ${c.status === "DRAFT" || c.status === "CHANGES_REQUESTED" ? s.bp : s.bs}`}>
+                  {c.status === "DRAFT" ? "Continue campaign" : c.status === "CHANGES_REQUESTED" ? "Make changes" : c.status === "APPROVED_SETUP_INCOMPLETE" ? "View setup requirements" : "View"}
+                </Link>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className={s.card} style={{ padding: "24px 20px", textAlign: "center", display: "flex", flexDirection: "column", gap: 6, alignItems: "center", background: "#fbf8f4", borderStyle: "dashed" }}>
+            <strong>No campaigns yet</strong>
+            <p className={`${s.muted} ${s.small}`}>After your application is approved, your campaigns will appear here.</p>
+          </div>
+        )}
       </section>
 
       {history.length > 0 && (
@@ -148,4 +168,18 @@ function ApplicationRow({ app, hasGrant }: { app: FundraisingApplication; hasGra
       <Link href={a.href} className={`${s.btn} ${a.primary ? s.bp : s.bs}`}>{a.label}</Link>
     </div>
   );
+}
+
+const CAMPAIGN_DETAIL: Record<string, string> = {
+  DRAFT: "Not public yet",
+  CHANGES_REQUESTED: "The reviewer asked for changes",
+  PUBLICATION_REVIEW: "Being reviewed for publication · not public",
+  APPROVED_SETUP_INCOMPLETE: "Approved · not public · payment setup requirements to be defined",
+  PUBLICATION_DECLINED: "Not approved for publication",
+  CANCELLED: "Cancelled before publication · no donations",
+};
+
+/** "Needs your action" first (handoff §4.2), then in-review, then finished. */
+function rank(status: string) {
+  return ({ CHANGES_REQUESTED: 0, DRAFT: 1, PUBLICATION_REVIEW: 2, APPROVED_SETUP_INCOMPLETE: 3, APPROVED: 3, PUBLICATION_DECLINED: 4, CANCELLED: 5 } as Record<string, number>)[status] ?? 6;
 }
