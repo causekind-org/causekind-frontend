@@ -30,19 +30,6 @@ const MAX_FLICK = 9;
 const STAGGER_LAG_STRENGTH = 0.85;
 const MIN_FOLLOW_FRACTION = 0.6;
 
-/** Desktop (lg, >=1024px) gets the original, taller stage. */
-function useIsDesktop() {
-  const [matches, setMatches] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    setMatches(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setMatches(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return matches;
-}
-
 function usePrefersReducedMotion() {
   const [matches, setMatches] = useState(false);
   useEffect(() => {
@@ -62,7 +49,6 @@ export function ImpactCarousel() {
   const innerRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const reduceMotion = usePrefersReducedMotion();
-  const isDesktop = useIsDesktop();
 
   /**
    * Whether the clips may start downloading.
@@ -141,25 +127,19 @@ export function ImpactCarousel() {
     // cap alone is not enough — the arc has to be lifted too or the outer cards
     // still drop out of the frame.
     //
-    // Desktop (>=1024px) is the exception: owner asked for the original,
-    // larger fan there — width-only card size, 0.85 radius, 0.5 arc centre.
-    const isDesktop = width >= 1024;
     const cardWidthFittingHeight = height * 0.68 * cardAspect;
-    const cardWidth = isDesktop
-      ? gsap.utils.clamp(minCardWidth, maxCardWidth, width * cardRatio)
-      : gsap.utils.clamp(
-          dynamicMinCardWidth,
-          Math.max(dynamicMinCardWidth, Math.min(maxCardWidth, cardWidthFittingHeight)),
-          width * dynamicCardRatio,
-        );
+    const cardWidth = gsap.utils.clamp(
+      dynamicMinCardWidth,
+      Math.max(dynamicMinCardWidth, Math.min(maxCardWidth, cardWidthFittingHeight)),
+      width * dynamicCardRatio,
+    );
     const cardHeight = cardWidth / cardAspect;
-    const radius = Math.max(width * (isDesktop ? 0.85 : radiusRatio), cardWidth * 4.2);
+    const radius = Math.max(width * radiusRatio, cardWidth * 4.2);
     const step = (cardWidth * (1 - gsap.utils.clamp(-0.5, 0.85, overlap))) / radius;
     const centerX = width / 2;
     // Shift the arc higher so the outer cards, which hang lower on the circle,
-    // stay inside the frame. Desktop was `arcOffset` (0.5), which put the centre
-    // low enough that anything off-centre dropped past the bottom edge.
-    const dynamicArcOffset = isDesktop ? arcOffset : 0.42;
+    // stay inside the frame.
+    const dynamicArcOffset = 0.42;
     const centerY = height * dynamicArcOffset + radius;
     const discRadius = radius - cardHeight * 0.66;
     const reach = Math.min(1, (width / 2 + cardWidth * 1.2) / radius);
@@ -467,8 +447,8 @@ export function ImpactCarousel() {
           keeps the value next to the code that depends on it. The clamp covers
           phone and tablet; desktop restores the original 85vh / min 650px. */}
       <div
-        className="relative pb-4 lg:pb-24 mt-2 sm:mt-3 lg:mt-4"
-        style={{ height: isDesktop ? 'max(650px, 85dvh)' : 'clamp(300px, 52dvh, 480px)' }}
+        className="relative pb-4 lg:pb-8 mt-2 sm:mt-3"
+        style={{ height: 'clamp(300px, 52dvh, 480px)' }}
       >
         <div
           ref={stageRef}
