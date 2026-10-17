@@ -66,8 +66,23 @@ describe("purchaseStage", () => {
     const bought = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "ORDER_PLACED" });
     expect(purchaseStage(bought, "ADMIN_APPROVED")).toBe("AWAITING_ITEM_PHOTO");
     const photo = { ...bought, evidence: [{ id: 1, type: "ITEM_PHOTO" as const, url: "u", uploadedAt: "x", screeningAvailable: true, prohibited: false, uploadedByRole: "DONOR" as const }] };
-    expect(purchaseStage(photo, "ADMIN_APPROVED")).toBe("AWAITING_PROOF_REVIEW");
+    expect(purchaseStage({ ...photo, status: "PROOF_UPLOADED" }, "ADMIN_APPROVED")).toBe("AWAITING_PROOF_REVIEW");
     expect(purchaseStage({ ...photo, status: "READY_FOR_HANDOVER" }, "ADMIN_APPROVED")).toBe("READY_FOR_HANDOVER");
+  });
+
+  it("a rejected item photo asks the donor for a new one, with the reason", () => {
+    const rejected = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "ORDER_PLACED",
+      proofRejectionReason: "The photo is blurry.",
+      evidence: [{ id: 1, type: "ITEM_PHOTO", url: "u", uploadedAt: "x", screeningAvailable: true, prohibited: false, uploadedByRole: "DONOR" }] });
+    const stage = purchaseStage(rejected, "ADMIN_APPROVED");
+    expect(stage).toBe("AWAITING_ITEM_PHOTO");
+    expect(purchaseNextAction(stage, "DONOR", rejected)).toContain("The photo is blurry.");
+    expect(purchaseNextAction(stage, "DONEE", rejected)).not.toContain("blurry");
+  });
+
+  it("in person, the recipient closes the issue window on the handover page", () => {
+    const view = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "READY_FOR_HANDOVER" });
+    expect(purchaseNextAction(purchaseStage(view, "ISSUE_WINDOW_OPEN"), "DONEE", view)).toContain("handover page");
   });
 
   it("a retailer 'delivered' report is still in transit until the donee confirms", () => {

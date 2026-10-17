@@ -98,7 +98,12 @@ export function PurchaseHub({
   }
 
   const orderedOpen = !!view.orderedAt && !["ISSUE_OPEN", "COMPLETED", "CLOSED", "ISSUE_WINDOW"].includes(stage);
-  const handoverStage = stage === "READY_FOR_HANDOVER" || (!direct && ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"].includes(offer.status));
+  // In person, the handover page owns the handover and its issue window ("Everything's fine" / report).
+  const physicalWindow = !direct && stage === "ISSUE_WINDOW";
+  const handoverStage = stage === "READY_FOR_HANDOVER" || physicalWindow
+    || (!direct && ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"].includes(offer.status));
+  // Before approval the buying window is provisional: it restarts in full when our team approves.
+  const beforeApproval = offer.status === "DONOR_RECONFIRMATION_REQUIRED" || stage === "AWAITING_ADDRESS" || stage === "AWAITING_APPROVAL";
   const plan = offer.purchaseCommitment;
   const inTransit = stage === "IN_TRANSIT" || stage === "PARTIALLY_RECEIVED" || stage === "DELIVERED";
   const openIssue = view.issues.find(i => !i.resolvedAt);
@@ -112,13 +117,14 @@ export function PurchaseHub({
   const showPhoto = donor && !direct && (stage === "AWAITING_ITEM_PHOTO" || stage === "AWAITING_PROOF_REVIEW");
   // After the recipient accepts, the donor confirms here that they'll still buy it.
   const showReconfirm = donor && offer.status === "DONOR_RECONFIRMATION_REQUIRED";
+  const showReview = donee && stage === "AWAITING_ACCEPTANCE";
   // Whether the main column has a form for this viewer; otherwise it explains the wait.
-  const hasMainAction = showAddress || showExtensionDecision || showPhoto || showReconfirm
+  const hasMainAction = showAddress || showExtensionDecision || showPhoto || showReconfirm || showReview
     || (donor && stage === "READY_TO_BUY")
     || (direct && inTransit && (donor || donee))
     || (donee && direct && stage === "ISSUE_WINDOW")
     || showDeliveryProof || canRespond || (donee && direct && stage === "ISSUE_OPEN")
-    || (direct && stage === "COMPLETED" && (donor || donee));
+    || (stage === "COMPLETED" && (donor || donee));
 
   return (
     <div className="min-h-screen bg-[#F4F6F9] text-[#1B2430] dark:bg-zinc-950 dark:text-stone-100" style={{ fontFamily: "var(--font-nunito), system-ui, sans-serif" }}>
@@ -145,7 +151,7 @@ export function PurchaseHub({
           <div className="flex flex-wrap gap-3">
             {!view.orderedAt && view.deadline && (
               <Tile label={donor ? (direct ? "Order by" : "Buy by") : (direct ? "Donor orders by" : "Donor buys by")}
-                value={formatShort(view.deadline)} sub={daysLeft(view.deadline)} />
+                value={formatShort(view.deadline)} sub={beforeApproval ? "Restarts when our team approves" : daysLeft(view.deadline)} />
             )}
             {view.orderedAt && view.expectedDeliveryAt && (
               <Tile label={direct ? "Expected delivery" : "Ready from"} value={formatShort(view.expectedDeliveryAt)} sub={view.retailer ?? undefined} />
@@ -157,9 +163,9 @@ export function PurchaseHub({
 
         <ProgressBar stage={stage} role={role} direct={direct} />
 
-        {handoverStage && (
+        {handoverStage && (donor || donee) && (
           <Link href={`/offers/${id}/handover`} className={`${primary} self-start`}>
-            <Handshake className="size-4" aria-hidden /> Arrange handover
+            <Handshake className="size-4" aria-hidden /> {physicalWindow ? (donee ? "Confirm or report on the handover page" : "Open the handover page") : "Arrange handover"}
           </Link>
         )}
 
@@ -177,6 +183,26 @@ export function PurchaseHub({
                   {busy === "reconfirm" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Yes, I&apos;ll buy it
                 </button>
                 <p className="mt-3 text-[13px] text-stone-500 dark:text-stone-400">Can&apos;t buy it any more? Withdraw the offer from your offers page so another donor can help.</p>
+              </Panel>
+            )}
+
+            {showReview && (
+              <Panel title="Review the proposal" icon={<FileText className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+                <p className="mb-4 text-[15px] text-[#3D4756] dark:text-stone-300">
+                  Check what the donor plans to buy and how it reaches you, then accept or decline it on your offers page.
+                  {direct ? " After you accept, you'll share a delivery address here." : " After you accept, you'll meet the donor for an in-person handover."}
+                </p>
+                <Link href="/donee/offers" className={primary}>Review on my offers page</Link>
+              </Panel>
+            )}
+
+            {showReview && (
+              <Panel title="Review the proposal" icon={<FileText className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+                <p className="mb-4 text-[15px] text-[#3D4756] dark:text-stone-300">
+                  Check what the donor plans to buy and how it reaches you, then accept or decline it on your offers page.
+                  {direct ? " After you accept, you'll share a delivery address here." : " After you accept, you'll meet the donor for an in-person handover."}
+                </p>
+                <Link href="/donee/offers" className={primary}>Review on my offers page</Link>
               </Panel>
             )}
 
@@ -201,15 +227,29 @@ export function PurchaseHub({
             {donor && stage === "READY_TO_BUY" && (
               <OrderPanel view={view} direct={direct} busy={busy}
                 blocked={direct && !view.evidence.some(e => e.type === "ORDER_CONFIRMATION")}
-                onSubmit={data => run("order", () => recordPurchaseOrder(id, data), direct ? "Order recorded" : "Purchase recorded")} />
+                onSubmit={data => run("order", () => recordPurchaseOrder(id, data), direct ? "Order recorded" : "Purchase recorded — now upload a photo of the item")} />
+            )}
+
+            {donor && stage === "READY_TO_BUY" && (
+              <p className="text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
+                Can&apos;t buy it after all? Approved offers can&apos;t be withdrawn here — ask for more time, or{" "}
+                <Link href="/contact" className="font-bold text-[var(--ck-role-accent)] underline">contact support</Link> so the recipient isn&apos;t left waiting.
+              </p>
             )}
 
             {showPhoto && (
               <>
-                <EvidencePanel title={stage === "AWAITING_ITEM_PHOTO" ? "Upload a photo of the item" : "Replace the item photo"} type="ITEM_PHOTO" busy={busy} accept="image/*"
+                {stage === "AWAITING_ITEM_PHOTO" && view.proofRejectionReason && (
+                  <div role="alert" className="flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-[15px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                    <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden />
+                    <p><strong>Our team couldn&apos;t accept the last photo.</strong> {view.proofRejectionReason} Upload a new photo below.</p>
+                  </div>
+                )}
+                <EvidencePanel title={stage === "AWAITING_ITEM_PHOTO" ? (view.proofRejectionReason ? "Upload a new photo of the item" : "Upload a photo of the item") : "Replace the item photo"} type="ITEM_PHOTO" busy={busy} accept="image/*"
                   hint="A clear, recent photo of the actual item you bought. This is not the handover photo — that comes later."
                   done={stage === "AWAITING_PROOF_REVIEW"}
-                  onUpload={f => run("upload", () => uploadFlowBProof(id, "ITEM_PHOTO", f), "Photo uploaded for review")} />
+                  doneText="Photo uploaded — our team is checking it. You can replace it until it's approved."
+                  onUpload={f => run("upload", () => uploadFlowBProof(id, "ITEM_PHOTO", f), "Photo uploaded — our team will check it before the handover")} />
                 <EvidencePanel title="Receipt (optional, private)" type="RECEIPT" busy={busy}
                   hint="Only our team sees it. Hide payment details."
                   done={view.evidence.some(e => e.type === "RECEIPT")}
@@ -260,10 +300,10 @@ export function PurchaseHub({
                 onUpload={f => run("upload", () => uploadPurchaseRecipientEvidence(id, "ISSUE_EVIDENCE", f), "Evidence added")} />
             )}
 
-            {direct && stage === "COMPLETED" && (donor || donee) && (
+            {stage === "COMPLETED" && (donor || donee) && (
               <Panel title="Donation complete" icon={<Award className="size-5 text-green-700" aria-hidden />}>
                 <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
-                  {view.receivedQuantity ?? 0} of {view.acceptedQuantity ?? "—"} received and confirmed.
+                  {view.receivedQuantity ?? 0} of {view.acceptedQuantity ?? "—"} {direct ? "received" : "handed over"} and confirmed.
                   {donor ? " Your certificate covers only what was received." : " Thank you for confirming."}
                 </p>
                 {/* Certificates are the donor's; the server refuses anyone else. */}
@@ -345,7 +385,7 @@ export function PurchaseHub({
                     <>
                       <li>You share an address. Our team approves the offer.</li>
                       <li>The donor places a prepaid order and uploads the confirmation.</li>
-                      <li>When the parcel arrives, you confirm what came — or report a problem.</li>
+                      <li>When the parcel arrives, you take a photo of what came and confirm it — or report a problem.</li>
                     </>
                   ) : (
                     <>
@@ -389,6 +429,9 @@ export function PurchaseHub({
               <div className="flex flex-col gap-2">
                 {(donor || donee) && (orderedOpen || (stage === "ISSUE_WINDOW" && direct)) && (
                   <IssuePanel busy={busy} onSubmit={data => run("issue", () => reportPurchaseIssue(id, data), "Problem reported — support will follow up")} />
+                )}
+                {(donor || donee) && physicalWindow && (
+                  <Link href={`/offers/${id}/handover`} className={secondary}>Report a problem on the handover page</Link>
                 )}
                 <Link href="/contact" className={secondary}>Contact support</Link>
               </div>

@@ -68,7 +68,8 @@ export function PurchaseQueuePanel() {
         const text = reason[r.offerId] ?? "";
         const reasonOk = text.trim().length >= 10;
         const proofPending = r.method === "BUY_AND_HAND_OVER" && r.status === "PROOF_UPLOADED";
-        const issue = r.status === "ISSUE_RAISED";
+        // An in-person problem raised on the handover page flags the offer, not the purchase.
+        const issue = r.status === "ISSUE_RAISED" || r.offerStatus === "ISSUE_RAISED";
         // Evidence-based fallback: escalated silence, donor proof on file, nothing under review.
         const fallback = r.method === "DIRECT_DELIVERY" && !!r.deliveryEscalatedAt && !issue
           && r.evidence.some(e => e.type === "DELIVERY_PROOF");
