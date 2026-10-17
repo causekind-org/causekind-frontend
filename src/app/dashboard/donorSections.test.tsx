@@ -116,6 +116,27 @@ describe("donor dashboard sections", () => {
     await openTab(/Your Offers/);
   });
 
+  it("filters the inventory by status group with counts, hiding empty groups", async () => {
+    mocks.listings.mockResolvedValue([
+      listing(1, "DRAFT"), listing(2, "DRAFT"), listing(3, "AVAILABLE"), listing(4, "MATCHED"),
+    ]);
+    render(<DashboardPage />);
+    await openTab(/Your Inventory/);
+
+    const chips = await screen.findByRole("group", { name: /Filter your inventory/ });
+    expect(within(chips).getByRole("button", { name: /All 4/ })).toHaveAttribute("aria-pressed", "true");
+    expect(within(chips).queryByRole("button", { name: /Paused/ })).toBeNull();
+
+    await userEvent.click(within(chips).getByRole("button", { name: /Drafts 2/ }));
+    expect(screen.getByText("Listed laptop 1")).toBeInTheDocument();
+    expect(screen.getByText("Listed laptop 2")).toBeInTheDocument();
+    expect(screen.queryByText("Listed laptop 3")).toBeNull();
+
+    await userEvent.click(within(chips).getByRole("button", { name: /Live · matching 1/ }));
+    expect(screen.getByText("Listed laptop 3")).toBeInTheDocument();
+    expect(screen.queryByText("Listed laptop 1")).toBeNull();
+  });
+
   it("switching tabs shows only that section and remembers it in the URL", async () => {
     mocks.listings.mockResolvedValue([listing(1, "AVAILABLE")]);
     render(<DashboardPage />);

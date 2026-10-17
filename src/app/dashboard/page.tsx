@@ -52,6 +52,7 @@ import { MatchOpportunitiesWindow } from "@/components/MatchOpportunitiesWindow"
 import MatchChatPopup from "@/components/MatchChatPopup";
 import { OfferJourney, donorJourneyIndex } from "@/components/OfferJourney";
 import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
+import { INVENTORY_FILTERS, inventoryCounts, matchesInventoryFilter, type InventoryFilter } from "./inventoryFilters";
 
 // Once both parties accept, scheduling/confirmation/chat all live on the
 // Handover Hub page instead of inline dashboard forms.
@@ -1986,6 +1987,7 @@ export default function DashboardPage() {
   // Listing action state
   const [listingActionLoading, setListingActionLoading] = useState<number | null>(null);
   const [selectedListing, setSelectedListing] = useState<ItemListing | null>(null);
+  const [inventoryFilter, setInventoryFilter] = useState<InventoryFilter>("all");
 
   // Donor review state
   const [declineMatchId, setDeclineMatchId] = useState<number | null>(null);
@@ -2366,8 +2368,42 @@ export default function DashboardPage() {
                           </Link>
                         </div>
                       ) : (
+                        <>
+                        {/* Status filters — one chip per group, hidden when empty
+                            so a donor with three drafts sees two chips, not nine. */}
+                        {(() => {
+                          const counts = inventoryCounts(itemListings.map(l => l.status));
+                          const chips = [{ key: "all" as InventoryFilter, label: "All" }, ...INVENTORY_FILTERS]
+                            .filter(f => f.key === "all" || counts[f.key] > 0);
+                          return (
+                            <div role="group" aria-label="Filter your inventory" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+                              {chips.map(f => {
+                                const active = inventoryFilter === f.key;
+                                return (
+                                  <button
+                                    key={f.key}
+                                    type="button"
+                                    aria-pressed={active}
+                                    onClick={() => setInventoryFilter(f.key)}
+                                    className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold transition-colors ${active
+                                      ? "border-[var(--ck-role-accent)] bg-[var(--ck-role-accent)] text-white"
+                                      : "border-stone-300 text-stone-600 hover:border-stone-500 dark:border-zinc-700 dark:text-stone-300"}`}
+                                  >
+                                    {f.label} <span className={active ? "opacity-80" : "text-stone-400"}>{counts[f.key]}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
+                        {itemListings.every(l => !matchesInventoryFilter(l.status, inventoryFilter)) && (
+                          <p className="py-6 text-center text-sm text-stone-400">
+                            Nothing here right now.{" "}
+                            <button type="button" onClick={() => setInventoryFilter("all")} className="font-bold text-[var(--ck-role-accent)] hover:underline">Show all</button>
+                          </p>
+                        )}
                         <div className="divide-y dark:divide-zinc-800 space-y-2">
-                          {itemListings.map((l) => {
+                          {itemListings.filter(l => matchesInventoryFilter(l.status, inventoryFilter)).map((l) => {
                             const meta = LISTING_STATUS_META[l.status] ?? { label: l.status, color: "text-stone-500", bg: "bg-stone-100", border: "border-stone-200" };
                             const isDraft = l.status === "DRAFT";
                             const needsInfo = l.status === "NEEDS_INFORMATION";
@@ -2490,6 +2526,7 @@ export default function DashboardPage() {
                             );
                           })}
                         </div>
+                        </>
                       )}
                     </div>
                   </section>
