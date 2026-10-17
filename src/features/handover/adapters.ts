@@ -106,6 +106,8 @@ export function adaptOffer(
           rescheduleCount: handover.rescheduleCount,
           maxReschedules: MAX_RESCHEDULES,
           atRisk: handover.atRisk,
+          courierName: handover.courierName ?? null,
+          trackingNumber: handover.trackingNumber ?? null,
         }
       : null,
     confirmation: {
@@ -125,7 +127,13 @@ export function adaptOffer(
     closed: state === "completed" || state === "cancelled_or_failed",
     completedAt: null,
     offeredQuantity: offer.itemDetails?.quantity ?? null,
-    delivery: handover?.delivery ?? null,
+    delivery: handover?.delivery
+      ? {
+          ...handover.delivery,
+          courierName: handover.courierName ?? null,
+          trackingNumber: handover.trackingNumber ?? null,
+        }
+      : null,
   };
 }
 
@@ -176,6 +184,8 @@ export function adaptMatch(
           rescheduleCount: match.logisticsRescheduleCount ?? 0,
           maxReschedules: MAX_RESCHEDULES,
           atRisk: match.logisticsAtRisk,
+          courierName: match.courierName ?? null,
+          trackingNumber: match.trackingNumber ?? null,
         }
       : null,
     confirmation: {
@@ -199,7 +209,13 @@ export function adaptMatch(
     closed: state === "completed" || state === "cancelled_or_failed",
     completedAt: match.completedAt ?? null,
     offeredQuantity: matchCommittedQuantity(match),
-    delivery: match.delivery ?? null,
+    delivery: match.delivery
+      ? {
+          ...match.delivery,
+          courierName: match.courierName ?? null,
+          trackingNumber: match.trackingNumber ?? null,
+        }
+      : null,
   };
 }
 

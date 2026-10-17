@@ -81,9 +81,12 @@ export function DonorOfferCard({
   const photo = offer.media?.find(m => m.mediaType === "IMAGE");
   const photoCount = offer.media?.filter(m => m.mediaType === "IMAGE").length ?? 0;
   const qty = offer.itemDetails?.quantity;
-  // Purchase offers live on the purchase page once accepted, not the handover hub.
-  const href = purchase && plan?.acceptedAt && !reconfirm ? `/offers/${offer.id}/purchase` : actionHref;
-  const label = purchase && plan?.acceptedAt && !reconfirm ? "Open purchase" : actionLabel;
+  // Purchase offers live on the purchase page once accepted, not the handover hub —
+  // including "Yes, I'll buy it", which is confirmed there, not on this card.
+  const inHub = purchase && !!plan?.acceptedAt;
+  const reconfirmHere = reconfirm && !inHub;
+  const href = inHub ? `/offers/${offer.id}/purchase` : actionHref;
+  const label = inHub ? (reconfirm ? "Confirm in purchase hub" : "Open purchase") : actionLabel;
   const pillText = reconfirm ? "Your turn: reconfirm" : needsYou ? `Your turn: ${statusLabel.toLowerCase()}` : statusLabel;
 
   return (
@@ -183,7 +186,7 @@ export function DonorOfferCard({
               : "Once you confirm, our team approves and you plan the handover together."
             : explanation}
         </p>
-        {reconfirm && (
+        {reconfirmHere && (
           <>
             <button type="button" onClick={onReconfirm} disabled={busy}
               className="min-h-12 rounded-xl bg-[var(--ck-role-accent)] text-[16px] font-extrabold text-white transition-colors hover:bg-[var(--ck-role-hover)] disabled:opacity-60">
@@ -195,12 +198,13 @@ export function DonorOfferCard({
             </p>
           </>
         )}
-        {!reconfirm && href && label && (
+        {!reconfirmHere && href && label && (
           <Link href={href}
             className="inline-flex min-h-12 items-center justify-center rounded-xl bg-[var(--ck-role-accent)] px-4 text-[15px] font-extrabold text-white hover:bg-[var(--ck-role-hover)]">
             {label}
           </Link>
         )}
+        {reconfirm && inHub && noButton}
         {!reconfirm && exit}
         {extra}
       </aside>

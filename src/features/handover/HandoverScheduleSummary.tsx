@@ -44,7 +44,7 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
             : "Not set"}
         </Row>
         <Row icon={Truck} label="How">{s.methodLabel ?? "Not set"}</Row>
-        {(s.address || showMap) && (
+        {!(s.method === "COURIER" || s.method === "THIRD_PARTY") && (s.address || showMap) && (
           <Row icon={MapPin} label="Where">
             <HandoverPlace address={s.address} lat={showMap ? s.latitude : null} lng={showMap ? s.longitude : null} />
           </Row>
