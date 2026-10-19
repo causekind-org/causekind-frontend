@@ -7,6 +7,7 @@ import { fundraisingCampaigns, type FundraisingCampaign } from "@/lib/api";
 import { DoneeGate } from "@/features/fundraising/DoneeGate";
 import { CampaignWizard } from "@/features/fundraising/CampaignWizard";
 import { CampaignStatusView } from "@/features/fundraising/CampaignStatusView";
+import { ManageWorkspace } from "@/features/fundraising/ManageWorkspace";
 import s from "@/features/fundraising/fundraising.module.css";
 
 /** A draft or changes-requested campaign opens the wizard (F13–F17); anything else shows its status (F18). */
@@ -33,6 +34,7 @@ function CampaignScreen({ id }: { id: number }) {
     );
   }
   if (!c) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }} />;
+  if (c.status === "APPROVED" || c.status === "COLLECTIONS_CLOSED") return <ManageWorkspace c={c} />;
   if (c.status === "DRAFT" || c.status === "CHANGES_REQUESTED") return <CampaignWizard initial={c} onSubmitted={setC} />;
   return <CampaignStatusView c={c} />;
 }

@@ -5638,7 +5638,7 @@ export const fundraising = {
 
 export type CampaignFlowStatus =
   | "DRAFT" | "PUBLICATION_REVIEW" | "CHANGES_REQUESTED" | "PUBLICATION_DECLINED"
-  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED";
+  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED" | "COLLECTIONS_CLOSED";
 export type NameVisibility = "FULL" | "FIRST_NAME" | "HIDDEN";
 export type LocationVisibility = "CITY" | "STATE" | "HIDDEN";
 export type CampaignCostRow = { expense: string; amount: number | null; reference: string | null; approvedAmount: number | null; changed: boolean };
@@ -5713,6 +5713,7 @@ export type FundraiserDetail = {
   card: FundraiserCard; story: string | null; beneficiary: string | null;
   costs: { expense: string; amount: number | null }[]; totalCosts: number; otherHelp: number;
   acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
+  status: CampaignFlowStatus; updates: FundraiserUpdate[];
 };
 
 export const fundraisers = {
@@ -5726,4 +5727,99 @@ export const fundraisers = {
     request<DonationOrder>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous }) }),
   setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>
     request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${id}/payout-ready`, { method: "POST", body: JSON.stringify({ expectedVersion, ready }) }),
+};
+
+// ── Fundraiser management: overview, donations, updates, page changes, closure (Phase C2, 2026-10-19) ──
+
+export type ReviewItemStatus = "DRAFT" | "SUBMITTED" | "CHANGES_REQUESTED" | "APPROVED" | "DECLINED";
+export type FundraiserOverview = {
+  campaignId: number; status: CampaignFlowStatus; title: string | null; confirmedTotal: number; target: number | null;
+  confirmedCount: number; pendingCount: number; endDate: string | null; itemsInReview: number; acceptingDonations: boolean;
+};
+/** Organiser-safe: the donor's public name or "Anonymous" — never contact or payment details. */
+export type FundraiserDonationRow = { id: number; name: string; amount: number; at: string; status: "INITIATED" | "COMPLETED" | "FAILED" };
+export type FundraiserUpdate = {
+  id: number; version: number | null; campaignId: number; title: string | null; body: string | null; status: ReviewItemStatus;
+  reviewerMessage: string | null; submittedAt: string | null; decidedAt: string | null; createdAt: string;
+};
+export type FundraiserRevision = {
+  id: number; version: number; campaignId: number; title: string | null; story: string | null; targetAmount: number | null;
+  endDate: string | null; changeReason: string | null; material: boolean; status: ReviewItemStatus; reviewerMessage: string | null;
+  submittedAt: string | null; decidedAt: string | null; createdAt: string;
+  currentTitle: string | null; currentStory: string | null; currentTarget: number | null; currentEndDate: string | null; raised: number;
+};
+export type FundraiserClosure = {
+  id: number; version: number; campaignId: number; reason: string; status: ReviewItemStatus;
+  reviewerMessage: string | null; decidedAt: string | null; createdAt: string;
+};
+export type FundraiserRevisionInput = {
+  title?: string | null; story?: string | null; targetAmount?: number | null; endDate?: string | null;
+  changeReason?: string | null; expectedVersion?: number;
+};
+export type ReviewItemKind = "UPDATE" | "REVISION" | "CLOSURE";
+export type ReviewItemRow = {
+  kind: ReviewItemKind; id: number; campaignId: number; campaignTitle: string | null; organiser: string;
+  material: boolean; submittedAt: string | null;
+};
+
+const FM = (id: number) => `/api/v1/fundraising/campaigns/${id}`;
+const FRI_ADMIN = "/api/v1/admin/fundraising/review-items";
+const REVIEW_PATH: Record<ReviewItemKind, string> = { UPDATE: "updates", REVISION: "revisions", CLOSURE: "closures" };
+
+export const fundraisingManage = {
+  overview: (id: number) => request<FundraiserOverview>(`${FM(id)}/overview`),
+  donations: (id: number) => request<FundraiserDonationRow[]>(`${FM(id)}/donations`),
+  updates: (id: number) => request<FundraiserUpdate[]>(`${FM(id)}/updates`),
+  createUpdate: (id: number, body: { title: string; body: string }) =>
+    request<FundraiserUpdate>(`${FM(id)}/updates`, { method: "POST", body: JSON.stringify(body) }),
+  saveUpdate: (id: number, updateId: number, body: { title: string; body: string; expectedVersion?: number | null }) =>
+    request<FundraiserUpdate>(`${FM(id)}/updates/${updateId}`, { method: "PUT", body: JSON.stringify(body) }),
+  submitUpdate: (id: number, updateId: number) => request<FundraiserUpdate>(`${FM(id)}/updates/${updateId}/submit`, { method: "POST" }),
+  deleteUpdate: (id: number, updateId: number) => request<void>(`${FM(id)}/updates/${updateId}`, { method: "DELETE" }),
+  revisions: (id: number) => request<FundraiserRevision[]>(`${FM(id)}/revisions`),
+  createRevision: (id: number, body: FundraiserRevisionInput) =>
+    request<FundraiserRevision>(`${FM(id)}/revisions`, { method: "POST", body: JSON.stringify(body) }),
+  saveRevision: (id: number, revisionId: number, body: FundraiserRevisionInput) =>
+    request<FundraiserRevision>(`${FM(id)}/revisions/${revisionId}`, { method: "PUT", body: JSON.stringify(body) }),
+  submitRevision: (id: number, revisionId: number) => request<FundraiserRevision>(`${FM(id)}/revisions/${revisionId}/submit`, { method: "POST" }),
+  deleteRevision: (id: number, revisionId: number) => request<void>(`${FM(id)}/revisions/${revisionId}`, { method: "DELETE" }),
+  closures: (id: number) => request<FundraiserClosure[]>(`${FM(id)}/closures`),
+  requestClosure: (id: number, reason: string) =>
+    request<FundraiserClosure>(`${FM(id)}/closures`, { method: "POST", body: JSON.stringify({ reason }) }),
+  admin: {
+    queue: () => request<ReviewItemRow[]>(FRI_ADMIN),
+    update: (id: number) => request<FundraiserUpdate>(`${FRI_ADMIN}/updates/${id}`),
+    revision: (id: number) => request<FundraiserRevision>(`${FRI_ADMIN}/revisions/${id}`),
+    closure: (id: number) => request<FundraiserClosure>(`${FRI_ADMIN}/closures/${id}`),
+    decide: (kind: ReviewItemKind, id: number, decision: "APPROVED" | "CHANGES_REQUESTED" | "DECLINED", body: { expectedVersion: number | null; message?: string }) =>
+      request<unknown>(`${FRI_ADMIN}/${REVIEW_PATH[kind]}/${id}/${decision}`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
+
+// ── Admin donor details for one fundraiser (2026-10-19). Every view and export is audit-logged. ──
+
+export type AdminDonorRow = {
+  id: number; name: string | null; email: string | null; phone: string | null; anonymous: boolean; amount: number;
+  feePercent: number; fee: number; net: number; status: "INITIATED" | "COMPLETED" | "FAILED"; at: string;
+  razorpayOrderId: string | null; razorpayPaymentId: string | null;
+};
+export type AdminDonorReport = {
+  campaignId: number; title: string | null;
+  summary: { confirmedCount: number; gross: number; fee: number; netToTransfer: number };
+  rows: AdminDonorRow[];
+};
+
+export const fundraisingDonors = {
+  report: (campaignId: number) => request<AdminDonorReport>(`/api/v1/admin/fundraising/campaigns/${campaignId}/donations`),
+  /** Downloads the CSV through the browser; the export itself is audit-logged server-side. */
+  async downloadCsv(campaignId: number) {
+    const res = await fetch(`${BASE_URL}/api/v1/admin/fundraising/campaigns/${campaignId}/donations.csv`, { credentials: "include", cache: "no-store" });
+    if (!res.ok) throw new ApiError(res.status, "Couldn't export donations", {});
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fundraiser-${campaignId}-donations.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  },
 };

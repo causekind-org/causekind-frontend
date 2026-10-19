@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "@/components/AppLink";
 import { FEATURES } from "@/lib/features";
-import { fundraisingCampaigns, fundraisers, ApiError, type FundraisingAdminCampaign } from "@/lib/api";
+import { fundraisingCampaigns, fundraisers, fundraisingDonors, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import a from "@/features/fundraising/admin.module.css";
 
@@ -110,6 +110,8 @@ export default function AdminCampaignReviewPage() {
         </div>
       </main>
 
+      {(c.status === "APPROVED" || c.status === "COLLECTIONS_CLOSED") && <DonorDetails id={c.id} />}
+
       {decision && <DecisionDialog data={data} initial={decision} onClose={() => setDecision(null)} onDone={(d) => { setData(d); setDecision(null); }}
         onStale={() => { setDecision(null); setError("This campaign changed since you opened it. Refresh before deciding."); }} />}
     </div>
@@ -191,5 +193,67 @@ function PayoutToggle({ id, version, ready, onDone, onError }: {
       <input type="checkbox" checked={ready} disabled={busy} onChange={toggle} style={{ width: 18, height: 18, accentColor: "#b04a15" }} />
       <span className={a.small}><strong>Sahas has this donee&apos;s transfer details</strong></span>
     </label>
+  );
+}
+
+/** Admin-only donor details: real names (including anonymous donors), contact, fee and payment ids. */
+function DonorDetails({ id }: { id: number }) {
+  const [r, setR] = useState<AdminDonorReport | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { fundraisingDonors.report(id).then(setR).catch(() => setErr("Couldn't load donations")); }, [id]);
+  const exportCsv = async () => {
+    setBusy(true); setErr(null);
+    try { await fundraisingDonors.downloadCsv(id); } catch { setErr("Couldn't export donations"); } finally { setBusy(false); }
+  };
+  const stat = (label: string, value: string, strong?: boolean) => (
+    <div className={`${a.card} ${a.pane}`} style={{ gap: 4 }}>
+      <span className={`${a.small} ${a.muted}`}>{label}</span>
+      <strong className={a.num} style={{ textAlign: "left", fontSize: strong ? 24 : 20 }}>{value}</strong>
+    </div>
+  );
+  return (
+    <section style={{ padding: "0 28px 48px", display: "flex", flexDirection: "column", gap: 14 }} aria-labelledby="dd">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12, flexWrap: "wrap" }}>
+        <div>
+          <h2 id="dd" className={a.serif} style={{ fontSize: 22 }}>Donations</h2>
+          <p className={`${a.small} ${a.muted}`}>Full donor details, including donors who hid their name publicly. Viewing and exporting are logged.</p>
+        </div>
+        <button type="button" className={`${a.btn} ${a.bs}`} disabled={busy || !r || r.rows.length === 0} onClick={exportCsv}>Export CSV</button>
+      </div>
+      {err && <p className={a.err} role="alert">{err}</p>}
+      {!r ? (!err && <div className={a.skel} style={{ width: "50%" }} />) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
+            {stat("Confirmed donations", String(r.summary.confirmedCount))}
+            {stat("Confirmed gross", formatINR(r.summary.gross))}
+            {stat("Platform fee", formatINR(r.summary.fee))}
+            {stat("Net to transfer to beneficiary", formatINR(r.summary.netToTransfer), true)}
+          </div>
+          <p className={`${a.small} ${a.muted}`}>Totals count confirmed donations only. Sahas Charitable Trust makes the transfer outside CauseKind.</p>
+          {r.rows.length === 0 ? <div className={a.card} style={{ padding: 20 }}><p className={a.muted}>No donations yet.</p></div> : (
+            <div className={a.card} style={{ overflowX: "auto" }}>
+              <table className={a.table}>
+                <thead><tr><th>Donor</th><th>Contact</th><th className={a.num}>Amount</th><th className={a.num}>Fee</th><th className={a.num}>Net</th><th>Status</th><th>Date</th><th>Razorpay</th></tr></thead>
+                <tbody>
+                  {r.rows.map((d) => (
+                    <tr key={d.id}>
+                      <td><strong>{d.name ?? "—"}</strong>{d.anonymous && <div className={`${a.small} ${a.muted}`}>Shown publicly as Anonymous</div>}</td>
+                      <td className={a.small}>{d.email ?? "—"}<br />{d.phone ?? "—"}</td>
+                      <td className={a.num}>{formatINR(d.amount)}</td>
+                      <td className={a.num}>{formatINR(d.fee)}<div className={`${a.small} ${a.muted}`}>{d.feePercent}%</div></td>
+                      <td className={a.num}>{formatINR(d.net)}</td>
+                      <td className={a.small} style={{ fontWeight: 600, color: d.status === "COMPLETED" ? "#1d5b3a" : d.status === "FAILED" ? "#8f1d1d" : "#1e3a60" }}>{d.status === "COMPLETED" ? "Confirmed" : d.status === "FAILED" ? "Failed" : "Pending"}</td>
+                      <td className={a.small}>{formatDate(d.at)}</td>
+                      <td className={a.small} style={{ fontFamily: "ui-monospace, monospace" }}>{d.razorpayOrderId ?? "—"}<br />{d.razorpayPaymentId ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
+    </section>
   );
 }
