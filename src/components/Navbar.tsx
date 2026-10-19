@@ -681,6 +681,8 @@ export function SiteHeader() {
     ...(FEATURES.money ? [{ href: "/campaigns", label: t("nav.campaigns") }] : []),
     // Donees ask, they do not give: the same slot reads "Requests" for them.
     { href: "/requests", label: user?.role === "DONEE" ? t("mobileNav.requests") : t("nav.donate") },
+    // Donees run fundraisers (2026-10-19). English-only label until it gets i18n keys.
+    ...(FEATURES.fundraising && user?.role === "DONEE" ? [{ href: "/fundraising", label: "Fundraising" }] : []),
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];

@@ -29,6 +29,7 @@ import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
+import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav";
 import {
   Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
@@ -723,6 +724,8 @@ export default function AdminDashboardPage() {
               )}
             </div>
           )}
+
+          <AdminFundraisingNav variant="sidebar" allowed={myPermissions === null || myPermissions.CAMPAIGNS !== false} />
         </div>
 
         {/* Reports */}
@@ -869,6 +872,8 @@ export default function AdminDashboardPage() {
                 ))}
               </>
             )}
+
+            <AdminFundraisingNav variant="strip" allowed={myPermissions === null || myPermissions.CAMPAIGNS !== false} />
 
             {REPORTS.length > 0 && (
               <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
