@@ -272,7 +272,11 @@ async function request<T>(
 
   // Also invalidate after completion: reads triggered while a write was in
   // progress (including SSE refreshes) may still contain the pre-write state.
-  return isGet ? execute() : execute().finally(invalidateRequestCache);
+  return isGet ? execute() : execute().finally(() => {
+    invalidateRequestCache();
+    // Lets live counters (e.g. the admin fundraising sidebar) refresh after any change.
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("ck:data-changed"));
+  });
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
