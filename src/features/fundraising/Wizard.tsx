@@ -10,6 +10,7 @@ import {
   type FundraisingCostItem, type FundraisingEvidence, type FundraisingEvidenceType, type FundraisingSave,
 } from "@/lib/api";
 import { CATEGORY_LABEL, Icon, SaveIndicator, Stepper, formatINR, type SaveState } from "./ui";
+import { FieldInfo } from "./FieldInfo";
 import s from "./fundraising.module.css";
 
 /** F03–F07 — the five-step application wizard (canvas F03…F07). Autosaves. */
@@ -132,15 +133,15 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
       <Heading title="About you" sub="We filled in what we already know from your account and donee profile. Check it, and correct anything out of date." />
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 22, maxWidth: 820 }}>
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="nm">Legal name <span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="nm" className={s.in} value={user?.fullName ?? ""} readOnly /><p className={s.hint}>As it appears on your government ID.</p></div>
-          <div><label className={s.lbl} htmlFor="age">Age <span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="age" className={s.in} value={profile?.details?.age ?? ""} readOnly /></div>
+          <div><label className={s.lbl} htmlFor="nm">Legal name <FieldInfo k="nm" /><span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="nm" className={s.in} value={user?.fullName ?? ""} readOnly /><p className={s.hint}>As it appears on your government ID.</p></div>
+          <div><label className={s.lbl} htmlFor="age">Age <FieldInfo k="age" /><span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="age" className={s.in} value={profile?.details?.age ?? ""} readOnly /></div>
         </div>
-        <div><label className={s.lbl} htmlFor="ad">Current address <span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="ad" className={s.in} value={address} placeholder="Not in your profile yet" readOnly />{address
+        <div><label className={s.lbl} htmlFor="ad">Current address <FieldInfo k="ad" /><span className={`${s.chip} ${s.cM}`}>From your profile</span></label><input id="ad" className={s.in} value={address} placeholder="Not in your profile yet" readOnly />{address
             ? <p className={s.hint}>Changing your address may mean we ask for a new residence proof.</p>
             : <p className={s.hint}>Not in your profile yet. <Link href="/profile/need-details">Add your address</Link> — your application is saved.</p>}</div>
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="em">Email <span className={`${s.chip} ${s.cOk}`}><Icon name="check" />Verified</span></label><input id="em" className={s.in} value={user?.email ?? ""} readOnly style={{ background: "#f7f3ee" }} /><p className={s.hint}>Verified with a code when you signed up.</p></div>
-          <div><label className={s.lbl} htmlFor="ph">Phone <span className={`${s.chip} ${s.cM}`}><Icon name="alert" />Not verified</span></label><input id="ph" className={s.in} value={user?.phone ?? ""} readOnly /><p className={s.hint}>We may ask you to verify this later.</p></div>
+          <div><label className={s.lbl} htmlFor="em">Email <FieldInfo k="em" /><span className={`${s.chip} ${s.cOk}`}><Icon name="check" />Verified</span></label><input id="em" className={s.in} value={user?.email ?? ""} readOnly style={{ background: "#f7f3ee" }} /><p className={s.hint}>Verified with a code when you signed up.</p></div>
+          <div><label className={s.lbl} htmlFor="ph">Phone <FieldInfo k="ph" /><span className={`${s.chip} ${s.cM}`}><Icon name="alert" />Not verified</span></label><input id="ph" className={s.in} value={user?.phone ?? ""} readOnly /><p className={s.hint}>We may ask you to verify this later.</p></div>
         </div>
         <p className={`${s.muted} ${s.small}`}>Something out of date? <Link href="/profile/need-details">Update your profile</Link>, then come back — your application is saved.</p>
         <Nav onNext={onNext} />
@@ -160,7 +161,7 @@ function WhoNeedsHelp({ app, set, onBack, onNext }: { app: FundraisingApplicatio
       <Heading title="Who needs help?" sub="You can organise a fundraiser for yourself or for someone you are helping." />
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24, maxWidth: 820 }}>
         <fieldset style={{ border: 0, padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 10 }}>
-          <legend className={s.lbl} style={{ marginBottom: 10 }}>This fundraiser is for</legend>
+          <legend className={s.lbl} style={{ marginBottom: 10 }}>This fundraiser is for <FieldInfo k="forWhom" /></legend>
           <div className={s.grid2} style={{ gap: 12 }}>
             <label style={opt(app.forSelf)}><input type="radio" name="who" checked={app.forSelf} onChange={() => set({ forSelf: true })} style={{ width: 20, height: 20, marginTop: 2, accentColor: "#1e3a60" }} /><span><strong>Myself</strong><br /><span className={`${s.muted} ${s.small}`}>I am the person who needs help.</span></span></label>
             <label style={opt(!app.forSelf)}><input type="radio" name="who" checked={!app.forSelf} onChange={() => set({ forSelf: false })} style={{ width: 20, height: 20, marginTop: 2, accentColor: "#1e3a60" }} /><span><strong>Someone else</strong><br /><span className={`${s.muted} ${s.small}`}>A family member or someone I support.</span></span></label>
@@ -170,20 +171,20 @@ function WhoNeedsHelp({ app, set, onBack, onNext }: { app: FundraisingApplicatio
         {!app.forSelf && (
           <>
             <div className={s.grid2}>
-              <div><label className={s.lbl} htmlFor="bn">Their full legal name <span className={`${s.chip} ${s.cM}`}><Icon name="lock" />Private</span></label><input id="bn" className={s.in} value={app.beneficiaryLegalName ?? ""} onChange={(e) => set({ beneficiaryLegalName: e.target.value })} maxLength={160} /><p className={s.hint}>Only reviewers see this.</p></div>
-              <div><label className={s.lbl} htmlFor="pn">Name shown to donors</label><input id="pn" className={s.in} value={app.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} maxLength={80} /><p className={s.hint}>You can use a first name only. You can change this when you prepare the campaign.</p></div>
+              <div><label className={s.lbl} htmlFor="bn">Their full legal name <FieldInfo k="bn" /><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />Private</span></label><input id="bn" className={s.in} value={app.beneficiaryLegalName ?? ""} onChange={(e) => set({ beneficiaryLegalName: e.target.value })} maxLength={160} /><p className={s.hint}>Only reviewers see this.</p></div>
+              <div><label className={s.lbl} htmlFor="pn">Name shown to donors <FieldInfo k="pn" /></label><input id="pn" className={s.in} value={app.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} maxLength={80} /><p className={s.hint}>You can use a first name only. You can change this when you prepare the campaign.</p></div>
             </div>
             <div className={s.grid2}>
-              <div><label className={s.lbl} htmlFor="ag">Their age</label>
+              <div><label className={s.lbl} htmlFor="ag">Their age <FieldInfo k="ag" /></label>
                 <select id="ag" className={s.in} value={app.beneficiaryAgeRange ?? ""} onChange={(e) => set({ beneficiaryAgeRange: e.target.value })}>
                   <option value="">Choose</option>{["Under 18", "18–39", "40–59", "60 or over"].map((o) => <option key={o}>{o}</option>)}
                 </select></div>
-              <div><label className={s.lbl} htmlFor="rl">Your relationship to them</label>
+              <div><label className={s.lbl} htmlFor="rl">Your relationship to them <FieldInfo k="rl" /></label>
                 <select id="rl" className={s.in} value={app.relationship ?? ""} onChange={(e) => set({ relationship: e.target.value })}>
                   <option value="">Choose</option>{["Parent", "Child", "Spouse", "Sibling", "Other relative", "Guardian", "Other"].map((o) => <option key={o}>{o}</option>)}
                 </select></div>
             </div>
-            <div><label className={s.lbl} htmlFor="au">Why are you the right person to organise this?</label><textarea id="au" className={s.in} rows={3} value={app.authorityExplanation ?? ""} onChange={(e) => set({ authorityExplanation: e.target.value })} maxLength={4000} style={{ resize: "vertical" }} /></div>
+            <div><label className={s.lbl} htmlFor="au">Why are you the right person to organise this? <FieldInfo k="au" /></label><textarea id="au" className={s.in} rows={3} value={app.authorityExplanation ?? ""} onChange={(e) => set({ authorityExplanation: e.target.value })} maxLength={4000} style={{ resize: "vertical" }} /></div>
             <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", borderRadius: 10, background: "#eaf0f8" }}>
               <span style={{ color: "#1e3a60", marginTop: 2 }}><Icon name="file" /></span>
               <p className={s.small}><strong>We&apos;ll ask for their consent in the Evidence step.</strong> Because you are organising for someone else, we need a signed consent or a short note from them. What counts is still being finalised.</p>
@@ -232,7 +233,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
       )}
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 820 }}>
         <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-          <legend className={s.lbl}>Category</legend>
+          <legend className={s.lbl}>Category <FieldInfo k="cat" /></legend>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {CATEGORIES.map((c) => {
               const open = OPEN.includes(c);
@@ -241,19 +242,19 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
           </div>
           <p className={s.hint}>Which categories are offered at launch is still being decided.</p>
         </fieldset>
-        <div><label className={s.lbl} htmlFor="wh">What happened, and what help is needed?</label><textarea id="wh" className={s.in} rows={4} value={app.whatHappened ?? ""} onChange={(e) => set({ whatHappened: e.target.value })} maxLength={8000} style={{ resize: "vertical" }} /></div>
+        <div><label className={s.lbl} htmlFor="wh">What happened, and what help is needed? <FieldInfo k="wh" /></label><textarea id="wh" className={s.in} rows={4} value={app.whatHappened ?? ""} onChange={(e) => set({ whatHappened: e.target.value })} maxLength={8000} style={{ resize: "vertical" }} /></div>
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="ur">When is the money needed by?</label>
+          <div><label className={s.lbl} htmlFor="ur">When is the money needed by? <FieldInfo k="ur" /></label>
             {/* Stored as an ISO date (yyyy-mm-dd) in the urgency field. */}
             <input id="ur" type="date" className={s.in} min={new Date().toISOString().slice(0, 10)}
               value={/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? app.urgency! : ""}
               onChange={(e) => set({ urgency: e.target.value })} />
             <p className={s.hint}>The date of the surgery, fee deadline or bill — as exact as you can.</p></div>
-          <div><label className={s.lbl} htmlFor="rq">Related CauseKind item request <span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span></label><input id="rq" className={s.in} inputMode="numeric" placeholder="Request number" value={app.linkedItemRequestId ?? ""} onChange={(e) => set({ linkedItemRequestId: num(e.target.value) })} /></div>
+          <div><label className={s.lbl} htmlFor="rq">Related CauseKind item request <FieldInfo k="rq" /><span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span></label><input id="rq" className={s.in} inputMode="numeric" placeholder="Request number" value={app.linkedItemRequestId ?? ""} onChange={(e) => set({ linkedItemRequestId: num(e.target.value) })} /></div>
         </div>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
-          <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}>Cost breakdown</h2>
+          <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}>Cost breakdown <FieldInfo k="costs" /></h2>
           <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
             <span>Expense</span><span style={{ textAlign: "right" }}>Estimated amount (₹)</span><span>Supporting reference</span><span />
           </div>
@@ -272,10 +273,10 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="oh">
-          <h2 id="oh" style={{ fontSize: 17, fontWeight: 700 }}>Other help received or expected</h2>
+          <h2 id="oh" style={{ fontSize: 17, fontWeight: 700 }}>Other help received or expected <FieldInfo k="help" /></h2>
           <div className={s.grid2}>
             {([["insuranceAmount", "Insurance"], ["ownContribution", "Own or family contribution"], ["grantsAmount", "Grants or schemes"], ["otherFundraisingAmount", "Other fundraising"]] as const).map(([k, label]) => (
-              <div key={k}><label className={s.lbl} htmlFor={k}>{label}</label><input id={k} className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app[k] ?? ""} onChange={(e) => set({ [k]: num(e.target.value) })} /></div>
+              <div key={k}><label className={s.lbl} htmlFor={k}>{label} <FieldInfo k={k} /></label><input id={k} className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app[k] ?? ""} onChange={(e) => set({ [k]: num(e.target.value) })} /></div>
             ))}
           </div>
         </section>
@@ -285,7 +286,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span>Total costs entered</span><span>{formatINR(total)}</span></div>
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span>Other help</span><span>− {formatINR(help)}</span></div>
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #e7ddd2", fontWeight: 700 }}><span>Outstanding gap</span><span>{formatINR(gap)}</span></div>
-          <div style={{ marginTop: 10 }}><label className={s.lbl} htmlFor="ask">Amount you want to raise (₹)</label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" style={{ maxWidth: 240 }} value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
+          <div style={{ marginTop: 10 }}><label className={s.lbl} htmlFor="ask">Amount you want to raise (₹) <FieldInfo k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" style={{ maxWidth: 240 }} value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
           {mismatch && (
             <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", borderRadius: 10, background: "#fdf3e1", color: "#5c3800", flexDirection: "column" }}>
               <p className={s.small}><strong>These don&apos;t add up yet.</strong> The amount you want to raise differs from the gap shown. That&apos;s often a missing cost — add it above, or tell us why in a sentence. Reviewers will ask about any difference.</p>
@@ -357,7 +358,7 @@ function Evidence({ app, setApp, profile, onBack, onNext }: {
           return (
             <section key={type} aria-labelledby={`g-${type}`} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, borderTop: gi ? "1px solid #efe7de" : 0, background: failed[type] ? "#fffaf9" : undefined }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-                <div><h2 id={`g-${type}`} style={{ fontSize: 16, fontWeight: 700 }}>{EVIDENCE_LABEL[type]}{type === "OTHER" && <span className={s.muted} style={{ fontWeight: 500 }}> (optional)</span>}</h2>{EVIDENCE_HINT[type] && <p className={`${s.muted} ${s.small}`}>{EVIDENCE_HINT[type]}</p>}</div>
+                <div><h2 id={`g-${type}`} style={{ fontSize: 16, fontWeight: 700 }}>{EVIDENCE_LABEL[type]} <FieldInfo k={`ev_${type}`} />{type === "OTHER" && <span className={s.muted} style={{ fontWeight: 500 }}> (optional)</span>}</h2>{EVIDENCE_HINT[type] && <p className={`${s.muted} ${s.small}`}>{EVIDENCE_HINT[type]}</p>}</div>
                 {busy === type ? <span className={`${s.chip} ${s.cN}`}><Icon name="upload" />Uploading</span>
                   : failed[type] ? <span className={`${s.chip} ${s.cX}`}><Icon name="x" />Not uploaded</span>
                   : files.length ? <span className={`${s.chip} ${s.cOk}`}><Icon name="check" />Ready</span>
