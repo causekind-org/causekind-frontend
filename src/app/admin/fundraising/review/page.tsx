@@ -38,6 +38,7 @@ export default function AdminFundraisingReviewPage() {
           <Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link>
           <Link href="/admin/fundraising/campaigns" className={a.switchBtn}>Publication review</Link>
           <span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Updates &amp; changes</span>
+          <Link href="/admin/fundraising/reports" className={a.switchBtn}>Reports</Link>
         </nav>
         {failed ? (
           <div className={a.card} role="alert" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start", borderColor: "#e9b8b3" }}>

@@ -99,19 +99,21 @@ export default function FundraiserPage() {
         </article>
 
         <aside className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }} aria-label="Donate">
-          <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? "Live" : "Collections closed"}</span>
+          <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : d.status === "PAUSED" ? s.cW : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? "Live" : d.status === "PAUSED" ? "Paused" : "Collections closed"}</span>
+          {d.status === "PAUSED" && <p className={s.small} role="status" style={{ padding: "10px 12px", borderRadius: 8, background: "#fdf3e1" }}>{d.pauseNotice || "Donations are paused while we review some information."}</p>}
           <p className={s.tabular}><strong style={{ fontSize: 30 }}>{formatINR(c.raised)}</strong><br /><span className={s.muted}>confirmed of {formatINR(c.target)} target</span></p>
           <div className={s.prog} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${pct}% of target`}><span style={{ width: `${pct}%` }} /></div>
           <p className={`${s.small} ${s.muted}`}>{c.donationCount} donation{c.donationCount === 1 ? "" : "s"}{c.endDate ? ` · ends ${formatDate(c.endDate)}` : ""}</p>
           {d.acceptingDonations
             ? <Link href={`/fundraisers/${c.id}/donate`} className={`${s.btn} ${s.bp}`} style={{ minHeight: 52, fontSize: 17 }}>Donate</Link>
-            : <div aria-disabled="true" className={s.btn} style={{ background: "#e3ddd6", color: "#4a3f37" }}>No longer accepting donations</div>}
+            : <div aria-disabled="true" className={s.btn} style={{ background: "#e3ddd6", color: "#4a3f37" }}>{d.status === "PAUSED" ? "Donations paused" : "No longer accepting donations"}</div>}
           <button type="button" className={`${s.btn} ${s.bs}`} onClick={share}>{copied ? "Link copied" : "Share"}</button>
           <div className={s.small} style={{ padding: "12px 14px", border: "1px dashed #cfc3b6", borderRadius: 10 }}>
             <strong>Where your money goes</strong><br />
             <span className={s.muted}>Donations are received by Sahas Charitable Trust, which transfers them to the beneficiary. CauseKind keeps {d.platformFeePercent}% to run the platform. <strong>Donations are not refundable</strong> and do not get an 80G tax receipt.</span>
           </div>
           <p className={`${s.small} ${s.muted}`}>The total counts only payments our server has confirmed.</p>
+          <Link href={`/fundraisers/${c.id}/report`} className={s.small} style={{ alignSelf: "flex-start" }}>Report this fundraiser</Link>
         </aside>
       </main>
     </div>

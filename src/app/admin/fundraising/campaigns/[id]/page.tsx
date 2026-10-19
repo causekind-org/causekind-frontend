@@ -110,7 +110,7 @@ export default function AdminCampaignReviewPage() {
         </div>
       </main>
 
-      {(c.status === "APPROVED" || c.status === "COLLECTIONS_CLOSED") && <DonorDetails id={c.id} />}
+      {(c.status === "APPROVED" || c.status === "PAUSED" || c.status === "COLLECTIONS_CLOSED") && <DonorDetails id={c.id} />}
 
       {decision && <DecisionDialog data={data} initial={decision} onClose={() => setDecision(null)} onDone={(d) => { setData(d); setDecision(null); }}
         onStale={() => { setDecision(null); setError("This campaign changed since you opened it. Refresh before deciding."); }} />}
