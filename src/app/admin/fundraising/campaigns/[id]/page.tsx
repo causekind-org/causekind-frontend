@@ -6,6 +6,7 @@ import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraisingCampaigns, fundraisers, fundraisingDonors, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
+import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 
 type Decision = "changes" | "approve" | "decline";
@@ -160,9 +161,9 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
             <p className={a.small}>Payment setup isn&apos;t met, so the page stays private and can&apos;t take donations.</p>
           </div>
         )}
-        <div><label className={a.lbl} htmlFor="m">{mode === "changes" ? "What to change (organiser-facing, required)" : mode === "decline" ? "Reason (organiser-facing, required)" : "Message to the organiser (optional)"}</label>
+        <div><label className={a.lbl} htmlFor="m">{mode === "changes" ? "What to change (organiser-facing, required)" : mode === "decline" ? "Reason (organiser-facing, required)" : "Message to the organiser (optional)"} <FieldInfo k={mode === "changes" ? "pChanges" : mode === "decline" ? "pDecline" : "pMessage"} /></label>
           <textarea id="m" className={a.in} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} /></div>
-        <div><label className={a.lbl} htmlFor="n">Internal note {mode === "changes" ? "(optional)" : "(required)"}</label>
+        <div><label className={a.lbl} htmlFor="n">Internal note {mode === "changes" ? "(optional)" : "(required)"} <FieldInfo k="pNote" /></label>
           <textarea id="n" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
         <p className={`${a.small} ${a.muted}`}>Recorded with your name and the time in the review history.</p>
         {error && <p role="alert" className={a.err}>{error}</p>}

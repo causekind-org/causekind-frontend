@@ -8,6 +8,7 @@ import {
   type ReviewItemKind, type ReviewItemRow,
 } from "@/lib/api";
 import { formatDate, formatINR } from "@/features/fundraising/ui";
+import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 
 const KIND: Record<ReviewItemKind, { label: string; bg: string; fg: string }> = {
@@ -132,7 +133,7 @@ function Review({ row, onDecided }: { row: ReviewItemRow; onDecided: () => void 
       </section>
       <section className={a.card} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="dc">
         <h2 id="dc" className={a.h}>Decision</h2>
-        <label className={a.lbl} htmlFor="msg">Message to organiser <span className={a.muted} style={{ fontWeight: 500 }}>(required unless approving)</span></label>
+        <label className={a.lbl} htmlFor="msg">Message to organiser <FieldInfo k="rMessage" /> <span className={a.muted} style={{ fontWeight: 500 }}>(required unless approving)</span></label>
         <textarea id="msg" className={a.in} rows={3} value={msg} onChange={(e) => setMsg(e.target.value)} />
         {err && <p className={a.err} role="alert">{err}</p>}
         <button type="button" className={`${a.btn} ${a.bp}`} disabled={busy || !item} onClick={() => decide("APPROVED")}>

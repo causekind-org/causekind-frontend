@@ -65,6 +65,20 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   dQuestions: { title: "Questions", text: "Ask specific things the applicant can answer or upload, e.g. “Please upload the hospital estimate with the stamp.” Pick the section each question is about." },
   dDeclineReason: { title: "Reason the applicant sees", text: "Explain kindly and clearly why it wasn't approved, and what (if anything) they can do. Avoid accusations." },
   dDeclineNote: { title: "Internal note", text: "Required. The real reason for other admins and the audit record. The applicant never sees it." },
+  // Admin — publication decision
+  pChanges: { title: "What to change", text: "List exactly what the organiser must fix before you can publish, e.g. “Remove the hospital file number from the story.” They see this." },
+  pDecline: { title: "Reason", text: "Why this page can't be published. The organiser sees it — be clear and kind." },
+  pMessage: { title: "Message to the organiser", text: "Optional. A short note they see with the approval, e.g. “Looks good — thank you.”" },
+  pNote: { title: "Internal note", text: "For other admins only — what you checked against the application. Required when approving or declining." },
+  // Admin — updates, page changes, closure
+  rMessage: { title: "Message to organiser", text: "What the organiser sees with your decision. Required when you request changes or decline — say exactly what to fix or why." },
+  // Admin — report case
+  kNotice: { title: "Public explanation", text: "Shown on the public page while donations are paused. Keep it neutral — never say “fraud” or blame anyone." },
+  kActions: { title: "What the organiser must do", text: "Private to the organiser. Say exactly what they need to send or fix to get donations reopened." },
+  kQuestion: { title: "Question", text: "One specific thing the organiser can answer or prove. Never reveal who reported or what they said word for word." },
+  kDeadline: { title: "Response deadline", text: "Optional date shown to the organiser. Nothing happens automatically when it passes — you decide what to do." },
+  kReason: { title: "Internal reason", text: "Why you're taking this action, for other admins and the audit log. Not shown to the organiser or reporter." },
+  kMessage: { title: "Message to organiser", text: "Optional. What the organiser sees in their notification, e.g. “Donations are open again.”" },
 };
 
 export function FieldInfo({ k }: { k: keyof typeof FIELD_HELP | string }) {

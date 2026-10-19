@@ -6,6 +6,7 @@ import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraisingReports, type AdminFundraisingReport, type ReportCase } from "@/lib/api";
 import { CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
+import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 
 const REASON: Record<string, string> = {
@@ -160,30 +161,30 @@ function CaseDialog({ c, dialog, onClose, onDone }: { c: ReportCase; dialog: Non
       <section role="dialog" aria-modal="true" aria-labelledby="dlg" className={`${a.card} ${a.pane}`} onClick={(e) => e.stopPropagation()} style={{ maxWidth: 560, width: "100%", gap: 12, padding: 24 }}>
         <h2 id="dlg" className={a.serif} style={{ fontSize: 22 }}>{title}</h2>
         {kind === "pause" && <>
-          <label className={a.lbl} htmlFor="pn">Public explanation</label>
+          <label className={a.lbl} htmlFor="pn">Public explanation <FieldInfo k="kNotice" /></label>
           <textarea id="pn" className={a.in} rows={2} maxLength={500} value={notice} onChange={(e) => setNotice(e.target.value)} />
           <p className={`${a.small} ${a.muted}`}>Shown on the public page. Keep it neutral — never say &quot;fraud&quot;.</p>
-          <label className={a.lbl} htmlFor="pa">What the organiser must do (private)</label>
+          <label className={a.lbl} htmlFor="pa">What the organiser must do (private) <FieldInfo k="kActions" /></label>
           <textarea id="pa" className={a.in} rows={2} maxLength={2000} value={actions} onChange={(e) => setActions(e.target.value)} />
         </>}
         {kind === "questions" && <>
           {questions.map((q, i) => (
             <div key={i}>
-              <label className={a.lbl} htmlFor={`qq${i}`}>Question {i + 1}</label>
+              <label className={a.lbl} htmlFor={`qq${i}`}>Question {i + 1} <FieldInfo k="kQuestion" /></label>
               <textarea id={`qq${i}`} className={a.in} rows={2} maxLength={2000} value={q} onChange={(e) => setQuestions((qs) => qs.map((x, j) => j === i ? e.target.value : x))} />
             </div>
           ))}
           {questions.length < 10 && <button type="button" className={`${a.btn} ${a.bs}`} style={{ alignSelf: "flex-start" }} onClick={() => setQuestions((qs) => [...qs, ""])}>Add question</button>}
-          <label className={a.lbl} htmlFor="dl">Response deadline (optional)</label>
+          <label className={a.lbl} htmlFor="dl">Response deadline (optional) <FieldInfo k="kDeadline" /></label>
           <input id="dl" type="date" className={a.in} value={deadline} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} onChange={(e) => setDeadline(e.target.value)} />
           <p className={`${a.small} ${a.muted}`}>Nothing happens automatically when it passes. The organiser is never told who reported.</p>
         </>}
         {kind !== "questions" && <>
-          <label className={a.lbl} htmlFor="ir">{kind === "dismiss" ? "Reason for dismissing (internal, required)" : "Reason (internal, required)"}</label>
+          <label className={a.lbl} htmlFor="ir">{kind === "dismiss" ? "Reason for dismissing (internal, required)" : "Reason (internal, required)"} <FieldInfo k="kReason" /></label>
           <textarea id="ir" className={a.in} rows={2} maxLength={2000} value={reason} onChange={(e) => setReason(e.target.value)} />
         </>}
         {(kind === "restore" || kind === "close") && <>
-          <label className={a.lbl} htmlFor="mo">Message to organiser</label>
+          <label className={a.lbl} htmlFor="mo">Message to organiser <FieldInfo k="kMessage" /></label>
           <textarea id="mo" className={a.in} rows={2} maxLength={300} value={message} onChange={(e) => setMessage(e.target.value)} />
         </>}
         <p className={`${a.small} ${a.muted}`}>
