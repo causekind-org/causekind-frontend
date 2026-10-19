@@ -49,7 +49,7 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   cCat: { title: "Category", text: "Fixed from your approved application. It can't be changed here." },
   dn: { title: "Name shown to donors", text: "The beneficiary's name on the public page. Use a first name if they want privacy." },
   cv: { title: "Cover photo", text: "The main picture on your page. Use a clear photo you have permission to share. Avoid showing IDs, bills or other people's faces without consent." },
-  alt: { title: "Photo description", text: "One sentence describing the photo for people using screen readers, e.g. “Ramesh smiling in a hospital bed”." },
+  alt: { title: "Photo description", text: "Optional. One sentence describing the photo for people using screen readers, e.g. “Ramesh smiling in a hospital bed”." },
   st: { title: "Your story", text: "Tell donors who needs help, what happened, what the money covers and what difference it makes. Keep it honest — no phone numbers or addresses." },
   ccb: { title: "Cost breakdown", text: "What donors see about where the money goes. Changes from your approved application need a reason." },
   why: { title: "Reason for the change", text: "Why the amount or costs differ from what was approved, e.g. “The hospital revised its quote”." },

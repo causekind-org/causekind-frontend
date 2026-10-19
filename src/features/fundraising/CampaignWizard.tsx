@@ -160,7 +160,7 @@ function Basics({ c, set, setC, nav }: { c: FundraisingCampaign; set: SetFn; set
               <label className={`${s.btn} ${s.bs}`} style={{ alignSelf: "flex-start" }}>{uploading ? "Uploading…" : c.coverUrl ? "Replace" : "Choose photo"}
                 <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} /></label>
               {err && <p role="alert" className={s.errText}><Icon name="alert" />{err}</p>}
-              <div><label className={s.lbl} htmlFor="alt">Describe the photo for people who can&apos;t see it <FieldInfo k="alt" /></label><input id="alt" className={s.in} maxLength={300} value={c.coverAltText ?? ""} onChange={(e) => set({ coverAltText: e.target.value })} /></div>
+              <div><label className={s.lbl} htmlFor="alt">Describe the photo for people who can&apos;t see it <span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span> <FieldInfo k="alt" /></label><input id="alt" className={s.in} maxLength={300} value={c.coverAltText ?? ""} onChange={(e) => set({ coverAltText: e.target.value })} /></div>
               <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><input type="checkbox" checked={c.coverConsent} onChange={(e) => set({ coverConsent: e.target.checked })} style={{ width: 20, height: 20, marginTop: 2, accentColor: "#1e3a60" }} /><span className={s.small}>I took this photo or have permission to use it, and everyone in it agrees to it being public.</span></label>
             </div>
           </div>
