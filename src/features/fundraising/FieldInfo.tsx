@@ -57,6 +57,14 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   ed: { title: "End date", text: "The last day people can donate. Donations stop automatically after this date." },
   vis: { title: "Names and place", text: "Choose how much donors see: full name, first name only, or hidden — and whether to show your city or state." },
   pe: { title: "Documents donors can see", text: "Optional. Pick documents that build trust, like a hospital estimate. Your ID and address proof can never be shown." },
+  // Admin — application decision dialog
+  dScope: { title: "Scope of approval", text: "“This need” lets them run one fundraiser for this application only. “Account eligibility” lets them start more fundraisers later — each one still needs publication review." },
+  dConditions: { title: "Conditions", text: "Optional rules the applicant must follow, e.g. “Upload the final hospital bill before closing”. They see this." },
+  dReason: { title: "Reason", text: "One or two plain sentences on why you approved. The applicant sees this — no internal details." },
+  dNote: { title: "Internal note", text: "For other admins only — what you checked, doubts, anything to watch. The applicant never sees it." },
+  dQuestions: { title: "Questions", text: "Ask specific things the applicant can answer or upload, e.g. “Please upload the hospital estimate with the stamp.” Pick the section each question is about." },
+  dDeclineReason: { title: "Reason the applicant sees", text: "Explain kindly and clearly why it wasn't approved, and what (if anything) they can do. Avoid accusations." },
+  dDeclineNote: { title: "Internal note", text: "Required. The real reason for other admins and the audit record. The applicant never sees it." },
 };
 
 export function FieldInfo({ k }: { k: keyof typeof FIELD_HELP | string }) {

@@ -135,4 +135,4 @@
 .info:hover, .info[data-state="open"] { color: var(--fr-donee, #1e3a60); }
 .info, .info:focus, .info:focus-visible { outline: none !important; box-shadow: none !important; }
 .info:focus-visible { color: var(--fr-donee, #1e3a60); }
-.infoPop { width: min(300px, calc(100vw - 32px)) !important; padding: 12px 14px !important; font-size: 13.5px; line-height: 1.5; color: #1f140c !important; background: #fff !important; border: 1px solid #e7ddd2 !important; border-radius: 10px !important; box-shadow: 0 8px 24px rgba(31, 20, 12, .14) !important; font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif; z-index: 60; }
+.infoPop { width: min(300px, calc(100vw - 32px)) !important; padding: 12px 14px !important; font-size: 13.5px; line-height: 1.5; color: #1f140c !important; background: #fff !important; border: 1px solid #e7ddd2 !important; border-radius: 10px !important; box-shadow: 0 8px 24px rgba(31, 20, 12, .14) !important; font-family: var(--font-plus-jakarta-sans), system-ui, sans-serif; z-index: 1000 !important; }

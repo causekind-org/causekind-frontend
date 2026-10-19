@@ -6,6 +6,7 @@ import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraising, ApiError, type FundraisingAdminApplication, type FundraisingEvidence, type FundraisingScope } from "@/lib/api";
 import { CATEGORY_LABEL, StatusChip, formatDate, formatINR } from "@/features/fundraising/ui";
+import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 
 type Decision = "approve" | "info" | "decline";
@@ -194,7 +195,7 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
         {mode === "approve" && (
           <>
             <fieldset style={{ border: 0, padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-              <legend className={a.lbl}>Scope of approval <span style={{ fontSize: 11, fontWeight: 700, color: "#7a4a00", background: "#fdf3e1", borderRadius: 99, padding: "1px 7px" }}>† undecided policy</span></legend>
+              <legend className={a.lbl}>Scope of approval <FieldInfo k="dScope" /> <span style={{ fontSize: 11, fontWeight: 700, color: "#7a4a00", background: "#fdf3e1", borderRadius: 99, padding: "1px 7px" }}>† undecided policy</span></legend>
               {([["THIS_NEED", "This need", "Can become one campaign for this need."], ["ACCOUNT", "Account eligibility", "May start further campaigns; each still goes through publication review."]] as const).map(([k, t, d]) => (
                 <label key={k} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "10px 12px", border: "1px solid #d6ccc1", borderRadius: 8 }}>
                   <input type="radio" name="scope" checked={scope === k} onChange={() => setScope(k)} style={{ width: 18, height: 18, marginTop: 2, accentColor: "#b04a15" }} />
@@ -202,15 +203,16 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
                 </label>
               ))}
             </fieldset>
-            <div><label className={a.lbl} htmlFor="cn">Conditions <span className={a.muted} style={{ fontWeight: 500 }}>(shown to applicant)</span></label><textarea id="cn" className={a.in} rows={2} value={conditions} onChange={(e) => setConditions(e.target.value)} /></div>
-            <div><label className={a.lbl} htmlFor="rs">Reason <span className={a.muted} style={{ fontWeight: 500 }}>(required · shown to applicant)</span></label><textarea id="rs" className={a.in} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
-            <div><label className={a.lbl} htmlFor="nt">Internal note <span className={a.muted} style={{ fontWeight: 500 }}>(admins only)</span></label><textarea id="nt" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+            <div><label className={a.lbl} htmlFor="cn">Conditions <FieldInfo k="dConditions" /> <span className={a.muted} style={{ fontWeight: 500 }}>(shown to applicant)</span></label><textarea id="cn" className={a.in} rows={2} value={conditions} onChange={(e) => setConditions(e.target.value)} /></div>
+            <div><label className={a.lbl} htmlFor="rs">Reason <FieldInfo k="dReason" /> <span className={a.muted} style={{ fontWeight: 500 }}>(required · shown to applicant)</span></label><textarea id="rs" className={a.in} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
+            <div><label className={a.lbl} htmlFor="nt">Internal note <FieldInfo k="dNote" /> <span className={a.muted} style={{ fontWeight: 500 }}>(admins only)</span></label><textarea id="nt" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
             <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>Recorded with your name and the time. Approval does not publish anything.</p>
           </>
         )}
 
         {mode === "info" && (
           <>
+            <p className={a.lbl} style={{ display: "flex", alignItems: "center", gap: 6 }}>Questions for the applicant <FieldInfo k="dQuestions" /></p>
             {questions.map((q, i) => (
               <div key={i} style={{ display: "grid", gridTemplateColumns: "160px minmax(0,1fr)", gap: 10 }}>
                 <select className={a.in} aria-label={`Section for question ${i + 1}`} value={q.section} onChange={(e) => setQuestions(questions.map((x, j) => (j === i ? { ...x, section: e.target.value } : x)))}>
@@ -220,14 +222,14 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
               </div>
             ))}
             <div><button type="button" className={`${a.btn} ${a.bs}`} onClick={() => setQuestions([...questions, { section: "NEED", question: "" }])}>+ Add another question</button></div>
-            <div><label className={a.lbl} htmlFor="nt2">Internal note <span className={a.muted} style={{ fontWeight: 500 }}>(admins only)</span></label><textarea id="nt2" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+            <div><label className={a.lbl} htmlFor="nt2">Internal note <FieldInfo k="dNote" /> <span className={a.muted} style={{ fontWeight: 500 }}>(admins only)</span></label><textarea id="nt2" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
           </>
         )}
 
         {mode === "decline" && (
           <>
-            <div><label className={a.lbl} htmlFor="r1">Reason the applicant will see (required)</label><textarea id="r1" className={a.in} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
-            <div><label className={a.lbl} htmlFor="r2">Internal note (required)</label><textarea id="r2" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
+            <div><label className={a.lbl} htmlFor="r1">Reason the applicant will see (required) <FieldInfo k="dDeclineReason" /></label><textarea id="r1" className={a.in} rows={3} value={reason} onChange={(e) => setReason(e.target.value)} /></div>
+            <div><label className={a.lbl} htmlFor="r2">Internal note (required) <FieldInfo k="dDeclineNote" /></label><textarea id="r2" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
             <label style={{ display: "flex", gap: 10, alignItems: "center" }}><input type="checkbox" checked={resubmit} onChange={(e) => setResubmit(e.target.checked)} style={{ width: 18, height: 18, accentColor: "#b04a15" }} />Applicant may apply again for this need</label>
           </>
         )}
