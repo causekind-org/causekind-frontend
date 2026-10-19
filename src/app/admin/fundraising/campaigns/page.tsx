@@ -11,6 +11,7 @@ const FILTERS: { label: string; status?: CampaignFlowStatus }[] = [
   { label: "Waiting for review" },
   { label: "Changes requested", status: "CHANGES_REQUESTED" },
   { label: "Approved — setup incomplete", status: "APPROVED_SETUP_INCOMPLETE" },
+  { label: "Live", status: "APPROVED" },
   { label: "Declined", status: "PUBLICATION_DECLINED" },
   { label: "Drafts", status: "DRAFT" },
   { label: "Cancelled", status: "CANCELLED" },

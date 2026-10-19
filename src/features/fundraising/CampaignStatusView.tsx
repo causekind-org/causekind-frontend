@@ -23,6 +23,8 @@ export function CampaignStatusView({ c }: { c: FundraisingCampaign }) {
         {c.status === "APPROVED_SETUP_INCOMPLETE" && <h1 className={s.serif} style={{ fontSize: 30 }}>Your page is approved. One step left before it goes live.</h1>}
         {c.status === "PUBLICATION_DECLINED" && <h1 className={s.serif} style={{ fontSize: 30 }}>This page wasn&apos;t approved for publication</h1>}
         {c.status === "CANCELLED" && <h1 className={s.serif} style={{ fontSize: 30 }}>You cancelled this campaign draft</h1>}
+        {c.status === "APPROVED" && <h1 className={s.serif} style={{ fontSize: 30 }}>Your fundraiser is live</h1>}
+        {c.status === "APPROVED" && <p><Link href={`/fundraisers/${c.id}`}>Open the public page</Link> to see it as donors do, and share the link.</p>}
         <p className={s.muted}>{title}{c.submittedAt ? ` · submitted ${formatDate(c.submittedAt)}` : ""}{c.decidedAt ? ` · decided ${formatDate(c.decidedAt)}` : ""}</p>
       </div>
 
@@ -41,7 +43,7 @@ export function CampaignStatusView({ c }: { c: FundraisingCampaign }) {
         </section>
       )}
 
-      {c.status !== "CANCELLED" && c.status !== "PUBLICATION_DECLINED" && (
+      {c.status !== "CANCELLED" && c.status !== "PUBLICATION_DECLINED" && c.status !== "APPROVED" && (
         <section className={s.card} style={{ padding: "22px 24px" }} aria-labelledby="lc">
           <h2 id="lc" style={{ fontSize: 17, fontWeight: 700, marginBottom: 4 }}>Launch checklist</h2>
           {ck("ok", "Done", "Application approved", c.applicationReference ?? undefined)}

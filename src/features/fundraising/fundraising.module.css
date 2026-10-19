@@ -92,3 +92,15 @@
 .notice { display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px; border-radius: 12px; background: var(--fr-donee-soft); border: 1px solid #c9d6e6; }
 
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* Public / donor surfaces (F21–F27) use the public terracotta palette, as on the canvas. */
+.publicTheme {
+  --fr-donee: #b04a15;
+  --fr-donee-hover: #c45520;
+  --fr-donee-soft: #fdf0e7;
+  --fr-donee-border: #e0c2ae;
+}
+.publicTheme a { color: #9a3f11; }
+.publicTheme a:hover { color: #7a3410; }
+.prog { height: 10px; border-radius: 99px; background: #efe7de; overflow: hidden; }
+.prog > span { display: block; height: 100%; background: #b04a15; }

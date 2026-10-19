@@ -5693,3 +5693,26 @@ export const fundraisingCampaigns = {
       request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}/decline`, { method: "POST", body: JSON.stringify(body) }),
   },
 };
+
+// ── Fundraisers: public pages and donations (Phase C1, 2026-10-19) ──────────
+
+export type FundraiserCard = {
+  id: number; title: string | null; coverUrl: string | null; coverAltText: string | null; category: FundraisingCategory | null;
+  organiser: string | null; location: string | null; raised: number; target: number | null; endDate: string | null; donationCount: number;
+};
+export type FundraiserDetail = {
+  card: FundraiserCard; story: string | null; beneficiary: string | null;
+  costs: { expense: string; amount: number | null }[]; totalCosts: number; otherHelp: number;
+  acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
+};
+
+export const fundraisers = {
+  live: (category?: FundraisingCategory) =>
+    request<FundraiserCard[]>(`/api/v1/fundraising/public/campaigns${category ? `?category=${category}` : ""}`, { silent401: true }),
+  detail: (id: number) => request<FundraiserDetail>(`/api/v1/fundraising/public/campaigns/${id}`, { silent401: true }),
+  /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
+  donate: (campaignId: number, amount: number, anonymous: boolean) =>
+    request<DonationOrder>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous }) }),
+  setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>
+    request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${id}/payout-ready`, { method: "POST", body: JSON.stringify({ expectedVersion, ready }) }),
+};

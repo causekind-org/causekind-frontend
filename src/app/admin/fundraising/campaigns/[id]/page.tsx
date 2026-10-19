@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "@/components/AppLink";
 import { FEATURES } from "@/lib/features";
-import { fundraisingCampaigns, ApiError, type FundraisingAdminCampaign } from "@/lib/api";
+import { fundraisingCampaigns, fundraisers, ApiError, type FundraisingAdminCampaign } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import a from "@/features/fundraising/admin.module.css";
 
@@ -89,8 +89,18 @@ export default function AdminCampaignReviewPage() {
           <section className={`${a.card} ${a.pane}`} aria-labelledby="pre">
             <h2 id="pre" className={a.h}>Launch prerequisites</h2>
             <p className={a.small}><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Application approved</p>
-            <p className={a.small}><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Payment setup (requirements to be defined)</p>
-            <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>Approving now results in <strong>Approved — setup incomplete</strong>. It will not go live or show a Donate button.</p>
+            <p className={a.small}>{c.paymentSetupComplete
+              ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Sahas holds the donee&apos;s transfer details</>
+              : <><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Sahas holds the donee&apos;s transfer details</>}</p>
+            {c.status !== "APPROVED" && c.status !== "CANCELLED" && c.status !== "PUBLICATION_DECLINED" && (
+              <PayoutToggle id={c.id} version={c.version} ready={c.paymentSetupComplete} onDone={setData} onError={setError} />
+            )}
+            <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>
+              {c.status === "APPROVED" ? <>This campaign is <strong>Live</strong> and taking donations.</>
+                : c.paymentSetupComplete ? <>Approving now makes it <strong>Live</strong>.</>
+                : <>Approving now results in <strong>Approved — setup incomplete</strong>. It goes live once the transfer details are confirmed.</>}
+            </p>
+            <p className={`${a.small} ${a.muted}`}>CauseKind stores no bank details. Sahas collects and keeps them.</p>
           </section>
           <section className={`${a.card} ${a.pane}`} aria-labelledby="dr">
             <h2 id="dr" className={a.h}>Decision record</h2>
@@ -162,5 +172,24 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
         </div>
       </section>
     </div>
+  );
+}
+
+/** Admin confirms Sahas holds the donee's transfer details; on an approved campaign this makes it Live. */
+function PayoutToggle({ id, version, ready, onDone, onError }: {
+  id: number; version: number; ready: boolean; onDone: (d: FundraisingAdminCampaign) => void; onError: (m: string) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  async function toggle() {
+    setBusy(true);
+    try { onDone(await fundraisers.setPayoutReady(id, version, !ready)); }
+    catch (e) { onError(e instanceof ApiError ? e.message : "Couldn't update the payout setup."); }
+    finally { setBusy(false); }
+  }
+  return (
+    <label style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 12px", border: "1px solid #d6ccc1", borderRadius: 8, cursor: "pointer" }}>
+      <input type="checkbox" checked={ready} disabled={busy} onChange={toggle} style={{ width: 18, height: 18, accentColor: "#b04a15" }} />
+      <span className={a.small}><strong>Sahas has this donee&apos;s transfer details</strong></span>
+    </label>
   );
 }
