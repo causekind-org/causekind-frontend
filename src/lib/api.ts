@@ -5710,6 +5710,8 @@ export const fundraisers = {
   live: (category?: FundraisingCategory) =>
     request<FundraiserCard[]>(`/api/v1/fundraising/public/campaigns${category ? `?category=${category}` : ""}`, { silent401: true }),
   detail: (id: number) => request<FundraiserDetail>(`/api/v1/fundraising/public/campaigns/${id}`, { silent401: true }),
+  /** Donor-only: asks Razorpay directly when the webhook is late (or never comes, e.g. localhost). */
+  checkDonation: (donationId: number) => request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
   donate: (campaignId: number, amount: number, anonymous: boolean) =>
     request<DonationOrder>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous }) }),

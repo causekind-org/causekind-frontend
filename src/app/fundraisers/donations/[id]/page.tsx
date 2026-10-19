@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import Link from "@/components/AppLink";
-import { getMyDonations, type Donation } from "@/lib/api";
+import { fundraisers, type Donation } from "@/lib/api";
 import { Icon, formatINR } from "@/features/fundraising/ui";
 import s from "@/features/fundraising/fundraising.module.css";
 
@@ -23,8 +23,8 @@ export default function DonationResultPage() {
   const check = useCallback(async () => {
     setChecking(true);
     try {
-      const all = await getMyDonations();
-      const mine = all.find((x) => x.id === Number(id)) ?? null;
+      // The server asks Razorpay itself; the browser never decides the outcome.
+      const mine = await fundraisers.checkDonation(Number(id));
       setD(mine);
       setCheckFailed(false);
       return mine;
