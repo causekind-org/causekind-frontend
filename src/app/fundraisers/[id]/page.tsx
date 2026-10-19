@@ -74,6 +74,19 @@ export default function FundraiserPage() {
             <p className={s.small}>Our team reviewed the organiser&apos;s identity and the documents behind this need, and checked this page against them before it went live. A review is not a guarantee.</p>
           </section>
 
+          {d.updates.length > 0 && (
+            <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="up">
+              <h2 id="up" className={s.serif} style={{ fontSize: 22 }}>Updates</h2>
+              {d.updates.map((u) => (
+                <article key={u.id} className={s.card} style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6 }}>
+                  <p className={`${s.small} ${s.muted}`}>{formatDate(u.decidedAt ?? u.createdAt)}</p>
+                  <strong>{u.title}</strong>
+                  <p style={{ whiteSpace: "pre-wrap" }}>{u.body}</p>
+                </article>
+              ))}
+            </section>
+          )}
+
           <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="sp">
             <h2 id="sp" className={s.serif} style={{ fontSize: 22 }}>Supporters</h2>
             {d.supporters.length === 0 ? <p className={`${s.small} ${s.muted}`}>Be the first to support this fundraiser.</p> : (

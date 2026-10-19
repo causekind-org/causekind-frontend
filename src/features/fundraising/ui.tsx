@@ -94,7 +94,7 @@ export const CATEGORY_LABEL = {
 } as const;
 
 /** Campaign status chip per handoff §3.3. */
-const CAMPAIGN: Record<string, { label: string; tone: string; icon: "check" | "alert" | "clock" | "x" | "edit" | "search" }> = {
+const CAMPAIGN: Record<string, { label: string; tone: string; icon: "check" | "alert" | "clock" | "x" | "edit" | "search" | "lock" }> = {
   DRAFT: { label: "Draft", tone: s.cW, icon: "edit" },
   PUBLICATION_REVIEW: { label: "Publication review", tone: s.cN, icon: "search" },
   CHANGES_REQUESTED: { label: "Changes requested", tone: s.cW, icon: "edit" },
@@ -104,6 +104,7 @@ const CAMPAIGN: Record<string, { label: string; tone: string; icon: "check" | "a
   CANCELLED: { label: "Cancelled", tone: s.cM, icon: "x" },
   PENDING_APPROVAL: { label: "Pending approval", tone: s.cN, icon: "clock" },
   REJECTED: { label: "Rejected", tone: s.cM, icon: "x" },
+  COLLECTIONS_CLOSED: { label: "Collections closed", tone: s.cM, icon: "lock" },
 };
 
 export function CampaignChip({ status }: { status: string }) {
@@ -125,4 +126,18 @@ export function CampaignStepper({ current }: { current: number }) {
       </ol>
     </nav>
   );
+}
+
+const REVIEW_ITEM: Record<string, { label: string; tone: string }> = {
+  DRAFT: { label: "Draft", tone: s.cN },
+  SUBMITTED: { label: "Submitted", tone: s.cN },
+  CHANGES_REQUESTED: { label: "Changes requested", tone: s.cW },
+  APPROVED: { label: "Published", tone: s.cOk },
+  DECLINED: { label: "Declined", tone: s.cX },
+};
+
+/** Status of an update, page change or closure request (Phase C2). `approvedLabel` overrides "Published". */
+export function ReviewChip({ status, approvedLabel }: { status: string; approvedLabel?: string }) {
+  const c = REVIEW_ITEM[status] ?? { label: status, tone: s.cM };
+  return <span className={`${s.chip} ${c.tone}`}>{status === "APPROVED" && approvedLabel ? approvedLabel : c.label}</span>;
 }
