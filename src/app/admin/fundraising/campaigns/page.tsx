@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "@/components/AppLink";
+import { FrLink as Link } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraisingCampaigns, type CampaignFlowStatus, type FundraisingCampaignQueueRow } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";

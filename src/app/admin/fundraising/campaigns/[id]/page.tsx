@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "@/components/AppLink";
+
+import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraisingCampaigns, fundraisers, fundraisingDonors, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
@@ -12,7 +12,7 @@ type Decision = "changes" | "approve" | "decline";
 
 /** F19 — publication review workspace; F20 — publication decision dialog. */
 export default function AdminCampaignReviewPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useFrParams<{ id: string }>();
   const cid = Number(id);
   const [data, setData] = useState<FundraisingAdminCampaign | null>(null);
   const [error, setError] = useState<string | null>(null);

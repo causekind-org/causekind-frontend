@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "@/components/AppLink";
+import { FrLink as Link } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import {
   fundraisingManage, type FundraiserClosure, type FundraiserRevision, type FundraiserUpdate,

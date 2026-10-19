@@ -51,3 +51,7 @@
 }
 .switchBtn:hover { border-color: #b04a15; }
 .switchOn { background: #1f1a17; border-color: #1f1a17; color: #fff !important; }
+
+/* Fundraising pages embedded in the admin dashboard panel (2026-10-19): the dashboard sidebar replaces the switch bar. */
+.embed { margin: -8px -4px 0; }
+.embed :global(nav[aria-label="Fundraising review"]) { display: none !important; }

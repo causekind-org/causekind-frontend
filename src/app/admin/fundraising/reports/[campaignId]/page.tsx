@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "@/components/AppLink";
+
+import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraisingReports, type AdminFundraisingReport, type ReportCase } from "@/lib/api";
 import { CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
@@ -25,7 +25,7 @@ type Dialog = "pause" | "restore" | "close" | "questions" | { dismiss: AdminFund
 
 /** F34 — one fundraiser's report case: reports, organiser response, timeline, pause/restore/close. */
 export default function AdminReportCasePage() {
-  const { campaignId } = useParams<{ campaignId: string }>();
+  const { campaignId } = useFrParams<{ campaignId: string }>();
   const id = Number(campaignId);
   const [c, setC] = useState<ReportCase | null>(null);
   const [err, setErr] = useState<string | null>(null);

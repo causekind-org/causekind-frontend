@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "@/components/AppLink";
+
+import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraising, ApiError, type FundraisingAdminApplication, type FundraisingEvidence, type FundraisingScope } from "@/lib/api";
 import { CATEGORY_LABEL, StatusChip, formatDate, formatINR } from "@/features/fundraising/ui";
@@ -13,7 +13,7 @@ const DECIDABLE = ["SUBMITTED", "IN_REVIEW", "RESUBMITTED"];
 
 /** F11 — Admin application review, F12 — decision dialog (canvas F11-AdminReview, F12-DecisionDialog). */
 export default function AdminFundraisingReviewPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useFrParams<{ id: string }>();
   const appId = Number(id);
   const [data, setData] = useState<FundraisingAdminApplication | null>(null);
   const [error, setError] = useState<string | null>(null);
