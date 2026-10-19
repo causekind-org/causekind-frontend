@@ -78,7 +78,7 @@ export default function AdminReportCasePage() {
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", gap: 18, alignItems: "start" }}>
+        <div data-fr-grid="two" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 340px", gap: 18, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {c.reports.map((r) => (
               <section key={r.id} className={`${a.card} ${a.pane}`} aria-labelledby={`r${r.id}`}>

@@ -45,7 +45,7 @@ export default function AdminFundraisingReviewPage() {
             <strong className={a.err}>Couldn&apos;t load the review queue</strong><button type="button" className={`${a.btn} ${a.bs}`} onClick={load}>Retry</button>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr) 340px", gap: 18, alignItems: "start" }}>
+          <div data-fr-grid="queue3" style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr) 340px", gap: 18, alignItems: "start" }}>
             <section className={a.card} style={{ overflow: "hidden" }} aria-labelledby="qq">
               <div style={{ padding: "12px 14px" }}><h2 id="qq" className={a.h}>Waiting for review</h2></div>
               {rows === null ? <div style={{ padding: 14 }}><div className={a.skel} /></div>

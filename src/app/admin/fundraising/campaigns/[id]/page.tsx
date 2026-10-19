@@ -46,7 +46,7 @@ export default function AdminCampaignReviewPage() {
       </div>
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
 
-      <main style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
+      <main data-fr-grid="two" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <section className={a.card} style={{ overflowX: "auto" }} aria-labelledby="cmp">
             <div className={a.pane} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -74,7 +74,7 @@ export default function AdminCampaignReviewPage() {
 
           <section className={`${a.card} ${a.pane}`} aria-labelledby="pv">
             <h2 id="pv" className={a.h}>Public preview</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "240px minmax(0,1fr)", gap: 16 }}>
+            <div data-fr-grid="two" style={{ display: "grid", gridTemplateColumns: "240px minmax(0,1fr)", gap: 16 }}>
               {c.coverUrl
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={c.coverUrl} alt={c.coverAltText ?? ""} style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 6 }} />
@@ -224,7 +224,7 @@ function DonorDetails({ id }: { id: number }) {
       {err && <p className={a.err} role="alert">{err}</p>}
       {!r ? (!err && <div className={a.skel} style={{ width: "50%" }} />) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
+          <div data-fr-grid="four" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
             {stat("Confirmed donations", String(r.summary.confirmedCount))}
             {stat("Confirmed gross", formatINR(r.summary.gross))}
             {stat("Platform fee", formatINR(r.summary.fee))}

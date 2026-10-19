@@ -55,7 +55,7 @@ export default function AdminFundraisingReviewPage() {
       {app.status === "WITHDRAWN" && <div role="status" style={{ padding: "10px 28px", background: "#fdf3e1", color: "#5c3800" }}>The applicant withdrew this application. You can&apos;t record a decision.</div>}
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
 
-      <main style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "340px minmax(0,1fr) 320px", gap: 18, alignItems: "start" }}>
+      <main data-fr-grid="app3" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "340px minmax(0,1fr) 320px", gap: 18, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <section className={`${a.card} ${a.pane}`} aria-labelledby="auto">
             <div style={{ display: "flex", justifyContent: "space-between" }}><h2 id="auto" className={a.h}>Automated findings</h2><span className={`${a.small} ${a.muted}`}>not conclusions</span></div>
