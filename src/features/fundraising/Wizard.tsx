@@ -254,7 +254,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
         </div>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
-          <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}>Cost breakdown <FieldInfo k="costs" /></h2>
+          <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}>Cost breakdown <span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span> <FieldInfo k="costs" /></h2>
           <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
             <span>Expense</span><span style={{ textAlign: "right" }}>Estimated amount (₹)</span><span>Supporting reference</span><span />
           </div>
