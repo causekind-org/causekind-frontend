@@ -5786,3 +5786,31 @@ export const fundraisingManage = {
       request<unknown>(`${FRI_ADMIN}/${REVIEW_PATH[kind]}/${id}/${decision}`, { method: "POST", body: JSON.stringify(body) }),
   },
 };
+
+// ── Admin donor details for one fundraiser (2026-10-19). Every view and export is audit-logged. ──
+
+export type AdminDonorRow = {
+  id: number; name: string | null; email: string | null; phone: string | null; anonymous: boolean; amount: number;
+  feePercent: number; fee: number; net: number; status: "INITIATED" | "COMPLETED" | "FAILED"; at: string;
+  razorpayOrderId: string | null; razorpayPaymentId: string | null;
+};
+export type AdminDonorReport = {
+  campaignId: number; title: string | null;
+  summary: { confirmedCount: number; gross: number; fee: number; netToTransfer: number };
+  rows: AdminDonorRow[];
+};
+
+export const fundraisingDonors = {
+  report: (campaignId: number) => request<AdminDonorReport>(`/api/v1/admin/fundraising/campaigns/${campaignId}/donations`),
+  /** Downloads the CSV through the browser; the export itself is audit-logged server-side. */
+  async downloadCsv(campaignId: number) {
+    const res = await fetch(`${BASE_URL}/api/v1/admin/fundraising/campaigns/${campaignId}/donations.csv`, { credentials: "include", cache: "no-store" });
+    if (!res.ok) throw new ApiError(res.status, "Couldn't export donations", {});
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fundraiser-${campaignId}-donations.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  },
+};
