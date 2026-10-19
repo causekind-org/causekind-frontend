@@ -683,6 +683,8 @@ export function SiteHeader() {
     { href: "/requests", label: user?.role === "DONEE" ? t("mobileNav.requests") : t("nav.donate") },
     // Donees run fundraisers (2026-10-19). English-only label until it gets i18n keys.
     ...(FEATURES.fundraising && user?.role === "DONEE" ? [{ href: "/fundraising", label: "Fundraising" }] : []),
+    // Everyone else (donors, NGOs, signed-out visitors) browses live fundraisers.
+    ...(FEATURES.fundraising && user?.role !== "DONEE" ? [{ href: "/fundraisers", label: "Fundraisers" }] : []),
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
