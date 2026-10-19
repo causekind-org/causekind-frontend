@@ -1,18 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "@/components/AppLink";
+
+import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraisingCampaigns, fundraisers, fundraisingDonors, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
+import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 
 type Decision = "changes" | "approve" | "decline";
 
 /** F19 — publication review workspace; F20 — publication decision dialog. */
 export default function AdminCampaignReviewPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useFrParams<{ id: string }>();
   const cid = Number(id);
   const [data, setData] = useState<FundraisingAdminCampaign | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function AdminCampaignReviewPage() {
       </div>
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
 
-      <main style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
+      <main data-fr-grid="two" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <section className={a.card} style={{ overflowX: "auto" }} aria-labelledby="cmp">
             <div className={a.pane} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -74,7 +75,7 @@ export default function AdminCampaignReviewPage() {
 
           <section className={`${a.card} ${a.pane}`} aria-labelledby="pv">
             <h2 id="pv" className={a.h}>Public preview</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "240px minmax(0,1fr)", gap: 16 }}>
+            <div data-fr-grid="two" style={{ display: "grid", gridTemplateColumns: "240px minmax(0,1fr)", gap: 16 }}>
               {c.coverUrl
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={c.coverUrl} alt={c.coverAltText ?? ""} style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 6 }} />
@@ -110,7 +111,7 @@ export default function AdminCampaignReviewPage() {
         </div>
       </main>
 
-      {(c.status === "APPROVED" || c.status === "COLLECTIONS_CLOSED") && <DonorDetails id={c.id} />}
+      {(c.status === "APPROVED" || c.status === "PAUSED" || c.status === "COLLECTIONS_CLOSED") && <DonorDetails id={c.id} />}
 
       {decision && <DecisionDialog data={data} initial={decision} onClose={() => setDecision(null)} onDone={(d) => { setData(d); setDecision(null); }}
         onStale={() => { setDecision(null); setError("This campaign changed since you opened it. Refresh before deciding."); }} />}
@@ -160,9 +161,9 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
             <p className={a.small}>Payment setup isn&apos;t met, so the page stays private and can&apos;t take donations.</p>
           </div>
         )}
-        <div><label className={a.lbl} htmlFor="m">{mode === "changes" ? "What to change (organiser-facing, required)" : mode === "decline" ? "Reason (organiser-facing, required)" : "Message to the organiser (optional)"}</label>
+        <div><label className={a.lbl} htmlFor="m">{mode === "changes" ? "What to change (organiser-facing, required)" : mode === "decline" ? "Reason (organiser-facing, required)" : "Message to the organiser (optional)"} <FieldInfo k={mode === "changes" ? "pChanges" : mode === "decline" ? "pDecline" : "pMessage"} /></label>
           <textarea id="m" className={a.in} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} /></div>
-        <div><label className={a.lbl} htmlFor="n">Internal note {mode === "changes" ? "(optional)" : "(required)"}</label>
+        <div><label className={a.lbl} htmlFor="n">Internal note {mode === "changes" ? "(optional)" : "(required)"} <FieldInfo k="pNote" /></label>
           <textarea id="n" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
         <p className={`${a.small} ${a.muted}`}>Recorded with your name and the time in the review history.</p>
         {error && <p role="alert" className={a.err}>{error}</p>}
@@ -224,7 +225,7 @@ function DonorDetails({ id }: { id: number }) {
       {err && <p className={a.err} role="alert">{err}</p>}
       {!r ? (!err && <div className={a.skel} style={{ width: "50%" }} />) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
+          <div data-fr-grid="four" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
             {stat("Confirmed donations", String(r.summary.confirmedCount))}
             {stat("Confirmed gross", formatINR(r.summary.gross))}
             {stat("Platform fee", formatINR(r.summary.fee))}

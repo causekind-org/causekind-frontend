@@ -30,6 +30,8 @@ import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
+import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav";
+import { AdminFundraisingPanel } from "@/features/fundraising/AdminFundraisingPanel";
 import {
   Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
@@ -39,7 +41,7 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -61,6 +63,8 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   "user-journey": "USER_READ",
   analytics: "PAYMENT_REVIEW",
   whatsapp: "WHATSAPP",
+  // Fundraising pages render in the panel (2026-10-19); same capability as /admin/fundraising.
+  fundraising: "CAMPAIGNS",
 };
 /** ?tab= values that open an NGO tab (tab keys plus the longer names used in links). */
 const NGO_TAB_LINKS: Record<string, TabKey> = {
@@ -187,6 +191,9 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState<TabKey>("campaigns");
+  // Which fundraising page the panel shows when tab === "fundraising".
+  const [frPath, setFrPath] = useState("/admin/fundraising");
+  const openFundraising = useCallback((href: string) => { setFrPath(href); setTab("fundraising"); }, []);
   // NGO sidebar group: opens with its header, and always while one of its tabs is active.
   const [ngoExpanded, setNgoExpanded] = useState(false);
   const [journeyUserId, setJourneyUserId] = useState<number | null>(null);
@@ -554,7 +561,7 @@ export default function AdminDashboardPage() {
   // wrong side of the mobile nav split below.
   const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
   const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
-    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp";
+    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising";
 
   const TABS = [
     { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
@@ -596,6 +603,7 @@ export default function AdminDashboardPage() {
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
     : tab === "whatsapp" ? "WhatsApp"
+    : tab === "fundraising" ? "Fundraising"
     : "Approval Queue";
 
   const headerSubtitle = tab === "ngo-applications"
@@ -616,6 +624,8 @@ export default function AdminDashboardPage() {
     ? "Donation and campaign performance"
     : tab === "whatsapp"
     ? "Templates, flows, sends, and the message log"
+    : tab === "fundraising"
+    ? "Applications, publication, updates and reports for donee fundraisers"
     : tab === "ai-logs"
     ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} across all listings`
     : loading ? "Loading..." : total > 0
@@ -724,6 +734,8 @@ export default function AdminDashboardPage() {
               )}
             </div>
           )}
+
+          <AdminFundraisingNav variant="sidebar" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
         </div>
 
         {/* Reports */}
@@ -870,6 +882,8 @@ export default function AdminDashboardPage() {
                 ))}
               </>
             )}
+
+            <AdminFundraisingNav variant="strip" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
 
             {REPORTS.length > 0 && (
               <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
@@ -1144,6 +1158,9 @@ export default function AdminDashboardPage() {
 
           {/* ── WHATSAPP TAB — previously the standalone /admin/whatsapp page ── */}
           {tab === "whatsapp" && <WhatsAppPanel />}
+
+          {/* ── FUNDRAISING — the /admin/fundraising pages, rendered in the panel ── */}
+          {tab === "fundraising" && <AdminFundraisingPanel path={frPath} go={setFrPath} />}
         </div>
 
         <ApprovalDetailDrawer

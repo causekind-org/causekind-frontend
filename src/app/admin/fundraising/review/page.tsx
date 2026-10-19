@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "@/components/AppLink";
+import { FrLink as Link } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import {
   fundraisingManage, type FundraiserClosure, type FundraiserRevision, type FundraiserUpdate,
   type ReviewItemKind, type ReviewItemRow,
 } from "@/lib/api";
 import { formatDate, formatINR } from "@/features/fundraising/ui";
+import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 
 const KIND: Record<ReviewItemKind, { label: string; bg: string; fg: string }> = {
@@ -38,13 +39,14 @@ export default function AdminFundraisingReviewPage() {
           <Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link>
           <Link href="/admin/fundraising/campaigns" className={a.switchBtn}>Publication review</Link>
           <span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Updates &amp; changes</span>
+          <Link href="/admin/fundraising/reports" className={a.switchBtn}>Reports</Link>
         </nav>
         {failed ? (
           <div className={a.card} role="alert" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start", borderColor: "#e9b8b3" }}>
             <strong className={a.err}>Couldn&apos;t load the review queue</strong><button type="button" className={`${a.btn} ${a.bs}`} onClick={load}>Retry</button>
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr) 340px", gap: 18, alignItems: "start" }}>
+          <div data-fr-grid="queue3" style={{ display: "grid", gridTemplateColumns: "320px minmax(0, 1fr) 340px", gap: 18, alignItems: "start" }}>
             <section className={a.card} style={{ overflow: "hidden" }} aria-labelledby="qq">
               <div style={{ padding: "12px 14px" }}><h2 id="qq" className={a.h}>Waiting for review</h2></div>
               {rows === null ? <div style={{ padding: 14 }}><div className={a.skel} /></div>
@@ -131,7 +133,7 @@ function Review({ row, onDecided }: { row: ReviewItemRow; onDecided: () => void 
       </section>
       <section className={a.card} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="dc">
         <h2 id="dc" className={a.h}>Decision</h2>
-        <label className={a.lbl} htmlFor="msg">Message to organiser <span className={a.muted} style={{ fontWeight: 500 }}>(required unless approving)</span></label>
+        <label className={a.lbl} htmlFor="msg">Message to organiser <FieldInfo k="rMessage" /> <span className={a.muted} style={{ fontWeight: 500 }}>(required unless approving)</span></label>
         <textarea id="msg" className={a.in} rows={3} value={msg} onChange={(e) => setMsg(e.target.value)} />
         {err && <p className={a.err} role="alert">{err}</p>}
         <button type="button" className={`${a.btn} ${a.bp}`} disabled={busy || !item} onClick={() => decide("APPROVED")}>
