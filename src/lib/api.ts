@@ -272,7 +272,11 @@ async function request<T>(
 
   // Also invalidate after completion: reads triggered while a write was in
   // progress (including SSE refreshes) may still contain the pre-write state.
-  return isGet ? execute() : execute().finally(invalidateRequestCache);
+  return isGet ? execute() : execute().finally(() => {
+    invalidateRequestCache();
+    // Lets live counters (e.g. the admin fundraising sidebar) refresh after any change.
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("ck:data-changed"));
+  });
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -5638,7 +5642,7 @@ export const fundraising = {
 
 export type CampaignFlowStatus =
   | "DRAFT" | "PUBLICATION_REVIEW" | "CHANGES_REQUESTED" | "PUBLICATION_DECLINED"
-  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED" | "COLLECTIONS_CLOSED" | "PAUSED";
+  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED" | "COLLECTIONS_CLOSED" | "PAUSED" | "OUTCOME_REPORTING";
 export type NameVisibility = "FULL" | "FIRST_NAME" | "HIDDEN";
 export type LocationVisibility = "CITY" | "STATE" | "HIDDEN";
 export type CampaignCostRow = { expense: string; amount: number | null; reference: string | null; approvedAmount: number | null; changed: boolean };
@@ -5714,6 +5718,7 @@ export type FundraiserDetail = {
   costs: { expense: string; amount: number | null }[]; totalCosts: number; otherHelp: number;
   acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
   status: CampaignFlowStatus; updates: FundraiserUpdate[]; pauseNotice: string | null;
+  outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
 };
 
 export const fundraisers = {
@@ -5756,7 +5761,7 @@ export type FundraiserRevisionInput = {
   title?: string | null; story?: string | null; targetAmount?: number | null; endDate?: string | null;
   changeReason?: string | null; expectedVersion?: number;
 };
-export type ReviewItemKind = "UPDATE" | "REVISION" | "CLOSURE";
+export type ReviewItemKind = "UPDATE" | "REVISION" | "CLOSURE" | "OUTCOME";
 export type ReviewItemRow = {
   kind: ReviewItemKind; id: number; campaignId: number; campaignTitle: string | null; organiser: string;
   material: boolean; submittedAt: string | null;
@@ -5764,7 +5769,7 @@ export type ReviewItemRow = {
 
 const FM = (id: number) => `/api/v1/fundraising/campaigns/${id}`;
 const FRI_ADMIN = "/api/v1/admin/fundraising/review-items";
-const REVIEW_PATH: Record<ReviewItemKind, string> = { UPDATE: "updates", REVISION: "revisions", CLOSURE: "closures" };
+const REVIEW_PATH: Record<ReviewItemKind, string> = { UPDATE: "updates", REVISION: "revisions", CLOSURE: "closures", OUTCOME: "outcomes" };
 
 export const fundraisingManage = {
   overview: (id: number) => request<FundraiserOverview>(`${FM(id)}/overview`),
@@ -5903,5 +5908,48 @@ export const fundraisingReports = {
       request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/restore`, { method: "POST", body: JSON.stringify(body) }),
     closeCollections: (campaignId: number, body: { expectedVersion: number; internalReason: string; message: string }) =>
       request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/close-collections`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
+
+// ── Fundraiser outcome reports and end of collections (Phase C4, 2026-10-19) ──
+
+export type OutcomeEvidence = { id: number; label: string; fileName: string | null; hasFile: boolean; explanation: string | null; publicVisible: boolean };
+export type FundraiserOutcome = {
+  id: number; version: number; campaignId: number; campaignTitle: string | null; moneyUsed: string | null; currentSituation: string | null;
+  status: ReviewItemStatus; reviewerMessage: string | null; evidence: OutcomeEvidence[];
+  submittedAt: string | null; decidedAt: string | null; createdAt: string;
+  confirmed: number; target: number | null; closedOn: string | null;
+};
+
+const FO = (id: number) => `/api/v1/fundraising/campaigns/${id}/outcome`;
+
+export const fundraisingOutcomes = {
+  /** Undefined when no outcome has been started. */
+  current: (campaignId: number) => request<FundraiserOutcome | undefined>(FO(campaignId)),
+  start: (campaignId: number) => request<FundraiserOutcome>(FO(campaignId), { method: "POST" }),
+  save: (campaignId: number, id: number, body: { moneyUsed: string; currentSituation: string; expectedVersion: number }) =>
+    request<FundraiserOutcome>(`${FO(campaignId)}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  async addEvidence(campaignId: number, id: number, label: string, explanation: string, publicVisible: boolean, file?: File | null) {
+    const fd = new FormData();
+    fd.append("label", label);
+    if (explanation) fd.append("explanation", explanation);
+    fd.append("publicVisible", String(publicVisible));
+    if (file) fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${FO(campaignId)}/${id}/evidence`, { method: "POST", credentials: "include", body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? "Couldn't add that — try again.", body);
+    }
+    invalidateRequestCache();
+    return (await res.json()) as FundraiserOutcome;
+  },
+  removeEvidence: (campaignId: number, id: number, evidenceId: number) =>
+    request<FundraiserOutcome>(`${FO(campaignId)}/${id}/evidence/${evidenceId}`, { method: "DELETE" }),
+  submit: (campaignId: number, id: number) => request<FundraiserOutcome>(`${FO(campaignId)}/${id}/submit`, { method: "POST" }),
+  admin: {
+    get: (id: number) => request<FundraiserOutcome>(`/api/v1/admin/fundraising/review-items/outcomes/${id}`),
+    evidence: (id: number, evidenceId: number) => request<{ url: string }>(`/api/v1/admin/fundraising/review-items/outcomes/${id}/evidence/${evidenceId}`),
+    closeNow: (campaignId: number, reason: string) =>
+      request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${campaignId}/close-now`, { method: "POST", body: JSON.stringify({ reason }) }),
   },
 };

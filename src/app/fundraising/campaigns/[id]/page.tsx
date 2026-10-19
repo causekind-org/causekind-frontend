@@ -34,7 +34,7 @@ function CampaignScreen({ id }: { id: number }) {
     );
   }
   if (!c) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }} />;
-  if (c.status === "APPROVED" || c.status === "PAUSED" || c.status === "COLLECTIONS_CLOSED") return <ManageWorkspace c={c} />;
+  if (["APPROVED", "PAUSED", "COLLECTIONS_CLOSED", "OUTCOME_REPORTING"].includes(c.status)) return <ManageWorkspace c={c} />;
   if (c.status === "DRAFT" || c.status === "CHANGES_REQUESTED") return <CampaignWizard initial={c} onSubmitted={setC} />;
   return <CampaignStatusView c={c} />;
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
-import { fundraisingCampaigns, fundraisers, fundraisingDonors, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
+import { fundraisingCampaigns, fundraisers, fundraisingDonors, fundraisingOutcomes, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
@@ -102,6 +102,7 @@ export default function AdminCampaignReviewPage() {
                 : <>Approving now results in <strong>Approved — setup incomplete</strong>. It goes live once the transfer details are confirmed.</>}
             </p>
             <p className={`${a.small} ${a.muted}`}>CauseKind stores no bank details. Sahas collects and keeps them.</p>
+            {(c.status === "APPROVED" || c.status === "PAUSED") && <CloseNow id={c.id} onDone={setData} />}
           </section>
           <section className={`${a.card} ${a.pane}`} aria-labelledby="dr">
             <h2 id="dr" className={a.h}>Decision record</h2>
@@ -111,7 +112,7 @@ export default function AdminCampaignReviewPage() {
         </div>
       </main>
 
-      {(c.status === "APPROVED" || c.status === "PAUSED" || c.status === "COLLECTIONS_CLOSED") && <DonorDetails id={c.id} />}
+      {["APPROVED", "PAUSED", "COLLECTIONS_CLOSED", "OUTCOME_REPORTING"].includes(c.status) && <DonorDetails id={c.id} />}
 
       {decision && <DecisionDialog data={data} initial={decision} onClose={() => setDecision(null)} onDone={(d) => { setData(d); setDecision(null); }}
         onStale={() => { setDecision(null); setError("This campaign changed since you opened it. Refresh before deciding."); }} />}
@@ -179,6 +180,30 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
 }
 
 /** Admin confirms Sahas holds the donee's transfer details; on an approved campaign this makes it Live. */
+/** "Close now": the same audited transition as the daily end-date job (Live or Paused → Outcome reporting). */
+function CloseNow({ id, onDone }: { id: number; onDone: (d: FundraisingAdminCampaign) => void }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!open) return <button type="button" className={`${a.btn} ${a.bs}`} style={{ color: "#8f1d1d" }} onClick={() => setOpen(true)}>Close now</button>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 8, background: "#fbeaea" }}>
+      <label className={a.lbl} htmlFor="cnr">Why end donations now? (internal, required) <FieldInfo k="cnReason" /></label>
+      <textarea id="cnr" className={a.in} rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+      <p className={`${a.small} ${a.muted}`}>Donations stop for good and the organiser is asked for an outcome report. Existing donations are kept. No refunds.</p>
+      {err && <p className={a.err} role="alert">{err}</p>}
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => setOpen(false)}>Cancel</button>
+        <button type="button" className={`${a.btn} ${a.bx}`} disabled={busy || !reason.trim()}
+          onClick={async () => { setBusy(true); setErr(null); try { onDone(await fundraisingOutcomes.admin.closeNow(id, reason.trim())); setOpen(false); } catch (e) { setErr(e instanceof Error ? e.message : "Couldn't close"); } finally { setBusy(false); } }}>
+          End donations
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function PayoutToggle({ id, version, ready, onDone, onError }: {
   id: number; version: number; ready: boolean; onDone: (d: FundraisingAdminCampaign) => void; onError: (m: string) => void;
 }) {

@@ -106,6 +106,7 @@ const CAMPAIGN: Record<string, { label: string; tone: string; icon: "check" | "a
   REJECTED: { label: "Rejected", tone: s.cM, icon: "x" },
   COLLECTIONS_CLOSED: { label: "Collections closed", tone: s.cM, icon: "lock" },
   PAUSED: { label: "Paused", tone: s.cW, icon: "clock" },
+  OUTCOME_REPORTING: { label: "Outcome reporting", tone: s.cM, icon: "lock" },
 };
 
 export function CampaignChip({ status }: { status: string }) {

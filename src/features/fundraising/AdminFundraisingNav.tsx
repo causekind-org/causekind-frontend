@@ -18,6 +18,15 @@ const APP_DETAIL = /^\/admin\/fundraising\/\d+$/;
 /** Waiting counts per fundraising queue; a failed queue counts as 0 rather than hiding the nav. */
 function useCounts(enabled: boolean, refreshKey: string | null) {
   const [c, setC] = useState<Record<Key, number>>({ apps: 0, pub: 0, items: 0, reports: 0 });
+  const [tick, setTick] = useState(0);
+  // Refresh after any change made anywhere in the app (approve, decline, pause...).
+  useEffect(() => {
+    if (!enabled) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const on = () => { clearTimeout(t); t = setTimeout(() => setTick((n) => n + 1), 400); };
+    window.addEventListener("ck:data-changed", on);
+    return () => { clearTimeout(t); window.removeEventListener("ck:data-changed", on); };
+  }, [enabled]);
   useEffect(() => {
     if (!enabled) return;
     const n = (p: Promise<unknown[]>) => p.then((x) => x.length).catch(() => 0);
@@ -27,7 +36,7 @@ function useCounts(enabled: boolean, refreshKey: string | null) {
       n(fundraisingManage.admin.queue()),
       fundraisingReports.admin.cases(true).then((r) => r.filter((x) => x.openReports > 0).length).catch(() => 0),
     ]).then(([apps, pub, items, reports]) => setC({ apps, pub, items, reports }));
-  }, [enabled, refreshKey]);
+  }, [enabled, refreshKey, tick]);
   return c;
 }
 

@@ -74,6 +74,20 @@ export default function FundraiserPage() {
             <p className={s.small}>Our team reviewed the organiser&apos;s identity and the documents behind this need, and checked this page against them before it went live. A review is not a guarantee.</p>
           </section>
 
+          {d.outcome && (
+            <section className={s.card} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 10, borderColor: "#bcd9c6" }} aria-labelledby="oc">
+              <h2 id="oc" className={s.serif} style={{ fontSize: 22 }}>Outcome</h2>
+              {d.outcome.publishedAt && <p className={`${s.small} ${s.muted}`}>Published {formatDate(d.outcome.publishedAt)} · reviewed by CauseKind</p>}
+              <div><strong className={s.small}>What the money paid for</strong><p style={{ whiteSpace: "pre-wrap" }}>{d.outcome.moneyUsed}</p></div>
+              <div><strong className={s.small}>How things are now</strong><p style={{ whiteSpace: "pre-wrap" }}>{d.outcome.currentSituation}</p></div>
+              {d.outcome.evidence.length > 0 && (
+                <ul className={s.small} style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {d.outcome.evidence.map((e, i) => <li key={i}><strong>{e.label}</strong> · {e.url ? <a href={e.url} target="_blank" rel="noopener noreferrer">View receipt</a> : <span className={s.muted}>{e.explanation}</span>}</li>)}
+                </ul>
+              )}
+            </section>
+          )}
+
           {d.updates.length > 0 && (
             <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="up">
               <h2 id="up" className={s.serif} style={{ fontSize: 22 }}>Updates</h2>
@@ -99,7 +113,7 @@ export default function FundraiserPage() {
         </article>
 
         <aside className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }} aria-label="Donate">
-          <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : d.status === "PAUSED" ? s.cW : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? "Live" : d.status === "PAUSED" ? "Paused" : "Collections closed"}</span>
+          <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : d.status === "PAUSED" ? s.cW : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? "Live" : d.status === "PAUSED" ? "Paused" : d.outcome ? "Outcome published" : "Collections closed"}</span>
           {d.status === "PAUSED" && <p className={s.small} role="status" style={{ padding: "10px 12px", borderRadius: 8, background: "#fdf3e1" }}>{d.pauseNotice || "Donations are paused while we review some information."}</p>}
           <p className={s.tabular}><strong style={{ fontSize: 30 }}>{formatINR(c.raised)}</strong><br /><span className={s.muted}>confirmed of {formatINR(c.target)} target</span></p>
           <div className={s.prog} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${pct}% of target`}><span style={{ width: `${pct}%` }} /></div>
