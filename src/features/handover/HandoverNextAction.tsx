@@ -20,7 +20,7 @@ import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmP
  * transition so the change is noticed without being animated at.
  */
 export function HandoverNextAction({
-  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat, onChanged, deliveryActions,
+  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat, onChanged, deliveryActions, confirmPanel,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -34,6 +34,8 @@ export function HandoverNextAction({
   onChanged: () => void;
   /** Absent on a flow that can't take a delivery address. */
   deliveryActions?: DeliveryAddressActions;
+  /** Replaces the confirmation panel (NGO drives only); absent elsewhere. */
+  confirmPanel?: React.ReactNode;
 }) {
   const copy = nextStepCopy(vm);
   const donor = vm.role === "DONOR";
@@ -89,7 +91,7 @@ export function HandoverNextAction({
         )}
 
         {!addressFirst && (vm.state === "ready_to_handover" || vm.state === "partially_confirmed") && (
-          <NeedsConfirmation
+          <NeedsConfirmation confirmPanel={confirmPanel}
             vm={vm} otp={otp}
             onGenerateOtp={onGenerateOtp}
             onDonorConfirm={onDonorConfirm}
@@ -100,6 +102,8 @@ export function HandoverNextAction({
           />
         )}
 
+        {/* NGO drive offers: the photo step (the drive's panel) completes the handover. */}
+        {vm.state === "photo_pending" && confirmPanel && <div className="-mx-1" data-testid="handover-photo-step">{confirmPanel}</div>}
         {vm.state === "at_risk" && (
           <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
             <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
@@ -112,6 +116,11 @@ export function HandoverNextAction({
             <p className="flex items-start gap-2 text-sm text-stone-600 dark:text-stone-400">
               <Clock className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden />
               Nothing to do — this closes on its own shortly.
+            </p>
+          ) : vm.flow === "NGO_OFFER" ? (
+            // The "Everything's fine" action is lower on the page; this card only points the way.
+            <p className="text-sm text-stone-600 dark:text-stone-400" data-testid="drive-issue-window-hint">
+              If something is wrong with the items, use “Report a problem” below.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
@@ -129,7 +138,8 @@ export function HandoverNextAction({
   );
 }
 
-function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat }: {
+function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat, confirmPanel }: {
+  confirmPanel?: React.ReactNode;
   vm: HandoverViewModel;
   otp: string | null;
   onGenerateOtp: () => Promise<void>;
@@ -150,6 +160,7 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
       <div className="space-y-4">
         {showConfirmationPanel && (
           <div className="-mx-1">
+            {confirmPanel ?? (
             <HandoverConfirmationPanel
               vm={vm}
               otp={otp}
@@ -159,6 +170,7 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
               onVerifyOtp={onVerifyOtp}
               proof={proof}
             />
+            )}
           </div>
         )}
         <WaitingRow onOpenChat={onOpenChat} label="Send them a nudge" />
@@ -168,6 +180,7 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
 
   return (
     <div className="-mx-1">
+      {confirmPanel ?? (
       <HandoverConfirmationPanel
         vm={vm}
         otp={otp}
@@ -177,6 +190,7 @@ function NeedsConfirmation({ vm, otp, onGenerateOtp, onDonorConfirm, onDoneeConf
               onVerifyOtp={onVerifyOtp}
               proof={proof}
       />
+      )}
     </div>
   );
 }

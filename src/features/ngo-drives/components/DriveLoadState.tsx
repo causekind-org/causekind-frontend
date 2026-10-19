@@ -48,10 +48,10 @@ export function HandoverNotFound({ driveId, role }: { driveId?: number; role: "N
 }
 
 /** Any other failure: say what went wrong and let the person try again. */
-export function DriveLoadError({ message, onRetry }: { message: string; onRetry: () => void }) {
+export function DriveLoadError({ title = "We couldn't load this drive", message, onRetry }: { title?: string; message: string; onRetry: () => void }) {
   return (
     <div role="alert" className="mx-auto my-12 max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center dark:border-red-900/50 dark:bg-red-950/30">
-      <h2 className="text-lg font-bold text-red-900 dark:text-red-200">We couldn&apos;t load this drive</h2>
+      <h2 className="text-lg font-bold text-red-900 dark:text-red-200">{title}</h2>
       <p className="mt-2 text-sm text-red-800 dark:text-red-300">{message}</p>
       <button type="button" onClick={onRetry}
         className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-red-700 px-5 text-sm font-bold text-white hover:bg-red-800">

@@ -1,5 +1,6 @@
 "use client";
 
+import { PHONE_COUNTRIES, fromStoredPhone, phoneError, toStoredPhone } from "@/features/ngo-drives/phoneCountries";
 import React, { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -18,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, ArrowLeft, ArrowRight, UploadCloud, X, CheckCircle2, ShieldCheck, Layers, ChevronLeft, Shield, Eye } from "lucide-react";
 import { compressImageIfNeeded } from "@/lib/imageCompression";
 import { ALL_REQUEST_CATEGORIES as CATEGORIES } from "@/lib/categoryVisuals";
@@ -49,6 +51,16 @@ const DETAILS_MAX = 500;
 
 export const WORKING_ORDER_CATEGORIES = ["Electronics", "Household"] as const;
 export const REQUIRE_CLEAN_CATEGORIES = ["Clothing", "Household", "Furniture"] as const;
+
+const DAY_WORDS: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
+
+/** The handover mode in words, with the pickup radius where pickup applies. */
+export function handoverModeInWords(mode: string, radius: number | null): string {
+  const within = radius != null ? ` within ${radius} km` : "";
+  if (mode === "DROP_OFF") return "Donors drop the items off at the drive address";
+  if (mode === "PICKUP") return `I pick up from donors${within}`;
+  return `I pick up from donors${within}; donors farther away drop off at the drive address`;
+}
 
 export const HANDOVER_MODES = [
   { value: "DROP_OFF", label: "Drop-off only" },
@@ -160,6 +172,9 @@ function NewNgoDriveForm() {
   const [quantity, setQuantity] = useState<number | "">("");
   const [unit, setUnit] = useState<"PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS">("PIECES");
   const [photos, setPhotos] = useState<DrivePhotoItem[]>([]);
+  // The drive cover (a real photo of the NGO's work), separate from the reference photos.
+  const [coverPhoto, setCoverPhoto] = useState<DrivePhotoItem | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   // Step 1: Urgency & item requirements
   const [urgency, setUrgency] = useState<"NORMAL" | "HIGH" | "CRITICAL">("NORMAL");
@@ -240,6 +255,8 @@ function NewNgoDriveForm() {
   // Step 2: Contact person
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  // Country code for the contact phone; India by default. Never prefilled from the account.
+  const [contactDial, setContactDial] = useState<string>("+91");
   const [altContact, setAltContact] = useState("");
   const [pastWorkUrl, setPastWorkUrl] = useState("");
 
@@ -309,6 +326,7 @@ function NewNgoDriveForm() {
       setRequireClean(Boolean(d.requireClean));
       setDetails(d.details || "");
 
+      setCoverPhoto(d.coverPhotoUrl ? { url: d.coverPhotoUrl } : null);
       // Photos migration
       if (Array.isArray(d.photos) && d.photos.length > 0) {
         setPhotos(d.photos.map(p => ({ url: p.url, storageKey: p.storageKey, sortOrder: p.sortOrder })));
@@ -350,7 +368,7 @@ function NewNgoDriveForm() {
 
       // Contact
       setContactName(d.contactName || "");
-      setContactPhone(d.contactPhone || "");
+      { const ph = fromStoredPhone(d.contactPhone); setContactDial(ph.code); setContactPhone(ph.digits); }
       setAltContact(d.altContact || "");
       setPastWorkUrl(d.pastWorkUrl || "");
 
@@ -379,6 +397,7 @@ function NewNgoDriveForm() {
         setRequireClean(Boolean(p.requireClean));
         setDetails(p.details || "");
 
+        setCoverPhoto(p.coverPhoto && typeof p.coverPhoto.url === "string" ? p.coverPhoto : null);
         // Photos draft migration
         if (Array.isArray(p.photos) && p.photos.length > 0) {
           setPhotos(p.photos);
@@ -420,7 +439,7 @@ function NewNgoDriveForm() {
 
         // Contact
         setContactName(p.contactName || "");
-        setContactPhone(p.contactPhone || "");
+        { const ph = fromStoredPhone(p.contactPhone); setContactDial(ph.code); setContactPhone(ph.digits); }
         setAltContact(p.altContact || "");
         setPastWorkUrl(p.pastWorkUrl || "");
 
@@ -443,9 +462,9 @@ function NewNgoDriveForm() {
   useEffect(() => {
     if (draftLoaded) {
       if (!contactName && ngoContactName) setContactName(ngoContactName);
-      if (!contactPhone && ngoContactPhone) setContactPhone(ngoContactPhone);
+      // The contact phone and alternate contact are left for the NGO to type.
     }
-  }, [ngoContactName, ngoContactPhone, contactName, contactPhone, draftLoaded]);
+  }, [ngoContactName, contactName, draftLoaded]);
 
   const saveDraft = useCallback(async () => {
     if (!draftLoaded) return;
@@ -453,14 +472,14 @@ function NewNgoDriveForm() {
     try {
       const saveObj = {
         title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
-        photos, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity,
+        photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity,
         locationCountry: driveLoc.countryIso, locationState: driveLoc.stateIso, locationPincode: driveLoc.pincode,
         locationLatitude: driveLoc.latitude, locationLongitude: driveLoc.longitude,
         pickupRadiusKm: radiusKm(radiusChoice, customRadius),
         beneficiaryGroup, beneficiaryCount, beneficiaryDescription,
         neededBy, availableDays, availableFrom, availableTo, handoverMode,
         changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-        contactName, contactPhone, altContact, pastWorkUrl,
+        contactName, contactPhone: toStoredPhone(contactDial, contactPhone.trim()), altContact, pastWorkUrl,
         declarations: { accurate: declAccurate, usedOnlyForBeneficiaries: declUsedOnly, proofWithin48h: declProof, facesWithConsent: declFaces, notDuplicate: declNotDuplicate, falseInfoConsequences: declFalseInfo, contactConsent: declContact }
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(saveObj));
@@ -470,11 +489,11 @@ function NewNgoDriveForm() {
     }
   }, [
     draftLoaded, title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
-    photos, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity, driveLoc, radiusChoice, customRadius,
+    photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity, driveLoc, radiusChoice, customRadius,
     beneficiaryGroup, beneficiaryCount, beneficiaryDescription,
     neededBy, availableDays, availableFrom, availableTo, handoverMode,
     changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-    contactName, contactPhone, altContact, pastWorkUrl,
+    contactName, contactPhone, contactDial, altContact, pastWorkUrl,
     declAccurate, declUsedOnly, declProof, declFaces, declNotDuplicate, declFalseInfo, declContact, DRAFT_KEY
   ]);
 
@@ -537,6 +556,23 @@ function NewNgoDriveForm() {
     }
   }
 
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} is larger than 5 MB.`); return; }
+    setCoverUploading(true);
+    try {
+      const url = await uploadNgoDriveReferencePhoto(await compressImageIfNeeded(file));
+      setCoverPhoto({ url });
+      toast.success("Cover photo uploaded");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to attach photo");
+    } finally {
+      setCoverUploading(false);
+    }
+  }
+
   function handleRemovePhoto(index: number) {
     setPhotos(prev => prev.filter((_, i) => i !== index));
   }
@@ -591,7 +627,7 @@ function NewNgoDriveForm() {
       if (!itemName.trim() || itemName.length < 2 || itemName.length > 60) e.itemName = "Item name must be 2-60 characters";
       if (quantity === "" || quantity < 2 || quantity > 10000) e.quantity = "Drives collect in bulk: ask for 2 to 10000";
       if (!unit) e.unit = "Unit is required";
-      if (photos.length === 0) e.photos = "Upload at least 1 photo (up to 5)";
+      if (photos.length > 5) e.photos = "Up to 5 reference photos";
       if (!condition) e.condition = "Condition is required";
       if (!details.trim()) e.details = "Add the details donors need";
       else if (details.length > DETAILS_MAX) e.details = `Details cannot exceed ${DETAILS_MAX} characters`;
@@ -620,7 +656,7 @@ function NewNgoDriveForm() {
       if (!changemakerPhotoUrl) e.changemakerPhoto = "Photo of the person leading this drive is required";
       if (!changemakerWhy.trim() || changemakerWhy.length < 30 || changemakerWhy.length > 300) e.changemakerWhy = "Why you do this work must be 30-300 characters (2 to 3 lines)";
       if (!contactName.trim()) e.contactName = "Contact name is required";
-      if (!contactPhone.trim() || contactPhone.length < 10) e.contactPhone = "Valid phone is required";
+      { const err = phoneError(contactDial, contactPhone.trim()); if (err) e.contactPhone = err; }
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
@@ -669,7 +705,10 @@ function NewNgoDriveForm() {
         requireClean,
         details: details.trim(),
         photos: photos.map((p, idx) => ({ url: p.url, storageKey: p.storageKey, sortOrder: idx })),
-        referencePhotoUrl: photos[0]?.url || undefined,
+        // The card image: the cover, else the first reference photo.
+        referencePhotoUrl: coverPhoto?.url || photos[0]?.url || undefined,
+        coverPhotoUrl: coverPhoto?.url || undefined,
+        coverPhotoKey: coverPhoto?.storageKey || undefined,
         whoFor: whoFor.trim(),
         whyNow: whyNow.trim(),
         whatChanges: whatChanges.trim(),
@@ -696,7 +735,7 @@ function NewNgoDriveForm() {
         changemakerPhotoKey: changemakerPhotoKey || undefined,
         changemakerWhy: changemakerWhy.trim(),
         contactName: contactName.trim(),
-        contactPhone: contactPhone.trim(),
+        contactPhone: toStoredPhone(contactDial, contactPhone.trim()),
         altContact: altContact.trim() || undefined,
         pastWorkUrl: pastWorkUrl.trim() || undefined,
         declarationsVersion: "v2",
@@ -812,29 +851,30 @@ function NewNgoDriveForm() {
     );
   }
 
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950 flex flex-col items-center justify-center p-4">
-        <div className="bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-3xl p-8 max-w-md w-full text-center shadow-xl">
-          <div className="w-16 h-16 bg-ngo-100 dark:bg-ngo-900/30 text-ngo-700 dark:text-ngo-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <CheckCircle2 className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-2">Drive submitted!</h1>
-          <p className="text-stone-500 dark:text-stone-400 text-sm mb-6 leading-relaxed">
-            Our team is reviewing your drive to ensure all details and safeguards are met. It usually goes live within 2 to 4 hours.
-          </p>
-          <div className="space-y-3">
-            <Link href="/dashboard/ngo" className="block w-full py-3 px-4 rounded-xl bg-ngo-700 hover:bg-ngo-800 text-white font-bold text-sm transition-colors">
-              Go to NGO Dashboard
-            </Link>
-            <button type="button" onClick={() => { setSubmitted(false); setStep("drive-details"); }} className="block w-full py-3 px-4 rounded-xl border border-stone-200 dark:border-zinc-800 hover:bg-stone-50 dark:hover:bg-zinc-800 text-stone-700 dark:text-stone-300 font-semibold text-sm transition-colors">
-              Start another drive
-            </button>
-          </div>
+  // "Drive submitted!" as a popup over the form. One drive at a time: "Start another drive" stays disabled.
+  const submittedPopup = submitted ? (
+    <Dialog open onOpenChange={() => { /* closed with the buttons only */ }}>
+      <DialogContent data-ck-role-theme="ngo" data-testid="drive-submitted" showCloseButton={false} className="block max-w-md p-8 text-center">
+        <div className="w-16 h-16 bg-ngo-100 dark:bg-ngo-900/30 text-ngo-700 dark:text-ngo-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <ShieldCheck className="w-8 h-8" aria-hidden />
         </div>
-      </div>
-    );
-  }
+        <DialogTitle className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-2">Drive submitted!</DialogTitle>
+        <DialogDescription className="text-stone-500 dark:text-stone-400 text-sm mb-6 leading-relaxed">
+          Our team is reviewing your drive to ensure all details and safeguards are met. It usually goes live within 2 to 4 hours.
+        </DialogDescription>
+        <div className="space-y-3">
+          <Link href="/dashboard/ngo" className="block w-full py-3 px-4 rounded-xl bg-ngo-700 hover:bg-ngo-800 text-white font-bold text-sm transition-colors">
+            Go to NGO dashboard
+          </Link>
+          <button type="button" disabled aria-describedby="one-drive-note"
+            className="block w-full py-3 px-4 rounded-xl border border-stone-200 dark:border-zinc-800 text-stone-400 dark:text-stone-500 font-semibold text-sm cursor-not-allowed">
+            Start another drive
+          </button>
+          <p id="one-drive-note" className="text-xs text-stone-500 dark:text-stone-400">You can start another drive once this one is completed with proof.</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  ) : null;
 
   if (step === "drive-type") {
     return (
@@ -944,64 +984,6 @@ function NewNgoDriveForm() {
             </WizardField>
           </div>
 
-          {/* Photos (1 to 5 images) */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-stone-700 dark:text-stone-200 block">
-              Photos<span className="text-red-500">*</span> <span className="text-stone-400 font-normal">({photos.length}/5)</span>
-            </label>
-            <p className="text-xs text-stone-500">Show the need, not identifiable faces of children without consent.</p>
-            {fieldErrors.photos && <p className="text-xs text-red-500">{fieldErrors.photos}</p>}
-            
-            <div className="flex flex-wrap items-center gap-3 pt-1">
-              {photos.map((photo, idx) => (
-                <div key={photo.url + idx} className="relative w-20 h-20 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0 group">
-                  <img src={photo.url} alt={`Drive photo ${idx + 1}`} className="w-full h-full object-cover" />
-                  {idx === 0 ? (
-                    <span className="absolute top-1 left-1 bg-ngo-700 text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                      Cover
-                    </span>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleMakeCover(idx)}
-                      className="absolute bottom-1 left-1 right-1 bg-black/75 hover:bg-black text-white text-[9px] font-bold py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-center"
-                    >
-                      Make cover
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto(idx)}
-                    aria-label={`Remove photo ${idx + 1}`}
-                    className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full shadow"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-
-              {photos.length < 5 && (
-                <button
-                  type="button"
-                  onClick={() => document.getElementById("photos-upload")?.click()}
-                  disabled={photoUploading}
-                  className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 dark:border-zinc-700 hover:border-ngo-600 dark:hover:border-ngo-400 flex flex-col items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors"
-                >
-                  <UploadCloud className="w-5 h-5 mb-1" />
-                  {photoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add photo"}
-                </button>
-              )}
-              <input
-                id="photos-upload"
-                type="file"
-                multiple
-                accept="image/jpeg, image/png, image/webp"
-                className="hidden"
-                onChange={handlePhotoUpload}
-              />
-            </div>
-            <p className="text-2xs text-stone-400">1 to 5 images. Max 5 MB each. JPG, PNG, WEBP.</p>
-          </div>
         </section>
 
         {/* 4. Drive Story */}
@@ -1040,16 +1022,6 @@ function NewNgoDriveForm() {
           </WizardField>
         </section>
 
-        {/* 5. Drive Location */}
-        <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="location-heading">
-          <h3 id="location-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Drive address for donors</h3>
-          
-          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 text-xs">
-            <span className="font-semibold text-stone-700 dark:text-stone-300 block mb-0.5">Registered office address</span>
-            <p className="text-stone-600 dark:text-stone-400">{registeredOfficeAddress || "Registered address on file"}</p>
-            <p className="text-2xs text-stone-500 mt-1.5">Your registered address will be shown to donors on the drive page so they can visit you.</p>
-          </div>
-        </section>
       </div>
   
       {/* Right Column */}
@@ -1116,6 +1088,97 @@ function NewNgoDriveForm() {
               </span>
             </label>
           )}
+        </section>
+
+        {/* Photos: the drive cover and the optional reference photos */}
+        <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="photos-heading">
+          <h3 id="photos-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">Photos</h3>
+          <div className="space-y-2" data-testid="drive-cover-field">
+            <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">Drive cover photo <span className="text-stone-400 font-normal">(optional)</span></p>
+            <p className="text-2xs text-stone-500 dark:text-stone-400">A real photo of your work, such as volunteers with collected items or a past distribution. Landscape, no identifiable faces of children.</p>
+            {coverPhoto ? (
+              <div className="relative aspect-[16/9] w-full max-w-xs overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-700">
+                {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
+                <img src={coverPhoto.url} alt="Drive cover" className="h-full w-full object-cover" />
+                <button type="button" onClick={() => setCoverPhoto(null)} aria-label="Remove cover photo"
+                  className="absolute top-1 right-1 rounded-full bg-red-600 p-1 text-white shadow hover:bg-red-700"><X className="w-3 h-3" /></button>
+              </div>
+            ) : (
+              <button type="button" onClick={() => document.getElementById("cover-upload")?.click()} disabled={coverUploading}
+                className="flex aspect-[16/9] w-full max-w-xs flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-xs font-semibold text-slate-600 hover:border-ngo-600 dark:border-zinc-700 dark:text-slate-300">
+                {coverUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UploadCloud className="w-5 h-5 mb-1" />Add cover photo</>}
+              </button>
+            )}
+            <input id="cover-upload" type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handleCoverUpload} />
+          </div>
+          {/* Reference photos (optional, 0 to 5): shown only on the drive page */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-stone-700 dark:text-stone-200 block">
+              Reference photos: how you&apos;d like the items to look <span className="text-stone-400 font-normal">(optional, {photos.length}/5)</span>
+            </label>
+            <p className="text-xs text-stone-500">Show the need, not identifiable faces of children without consent.</p>
+            {fieldErrors.photos && <p className="text-xs text-red-500">{fieldErrors.photos}</p>}
+            
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              {photos.map((photo, idx) => (
+                <div key={photo.url + idx} className="relative w-20 h-20 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0 group">
+                  <img src={photo.url} alt={`Drive photo ${idx + 1}`} className="w-full h-full object-cover" />
+                  {idx === 0 ? (
+                    <span className="absolute top-1 left-1 bg-ngo-700 text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
+                      Cover
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleMakeCover(idx)}
+                      className="absolute bottom-1 left-1 right-1 bg-black/75 hover:bg-black text-white text-[9px] font-bold py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-center"
+                    >
+                      Make cover
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhoto(idx)}
+                    aria-label={`Remove photo ${idx + 1}`}
+                    className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full shadow"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+
+              {photos.length < 5 && (
+                <button
+                  type="button"
+                  onClick={() => document.getElementById("photos-upload")?.click()}
+                  disabled={photoUploading}
+                  className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 dark:border-zinc-700 hover:border-ngo-600 dark:hover:border-ngo-400 flex flex-col items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors"
+                >
+                  <UploadCloud className="w-5 h-5 mb-1" />
+                  {photoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add photo"}
+                </button>
+              )}
+              <input
+                id="photos-upload"
+                type="file"
+                multiple
+                accept="image/jpeg, image/png, image/webp"
+                className="hidden"
+                onChange={handlePhotoUpload}
+              />
+            </div>
+            <p className="text-2xs text-stone-400">Show donors the kind of items you want, e.g. a sample blanket. Up to 5 images, 5 MB each.</p>
+          </div>
+        </section>
+        {/* 5. Drive Location */}
+        <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="location-heading">
+          <h3 id="location-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Drive address for donors</h3>
+          
+          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 text-xs">
+            <span className="font-semibold text-stone-700 dark:text-stone-300 block mb-0.5">Registered office address</span>
+            <p className="text-stone-600 dark:text-stone-400">{registeredOfficeAddress || "Registered address on file"}</p>
+            <p className="text-2xs text-stone-500 mt-1.5">Your registered address will be shown to donors on the drive page so they can visit you.</p>
+          </div>
         </section>
       </div>
     </div>
@@ -1311,9 +1374,12 @@ function NewNgoDriveForm() {
           
           <WizardField label="Contact phone" required error={fieldErrors.contactPhone}>
             {({ id, describedBy, invalid }) => (
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-medium text-sm">+91</span>
-                <Input id={id} name="contactPhone" type="tel" maxLength={10} placeholder="Mobile number" value={contactPhone} onChange={e => setContactPhone(e.target.value.replace(/\D/g, ""))} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border pl-11 h-11 ${invalid ? "border-red-500" : ""}`} />
+              <div className="flex gap-2">
+                <select aria-label="Country code" value={contactDial} onChange={e => setContactDial(e.target.value)}
+                  className="h-11 shrink-0 rounded-md border border-input bg-background px-2 text-sm">
+                  {PHONE_COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                </select>
+                <Input id={id} name="contactPhone" type="tel" inputMode="numeric" maxLength={10} placeholder="Mobile number" value={contactPhone} onChange={e => setContactPhone(e.target.value.replace(/\D/g, ""))} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               </div>
             )}
           </WizardField>
@@ -1390,7 +1456,7 @@ function NewNgoDriveForm() {
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Drive location</span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
-              {locationArea}, {locationCity}
+              {[driveLoc.locality, driveLoc.city, driveLoc.stateIso, driveLoc.pincode].filter(Boolean).join(", ") || `${locationArea}, ${locationCity}`}
             </span>
           </div>
 
@@ -1418,8 +1484,26 @@ function NewNgoDriveForm() {
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Handover mode</span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100" data-testid="review-handover-mode">
+              {handoverModeInWords(handoverMode, radiusKm(radiusChoice, customRadius))}
+            </span>
+          </div>
+          <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800">
+            <span className="text-stone-500">Pickup radius</span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
-              {HANDOVER_MODES.find(m => m.value === handoverMode)?.label || handoverMode}
+              {radiusKm(radiusChoice, customRadius) != null ? `${radiusKm(radiusChoice, customRadius)} km` : "Not set"}
+            </span>
+          </div>
+          <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800">
+            <span className="text-stone-500">Available days</span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100" data-testid="review-days">
+              {availableDays.length ? availableDays.map(d => DAY_WORDS[d] ?? d).join(", ") : "Not set"}
+            </span>
+          </div>
+          <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800">
+            <span className="text-stone-500">Handover hours</span>
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100">
+              {availableFrom && availableTo ? `${availableFrom} to ${availableTo}` : "Not set"}
             </span>
           </div>
 
@@ -1440,7 +1524,7 @@ function NewNgoDriveForm() {
             <span className="text-stone-500">Contact</span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
               {contactName}<br />
-              <span className="text-stone-400 text-xs">{contactPhone}</span>
+              <span className="text-stone-400 text-xs">{contactDial} {contactPhone}</span>
               {altContact && <span className="block text-stone-400 text-xs">Alt: {altContact}</span>}
             </span>
           </div>
@@ -1539,6 +1623,7 @@ function NewNgoDriveForm() {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950" style={{ "--ck-role-accent": "var(--color-ngo-600)", "--ck-role-hover": "var(--color-ngo-700)", "--ck-role-secondary": "var(--color-ngo-300)", "--ck-role-highlight": "white" } as React.CSSProperties}>
+      {submittedPopup}
       
       {/* ── LEFT SIDEBAR ── */}
       <aside className="hidden lg:flex lg:w-[280px] xl:w-[300px] shrink-0 flex-col relative overflow-hidden bg-ngo-950"

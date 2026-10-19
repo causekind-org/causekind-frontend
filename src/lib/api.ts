@@ -229,7 +229,13 @@ async function request<T>(
       const plainText = Object.keys(body).length === 0 && raw.trim() && !raw.trim().startsWith("<")
         ? raw.trim().slice(0, 200)
         : null;
+      // ApiException bodies carry the real reasons in fieldErrors; their "message" is the
+      // code's generic text ("We couldn't read that request"), so the reasons come first.
+      const fieldMessages = Array.isArray(body?.fieldErrors)
+        ? (body.fieldErrors as { message?: string }[]).map(e => e?.message).filter(Boolean).join(" ")
+        : "";
       const msg =
+        (fieldMessages || null) ??
         body?.message ??
         body?.detail ??
         (Array.isArray(body?.errors) && body.errors.length > 0
@@ -5312,6 +5318,14 @@ export type NgoDrive = {
   locationLatitude?: number | null;
   locationLongitude?: number | null;
   /** Pickup available within this distance (km); null on older drives. */
+  /** Optional distribution-proof details (sent with the proof). */
+  /** When collection completed (proof dates can't be before it). */
+  collectionCompletedAt?: string | null;
+  proofDistributedOn?: string | null;
+  proofLocation?: string | null;
+  proofQuantityDistributed?: number | null;
+  proofNote?: string | null;
+  proofConsentConfirmed?: boolean | null;
   pickupRadiusKm?: number | null;
   urgency: string;
   beneficiaryGroup: string;
@@ -5336,6 +5350,8 @@ export type NgoDrive = {
   details?: string | null;
   referencePhotoUrl?: string | null;
   referencePhotoKey?: string | null;
+  /** The separate drive cover photo, when the drive has one. */
+  coverPhotoUrl?: string | null;
   photos?: NgoDrivePhotoItem[];
   createdAt: string;
   submittedAt?: string;
@@ -5379,6 +5395,7 @@ export type PublicNgoProfile = {
   slug: string;
   organizationName: string;
   logoUrl?: string | null;
+  coverImageUrl?: string | null;
   photoUrls?: string[];
   verifiedAt?: string | null;
   city?: string | null;
@@ -5398,6 +5415,11 @@ export type PublicNgoProfile = {
   activities?: { id: number; title: string; activityDate: string; description?: string | null; media: { mediaType: "IMAGE" | "VIDEO"; url: string }[] }[];
   liveDrives?: PublicNgoDrive[];
 };
+
+/** A 10-minute link to one of the signed-in NGO's own uploaded files (review step preview). */
+export function getNgoFileLink(kind: "document" | "photo", id: number) {
+  return request<{ url: string }>(`/api/v1/ngo-registration/files/${kind}/${id}/link`);
+}
 
 export function getPublicNgo(slug: string) {
   return request<PublicNgoProfile>(`/api/v1/ngos/${encodeURIComponent(slug)}`);
@@ -5651,6 +5673,8 @@ export type NgoDriveOfferResponse = {
   donorDisplayName: string;
   status: string;
   quantity?: number;
+  /** Set when the NGO accepted part of the offer: what the donor first offered. */
+  offeredQuantity?: number | null;
   condition?: string;
   approximateAge?: string;
   sizeSpec?: string | null;
@@ -5680,6 +5704,11 @@ export type NgoDriveOfferResponse = {
   ngoDeclineReason?: string;
   /** Photos the NGO took of the items it received at the handover. */
   receiptPhotos?: string[];
+  /** The donor's handover photos, taken before showing the code. */
+  handoverPhotos?: string[];
+  /** Once the NGO received the items: when, and how many. */
+  receivedAt?: string | null;
+  receivedQuantity?: number | null;
   submittedAt?: string;
   driveTitle: string;
   ngoName: string;
@@ -5712,6 +5741,7 @@ export type NgoDriveOfferResponse = {
     availableDays?: string | null;
     availableHours?: string | null;
   };
+  ngoAllowsDonorCall?: boolean | null;
 };
 
 export type DriveOfferLocation = {
@@ -5801,15 +5831,31 @@ export async function getNgoDriveOffersForNgo(driveId: number, status?: string):
   return await request<NgoDriveOfferResponse[]>(`/api/v1/ngo-drives/${driveId}/offers${query}`);
 }
 
-export async function reviewNgoDriveOffer(driveId: number, offerId: number, decision: "ACCEPT" | "DECLINE", reason?: string): Promise<NgoDriveOfferResponse> {
+export async function reviewNgoDriveOffer(driveId: number, offerId: number, decision: "ACCEPT" | "DECLINE", reason?: string, acceptedQuantity?: number): Promise<NgoDriveOfferResponse> {
   return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/review`, {
     method: "POST",
-    body: JSON.stringify({ decision, reason }),
+    // acceptedQuantity: accept only part of the offer; the rest goes back to the drive.
+    body: JSON.stringify({ decision, reason, ...(acceptedQuantity != null ? { acceptedQuantity: String(acceptedQuantity) } : {}) }),
   });
 }
 
-export async function releaseNgoDriveOffer(driveId: number, offerId: number): Promise<NgoDriveOfferResponse> {
+/** Accept or decline several offers on one drive at once (all or nothing). */
+export async function reviewNgoDriveOffersBulk(driveId: number, offerIds: number[], decision: "ACCEPT" | "DECLINE", reason?: string): Promise<NgoDriveOfferResponse[]> {
+  return await request<NgoDriveOfferResponse[]>(`/api/v1/ngo-drives/${driveId}/offers/review-bulk`, {
+    method: "POST",
+    body: JSON.stringify({ offerIds, decision, reason }),
+  });
+}
+
+export async function releaseNgoDriveOffer(driveId: number, offerId: number, reason?: string): Promise<NgoDriveOfferResponse> {
   return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/release`, {
+    method: "POST",
+    ...(reason ? { body: JSON.stringify({ reason }) } : {}),
+  });
+}
+
+export async function setNgoDriveOfferCallPermission(driveId: number, offerId: number, allowed: boolean): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/call-permission?allowed=${allowed}`, {
     method: "POST",
   });
 }
@@ -5853,10 +5899,20 @@ export async function rescheduleNgoDriveOfferHandover(offerId: number, data: any
     body: JSON.stringify(data),
   });
 }
-export async function generateNgoDriveOfferHandoverOtp(offerId: number): Promise<{ otp: string }> {
-  return await request<{ otp: string }>(`/api/v1/drive-offers/${offerId}/generate-otp`, {
+/** The same code for 30 minutes; `renew` asks for a new one. Needs a donor handover photo first. */
+export async function generateNgoDriveOfferHandoverOtp(offerId: number, renew = false): Promise<{ otp: string }> {
+  return await request<{ otp: string }>(`/api/v1/drive-offers/${offerId}/generate-otp${renew ? "?renew=true" : ""}`, {
     method: "POST",
   });
+}
+
+/** The donor's handover photos (1 to 5), taken before showing the code. */
+export async function uploadNgoDriveHandoverPhotos(offerId: number, files: File[]): Promise<string[]> {
+  const formData = new FormData();
+  files.forEach((f) => formData.append("files", f));
+  const res = await fetch(`${BASE_URL}/api/v1/drive-offers/${offerId}/handover-photos`, { method: "POST", body: formData, credentials: "include" });
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || "Upload failed");
+  return await res.json();
 }
 export async function confirmNgoDriveOfferHandoverDonor(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
   return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/confirm-handover`, {
@@ -5878,10 +5934,16 @@ export async function closeNgoDrive(driveId: number, data: { reason: string }): 
     body: JSON.stringify(data),
   });
 }
-export async function uploadDistributionProof(driveId: number, files: File[], beneficiariesReached: number): Promise<void> {
+export type DistributionProofDetails = {
+  distributedOn?: string; location?: string; quantityDistributed?: number; note?: string; consentConfirmed?: boolean;
+};
+
+export async function uploadDistributionProof(driveId: number, files: File[], beneficiariesReached: number, details: DistributionProofDetails = {}): Promise<void> {
   const formData = new FormData();
   files.forEach((f) => formData.append("files", f));
   formData.append("beneficiariesReached", String(beneficiariesReached));
+  // Optional details: only what the NGO filled in.
+  Object.entries(details).forEach(([k, v]) => { if (v !== undefined && v !== "") formData.append(k, String(v)); });
   const res = await fetch(`${BASE_URL}/api/v1/ngo-drives/${driveId}/distribution-proof`, {
     method: "POST",
     body: formData,
@@ -5929,6 +5991,12 @@ export type NgoDriveProofResponse = {
   beneficiariesReached?: number | null;
   ngoStatement: string | null;
   status: string;
+  /** Proof details (null on older proofs). */
+  distributedOn?: string | null;
+  location?: string | null;
+  ngoName?: string | null;
+  itemName?: string | null;
+  beneficiaryGroup?: string | null;
 };
 
 export async function getNgoDriveProof(driveId: number): Promise<NgoDriveProofResponse> {

@@ -3,31 +3,65 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
-/** Drive offers the NGO has accepted and that are not finished: the statuses that share the NGO's contact. */
+/**
+ * The donor's offers to NGO drives shown in Matches > NGO: from "Offer sent" until the NGO
+ * received the items. Completed ones move to History (with the proof once it's approved).
+ */
 export const ACCEPTED_DRIVE_OFFER_STATUSES = [
-  "NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK",
+  "PENDING_NGO_REVIEW", "NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK",
+  "ISSUE_WINDOW_OPEN", "ISSUE_RAISED",
 ] as const;
 
 export type AcceptedDriveOffer = {
   id: number;
   status: string;
+  driveId?: number | null;
   driveTitle?: string | null;
   ngoName?: string | null;
   driveItemName?: string | null;
   quantity?: number | null;
   driveUnit?: string | null;
+  driveStatus?: string | null;
+  driveBeneficiariesReached?: number | null;
+  driveBeneficiaryGroup?: string | null;
+  receivedAt?: string | null;
+  receivedQuantity?: number | null;
 };
+
+const RECEIVED = new Set(["ISSUE_WINDOW_OPEN", "ISSUE_RAISED"]);
+/** "Received on 19 Oct 2026 · 5 pieces". */
+function receivedText(o: AcceptedDriveOffer): string {
+  const when = o.receivedAt ? new Date(o.receivedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
+  const qty = o.receivedQuantity ?? o.quantity;
+  return ["Received" + (when ? ` on ${when}` : ""), qty != null ? `${qty} ${(o.driveUnit ?? "").replaceAll("_", " ").toLowerCase()}`.trim() : null].filter(Boolean).join(" · ");
+}
+
+/** The four stages a donor sees, over the real offer statuses. */
+export const DRIVE_OFFER_STAGES = ["Offer sent", "Accepted, arrange handover", "Handover scheduled", "Received by NGO"] as const;
+export function driveOfferStage(status: string): number {
+  if (status === "PENDING_NGO_REVIEW") return 0;
+  if (["NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED"].includes(status)) return 1;
+  if (["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"].includes(status)) return 2;
+  return 3;
+}
+
+/** After the proof is approved: "Your 10 jackets were distributed to 50 children". */
+export function distributedLine(o: AcceptedDriveOffer): string | null {
+  if (o.driveStatus !== "FULFILLED") return null;
+  const what = o.quantity ? `${o.quantity} ${(o.driveItemName ?? "items").toLowerCase()}` : (o.driveItemName ?? "items").toLowerCase();
+  const who = o.driveBeneficiariesReached ? `${o.driveBeneficiariesReached} ${(o.driveBeneficiaryGroup ?? "people").toLowerCase()}` : "people in need";
+  return `Your ${what} were distributed to ${who}`;
+}
 
 export function acceptedDriveOffers<T extends { _type?: string; status: string }>(offers: T[]): T[] {
   return offers.filter(o => o._type === "DRIVE_OFFER" && (ACCEPTED_DRIVE_OFFER_STATUSES as readonly string[]).includes(o.status));
 }
 
+/** Extra wording only where the stage alone isn't enough. */
 const STATUS_TEXT: Record<string, string> = {
-  NGO_ACCEPTED: "Accepted, plan the handover",
-  PENDING_ADMIN_APPROVAL: "Accepted, plan the handover",
-  ADMIN_APPROVED: "Accepted, plan the handover",
-  HANDOVER_IN_PROGRESS: "Handover planned",
   HANDOVER_AT_RISK: "Handover needs attention",
+  ISSUE_RAISED: "An issue is being reviewed",
+  COMPLETED: "Completed. The NGO's distribution proof shows here once approved.",
 };
 
 export type MatchSegment = "donee" | "ngo";
@@ -58,7 +92,7 @@ export function NgoAcceptedOffersList({ offers }: { offers: AcceptedDriveOffer[]
   if (offers.length === 0) {
     return (
       <div className="py-8 text-center" data-testid="ngo-matches-empty">
-        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No accepted drive offers yet.</p>
+        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No offers to NGO drives yet.</p>
         <Link href="/#ngo-drives-section" className="mt-2 inline-block text-xs font-bold text-ngo-700 underline underline-offset-2 dark:text-ngo-300">
           Browse NGO drives
         </Link>
@@ -76,15 +110,39 @@ export function NgoAcceptedOffersList({ offers }: { offers: AcceptedDriveOffer[]
               <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
                 {o.quantity ?? ""} {o.driveUnit ? o.driveUnit.replaceAll("_", " ").toLowerCase() : ""}{o.driveItemName ? ` · ${o.driveItemName}` : ""}
               </p>
-              <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-ngo-800 dark:text-ngo-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-ngo-600 dark:bg-ngo-400" aria-hidden />
-                {STATUS_TEXT[o.status] ?? "Accepted"}
-              </p>
+              {distributedLine(o) ? (
+                <p className="mt-1 text-sm font-semibold text-ngo-800 dark:text-ngo-200" data-testid="drive-offer-distributed">{distributedLine(o)}</p>
+              ) : (
+                <ol className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs" aria-label="Offer progress" data-testid="drive-offer-stages">
+                  {DRIVE_OFFER_STAGES.map((label, i) => {
+                    const at = driveOfferStage(o.status);
+                    return (
+                      <li key={label} aria-current={i === at ? "step" : undefined}
+                        className={`inline-flex items-center gap-1.5 ${i === at ? "font-bold text-ngo-800 dark:text-ngo-200" : i < at ? "text-stone-500 dark:text-stone-400" : "text-stone-400 dark:text-stone-500"}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${i <= at ? "bg-ngo-600 dark:bg-ngo-400" : "bg-stone-300 dark:bg-zinc-600"}`} aria-hidden />
+                        {label}
+                      </li>
+                    );
+                  })}
+                </ol>
+              )}
+              {RECEIVED.has(o.status) && <p className="mt-1 text-xs text-stone-600 dark:text-stone-300" data-testid="drive-offer-received">{receivedText(o)}</p>}
+              {STATUS_TEXT[o.status] && <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">{STATUS_TEXT[o.status]}</p>}
             </div>
-            <Link href={`/ngo-drive-offers/${o.id}/handover`}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ngo-700 px-4 text-xs font-bold text-white hover:bg-ngo-800">
-              Open handover <ArrowRight className="h-3.5 w-3.5" aria-hidden />
-            </Link>
+            {distributedLine(o) && o.driveId ? (
+              <Link href={`/drives/${o.driveId}/proof`}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ngo-700 px-4 text-xs font-bold text-white hover:bg-ngo-800">
+                View proof <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            ) : RECEIVED.has(o.status) ? (
+              // Received: no chat or handover actions, just a small link to the record.
+              <Link href={`/ngo-drive-offers/${o.id}/handover`} className="text-xs font-semibold text-ngo-700 underline dark:text-ngo-300">View handover</Link>
+            ) : o.status !== "PENDING_NGO_REVIEW" && (
+              <Link href={`/ngo-drive-offers/${o.id}/handover`}
+                className="inline-flex min-h-10 items-center gap-1.5 rounded-full bg-ngo-700 px-4 text-xs font-bold text-white hover:bg-ngo-800">
+                Open handover <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+              </Link>
+            )}
           </div>
         </li>
       ))}

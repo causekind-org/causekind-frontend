@@ -75,10 +75,7 @@ function validateDriveOfferAll(
   options?: { driveCategory?: string | null; mustBeWorking?: boolean; requireClean?: boolean },
 ): Record<string, string> {
   const errors = Object.assign({}, ...DRIVE_OFFER_STEPS.filter(s => s !== "location").map(s => validateOfferStep(s, model, null, maxQuantity)));
-  const isClothing = (options?.driveCategory ?? "").trim().toLowerCase() === "clothing";
-  if (isClothing && !model.sizeSpec?.trim()) {
-    errors.sizeSpec = "Size or specification is required for clothing and footwear.";
-  } else if (model.sizeSpec && model.sizeSpec.length > 100) {
+  if (model.sizeSpec && model.sizeSpec.length > 100) {
     errors.sizeSpec = "Size / specification cannot exceed 100 characters.";
   }
   const effectiveAge = model.ageRange || mapLegacyAgeToAgeRange(model.approximateAge, model.condition);
@@ -542,10 +539,7 @@ export function NgoDriveOfferWizard({
     }
     if (step === "details") {
       if (overNeedMessage) stepErrors.quantity = overNeedMessage;
-      const isClothing = (driveCategory ?? "").trim().toLowerCase() === "clothing";
-      if (isClothing && !model.sizeSpec?.trim()) {
-        stepErrors.sizeSpec = "Size or specification is required for clothing and footwear.";
-      } else if (model.sizeSpec && model.sizeSpec.length > 100) {
+      if (model.sizeSpec && model.sizeSpec.length > 100) {
         stepErrors.sizeSpec = "Size / specification cannot exceed 100 characters.";
       }
       const effectiveAge = model.ageRange || mapLegacyAgeToAgeRange(model.approximateAge, model.condition);

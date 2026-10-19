@@ -67,7 +67,7 @@ describe("NGO drive form step 1: where is this drive?", () => {
     render(<Harness />);
     expect(screen.getByText("Where is this drive?")).toBeInTheDocument();
     expect(screen.getByText("Donors near this place will see that you can pick up their items.")).toBeInTheDocument();
-    expect(screen.getByText(/Donors within this distance can ask you to pick up/)).toBeInTheDocument();
+    expect(screen.getByText(/You will pick up items from donors within this distance/)).toBeInTheDocument();
     expect(screen.getAllByRole("radio").map(r => r.textContent)).toEqual(["10 km", "20 km", "30 km", "50 km", "100 km", "Custom"]);
     fireEvent.click(screen.getByRole("radio", { name: "50 km" }));
     expect(screen.getByRole("radio", { name: "50 km" })).toHaveAttribute("aria-checked", "true");

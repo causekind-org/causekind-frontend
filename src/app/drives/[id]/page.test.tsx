@@ -188,8 +188,7 @@ describe("DriveDetailPage", () => {
     expect(screen.getByText("Verified by CauseKind")).toBeInTheDocument();
     expect(screen.getByText(/Verified on 15-01-2024/)).toBeInTheDocument();
     expect(screen.getByText(/What we checked: registration, address, contact person/)).toBeInTheDocument();
-    expect(screen.getByText("Trust")).toBeInTheDocument();
-    expect(screen.getByText("TR-12345/2015")).toBeInTheDocument();
+    expect(screen.queryByText("Legal structure")).not.toBeInTheDocument(); // removed from the About the NGO card
     expect(screen.getByText("2015")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "ruraleducation.org" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /view past work/i })).toHaveAttribute("href", "https://example.com/sunita-impact");

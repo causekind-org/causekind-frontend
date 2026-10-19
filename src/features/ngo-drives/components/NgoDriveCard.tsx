@@ -12,7 +12,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import { giveState, stillNeeded } from "@/features/ngo-drives/driveGiveState";
-import { formatDaysLeft, formatBeneficiarySupport } from "@/features/ngo-drives/ngoDriveFilters";
+import { formatBeneficiarySupport } from "@/features/ngo-drives/ngoDriveFilters";
 
 export type NgoDriveCardProps = {
   drive: PublicNgoDrive;
@@ -35,7 +35,6 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
   const receivedPct = Math.min(100, ((drive.quantityReceived ?? 0) / total) * 100);
   const pledgedPct = Math.min(100 - receivedPct, ((drive.quantityPledged ?? 0) / total) * 100);
 
-  const daysInfo = formatDaysLeft(drive.neededBy);
   const beneficiaryText = formatBeneficiarySupport(drive.beneficiaryCount, drive.beneficiaryGroup);
 
   const isMoney = (drive.driveType ?? "").toUpperCase() === "MONEY";
@@ -149,7 +148,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
             ) : !isMoney ? (
               <span
                 data-testid="drive-verified-badge"
-                className="inline-flex items-center gap-1.5 rounded-full bg-stone-900/80 backdrop-blur-md px-2.5 py-1 text-4xs font-bold tracking-wide text-white shadow-sm dark:bg-zinc-800/90"
+                className="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-2.5 py-1 text-4xs font-bold tracking-wide text-white shadow-sm"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-ngo-400" aria-hidden="true" />
                 Verified by CauseKind
@@ -158,10 +157,10 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
           </div>
 
           {/* Bottom-left photo chip: Support {count} {beneficiaryGroup} */}
-          <div className="absolute bottom-3 left-3 right-3">
+          <div className="absolute bottom-0 left-0 right-3">
             <span
               data-testid="drive-beneficiary-chip"
-              className="inline-flex items-center max-w-full truncate rounded-lg bg-black/55 backdrop-blur-sm px-2.5 py-1 text-3xs font-semibold text-white/95"
+              className="inline-flex items-center max-w-full truncate rounded-tr-xl bg-white px-3 py-1.5 text-2xs font-bold text-stone-800 shadow-sm dark:bg-zinc-900 dark:text-stone-100"
             >
               {beneficiaryText}
             </span>
@@ -187,12 +186,6 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
             {drive.title}
           </h3>
 
-          {/* Tagline (clamped to 1 line) */}
-          {drive.tagline && (
-            <p className="mt-1 line-clamp-1 text-xs text-stone-600 dark:text-stone-400">
-              {drive.tagline}
-            </p>
-          )}
 
           {/* By NGO + Location */}
           <div className="mt-1.5 flex items-center justify-between gap-2 text-xs font-medium text-stone-500 dark:text-stone-400">
@@ -257,19 +250,6 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
               ) : null}
             </div>
 
-            {/* Days left indicator (under bottom row) */}
-            {daysInfo && (
-              <p
-                data-testid="drive-days-left"
-                className={`pt-0.5 text-3xs font-semibold ${
-                  daysInfo.isAmber
-                    ? "text-amber-600 dark:text-amber-400 font-bold"
-                    : "text-stone-400 dark:text-stone-500"
-                }`}
-              >
-                {daysInfo.label}
-              </p>
-            )}
           </div>
 
           {/* CTA Button */}

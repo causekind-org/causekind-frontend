@@ -374,7 +374,7 @@ describe("4. Tip Popup Suppression for NGO Role", () => {
     expect(mockApi.initiatePlatformTip).not.toHaveBeenCalled();
   });
 
-  it("allows tip popup for DONOR role after feedback", async () => {
+  it("skips the money tip for a DONOR on a drive handover too", async () => {
     mockUser.current = { email: "donor@example.com", role: "DONOR" };
     const onClose = vi.fn();
 
@@ -397,10 +397,9 @@ describe("4. Tip Popup Suppression for NGO Role", () => {
     expect(await screen.findByText("How did doing this act of kindness feel?")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Skip" }));
 
-    // Expect tip step to be shown for DONOR
-    await waitFor(() => {
-      expect(screen.getByText("One small thing more?")).toBeInTheDocument();
-      expect(screen.getByText(/Send ₹50 tip/i)).toBeInTheDocument();
-    });
+    // Drive handovers skip the money tip, for the donor too.
+    await waitFor(() => expect(screen.queryByText("How did doing this act of kindness feel?")).not.toBeInTheDocument());
+    expect(screen.queryByText("One small thing more?")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Send ₹50 tip/i)).not.toBeInTheDocument();
   });
 });

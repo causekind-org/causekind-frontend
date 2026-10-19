@@ -30,7 +30,7 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
 
   const showMap = hasCoordinates(s.latitude, s.longitude);
   const reschedulesLeft = Math.max(0, s.maxReschedules - s.rescheduleCount);
-  const canReschedule = vm.role === "DONOR" && reschedulesLeft > 0 && !vm.closed && onReschedule;
+  const canReschedule = vm.role === "DONOR" && reschedulesLeft > 0 && !vm.closed && !vm.confirmation.otpVerified && onReschedule;
 
   return (
     <Panel title="Schedule">
@@ -66,6 +66,11 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
         >
           Change the time
         </button>
+      )}
+      {vm.role === "DONOR" && vm.confirmation.otpVerified && !vm.closed && (
+        <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">
+          The code has already been confirmed. You cannot reschedule or cancel this handover.
+        </p>
       )}
       {vm.role === "DONEE" && !vm.closed && (
         <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">

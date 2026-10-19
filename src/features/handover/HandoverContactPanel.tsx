@@ -19,8 +19,23 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
   vm: HandoverViewModel;
   onTogglePermission?: (next: boolean) => Promise<void>;
 }) {
+  const isNgoDrive = vm.flow === "NGO_OFFER";
   const donor = vm.role === "DONOR";
-  const label = donor ? `Call ${vm.counterpart.name ?? "the recipient"}` : `Call ${vm.counterpart.name ?? "the donor"}`;
+  const label = donor
+    ? `Call ${vm.counterpart.name ?? (isNgoDrive ? "the NGO" : "the recipient")}`
+    : `Call ${vm.counterpart.name ?? "the donor"}`;
+
+  const lockedMessage = isNgoDrive
+    ? (donor
+        ? "The NGO hasn't turned on calls yet. Use the chat for now — they'll see it straight away."
+        : "Their number isn't available yet.")
+    : (donor
+        ? "Their number isn't available yet."
+        : "The donor hasn't turned on calls yet. Use the chat for now — they'll see it straight away.");
+
+  const showToggle = isNgoDrive
+    ? (!donor && Boolean(onTogglePermission) && !vm.closed)
+    : (donor && Boolean(onTogglePermission) && !vm.closed);
 
   return (
     <Panel title="Contact">
@@ -28,11 +43,9 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
         <CallAction
           phone={vm.counterpart.phone}
           label={label}
-          lockedMessage={donor
-            ? "Their number isn't available yet."
-            : "The donor hasn't turned on calls yet. Use the chat for now — they'll see it straight away."}
+          lockedMessage={lockedMessage}
         />
-        {donor && onTogglePermission && !vm.closed && (
+        {showToggle && onTogglePermission && (
           <CallPermissionToggle allowed={vm.donorAllowsDoneeCall} onToggle={onTogglePermission} />
         )}
       </div>

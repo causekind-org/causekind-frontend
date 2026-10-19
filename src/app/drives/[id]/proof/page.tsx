@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { getNgoDrive, getNgoDriveProof, type PublicNgoDrive, type NgoDriveProofResponse } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
+import { DriveProofCard } from "@/features/ngo-drives/components/DriveProofCard";
 
 export default function DriveProofPage() {
   const params = useParams();
@@ -82,26 +83,8 @@ export default function DriveProofPage() {
             </div>
           </div>
 
-          {proof.ngoStatement && (
-            <div className="mb-8 bg-stone-50 p-6 rounded-xl border border-stone-100 relative">
-              <span className="absolute -top-3 left-6 bg-white px-2 text-xs font-bold uppercase text-stone-400 tracking-wider">A message from {drive.ngoOrganizationName || "Verified NGO"}</span>
-              <p className="text-stone-700 italic leading-relaxed">"{proof.ngoStatement}"</p>
-            </div>
-          )}
-
-          {proof.media && proof.media.length > 0 && (
-            <div>
-              <h3 className="font-bold text-stone-900 mb-4">Photos from the distribution</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {proof.media.map((m, idx) => (
-                  <div key={idx} className="aspect-[4/3] rounded-lg overflow-hidden bg-stone-100 relative border border-stone-200">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={m.mediaUrl} alt={`Distribution photo ${idx + 1}`} className="absolute inset-0 w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Everything the NGO published with the proof (shared with the donor's History). */}
+          <DriveProofCard proof={{ ...proof, ngoName: proof.ngoName ?? drive.ngoOrganizationName ?? null }} />
         </div>
       </div>
     </main>

@@ -284,6 +284,7 @@ export function adaptNgoOffer(
     atRisk: handover?.atRisk ?? false,
     donorConfirmedAt,
     doneeConfirmedAt,
+    otpVerified: confirmation?.otpVerified === true,
   });
 
   return {
@@ -299,11 +300,12 @@ export function adaptNgoOffer(
     counterpart: role === "DONOR"
       ? { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null }
       : { name: offer.donorDisplayName, phone: null },
-    donorAllowsDoneeCall: false, // Not applicable for NGO drives
+    donorAllowsDoneeCall: offer.ngoAllowsDonorCall === true,
     schedule: handover
       ? {
-          method: handover.method,
-          methodLabel: methodLabel(handover.method, NGO_OFFER_METHODS),
+          // The drive API speaks DROP_OFF / PICKUP; the hub's options are DONOR_DROP_OFF / NGO_PICKUP.
+          method: handover.method === "PICKUP" ? "NGO_PICKUP" : "DONOR_DROP_OFF",
+          methodLabel: methodLabel(handover.method === "PICKUP" ? "NGO_PICKUP" : "DONOR_DROP_OFF", NGO_OFFER_METHODS),
           scheduledAt: toZonedIso(handover.scheduledDateTime),
           address: handover.locationAddress,
           latitude: handover.locationLatitude,
@@ -321,10 +323,10 @@ export function adaptNgoOffer(
       doneeConfirmedQty: confirmation?.ngoConfirmedQty ?? null,
       conditionRating: null, // No condition rating for NGO drives
       partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
-      // NGO drives keep their one-step flow (code entered with the receipt).
-      otpVerified: false,
+      otpVerified: confirmation?.otpVerified ?? false,
     },
-    methodOptions: NGO_OFFER_METHODS,
+    // Outside the NGO's pickup radius only drop-off is offered.
+    methodOptions: offer.dropOffOnly ? NGO_OFFER_METHODS.filter(m => m.value !== "NGO_PICKUP") : NGO_OFFER_METHODS,
     certificateCode: null, // Handled differently if needed
     certificateHref: role === "DONOR" && offer.status === "COMPLETED"
       ? `/certificate?offerId=${offer.id}&type=ngo_drive` : null, // Assuming this is how certificates work for NGO drives

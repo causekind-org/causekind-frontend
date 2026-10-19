@@ -9,7 +9,8 @@ import {
   type NgoDriveOfferResponse, type NgoDriveOfferHandoverRecordResponse,
 } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
-import { DriveHandover, type DriveHandoverRole } from "./DriveHandover";
+import { type DriveHandoverRole } from "./DriveHandover";
+import { DriveHandoverHub } from "./DriveHandoverHub";
 import { DriveLoadError, HandoverNotFound } from "./DriveLoadState";
 import { errorMessage, isForbidden, isNotFound } from "../driveGiveState";
 import HandoverCelebration from "@/components/handover/HandoverCelebration";
@@ -28,13 +29,13 @@ export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHando
   const load = useCallback(async () => {
     if (!offerId) return;
     try {
-      const [o, h] = await Promise.all([
-        role === "NGO" && driveId ? getNgoDriveOfferForNgo(driveId, offerId) : getNgoDriveOffer(offerId),
-        getNgoDriveOfferHandover(offerId),
-      ]);
+      // Handover first: reading it can complete a handover that was already ready (code
+      // confirmed + photo), so the offer read after it shows the up-to-date status.
+      const h = await getNgoDriveOfferHandover(offerId);
+      const o = await (role === "NGO" && driveId ? getNgoDriveOfferForNgo(driveId, offerId) : getNgoDriveOffer(offerId));
       setOffer(o); setHandover(h); setState("ready");
     } catch (e) {
-      setState(isNotFound(e) || isForbidden(e) ? "not-found" : "error");
+      setState(isNotFound(e) ? "not-found" : "error");
       setMessage(errorMessage(e, "Please check your connection and try again."));
     }
   }, [role, driveId, offerId]);
@@ -57,10 +58,10 @@ export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHando
   if (state === "not-found") {
     return <HandoverNotFound driveId={driveId} role={role} />;
   }
-  if (state === "error" || !offer) return <DriveLoadError message={message} onRetry={() => { setState("loading"); void load(); }} />;
+  if (state === "error" || !offer) return <DriveLoadError title="We couldn't load this handover" message={message} onRetry={() => { setState("loading"); void load(); }} />;
   return (
     <>
-      <DriveHandover role={role} offer={offer} handover={handover} onChanged={() => void load()} />
+      <DriveHandoverHub role={role} offer={offer} handover={handover} userEmail={user.email ?? ""} onChanged={() => void load()} />
       <HandoverCelebration
         role={role}
         contextType="NGO_DRIVE_OFFER"

@@ -54,7 +54,7 @@ function Handovers() {
   if (authLoading || !user || !["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return <p role="status">Loading your account…</p>;
   return <main className="min-h-screen bg-stone-50 px-4 py-8 dark:bg-zinc-950"><div className="mx-auto max-w-4xl space-y-6">
     <Link href="/dashboard/ngo#live-drives" className="text-sm underline">Your drives</Link>
-    <header><h1 className="text-3xl font-bold">Handovers and photos</h1><p className="mt-2 text-sm text-stone-500">Track your items, confirm receipt, and share a photo of the handover.</p></header>
+    <header><h1 className="text-3xl font-bold">Handovers and photos</h1><p className="mt-2 text-sm text-stone-500">Track your items, confirm receipt, and share a photo of the handover.</p><p className="mt-2 text-sm"><Link href="/dashboard/ngo?tab=activity&filter=handovers" className="font-bold text-ngo-700 underline dark:text-ngo-300">Handovers for your drives are in your dashboard's Activity</Link></p></header>
     <nav className="flex flex-wrap gap-4 text-sm underline"><Link href="/dashboard/ngo#live-drives">Review incoming offers</Link><StartDriveLink href="/ngo/drives/new">Start a drive</StartDriveLink>{filterId && <Link href="/ngo/handovers">Show all handovers</Link>}</nav>
     {feedback && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-900">{feedback}</p>}
     {actionError && <p role="alert" className="rounded-xl border border-red-300 p-4">{actionError}</p>}

@@ -203,6 +203,10 @@ export function DriveOfferPhotosStep({
         {video && onPickVideo && onRemoveVideo && (
           <OfferVideoField state={video} onPick={onPickVideo} onRemove={onRemoveVideo} />
         )}
+        {/* The server answered that video is off (e.g. no ffmpeg to check clips): say so. */}
+        {video?.capability && !video.capability.available && (
+          <p data-testid="drive-video-unavailable" className="text-sm text-stone-500 dark:text-stone-400">Video upload isn&apos;t available right now.</p>
+        )}
 
         <details className="rounded-xl border border-stone-200 bg-white p-2.5 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
           <summary className="cursor-pointer text-2xs font-bold text-stone-700 dark:text-stone-200">What makes a good photo?</summary>

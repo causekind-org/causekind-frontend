@@ -41,7 +41,6 @@ export function DriveOfferDetailsStep({
 }) {
   const partlyMet = requestedQuantity != null && stillNeededQuantity != null
     && stillNeededQuantity < requestedQuantity;
-  const isClothing = (driveCategory ?? "").trim().toLowerCase() === "clothing";
 
   return (
     <div className="space-y-3">
@@ -68,8 +67,7 @@ export function DriveOfferDetailsStep({
       {/* NEW Size / specification field under quantity */}
       <WizardField
         label="Size / specification"
-        required={isClothing}
-        hint={isClothing ? "Required for clothing and footwear (up to 100 characters)" : "Optional (up to 100 characters)"}
+        hint="Optional (up to 100 characters)"
         error={errors.sizeSpec}
       >
         {({ id, describedBy, invalid }) => (

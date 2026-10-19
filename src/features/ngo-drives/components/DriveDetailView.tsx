@@ -156,11 +156,6 @@ export function DriveDetailView({
 
   return (
     <div className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
-      {!isPreview && (
-        <div className="mx-auto max-w-6xl px-4 pt-3 sm:px-6">
-          <BackButton />
-        </div>
-      )}
       {/* ── Preview Mode Banner ── */}
       {isPreview && (
         <div
@@ -177,6 +172,7 @@ export function DriveDetailView({
       {/* ── Hero ── */}
       <section className="bg-gradient-to-br from-emerald-900 to-emerald-800 px-4 py-10 text-white sm:px-6 lg:py-14">
         <div className="mx-auto max-w-6xl">
+          {!isPreview && <BackButton onDark className="mb-4 -mt-6 lg:-mt-8" />}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">
               {drive.verified && (
@@ -540,27 +536,6 @@ export function DriveDetailView({
 
               {/* Organisation Facts */}
               <dl className="grid gap-4 pt-1 sm:grid-cols-2">
-                {drive.ngo?.legalStructure && (
-                  <div>
-                    <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-                      Legal structure
-                    </dt>
-                    <dd className="mt-0.5 text-sm font-semibold text-stone-800 dark:text-stone-200">
-                      {formatLegalStructure(drive.ngo.legalStructure)}
-                    </dd>
-                  </div>
-                )}
-
-                {drive.ngo?.registrationNumber && (
-                  <div>
-                    <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
-                      Registration number
-                    </dt>
-                    <dd className="mt-0.5 text-sm font-semibold text-stone-800 dark:text-stone-200">
-                      {drive.ngo.registrationNumber}
-                    </dd>
-                  </div>
-                )}
 
 
                 {drive.ngo?.website && (

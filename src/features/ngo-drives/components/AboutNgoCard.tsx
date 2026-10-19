@@ -19,7 +19,13 @@ export type AboutNgo = {
 export function AboutNgoContent({ ngo, emptyAboutUs }: { ngo: AboutNgo; emptyAboutUs?: React.ReactNode }) {
   return (
     <div className="space-y-3" data-testid="about-ngo">
-      <h3 className="text-lg font-bold text-stone-900 dark:text-stone-100">{ngo.organizationName}</h3>
+      {/* The NGO's name in the accent colour, so it reads apart from the card heading. */}
+      {ngo.slug ? (
+        <Link href={`/ngos/${ngo.slug}`} data-testid="about-ngo-name"
+          className="block text-lg font-extrabold text-ngo-700 underline-offset-4 hover:underline dark:text-ngo-300">{ngo.organizationName}</Link>
+      ) : (
+        <h3 data-testid="about-ngo-name" className="text-lg font-extrabold text-ngo-700 dark:text-ngo-300">{ngo.organizationName}</h3>
+      )}
       {ngo.verified && (
         <p className="inline-flex items-center gap-2 text-xs font-bold text-ngo-800 dark:text-ngo-300">
           <span className="h-1.5 w-1.5 rounded-full bg-ngo-600 dark:bg-ngo-400" aria-hidden />

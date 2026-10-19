@@ -222,4 +222,36 @@ describe("drive give form: review", { timeout: 20000 }, () => {
     const video = (await screen.findByTestId("review-video")).querySelector("video")!;
     expect(video).toHaveAttribute("src", "https://s3.test/clean.mp4");
   });
+
+  it("every step filled: Review shows no errors, size is optional and submit sends the autosaved offer", async () => {
+    api.submitNgoDriveOffer.mockResolvedValue({ id: 9, status: "PENDING_ADMIN_REVIEW" });
+    const onSubmitted = vi.fn();
+    const { container } = render(
+      <NgoDriveOfferWizard offerId={9} offer={withPhotos as never} driveId={5} ngoName="Hope Trust" driveUnit="PIECES"
+        initialQuantityReceived={0} initialQuantityPledged={0} requestTitle="Winter blankets" requestedQuantity={50}
+        stillNeededQuantity={50} adminNote={null} onSubmitted={onSubmitted} onExit={vi.fn()} onSaveExit={vi.fn()}
+        driveCategory="Clothing" requireClean acceptedConditions={["Unused", "Like New"]} />,
+    );
+    await toDetails();
+    expect(screen.queryByText(/Required for clothing/)).not.toBeInTheDocument();
+    fireEvent.change(field(container, "quantity"), { target: { value: "3" } });
+    fireEvent.change(field(container, "approximateAge"), { target: { value: "1 year" } });
+    fireEvent.click(field(container, "confirmedClean"));
+    clickLast(/^continue$/i);
+    await waitFor(() => expect(heading()).toMatch(/Condition & fit/));
+    expect(screen.getByText("This drive accepts: Unused, Like New")).toBeInTheDocument();
+    expect(within(field(container, "condition") as unknown as HTMLElement).getAllByRole("option").map(o => o.textContent)).toEqual(["Select…", "Unused", "Like New"]);
+    fireEvent.change(field(container, "condition"), { target: { value: "Like New" } });
+    clickLast(/^continue$/i);
+    await waitFor(() => expect(heading()).toMatch(/Review your offer/));
+    container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach(c => { if (!c.checked) fireEvent.click(c); });
+    clickLast(/send|submit/i);
+    await waitFor(() => expect(api.submitNgoDriveOffer).toHaveBeenCalledWith(9));
+    expect(screen.queryByText(/Choose the item|Enter the size|how old the item is|washed and clean|matches what the drive/)).not.toBeInTheDocument();
+    const last = api.updateNgoDriveOfferItem.mock.calls.at(-1)!;
+    expect(last[0]).toBe(9);
+    expect(last[1]).toMatchObject({ condition: "Like New", quantity: 3, matchesRequirements: true });
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+  });
 });
+

@@ -162,7 +162,7 @@ describe("drive form fields", { timeout: 20000 }, () => {
     expect(img2).toHaveAttribute("src", "https://example.test/photo2.jpg");
     expect(img3).toHaveAttribute("src", "https://example.test/photo3.jpg");
     expect(screen.getByText("Cover")).toBeInTheDocument();
-    expect(screen.getByText("(3/5)")).toBeInTheDocument();
+    expect(screen.getByText(/3\/5\)/)).toBeInTheDocument();
 
     // 2. V2 fields loaded in Step 1
     expect(screen.getByDisplayValue("Helping elders stay warm")).toBeInTheDocument();
@@ -222,7 +222,7 @@ describe("drive form fields", { timeout: 20000 }, () => {
     const img1 = screen.getByAltText("Drive photo 1");
     expect(img1).toHaveAttribute("src", "https://example.test/legacy-photo.jpg");
     expect(screen.getByText("Cover")).toBeInTheDocument();
-    expect(screen.getByText("(1/5)")).toBeInTheDocument();
+    expect(screen.getByText(/1\/5\)/)).toBeInTheDocument();
 
     // Navigate to Step 2 and Step 3
     fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));

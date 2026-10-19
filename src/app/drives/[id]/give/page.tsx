@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +30,7 @@ export default function DriveGivePage() {
   const { user, isLoading: authLoading } = useAuth();
   const [view, setView] = useState<View>({ kind: "loading" });
 
+  const draftRequest = useRef<{ driveId: number; promise: ReturnType<typeof createNgoDriveOfferDraft> } | null>(null);
   const load = useCallback(async () => {
     if (!user || Number.isNaN(id)) return;
     setView({ kind: "loading" });
@@ -60,7 +61,11 @@ export default function DriveGivePage() {
           setView({ kind: "wizard", drive, offer: state.offer });
           return;
         default: {
-          const draft = await createNgoDriveOfferDraft(drive.id);
+          // load() can run twice (the user object settles after login); share one draft
+          // request, or the wizard autosaved to one draft and submitted the other, empty one.
+          const pending = draftRequest.current?.driveId === drive.id ? draftRequest.current.promise : createNgoDriveOfferDraft(drive.id);
+          draftRequest.current = { driveId: drive.id, promise: pending };
+          const draft = await pending;
           setView({ kind: "wizard", drive, offer: await getNgoDriveOffer(draft.id) });
         }
       }
@@ -101,6 +106,7 @@ export default function DriveGivePage() {
   return (
     <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 dark:bg-zinc-950">
       <NgoDriveOfferWizard
+        key={offer.id}
         offerId={offer.id}
         offer={offer}
         driveId={drive.id}

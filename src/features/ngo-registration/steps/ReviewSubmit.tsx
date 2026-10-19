@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
+import { getNgoFileLink } from "@/lib/api";
 import { ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
 import {
   PAN_DOC,
@@ -11,6 +13,7 @@ import {
   getDocsForStructure,
   legalStructureLabel,
   type NGOFormState,
+  type UploadedFile,
   type NGOStep,
   getNgoStillNeededItems,
 } from "@/features/ngo-registration/ngoRegistrationModel";
@@ -34,6 +37,43 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
   const uploadedDocs = docs.filter((d) => !!data.documents[d.id]);
   const activityPhotosCount = data.activityPhotos.filter(Boolean).length;
 
+  // Every uploaded file on this page, in page order, for the preview popup.
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const previewFiles = useMemo(() => {
+    const out: { key: string; file: PreviewFile }[] = [];
+    const add = (key: string, label: string, f: UploadedFile | null | undefined, kind: "document" | "photo") => {
+      if (!f || f.demo) return;
+      const id = kind === "photo" ? f.photoId : f.documentId;
+      if (id == null && !f.s3Url) return;
+      out.push({ key, file: { name: `${label}: ${f.name}`, mimeType: f.mimeType,
+        resolve: id != null ? async () => (await getNgoFileLink(kind, id)).url : undefined, url: id == null ? f.s3Url : undefined } });
+    };
+    add("pan", PAN_DOC.label, data.documents[PAN_DOC.id], "document");
+    for (const d of docs) if (d.id !== PAN_DOC.id) add(`doc-${d.id}`, d.label, data.documents[d.id], "document");
+    (data.representatives ?? []).forEach((r, i) => add(`rep-${i}`, `${r.fullName || `Representative ${i + 1}`} ID proof`, r.idProof, "document"));
+    add("auth", authorizationDocumentLabel(data.legalStructure), data.authorizationLetter, "document");
+    add("logo", "Logo", data.logo, "photo");
+    add("office", "Office photo", data.officePhoto, "photo");
+    data.activityPhotos.forEach((f, i) => add(`activity-${i}`, `Activity photo ${i + 1}`, f, "photo"));
+    return out;
+  }, [data, docs]);
+  const openPreview = (key: string) => {
+    const i = previewFiles.findIndex(x => x.key === key);
+    if (i >= 0) setPreviewIndex(i);
+  };
+  /** A file name that opens the preview; plain text when the file can't be previewed. */
+  const fileChip = (key: string, f: UploadedFile | null | undefined, empty = "Not uploaded") => {
+    if (!f) return <span className="text-stone-400 italic">{empty}</span>;
+    const canPreview = previewFiles.some(x => x.key === key);
+    if (!canPreview) return <span className="truncate">{f.demo ? "Demo upload" : f.name}</span>;
+    return (
+      <button type="button" onClick={() => openPreview(key)} data-testid={`preview-${key}`}
+        className="inline-flex max-w-full items-center gap-1.5 truncate rounded-full border border-ngo-200 bg-white px-2.5 py-1 text-2xs font-semibold text-ngo-800 hover:bg-ngo-50 focus-visible:outline-2 focus-visible:outline-ngo-700 dark:border-ngo-900 dark:bg-zinc-900 dark:text-ngo-300">
+        <FileText className="h-3.5 w-3.5 shrink-0" aria-hidden /><span className="truncate">{f.name}</span>
+      </button>
+    );
+  };
+
   function handleSubmit() {
     if (!data.confirmationChecked) {
       setError("Please check the declaration box before submitting.");
@@ -50,6 +90,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
 
   return (
     <div className="space-y-6">
+      <FilePreviewDialog files={previewFiles.map(x => x.file)} index={previewIndex} onIndexChange={setPreviewIndex} onClose={() => setPreviewIndex(null)} />
       {/* Header */}
       <div className="space-y-1">
         <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
@@ -107,7 +148,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">{PAN_DOC.label}</dt>
               <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
-                {data.documents[PAN_DOC.id]?.name || "Not uploaded"}
+                {fileChip("pan", data.documents[PAN_DOC.id])}
               </dd>
             </div>
             <div className="sm:col-span-2">
@@ -117,7 +158,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
               <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
                 {(() => {
                   const cert = getRegistrationCertificateDoc(data.legalStructure);
-                  return (cert && data.documents[cert.id]?.name) || "Not uploaded";
+                  return cert ? fileChip(`doc-${cert.id}`, data.documents[cert.id]) : "Not uploaded";
                 })()}
               </dd>
             </div>
@@ -193,8 +234,8 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                           {doc.label}
                         </span>
                       </div>
-                      <span className="shrink-0 text-3xs font-medium text-stone-500 dark:text-stone-400 ml-2">
-                        {file?.demo ? "Demo Upload" : file?.name}
+                      <span className="ml-2 min-w-0 shrink-0">
+                        {doc.id === PAN_DOC.id ? fileChip("pan", file) : fileChip(`doc-${doc.id}`, file)}
                       </span>
                     </li>
                   );
@@ -225,44 +266,43 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             </button>
           </div>
 
-          <ul className="space-y-2 mb-3">
-            {(data.representatives ?? []).filter((card, i) => i === 0 || !isRepresentativeEmpty(card)).map((card, i) => (
-              <li key={i} className="rounded-lg bg-white dark:bg-zinc-800/60 px-3 py-2 border border-stone-100 dark:border-zinc-800 text-xs">
-                <p className="font-bold text-stone-800 dark:text-stone-200">
-                  {i + 1}. {card.fullName || "—"} <span className="font-medium text-stone-500">· {card.designation || "—"}</span>
-                </p>
-                <p className="mt-0.5 text-stone-600 dark:text-stone-300">
-                  <span className="font-mono">{card.mobileNumber || "—"}</span> · {card.email || "—"}{" "}
-                  {card.emailVerified ? (
-                    <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />
-                      verified
-                    </span>
-                  ) : (
-                    <span className="font-bold text-red-600 dark:text-red-400">not verified</span>
-                  )}
-                </p>
-                <p className="mt-0.5 text-stone-500">
-                  PAN: <span className="font-mono">{normalizePan(card.panNumber) || "—"}</span> · ID proof: {card.idProof?.name ?? "not uploaded"}
-                </p>
+          <ul className="grid gap-3 lg:grid-cols-2">
+            {(data.representatives ?? []).map((card, i) => ({ card, i })).filter(({ card, i }) => i === 0 || !isRepresentativeEmpty(card)).map(({ card, i }) => (
+              <li key={i} data-testid="review-representative" className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{card.fullName || "—"}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400">{card.designation || "—"}{i === 0 ? " · Main contact" : ""}</p>
+                <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2.5 text-xs sm:grid-cols-2">
+                  <div>
+                    <dt className="text-3xs font-semibold uppercase text-stone-400">Mobile</dt>
+                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">{card.mobileNumber || "—"}</dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-3xs font-semibold uppercase text-stone-400">Email</dt>
+                    <dd className="mt-0.5 break-all text-stone-800 dark:text-stone-200">
+                      {card.email || "—"}{" "}
+                      {card.emailVerified ? (
+                        <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
+                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />verified
+                        </span>
+                      ) : <span className="font-bold text-red-600 dark:text-red-400">not verified</span>}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-3xs font-semibold uppercase text-stone-400">PAN</dt>
+                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">{normalizePan(card.panNumber) || "—"}</dd>
+                  </div>
+                  <div className="min-w-0">
+                    <dt className="text-3xs font-semibold uppercase text-stone-400">ID proof</dt>
+                    <dd className="mt-0.5">{fileChip(`rep-${i}`, card.idProof)}</dd>
+                  </div>
+                </dl>
               </li>
             ))}
           </ul>
-          <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
-            <div className="sm:col-span-2">
-              <dt className="text-stone-400 text-3xs uppercase font-semibold">{authorizationDocumentLabel(data.legalStructure)}</dt>
-              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 flex items-center gap-1.5">
-                {data.authorizationLetter ? (
-                  <>
-                    <FileCheck className="h-3.5 w-3.5 text-green-600 shrink-0" />
-                    <span>{data.authorizationLetter.demo ? "Demo Letter attached" : data.authorizationLetter.name}</span>
-                  </>
-                ) : (
-                  <span className="text-stone-400 italic">Not attached</span>
-                )}
-              </dd>
-            </div>
-          </dl>
+          <div className="mt-4 text-xs">
+            <p className="text-3xs font-semibold uppercase text-stone-400">{authorizationDocumentLabel(data.legalStructure)}</p>
+            <div className="mt-1">{fileChip("auth", data.authorizationLetter, "Not attached")}</div>
+          </div>
         </section>
 
         {/* Section 4: Organization Photos */}
@@ -289,21 +329,19 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
             <div className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800">
               <p className="text-3xs uppercase text-stone-400 font-semibold">Logo</p>
-              <p className="font-bold text-stone-800 dark:text-stone-200 truncate mt-1">
-                {data.logo ? (data.logo.demo ? "Logo Provided (demo)" : data.logo.name) : "None"}
-              </p>
+              <div className="mt-1">{fileChip("logo", data.logo, "None")}</div>
             </div>
             <div className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800">
               <p className="text-3xs uppercase text-stone-400 font-semibold">Office Photo</p>
-              <p className="font-bold text-stone-800 dark:text-stone-200 truncate mt-1">
-                {data.officePhoto ? (data.officePhoto.demo ? "Photo Provided (demo)" : data.officePhoto.name) : "None"}
-              </p>
+              <div className="mt-1">{fileChip("office", data.officePhoto, "None")}</div>
             </div>
             <div className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800">
               <p className="text-3xs uppercase text-stone-400 font-semibold">Activity Photos</p>
-              <p className="font-bold text-stone-800 dark:text-stone-200 mt-1">
-                {activityPhotosCount > 0 ? `${activityPhotosCount} photo${activityPhotosCount > 1 ? "s" : ""}` : "None"}
-              </p>
+              {activityPhotosCount > 0 ? (
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {data.activityPhotos.map((f, i) => f ? <span key={i}>{fileChip(`activity-${i}`, f)}</span> : null)}
+                </div>
+              ) : <p className="mt-1 font-bold text-stone-800 dark:text-stone-200">None</p>}
             </div>
           </div>
         </section>

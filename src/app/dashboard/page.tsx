@@ -24,9 +24,10 @@ import { MyTasksCard } from "@/components/MyTasksCard";
 import { ListingDetailsPanel } from "@/components/listings/ListingDetailsPanel";
 import { RequestDetailsPanel } from "@/components/requests/RequestDetailsPanel";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import { DriveProofCardLoader } from "@/features/ngo-drives/components/DriveProofCard";
 import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
 import {
-  MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers, type AcceptedDriveOffer, type MatchSegment,
+  MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers, distributedLine, type AcceptedDriveOffer, type MatchSegment,
 } from "@/components/matches/NgoAcceptedOffers";
 import { DonorMatchReviewInline } from "@/components/matches/DonorMatchReviewInline";
 import { DoneeMatchReviewCard } from "@/components/matches/DoneeMatchReviewCard";
@@ -1471,6 +1472,27 @@ const doneDate = (iso?: string | null) => {
  * failed), each with its status and reason. Replaces the separate "Didn't go
  * ahead" fold and the Match history strip.
  */
+/** A completed NGO drive offer in History: after proof approval, "Your 10 jackets were distributed to 50 children" + View proof. */
+function driveDoneEntry(o: DonationOffer) {
+  const d = o as unknown as AcceptedDriveOffer & { closedAt?: string | null; createdAt?: string | null; submittedAt?: string | null };
+  const distributed = distributedLine(d);
+  const when = d.closedAt ?? d.createdAt ?? d.submittedAt ?? null;
+  return {
+    key: `d${o.id}`,
+    at: Date.parse(when ?? "") || 0,
+    text: [o.requestTitle, o.requestCity, "donated ngo drive", distributed].join(" "),
+    node: (
+      <div className="space-y-2">
+        <DoneRow title={o.requestTitle ?? "NGO drive"} tag={distributed ? "Donated · proof published" : "Donated · NGO drive"}
+          sub={distributed ?? [doneDate(when), o.requestCity].filter(Boolean).join(" · ")}
+          thumb={o.media?.[0]?.mediaUrl ?? null} photos={(o.media ?? []).map(m => m.mediaUrl)}
+          href={distributed && d.driveId ? `/drives/${d.driveId}/proof` : `/ngo-drive-offers/${o.id}/handover`} />
+        {distributed && d.driveId ? <DriveProofCardLoader driveId={d.driveId} /> : null}
+      </div>
+    ),
+  };
+}
+
 function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onChanged }: {
   offers: DonationOffer[];
   fulfilledItems: ItemListing[];
@@ -1480,7 +1502,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
   onChanged: () => void;
 }) {
   const entries = useMemo(() => {
-    const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => ({
+    const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => isDriveOffer(o) ? driveDoneEntry(o) : ({
       key: `o${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
       text: [o.requestTitle, o.requestCity, "donated completed your offer"].join(" "),
@@ -1504,7 +1526,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
           href={isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null} />,
       };
     });
-    const fromClosedOffers = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED").map(o => ({
+    const fromClosedOffers = offers.filter(o => (isDriveOffer(o) ? DRIVE_TERMINAL_STATUSES : TERMINAL_OFFER_STATUSES).includes(o.status) && o.status !== "COMPLETED").map(o => ({
       key: `c${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
       text: [o.requestTitle, o.requestCity, o.status.replace(/_/g, " "), o.rejectionReason].join(" "),
@@ -1681,6 +1703,11 @@ const TERMINAL_OFFER_STATUSES = ["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DO
  *  Action Required / In Progress lists render, so the two can't disagree. */
 const isLiveDonorOffer = (o: DonationOffer) =>
   !TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED";
+
+/** Offers to NGO drives travel in the same list, tagged _type "DRIVE_OFFER" (loadAllDonationOffers). */
+const isDriveOffer = (o: object) => (o as { _type?: string })._type === "DRIVE_OFFER";
+/** A drive offer that ended without a handover (History). */
+const DRIVE_TERMINAL_STATUSES = ["NGO_DECLINED", "ENDED", "WITHDRAWN", "CANCELLED", "ADMIN_REJECTED"];
 
 // A completed donation stays among the live offers while the donee can still
 // report a problem with it — the backend allows that until a grace period after
@@ -2562,11 +2589,16 @@ async function loadAllDonationOffers(): Promise<any[]> {
 
 export default function DashboardPage() {
   const [matchSegment, setMatchSegment] = useState<MatchSegment>("donee");
+  // Drive notices link to /dashboard?segment=ngo#matches: open the NGO segment.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("segment") === "ngo") setMatchSegment("ngo");
+  }, []);
   const t = useTranslations("dashboard");
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER"], () => {
+  // NGO_DRIVE_OFFER / NGO_DRIVE: a drive handover completing updates Matches > NGO, History and the stats live.
+  useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER", "NGO_DRIVE_OFFER", "NGO_DRIVE"], () => {
     refreshListings();
     refreshMatches();
     getMyItemRequests().then(setItemRequests).catch(() => {});
@@ -2854,9 +2886,16 @@ export default function DashboardPage() {
       review={reviewByListing.has(l.id) ? renderDonorReview(reviewByListing.get(l.id) as ItemMatch, true) : undefined}
     />
   );
-  const liveDonorOffers = donationOffers.filter(isLiveDonorOffer);
-  // Matches tab, NGO segment: drive offers the NGO has accepted, not yet finished.
+  // Donee segment: offers to donee requests only. NGO segment: offers to NGO drives only.
+  const liveDonorOffers = donationOffers.filter(o => !isDriveOffer(o) && isLiveDonorOffer(o));
+  // Matches tab, NGO segment: drive offers from "Offer sent" until the NGO received them.
   const acceptedNgoOffers = acceptedDriveOffers(donationOffers as { _type?: string; status: string }[]) as unknown as AcceptedDriveOffer[];
+  const liveNgoOfferIds = new Set(acceptedNgoOffers.map(o => o.id));
+  // History: ended request offers, and drive offers that are completed or ended (each once).
+  const donorHistoryOffers = donationOffers.filter(o => isDriveOffer(o)
+    ? !liveNgoOfferIds.has(o.id) && o.status !== "DRAFT" && (o.status === "COMPLETED" || DRIVE_TERMINAL_STATUSES.includes(o.status))
+    : !isLiveDonorOffer(o));
+  const ngoOffersNeedYou = acceptedNgoOffers.some(o => ["NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED"].includes(o.status));
   const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));
   const donorMatchesNeedYou = activeDonorMatches.some(m => MATCH_NEEDS_DONOR.has(m.status));
   const donorItemsNeedYou = itemListings.some(l => l.status === "NEEDS_INFORMATION");
@@ -2966,8 +3005,9 @@ export default function DashboardPage() {
               { n: itemListings.length, label: "items listed" },
               // Same list the Matches tab calls live, so the headline number and
               // the tab's count can't disagree about what "active" means.
-              { n: activeDonorMatches.length, label: "active matches" },
-              { n: donorMatches.filter(m => ["FULFILLED", "COMPLETED"].includes(m.status)).length, label: "donations completed" },
+              // Drive offers count once: live ones as active matches, completed ones as donations.
+              { n: activeDonorMatches.length + acceptedNgoOffers.length, label: "active matches" },
+              { n: donorMatches.filter(m => ["FULFILLED", "COMPLETED"].includes(m.status)).length + donationOffers.filter(o => isDriveOffer(o) && o.status === "COMPLETED").length, label: "donations completed" },
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                 className={`py-3.5 sm:py-5 ${i > 0 ? "border-l border-white/10 pl-3.5 sm:pl-8" : ""}`}>
@@ -3025,16 +3065,17 @@ export default function DashboardPage() {
                 >
                   <SectionTab value="items" icon={Package} label="Your Inventory" shortLabel="Inventory"
                     count={visibleDonorListings.filter(l => !inFlowListingIds.has(l.id)).length} attention={donorItemsNeedYou || reviewDonorMatches.length > 0} tour="inventory" role="donor" />
+                  {/* Matches = Donee segment + NGO segment, each item counted once. */}
                   <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
-                    count={flowDonorMatches.length + liveDonorOffers.length} attention={donorOffersNeedYou} tour="matches" role="donor" />
+                    count={flowDonorMatches.length + liveDonorOffers.length + acceptedNgoOffers.length} attention={donorOffersNeedYou || ngoOffersNeedYou} tour="matches" role="donor" />
                   <SectionTab value="offers" icon={Heart} label="History" shortLabel="History"
-                    count={pastDonorMatches.length + donationOffers.filter(o => !isLiveDonorOffer(o)).length} attention={false} tour="offers" role="donor" />
+                    count={pastDonorMatches.length + donorHistoryOffers.length} attention={false} tour="offers" role="donor" />
                 </TabsList>
 
                 {/* Donor Flow 2 — Offer Tracker */}
                 <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
                   <DonorHistorySection
-                    offers={donationOffers.filter(o => !isLiveDonorOffer(o))}
+                    offers={donorHistoryOffers}
                     fulfilledItems={donorListingGroups.fulfilled}
                     matches={donorMatches}
                     pastMatches={pastDonorMatches}

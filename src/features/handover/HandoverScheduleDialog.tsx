@@ -47,6 +47,36 @@ export type SchedulePayload = {
  * directly, because both portal to `<body>` and would otherwise land outside the
  * `.handover-donor` scope with no accent at all.
  */
+const DAY_CODES = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const DAY_WORDS: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
+type DriveWindow = { availableDays?: string | string[] | null; availableFrom?: string | null; availableTo?: string | null };
+const dayCodes = (d: DriveWindow) => (Array.isArray(d.availableDays) ? d.availableDays : String(d.availableDays ?? "").split(","))
+  .map(x => x.trim().toUpperCase().slice(0, 3)).filter(Boolean);
+const hhmm = (t?: string | null) => (t ? t.slice(0, 5) : "");
+
+/** "on Mon, Wed between 18:11 and 19:11". */
+export function driveWindowText(d: DriveWindow): string {
+  const days = dayCodes(d).map(c => DAY_WORDS[c] ?? c).join(", ");
+  const hours = d.availableFrom && d.availableTo ? `between ${hhmm(d.availableFrom)} and ${hhmm(d.availableTo)}` : "";
+  return [days ? `on ${days}` : "", hours].filter(Boolean).join(" ") || "at a time you agree";
+}
+
+/** Why a picked local time (yyyy-MM-ddTHH:mm) is outside the NGO's days and hours, or null. */
+export function driveSlotProblem(d: DriveWindow, when: string, now = new Date()): string | null {
+  const [date, time] = when.split("T");
+  if (!date || !time) return null;
+  const [y, m, day] = date.split("-").map(Number);
+  const local = new Date(y, m - 1, day, Number(time.slice(0, 2)), Number(time.slice(3, 5)));
+  if (local <= now) return "Pick a date and time in the future.";
+  const codes = dayCodes(d);
+  if (codes.length && !codes.includes(DAY_CODES[local.getDay()])) return `The NGO receives items on ${codes.map(c => DAY_WORDS[c] ?? c).join(", ")} only.`;
+  const t = time.slice(0, 5);
+  if (d.availableFrom && d.availableTo && (t < hhmm(d.availableFrom) || t > hhmm(d.availableTo))) {
+    return `Pick a time between ${hhmm(d.availableFrom)} and ${hhmm(d.availableTo)}.`;
+  }
+  return null;
+}
+
 export function HandoverScheduleDialog({
   vm, open, onOpenChange, onSubmit, isReschedule,
 }: {
@@ -102,20 +132,9 @@ export function HandoverScheduleDialog({
   let canSubmit = !busy && !locationBusy && when.trim() !== "" && address.trim() !== "" && hasPin
     && (!reasonRequired || reason.trim().length >= 3);
 
-  // Validate NGO Drop off limits
-  if (canSubmit && method === "DONOR_DROP_OFF" && drive) {
-    const d = new Date(when);
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
-    const availableDays = (drive.availableDays || "").split(",").map((s: string) => s.trim());
-    if (availableDays.length > 0 && !availableDays.includes("Everyday") && !availableDays.includes(dayName)) {
-      canSubmit = false;
-    }
-    const neededBy = new Date(drive.neededBy);
-    if (d > neededBy) {
-      canSubmit = false;
-    }
-    // Time slot validation could go here, but for simplicity we rely on the submit warning if it fails.
-  }
+  // NGO drive offers: the NGO's handover days and hours (the same rule the server checks).
+  const slotProblem = vm.flow === "NGO_OFFER" && drive && when ? driveSlotProblem(drive, when) : null;
+  if (slotProblem) canSubmit = false;
 
   async function submit() {
     if (busy || !canSubmit) return;      // `disabled` lags a fast double-click
@@ -124,7 +143,9 @@ export function HandoverScheduleDialog({
     try {
       await onSubmit({
         method,
-        scheduledDateTime: new Date(when).toISOString(),
+        // Drive handovers: the local (IST) time as picked — toISOString() turned 18:30 IST into
+        // 13:00, which the server read as outside the NGO's hours. Other flows unchanged.
+        scheduledDateTime: vm.flow === "NGO_OFFER" ? `${when.slice(0, 16)}:00` : new Date(when).toISOString(),
         address: address.trim() || undefined,
         ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
         notes: notes.trim() || undefined,
@@ -175,6 +196,11 @@ export function HandoverScheduleDialog({
             {selectedHint && <Hint>{selectedHint}</Hint>}
           </Field>
 
+          {vm.flow === "NGO_OFFER" && drive && (
+            <p data-testid="drive-handover-window" className="text-sm text-stone-700 dark:text-stone-300">
+              The NGO receives items {driveWindowText(drive)}.
+            </p>
+          )}
           {method === "DONOR_DROP_OFF" && vm.flow === "NGO_OFFER" && (
             <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-100 text-sm text-amber-800 dark:text-amber-400">
               <strong>Drop-off Location:</strong> {vm.counterpart.name}
@@ -202,6 +228,7 @@ export function HandoverScheduleDialog({
               min={method === "DONOR_DROP_OFF" ? new Date(Date.now() + 86400000).toISOString().slice(0, 16) : undefined}
               max={method === "DONOR_DROP_OFF" && drive ? new Date(drive.neededBy).toISOString().slice(0, 16) : undefined}
             />
+            {slotProblem && <p role="alert" data-testid="drive-slot-problem" className="mt-1 text-sm font-medium text-destructive">{slotProblem}</p>}
           </Field>
 
           <Field label="Where?" required>

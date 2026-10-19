@@ -1133,8 +1133,6 @@
     "a10": "You meet in person to hand over the item, and confirm it in the app with a one-time code. We recommend meeting in a public place.",
     "q11": "What if the handover doesn't happen?",
     "a11": "You can cancel, and the need goes back live for other donors.",
-    "q12": "Which cities are you in?",
-    "a12": "We're currently live in Pune, Mumbai, Bengaluru, and Delhi NCR, with more cities coming soon.",
     "q13": "Is CauseKind free?",
     "a13": "Yes. It's completely free for donors, donees and NGOs.",
     "q14": "Do you accept money?",
@@ -1149,9 +1147,7 @@
     "ngoDriveQ4": "What condition should donated items be in?",
     "ngoDriveA4": "Items should match the condition requested on this drive. If marked as working order, items must be fully functional.",
     "ngoDriveQ5": "How does the handover work?",
-    "ngoDriveA5": "You meet in person or arrange drop-off/pickup, and confirm handover in the app with a 6-digit code.",
-    "ngoDriveQ6": "Is CauseKind free to use?",
-    "ngoDriveA6": "Yes. It's completely free for donors and NGOs."
+    "ngoDriveA5": "You meet in person or arrange drop-off/pickup, and confirm handover in the app with a 6-digit code."
   },
   "forgotPassword": {
     "title": "Forgot your password?",

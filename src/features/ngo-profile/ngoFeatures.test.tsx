@@ -37,7 +37,7 @@ import { OfferPhotosStep } from "@/features/donation-offer-wizard/steps/OfferPho
 import { aboutUsMissing, getNgoStillNeededItems, INITIAL_NGO_FORM } from "@/features/ngo-registration/ngoRegistrationModel";
 import { NgoAboutSection } from "./NgoAboutSection";
 import { AboutNgoContent } from "@/features/ngo-drives/components/AboutNgoCard";
-import { NgoPublicPage } from "./NgoPublicPage";
+import { isBannerDimensions, NgoHeroBanner, NgoPublicPage } from "./NgoPublicPage";
 import { NgoActivitiesManager } from "./NgoActivitiesManager";
 import { NgoActivityModerationPanel } from "@/app/admin/ngos/NgoActivityModerationPanel";
 import { MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers } from "@/components/matches/NgoAcceptedOffers";
@@ -137,7 +137,9 @@ describe("3. About the NGO card and public page", () => {
     expect(screen.getByRole("link", { name: /hope@ngo.test/ })).toHaveAttribute("href", "mailto:hope@ngo.test");
     expect(screen.getByRole("link", { name: /\+919822222222/ })).toBeInTheDocument();
     expect(screen.getByText("Asha Rao")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /80G certificate/ })).toHaveAttribute("href", "https://x.test/80g?sig=1");
+    // Documents open in the preview popup (no download link).
+    fireEvent.click(screen.getByRole("button", { name: /80G certificate/ }));
+    expect(await screen.findByTestId("file-preview")).toBeInTheDocument();
     expect(screen.getAllByTestId("public-activity")).toHaveLength(1);
     expect(screen.getByTestId("activity-carousel")).toBeInTheDocument();
   });
@@ -147,6 +149,99 @@ describe("3. About the NGO card and public page", () => {
     api.getPublicNgo.mockRejectedValue(new ApiError(404, "Not found"));
     render(<NgoPublicPage slug="nope" />);
     expect(await screen.findByTestId("ngo-not-found")).toHaveTextContent("NGO not found");
+  });
+
+  it("renders default laptops banner when NGO has no cover, and falls back to green gradient on error", async () => {
+    api.getPublicNgo.mockResolvedValue({
+      slug: "laptop-aid",
+      organizationName: "Laptop Aid",
+      verifiedAt: "2024-01-15T10:00:00",
+      photoUrls: [],
+      trackRecord: { completedDrives: 5, itemsReceived: 120 },
+    });
+    render(<NgoPublicPage slug="laptop-aid" />);
+    expect(await screen.findByRole("heading", { name: "Laptop Aid", level: 1 })).toBeInTheDocument();
+
+    // Default banner image rendered with object-cover
+    const defaultBanner = screen.getByTestId("ngo-default-banner");
+    expect(defaultBanner).toBeInTheDocument();
+    expect(defaultBanner).toHaveAttribute("src", "/images/ngo-default-banner.jpg");
+    expect(defaultBanner.className).toContain("object-cover");
+
+    // Logo and stat cards still rendered and visible
+    expect(screen.getByTestId("ngo-initials")).toHaveTextContent("LA");
+    expect(screen.getByTestId("ngo-quick-stats")).toHaveTextContent("120");
+
+    // If default image fails to load, falls back to plain NGO-green gradient
+    fireEvent.error(defaultBanner);
+    expect(screen.getByTestId("ngo-gradient-fallback")).toBeInTheDocument();
+  });
+
+  it("never uses photoUrls[0] as banner; uses coverImageUrl only", async () => {
+    api.getPublicNgo.mockResolvedValue({
+      slug: "photo-ngo",
+      organizationName: "Photo NGO",
+      verifiedAt: "2024-01-15T10:00:00",
+      photoUrls: ["https://x.test/dashboard-screenshot.jpg"],
+      coverImageUrl: null,
+    });
+    render(<NgoPublicPage slug="photo-ngo" />);
+    expect(await screen.findByRole("heading", { name: "Photo NGO", level: 1 })).toBeInTheDocument();
+
+    // photoUrls[0] is NOT used as banner
+    expect(screen.queryByTestId("ngo-cover-image")).toBeNull();
+    // Default banner fallback is rendered instead
+    expect(screen.getByTestId("ngo-default-banner")).toBeInTheDocument();
+  });
+
+  it("uses custom coverImageUrl when valid and falls back to default on error", async () => {
+    api.getPublicNgo.mockResolvedValue({
+      slug: "tech-ngo",
+      organizationName: "Tech NGO",
+      verifiedAt: "2024-01-15T10:00:00",
+      coverImageUrl: "https://x.test/custom-cover.jpg",
+    });
+    render(<NgoPublicPage slug="tech-ngo" />);
+    expect(await screen.findByRole("heading", { name: "Tech NGO", level: 1 })).toBeInTheDocument();
+
+    const customImg = screen.getByTestId("ngo-cover-image");
+    expect(customImg).toHaveAttribute("src", "https://x.test/custom-cover.jpg");
+    expect(customImg.className).toContain("object-cover");
+
+    // When custom image fails to load, falls back to default banner
+    fireEvent.error(customImg);
+    const defaultBanner = await screen.findByTestId("ngo-default-banner");
+    expect(defaultBanner).toBeInTheDocument();
+  });
+
+  it("rejects cover images that are obviously not banners (width < 800 or height > width)", async () => {
+    // Dimension helper unit checks
+    expect(isBannerDimensions(600, 300)).toBe(false); // width under 800px
+    expect(isBannerDimensions(1000, 1200)).toBe(false); // height greater than width (portrait)
+    expect(isBannerDimensions(1600, 900)).toBe(true); // wide landscape banner
+
+    // Rejection for width < 800px in component
+    const { unmount } = render(
+      <NgoHeroBanner coverImageUrl="https://x.test/small.jpg" orgName="Small NGO" />
+    );
+    const smallImg = screen.getByTestId("ngo-cover-image");
+    Object.defineProperty(smallImg, "naturalWidth", { value: 640, configurable: true });
+    Object.defineProperty(smallImg, "naturalHeight", { value: 360, configurable: true });
+    fireEvent.load(smallImg);
+    expect(screen.queryByTestId("ngo-cover-image")).toBeNull();
+    expect(screen.getByTestId("ngo-default-banner")).toBeInTheDocument();
+    unmount();
+
+    // Rejection for height > width (portrait) in component
+    render(
+      <NgoHeroBanner coverImageUrl="https://x.test/portrait.jpg" orgName="Portrait NGO" />
+    );
+    const portraitImg = screen.getByTestId("ngo-cover-image");
+    Object.defineProperty(portraitImg, "naturalWidth", { value: 900, configurable: true });
+    Object.defineProperty(portraitImg, "naturalHeight", { value: 1200, configurable: true });
+    fireEvent.load(portraitImg);
+    expect(screen.queryByTestId("ngo-cover-image")).toBeNull();
+    expect(screen.getByTestId("ngo-default-banner")).toBeInTheDocument();
   });
 });
 
@@ -181,19 +276,31 @@ describe("4. past activity", () => {
 });
 
 describe("5. Matches tab NGO segment", () => {
-  it("lists only accepted, unfinished drive offers, with a link to the handover", () => {
+  it("shows the stages Offer sent, Accepted, Handover scheduled, Received by NGO over the real statuses", () => {
     const offers = [
       { _type: "DRIVE_OFFER", id: 1, status: "NGO_ACCEPTED", driveTitle: "Winter blankets", ngoName: "Hope Trust", quantity: 3, driveUnit: "PIECES", driveItemName: "Blankets" },
-      { _type: "DRIVE_OFFER", id: 2, status: "PENDING_NGO_REVIEW" },
-      { _type: "DRIVE_OFFER", id: 3, status: "COMPLETED" },
-      { id: 4, status: "NGO_ACCEPTED" },
+      { _type: "DRIVE_OFFER", id: 2, status: "PENDING_NGO_REVIEW", driveTitle: "School bags" },
+      { _type: "DRIVE_OFFER", id: 3, status: "ISSUE_WINDOW_OPEN", driveTitle: "Rice" },
+      { _type: "DRIVE_OFFER", id: 5, status: "NGO_DECLINED" },
+      { id: 4, status: "NGO_ACCEPTED" },                 // not a drive offer (donee side): never here
     ];
-    const accepted = acceptedDriveOffers(offers);
-    expect(accepted.map(o => o.id)).toEqual([1]);
-    render(<NgoAcceptedOffersList offers={accepted as never} />);
-    expect(screen.getByText("Winter blankets")).toBeInTheDocument();
-    expect(screen.getByText("Accepted, plan the handover")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Open handover/ })).toHaveAttribute("href", "/ngo-drive-offers/1/handover");
+    const listed = acceptedDriveOffers(offers);
+    expect(listed.map(o => o.id)).toEqual([1, 2, 3]);
+    render(<NgoAcceptedOffersList offers={listed as never} />);
+    const current = screen.getAllByTestId("drive-offer-stages").map(ol => ol.querySelector('[aria-current="step"]')?.textContent);
+    expect(current).toEqual(["Accepted, arrange handover", "Offer sent", "Received by NGO"]);
+    const links = screen.getAllByRole("link", { name: /Open handover/ }).map(a => a.getAttribute("href"));
+    expect(links).toEqual(["/ngo-drive-offers/1/handover"]); // none while only sent; received gets a small link
+    expect(screen.getByRole("link", { name: "View handover" })).toHaveAttribute("href", "/ngo-drive-offers/3/handover");
+  });
+
+  it("after proof approval: 'Your 10 jackets were distributed to 50 children' and View proof", () => {
+    const done = { _type: "DRIVE_OFFER", id: 9, status: "COMPLETED", driveId: 4, driveTitle: "Warm jackets", quantity: 10, driveItemName: "Jackets",
+      driveStatus: "FULFILLED", driveBeneficiariesReached: 50, driveBeneficiaryGroup: "Children" };
+    expect(acceptedDriveOffers([done])).toEqual([]);           // completed: History, not Matches
+    render(<NgoAcceptedOffersList offers={[done] as never} />);
+    expect(screen.getByTestId("drive-offer-distributed")).toHaveTextContent("Your 10 jackets were distributed to 50 children");
+    expect(screen.getByRole("link", { name: /View proof/ })).toHaveAttribute("href", "/drives/4/proof");
   });
 
   it("empty state, and a segmented control that defaults to Donee", () => {
@@ -202,7 +309,7 @@ describe("5. Matches tab NGO segment", () => {
     expect(screen.getByRole("radio", { name: /Donee/ })).toHaveAttribute("aria-checked", "true");
     fireEvent.click(screen.getByRole("radio", { name: /NGO/ }));
     expect(onChange).toHaveBeenCalledWith("ngo");
-    expect(screen.getByTestId("ngo-matches-empty")).toHaveTextContent("No accepted drive offers yet.");
+    expect(screen.getByTestId("ngo-matches-empty")).toHaveTextContent("No offers to NGO drives yet.");
     expect(screen.getByRole("link", { name: "Browse NGO drives" })).toBeInTheDocument();
   });
 });
@@ -232,7 +339,7 @@ describe("7. FAQ", () => {
     render(<FaqPageClient />);
     fireEvent.click(screen.getByRole("button", { name: /NGO drives/ }));
     expect(await screen.findByText("Can I see the NGO's phone number?")).toBeInTheDocument();
-    expect(NGO_DRIVE_FAQ_KEYS).toHaveLength(6);
+    expect(NGO_DRIVE_FAQ_KEYS).toHaveLength(5);
     const drivePage = readFileSync(resolve(__dirname, "../ngo-drives/components/DriveDetailView.tsx"), "utf8");
     // The drive page no longer repeats the FAQ: it links to this category.
     expect(drivePage).not.toContain("Frequently Asked Questions");

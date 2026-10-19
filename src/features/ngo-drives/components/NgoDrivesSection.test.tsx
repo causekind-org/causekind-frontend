@@ -190,7 +190,7 @@ describe("NgoDrivesSection", () => {
     expect(screen.queryByText("Give to this drive")).toBeNull();
   });
 
-  it("renders amber days left for <= 3 days and hides donorCount when 0", async () => {
+  it("shows no days-left line and hides donorCount when 0", async () => {
     render(<NgoDrivesSection />);
 
     expect(await screen.findByText("Flood Relief Medicine Kits")).toBeInTheDocument();
@@ -200,7 +200,7 @@ describe("NgoDrivesSection", () => {
     expect(screen.getByText("1 Donor")).toBeInTheDocument();
     expect(screen.queryByText("0 Donors")).toBeNull();
 
-    // Drive 3 has Ends today
-    expect(screen.getByText("Ends today")).toBeInTheDocument();
+    // Cards no longer show the days-left line.
+    expect(screen.queryByText("Ends today")).toBeNull();
   });
 });

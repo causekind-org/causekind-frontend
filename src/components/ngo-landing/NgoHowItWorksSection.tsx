@@ -59,6 +59,9 @@ export function NgoHowItWorksSection() {
     ctaLabel = "Fix Verification Documents →";
   }
 
+  // Approved NGOs have done these steps: the closing "Get verified. Post. Deliver." section is for everyone else.
+  if (isVerified) return null;
+
   return (
     <section className="relative overflow-hidden py-16 sm:py-24 text-stone-900 dark:text-stone-100">
       {/* Background bleed connecting to Section 6 */}

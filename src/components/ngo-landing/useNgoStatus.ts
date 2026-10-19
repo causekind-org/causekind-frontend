@@ -133,6 +133,8 @@ export function useNgoStatus(): NgoStatusData {
   const [hasShownWelcome, setHasShownWelcome] = useState(true);
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
+  /** Whose status is on screen: later refreshes for the same NGO keep it instead of blanking it. */
+  const loadedFor = useRef<string | null>(null);
   // Depend on who the user is, not on the object: a new user object with the same
   // identity (each re-render, e.g. the hero gallery's slideshow) must not restart the load.
   const userRef = useRef(user);
@@ -146,7 +148,11 @@ export function useNgoStatus(): NgoStatusData {
     if (!user || !["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) {
       setStatus("incomplete"); setOverview(null); setLoading(false); setError(null); return;
     }
-    setLoading(true); setError(null);
+    // Only the first load for this account shows "loading". A background refresh (focus,
+    // live update, the profile name arriving) kept flipping isVerified off for ~2s, so every
+    // NGO page dropped to its locked/blank state and came back.
+    const id = String(user.id ?? user.email ?? "");
+    if (loadedFor.current !== id) setLoading(true);
     try {
       const [application, draft, totals] = await Promise.all([getMyNgoApplication(), getNgoDraft(), getNgoOverview()]);
       if (request !== sequence.current) return;
@@ -159,6 +165,8 @@ export function useNgoStatus(): NgoStatusData {
       setProgress(calculateNgoProgress(form));
       setDocuments(form.documents || {});
       setOverview(totals);
+      setError(null);
+      loadedFor.current = id;
     } catch (e) {
       if (request === sequence.current) {
         setError(e instanceof Error ? e.message : "We could not load your NGO activity. Please retry.");

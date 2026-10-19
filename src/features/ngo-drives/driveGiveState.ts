@@ -74,11 +74,11 @@ export function giveState(
 }
 
 export function isNotFound(e: unknown) {
-  return e instanceof ApiError && e.status === 404;
+  return (e instanceof ApiError && e.status === 404) || (typeof e === "object" && e !== null && "status" in e && (e as { status: unknown }).status === 404);
 }
 
 export function isForbidden(e: unknown) {
-  return e instanceof ApiError && e.status === 403;
+  return (e instanceof ApiError && e.status === 403) || (typeof e === "object" && e !== null && "status" in e && (e as { status: unknown }).status === 403);
 }
 
 export function errorMessage(e: unknown, fallback: string) {

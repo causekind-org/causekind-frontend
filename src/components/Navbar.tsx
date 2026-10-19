@@ -617,11 +617,9 @@ export function SiteHeader() {
     user?.role === "SUPER_ADMIN";
 
   const isNgo = user?.role === "NGO" || user?.role === "NGO_PARTNER";
-  const isNgoDashboard =
-    isNgo ||
-    pathname?.startsWith("/dashboard/ngo") ||
-    // "/ngo" and "/ngo/…" only: the public NGO pages ("/ngos/…") are for everyone.
-    pathname === "/ngo" || pathname?.startsWith("/ngo/");
+  // From the signed-in account's role only, never from the path: "/ngos/…",
+  // "/ngo-drive-offers/…" and the like are visited by donors and guests too.
+  const isNgoDashboard = isNgo;
 
   const [ngoApplicationState, setNgoApplicationState] = useState("CHECKING");
   useEffect(() => {

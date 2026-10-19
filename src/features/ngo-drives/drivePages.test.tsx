@@ -217,10 +217,16 @@ describe("NGO drive page /ngo/drives/[id]", () => {
     expect(await screen.findByRole("heading", { name: /Winter blankets/ })).toBeInTheDocument();
     expect(screen.getByText("Live")).toBeInTheDocument();
     expect(screen.getByText("MON, TUE, 10:00–17:00")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Offers to review (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Accept/ })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "Handovers (1)" }));
-    expect(screen.getByRole("link", { name: "Open handover" })).toHaveAttribute("href", "/ngo/drives/5/offers/10/handover");
+    // Details only: no tabs; a summary line links into the dashboard's Activity.
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Accept/ })).toBeNull();
+    expect(screen.getByRole("link", { name: "1 offer to review" })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=offers&drive=5");
+    expect(screen.getByRole("link", { name: "1 handover" })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=handovers&drive=5");
+    // Closing is blocked while an offer waits for review.
+    fireEvent.click(screen.getByTestId("close-drive"));
+    expect(await screen.findByTestId("close-blocked")).toHaveTextContent("1 offer is waiting for your review");
+    fireEvent.change(screen.getByPlaceholderText("e.g. We have enough"), { target: { value: "Enough" } });
+    expect(screen.getAllByRole("button", { name: "Close drive" }).at(-1)).toBeDisabled();
   });
 
   it("a failing offers call still shows the drive, with Retry for the offers", async () => {
@@ -245,12 +251,12 @@ describe("NGO drive page /ngo/drives/[id]", () => {
     expect(await screen.findByText("Drive not found")).toBeInTheDocument();
   });
 
-  it("collection complete opens the proof tab with people reached", async () => {
+  it("collection complete links to Proof due and can't be closed", async () => {
     api.getNgoDriveDetail.mockResolvedValue(ngoDrive({ status: "COLLECTION_COMPLETE", quantityReceived: 20 }));
     api.getNgoDriveOffersForNgo.mockResolvedValue([]);
     const P = await Page();
     render(<P />);
-    expect(await screen.findByLabelText("People reached")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Submit proof/ })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: "proof pending" })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=proof&drive=5");
+    expect(screen.queryByTestId("close-drive")).toBeNull();
   });
 });

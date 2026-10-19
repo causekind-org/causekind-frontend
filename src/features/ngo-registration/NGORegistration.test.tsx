@@ -183,7 +183,7 @@ describe("NGORegistration Component", () => {
     // Check summarized information
     expect(screen.getByText("Helping Hearts Trust")).toBeInTheDocument();
     expect(screen.getByText("MH/TRU/2026/9876")).toBeInTheDocument();
-    expect(screen.getByText(/1\. Priya Sharma/)).toBeInTheDocument();
+    expect(screen.getAllByText("Priya Sharma").length).toBeGreaterThan(0); // one card per representative
     expect(screen.getByText(/priya@helpinghearts\.org/)).toBeInTheDocument();
     expect(screen.getByText("AAATH1234K")).toBeInTheDocument();
 

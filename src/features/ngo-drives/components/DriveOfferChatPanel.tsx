@@ -14,7 +14,7 @@ export const DRIVE_CHAT_WRITABLE = new Set([
 /** After it ends: read-only history, as in the donor↔donee handover chat. */
 export const DRIVE_CHAT_READ_ONLY = new Set(["COMPLETED", "CANCELLED", "ENDED", "WITHDRAWN", "ADMIN_REJECTED"]);
 
-const ENDPOINTS: ChatEndpoints = {
+export const DRIVE_CHAT_ENDPOINTS: ChatEndpoints = {
   source: "DRIVE_OFFER",
   messages: driveOfferChat.messages,
   since: driveOfferChat.since,
@@ -67,7 +67,7 @@ export function DriveOfferChatPanel({ offerId, status, role }: { offerId: number
           )}
         </button>
       ) : (
-        <MatchChatWindow matchId={offerId} currentUserEmail={user?.email ?? ""} endpoints={ENDPOINTS} locked={!writable}
+        <MatchChatWindow matchId={offerId} currentUserEmail={user?.email ?? ""} endpoints={DRIVE_CHAT_ENDPOINTS} locked={!writable}
           emptyText={role === "DONOR" ? "Say hello to the NGO." : "No messages from the donor yet."} />
       )}
       {!writable && <p className="text-xs text-stone-500 dark:text-stone-400">This chat is closed. You can still read it.</p>}

@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  AlertCircle, Building2, Calendar, ChevronLeft, ChevronRight, Download, FileText, Globe, Hash, Mail, MapPin,
+  AlertCircle, Building2, Calendar, ChevronLeft, ChevronRight, FileText, Globe, Hash, Mail, MapPin,
   Package, Phone, Scale, UserRound,
 } from "lucide-react";
 import { getPublicNgo, type PublicNgoProfile } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
+import { FilePreviewDialog } from "@/components/FilePreviewDialog";
 import { BackButton, DRIVES_SECTION_HREF } from "@/components/BackButton";
 import { NgoDriveCard } from "@/features/ngo-drives/components/NgoDriveCard";
 import { formatDdMmYyyy, formatLegalStructure } from "@/features/ngo-drives/driveFormatters";
@@ -97,11 +98,82 @@ function MediaCarousel({ media, title }: { media: { mediaType: "IMAGE" | "VIDEO"
   );
 }
 
+const DEFAULT_BANNER = "/images/ngo-default-banner.jpg";
+const DEFAULT_BANNER_MOBILE = "/images/ngo-default-banner-mobile.jpg";
+
+/** A banner must be wide enough and landscape: natural width >= 800px and height <= width. */
+export function isBannerDimensions(width: number, height: number): boolean {
+  return width >= 800 && height <= width;
+}
+
+export function NgoHeroBanner({
+  coverImageUrl,
+  orgName,
+}: {
+  coverImageUrl?: string | null;
+  orgName: string;
+}) {
+  const [coverFailed, setCoverFailed] = useState(false);
+  const [coverRejected, setCoverRejected] = useState(false);
+  const [defaultFailed, setDefaultFailed] = useState(false);
+
+  useEffect(() => {
+    setCoverFailed(false);
+    setCoverRejected(false);
+  }, [coverImageUrl]);
+
+  const showCover = Boolean(coverImageUrl && !coverFailed && !coverRejected);
+
+  return (
+    <div
+      className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800 sm:h-56 lg:h-64"
+      data-testid="ngo-hero-banner"
+    >
+      {showCover ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={coverImageUrl!}
+          alt={`${orgName} cover banner`}
+          className="h-full w-full object-cover"
+          onLoad={(e) => {
+            const { naturalWidth, naturalHeight } = e.currentTarget;
+            if (naturalWidth > 0 && naturalHeight > 0 && !isBannerDimensions(naturalWidth, naturalHeight)) {
+              setCoverRejected(true);
+            }
+          }}
+          onError={() => setCoverFailed(true)}
+          data-testid="ngo-cover-image"
+        />
+      ) : !defaultFailed ? (
+        <picture>
+          <source media="(max-width: 640px)" srcSet={DEFAULT_BANNER_MOBILE} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={DEFAULT_BANNER}
+            alt="CauseKind verified NGO distribution drive"
+            className="h-full w-full object-cover"
+            onError={() => setDefaultFailed(true)}
+            data-testid="ngo-default-banner"
+          />
+        </picture>
+      ) : (
+        <div
+          className="h-full w-full bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800"
+          data-testid="ngo-gradient-fallback"
+        />
+      )}
+
+      {/* Dark gradient overlay so the title, badges, and quick-stats remain completely readable */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-emerald-950/95 via-emerald-900/50 to-black/30" />
+    </div>
+  );
+}
+
 export function NgoPublicPage({ slug }: { slug: string }) {
   const [ngo, setNgo] = useState<PublicNgoProfile | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "not-found" | "error">("loading");
   const [message, setMessage] = useState("");
-  const [cover, setCover] = useState(0);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let live = true;
@@ -118,34 +190,22 @@ export function NgoPublicPage({ slug }: { slug: string }) {
 
   const place = [ngo.city, ngo.state].filter(Boolean).join(", ");
   const tr = ngo.trackRecord;
-  const photos = ngo.photoUrls ?? [];
   const website = ngo.website ? (ngo.website.startsWith("http") ? ngo.website : `https://${ngo.website}`) : null;
 
   return (
     <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
-      <div className="mx-auto max-w-6xl px-4 pt-3 sm:px-6">
-        <BackButton />
-      </div>
+      <FilePreviewDialog files={(ngo.documents ?? []).map(d => ({ name: d.label, url: d.url }))} index={previewIndex}
+        onIndexChange={setPreviewIndex} onClose={() => setPreviewIndex(null)} />
 
       {/* ── Hero ── */}
-      <section className="mt-2 bg-gradient-to-br from-emerald-900 to-emerald-800 text-white">
-        {photos.length > 0 && (
-          <div className="relative h-40 w-full overflow-hidden sm:h-56 lg:h-64">
-            <SafeImg src={photos[cover % photos.length]} alt={`${ngo.organizationName}, photo ${cover + 1}`} className="h-full w-full object-cover opacity-80"
-              fallback={<div className="h-full w-full" />} />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-emerald-950/90 via-emerald-900/30 to-transparent" />
-            {photos.length > 1 && (
-              <div className="absolute bottom-3 right-4 flex gap-1.5" role="group" aria-label="Photos">
-                {photos.map((_, k) => (
-                  <button key={k} type="button" aria-label={`Show photo ${k + 1}`} aria-pressed={k === cover} onClick={() => setCover(k)}
-                    className={`h-2 rounded-full transition-all ${k === cover ? "w-6 bg-white" : "w-2 bg-white/50"}`} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+      <section className="bg-gradient-to-br from-emerald-900 to-emerald-800 text-white">
+        <div className="mx-auto max-w-6xl px-4 pt-3 sm:px-6"><BackButton onDark /></div>
+        <NgoHeroBanner
+          coverImageUrl={ngo.coverImageUrl}
+          orgName={ngo.organizationName}
+        />
         <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-          <div className={`flex flex-col gap-5 sm:flex-row sm:items-end ${photos.length > 0 ? "-mt-16 sm:-mt-20" : ""}`}>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-end -mt-16 sm:-mt-20">
             <SafeImg src={ngo.logoUrl} alt={`${ngo.organizationName} logo`}
               className="relative h-24 w-24 shrink-0 rounded-2xl border-4 border-white bg-white object-cover shadow-lg dark:border-zinc-900"
               fallback={
@@ -188,24 +248,39 @@ export function NgoPublicPage({ slug }: { slug: string }) {
             </Card>
           )}
 
-          <Card title="Organization details">
-            <dl className="grid gap-5 sm:grid-cols-2">
-              <Detail icon={Scale} label="Legal structure">{ngo.legalStructure ? formatLegalStructure(ngo.legalStructure) : null}</Detail>
-              <Detail icon={Hash} label="Registration number">{ngo.registrationNumber}</Detail>
-              <Detail icon={Calendar} label="Year established">{ngo.yearOfEstablishment}</Detail>
-              <Detail icon={Building2} label="Registered office">{ngo.registeredOfficeAddress}</Detail>
-              <Detail icon={Globe} label="Website">{website && (
-                <a href={website} target="_blank" rel="noopener noreferrer" className="text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.website}</a>
-              )}</Detail>
-              <Detail icon={Phone} label="Organization phone">{ngo.organizationPhone && (
-                <a href={`tel:${ngo.organizationPhone.replace(/[^\d+]/g, "")}`} className="text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.organizationPhone}</a>
-              )}</Detail>
-              <Detail icon={Mail} label="Official email">{ngo.officialEmail && (
-                <a href={`mailto:${ngo.officialEmail}`} className="break-all text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.officialEmail}</a>
-              )}</Detail>
-            </dl>
-          </Card>
 
+          {(ngo.documents?.length ?? 0) > 0 && (
+            <Card title="Documents">
+              <ul className="flex flex-wrap gap-2" data-testid="ngo-documents">
+                {ngo.documents!.map((d, i) => (
+                  <li key={d.label + i}>
+                    <button type="button" onClick={() => setPreviewIndex(i)}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 text-sm font-semibold text-stone-800 hover:border-emerald-600 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200 dark:hover:bg-emerald-950/40">
+                      <FileText className="h-4 w-4 text-emerald-700 dark:text-emerald-400" aria-hidden />{d.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Opens a secure preview. Links expire after a few minutes.</p>
+            </Card>
+          )}
+          {(ngo.representatives?.length ?? 0) > 0 && (
+            <Card title="Authorized representatives">
+              <ul className="grid gap-2 sm:grid-cols-2">
+                {ngo.representatives!.map((r, i) => (
+                  <li key={`${r.fullName}-${i}`} className="flex items-center gap-3 rounded-xl border border-stone-200 p-3 dark:border-zinc-800">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                      <UserRound className="h-4 w-4" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold text-stone-900 dark:text-stone-100">{r.fullName}</p>
+                      {r.designation && <p className="text-xs text-stone-500 dark:text-stone-400">{r.designation}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          )}
           {(ngo.activities?.length ?? 0) > 0 && (
             <Card title="Past activity">
               <ul className="grid gap-4 sm:grid-cols-2">
@@ -232,7 +307,25 @@ export function NgoPublicPage({ slug }: { slug: string }) {
           )}
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start" data-testid="ngo-summary">
+          <Card title="Organization details">
+            <dl className="grid gap-4">
+              <Detail icon={Scale} label="Legal structure">{ngo.legalStructure ? formatLegalStructure(ngo.legalStructure) : null}</Detail>
+              <Detail icon={Hash} label="Registration number">{ngo.registrationNumber}</Detail>
+              <Detail icon={Calendar} label="Year established">{ngo.yearOfEstablishment}</Detail>
+              <Detail icon={Building2} label="Registered office">{ngo.registeredOfficeAddress}</Detail>
+              <Detail icon={Globe} label="Website">{website && (
+                <a href={website} target="_blank" rel="noopener noreferrer" className="text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.website}</a>
+              )}</Detail>
+              <Detail icon={Phone} label="Organization phone">{ngo.organizationPhone && (
+                <a href={`tel:${ngo.organizationPhone.replace(/[^\d+]/g, "")}`} className="text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.organizationPhone}</a>
+              )}</Detail>
+              <Detail icon={Mail} label="Official email">{ngo.officialEmail && (
+                <a href={`mailto:${ngo.officialEmail}`} className="break-all text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.officialEmail}</a>
+              )}</Detail>
+            </dl>
+          </Card>
+
           {tr && (
             <Card title="Track record">
               <dl className="space-y-3">
@@ -250,40 +343,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
             </Card>
           )}
 
-          {(ngo.representatives?.length ?? 0) > 0 && (
-            <Card title="Authorized representatives">
-              <ul className="space-y-2">
-                {ngo.representatives!.map((r, i) => (
-                  <li key={`${r.fullName}-${i}`} className="flex items-center gap-3 rounded-xl border border-stone-200 p-3 dark:border-zinc-800">
-                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                      <UserRound className="h-4 w-4" aria-hidden />
-                    </span>
-                    <div className="min-w-0">
-                      <p className="truncate font-semibold text-stone-900 dark:text-stone-100">{r.fullName}</p>
-                      {r.designation && <p className="text-xs text-stone-500 dark:text-stone-400">{r.designation}</p>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
 
-          {(ngo.documents?.length ?? 0) > 0 && (
-            <Card title="Documents">
-              <ul className="flex flex-wrap gap-2">
-                {ngo.documents!.map(d => (
-                  <li key={d.label}>
-                    <a href={d.url} target="_blank" rel="noopener noreferrer" aria-label={`${d.label}: view or download`}
-                      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 text-sm font-semibold text-stone-800 hover:border-emerald-600 hover:bg-emerald-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200 dark:hover:bg-emerald-950/40">
-                      <FileText className="h-4 w-4 text-emerald-700 dark:text-emerald-400" aria-hidden />{d.label}
-                      <Download className="h-3.5 w-3.5 text-stone-400" aria-hidden />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Links work for a few minutes. Reload the page for a fresh one.</p>
-            </Card>
-          )}
         </aside>
       </div>
     </main>

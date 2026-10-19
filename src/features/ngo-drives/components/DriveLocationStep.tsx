@@ -83,7 +83,7 @@ export function DriveLocationStep({
         )}
         {errors.pickupRadiusKm && <p role="alert" className="text-xs font-semibold text-red-600">{errors.pickupRadiusKm}</p>}
         <p className="text-xs text-stone-500 dark:text-stone-400">
-          Donors within this distance can ask you to pick up. Donors farther away can still give by dropping the items at this location.
+          You will pick up items from donors within this distance. Donors farther away will drop the items off at your location.
         </p>
       </section>
     </div>

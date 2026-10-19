@@ -29,8 +29,8 @@ export function useNgoDashboardData() {
       setRequests(res);
       setErrorRequests(false);
     } catch (e) {
-      setRequests([]);
-      setErrorRequests(true);
+      // A failed background refresh keeps what's on screen; only a first load shows the error.
+      if (!silent) { setRequests([]); setErrorRequests(true); }
     } finally {
       setLoadingRequests(false);
     }
