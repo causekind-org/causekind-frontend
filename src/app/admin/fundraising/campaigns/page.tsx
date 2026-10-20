@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "@/components/AppLink";
+import { FrLink as Link } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
 import { fundraisingCampaigns, type CampaignFlowStatus, type FundraisingCampaignQueueRow } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
@@ -34,7 +34,7 @@ export default function AdminCampaignQueuePage() {
   return (
     <div className={a.root}>
       <main className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
-        <nav className={a.switch} aria-label="Fundraising review"><Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link><span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Publication review</span><Link href="/admin/fundraising/review" className={a.switchBtn}>Updates &amp; changes</Link></nav>
+        <nav className={a.switch} aria-label="Fundraising review"><Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link><span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Publication review</span><Link href="/admin/fundraising/review" className={a.switchBtn}>Updates &amp; changes</Link><Link href="/admin/fundraising/reports" className={a.switchBtn}>Reports</Link></nav>
         <div><h1 className={a.serif} style={{ fontSize: 28 }}>Publication review</h1><p className={a.muted}>Check each fundraiser page against its approved application before it can go public.</p></div>
         <nav className={a.tabs} aria-label="Filter by state">
           {FILTERS.map((f, i) => <button key={f.label} type="button" className={`${a.tab} ${i === filter ? a.tabOn : ""}`} aria-pressed={i === filter} onClick={() => setFilter(i)}>{f.label}</button>)}

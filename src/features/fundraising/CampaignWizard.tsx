@@ -8,6 +8,7 @@ import {
   type LocationVisibility, type NameVisibility,
 } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignStepper, Icon, SaveIndicator, formatDate, formatINR, type SaveState } from "./ui";
+import { FieldInfo } from "./FieldInfo";
 import s from "./fundraising.module.css";
 
 type SetFn = (patch: FundraisingCampaignSave) => void;
@@ -143,13 +144,13 @@ function Basics({ c, set, setC, nav }: { c: FundraisingCampaign; set: SetFn; set
     <>
       <Heading title="Public basics" sub="This is what donors see first. We've carried over what you already told us." />
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24, maxWidth: 860 }}>
-        <div><label className={s.lbl} htmlFor="t">Campaign title</label><input id="t" className={s.in} maxLength={120} value={c.title ?? ""} onChange={(e) => set({ title: e.target.value })} /><p className={s.hint}>{(c.title ?? "").length} of 120 characters. Say who and what, plainly.</p></div>
+        <div><label className={s.lbl} htmlFor="t">Campaign title <FieldInfo k="t" /></label><input id="t" className={s.in} maxLength={120} value={c.title ?? ""} onChange={(e) => set({ title: e.target.value })} /><p className={s.hint}>{(c.title ?? "").length} of 120 characters. Say who and what, plainly.</p></div>
         <div className={s.grid2}>
-          <div><span className={s.lbl}>Category</span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{c.category ? CATEGORY_LABEL[c.category] : "—"}</span><span className={`${s.muted} ${s.small}`}>Approved — can&apos;t change here</span></p></div>
-          <div><label className={s.lbl} htmlFor="dn">Beneficiary name shown to donors <span className={`${s.chip} ${s.cN}`}>From application</span></label><input id="dn" className={s.in} maxLength={80} value={c.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} /><p className={s.hint}>Their legal name stays private. Change visibility in step 4.</p></div>
+          <div><span className={s.lbl}>Category <FieldInfo k="cCat" /></span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{c.category ? CATEGORY_LABEL[c.category] : "—"}</span><span className={`${s.muted} ${s.small}`}>Approved — can&apos;t change here</span></p></div>
+          <div><label className={s.lbl} htmlFor="dn">Beneficiary name shown to donors <FieldInfo k="dn" /><span className={`${s.chip} ${s.cN}`}>From application</span></label><input id="dn" className={s.in} maxLength={80} value={c.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} /><p className={s.hint}>Their legal name stays private. Change visibility in step 4.</p></div>
         </div>
         <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="cv">
-          <h2 id="cv" className={s.lbl} style={{ margin: 0 }}>Cover photo</h2>
+          <h2 id="cv" className={s.lbl} style={{ margin: 0 }}>Cover photo <FieldInfo k="cv" /></h2>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0,360px) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
             {c.coverUrl
               // eslint-disable-next-line @next/next/no-img-element
@@ -159,7 +160,7 @@ function Basics({ c, set, setC, nav }: { c: FundraisingCampaign; set: SetFn; set
               <label className={`${s.btn} ${s.bs}`} style={{ alignSelf: "flex-start" }}>{uploading ? "Uploading…" : c.coverUrl ? "Replace" : "Choose photo"}
                 <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} /></label>
               {err && <p role="alert" className={s.errText}><Icon name="alert" />{err}</p>}
-              <div><label className={s.lbl} htmlFor="alt">Describe the photo for people who can&apos;t see it</label><input id="alt" className={s.in} maxLength={300} value={c.coverAltText ?? ""} onChange={(e) => set({ coverAltText: e.target.value })} /></div>
+              <div><label className={s.lbl} htmlFor="alt">Describe the photo for people who can&apos;t see it <span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span> <FieldInfo k="alt" /></label><input id="alt" className={s.in} maxLength={300} value={c.coverAltText ?? ""} onChange={(e) => set({ coverAltText: e.target.value })} /></div>
               <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><input type="checkbox" checked={c.coverConsent} onChange={(e) => set({ coverConsent: e.target.checked })} style={{ width: 20, height: 20, marginTop: 2, accentColor: "#1e3a60" }} /><span className={s.small}>I took this photo or have permission to use it, and everyone in it agrees to it being public.</span></label>
             </div>
           </div>
@@ -179,7 +180,7 @@ function Story({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: React
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 300px", gap: 32, alignItems: "start", maxWidth: 1120 }}>
         <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
           <div>
-            <label className={s.lbl} htmlFor="st">Your story</label>
+            <label className={s.lbl} htmlFor="st">Your story <FieldInfo k="st" /></label>
             <p className={`${s.muted} ${s.small}`} style={{ marginBottom: 8 }}>Who needs help? What happened? What will the funds cover? What difference will support make? We&apos;ve started it from your application — edit freely.</p>
             <textarea id="st" className={s.in} rows={14} maxLength={5000} value={c.story ?? ""} onChange={(e) => set({ story: e.target.value })} style={{ resize: "vertical", lineHeight: 1.6 }} />
             <p className={s.hint}>{(c.story ?? "").length} of 5000 characters.</p>
@@ -213,7 +214,7 @@ function Target({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: Reac
       <Heading title="Target and end date" sub="Carried over from your approved application. Changes are allowed, but reviewers will check them." />
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 22, maxWidth: 860 }}>
         <section aria-labelledby="cb">
-          <h2 id="cb" style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Cost breakdown</h2>
+          <h2 id="cb" style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>Cost breakdown <FieldInfo k="ccb" /></h2>
           {c.costItems.map((r, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 180px 150px", gap: 12, alignItems: "center", padding: r.changed ? 12 : "12px 0", borderTop: "1px solid #efe7de", background: r.changed ? "#fffaf0" : undefined, borderRadius: r.changed ? 8 : 0 }}>
               <span>{r.expense}{r.approvedAmount != null && r.changed && <><br /><span className={`${s.small} ${s.muted}`}>Approved: {formatINR(r.approvedAmount)}</span></>}</span>
@@ -228,12 +229,12 @@ function Target({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: Reac
         {c.hasMaterialChanges && (
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000", flexDirection: "column" }}>
             <p className={s.small}><strong>This differs from what was approved.</strong> A reviewer will look at the change when you submit. Add a short reason.</p>
-            <div style={{ width: "100%" }}><label className={s.lbl} htmlFor="why">Reason for the change</label><input id="why" className={s.in} maxLength={2000} value={c.changeReason ?? ""} onChange={(e) => set({ changeReason: e.target.value })} /></div>
+            <div style={{ width: "100%" }}><label className={s.lbl} htmlFor="why">Reason for the change <FieldInfo k="why" /></label><input id="why" className={s.in} maxLength={2000} value={c.changeReason ?? ""} onChange={(e) => set({ changeReason: e.target.value })} /></div>
           </div>
         )}
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="tg">Target (₹)</label><input id="tg" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={c.targetAmount ?? ""} onChange={(e) => set({ targetAmount: num(e.target.value) })} /><p className={s.hint}>Approved: {formatINR(c.approvedTarget)}. Minimum and maximum targets: [TO BE DEFINED].</p></div>
-          <div><label className={s.lbl} htmlFor="ed">End date</label><input id="ed" type="date" className={s.in} min={tomorrow} value={c.endDate ?? ""} onChange={(e) => set({ endDate: e.target.value || null })} /><p className={s.hint}>Allowed duration: [TO BE DEFINED].</p></div>
+          <div><label className={s.lbl} htmlFor="tg">Target (₹) <FieldInfo k="tg" /></label><input id="tg" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={c.targetAmount ?? ""} onChange={(e) => set({ targetAmount: num(e.target.value) })} /><p className={s.hint}>Approved: {formatINR(c.approvedTarget)}. Minimum and maximum targets: [TO BE DEFINED].</p></div>
+          <div><label className={s.lbl} htmlFor="ed">End date <FieldInfo k="ed" /></label><input id="ed" type="date" className={s.in} min={tomorrow} value={c.endDate ?? ""} onChange={(e) => set({ endDate: e.target.value || null })} /><p className={s.hint}>Allowed duration: [TO BE DEFINED].</p></div>
         </div>
         {nav}
       </div>
@@ -263,13 +264,13 @@ function Privacy({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: Rea
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 28, alignItems: "start", maxWidth: 1120 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
           <section className={s.card} style={{ padding: "8px 24px 16px" }} aria-labelledby="vis">
-            <h2 id="vis" style={{ fontSize: 16, fontWeight: 700, paddingTop: 14 }}>Names and place</h2>
+            <h2 id="vis" style={{ fontSize: 16, fontWeight: 700, paddingTop: 14 }}>Names and place <FieldInfo k="vis" /></h2>
             <div style={row}><div><strong>Beneficiary name</strong><p className={`${s.small} ${s.muted}`}>Shown as &ldquo;{c.beneficiaryDisplayName ?? "—"}&rdquo;</p></div>{seg("Beneficiary name", c.beneficiaryNameVisibility, name, (v) => set({ beneficiaryNameVisibility: v }))}</div>
             <div style={row}><div><strong>Organiser name</strong><p className={`${s.small} ${s.muted}`}>{c.organiserName}</p></div>{seg("Organiser name", c.organiserNameVisibility, name.slice(0, 2), (v) => set({ organiserNameVisibility: v }))}</div>
             <div style={row}><div><strong>Location</strong><p className={`${s.small} ${s.muted}`}>Your address is never shown</p></div>{seg("Location", c.locationVisibility, loc, (v) => set({ locationVisibility: v }))}</div>
           </section>
           <section className={s.card} style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="pe">
-            <h2 id="pe" style={{ fontSize: 16, fontWeight: 700 }}>Supporting documents donors can see <span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span></h2>
+            <h2 id="pe" style={{ fontSize: 16, fontWeight: 700 }}>Supporting documents donors can see <FieldInfo k="pe" /><span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span></h2>
             <p className={`${s.small} ${s.muted}`}>Picked documents are reviewed and may be redacted before anyone sees them. ID and consent documents can&apos;t be picked.</p>
             {c.selectableEvidence.length === 0 && <p className={`${s.small} ${s.muted}`}>No documents from your application can be shown.</p>}
             {c.selectableEvidence.map((e) => {

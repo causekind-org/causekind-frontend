@@ -1,18 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import Link from "@/components/AppLink";
+
+import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
-import { fundraisingCampaigns, fundraisers, fundraisingDonors, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
+import { fundraisingCampaigns, fundraisers, fundraisingDonors, fundraisingOutcomes, ApiError, type AdminDonorReport, type FundraisingAdminCampaign } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
+import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 
 type Decision = "changes" | "approve" | "decline";
 
 /** F19 — publication review workspace; F20 — publication decision dialog. */
 export default function AdminCampaignReviewPage() {
-  const { id } = useParams<{ id: string }>();
+  const { id } = useFrParams<{ id: string }>();
   const cid = Number(id);
   const [data, setData] = useState<FundraisingAdminCampaign | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function AdminCampaignReviewPage() {
       </div>
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
 
-      <main style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
+      <main data-fr-grid="two" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <section className={a.card} style={{ overflowX: "auto" }} aria-labelledby="cmp">
             <div className={a.pane} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -74,7 +75,7 @@ export default function AdminCampaignReviewPage() {
 
           <section className={`${a.card} ${a.pane}`} aria-labelledby="pv">
             <h2 id="pv" className={a.h}>Public preview</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "240px minmax(0,1fr)", gap: 16 }}>
+            <div data-fr-grid="two" style={{ display: "grid", gridTemplateColumns: "240px minmax(0,1fr)", gap: 16 }}>
               {c.coverUrl
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={c.coverUrl} alt={c.coverAltText ?? ""} style={{ width: "100%", aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 6 }} />
@@ -101,6 +102,7 @@ export default function AdminCampaignReviewPage() {
                 : <>Approving now results in <strong>Approved — setup incomplete</strong>. It goes live once the transfer details are confirmed.</>}
             </p>
             <p className={`${a.small} ${a.muted}`}>CauseKind stores no bank details. Sahas collects and keeps them.</p>
+            {(c.status === "APPROVED" || c.status === "PAUSED") && <CloseNow id={c.id} onDone={setData} />}
           </section>
           <section className={`${a.card} ${a.pane}`} aria-labelledby="dr">
             <h2 id="dr" className={a.h}>Decision record</h2>
@@ -110,7 +112,7 @@ export default function AdminCampaignReviewPage() {
         </div>
       </main>
 
-      {(c.status === "APPROVED" || c.status === "COLLECTIONS_CLOSED") && <DonorDetails id={c.id} />}
+      {["APPROVED", "PAUSED", "COLLECTIONS_CLOSED", "OUTCOME_REPORTING"].includes(c.status) && <DonorDetails id={c.id} />}
 
       {decision && <DecisionDialog data={data} initial={decision} onClose={() => setDecision(null)} onDone={(d) => { setData(d); setDecision(null); }}
         onStale={() => { setDecision(null); setError("This campaign changed since you opened it. Refresh before deciding."); }} />}
@@ -160,9 +162,9 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
             <p className={a.small}>Payment setup isn&apos;t met, so the page stays private and can&apos;t take donations.</p>
           </div>
         )}
-        <div><label className={a.lbl} htmlFor="m">{mode === "changes" ? "What to change (organiser-facing, required)" : mode === "decline" ? "Reason (organiser-facing, required)" : "Message to the organiser (optional)"}</label>
+        <div><label className={a.lbl} htmlFor="m">{mode === "changes" ? "What to change (organiser-facing, required)" : mode === "decline" ? "Reason (organiser-facing, required)" : "Message to the organiser (optional)"} <FieldInfo k={mode === "changes" ? "pChanges" : mode === "decline" ? "pDecline" : "pMessage"} /></label>
           <textarea id="m" className={a.in} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} /></div>
-        <div><label className={a.lbl} htmlFor="n">Internal note {mode === "changes" ? "(optional)" : "(required)"}</label>
+        <div><label className={a.lbl} htmlFor="n">Internal note {mode === "changes" ? "(optional)" : "(required)"} <FieldInfo k="pNote" /></label>
           <textarea id="n" className={a.in} rows={2} value={note} onChange={(e) => setNote(e.target.value)} /></div>
         <p className={`${a.small} ${a.muted}`}>Recorded with your name and the time in the review history.</p>
         {error && <p role="alert" className={a.err}>{error}</p>}
@@ -178,6 +180,30 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
 }
 
 /** Admin confirms Sahas holds the donee's transfer details; on an approved campaign this makes it Live. */
+/** "Close now": the same audited transition as the daily end-date job (Live or Paused → Outcome reporting). */
+function CloseNow({ id, onDone }: { id: number; onDone: (d: FundraisingAdminCampaign) => void }) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  if (!open) return <button type="button" className={`${a.btn} ${a.bs}`} style={{ color: "#8f1d1d" }} onClick={() => setOpen(true)}>Close now</button>;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, borderRadius: 8, background: "#fbeaea" }}>
+      <label className={a.lbl} htmlFor="cnr">Why end donations now? (internal, required) <FieldInfo k="cnReason" /></label>
+      <textarea id="cnr" className={a.in} rows={2} maxLength={500} value={reason} onChange={(e) => setReason(e.target.value)} />
+      <p className={`${a.small} ${a.muted}`}>Donations stop for good and the organiser is asked for an outcome report. Existing donations are kept. No refunds.</p>
+      {err && <p className={a.err} role="alert">{err}</p>}
+      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => setOpen(false)}>Cancel</button>
+        <button type="button" className={`${a.btn} ${a.bx}`} disabled={busy || !reason.trim()}
+          onClick={async () => { setBusy(true); setErr(null); try { onDone(await fundraisingOutcomes.admin.closeNow(id, reason.trim())); setOpen(false); } catch (e) { setErr(e instanceof Error ? e.message : "Couldn't close"); } finally { setBusy(false); } }}>
+          End donations
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function PayoutToggle({ id, version, ready, onDone, onError }: {
   id: number; version: number; ready: boolean; onDone: (d: FundraisingAdminCampaign) => void; onError: (m: string) => void;
 }) {
@@ -224,7 +250,7 @@ function DonorDetails({ id }: { id: number }) {
       {err && <p className={a.err} role="alert">{err}</p>}
       {!r ? (!err && <div className={a.skel} style={{ width: "50%" }} />) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
+          <div data-fr-grid="four" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 14 }}>
             {stat("Confirmed donations", String(r.summary.confirmedCount))}
             {stat("Confirmed gross", formatINR(r.summary.gross))}
             {stat("Platform fee", formatINR(r.summary.fee))}

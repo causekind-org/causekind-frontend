@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import {
-  fundraisingManage, type FundraiserClosure, type FundraiserDonationRow, type FundraiserOverview,
+  fundraisingManage, fundraisingReports, fundraisingOutcomes, type FundraiserOutcome, type FundraiserClosure, type FundraiserDonationRow, type FundraiserOverview,
+  type OrganiserInquiryView,
   type FundraiserRevision, type FundraiserUpdate, type FundraisingCampaign,
 } from "@/lib/api";
 import { CampaignChip, Icon, ReviewChip, formatDate, formatINR } from "./ui";
 import s from "./fundraising.module.css";
 
-type Tab = "overview" | "page" | "donations" | "updates" | "history";
+type Tab = "overview" | "page" | "donations" | "updates" | "history" | "questions" | "outcome";
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "page", label: "Campaign page" },
@@ -19,7 +20,7 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 const OPEN = ["DRAFT", "SUBMITTED", "CHANGES_REQUESTED"];
 
-type Data = { o: FundraiserOverview; u: FundraiserUpdate[]; r: FundraiserRevision[]; k: FundraiserClosure[] };
+type Data = { o: FundraiserOverview; u: FundraiserUpdate[]; r: FundraiserRevision[]; k: FundraiserClosure[]; q: OrganiserInquiryView };
 
 /** Organiser workspace for a live or closed fundraiser (canvas F28–F31, F36). */
 export function ManageWorkspace({ c }: { c: FundraisingCampaign }) {
@@ -30,15 +31,22 @@ export function ManageWorkspace({ c }: { c: FundraisingCampaign }) {
 
   const load = useCallback(() => {
     setFailed(false);
-    Promise.all([fundraisingManage.overview(c.id), fundraisingManage.updates(c.id), fundraisingManage.revisions(c.id), fundraisingManage.closures(c.id)])
-      .then(([o, u, r, k]) => setData({ o, u, r, k }))
+    Promise.all([fundraisingManage.overview(c.id), fundraisingManage.updates(c.id), fundraisingManage.revisions(c.id), fundraisingManage.closures(c.id), fundraisingReports.inquiry(c.id)])
+      .then(([o, u, r, k, q]) => setData({ o, u, r, k, q }))
       .catch(() => setFailed(true));
   }, [c.id]);
   useEffect(() => { load(); }, [load]);
 
   const title = c.title || "Untitled fundraiser";
   const live = c.status === "APPROVED";
-  const heading: Record<Tab, string> = { overview: title, page: "Campaign page", donations: "Donations", updates: "Updates", history: "Review history" };
+  const paused = c.status === "PAUSED";
+  const ended = c.status === "COLLECTIONS_CLOSED" || c.status === "OUTCOME_REPORTING";
+  const heading: Record<Tab, string> = { overview: title, page: "Campaign page", donations: "Donations", updates: "Updates", history: "Review history", questions: "Questions from CauseKind", outcome: "Outcome report" };
+  const tabs = [
+    ...TABS,
+    ...(data?.q.inquiry ? [{ id: "questions" as Tab, label: "Questions" }] : []),
+    ...(ended ? [{ id: "outcome" as Tab, label: "Outcome" }] : []),
+  ];
 
   return (
     <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 22 }}>
@@ -55,7 +63,7 @@ export function ManageWorkspace({ c }: { c: FundraisingCampaign }) {
       </div>
 
       <nav className={s.tabs} aria-label="Campaign workspace">
-        {TABS.map((t) => (
+        {tabs.map((t) => (
           <button key={t.id} type="button" className={`${s.tab} ${tab === t.id ? s.tabOn : ""}`} aria-current={tab === t.id ? "page" : undefined} onClick={() => setTab(t.id)}>{t.label}</button>
         ))}
       </nav>
@@ -68,13 +76,17 @@ export function ManageWorkspace({ c }: { c: FundraisingCampaign }) {
       ) : !data ? (
         <div className={s.card} aria-busy="true" style={{ minHeight: 240 }} />
       ) : tab === "overview" ? (
-        <Overview d={data} live={live} go={setTab} onClose={() => setClosing(true)} />
+        <Overview d={data} live={live} paused={paused} go={setTab} onClose={() => setClosing(true)} />
       ) : tab === "page" ? (
         <PageChanges c={c} raised={data.o.confirmedTotal} live={live} revisions={data.r} reload={load} />
       ) : tab === "donations" ? (
         <Donations id={c.id} o={data.o} />
       ) : tab === "updates" ? (
-        <Updates id={c.id} live={live || c.status === "COLLECTIONS_CLOSED"} updates={data.u} reload={load} />
+        <Updates id={c.id} live={live || paused || ended} updates={data.u} reload={load} />
+      ) : tab === "outcome" && ended ? (
+        <OutcomeTab id={c.id} />
+      ) : tab === "questions" && data.q.inquiry ? (
+        <Questions key={data.q.inquiry.id} id={c.id} view={data.q} reload={load} />
       ) : (
         <History d={data} />
       )}
@@ -100,7 +112,8 @@ function PublicLink({ id }: { id: number }) {
 
 // ── F28 Overview ────────────────────────────────────────────────────────────
 
-function Overview({ d, live, go, onClose }: { d: Data; live: boolean; go: (t: Tab) => void; onClose: () => void }) {
+function Overview({ d, live, paused, go, onClose }: { d: Data; live: boolean; paused: boolean; go: (t: Tab) => void; onClose: () => void }) {
+  const inq = d.q.inquiry;
   const { o } = d;
   const pct = o.target ? Math.min(100, Math.round((o.confirmedTotal / o.target) * 100)) : 0;
   const daysLeft = o.endDate ? Math.ceil((new Date(o.endDate).getTime() - Date.now()) / 86400000) : null;
@@ -116,13 +129,26 @@ function Overview({ d, live, go, onClose }: { d: Data; live: boolean; go: (t: Ta
       {openClosure && (
         <div role="status" className={s.card} style={{ padding: "16px 20px", display: "flex", gap: 14, alignItems: "center", background: "#eaf0f8", borderColor: "#c9d6e6", flexWrap: "wrap" }}>
           <span style={{ color: "#1e3a60" }}><Icon name="clock" /></span>
-          <p style={{ flex: "1 1 400px" }}><strong>Next:</strong> your closure request is with CauseKind (submitted {formatDate(openClosure.createdAt)}). Your fundraiser stays Live and keeps taking donations until it&apos;s decided.</p>
+          <p style={{ flex: "1 1 400px" }}><strong>Next:</strong> your closure request is with CauseKind (submitted {formatDate(openClosure.createdAt)}). {paused ? "Donations stay paused until it's decided." : "Your fundraiser stays Live and keeps taking donations until it's decided."}</p>
           <span className={`${s.chip} ${s.cN}`}>Closure request · Submitted</span>
         </div>
       )}
-      {!live && (
+      {paused && (
+        <div role="status" className={s.card} style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6, background: "#fdf3e1", borderColor: "#f0d9a8" }}>
+          <p><strong>Donations are paused.</strong> Your public page stays visible with this notice: &quot;{d.q.pauseNotice}&quot;</p>
+          {d.q.pauseActions && <p className={s.small}><strong>What CauseKind needs from you:</strong> {d.q.pauseActions}</p>}
+          <p className={`${s.small} ${s.muted}`}>Paused on {formatDate(d.q.pausedAt)}. CauseKind decides whether to reopen donations. Donations already made are kept.</p>
+        </div>
+      )}
+      {inq?.status === "OPEN" && (
+        <div role="status" className={s.card} style={{ padding: "16px 20px", display: "flex", gap: 14, alignItems: "center", background: "#eaf0f8", borderColor: "#c9d6e6", flexWrap: "wrap" }}>
+          <p style={{ flex: "1 1 400px" }}><strong>CauseKind has some questions about your fundraiser.</strong> This isn&apos;t a finding against you.{inq.deadline ? ` Please answer by ${formatDate(inq.deadline)}.` : ""}</p>
+          <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => go("questions")}>Answer questions</button>
+        </div>
+      )}
+      {(d.o.status === "COLLECTIONS_CLOSED" || d.o.status === "OUTCOME_REPORTING") && (
         <div role="status" className={s.card} style={{ padding: "16px 20px", background: "#f1ece6" }}>
-          <p><strong>Donations have stopped.</strong> Your public page stays visible and shows &quot;No longer accepting donations&quot;. You can still post updates.</p>
+          <p><strong>Donations have ended.</strong> Your public page stays visible and shows &quot;No longer accepting donations&quot;. Next: <button type="button" className={s.bq} style={{ minHeight: 0, padding: 0 }} onClick={() => go("outcome")}>tell donors what happened</button>. You can still post updates.</p>
         </div>
       )}
 
@@ -162,7 +188,7 @@ function Overview({ d, live, go, onClose }: { d: Data; live: boolean; go: (t: Ta
           <h2 id="ac" style={{ fontSize: 16, fontWeight: 700 }}>Actions</h2>
           <button type="button" className={`${s.btn} ${s.bs}`} style={{ justifyContent: "flex-start" }} disabled={!live} onClick={() => go("page")}>Edit campaign page</button>
           <button type="button" className={`${s.btn} ${s.bs}`} style={{ justifyContent: "flex-start" }} onClick={() => go("updates")}>Post an update</button>
-          <button type="button" className={`${s.btn} ${s.bs}`} style={{ justifyContent: "flex-start" }} aria-disabled={!live || !!openClosure} disabled={!live || !!openClosure} onClick={onClose}>
+          <button type="button" className={`${s.btn} ${s.bs}`} style={{ justifyContent: "flex-start" }} aria-disabled={!(live || paused) || !!openClosure} disabled={!(live || paused) || !!openClosure} onClick={onClose}>
             Request closure {openClosure && <span className={`${s.small} ${s.muted}`}>· already requested</span>}
           </button>
         </section>
@@ -480,6 +506,216 @@ function ClosureDialog({ c, o, onDone, onCancel }: { c: FundraisingCampaign; o: 
           <button type="button" className={`${s.btn} ${s.bp}`} disabled={busy || !reason.trim()} onClick={send}>Send request</button>
         </div>
       </section>
+    </div>
+  );
+}
+
+// ── F35 Questions from CauseKind ────────────────────────────────────────────
+
+function Questions({ id, view, reload }: { id: number; view: OrganiserInquiryView; reload: () => void }) {
+  const inq = view.inquiry!;
+  const open = inq.status === "OPEN";
+  const [answers, setAnswers] = useState<Record<number, string>>(() => Object.fromEntries(inq.questions.map((q) => [q.id, q.answer ?? ""])));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const unanswered = inq.questions.find((q) => !(answers[q.id] ?? "").trim());
+
+  const save = () => fundraisingReports.saveAnswers(id, inq.questions.map((q) => ({ questionId: q.id, answer: answers[q.id] ?? "" })));
+  const run = async (fn: () => Promise<unknown>, after?: () => void) => {
+    setBusy(true); setErr(null); setSaved(false);
+    try { await fn(); after?.(); reload(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Something went wrong"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 18, maxWidth: 820 }}>
+      {open ? (
+        <div className={s.card} style={{ padding: "16px 20px", background: "#eaf0f8", borderColor: "#c9d6e6", display: "flex", flexDirection: "column", gap: 6 }}>
+          <span className={`${s.chip} ${s.cW}`} style={{ alignSelf: "flex-start" }}>Response requested</span>
+          <p><strong>We&apos;ve received information we need to check.</strong> This isn&apos;t a finding against you. We won&apos;t tell you who contacted us.</p>
+          {inq.deadline && <p className={s.small}>Please answer by <strong>{formatDate(inq.deadline)}</strong>.</p>}
+        </div>
+      ) : (
+        <div className={s.card} role="status" style={{ padding: "16px 20px", background: "#e6f2ea", borderColor: "#bcd9c6" }}>
+          <p><strong>Response sent {formatDate(inq.answeredAt)}.</strong> A reviewer will decide what happens next.</p>
+        </div>
+      )}
+      {inq.questions.map((q) => (
+        <section key={q.id} className={s.card} style={{ padding: 22, display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby={`q${q.id}`}>
+          <p className={s.colLbl}>Question {q.position}</p>
+          <p id={`q${q.id}`}><strong>&quot;{q.question}&quot;</strong></p>
+          <label className={s.lbl} htmlFor={`a${q.id}`}>Your answer</label>
+          <textarea id={`a${q.id}`} className={s.in} rows={4} maxLength={5000} readOnly={!open} value={answers[q.id] ?? ""}
+            onChange={(e) => setAnswers((a) => ({ ...a, [q.id]: e.target.value }))} style={{ resize: "vertical" }} />
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <span className={s.small}>Evidence <span className={s.muted}>(optional)</span>:</span>
+            {q.hasEvidence ? (
+              <>
+                <span className={s.small}>{q.evidenceFileName || "file"} · uploaded</span>
+                {open && <button type="button" className={s.bq} disabled={busy} onClick={() => run(() => fundraisingReports.removeEvidence(id, q.id))}>Remove</button>}
+              </>
+            ) : open ? (
+              <label className={`${s.btn} ${s.bs}`} style={{ minHeight: 36 }}>Add file
+                <input type="file" accept="image/*,application/pdf" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) run(async () => { await save(); await fundraisingReports.uploadEvidence(id, q.id, f); }); }} />
+              </label>
+            ) : <span className={`${s.small} ${s.muted}`}>none</span>}
+          </div>
+        </section>
+      ))}
+      {err && <p className={s.errText} role="alert">{err}</p>}
+      {open && (
+        <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap", alignItems: "center" }}>
+          {saved && <span className={`${s.small} ${s.muted}`}>Draft saved</span>}
+          <button type="button" className={`${s.btn} ${s.bs}`} disabled={busy} onClick={() => run(save, () => setSaved(true))}>Save and finish later</button>
+          <button type="button" className={`${s.btn} ${s.bp}`} disabled={busy || !!unanswered} onClick={() => run(async () => { await save(); await fundraisingReports.submitAnswers(id); })}>
+            {unanswered ? `Answer question ${unanswered.position} to send` : "Send response"}
+          </button>
+        </div>
+      )}
+      <p className={`${s.small} ${s.muted}`}>After you send, a reviewer decides whether to keep or reopen donations.</p>
+    </div>
+  );
+}
+
+// ── F37 Outcome report ──────────────────────────────────────────────────────
+
+function OutcomeTab({ id }: { id: number }) {
+  const [o, setO] = useState<FundraiserOutcome | null | undefined>(undefined);
+  const [failed, setFailed] = useState(false);
+  const load = useCallback(() => { fundraisingOutcomes.current(id).then((x) => setO(x ?? null)).catch(() => setFailed(true)); }, [id]);
+  useEffect(() => { load(); }, [load]);
+  if (failed) return <div className={s.card} role="alert" style={{ padding: 20 }}><strong>Couldn&apos;t load your outcome report</strong></div>;
+  if (o === undefined) return <div className={s.card} aria-busy="true" style={{ minHeight: 200 }} />;
+  if (o === null || o.status === "DECLINED") {
+    return (
+      <section className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 12, maxWidth: 820 }}>
+        {o?.status === "DECLINED" && <p className={s.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#fbeaea" }}>Your last outcome report wasn&apos;t approved: &quot;{o.reviewerMessage}&quot;. You can write a new one.</p>}
+        <h2 className={s.serif} style={{ fontSize: 22 }}>Tell donors what happened</h2>
+        <p className={s.muted}>Donations have ended. Share what the money paid for and how things are now. CauseKind reviews it before it appears on your page.</p>
+        <button type="button" className={`${s.btn} ${s.bp}`} style={{ alignSelf: "flex-start" }}
+          onClick={() => fundraisingOutcomes.start(id).then(setO).catch(() => setFailed(true))}>Start outcome report</button>
+      </section>
+    );
+  }
+  return <OutcomeEditor key={o.id} campaignId={id} initial={o} onChange={setO} />;
+}
+
+function OutcomeEditor({ campaignId, initial, onChange }: { campaignId: number; initial: FundraiserOutcome; onChange: (o: FundraiserOutcome) => void }) {
+  const o = initial;
+  const editable = o.status === "DRAFT" || o.status === "CHANGES_REQUESTED";
+  const [used, setUsed] = useState(o.moneyUsed ?? "");
+  const [now, setNow] = useState(o.currentSituation ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const shortfall = o.target != null ? Math.max(0, o.target - o.confirmed) : 0;
+
+  const save = () => fundraisingOutcomes.save(campaignId, o.id, { moneyUsed: used, currentSituation: now, expectedVersion: o.version });
+  const run = async (fn: () => Promise<FundraiserOutcome>, after?: () => void) => {
+    setBusy(true); setErr(null); setSaved(false);
+    try { onChange(await fn()); after?.(); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Something went wrong"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div className={s.composer}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {o.status !== "DRAFT" && (
+          <div role="status" className={s.card} style={{ padding: "14px 18px", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap",
+            background: o.status === "APPROVED" ? "#e6f2ea" : o.status === "CHANGES_REQUESTED" ? "#fdf3e1" : "#eaf0f8" }}>
+            <ReviewChip status={o.status} />
+            <p style={{ flex: "1 1 360px" }}>
+              {o.status === "SUBMITTED" && "With CauseKind for review. It isn't public yet."}
+              {o.status === "APPROVED" && "Published on your fundraiser page. Your fundraiser stays in Outcome reporting for now."}
+              {o.status === "CHANGES_REQUESTED" && <>Reviewer: &quot;{o.reviewerMessage}&quot;</>}
+            </p>
+          </div>
+        )}
+        <section className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <h2 className={s.serif} style={{ fontSize: 22 }}>Tell donors what happened</h2>
+            <p className={`${s.small} ${s.muted}`} style={{ marginTop: 4 }}>
+              Donations ended at {formatINR(o.confirmed)} of {formatINR(o.target)}.
+              {shortfall > 0 && " Ending below target is fine — say plainly what the money covered and what's still open."}
+            </p>
+          </div>
+          <div><label className={s.lbl} htmlFor="ou">What did the money pay for?</label>
+            <textarea id="ou" className={s.in} rows={5} maxLength={5000} readOnly={!editable} value={used} onChange={(e) => setUsed(e.target.value)} style={{ resize: "vertical" }} /></div>
+          <div><label className={s.lbl} htmlFor="on">How are things now?</label>
+            <textarea id="on" className={s.in} rows={4} maxLength={5000} readOnly={!editable} value={now} onChange={(e) => setNow(e.target.value)} style={{ resize: "vertical" }} /></div>
+
+          <div>
+            <p className={s.lbl}>Spending evidence <span className={s.muted} style={{ fontWeight: 500 }}>(optional)</span></p>
+            <p className={`${s.small} ${s.muted}`} style={{ marginBottom: 8 }}>Receipts or bills. Private to reviewers unless you choose to show one. If something has no receipt — for example it wasn&apos;t paid from the fundraiser — say so.</p>
+            {o.evidence.map((e) => (
+              <div key={e.id} className={s.it} style={{ alignItems: "center" }}>
+                <span className={`${s.chip} ${e.hasFile ? s.cOk : s.cN}`}>{e.hasFile ? "Ready" : "Explained"}</span>
+                <div style={{ flex: 1 }}>
+                  <strong className={s.small}>{e.label}</strong>
+                  <p className={`${s.small} ${s.muted}`}>{e.hasFile ? `${e.fileName ?? "file"} · uploaded` : e.explanation}{e.publicVisible ? " · shown publicly" : ""}</p>
+                </div>
+                {editable && <button type="button" className={s.bq} disabled={busy} onClick={() => run(() => fundraisingOutcomes.removeEvidence(campaignId, o.id, e.id))}>Remove</button>}
+              </div>
+            ))}
+            {editable && (adding
+              ? <EvidenceForm busy={busy} onCancel={() => setAdding(false)} onAdd={(label, expl, pub, file) => run(async () => { await save(); return fundraisingOutcomes.addEvidence(campaignId, o.id, label, expl, pub, file); }, () => setAdding(false))} />
+              : <button type="button" className={`${s.btn} ${s.bs}`} style={{ marginTop: 8 }} onClick={() => setAdding(true)}>+ Add spending item</button>)}
+          </div>
+
+          {err && <p className={s.errText} role="alert">{err}</p>}
+          {editable && (
+            <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap", alignItems: "center" }}>
+              {saved && <span className={`${s.small} ${s.muted}`}>Draft saved</span>}
+              <button type="button" className={`${s.btn} ${s.bs}`} disabled={busy} onClick={() => run(save, () => setSaved(true))}>Save draft</button>
+              <button type="button" className={`${s.btn} ${s.bp}`} disabled={busy || !used.trim() || !now.trim()}
+                onClick={() => run(async () => { await save(); return fundraisingOutcomes.submit(campaignId, o.id); })}>
+                {o.status === "CHANGES_REQUESTED" ? "Resubmit for review" : "Submit outcome for review"}
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+      <aside style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <section className={`${s.card} ${s.col}`}>
+          <p className={s.colLbl}>Raised</p>
+          <p className={s.tabular} style={{ display: "flex", justifyContent: "space-between" }}>Target <strong>{formatINR(o.target)}</strong></p>
+          <p className={s.tabular} style={{ display: "flex", justifyContent: "space-between" }}>Confirmed <strong>{formatINR(o.confirmed)}</strong></p>
+          {shortfall > 0 && <p className={s.tabular} style={{ display: "flex", justifyContent: "space-between" }}>Shortfall <strong>{formatINR(shortfall)}</strong></p>}
+        </section>
+        <section className={`${s.card} ${s.col}`} style={{ background: "#fbf8f4" }}>
+          <p className={s.small}><strong>Closure conditions to be defined.</strong> Publishing your outcome doesn&apos;t close the fundraiser. What happens to unused money or partial funding is decided by Sahas Charitable Trust — there&apos;s nothing to do here. Donations are not refundable.</p>
+        </section>
+      </aside>
+    </div>
+  );
+}
+
+function EvidenceForm({ busy, onAdd, onCancel }: { busy: boolean; onAdd: (label: string, explanation: string, pub: boolean, file: File | null) => void; onCancel: () => void }) {
+  const [label, setLabel] = useState("");
+  const [mode, setMode] = useState<"file" | "none">("file");
+  const [file, setFile] = useState<File | null>(null);
+  const [expl, setExpl] = useState("");
+  const [pub, setPub] = useState(false);
+  const ok = !!label.trim() && (mode === "file" ? !!file : !!expl.trim());
+  return (
+    <div className={s.card} style={{ padding: 16, marginTop: 8, display: "flex", flexDirection: "column", gap: 10, background: "#fbf8f4" }}>
+      <div><label className={s.lbl} htmlFor="evl">What is it for?</label><input id="evl" className={s.in} maxLength={200} placeholder="e.g. Final-year tuition" value={label} onChange={(e) => setLabel(e.target.value)} /></div>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }} className={s.small}>
+        <label><input type="radio" checked={mode === "file"} onChange={() => setMode("file")} /> I have a receipt</label>
+        <label><input type="radio" checked={mode === "none"} onChange={() => setMode("none")} /> No receipt</label>
+      </div>
+      {mode === "file"
+        ? <label className={`${s.btn} ${s.bs}`} style={{ alignSelf: "flex-start" }}>{file ? file.name : "Choose file"}<input type="file" accept="image/*,application/pdf" hidden onChange={(e) => setFile(e.target.files?.[0] ?? null)} /></label>
+        : <div><label className={s.lbl} htmlFor="evx">Why is there no receipt?</label><input id="evx" className={s.in} maxLength={2000} placeholder="e.g. Not paid from the fundraiser" value={expl} onChange={(e) => setExpl(e.target.value)} /></div>}
+      <label className={s.small} style={{ display: "flex", gap: 8, alignItems: "center" }}><input type="checkbox" checked={pub} onChange={(e) => setPub(e.target.checked)} /> Show this on my public page</label>
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+        <button type="button" className={`${s.btn} ${s.bs}`} onClick={onCancel}>Cancel</button>
+        <button type="button" className={`${s.btn} ${s.bp}`} disabled={busy || !ok} onClick={() => onAdd(label.trim(), mode === "none" ? expl.trim() : "", pub, mode === "file" ? file : null)}>Add</button>
+      </div>
     </div>
   );
 }

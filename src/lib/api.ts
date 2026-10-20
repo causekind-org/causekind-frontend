@@ -278,7 +278,11 @@ async function request<T>(
 
   // Also invalidate after completion: reads triggered while a write was in
   // progress (including SSE refreshes) may still contain the pre-write state.
-  return isGet ? execute() : execute().finally(invalidateRequestCache);
+  return isGet ? execute() : execute().finally(() => {
+    invalidateRequestCache();
+    // Lets live counters (e.g. the admin fundraising sidebar) refresh after any change.
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("ck:data-changed"));
+  });
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -6116,7 +6120,7 @@ export const fundraising = {
 
 export type CampaignFlowStatus =
   | "DRAFT" | "PUBLICATION_REVIEW" | "CHANGES_REQUESTED" | "PUBLICATION_DECLINED"
-  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED" | "COLLECTIONS_CLOSED";
+  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED" | "COLLECTIONS_CLOSED" | "PAUSED" | "OUTCOME_REPORTING";
 export type NameVisibility = "FULL" | "FIRST_NAME" | "HIDDEN";
 export type LocationVisibility = "CITY" | "STATE" | "HIDDEN";
 export type CampaignCostRow = { expense: string; amount: number | null; reference: string | null; approvedAmount: number | null; changed: boolean };
@@ -6191,7 +6195,8 @@ export type FundraiserDetail = {
   card: FundraiserCard; story: string | null; beneficiary: string | null;
   costs: { expense: string; amount: number | null }[]; totalCosts: number; otherHelp: number;
   acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
-  status: CampaignFlowStatus; updates: FundraiserUpdate[];
+  status: CampaignFlowStatus; updates: FundraiserUpdate[]; pauseNotice: string | null;
+  outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
 };
 
 export const fundraisers = {
@@ -6234,7 +6239,7 @@ export type FundraiserRevisionInput = {
   title?: string | null; story?: string | null; targetAmount?: number | null; endDate?: string | null;
   changeReason?: string | null; expectedVersion?: number;
 };
-export type ReviewItemKind = "UPDATE" | "REVISION" | "CLOSURE";
+export type ReviewItemKind = "UPDATE" | "REVISION" | "CLOSURE" | "OUTCOME";
 export type ReviewItemRow = {
   kind: ReviewItemKind; id: number; campaignId: number; campaignTitle: string | null; organiser: string;
   material: boolean; submittedAt: string | null;
@@ -6242,7 +6247,7 @@ export type ReviewItemRow = {
 
 const FM = (id: number) => `/api/v1/fundraising/campaigns/${id}`;
 const FRI_ADMIN = "/api/v1/admin/fundraising/review-items";
-const REVIEW_PATH: Record<ReviewItemKind, string> = { UPDATE: "updates", REVISION: "revisions", CLOSURE: "closures" };
+const REVIEW_PATH: Record<ReviewItemKind, string> = { UPDATE: "updates", REVISION: "revisions", CLOSURE: "closures", OUTCOME: "outcomes" };
 
 export const fundraisingManage = {
   overview: (id: number) => request<FundraiserOverview>(`${FM(id)}/overview`),
@@ -6299,5 +6304,130 @@ export const fundraisingDonors = {
     link.download = `fundraiser-${campaignId}-donations.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  },
+};
+
+// ── Fundraiser reports, organiser inquiries, pause/restore (Phase C3, 2026-10-19) ──
+
+export type FundraisingReportReason = "UNTRUE" | "PRIVACY" | "DUPLICATE" | "OTHER";
+export type FundraisingReportStatus = "RECEIVED" | "UNDER_INVESTIGATION" | "RESPONSE_REQUESTED" | "DISMISSED" | "ACTION_TAKEN";
+/** Reporter view: status is only "Received" | "Under investigation" | "Closed". */
+export type MyFundraisingReport = { id: number; reference: string; campaignId: number; campaignTitle: string | null; status: string; createdAt: string };
+export type InquiryQuestion = { id: number; position: number; question: string; answer: string | null; hasEvidence: boolean; evidenceFileName: string | null };
+export type CampaignInquiry = {
+  id: number; version: number; status: "OPEN" | "ANSWERED" | "WITHDRAWN"; deadline: string | null; requestedBy: string | null;
+  questions: InquiryQuestion[]; answeredAt: string | null; createdAt: string;
+};
+export type OrganiserInquiryView = {
+  campaignStatus: CampaignFlowStatus; pauseNotice: string | null; pauseActions: string | null; pausedAt: string | null;
+  inquiry: CampaignInquiry | null;
+};
+export type ReportCaseRow = {
+  campaignId: number; title: string | null; organiser: string; campaignStatus: CampaignFlowStatus; openReports: number;
+  totalReports: number; responseRequested: boolean; responseReceived: boolean; latestAt: string;
+};
+export type AdminFundraisingReport = {
+  id: number; reference: string; reason: FundraisingReportReason; details: string; reporterName: string | null; reporterEmail: string | null;
+  hasEvidence: boolean; evidenceFileName: string | null; status: FundraisingReportStatus; adminNote: string | null;
+  decidedBy: string | null; decidedAt: string | null; createdAt: string;
+};
+export type ReportCase = {
+  campaignId: number; campaignVersion: number; title: string | null; organiser: string; campaignStatus: CampaignFlowStatus;
+  confirmed: number; pauseNotice: string | null; pauseActions: string | null; pauseReason: string | null; pausedBy: string | null;
+  pausedAt: string | null; reports: AdminFundraisingReport[]; inquiries: CampaignInquiry[];
+};
+
+const FRP = "/api/v1/fundraising";
+const FRP_ADMIN = "/api/v1/admin/fundraising/reports";
+
+async function multipart<T>(path: string, fd: FormData, fallback: string): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, { method: "POST", credentials: "include", body: fd });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, body?.message ?? fallback, body);
+  }
+  invalidateRequestCache();
+  return (await res.json()) as T;
+}
+
+export const fundraisingReports = {
+  report(campaignId: number, reason: FundraisingReportReason, details: string, file?: File | null) {
+    const fd = new FormData();
+    fd.append("campaignId", String(campaignId));
+    fd.append("reason", reason);
+    fd.append("details", details);
+    if (file) fd.append("file", file);
+    return multipart<MyFundraisingReport>(`${FRP}/reports`, fd, "Your report wasn't sent. What you wrote is still here — try again.");
+  },
+  mine: () => request<MyFundraisingReport[]>(`${FRP}/reports/mine`),
+  inquiry: (campaignId: number) => request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry`),
+  saveAnswers: (campaignId: number, answers: { questionId: number; answer: string }[]) =>
+    request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/answers`, { method: "PUT", body: JSON.stringify({ answers }) }),
+  uploadEvidence(campaignId: number, questionId: number, file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    return multipart<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/questions/${questionId}/evidence`, fd, "Upload failed — try again.");
+  },
+  removeEvidence: (campaignId: number, questionId: number) =>
+    request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/questions/${questionId}/evidence`, { method: "DELETE" }),
+  submitAnswers: (campaignId: number) => request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/submit`, { method: "POST" }),
+  admin: {
+    cases: (open = true) => request<ReportCaseRow[]>(`${FRP_ADMIN}?open=${open}`),
+    get: (campaignId: number) => request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}`),
+    reportEvidence: (reportId: number) => request<{ url: string }>(`${FRP_ADMIN}/${reportId}/evidence`),
+    answerEvidence: (campaignId: number, questionId: number) => request<{ url: string }>(`${FRP_ADMIN}/campaigns/${campaignId}/questions/${questionId}/evidence`),
+    dismiss: (reportId: number, expectedVersion: number | null, reason: string) =>
+      request<ReportCase>(`${FRP_ADMIN}/${reportId}/dismiss`, { method: "POST", body: JSON.stringify({ expectedVersion, reason }) }),
+    requestResponse: (campaignId: number, questions: string[], deadline: string | null) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/request-response`, { method: "POST", body: JSON.stringify({ questions, deadline }) }),
+    pause: (campaignId: number, body: { expectedVersion: number; publicNotice: string; organiserActions: string; internalReason: string }) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/pause`, { method: "POST", body: JSON.stringify(body) }),
+    restore: (campaignId: number, body: { expectedVersion: number; internalReason: string; message: string }) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/restore`, { method: "POST", body: JSON.stringify(body) }),
+    closeCollections: (campaignId: number, body: { expectedVersion: number; internalReason: string; message: string }) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/close-collections`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
+
+// ── Fundraiser outcome reports and end of collections (Phase C4, 2026-10-19) ──
+
+export type OutcomeEvidence = { id: number; label: string; fileName: string | null; hasFile: boolean; explanation: string | null; publicVisible: boolean };
+export type FundraiserOutcome = {
+  id: number; version: number; campaignId: number; campaignTitle: string | null; moneyUsed: string | null; currentSituation: string | null;
+  status: ReviewItemStatus; reviewerMessage: string | null; evidence: OutcomeEvidence[];
+  submittedAt: string | null; decidedAt: string | null; createdAt: string;
+  confirmed: number; target: number | null; closedOn: string | null;
+};
+
+const FO = (id: number) => `/api/v1/fundraising/campaigns/${id}/outcome`;
+
+export const fundraisingOutcomes = {
+  /** Undefined when no outcome has been started. */
+  current: (campaignId: number) => request<FundraiserOutcome | undefined>(FO(campaignId)),
+  start: (campaignId: number) => request<FundraiserOutcome>(FO(campaignId), { method: "POST" }),
+  save: (campaignId: number, id: number, body: { moneyUsed: string; currentSituation: string; expectedVersion: number }) =>
+    request<FundraiserOutcome>(`${FO(campaignId)}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  async addEvidence(campaignId: number, id: number, label: string, explanation: string, publicVisible: boolean, file?: File | null) {
+    const fd = new FormData();
+    fd.append("label", label);
+    if (explanation) fd.append("explanation", explanation);
+    fd.append("publicVisible", String(publicVisible));
+    if (file) fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${FO(campaignId)}/${id}/evidence`, { method: "POST", credentials: "include", body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? "Couldn't add that — try again.", body);
+    }
+    invalidateRequestCache();
+    return (await res.json()) as FundraiserOutcome;
+  },
+  removeEvidence: (campaignId: number, id: number, evidenceId: number) =>
+    request<FundraiserOutcome>(`${FO(campaignId)}/${id}/evidence/${evidenceId}`, { method: "DELETE" }),
+  submit: (campaignId: number, id: number) => request<FundraiserOutcome>(`${FO(campaignId)}/${id}/submit`, { method: "POST" }),
+  admin: {
+    get: (id: number) => request<FundraiserOutcome>(`/api/v1/admin/fundraising/review-items/outcomes/${id}`),
+    evidence: (id: number, evidenceId: number) => request<{ url: string }>(`/api/v1/admin/fundraising/review-items/outcomes/${id}/evidence/${evidenceId}`),
+    closeNow: (campaignId: number, reason: string) =>
+      request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${campaignId}/close-now`, { method: "POST", body: JSON.stringify({ reason }) }),
   },
 };

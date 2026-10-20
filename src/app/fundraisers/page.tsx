@@ -35,6 +35,10 @@ export default function FundraisersPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 720 }}>
           <h1 className={s.serif} style={{ fontSize: 40, lineHeight: 1.1 }}>Fundraisers</h1>
           <p className={s.muted}>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public. Looking to give items instead? <Link href="/requests">Donate items</Link></p>
+          <p className={s.small} style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <Link href="/fundraisers/my-donations">Your fundraiser donations</Link>
+            <Link href="/fundraisers/reports">Your reports</Link>
+          </p>
         </div>
         <label style={{ display: "flex" }}>
           <span style={{ position: "absolute", left: -9999 }}>Search fundraisers</span>

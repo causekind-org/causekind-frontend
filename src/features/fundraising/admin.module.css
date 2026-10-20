@@ -51,3 +51,24 @@
 }
 .switchBtn:hover { border-color: #b04a15; }
 .switchOn { background: #1f1a17; border-color: #1f1a17; color: #fff !important; }
+
+/* Fundraising pages embedded in the admin dashboard panel (2026-10-19): the dashboard sidebar replaces the switch bar. */
+.embed { margin: -8px -4px 0; container-type: inline-size; }
+.embed :global(nav[aria-label="Fundraising review"]) { display: none !important; }
+
+/* Reflow fixed-width layouts to the panel's width (inline styles need !important). */
+@container (max-width: 1280px) {
+  .embed :global([data-fr-grid="app3"]) { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; padding: 16px 0 40px !important; }
+  /* Evidence (2nd column) goes full width on top; findings and decision sit side by side below. */
+  .embed :global([data-fr-grid="app3"] > :nth-child(2)) { grid-column: 1 / -1; order: -1; }
+  .embed :global([data-fr-grid="queue3"]) { grid-template-columns: 260px minmax(0, 1fr) !important; }
+  .embed :global([data-fr-grid="queue3"] > :nth-child(3)) { grid-column: 2; }
+  .embed :global([data-fr-grid="four"]) { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@container (max-width: 900px) {
+  .embed :global([data-fr-grid="app3"]),
+  .embed :global([data-fr-grid="queue3"]),
+  .embed :global([data-fr-grid="two"]) { grid-template-columns: minmax(0, 1fr) !important; }
+  .embed :global([data-fr-grid="queue3"] > :nth-child(3)) { grid-column: auto; }
+  .embed :global([data-fr-grid]) { padding-left: 0 !important; padding-right: 0 !important; }
+}
