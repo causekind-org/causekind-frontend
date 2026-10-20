@@ -12,7 +12,11 @@ const fmtDate = (d?: string | null) => (d ? new Date(`${d.slice(0, 10)}T00:00:00
  * enlarge), people reached, quantity, date, location, note, NGO. The proof is public only
  * after admin approval and never includes the internal consent flag.
  */
-export function DriveProofCard({ proof }: { proof: NgoDriveProofResponse }) {
+export function DriveProofCard({ proof, factsGridClassName = "grid-cols-2 sm:grid-cols-4" }: {
+  proof: NgoDriveProofResponse;
+  /** Column layout of the details grid (the NGO report uses 1/2/4). */
+  factsGridClassName?: string;
+}) {
   const [open, setOpen] = useState<number | null>(null);
   const photos = proof.media.filter((m) => m.mediaType !== "VIDEO");
   const facts: [React.ComponentType<{ className?: string }>, string, string | null][] = [
@@ -24,11 +28,11 @@ export function DriveProofCard({ proof }: { proof: NgoDriveProofResponse }) {
   return (
     <section data-testid="drive-proof-card" className="rounded-2xl border border-ngo-200 bg-white p-5 shadow-sm dark:border-ngo-900/50 dark:bg-zinc-900">
       <p className="text-3xs font-black uppercase tracking-[0.2em] text-ngo-700 dark:text-ngo-300">Distribution proof{proof.ngoName ? ` · ${proof.ngoName}` : ""}</p>
-      <dl className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <dl className={`mt-3 grid gap-3 ${factsGridClassName}`}>
         {facts.filter(([, , v]) => v).map(([Icon, label, value]) => (
           <div key={label} className="rounded-xl bg-ngo-50 p-3 dark:bg-ngo-950/30">
             <dt className="flex items-center gap-1.5 text-2xs font-bold uppercase tracking-wider text-ngo-800 dark:text-ngo-200"><Icon className="h-3.5 w-3.5" aria-hidden />{label}</dt>
-            <dd className="mt-1 text-sm font-semibold text-stone-900 dark:text-stone-100">{value}</dd>
+            <dd className="mt-1 break-words text-sm font-semibold text-stone-900 dark:text-stone-100">{value}</dd>
           </div>
         ))}
       </dl>

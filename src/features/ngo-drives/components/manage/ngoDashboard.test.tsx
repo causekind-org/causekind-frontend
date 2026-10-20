@@ -233,15 +233,15 @@ describe("History", { timeout: 20000 }, () => {
     api.getNgoDriveOffersForNgo.mockImplementation(async (id: number) => (id === 1
       ? [offer(1, "NGO_DECLINED", { ngoDeclineReason: "Torn" }), offer(2, "ENDED"), offer(3, "COMPLETED")] : []));
     renderSections([drive(1, "FULFILLED", { quantityReceived: 10, beneficiariesReached: 50 }), drive(2, "LIVE")]);
-    // The fulfilled drive's completed offer is in History too (never also in Activity).
-    await waitFor(() => expect(screen.getAllByTestId("history-offer")).toHaveLength(3));
+    // Declined and ended offers only; the completed one is in the drive report (and never in Activity).
+    await waitFor(() => expect(screen.getAllByTestId("history-offer")).toHaveLength(2));
     expect(screen.getByTestId("ngo-tab-activity")).toHaveTextContent(/Activity\s*0/);
     const fulfilled = screen.getByTestId("history-drive");
     expect(fulfilled).toHaveTextContent("50 people reached");
-    expect(within(fulfilled).getByRole("link", { name: "View proof" })).toHaveAttribute("href", "/drives/1/proof");
+    expect(within(fulfilled).getByRole("link", { name: "View proof" })).toHaveAttribute("href", "/ngo/drives/1/report");
     fireEvent.change(screen.getByTestId("history-search"), { target: { value: "torn" } });
     expect(screen.getAllByTestId("history-offer")).toHaveLength(1);
-    expect(screen.getByTestId("history-offer")).toHaveTextContent("Declined: Torn");
+    expect(screen.getByTestId("history-offer")).toHaveTextContent(/Declined.*Reason: Torn/);
   });
 });
 
@@ -294,7 +294,7 @@ describe("rows: each item sits in exactly one row", { timeout: 20000 }, () => {
     // Proof approved: the drive and its offer leave Activity for History.
     api.getNgoDriveOffersForNgo.mockResolvedValue([offer(1, "COMPLETED")]);
     renderSections([drive(1, "FULFILLED")]);
-    await waitFor(() => expect(screen.getByTestId("ngo-tab-history")).toHaveTextContent(/History\s*2/));
+    await waitFor(() => expect(screen.getByTestId("ngo-tab-history")).toHaveTextContent(/History\s*1/));
     expect(screen.getByTestId("ngo-tab-activity")).toHaveTextContent(/Activity\s*0/);
   });
 

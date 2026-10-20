@@ -5999,6 +5999,20 @@ export type NgoDriveProofResponse = {
   beneficiaryGroup?: string | null;
 };
 
+/** The NGO's own report for one of its drives: the proof plus the donors whose items were received (owner only). */
+export type NgoDriveReportDonor = {
+  offerId: number; donorName: string; quantity: number | null; offeredAt: string | null; receivedAt: string | null;
+  handoverMethod: string | null; handoverPhotos: string[];
+};
+export type NgoDriveReport = {
+  driveId: number; title: string; status: string; quantityNeeded: number; quantityReceived: number; unit: string | null;
+  itemName: string | null; beneficiaryCount: number | null; beneficiaryGroup: string | null;
+  proof: NgoDriveProofResponse | null; donors: NgoDriveReportDonor[]; totalDonors: number; totalReceived: number;
+};
+export async function getNgoDriveReport(driveId: number): Promise<NgoDriveReport> {
+  return await request<NgoDriveReport>(`/api/v1/ngo-drives/${driveId}/report`);
+}
+
 export async function getNgoDriveProof(driveId: number): Promise<NgoDriveProofResponse> {
   return await request<NgoDriveProofResponse>(`/api/v1/drives/${driveId}/proof`);
 }

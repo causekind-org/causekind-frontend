@@ -9,7 +9,7 @@ import { isOfferToReview, isHandover, isProofDue, isHistoryDrive, isHistoryOffer
 import { useNgoOffers } from "./useNgoOffers";
 import { YourDrivesTab } from "./YourDrivesTab";
 import { ActivityTab } from "./ActivityTab";
-import { HistoryTab } from "./HistoryTab";
+import { HistoryTab, isDeclinedOffer } from "./HistoryTab";
 
 export type NgoSection = "drives" | "activity" | "history";
 const SECTIONS: readonly string[] = ["drives", "activity", "history"];
@@ -56,7 +56,8 @@ export function NgoDashboardSections({ drives, verified, loading, error, onRetry
   // Each drive and offer in exactly one place: Your Drives/Activity until proof is approved, then History.
   const activeDrives = drives.filter((d) => !isHistoryDrive(d));
   const historyDrives = drives.filter(isHistoryDrive);
-  const historyOffers = offers.filter(isHistoryOffer);
+  // History lists declined/ended offers only; received ones are in each drive's report.
+  const historyOffers = offers.filter(isHistoryOffer).filter(isDeclinedOffer);
   const activityNeedsYou = toReview.length > 0 || proofDue.some((d) => d.status === "COLLECTION_COMPLETE") || handovers.some((o) => ISSUE_STATUSES.has(o.status));
 
   function select(next: string) {
