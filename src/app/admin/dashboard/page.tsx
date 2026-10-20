@@ -43,8 +43,7 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp";
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
