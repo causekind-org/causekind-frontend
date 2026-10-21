@@ -1338,5 +1338,42 @@
       "q3": "What items can I ask for?",
       "a3": "You can request physical goods like blankets, books, medical supplies, food packets, etc. CauseKind does not facilitate direct monetary donations for drives."
     }
+  },
+  "ui": {
+    "all_f32e4a94": "Todas",
+    "category_afb3e591": "Categoría",
+    "check_your_connection_8e59e03c": "Comprueba tu conexión.",
+    "couldn_t_load_fundraisers_0a382bf7": "No se pudieron cargar las recaudaciones",
+    "education_eea43de5": "Educación",
+    "emergency_household_support_f2ac4398": "Ayuda de emergencia para el hogar",
+    "fundraiser_45de6250": "Recaudación",
+    "fundraisers_20147d19": "Recaudaciones",
+    "fundraisers_aren_t_available_yet_59bb4cd5": "Las recaudaciones aún no están disponibles",
+    "fundraising_c62c6d05": "Recaudación de fondos",
+    "loading_fundraisers_2c84d649": "Cargando recaudaciones",
+    "looking_to_give_items_instead_c603697b": "¿Prefieres donar artículos?",
+    "medical_250af72c": "Salud",
+    "money_raised_for_a_specific_0b8a0fc8": "Dinero recaudado para la necesidad concreta de una persona. Nuestro equipo revisó cada recaudación antes de publicarla.",
+    "no_fundraisers_yet_593936b2": "Todavía no hay recaudaciones",
+    "no_matches_d29421ef": "Sin resultados",
+    "other_206f5e85": "Otra",
+    "search_by_title_or_city_cf325c9c": "Buscar por título o ciudad",
+    "search_fundraisers_dc824103": "Buscar recaudaciones",
+    "there_are_no_live_fundraisers_a5768942": "No hay recaudaciones activas en este momento. Aun así, puedes donar artículos.",
+    "totals_on_cards_count_only_34dfe469": "Los totales solo incluyen pagos confirmados por nuestro servidor. Sin destacados ni posiciones pagadas.",
+    "your_fundraiser_donations_30cf86f8": "Tus donaciones a recaudaciones",
+    "your_reports_30f797ed": "Tus reportes",
+    "donate_items_1cd67f8a": "Donar artículos"
+  },
+  "fundraisersList": {
+    "nothingMatches": "Ningún resultado para «{query}».",
+    "byOrganiser": "Por {organiser}",
+    "raisedOfTarget": "<strong>{raised}</strong> confirmados de {target}",
+    "endsOn": "Termina el {date}",
+    "progressLabel": "{pct} % del objetivo confirmado"
+  },
+  "cancellation": {
+    "WARN_HANDOVER_ARRANGED": "Ya se ha acordado una entrega. Se avisará de inmediato a la otra persona y cualquier artículo reservado quedará liberado.",
+    "WARN_COUNTERPART_WAITING": "Alguien ya cuenta con esto. Se le avisará de inmediato y el artículo quedará liberado."
   }
 }

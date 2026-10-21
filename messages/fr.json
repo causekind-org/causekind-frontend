@@ -1338,5 +1338,42 @@
       "q3": "What items can I ask for?",
       "a3": "You can request physical goods like blankets, books, medical supplies, food packets, etc. CauseKind does not facilitate direct monetary donations for drives."
     }
+  },
+  "ui": {
+    "all_f32e4a94": "Toutes",
+    "category_afb3e591": "Catégorie",
+    "check_your_connection_8e59e03c": "Vérifiez votre connexion.",
+    "couldn_t_load_fundraisers_0a382bf7": "Impossible de charger les collectes",
+    "education_eea43de5": "Éducation",
+    "emergency_household_support_f2ac4398": "Aide d’urgence au foyer",
+    "fundraiser_45de6250": "Collecte",
+    "fundraisers_20147d19": "Collectes",
+    "fundraisers_aren_t_available_yet_59bb4cd5": "Les collectes ne sont pas encore disponibles",
+    "fundraising_c62c6d05": "Collecte de fonds",
+    "loading_fundraisers_2c84d649": "Chargement des collectes",
+    "looking_to_give_items_instead_c603697b": "Vous préférez donner des objets ?",
+    "medical_250af72c": "Santé",
+    "money_raised_for_a_specific_0b8a0fc8": "De l’argent collecté pour le besoin précis d’une personne. Chaque collecte a été vérifiée par notre équipe avant sa mise en ligne.",
+    "no_fundraisers_yet_593936b2": "Aucune collecte pour le moment",
+    "no_matches_d29421ef": "Aucun résultat",
+    "other_206f5e85": "Autre",
+    "search_by_title_or_city_cf325c9c": "Rechercher par titre ou par ville",
+    "search_fundraisers_dc824103": "Rechercher des collectes",
+    "there_are_no_live_fundraisers_a5768942": "Aucune collecte n’est en cours. Vous pouvez quand même donner des objets.",
+    "totals_on_cards_count_only_34dfe469": "Les totaux n’incluent que les paiements confirmés par notre serveur. Aucune mise en avant ni placement payant.",
+    "your_fundraiser_donations_30cf86f8": "Vos dons aux collectes",
+    "your_reports_30f797ed": "Vos signalements",
+    "donate_items_1cd67f8a": "Donner des objets"
+  },
+  "fundraisersList": {
+    "nothingMatches": "Aucun résultat pour « {query} ».",
+    "byOrganiser": "Par {organiser}",
+    "raisedOfTarget": "<strong>{raised}</strong> confirmés sur {target}",
+    "endsOn": "Se termine le {date}",
+    "progressLabel": "{pct} % de l’objectif confirmé"
+  },
+  "cancellation": {
+    "WARN_HANDOVER_ARRANGED": "Une remise a déjà été organisée. L’autre personne sera prévenue immédiatement et tout article réservé sera libéré.",
+    "WARN_COUNTERPART_WAITING": "Quelqu’un compte déjà sur ce don. Cette personne sera prévenue immédiatement et l’article sera libéré."
   }
 }

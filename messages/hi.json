@@ -1338,5 +1338,42 @@
       "q3": "What items can I ask for?",
       "a3": "You can request physical goods like blankets, books, medical supplies, food packets, etc. CauseKind does not facilitate direct monetary donations for drives."
     }
+  },
+  "ui": {
+    "all_f32e4a94": "सभी",
+    "category_afb3e591": "श्रेणी",
+    "check_your_connection_8e59e03c": "अपना इंटरनेट कनेक्शन जाँचें।",
+    "couldn_t_load_fundraisers_0a382bf7": "फ़ंडरेज़र लोड नहीं हो सके",
+    "education_eea43de5": "शिक्षा",
+    "emergency_household_support_f2ac4398": "आपात घरेलू सहायता",
+    "fundraiser_45de6250": "फ़ंडरेज़र",
+    "fundraisers_20147d19": "फ़ंडरेज़र",
+    "fundraisers_aren_t_available_yet_59bb4cd5": "फ़ंडरेज़र अभी उपलब्ध नहीं हैं",
+    "fundraising_c62c6d05": "फ़ंडरेज़िंग",
+    "loading_fundraisers_2c84d649": "फ़ंडरेज़र लोड हो रहे हैं",
+    "looking_to_give_items_instead_c603697b": "इसके बजाय सामान देना चाहते हैं?",
+    "medical_250af72c": "चिकित्सा",
+    "money_raised_for_a_specific_0b8a0fc8": "किसी एक व्यक्ति की खास ज़रूरत के लिए जुटाया गया पैसा। हर फ़ंडरेज़र को सार्वजनिक होने से पहले हमारी टीम ने जाँचा है।",
+    "no_fundraisers_yet_593936b2": "अभी कोई फ़ंडरेज़र नहीं है",
+    "no_matches_d29421ef": "कोई मेल नहीं मिला",
+    "other_206f5e85": "अन्य",
+    "search_by_title_or_city_cf325c9c": "शीर्षक या शहर से खोजें",
+    "search_fundraisers_dc824103": "फ़ंडरेज़र खोजें",
+    "there_are_no_live_fundraisers_a5768942": "अभी कोई फ़ंडरेज़र चालू नहीं है। आप फिर भी सामान दान कर सकते हैं।",
+    "totals_on_cards_count_only_34dfe469": "कार्ड पर दिखी कुल राशि में केवल वही भुगतान गिने जाते हैं जिनकी हमारे सर्वर ने पुष्टि की है। कोई प्रायोजित या पैसे देकर ऊपर दिखाया गया फ़ंडरेज़र नहीं।",
+    "your_fundraiser_donations_30cf86f8": "फ़ंडरेज़र के लिए आपके दान",
+    "your_reports_30f797ed": "आपकी रिपोर्टें",
+    "donate_items_1cd67f8a": "सामान दान करें"
+  },
+  "fundraisersList": {
+    "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",
+    "byOrganiser": "आयोजक: {organiser}",
+    "raisedOfTarget": "{target} में से <strong>{raised}</strong> की पुष्टि हुई",
+    "endsOn": "{date} को समाप्त",
+    "progressLabel": "लक्ष्य का {pct}% पुष्टि हुआ"
+  },
+  "cancellation": {
+    "WARN_HANDOVER_ARRANGED": "हैंडओवर पहले ही तय हो चुका है। दूसरे व्यक्ति को तुरंत सूचित किया जाएगा और आरक्षित सामान का आरक्षण हटा दिया जाएगा।",
+    "WARN_COUNTERPART_WAITING": "कोई पहले से इस पर भरोसा कर रहा है। उन्हें तुरंत बताया जाएगा और सामान का आरक्षण हटा दिया जाएगा।"
   }
 }
