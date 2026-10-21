@@ -1,5 +1,5 @@
 "use client";
-import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+import { LandingText, LandingAttributes, useLandingTranslation } from "@/components/LandingTranslation";
 
 
 /**
@@ -24,7 +24,7 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
  *   4. Mobile layout (still inline — ~200 lines — a future task can extract it too)
  */
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { isNgoRole } from "@/lib/isNgoRole";
 import Image from "next/image";
 import Link from "next/link";
@@ -264,6 +264,11 @@ export default function HomeClient({
   // The donee page has no lines between its sections (desktop RoleHome and this phone column).
   const isDoneeHome = roleStr === "DONEE" && !isRestoring;
 
+  // Where the landing film's "Skip intro" lands and moves focus to: one labelled
+  // region around both "Who we are" variants (handoffs/Landing Film Skip Plan.md).
+  const afterFilmRef = useRef<HTMLElement>(null);
+  const whoWeAreLabel = useLandingTranslation("Who we are");
+
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
     return <NgoLandingView />;
@@ -289,15 +294,17 @@ export default function HomeClient({
           <DashedJourneyRoad />
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
-      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} destinationRef={afterFilmRef} /> : <HeroComponent />}
 
-      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      <div className="hidden lg:block">
-        <WhoAreWeDesktop />
-      </div>
-      <div className="lg:hidden">
-        <WhoAreWeSection />
-      </div>
+      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit). Also the film's skip target. */}
+      <section id="who-we-are" ref={afterFilmRef} tabIndex={-1} aria-label={whoWeAreLabel} className="outline-none">
+        <div className="hidden lg:block">
+          <WhoAreWeDesktop />
+        </div>
+        <div className="lg:hidden">
+          <WhoAreWeSection />
+        </div>
+      </section>
 
       <SupportGallery />
 

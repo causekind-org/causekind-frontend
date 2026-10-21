@@ -5,6 +5,12 @@ import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
+/** The active Lenis instance, or null on touch devices / reduced motion (native scroll). */
+let activeLenis: Lenis | null = null;
+export function getLenis(): Lenis | null {
+  return activeLenis;
+}
+
 export function SmoothScroll() {
   useEffect(() => {
     // A phone browser's address bar shrinking/growing resizes the viewport on
@@ -46,6 +52,8 @@ export function SmoothScroll() {
       touchMultiplier: 1.5,
     });
 
+    activeLenis = lenis;
+
     // Synchronize Lenis scroll with GSAP ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
 
@@ -58,6 +66,7 @@ export function SmoothScroll() {
 
     return () => {
       gsap.ticker.remove(updateTicker);
+      if (activeLenis === lenis) activeLenis = null;
       lenis.destroy();
     };
   }, []);
