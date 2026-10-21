@@ -21,13 +21,23 @@ import { normalizeUiText, uiKey } from "@/lib/uiText/key";
  * renders the English as written.
  */
 export function useUiText() {
-  const t = useTranslations("ui");
+  // Shared primitives (dialog, etc.) now use this, and many tests render them
+  // with no NextIntlClientProvider, where useTranslations throws. Without a
+  // provider there is nothing to translate into, so fall back to the English.
+  // The call is unconditional and the outcome is fixed for a given tree, so hook
+  // order never changes. The app always has the provider (root layout).
+  let t: ReturnType<typeof useTranslations> | null;
+  try {
+    t = useTranslations("ui");
+  } catch {
+    t = null;
+  }
   return (text: string, context?: string): string => {
     const key = uiKey(text, context);
     // Real next-intl translators always have has(); minimal test mocks often
     // don't — treat that as "no entry" and show the English.
-    const has = typeof t.has === "function" && t.has(key);
-    return has ? t(key) : normalizeUiText(text);
+    const has = !!t && typeof t.has === "function" && t.has(key);
+    return has && t ? t(key) : normalizeUiText(text);
   };
 }
 
