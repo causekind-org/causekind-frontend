@@ -1363,7 +1363,9 @@
     "totals_on_cards_count_only_34dfe469": "Los totales solo incluyen pagos confirmados por nuestro servidor. Sin destacados ni posiciones pagadas.",
     "your_fundraiser_donations_30cf86f8": "Tus donaciones a recaudaciones",
     "your_reports_30f797ed": "Tus reportes",
-    "donate_items_1cd67f8a": "Donar artículos"
+    "donate_items_1cd67f8a": "Donar artículos",
+    "dismiss_265915f3": "Cerrar",
+    "withdraw_1dba6cb7": "Retirar"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
@@ -1374,6 +1376,23 @@
   },
   "cancellation": {
     "WARN_HANDOVER_ARRANGED": "Ya se ha acordado una entrega. Se avisará de inmediato a la otra persona y cualquier artículo reservado quedará liberado.",
-    "WARN_COUNTERPART_WAITING": "Alguien ya cuenta con esto. Se le avisará de inmediato y el artículo quedará liberado."
-  }
+    "WARN_COUNTERPART_WAITING": "Alguien ya cuenta con esto. Se le avisará de inmediato y el artículo quedará liberado.",
+    "WITHDRAW_REQUEST": "Retirar la solicitud",
+    "WITHDRAW_OFFER": "Retirar la oferta",
+    "WITHDRAW_LISTING": "Retirar el anuncio"
+  },
+  "categoryBoard": {
+    "count": "{count, plural, one {# necesidad abierta} other {# necesidades abiertas}}",
+    "countNear": "{count, plural, one {# necesidad abierta cerca de ti} other {# necesidades abiertas cerca de ti}}"
+  },
+  "search": {
+    "resultCount": "{count, plural, one {# resultado} other {# resultados}}"
+  },
+  "offerCancel": {
+    "titleQuestion": "¿{action}?"
+  },
+  "withdrawIssue": {
+    "withdrawNumbered": "Retirar el problema reportado #{id}"
+  },
+  "__pending": {}
 }

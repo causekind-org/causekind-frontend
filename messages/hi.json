@@ -1363,7 +1363,9 @@
     "totals_on_cards_count_only_34dfe469": "कार्ड पर दिखी कुल राशि में केवल वही भुगतान गिने जाते हैं जिनकी हमारे सर्वर ने पुष्टि की है। कोई प्रायोजित या पैसे देकर ऊपर दिखाया गया फ़ंडरेज़र नहीं।",
     "your_fundraiser_donations_30cf86f8": "फ़ंडरेज़र के लिए आपके दान",
     "your_reports_30f797ed": "आपकी रिपोर्टें",
-    "donate_items_1cd67f8a": "सामान दान करें"
+    "donate_items_1cd67f8a": "सामान दान करें",
+    "dismiss_265915f3": "बंद करें",
+    "withdraw_1dba6cb7": "वापस लें"
   },
   "fundraisersList": {
     "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",
@@ -1374,6 +1376,22 @@
   },
   "cancellation": {
     "WARN_HANDOVER_ARRANGED": "हैंडओवर पहले ही तय हो चुका है। दूसरे व्यक्ति को तुरंत सूचित किया जाएगा और आरक्षित सामान का आरक्षण हटा दिया जाएगा।",
-    "WARN_COUNTERPART_WAITING": "कोई पहले से इस पर भरोसा कर रहा है। उन्हें तुरंत बताया जाएगा और सामान का आरक्षण हटा दिया जाएगा।"
+    "WARN_COUNTERPART_WAITING": "कोई पहले से इस पर भरोसा कर रहा है। उन्हें तुरंत बताया जाएगा और सामान का आरक्षण हटा दिया जाएगा।",
+    "WITHDRAW_REQUEST": "अनुरोध वापस लें",
+    "WITHDRAW_OFFER": "प्रस्ताव वापस लें",
+    "WITHDRAW_LISTING": "लिस्टिंग वापस लें"
+  },
+  "categoryBoard": {
+    "count": "{count, plural, one {# खुली ज़रूरत} other {# खुली ज़रूरतें}}",
+    "countNear": "{count, plural, one {आपके आस-पास # खुली ज़रूरत} other {आपके आस-पास # खुली ज़रूरतें}}"
+  },
+  "search": {
+    "resultCount": "{count, plural, one {# परिणाम} other {# परिणाम}}"
+  },
+  "offerCancel": {
+    "titleQuestion": "{action}?"
+  },
+  "withdrawIssue": {
+    "withdrawNumbered": "रिपोर्ट की गई समस्या #{id} वापस लें"
   }
 }
