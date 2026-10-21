@@ -13,7 +13,7 @@ import {
   fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 
-export type NgoStatusType = "loading" | "incomplete" | "under_review" | "changes_requested" | "verified";
+export type NgoStatusType = "loading" | "incomplete" | "under_review" | "changes_requested" | "rejected" | "verified";
 
 function parseFormState(raw: any): NGOFormState {
   if (!raw) return INITIAL_NGO_FORM;
@@ -67,7 +67,7 @@ export function triggerNgoLockedToast(
     });
   } else if (status === "under_review") {
     toast.info("Your application is under review. We'll unlock this once you're approved.");
-  } else if (status === "changes_requested") {
+  } else if (status === "changes_requested" || status === "rejected") {
     toast.warning("A few documents need fixing. Fix now →", {
       action: router
         ? {
@@ -116,6 +116,7 @@ export interface NgoStatusData {
   markWelcomeShown: () => void;
   documents: Record<string, any>;
   isError: boolean;
+  verifiedAt?: string | null;
 }
 
 export function useNgoStatus(): NgoStatusData {
@@ -127,7 +128,15 @@ export function useNgoStatus(): NgoStatusData {
   const [overview, setOverview] = useState<NgoOverview | null>(null);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasShownWelcome, setHasShownWelcome] = useState(true);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+  const [hasShownWelcome, setHasShownWelcome] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try {
+      return !!localStorage.getItem(`ngo-verified-welcome-shown-${userIdentifier}`);
+    } catch {
+      return true;
+    }
+  });
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
 
@@ -143,8 +152,10 @@ export function useNgoStatus(): NgoStatusData {
       if (request !== sequence.current) return;
       const raw = application?.status;
       setStatus(raw === "APPROVED" ? "verified"
-        : raw === "REJECTED" || raw === "NEEDS_INFORMATION" ? "changes_requested"
+        : raw === "REJECTED" ? "rejected"
+        : raw === "NEEDS_INFORMATION" ? "changes_requested"
         : raw === "UNDER_REVIEW" || raw === "PENDING_VERIFICATION" ? "under_review" : "incomplete");
+      setVerifiedAt(application?.verifiedAt || null);
       setNgoName(application?.organizationName || draft?.organizationName || user?.fullName || "Your Organization");
       const form = parseFormState(draft || application);
       setProgress(calculateNgoProgress(form));
@@ -186,25 +197,68 @@ export function useNgoStatus(): NgoStatusData {
     setHasShownWelcome(true);
   }, [userIdentifier]);
 
-  const isVerified = !isLoading && !error && status === "verified";
-  const isPhotosDue = (overview?.photosDue ?? 0) > 0;
-  const canStartDrive = overview?.canStartDrive !== false;
-  const blockingDriveTitle = overview?.blockingDriveTitle ?? "";
+  // Support visual preview states via query param (e.g. ?state=under_review, ?state=approved, etc.)
+  let effectiveStatus = status;
+  let effectiveStepNumber = progress.completedCount;
+  let effectiveOverview = overview;
+  let effectiveIsLoading = isLoading || authLoading;
+  let effectiveVerifiedAt = verifiedAt;
+
+  if (typeof window !== "undefined" && window.location.search) {
+    const params = new URLSearchParams(window.location.search);
+    const preview = params.get("preview") || params.get("previewState") || params.get("state");
+    if (preview) {
+      effectiveIsLoading = false;
+      if (preview === "approved" || preview === "verified") {
+        effectiveStatus = "verified";
+        effectiveVerifiedAt = effectiveVerifiedAt || "2025-10-12T00:00:00Z";
+        effectiveOverview = effectiveOverview || {
+          activeRequests: 2,
+          itemsPledged: 140,
+          dropoffsToConfirm: 3,
+          photosDue: 0,
+          canStartDrive: true,
+          blockingDriveTitle: "",
+          photosDueRequestName: "",
+          verifiedDeliveries: 12,
+          handovers: [],
+        };
+      } else if (preview === "under_review") {
+        effectiveStatus = "under_review";
+        effectiveStepNumber = 5;
+      } else if (preview === "changes_requested" || preview === "needs_information") {
+        effectiveStatus = "changes_requested";
+        effectiveStepNumber = 3;
+      } else if (preview === "rejected") {
+        effectiveStatus = "rejected";
+        effectiveStepNumber = 2;
+      } else if (preview === "new" || preview === "incomplete") {
+        effectiveStatus = "incomplete";
+        effectiveStepNumber = 0;
+      }
+    }
+  }
+
+  const isVerified = !effectiveIsLoading && !error && effectiveStatus === "verified";
+  const isPhotosDue = (effectiveOverview?.photosDue ?? 0) > 0;
+  const canStartDrive = effectiveOverview?.canStartDrive !== false;
+  const blockingDriveTitle = effectiveOverview?.blockingDriveTitle ?? "";
   const driveLockReason = canStartDrive ? ""
     : `Available after your current drive${blockingDriveTitle ? ` "${blockingDriveTitle}"` : ""} is completed and its photos are approved.`;
   const canPostRequest = isVerified && !isPhotosDue && canStartDrive;
-  const lockReason = isLoading ? "Checking your NGO status…" : error || (!isVerified
+  const lockReason = effectiveIsLoading ? "Checking your NGO status…" : error || (!isVerified
     ? "Available once CauseKind verifies your NGO."
-    : isPhotosDue ? `Upload handover photos for ${overview?.photosDueRequestName} before starting another drive.`
+    : isPhotosDue ? `Upload handover photos for ${effectiveOverview?.photosDueRequestName} before starting another drive.`
     : driveLockReason);
+
   return {
-    isLoading: isLoading || authLoading, error, refresh, overview, status, ngoName,
-    stepNumber: progress.completedCount, totalSteps: 6, nextIncompleteStep: progress.nextIncompleteStep,
+    isLoading: effectiveIsLoading, error, refresh, overview: effectiveOverview, status: effectiveStatus, ngoName,
+    stepNumber: effectiveStepNumber, totalSteps: 6, nextIncompleteStep: progress.nextIncompleteStep,
     wizardHref: progress.nextIncompleteStep ? `/profile/ngo-details?step=${progress.nextIncompleteStep}` : "/profile/ngo-details",
-    activeRequests: overview?.activeRequests ?? 0, itemsPledged: overview?.itemsPledged ?? 0,
-    dropoffsToConfirm: overview?.dropoffsToConfirm ?? 0, photosDue: overview?.photosDue ?? 0,
-    photosDueRequestName: overview?.photosDueRequestName ?? "", isVerified, isPhotosDue,
+    activeRequests: effectiveOverview?.activeRequests ?? 0, itemsPledged: effectiveOverview?.itemsPledged ?? 0,
+    dropoffsToConfirm: effectiveOverview?.dropoffsToConfirm ?? 0, photosDue: effectiveOverview?.photosDue ?? 0,
+    photosDueRequestName: effectiveOverview?.photosDueRequestName ?? "", isVerified, isPhotosDue,
     canPostRequest, lockReason, canStartDrive, blockingDriveTitle, driveLockReason, hasShownWelcome, markWelcomeShown,
-    documents, isError: !!error,
+    documents, isError: !!error, verifiedAt: effectiveVerifiedAt,
   };
 }

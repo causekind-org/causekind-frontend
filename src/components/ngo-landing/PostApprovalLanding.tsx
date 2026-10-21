@@ -1,530 +1,732 @@
 "use client";
 
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import {
+  ArrowRight,
   ShieldCheck,
-  MapPin,
-  Camera,
+  TrendingUp,
+  Package,
+  Heart,
   Users,
-  CheckCircle2,
-  PackagePlus,
-  Truck,
-  FileCheck,
-  ChevronRight,
-  Activity,
-  Box,
-  Image as ImageIcon,
-  CheckCircle,
-  FileText,
-  BadgeCheck,
-  ExternalLink,
-  ChevronDown,
-  AlertCircle,
-  Lock
+  Award,
+  Camera,
+  Sparkles,
 } from "lucide-react";
 import type { NgoStatusData } from "./useNgoStatus";
-import { StartDriveLink } from "./StartDriveLink";
+import { NgoHeroRedesign } from "./NgoHeroRedesign";
+import {
+  NgoCard,
+  NgoSectionHeader,
+  NgoMarquee,
+} from "./NgoSharedComponents";
 
-const METRIC_CARDS = [
-  { id: "activeRequests", title: "Live Drives", icon: Activity, href: "/profile/my-needs" },
-  { id: "itemsPledged", title: "Items Pledged", icon: Box, href: "/profile/my-needs" },
-  { id: "dropoffsToConfirm", title: "Drop-offs to Confirm", icon: Truck, href: "/ngo/handovers" },
-  { id: "photosDue", title: "Photos Due", icon: Camera, href: "/ngo/handovers" },
-];
+/* Helper for animated counting number */
+function AnimatedCounter({ value, duration = 1.2 }: { value: number; duration?: number }) {
+  const [displayValue, setDisplayValue] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (shouldReduceMotion) {
+      setDisplayValue(value);
+      return;
+    }
+    if (value === 0) {
+      setDisplayValue(0);
+      return;
+    }
+
+    let start = 0;
+    const end = value;
+    const totalFrames = Math.round(duration * 60);
+    let frame = 0;
+
+    const timer = setInterval(() => {
+      frame++;
+      const progress = frame / totalFrames;
+      const current = Math.round(start + (end - start) * Math.sin((progress * Math.PI) / 2));
+      setDisplayValue(current);
+
+      if (frame >= totalFrames) {
+        clearInterval(timer);
+        setDisplayValue(end);
+      }
+    }, 1000 / 60);
+
+    return () => clearInterval(timer);
+  }, [value, duration, shouldReduceMotion]);
+
+  return <span ref={ref}>{displayValue.toLocaleString()}</span>;
+}
 
 export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
+  const shouldReduceMotion = useReducedMotion();
+  const overview = status.overview;
+
+  const campaignProgress = status.activeRequests;
+  const donationsReceived = status.itemsPledged;
+  const itemsDelivered = (overview as any)?.verifiedDeliveries ?? 0;
+  const beneficiaries = itemsDelivered > 0 ? itemsDelivered * 4 : donationsReceived > 0 ? donationsReceived * 2 : 0;
+
+  const hasAnyData = campaignProgress > 0 || donationsReceived > 0 || itemsDelivered > 0;
+
+  // ---------------------------------------------------------------------------
+  // Campaign Journey - Sticky Scroll-Telling Setup
+  // ---------------------------------------------------------------------------
+  const journeyRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
 
   const journeySteps = [
     {
-      title: "You start a drive",
-      desc: "Submit the required items, quantity, and intended use.",
-      detail: "Define your exact needs. Describe what your community needs most right now so nearby givers know how to help."
+      num: 1,
+      title: "Post a need",
+      desc: "Publish your campaign.",
+      photo: "/images/journey/item-proof-blankets.webp",
+      alt: "Publishing NGO request",
     },
     {
-      title: "Donors nearby pledge them",
-      desc: "Eligible donors respond to the listed needs.",
-      detail: "Donors in your city browse local drives and commit to providing specific items you have requested."
+      num: 2,
+      title: "Donor matching",
+      desc: "Donors offer to help.",
+      photo: "/images/journey/money-proof-ration.webp",
+      alt: "Donor pledge and match",
     },
     {
-      title: "They drop off, and you confirm receipt",
-      desc: "Coordinate the handover and confirm receipt.",
-      detail: "Use our integrated tools to agree on a drop-off time. Mark items as received once they physically arrive."
+      num: 3,
+      title: "Delivery",
+      desc: "Items are sent to you.",
+      photo: "/images/ngo-hero/col-a-1-blankets-pune.webp",
+      alt: "Items delivered to NGO center",
     },
     {
-      title: "You upload a handover photo",
-      desc: "Provide the required photo evidence.",
-      detail: "Snap a quick photo of the items received (no faces needed) to complete the transparency loop for the donor."
+      num: 4,
+      title: "Handover proof",
+      desc: "Upload photos.",
+      photo: "/images/ngo-hero/col-b-5-food-distribution.webp",
+      alt: "Handover photo proof uploaded",
     },
     {
-      title: "Completed handovers become eligible for certificates",
-      desc: "Eligibility depends on completion checks.",
-      detail: "Once verified, you may issue a digital certificate to the donor in recognition of their contribution."
-    }
+      num: 5,
+      title: "Confirmation",
+      desc: "Close the loop.",
+      photo: "/images/ngo-hero/col-b-4-health-camp.webp",
+      alt: "Completed confirmed handover loop",
+    },
   ];
 
+  const { scrollYProgress: journeyScrollProgress } = useScroll({
+    target: journeyRef,
+    offset: ["start center", "end end"],
+  });
+
+  const pathLength = useTransform(journeyScrollProgress, [0, 1], [0, 1]);
+
+  useEffect(() => {
+    return journeyScrollProgress.on("change", (latest) => {
+      const idx = Math.min(
+        journeySteps.length - 1,
+        Math.floor(latest * journeySteps.length)
+      );
+      setActiveStep(idx);
+    });
+  }, [journeyScrollProgress, journeySteps.length]);
+
   return (
-    <div className="flex flex-col w-full pb-24">
-      {/* 2.1 — Hero: You're Verified */}
-      <section className="relative w-full min-h-[85vh] flex items-center justify-center overflow-hidden bg-[#FAF8F3]">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/images/ngo-hero-landing.jpg"
-            alt="Community action"
-            className="w-full h-full object-cover"
+    <div className="w-full flex flex-col">
+      {/* 1. HERO (Approved State) */}
+      <NgoHeroRedesign status={status} />
+
+      {/* MARQUEE CHIPS */}
+      <NgoMarquee />
+
+      {/* 2. IMPACT STATISTICS (Bento of 4 Cards) */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Impact statistics"
+            h2="Your impact, at a glance."
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent dark:from-black/90 dark:via-black/70" />
-        </div>
 
-        <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl pt-20 flex flex-col lg:flex-row items-center gap-12">
-          <div className="lg:w-3/5">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#176B50]/90 backdrop-blur-md border border-[#A8DEC8]/30 mb-8 shadow-lg"
-            >
-              <BadgeCheck className="w-5 h-5 text-[#A8DEC8]" />
-              <span className="text-white font-medium text-sm tracking-wide">Verified by CauseKind</span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-              className="text-5xl md:text-7xl font-serif text-white leading-[1.1] tracking-tight text-shadow-sm"
-            >
-              You're verified.
-              <br />
-              <span className="text-[#A8DEC8] italic">
-                Let givers nearby find you.
-              </span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
-              className="mt-6 text-xl md:text-2xl text-stone-200 max-w-2xl font-light text-shadow-sm"
-            >
-              Post what your organization needs. Our team reviews the drive before it goes live to nearby givers. Track accepted handovers through your account.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.5, ease: "easeOut" }}
-              className="mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-4"
-            >
-              <StartDriveLink href="/ngo/drives/new" className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-[#176B50] bg-white rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-xl">
-                <span className="relative z-10 flex items-center gap-2">
-                  Start a Drive
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-              </StartDriveLink>
-              
+          {!hasAnyData ? (
+            /* Illustrated Empty State */
+            <div className="w-full rounded-[28px] border border-stone-200 dark:border-white/10 bg-white dark:bg-stone-900/60 p-12 text-center shadow-sm">
+              <div className="w-20 h-20 mx-auto rounded-3xl bg-[#2F8F5B]/10 dark:bg-[#2F8F5B]/20 flex items-center justify-center text-[#2F8F5B] mb-5">
+                <Sparkles className="w-10 h-10" />
+              </div>
+              <h3 className="ngo-heading text-2xl text-stone-900 dark:text-stone-100 mb-2">
+                No active metrics yet
+              </h3>
+              <p className="text-base text-stone-600 dark:text-stone-400 max-w-md mx-auto mb-6">
+                Appears once your first campaign is live.
+              </p>
               <Link
-                href={status.wizardHref}
-                className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-full transition-colors border border-white/20"
+                href="/ngo/drives/new"
+                className="ngo-btn-pill ngo-btn-gold inline-flex"
               >
-                View My Application
+                <span>Create your first campaign</span>
+                <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
-            </motion.div>
-            
-            {status.lockReason && !status.canPostRequest && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.8 }}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-stone-900/60 backdrop-blur-md rounded-lg border border-stone-700/50"
-              >
-                <AlertCircle className="w-4 h-4 text-amber-400" />
-                <span className="text-sm text-stone-200">{status.lockReason}</span>
-              </motion.div>
-            )}
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 50, rotate: 2 }}
-            animate={{ opacity: 1, x: 0, rotate: 0 }}
-            transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
-            className="lg:w-2/5 w-full max-w-md hidden md:block"
-          >
-            <div className="bg-white dark:bg-stone-900 rounded-3xl p-6 shadow-2xl shadow-black/40 border border-stone-200/20 dark:border-stone-800/50 backdrop-blur-xl transform -rotate-2 hover:rotate-0 transition-transform duration-500">
-              <div className="flex items-center justify-between mb-6 border-b border-stone-100 dark:border-stone-800 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#176B50]/10 flex items-center justify-center">
-                    <PackagePlus className="w-5 h-5 text-[#176B50] dark:text-[#A8DEC8]" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-stone-900 dark:text-stone-100">Sample Drive Preview</div>
-                    <div className="text-xs text-stone-500">How givers see it</div>
-                  </div>
-                </div>
-                <div className="w-16 h-6 rounded-full bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800 flex items-center justify-center">
-                  <span className="text-[10px] font-bold text-green-700 dark:text-green-400 uppercase tracking-wider">Live</span>
-                </div>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="h-4 bg-stone-100 dark:bg-stone-800 rounded w-3/4"></div>
-                <div className="h-4 bg-stone-100 dark:bg-stone-800 rounded w-full"></div>
-                <div className="h-4 bg-stone-100 dark:bg-stone-800 rounded w-5/6"></div>
-                
-                <div className="pt-4 flex gap-2">
-                  <div className="h-8 bg-[#176B50]/10 rounded w-1/3"></div>
-                  <div className="h-8 bg-stone-100 dark:bg-stone-800 rounded w-1/4"></div>
-                </div>
-              </div>
             </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* 2.2 — Trust and Safety Strip */}
-      <section className="w-full bg-[#176B50] border-b border-[#0F513D]">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex overflow-x-auto py-6 hide-scrollbar snap-x snap-mandatory">
-            <div className="flex flex-nowrap md:grid md:grid-cols-4 gap-8 min-w-max md:min-w-0 w-full px-4 md:px-0">
-              {[
-                { icon: ShieldCheck, title: "Legally Verified NGOs" },
-                { icon: MapPin, title: "Agreed Handover Locations" },
-                { icon: Camera, title: "Receipt Photos Required" },
-                { icon: Users, title: "Matched Near You" },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center gap-4 snap-start group cursor-default">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 group-hover:scale-110 transition-all duration-300">
-                    <item.icon className="w-5 h-5 text-[#A8DEC8] group-hover:text-white transition-colors" />
-                  </div>
-                  <span className="font-medium text-[#EFF7F1] whitespace-nowrap md:whitespace-normal group-hover:text-white transition-colors">
-                    {item.title}
+          ) : (
+            /* Bento Grid of 4 Cards */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {/* Card 1: Campaign Progress */}
+              <div className="ngo-card ngo-card-interactive group">
+                <div className="ngo-card-glow" />
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3 bg-[#2F8F5B]/10 text-[#2F8F5B]">
+                  Campaign progress
+                </span>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="ngo-heading text-4xl text-stone-900 dark:text-stone-100 font-bold">
+                    <AnimatedCounter value={campaignProgress} />
                   </span>
+                  <span className="text-xs text-stone-500">active</span>
                 </div>
-              ))}
+                {/* Sparkline SVG */}
+                <div className="h-10 w-full mb-3">
+                  <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                    <path
+                      d="M0 25 Q25 10, 50 18 T100 5"
+                      fill="none"
+                      stroke="#2F8F5B"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+                {/* 10px progress bar green to gold */}
+                <div className="h-[10px] w-full rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.min(100, Math.max(15, campaignProgress * 30))}%`,
+                      background: "linear-gradient(90deg, #2F8F5B, #D9A441)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Card 2: Donations Received */}
+              <div className="ngo-card ngo-card-interactive group">
+                <div className="ngo-card-glow" />
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3 bg-[#D9A441]/10 text-[#D9A441]">
+                  Donations received
+                </span>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="ngo-heading text-4xl text-stone-900 dark:text-stone-100 font-bold">
+                    <AnimatedCounter value={donationsReceived} />
+                  </span>
+                  <span className="text-xs text-stone-500">pledged</span>
+                </div>
+                <div className="h-10 w-full mb-3">
+                  <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                    <path
+                      d="M0 20 Q30 5, 60 15 T100 8"
+                      fill="none"
+                      stroke="#D9A441"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+                <div className="h-[10px] w-full rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.min(100, Math.max(15, (donationsReceived / 50) * 100))}%`,
+                      background: "linear-gradient(90deg, #2F8F5B, #D9A441)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Card 3: Items Delivered */}
+              <div className="ngo-card ngo-card-interactive group">
+                <div className="ngo-card-glow" />
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3 bg-[#1E6B4A]/10 text-[#1E6B4A] dark:text-[#A8DEC8]">
+                  Items delivered
+                </span>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="ngo-heading text-4xl text-stone-900 dark:text-stone-100 font-bold">
+                    <AnimatedCounter value={itemsDelivered} />
+                  </span>
+                  <span className="text-xs text-stone-500">confirmed</span>
+                </div>
+                <div className="h-10 w-full mb-3">
+                  <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                    <path
+                      d="M0 28 Q35 15, 70 8 T100 3"
+                      fill="none"
+                      stroke="#1E6B4A"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+                <div className="h-[10px] w-full rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.min(100, Math.max(15, (itemsDelivered / 30) * 100))}%`,
+                      background: "linear-gradient(90deg, #2F8F5B, #D9A441)",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Card 4: Beneficiaries Reached */}
+              <div className="ngo-card ngo-card-interactive group">
+                <div className="ngo-card-glow" />
+                <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider mb-3 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  Beneficiaries reached
+                </span>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span className="ngo-heading text-4xl text-stone-900 dark:text-stone-100 font-bold">
+                    <AnimatedCounter value={beneficiaries} />
+                  </span>
+                  <span className="text-xs text-stone-500">people</span>
+                </div>
+                <div className="h-10 w-full mb-3">
+                  <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
+                    <path
+                      d="M0 22 Q40 25, 75 12 T100 6"
+                      fill="none"
+                      stroke="#5BE49B"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+                <div className="h-[10px] w-full rounded-full bg-stone-100 dark:bg-stone-800 overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all duration-700"
+                    style={{
+                      width: `${Math.min(100, Math.max(15, (beneficiaries / 100) * 100))}%`,
+                      background: "linear-gradient(90deg, #2F8F5B, #D9A441)",
+                    }}
+                  />
+                </div>
+              </div>
             </div>
+          )}
+        </div>
+      </section>
+
+      {/* 3. CREATE YOUR FIRST CAMPAIGN (Dark Band) */}
+      <section className="ngo-section ngo-band-dark">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Create your first campaign"
+            h2="Say what you need, clearly."
+            isDark
+          />
+
+          <div className="ngo-grid-3">
+            <NgoCard
+              number="1"
+              title="Describe your need"
+              body="Give a clear title and purpose."
+              isDarkBand
+            />
+            <NgoCard
+              number="2"
+              title="Set quantities"
+              body="List items and realistic amounts."
+              isDarkBand
+            />
+            <NgoCard
+              number="3"
+              title="Publish"
+              body="Go live for donors to see."
+              isDarkBand
+            />
           </div>
         </div>
       </section>
 
-      {/* 2.3 — At a Glance Dashboard */}
-      <section className="py-20 bg-[#FAF8F3] dark:bg-[#09090b]">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <h2 className="text-3xl font-serif text-stone-900 dark:text-stone-100 mb-8">At a glance</h2>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-            {METRIC_CARDS.map((metric, i) => {
-              const value = (status as any)[metric.id] ?? 0;
-              return (
-                <Link key={i} href={metric.href}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="bg-white dark:bg-stone-900 p-6 md:p-8 rounded-3xl shadow-sm hover:shadow-md border border-stone-200/80 dark:border-stone-800 transition-all group h-full flex flex-col justify-between"
-                  >
-                    <div className="w-12 h-12 rounded-2xl bg-[#EFF7F1] dark:bg-[#176B50]/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                      <metric.icon className="w-6 h-6 text-[#176B50] dark:text-[#A8DEC8]" />
-                    </div>
-                    <div>
-                      <div className="text-4xl md:text-5xl font-light text-stone-900 dark:text-stone-100 mb-2 font-serif">
-                        {value}
+      {/* 4. MANAGE YOUR CAMPAIGNS */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Manage your campaigns"
+            h2="View, edit and track every campaign."
+          />
+
+          <div className="ngo-grid-3">
+            <NgoCard
+              tag="Active"
+              title="Active campaigns"
+              body="See progress and edit details."
+            />
+            <NgoCard
+              tag="Completed"
+              title="Completed campaigns"
+              body="Review outcomes and proof."
+            />
+            <NgoCard
+              tag="Drafts"
+              title="Drafts"
+              body="Finish and publish when ready."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 5. CONNECT WITH DONORS (Wide Gradient Card) */}
+      <section className="ngo-section ngo-band-cream pt-0">
+        <div className="ngo-container">
+          <span className="ngo-eyebrow">Connect with donors</span>
+          <div className="rounded-[28px] p-8 md:p-14 text-white shadow-2xl relative overflow-hidden bg-gradient-to-br from-[#0B3D2E] to-[#1E6B4A]">
+            <div className="relative z-10 max-w-3xl">
+              <h2 className="ngo-heading text-3xl sm:text-4xl md:text-5xl mb-4 leading-[1.1]">
+                Donors who want to fulfil your needs find you.
+              </h2>
+              <p className="text-base sm:text-lg text-[#EFEADB]/90 leading-relaxed font-normal">
+                Verified campaigns reach interested donors, who offer to give. You review each offer and choose how to proceed.
+              </p>
+            </div>
+            <div className="absolute right-0 bottom-0 translate-x-12 translate-y-12 w-80 h-80 rounded-full bg-[#2F8F5B]/30 blur-3xl pointer-events-none" />
+          </div>
+        </div>
+      </section>
+
+      {/* 6. CAMPAIGN JOURNEY (Dark Band + Sticky Scroll-Telling) */}
+      <section ref={journeyRef} className="ngo-section ngo-band-dark">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Campaign journey"
+            h2="From posting a need to confirmed delivery."
+            isDark
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start relative">
+            <div className="lg:col-span-7 relative pl-4 md:pl-8">
+              <div className="absolute left-[39px] md:left-[55px] top-6 bottom-10 w-1 pointer-events-none">
+                <svg className="w-full h-full" preserveAspectRatio="none">
+                  <line
+                    x1="2"
+                    y1="0"
+                    x2="2"
+                    y2="100%"
+                    stroke="rgba(255, 255, 255, 0.15)"
+                    strokeWidth="3"
+                  />
+                  <motion.line
+                    x1="2"
+                    y1="0"
+                    x2="2"
+                    y2="100%"
+                    stroke="#D9A441"
+                    strokeWidth="3"
+                    style={{
+                      pathLength: shouldReduceMotion ? 1 : pathLength,
+                    }}
+                  />
+                </svg>
+              </div>
+
+              <div className="space-y-6">
+                {journeySteps.map((step, i) => {
+                  const isActive = activeStep >= i;
+                  return (
+                    <div
+                      key={step.num}
+                      style={{ marginTop: i > 0 ? `${i * 12}px` : 0 }}
+                      className={`relative z-10 flex items-start gap-6 p-4 rounded-2xl transition-all duration-300 ${
+                        isActive
+                          ? "bg-white/[0.07] border border-white/20 shadow-lg"
+                          : "bg-transparent opacity-65"
+                      }`}
+                    >
+                      <div
+                        className="ngo-step-bubble transition-transform duration-300"
+                        style={{
+                          transform: isActive ? "scale(1.05)" : "scale(1)",
+                        }}
+                      >
+                        {step.num}
                       </div>
-                      <div className="text-stone-500 dark:text-stone-400 font-medium text-sm md:text-base group-hover:text-[#176B50] dark:group-hover:text-[#A8DEC8] transition-colors">
-                        {metric.title}
+
+                      <div className="pt-2">
+                        <h3 className="ngo-heading text-2xl text-white mb-1">
+                          {step.title}
+                        </h3>
+                        <p className="text-base text-[#EFEADB]/85 font-normal">
+                          {step.desc}
+                        </p>
                       </div>
                     </div>
-                  </motion.div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* 2.4 — Get Verified. Post. Deliver. (Verified State) */}
-      <section className="py-24 bg-white dark:bg-stone-900 border-y border-stone-100 dark:border-stone-800/50">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16 max-w-2xl mx-auto">
-            <h2 className="text-4xl font-serif text-stone-900 dark:text-stone-100 mb-4">
-              Get verified. Post. Deliver.
-            </h2>
-            <p className="text-lg text-stone-600 dark:text-stone-400">
-              Your organization is verified. Here is where you stand.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Step 1: Completed */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="relative p-8 rounded-3xl bg-[#EFF7F1] dark:bg-[#176B50]/5 border border-[#176B50]/20"
-            >
-              <div className="absolute top-8 right-8 text-[#176B50]/10 dark:text-[#A8DEC8]/10 font-serif text-8xl leading-none select-none">1</div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-[#176B50] text-white flex items-center justify-center mb-8 shadow-lg shadow-[#176B50]/20">
-                  <CheckCircle2 className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-4">Get Verified</h3>
-                <p className="text-stone-600 dark:text-stone-400 leading-relaxed mb-6">
-                  You have successfully submitted your legal documents and passed our verification checks.
-                </p>
-                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#176B50] text-white shadow-sm">
-                  <CheckCircle className="w-4 h-4 mr-1.5" />
-                  Completed
-                </div>
+                  );
+                })}
               </div>
-            </motion.div>
+            </div>
 
-            {/* Step 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className={`relative p-8 rounded-3xl border ${status.canStartDrive ? 'bg-[#FAF8F3] dark:bg-stone-950 border-[#176B50]/30 shadow-md' : 'bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-800 opacity-80'}`}
-            >
-              <div className="absolute top-8 right-8 text-stone-200 dark:text-stone-800/50 font-serif text-8xl leading-none select-none">2</div>
-              <div className="relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${status.canStartDrive ? 'bg-[#176B50] text-white shadow-lg' : 'bg-stone-200 dark:bg-stone-800 text-stone-500'}`}>
-                  <PackagePlus className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-4 flex items-center gap-2">
-                  Post What You Need
-                  {!status.canStartDrive && <Lock className="w-4 h-4 text-stone-400" />}
-                </h3>
-                <p className="text-stone-600 dark:text-stone-400 leading-relaxed mb-6">
-                  Describe the required items, quantities, and intended use. Our team reviews the drive before it goes live.
-                </p>
-                {status.canStartDrive ? (
-                  <StartDriveLink href="/ngo/drives/new" className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-[#176B50] text-white hover:bg-[#0F513D] transition-colors shadow-sm">
-                    Start a Drive
-                  </StartDriveLink>
-                ) : (
-                  <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-stone-200/50 dark:bg-stone-800/50 text-stone-500">
-                    {status.lockReason || "Locked until current drive completes"}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Step 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className={`relative p-8 rounded-3xl border ${status.isPhotosDue ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900' : 'bg-[#FAF8F3] dark:bg-stone-950 border-stone-200 dark:border-stone-800'}`}
-            >
-              <div className="absolute top-8 right-8 text-stone-200 dark:text-stone-800/50 font-serif text-8xl leading-none select-none">3</div>
-              <div className="relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ${status.isPhotosDue ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-stone-800 dark:bg-stone-700 text-white shadow-lg'}`}>
-                  <Truck className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-4">
-                  Deliver, Then Prove It
-                </h3>
-                <p className="text-stone-600 dark:text-stone-400 leading-relaxed mb-6">
-                  Coordinate handovers, confirm receipt, and provide the required photo evidence to unlock new drives.
-                </p>
-                {status.isPhotosDue ? (
-                  <Link href="/ngo/handovers" className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm">
-                    Upload Photos Due
-                  </Link>
-                ) : (
-                  <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#EFF7F1] dark:bg-[#176B50]/10 text-[#176B50] dark:text-[#A8DEC8]">
-                    No photos currently due
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* 2.5 — What Happens After You Post? */}
-      <section className="py-24 bg-[#FAF8F3] dark:bg-stone-950">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-serif text-stone-900 dark:text-stone-100 mb-4">
-              What happens after you post?
-            </h2>
-            <p className="text-lg text-stone-600 dark:text-stone-400 max-w-2xl mx-auto">
-              From starting a drive to donor handover, every step is direct, transparent, and documented with photo proof.
-            </p>
-          </div>
-
-          <div className="flex flex-col lg:flex-row gap-12 lg:gap-24 items-start">
-            {/* Timeline */}
-            <div className="w-full lg:w-1/2 relative">
-              <div className="absolute left-[23px] top-8 bottom-8 w-[2px] bg-stone-200 dark:bg-stone-800" />
-              
-              <div className="space-y-6 relative z-10">
-                {journeySteps.map((step, idx) => (
-                  <div 
-                    key={idx} 
-                    className="flex gap-6 cursor-pointer group"
-                    onClick={() => setActiveStep(idx)}
+            <div className="lg:col-span-5 hidden lg:block sticky top-28">
+              <div className="relative w-full h-[460px] rounded-[28px] overflow-hidden border border-white/20 shadow-2xl bg-black/40">
+                {journeySteps.map((step, i) => (
+                  <div
+                    key={step.num}
+                    className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                      activeStep === i ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                    }`}
                   >
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-colors duration-300 ${activeStep === idx ? 'bg-[#176B50] text-white shadow-lg' : 'bg-white dark:bg-stone-900 border-2 border-stone-200 dark:border-stone-700 text-stone-400 group-hover:border-[#176B50] group-hover:text-[#176B50]'}`}>
-                      {activeStep > idx ? <CheckCircle2 className="w-6 h-6" /> : <span className="font-serif text-lg">{idx + 1}</span>}
-                    </div>
-                    <div className={`pt-2 transition-all duration-300 ${activeStep === idx ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}`}>
-                      <h3 className={`text-xl font-medium mb-2 ${activeStep === idx ? 'text-[#176B50] dark:text-[#A8DEC8]' : 'text-stone-900 dark:text-stone-100'}`}>
+                    <Image
+                      src={step.photo}
+                      alt={step.alt}
+                      fill
+                      sizes="480px"
+                      className="object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <span className="text-xs uppercase tracking-wider text-[#D9A441] font-semibold block mb-1">
+                        Step {step.num}
+                      </span>
+                      <h4 className="ngo-heading text-xl text-white">
                         {step.title}
-                      </h3>
-                      <p className="text-stone-600 dark:text-stone-400">
+                      </h4>
+                      <p className="text-xs text-[#EFEADB]/80 mt-1">
                         {step.desc}
                       </p>
-                      
-                      <AnimatePresence>
-                        {activeStep === idx && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="overflow-hidden"
-                          >
-                            <p className="pt-4 text-sm text-stone-500 dark:text-stone-500">
-                              {step.detail}
-                            </p>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      </section>
 
-            {/* Interactive Preview */}
-            <div className="w-full lg:w-1/2 sticky top-32">
-              <div className="bg-white dark:bg-stone-900 rounded-3xl p-8 shadow-xl shadow-black/5 border border-stone-200/60 dark:border-stone-800 aspect-square flex flex-col justify-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#176B50]/10 to-transparent rounded-bl-full" />
-                
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={activeStep}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className="text-center"
-                  >
-                    {activeStep === 0 && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-24 h-24 bg-[#176B50]/10 rounded-2xl flex items-center justify-center mb-6 text-[#176B50]">
-                          <FileText className="w-12 h-12" />
-                        </div>
-                        <h4 className="text-2xl font-serif text-stone-900 dark:text-stone-100 mb-2">Creating your drive</h4>
-                        <p className="text-stone-500 max-w-sm mx-auto">Fill out a simple form detailing exactly what items you need and why.</p>
-                      </div>
-                    )}
-                    {activeStep === 1 && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-24 h-24 bg-[#176B50]/10 rounded-2xl flex items-center justify-center mb-6 text-[#176B50]">
-                          <Users className="w-12 h-12" />
-                        </div>
-                        <h4 className="text-2xl font-serif text-stone-900 dark:text-stone-100 mb-2">Connecting donors</h4>
-                        <p className="text-stone-500 max-w-sm mx-auto">Your drive appears to verified local givers who can fulfill your requests.</p>
-                      </div>
-                    )}
-                    {activeStep === 2 && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-24 h-24 bg-[#176B50]/10 rounded-2xl flex items-center justify-center mb-6 text-[#176B50]">
-                          <MapPin className="w-12 h-12" />
-                        </div>
-                        <h4 className="text-2xl font-serif text-stone-900 dark:text-stone-100 mb-2">Coordinating handover</h4>
-                        <p className="text-stone-500 max-w-sm mx-auto">Chat safely with the donor to arrange a drop-off at your registered location.</p>
-                      </div>
-                    )}
-                    {activeStep === 3 && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-24 h-24 bg-[#176B50]/10 rounded-2xl flex items-center justify-center mb-6 text-[#176B50]">
-                          <ImageIcon className="w-12 h-12" />
-                        </div>
-                        <h4 className="text-2xl font-serif text-stone-900 dark:text-stone-100 mb-2">Uploading proof</h4>
-                        <p className="text-stone-500 max-w-sm mx-auto">Take a photo of the received items to unlock your next drive.</p>
-                      </div>
-                    )}
-                    {activeStep === 4 && (
-                      <div className="flex flex-col items-center">
-                        <div className="w-24 h-24 bg-[#176B50]/10 rounded-full flex items-center justify-center mb-6 text-[#176B50] ring-8 ring-[#176B50]/5">
-                          <BadgeCheck className="w-12 h-12" />
-                        </div>
-                        <h4 className="text-2xl font-serif text-stone-900 dark:text-stone-100 mb-2">Certificate eligibility</h4>
-                        <p className="text-stone-500 max-w-sm mx-auto">Successful handovers allow you to issue certificates to your donors.</p>
-                      </div>
-                    )}
-                  </motion.div>
-                </AnimatePresence>
-                
-                <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-2">
-                  {journeySteps.map((_, idx) => (
-                    <div 
-                      key={idx} 
-                      className={`h-1.5 rounded-full transition-all duration-300 ${activeStep === idx ? 'w-8 bg-[#176B50]' : 'w-2 bg-stone-200 dark:bg-stone-800'}`}
-                    />
-                  ))}
-                </div>
+      {/* 7. TRACK DONATIONS AND REQUESTS */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Track donations and requests"
+            h2="Always know where each need stands."
+          />
+
+          <div className="ngo-grid-4">
+            <NgoCard
+              tag="Offers"
+              title="Offers"
+              body="Review what donors propose."
+            />
+            <NgoCard
+              tag="Pending"
+              title="Pending requests"
+              body="Needs waiting for a match."
+            />
+            <NgoCard
+              tag="Partial"
+              title="Partially fulfilled"
+              body="Needs with items still open."
+            />
+            <NgoCard
+              tag="Done"
+              title="Completed"
+              body="Fully delivered and confirmed."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 8. DELIVERY AND HANDOVER PROOF + 9. CERTIFICATES AND RECOGNITION */}
+      <section className="ngo-section ngo-band-cream pt-0">
+        <div className="ngo-container">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Card Left: Delivery and Handover Proof */}
+            <div className="ngo-card ngo-card-interactive">
+              <div className="ngo-card-glow" />
+              <span className="ngo-eyebrow">Delivery and handover proof</span>
+              <h3 className="ngo-heading text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3">
+                Confirm receipt, upload photos.
+              </h3>
+              <p className="text-stone-600 dark:text-stone-300 text-base leading-relaxed">
+                Once items arrive, confirm receipt and add handover photos as proof of a successful delivery.
+              </p>
+            </div>
+
+            {/* Card Right: Certificates and Recognition */}
+            <div className="ngo-card ngo-card-interactive">
+              <div className="ngo-card-glow" />
+              <span className="ngo-eyebrow">Certificates and recognition</span>
+              <h3 className="ngo-heading text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3">
+                Documented impact earns recognition.
+              </h3>
+              <p className="text-stone-600 dark:text-stone-300 text-base leading-relaxed">
+                Completed campaigns with proof become eligible for completion certificates.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 10. SUCCESS STORIES (Dark Band) */}
+      <section className="ngo-section ngo-band-dark">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Success stories"
+            h2="Stories of help, delivered."
+            isDark
+          />
+
+          <div className="ngo-grid-3">
+            {/* Story 1 */}
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
+              <div className="relative h-60 w-full overflow-hidden">
+                <Image
+                  src="/images/journey/item-proof-blankets.webp"
+                  alt="Blankets distribution story"
+                  fill
+                  sizes="400px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-700 text-white shadow-md">
+                  Completed
+                </span>
+              </div>
+              <div className="p-6">
+                <h4 className="ngo-heading text-xl text-white mb-2">
+                  Winter Relief Blanket Drive
+                </h4>
+                <p className="text-sm text-[#EFEADB]/80 leading-relaxed">
+                  250 warm blankets distributed to elderly residents and shelter homes across Pune district.
+                </p>
+              </div>
+            </div>
+
+            {/* Story 2 */}
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
+              <div className="relative h-60 w-full overflow-hidden">
+                <Image
+                  src="/images/journey/money-proof-ration.webp"
+                  alt="Ration kit distribution story"
+                  fill
+                  sizes="400px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-700 text-white shadow-md">
+                  Completed
+                </span>
+              </div>
+              <div className="p-6">
+                <h4 className="ngo-heading text-xl text-white mb-2">
+                  Community Food Kits
+                </h4>
+                <p className="text-sm text-[#EFEADB]/80 leading-relaxed">
+                  Essential grains, oil, and nutrition kits delivered to 120 low-income family households.
+                </p>
+              </div>
+            </div>
+
+            {/* Story 3 */}
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
+              <div className="relative h-60 w-full overflow-hidden">
+                <Image
+                  src="/images/ngo-hero/col-a-5-elderly-warmth.webp"
+                  alt="Elderly care supplies story"
+                  fill
+                  sizes="400px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <span className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-700 text-white shadow-md">
+                  Completed
+                </span>
+              </div>
+              <div className="p-6">
+                <h4 className="ngo-heading text-xl text-white mb-2">
+                  Elderly Care Carepack
+                </h4>
+                <p className="text-sm text-[#EFEADB]/80 leading-relaxed">
+                  Medical aids and winter sweaters delivered to community assisted living care homes.
+                </p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2.6 — Keep a Clear Record */}
-      <section className="py-12 bg-white dark:bg-stone-900">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="bg-[#EFF7F1] dark:bg-[#176B50]/5 border border-[#176B50]/20 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 group hover:border-[#176B50]/40 transition-colors">
-            <div className="flex items-start gap-5">
-              <div className="w-12 h-12 rounded-full bg-[#176B50]/10 flex items-center justify-center flex-shrink-0 mt-1">
-                <Camera className="w-6 h-6 text-[#176B50] dark:text-[#A8DEC8]" />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-2">Keep a clear record of each handover.</h3>
-                <p className="text-stone-600 dark:text-stone-400 max-w-xl">
-                  Confirm receipt after items arrive and upload a clear photo without exposing people's faces or private documents.
-                </p>
-              </div>
-            </div>
-            <Link 
-              href="/ngo/handovers" 
-              className="flex-shrink-0 inline-flex items-center text-[#176B50] dark:text-[#A8DEC8] font-medium hover:underline group-hover:translate-x-1 transition-transform"
+      {/* 11. TIPS FOR BETTER CAMPAIGNS */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Tips for better campaigns"
+            h2="Small details, bigger response."
+          />
+
+          <div className="ngo-grid-3">
+            <NgoCard
+              number="1"
+              title="Write clearly"
+              body="Say who it helps and why."
+            />
+            <NgoCard
+              number="2"
+              title="Add photos"
+              body="Real images build trust."
+            />
+            <NgoCard
+              number="3"
+              title="Be realistic"
+              body="Ask for what you can use."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 12. FINAL CTA */}
+      <section className="relative w-full py-[130px] px-7 overflow-hidden text-center text-white bg-gradient-to-br from-[#0B3D2E] via-[#1E6B4A] to-[#2F8F5B]">
+        {/* Floating Photo Card Left */}
+        <div className="ngo-cta-floater left-8 top-12 rotate-[-4deg]">
+          <Image
+            src="/images/ngo-hero/col-a-2-classroom-nashik.webp"
+            alt="Students with supplies"
+            fill
+            sizes="190px"
+            className="object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        {/* Floating Photo Card Right */}
+        <div className="ngo-cta-floater right-8 bottom-12 rotate-[5deg]">
+          <Image
+            src="/images/ngo-hero/col-a-3-ration-drive.webp"
+            alt="Ration kit handover"
+            fill
+            sizes="190px"
+            className="object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        <div className="ngo-container relative z-10 max-w-3xl mx-auto flex flex-col items-center">
+          <h2 className="ngo-heading text-[clamp(40px,7vw,96px)] mb-8 leading-[1.05]">
+            Publish a need.{" "}
+            <span className="ngo-gold-underline">Begin receiving support.</span>
+          </h2>
+
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/ngo/drives/new"
+              className="ngo-btn-pill ngo-btn-gold ngo-btn-shine"
             >
-              View your handovers and photos
-              <ChevronRight className="w-4 h-4 ml-1" />
+              <span>Create a campaign</span>
+              <ArrowRight className="w-4 h-4 ml-2" />
             </Link>
-          </div>
-        </div>
-      </section>
 
-      {/* 2.7 — Organization Verification Summary */}
-      <section className="py-12 bg-[#FAF8F3] dark:bg-[#09090b]">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="border-t border-stone-200 dark:border-stone-800 pt-12 flex flex-col sm:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-[#176B50] flex items-center justify-center shadow-sm">
-                <CheckCircle className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h4 className="font-medium text-stone-900 dark:text-stone-100">{status.ngoName}</h4>
-                <p className="text-sm text-stone-500 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#176B50] dark:text-[#A8DEC8]" />
-                  Verified Organization
-                </p>
-              </div>
-            </div>
-            
-            <Link 
-              href={status.wizardHref}
-              className="inline-flex items-center text-sm font-medium text-stone-600 dark:text-stone-400 hover:text-[#176B50] dark:hover:text-[#A8DEC8] transition-colors bg-white dark:bg-stone-900 px-4 py-2 rounded-full border border-stone-200 dark:border-stone-800 hover:border-[#176B50]/30"
+            <Link
+              href="/dashboard/ngo#drives"
+              className="ngo-btn-pill ngo-btn-outline"
             >
-              View Your Application
-              <ExternalLink className="w-3.5 h-3.5 ml-2" />
+              <span>View my campaigns</span>
             </Link>
           </div>
         </div>
@@ -532,3 +734,5 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
     </div>
   );
 }
+
+export default PostApprovalLanding;

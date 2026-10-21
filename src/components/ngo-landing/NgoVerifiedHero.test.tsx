@@ -20,7 +20,7 @@ describe("verified NGO hero (points 4 and 6)", () => {
   it("keeps only the green Start a Drive button: no View my application, no Or start a drive, no sample card", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
-    await screen.findByText("✓ Verified by CauseKind");
+    await screen.findByText(/Verified by CauseKind/i);
 
     const start = screen.getAllByRole("link", { name: /Start a Drive/i })[0];
     expect(start).toHaveAttribute("href", "/ngo/drives/new");

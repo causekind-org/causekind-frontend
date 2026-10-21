@@ -2,12 +2,23 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, X } from "lucide-react";
+import { ShieldCheck, X } from "lucide-react";
 import { useNgoStatus } from "./useNgoStatus";
 
-export function NgoVerifiedWelcomeModal() {
-  const { isVerified, hasShownWelcome, markWelcomeShown } = useNgoStatus();
-  const [open, setOpen] = useState(false);
+export function NgoVerifiedWelcomeModal({
+  isVerified: propIsVerified,
+  hasShownWelcome: propHasShown,
+  markWelcomeShown: propMarkShown,
+}: {
+  isVerified?: boolean;
+  hasShownWelcome?: boolean;
+  markWelcomeShown?: () => void;
+} = {}) {
+  const hookStatus = useNgoStatus();
+  const isVerified = propIsVerified !== undefined ? propIsVerified : hookStatus.isVerified;
+  const hasShownWelcome = propHasShown !== undefined ? propHasShown : hookStatus.hasShownWelcome;
+  const markWelcomeShown = propMarkShown !== undefined ? propMarkShown : hookStatus.markWelcomeShown;
+  const [open, setOpen] = useState(() => Boolean(isVerified && !hasShownWelcome));
 
   useEffect(() => {
     if (isVerified && !hasShownWelcome) {
@@ -35,7 +46,7 @@ export function NgoVerifiedWelcomeModal() {
         <div className="flex items-start gap-3">
           <div className="min-w-0">
             <p className="flex items-center gap-2 text-sm font-bold leading-tight">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-ngo-700 dark:text-ngo-300" aria-hidden />
+              <ShieldCheck className="h-4 w-4 shrink-0 text-[#2F8F5B]" aria-hidden />
               <span>You&apos;re verified</span>
             </p>
             <p className="mt-1 pl-6 text-xs text-stone-600 dark:text-stone-300">You can now start drives.</p>

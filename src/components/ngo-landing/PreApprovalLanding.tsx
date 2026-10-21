@@ -1,413 +1,494 @@
 "use client";
 
-import { motion } from "framer-motion";
+import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import Link from "next/link";
-import {
-  Lock,
-  ShieldCheck,
-  MapPin,
-  Camera,
-  Users,
-  XCircle,
-  CheckCircle2,
-  FileCheck,
-  PackagePlus,
-  Truck,
-  ScanSearch,
-  Scale,
-  Handshake,
-  Image as ImageIcon,
-  ChevronRight,
-  Clock,
-  AlertCircle
-} from "lucide-react";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { ChevronDown, ArrowRight, ShieldCheck } from "lucide-react";
 import type { NgoStatusData } from "./useNgoStatus";
+import { NgoHeroRedesign } from "./NgoHeroRedesign";
+import {
+  NgoCard,
+  NgoSectionHeader,
+  NgoMarquee,
+} from "./NgoSharedComponents";
 
 export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
+  const shouldReduceMotion = useReducedMotion();
+
+  // ---------------------------------------------------------------------------
+  // How CauseKind Works - Sticky Scroll-Telling Setup
+  // ---------------------------------------------------------------------------
+  const howItWorksRef = useRef<HTMLDivElement>(null);
+  const [activeStep, setActiveStep] = useState(0);
+
+  const howItWorksSteps = [
+    {
+      num: 1,
+      title: "Register",
+      desc: "Create your NGO account.",
+      photo: "/images/ngo-hero/col-a-6-volunteer-team.webp",
+      alt: "NGO volunteer team registration",
+    },
+    {
+      num: 2,
+      title: "Get verified",
+      desc: "Submit documents for review.",
+      photo: "/images/ngo-hero/col-b-2-community-aid.webp",
+      alt: "Verification document submission",
+    },
+    {
+      num: 3,
+      title: "Create campaigns",
+      desc: "Post what you need.",
+      photo: "/images/journey/item-proof-blankets.webp",
+      alt: "Campaign for blankets and relief kits",
+    },
+    {
+      num: 4,
+      title: "Match donors",
+      desc: "Donors offer to help.",
+      photo: "/images/journey/money-proof-ration.webp",
+      alt: "Donor offers matched with NGO needs",
+    },
+    {
+      num: 5,
+      title: "Receive support",
+      desc: "Confirm delivery with proof.",
+      photo: "/images/ngo-hero/col-b-4-health-camp.webp",
+      alt: "Confirmed handover and delivery proof",
+    },
+  ];
+
+  // Scroll tracking for gold line drawing & active step detection
+  const { scrollYProgress: worksScrollProgress } = useScroll({
+    target: howItWorksRef,
+    offset: ["start center", "end end"],
+  });
+
+  const pathLength = useTransform(worksScrollProgress, [0, 1], [0, 1]);
+
+  useEffect(() => {
+    return worksScrollProgress.on("change", (latest) => {
+      const idx = Math.min(
+        howItWorksSteps.length - 1,
+        Math.floor(latest * howItWorksSteps.length)
+      );
+      setActiveStep(idx);
+    });
+  }, [worksScrollProgress, howItWorksSteps.length]);
+
+  // CTA Links
+  const registerHref = status.wizardHref || "/profile/ngo-details";
+
   return (
-    <div className="flex flex-col w-full pb-24">
-      {/* 1.1 — Hero: Post What You Need */}
-      <section className="relative w-full min-h-[90vh] flex items-center justify-center overflow-hidden bg-[#FAF8F3]">
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/images/ngo-hero-landing.jpg"
-            alt="Volunteers and community members"
-            className="w-full h-full object-cover opacity-20 dark:opacity-10"
+    <div className="w-full flex flex-col">
+      {/* 1. HERO */}
+      <NgoHeroRedesign status={status} />
+
+      {/* 2. MARQUEE CHIPS */}
+      <NgoMarquee />
+
+      {/* 3. WHY JOIN CAUSEKIND */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Why join CauseKind"
+            h2="Visibility, trust and transparency, built in."
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#FAF8F3]/80 via-[#FAF8F3]/90 to-[#FAF8F3] dark:from-[#09090b]/80 dark:via-[#09090b]/90 dark:to-[#09090b]" />
-        </div>
 
-        <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl pt-20">
-          <div className="max-w-4xl">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, ease: "easeOut" }}
-              className="text-5xl md:text-7xl lg:text-8xl font-serif text-stone-900 dark:text-stone-100 leading-[1.1] tracking-tight"
-            >
-              Post what you need.
-              <br />
-              <span className="text-[#176B50] dark:text-[#A8DEC8] italic">
-                Connect with givers nearby.
-              </span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
-              className="mt-8 text-xl md:text-2xl text-stone-600 dark:text-stone-400 max-w-2xl font-light"
-            >
-              Create a free organization profile. Once verified by our team, you can publish structured needs directly to donors in your community.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
-              className="mt-12 flex flex-col sm:flex-row items-start sm:items-center gap-6"
-            >
-              <Link
-                href={status.wizardHref}
-                className="group relative inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-white bg-[#176B50] rounded-full overflow-hidden transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-[#176B50]/20"
-              >
-                <span className="relative z-10 flex items-center gap-2">
-                  {status.status === "incomplete" ? "Start Your Application" : "View My Application"}
-                  <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </span>
-                <div className="absolute inset-0 bg-[#0F513D] transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 ease-out" />
-              </Link>
-
-              <div className="flex flex-col">
-                <button
-                  disabled
-                  className="inline-flex items-center justify-center px-8 py-4 text-lg font-medium text-stone-400 bg-stone-200/50 dark:bg-stone-800/50 rounded-full cursor-not-allowed border border-stone-300 dark:border-stone-700"
-                >
-                  <Lock className="w-5 h-5 mr-2" />
-                  Start a Drive
-                </button>
-                <span className="text-sm text-stone-500 dark:text-stone-400 mt-2 px-2 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-[#176B50] dark:text-[#A8DEC8]" />
-                  Available once CauseKind verifies your NGO
-                </span>
-              </div>
-            </motion.div>
+          <div className="ngo-grid-3">
+            <NgoCard
+              number="01"
+              title="Better visibility"
+              body="Get your cause in front of donors actively looking to help."
+            />
+            <NgoCard
+              number="02"
+              title="Trusted connections"
+              body="Verified status shows donors you are the real thing."
+            />
+            <NgoCard
+              number="03"
+              title="Transparent giving"
+              body="Every offer and delivery is tracked from start to finish."
+            />
           </div>
         </div>
       </section>
 
-      {/* 1.2 — Trust and Safety Strip */}
-      <section className="w-full bg-white dark:bg-stone-900 border-y border-stone-200 dark:border-stone-800">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="flex overflow-x-auto py-8 hide-scrollbar snap-x snap-mandatory">
-            <div className="flex flex-nowrap md:grid md:grid-cols-4 gap-8 min-w-max md:min-w-0 w-full px-4 md:px-0">
-              {[
-                { icon: ShieldCheck, title: "Legally Verified NGOs" },
-                { icon: MapPin, title: "Agreed Handover Locations" },
-                { icon: Camera, title: "Receipt Photos Required" },
-                { icon: Users, title: "Matched Near You" },
-              ].map((item, idx) => (
-                <div key={idx} className="flex items-center gap-4 snap-start group">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full border border-[#176B50]/20 bg-[#EFF7F1] dark:bg-[#176B50]/10 flex items-center justify-center group-hover:bg-[#176B50] group-hover:border-[#176B50] transition-colors duration-300">
-                    <item.icon className="w-6 h-6 text-[#176B50] dark:text-[#A8DEC8] group-hover:text-white transition-colors" />
+      {/* 4. HOW CAUSEKIND WORKS (Dark Band + Sticky Scroll-Telling) */}
+      <section ref={howItWorksRef} className="ngo-section ngo-band-dark">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="How CauseKind works"
+            h2="From registration to receiving support."
+            isDark
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start relative">
+            {/* Steps Column with Drawing Gold SVG Path */}
+            <div className="lg:col-span-7 relative pl-4 md:pl-8">
+              {/* Gold SVG Drawing Path */}
+              <div className="absolute left-[39px] md:left-[55px] top-6 bottom-10 w-1 pointer-events-none">
+                <svg className="w-full h-full" preserveAspectRatio="none">
+                  <line
+                    x1="2"
+                    y1="0"
+                    x2="2"
+                    y2="100%"
+                    stroke="rgba(255, 255, 255, 0.15)"
+                    strokeWidth="3"
+                  />
+                  <motion.line
+                    x1="2"
+                    y1="0"
+                    x2="2"
+                    y2="100%"
+                    stroke="#D9A441"
+                    strokeWidth="3"
+                    style={{
+                      pathLength: shouldReduceMotion ? 1 : pathLength,
+                    }}
+                  />
+                </svg>
+              </div>
+
+              {/* 5 Steps staggered down a diagonal (margin-top i * 26px) */}
+              <div className="space-y-6">
+                {howItWorksSteps.map((step, i) => {
+                  const isActive = activeStep >= i;
+                  return (
+                    <div
+                      key={step.num}
+                      style={{ marginTop: i > 0 ? `${i * 12}px` : 0 }}
+                      className={`relative z-10 flex items-start gap-6 p-4 rounded-2xl transition-all duration-300 ${
+                        isActive
+                          ? "bg-white/[0.07] border border-white/20 shadow-lg"
+                          : "bg-transparent opacity-65"
+                      }`}
+                    >
+                      {/* 48px green numbered bubble with 8px soft ring */}
+                      <div
+                        className="ngo-step-bubble transition-transform duration-300"
+                        style={{
+                          transform: isActive ? "scale(1.05)" : "scale(1)",
+                        }}
+                      >
+                        {step.num}
+                      </div>
+
+                      <div className="pt-2">
+                        <h3 className="ngo-heading text-2xl text-white mb-1">
+                          {step.title}
+                        </h3>
+                        <p className="text-base text-[#EFEADB]/85 font-normal">
+                          {step.desc}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Sticky Photo Column swapping photos on scroll */}
+            <div className="lg:col-span-5 hidden lg:block sticky top-28">
+              <div className="relative w-full h-[460px] rounded-[28px] overflow-hidden border border-white/20 shadow-2xl bg-black/40">
+                {howItWorksSteps.map((step, i) => (
+                  <div
+                    key={step.num}
+                    className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
+                      activeStep === i ? "opacity-100 z-10" : "opacity-0 z-0 pointer-events-none"
+                    }`}
+                  >
+                    <Image
+                      src={step.photo}
+                      alt={step.alt}
+                      fill
+                      sizes="480px"
+                      className="object-cover"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <span className="text-xs uppercase tracking-wider text-[#D9A441] font-semibold block mb-1">
+                        Step {step.num}
+                      </span>
+                      <h4 className="ngo-heading text-xl text-white">
+                        {step.title}
+                      </h4>
+                      <p className="text-xs text-[#EFEADB]/80 mt-1">
+                        {step.desc}
+                      </p>
+                    </div>
                   </div>
-                  <span className="font-medium text-stone-800 dark:text-stone-200 whitespace-nowrap md:whitespace-normal">
-                    {item.title}
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 1.3 — Sound Familiar? Comparison Section */}
-      <section className="py-24 bg-[#FAF8F3] dark:bg-stone-950">
-        <div className="container mx-auto px-4 max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-100px" }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif text-stone-900 dark:text-stone-100">
-              You post your needs. <span className="italic text-[#176B50] dark:text-[#A8DEC8]">Then what?</span>
-            </h2>
-          </motion.div>
+      {/* 5. CHALLENGES */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="The challenges NGOs face"
+            h2="Doing good is hard enough."
+          />
 
-          <div className="grid md:grid-cols-2 gap-8 lg:gap-12 relative">
-            {/* The Usual Way */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              className="bg-white dark:bg-stone-900 rounded-3xl p-8 md:p-10 shadow-sm border border-stone-200/60 dark:border-stone-800"
-            >
-              <h3 className="text-2xl font-medium mb-8 text-stone-800 dark:text-stone-200 flex items-center gap-3">
-                <div className="w-2 h-8 bg-red-400/80 rounded-full" />
-                The Usual Way
-              </h3>
-              <ul className="space-y-6">
-                {[
-                  "Post on WhatsApp groups and hope.",
-                  "Donors aren't sure whether the organization is genuine.",
-                  "Organizations receive things they did not request.",
-                  "There is no reliable record of who gave what."
-                ].map((text, i) => (
-                  <li key={i} className="flex items-start gap-4">
-                    <XCircle className="w-6 h-6 text-red-400/80 flex-shrink-0 mt-0.5" />
-                    <span className="text-stone-600 dark:text-stone-400 leading-relaxed">{text}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-
-            {/* VS Badge */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 hidden md:flex items-center justify-center w-12 h-12 rounded-full bg-[#FAF8F3] dark:bg-stone-950 border border-stone-200 dark:border-stone-800 shadow-sm text-stone-400 font-serif italic text-lg">
-              vs
-            </div>
-
-            {/* The CauseKind Way */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              className="bg-[#176B50] rounded-3xl p-8 md:p-10 shadow-xl shadow-[#176B50]/10 border border-[#1F7A5D]"
-            >
-              <h3 className="text-2xl font-medium mb-8 text-white flex items-center gap-3">
-                <div className="w-2 h-8 bg-[#A8DEC8] rounded-full" />
-                The CauseKind Way
-              </h3>
-              <ul className="space-y-6">
-                {[
-                  "Reviewed drives can reach nearby donors.",
-                  "Verified status builds donor confidence.",
-                  "Donors can respond to listed needs.",
-                  "Handovers are tracked through completion checks."
-                ].map((text, i) => (
-                  <li key={i} className="flex items-start gap-4">
-                    <CheckCircle2 className="w-6 h-6 text-[#A8DEC8] flex-shrink-0 mt-0.5" />
-                    <span className="text-[#EFF7F1] leading-relaxed">{text}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+          <div className="ngo-grid-4">
+            <NgoCard
+              tag="Resources"
+              title="Limited resources"
+              body="Small teams stretch to cover every need."
+            />
+            <NgoCard
+              tag="Reach"
+              title="Low visibility"
+              body="Great work often goes unseen."
+            />
+            <NgoCard
+              tag="Donors"
+              title="Finding donors"
+              body="Reaching the right givers takes time."
+            />
+            <NgoCard
+              tag="Trust"
+              title="Proving credibility"
+              body="Donors need confidence before they give."
+            />
           </div>
         </div>
       </section>
 
-      {/* 1.4 — Get Verified. Post. Deliver. */}
-      <section className="py-24 bg-white dark:bg-stone-900 border-t border-stone-100 dark:border-stone-800/50">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="text-center mb-16 max-w-2xl mx-auto">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-4xl font-serif text-stone-900 dark:text-stone-100 mb-4"
-            >
-              Get verified. Post. Deliver.
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="text-lg text-stone-600 dark:text-stone-400"
-            >
-              From legal verification to community handovers, here is how CauseKind supports your mission.
-            </motion.p>
-          </div>
+      {/* 6. REGISTRATION PROCESS */}
+      <section className="ngo-section ngo-band-cream pt-0">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="NGO registration process"
+            h2="Create your account in minutes."
+          />
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="relative p-8 rounded-3xl bg-[#FAF8F3] dark:bg-stone-950 border border-[#176B50]/20"
-            >
-              <div className="absolute top-8 right-8 text-[#176B50]/10 dark:text-[#A8DEC8]/10 font-serif text-8xl leading-none select-none">
-                1
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-[#176B50] text-white flex items-center justify-center mb-8 shadow-lg shadow-[#176B50]/20">
-                  <FileCheck className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-4">Get Verified</h3>
-                <p className="text-stone-600 dark:text-stone-400 leading-relaxed mb-6">
-                  Submit legal registration documents once. The team reviews the application and verifies the organization's details.
-                </p>
-                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#176B50]/10 text-[#176B50] dark:bg-[#A8DEC8]/10 dark:text-[#A8DEC8]">
-                  {status.status === "incomplete" ? "Action Required" : "Pending Review"}
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Step 2 */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="relative p-8 rounded-3xl bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 opacity-75"
-            >
-              <div className="absolute top-8 right-8 text-stone-200 dark:text-stone-800 font-serif text-8xl leading-none select-none">
-                2
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-stone-200 dark:bg-stone-800 text-stone-500 flex items-center justify-center mb-8">
-                  <PackagePlus className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-4 flex items-center gap-2">
-                  Post What You Need
-                  <Lock className="w-4 h-4 text-stone-400" />
-                </h3>
-                <p className="text-stone-500 dark:text-stone-500 leading-relaxed mb-6">
-                  After approval, describe the required items, quantities, and intended use. The team reviews the drive according to the platform's existing rules.
-                </p>
-                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-stone-200/50 dark:bg-stone-800/50 text-stone-500">
-                  Locked until verified
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Step 3 */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="relative p-8 rounded-3xl bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800 opacity-75"
-            >
-              <div className="absolute top-8 right-8 text-stone-200 dark:text-stone-800 font-serif text-8xl leading-none select-none">
-                3
-              </div>
-              <div className="relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-stone-200 dark:bg-stone-800 text-stone-500 flex items-center justify-center mb-8">
-                  <Truck className="w-7 h-7" />
-                </div>
-                <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-4 flex items-center gap-2">
-                  Deliver, Then Prove It
-                  <Lock className="w-4 h-4 text-stone-400" />
-                </h3>
-                <p className="text-stone-500 dark:text-stone-500 leading-relaxed mb-6">
-                  Coordinate handovers, confirm receipt, and provide the required photo evidence. Certificate eligibility follows the actual completion requirements.
-                </p>
-                <div className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-stone-200/50 dark:bg-stone-800/50 text-stone-500">
-                  Locked until verified
-                </div>
-              </div>
-            </motion.div>
+          <div className="ngo-grid-3">
+            <NgoCard
+              number="1"
+              title="Create an account"
+              body="Sign up with your organisation email."
+            />
+            <NgoCard
+              number="2"
+              title="Add organisation details"
+              body="Name, mission, location and contact person."
+            />
+            <NgoCard
+              number="3"
+              title="Submit for review"
+              body="Upload documents and send your application."
+            />
           </div>
         </div>
       </section>
 
-      {/* 1.5 — Verification and Safety */}
-      <section className="py-24 bg-[#FAF8F3] dark:bg-stone-950">
-        <div className="container mx-auto px-4 max-w-6xl">
-          <div className="flex flex-col md:flex-row gap-16 items-start">
-            <div className="md:w-1/3 sticky top-32">
-              <h2 className="text-3xl md:text-4xl font-serif text-stone-900 dark:text-stone-100 mb-6">
-                What we check at every step.
+      {/* 7. VERIFICATION STEPS (Dark Band) */}
+      <section className="ngo-section ngo-band-dark">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Verification steps"
+            h2="Four checks. One trusted badge."
+            isDark
+          />
+
+          <div className="ngo-grid-4">
+            <NgoCard
+              number="1"
+              title="Document submission"
+              body="Upload your registration papers."
+              isDarkBand
+            />
+            <NgoCard
+              number="2"
+              title="Legal checks"
+              body="We confirm your legal standing."
+              isDarkBand
+            />
+            <NgoCard
+              number="3"
+              title="AI screening"
+              body="Automated checks flag inconsistencies."
+              isDarkBand
+            />
+            <NgoCard
+              number="4"
+              title="Team review"
+              body="A person reviews and decides."
+              isDarkBand
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 8. DOCUMENTS REQUIRED */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Documents required"
+            h2="Keep these ready."
+          />
+
+          <div className="ngo-grid-3">
+            <NgoCard
+              title="Registration certificate"
+              body="Trust, society or Section 8 proof."
+            />
+            <NgoCard
+              title="PAN of the organisation"
+              body="Tax identity document."
+            />
+            <NgoCard
+              title="12A / 80G certificates"
+              body="If your NGO holds them."
+            />
+            <NgoCard
+              title="Address proof"
+              body="Office or premises proof."
+            />
+            <NgoCard
+              title="Authorised person ID"
+              body="Government ID of your representative."
+            />
+            <NgoCard
+              title="Mission and activities"
+              body="A short description of your work."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 9. WHY VERIFICATION MATTERS (Wide gradient card) */}
+      <section className="ngo-section ngo-band-cream pt-0">
+        <div className="ngo-container">
+          <span className="ngo-eyebrow">Why verification matters</span>
+          <div className="rounded-[28px] p-8 md:p-16 text-white shadow-2xl relative overflow-hidden bg-gradient-to-br from-[#0B3D2E] to-[#1E6B4A]">
+            <div className="relative z-10 max-w-3xl">
+              <h2 className="ngo-heading text-3xl sm:text-4xl md:text-5xl mb-6 leading-[1.1]">
+                Donors give faster when they know you are genuine.
               </h2>
-              <p className="text-stone-600 dark:text-stone-400 leading-relaxed">
-                CauseKind's verification processes ensure that donors can give with confidence, and legitimate organizations receive the support they actually requested.
+              <p className="text-base sm:text-lg md:text-xl text-[#EFEADB]/90 leading-relaxed font-normal">
+                A verified badge tells donors your organisation was checked by documents, AI screening and a real person, so every need you post is taken seriously.
               </p>
             </div>
-            
-            <div className="md:w-2/3 flex flex-col gap-6">
-              {[
-                { icon: ScanSearch, title: "AI Screening", desc: "Automated checks against the NGO application details." },
-                { icon: Scale, title: "Legal Checks", desc: "Manual review of registration certificates and authorization letters." },
-                { icon: Users, title: "Local Matching", desc: "Connecting your structured needs with community members nearby." },
-                { icon: Handshake, title: "Safe Drop-offs", desc: "Coordinate transparent handovers at agreed community locations." },
-                { icon: ImageIcon, title: "Proof Required", desc: "Mandatory photo evidence of items received before starting new drives." },
-              ].map((item, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, x: 20 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true, margin: "-50px" }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="bg-white dark:bg-stone-900 rounded-2xl p-6 md:p-8 flex gap-6 shadow-sm border border-stone-200/60 dark:border-stone-800 hover:shadow-md transition-shadow group"
-                >
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#EFF7F1] dark:bg-[#176B50]/10 flex items-center justify-center group-hover:bg-[#176B50] group-hover:text-white transition-colors">
-                    <item.icon className="w-6 h-6 text-[#176B50] dark:text-[#A8DEC8] group-hover:text-white transition-colors" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-medium text-stone-900 dark:text-stone-100 mb-2">{item.title}</h3>
-                    <p className="text-stone-600 dark:text-stone-400">{item.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            <div className="absolute right-0 bottom-0 translate-x-12 translate-y-12 w-96 h-96 rounded-full bg-[#2F8F5B]/30 blur-3xl pointer-events-none" />
           </div>
         </div>
       </section>
 
-      {/* 1.6 — Application Status and Next Steps */}
-      <section className="py-24 bg-white dark:bg-stone-900 border-t border-stone-100 dark:border-stone-800/50">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <div className="bg-[#FAF8F3] dark:bg-stone-950 rounded-3xl p-8 md:p-12 border border-[#176B50]/20 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[#176B50] to-[#A8DEC8]" />
-            
-            <div className="flex flex-col md:flex-row gap-8 items-center justify-between">
-              <div>
-                {status.status === "incomplete" ? (
-                  <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <AlertCircle className="w-6 h-6 text-[#176B50] dark:text-[#A8DEC8]" />
-                      <h3 className="text-2xl font-serif text-stone-900 dark:text-stone-100">Verification needed</h3>
-                    </div>
-                    <p className="text-stone-600 dark:text-stone-400 mb-2 max-w-xl">
-                      To build trust with givers, all organizations must complete verification.
-                    </p>
-                    <p className="text-sm text-stone-500 dark:text-stone-500">
-                      Step {status.stepNumber} of {status.totalSteps} completed
-                    </p>
-                  </>
-                ) : status.status === "under_review" ? (
-                  <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <Clock className="w-6 h-6 text-amber-500" />
-                      <h3 className="text-2xl font-serif text-stone-900 dark:text-stone-100">Application pending review</h3>
-                    </div>
-                    <p className="text-stone-600 dark:text-stone-400 mb-2 max-w-xl">
-                      Your application has been submitted and is currently being reviewed by our team.
-                    </p>
-                    <p className="text-sm text-stone-500 dark:text-stone-500">
-                      You will be notified once approved. After approval, you can start creating drives.
-                    </p>
-                  </>
-                ) : status.status === "changes_requested" ? (
-                  <>
-                    <div className="flex items-center gap-3 mb-4">
-                      <AlertCircle className="w-6 h-6 text-red-500" />
-                      <h3 className="text-2xl font-serif text-stone-900 dark:text-stone-100">Changes requested</h3>
-                    </div>
-                    <p className="text-stone-600 dark:text-stone-400 mb-2 max-w-xl">
-                      Please review your application and provide the requested information.
-                    </p>
-                    <p className="text-sm text-stone-500 dark:text-stone-500">
-                      We need a few details clarified before we can verify your organization.
-                    </p>
-                  </>
-                ) : null}
+      {/* 10. FAQ */}
+      <section className="ngo-section ngo-band-cream pt-0">
+        <div className="ngo-container max-w-[860px]">
+          <NgoSectionHeader
+            eyebrow="Frequently asked questions"
+            h2="Everything you need to know."
+            align="center"
+          />
+
+          <div className="space-y-4">
+            <details className="ngo-faq-details group">
+              <summary className="ngo-faq-summary">
+                <span>How long does the verification process take?</span>
+                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="ngo-faq-content">
+                Our verification team reviews applications within 24 to 48 hours of submission. If any document requires clarification, we notify you promptly with actionable guidance.
               </div>
-              
-              <div className="flex-shrink-0 w-full md:w-auto">
-                <Link
-                  href={status.wizardHref}
-                  className="inline-flex items-center justify-center w-full md:w-auto px-8 py-4 text-lg font-medium text-white bg-[#176B50] hover:bg-[#0F513D] rounded-full transition-colors"
-                >
-                  {status.status === "incomplete" ? "Continue Application" : "View My Application"}
-                </Link>
+            </details>
+
+            <details className="ngo-faq-details group">
+              <summary className="ngo-faq-summary">
+                <span>Is CauseKind completely free for registered NGOs?</span>
+                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="ngo-faq-content">
+                Yes. Registering your organisation, posting drives, and receiving item donations through CauseKind is 100% free with no hidden charges or commission.
               </div>
-            </div>
+            </details>
+
+            <details className="ngo-faq-details group">
+              <summary className="ngo-faq-summary">
+                <span>Which NGO legal forms are eligible to apply?</span>
+                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="ngo-faq-content">
+                We accept public charitable trusts, registered societies, Section 8 non-profit corporations, and recognised legal non-profit entities in India.
+              </div>
+            </details>
+
+            <details className="ngo-faq-details group">
+              <summary className="ngo-faq-summary">
+                <span>How do item handovers and deliveries work?</span>
+                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
+              </summary>
+              <div className="ngo-faq-content">
+                Donors drop off pledged items directly at your verified address or dispatch them via courier. Each delivery is verified using digital code confirmations and handover photo proofs.
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      {/* 11. FINAL CTA (Full-width gradient band) */}
+      <section className="relative w-full py-[130px] px-7 overflow-hidden text-center text-white bg-gradient-to-br from-[#0B3D2E] via-[#1E6B4A] to-[#2F8F5B]">
+        {/* Floating Photo Card Left */}
+        <div className="ngo-cta-floater left-8 top-12 rotate-[-4deg]">
+          <Image
+            src="/images/ngo-hero/col-a-2-classroom-nashik.webp"
+            alt="Students with classroom supplies"
+            fill
+            sizes="190px"
+            className="object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        {/* Floating Photo Card Right */}
+        <div className="ngo-cta-floater right-8 bottom-12 rotate-[5deg]">
+          <Image
+            src="/images/ngo-hero/col-a-3-ration-drive.webp"
+            alt="Food ration kits for families"
+            fill
+            sizes="190px"
+            className="object-cover"
+            loading="lazy"
+          />
+        </div>
+
+        <div className="ngo-container relative z-10 max-w-3xl mx-auto flex flex-col items-center">
+          <h2 className="ngo-heading text-[clamp(40px,7vw,96px)] mb-8 leading-[1.05]">
+            Ready to get{" "}
+            <span className="ngo-gold-underline">verified?</span>
+          </h2>
+
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href={registerHref}
+              className="ngo-btn-pill ngo-btn-gold ngo-btn-shine"
+            >
+              <span>Complete registration</span>
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+
+            <Link
+              href={registerHref}
+              className="ngo-btn-pill ngo-btn-outline"
+            >
+              <span>Review the checklist</span>
+            </Link>
           </div>
         </div>
       </section>
     </div>
   );
 }
+
+export default PreApprovalLanding;
