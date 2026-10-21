@@ -1,5 +1,5 @@
 "use client";
-import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+import { UiText, useUiText } from "@/components/UiText";
 
 
 import { serverDate } from "@/lib/serverTime";
@@ -75,7 +75,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
   return (
-    <LandingAttributes><motion.span
+    <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
       aria-label="CauseKind"
       whileHover={{ scale: 1.03 }}
@@ -142,7 +142,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
           </motion.span>
         </span>
       )}
-    </motion.span></LandingAttributes>
+    </motion.span>
   );
 }
 
@@ -162,6 +162,7 @@ const LOGIN_NUDGE_SESSION_KEY  = "ck_login_nudge_shown";
 const LOGIN_NUDGE_SKIP_PATHS   = ["/login", "/register"];
 
 function LoginNudgeBubble({ user }: { user: AuthUser | null }) {
+  const ui = useUiText();
   const pathname = usePathname();
   const pathnameRef = useRef(pathname);
   const [visible, setVisible] = useState(false);
@@ -217,17 +218,17 @@ function LoginNudgeBubble({ user }: { user: AuthUser | null }) {
       <div className="absolute -top-1.5 right-6 w-3 h-3 bg-white dark:bg-zinc-900 border-t border-l border-stone-200 dark:border-zinc-700 rotate-45" />
 
       <div className="relative rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 shadow-[0_12px_36px_rgba(0,0,0,0.16)] p-4">
-        <LandingAttributes><button
+        <button
           onClick={dismiss}
-          aria-label="Dismiss"
+          aria-label={ui("Dismiss")}
           className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <X className="w-3 h-3" />
-        </button></LandingAttributes>
-        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 pr-5"><LandingText>New here?</LandingText></p>
-        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed"><LandingText>
+        </button>
+        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 pr-5"><UiText>New here?</UiText></p>
+        <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed"><UiText>
           Log in to donate items or request help — it only takes a moment.
-        </LandingText></p>
+        </UiText></p>
       </div>
     </div>
   );
@@ -551,6 +552,7 @@ export function SiteHeader() {
   }
 
   const t = useTranslations();
+  const ui = useUiText();
 
   // ── Derived panel data (all real, no hardcoded values) ────────────────────
   const livesTouched = matches.filter(
@@ -576,12 +578,12 @@ export function SiteHeader() {
     : [];
 
   const roleLabel: Record<string, string> = {
-    DONOR: "Donor",
-    DONEE: "Donee",
-    ADMIN: "Administrator",
-    SUPER_ADMIN: "Super Admin",
-    REPRESENTATIVE: "Representative",
-    NGO_PARTNER: "NGO Partner",
+    DONOR: ui("Donor"),
+    DONEE: ui("Donee"),
+    ADMIN: ui("Administrator"),
+    SUPER_ADMIN: ui("Super Admin"),
+    REPRESENTATIVE: ui("Representative"),
+    NGO_PARTNER: ui("NGO Partner"),
   };
 
   const latestMatch = matches.length > 0
@@ -662,12 +664,12 @@ export function SiteHeader() {
     const timer = setTimeout(() => setNgoApprovedPillExpired(true), remaining);
     return () => clearTimeout(timer);
   }, [isNgo, ngoApplicationState, ngoAccountKey]);
-  const ngoApplicationLabel = ngoApplicationState === "APPROVED" ? "NGO Approved"
-    : ngoApplicationState === "UNDER_REVIEW" ? "Application Under Review"
-    : ngoApplicationState === "PENDING_VERIFICATION" ? "Verify Application Email"
-    : ["NEEDS_INFORMATION", "REJECTED"].includes(ngoApplicationState) ? "Update Application"
-    : ngoApplicationState === "CHECKING" ? "Checking Application…"
-    : ngoApplicationState === "UNAVAILABLE" ? "View Application" : "Complete Profile";
+  const ngoApplicationLabel = ngoApplicationState === "APPROVED" ? ui("NGO Approved")
+    : ngoApplicationState === "UNDER_REVIEW" ? ui("Application Under Review")
+    : ngoApplicationState === "PENDING_VERIFICATION" ? ui("Verify Application Email")
+    : ["NEEDS_INFORMATION", "REJECTED"].includes(ngoApplicationState) ? ui("Update Application")
+    : ngoApplicationState === "CHECKING" ? ui("Checking Application…")
+    : ngoApplicationState === "UNAVAILABLE" ? ui("View Application") : ui("Complete Profile");
 
   const aboutMenuItems = [
     { href: "/about", label: t("nav.about") },
@@ -862,16 +864,16 @@ export function SiteHeader() {
               lives in styles.css, which is the only place that can outrank the
               cream `data-home-hero` inherited from the old treatment. The
               hover tint goes: it fought the glass for the same surface. */}
-          <LandingAttributes><button
+          <button
             ref={menuTriggerRef}
             onClick={() => setIsSidebarOpen(true)}
-            aria-label="Open menu"
+            aria-label={t("nav.openMenu")}
             aria-expanded={isSidebarOpen}
             aria-controls="staggered-menu-panel"
             className="justify-self-end flex items-center justify-center w-8 h-8 rounded-full text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
           >
             <Menu className="w-5 h-5" />
-          </button></LandingAttributes>
+          </button>
         </div>
 
         {/* Desktop Header */}
@@ -923,7 +925,7 @@ export function SiteHeader() {
                         />
                       )}
                       {groupActive && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                      <span className="relative z-10"><LandingText>{triggerLabel}</LandingText></span>
+                      <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
                           isAboutMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
@@ -949,7 +951,7 @@ export function SiteHeader() {
               if (isInKindTrigger) {
                 const isNgoPartnerActive = isNgoRole(user?.role?.toUpperCase());
                 const triggerHref = isNgoPartnerActive ? "/dashboard/ngo#live-drives" : link.href;
-                const triggerLabel = isNgoPartnerActive ? "Drives" : link.label;
+                const triggerLabel = isNgoPartnerActive ? ui("Drives") : link.label;
                 const active = isNgoPartnerActive
                   ? (pathname === "/dashboard/ngo" || pathname.startsWith("/ngo/drives/"))
                   : isActive(link.href);
@@ -980,7 +982,7 @@ export function SiteHeader() {
                         />
                       )}
                       {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                      <span className="relative z-10"><LandingText>{triggerLabel}</LandingText></span>
+                      <span className="relative z-10">{triggerLabel}</span>
                       <ChevronDown
                         className={`relative z-10 w-3.5 h-3.5 transition-transform duration-300 ${
                           isInKindMegaMenuOpen ? "rotate-180 text-[var(--ck-role-accent)]" : ""
@@ -1029,7 +1031,7 @@ export function SiteHeader() {
                     />
                   )}
                   {active && <span className="relative z-10 w-2.5 h-2.5 rounded-full bg-[var(--ck-role-highlight)] shrink-0" />}
-                  <span className="relative z-10"><LandingText>{link.label}</LandingText></span>
+                  <span className="relative z-10">{link.label}</span>
                 </Link>
               );
             })}
@@ -1048,7 +1050,7 @@ export function SiteHeader() {
             </span>
 
             {/* Sleek Theme Toggle */}
-            <LandingAttributes><button
+            <button
               onClick={toggleTheme}
               className={iconBtnCls}
               aria-label={t("nav.toggleTheme")}
@@ -1059,18 +1061,18 @@ export function SiteHeader() {
                 <Sun className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-amber-500 transition-all duration-500 transform ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
                 <Moon className={`w-4 h-4 sm:w-5 sm:h-5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 transform ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
               </div>
-            </button></LandingAttributes>
+            </button>
 
             {/* Hamburger menu trigger */}
-            <LandingAttributes><button
+            <button
               onClick={() => setIsSidebarOpen(true)}
               className={iconBtnCls}
-              aria-label="Open workspace menu"
+              aria-label={ui("Open workspace menu")}
               data-tour="menu"
               {...tilt}
             >
               <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-stone-700 dark:text-stone-300" />
-            </button></LandingAttributes>
+            </button>
 
             {/* Deliberately NOT behind FEATURES.money. That flag postpones
                 monetary campaigns and the old /donate page; /donate/money is
@@ -1085,7 +1087,7 @@ export function SiteHeader() {
             {isNgo && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
               <Link href="/profile/ngo-details">
                 <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
-                  <LandingText>{ngoApplicationLabel}</LandingText>
+                  {ngoApplicationLabel}
                 </Button>
               </Link>
             )}
@@ -1113,7 +1115,7 @@ export function SiteHeader() {
               >
                 <span className="inline-flex items-center gap-1.5">
                   {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  <LandingText>{user ? t("nav.signOut") : t("nav.logIn")}</LandingText>
+                  {user ? t("nav.signOut") : t("nav.logIn")}
                 </span>
               </SpecularButton>
               <LoginNudgeBubble user={user} />
@@ -1211,19 +1213,19 @@ export function SiteHeader() {
                           <div className="w-10 h-10 rounded-xl bg-orange-500/10 dark:bg-orange-400/15 flex items-center justify-center text-[var(--ck-role-accent)] group-hover:scale-110 transition-transform duration-200">
                             <HeartHandshake className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-orange-500/10 text-[var(--ck-role-accent)] border border-orange-500/20"><LandingText>
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-orange-500/10 text-[var(--ck-role-accent)] border border-orange-500/20"><UiText>
                             Story
-                          </LandingText></span>
+                          </UiText></span>
                         </div>
                         <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.about")}
                         </h4>
-                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>
+                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><UiText>
                           Our story, mission, and transparent model for direct peer-to-peer giving.
-                        </LandingText></p>
+                        </UiText></p>
                       </div>
                       <div className="mt-4 flex items-center text-xs font-semibold text-[var(--ck-role-accent)] opacity-80 group-hover:opacity-100 transition-opacity">
-                        <span><LandingText>Read our story</LandingText></span>
+                        <span><UiText>Read our story</UiText></span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
                       </div>
                     </Link>
@@ -1239,19 +1241,19 @@ export function SiteHeader() {
                           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-400/15 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform duration-200">
                             <HelpCircle className="w-5 h-5" />
                           </div>
-                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"><LandingText>
+                          <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"><UiText>
                             Help & Safety
-                          </LandingText></span>
+                          </UiText></span>
                         </div>
                         <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.faq")}
                         </h4>
-                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>
+                        <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><UiText>
                           Clear answers on item matching, verification rules, and donor safety.
-                        </LandingText></p>
+                        </UiText></p>
                       </div>
                       <div className="mt-4 flex items-center text-xs font-semibold text-emerald-600 dark:text-emerald-400 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <span><LandingText>Browse answers</LandingText></span>
+                        <span><UiText>Browse answers</UiText></span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
                       </div>
                     </Link>
@@ -1271,17 +1273,17 @@ export function SiteHeader() {
                             <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {t("nav.contact")}
                             </h4>
-                            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20"><LandingText>
+                            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20"><UiText>
                               Support
-                            </LandingText></span>
+                            </UiText></span>
                           </div>
-                          <p className="text-xs text-stone-600 dark:text-stone-400"><LandingText>
+                          <p className="text-xs text-stone-600 dark:text-stone-400"><UiText>
                             Need help, partnership inquiries, or donor support? Talk directly to our team.
-                          </LandingText></p>
+                          </UiText></p>
                         </div>
                       </div>
                       <div className="flex items-center text-xs font-semibold text-blue-600 dark:text-blue-400 shrink-0 pl-4 opacity-80 group-hover:opacity-100 transition-opacity">
-                        <span><LandingText>Get in touch</LandingText></span>
+                        <span><UiText>Get in touch</UiText></span>
                         <ArrowRight className="w-3.5 h-3.5 ml-1 -translate-x-1 group-hover:translate-x-0.5 transition-transform duration-200" />
                       </div>
                     </Link>
@@ -1292,16 +1294,16 @@ export function SiteHeader() {
                     <div>
                       <div className="flex items-center gap-2 mb-3">
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--ck-role-accent)] text-white shadow-2xs">
-                          <Heart className="w-3 h-3 fill-current" /><LandingText>
+                          <Heart className="w-3 h-3 fill-current" /><UiText>
                           100% Direct Giving
-                        </LandingText></span>
+                        </UiText></span>
                       </div>
-                      <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><LandingText>
+                      <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><UiText>
                         Giving Directly to People in Need.
-                      </LandingText></h4>
-                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4"><LandingText>
+                      </UiText></h4>
+                      <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4"><UiText>
                         Zero platform fees on in-kind donations. Every request is vetted to ensure your generosity makes an immediate impact.
-                      </LandingText></p>
+                      </UiText></p>
                     </div>
 
                     <Link
@@ -1309,7 +1311,7 @@ export function SiteHeader() {
                       onClick={() => setOpenMegaMenu(null)}
                       className="inline-flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl text-xs font-bold text-white bg-[var(--ck-role-accent)] hover:brightness-110 shadow-sm hover:shadow-md transition-all duration-200"
                     >
-                      <span><LandingText>Explore Community Needs</LandingText></span>
+                      <span><UiText>Explore Community Needs</UiText></span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
@@ -1320,15 +1322,15 @@ export function SiteHeader() {
                   <div className="flex items-center gap-6 flex-wrap">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      <span className="font-medium"><LandingText>Verified Beneficiaries</LandingText></span>
+                      <span className="font-medium"><UiText>Verified Beneficiaries</UiText></span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" />
-                      <span className="font-medium"><LandingText>100% Free Peer Giving</LandingText></span>
+                      <span className="font-medium"><UiText>100% Free Peer Giving</UiText></span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-500" />
-                      <span className="font-medium"><LandingText>Smart AI Matching</LandingText></span>
+                      <span className="font-medium"><UiText>Smart AI Matching</UiText></span>
                     </div>
                   </div>
                   <Link
@@ -1336,7 +1338,7 @@ export function SiteHeader() {
                     onClick={() => setOpenMegaMenu(null)}
                     className="flex items-center gap-1 font-semibold text-[var(--ck-role-accent)] hover:underline"
                   >
-                    <span><LandingText>Learn about CauseKind verification</LandingText></span>
+                    <span><UiText>Learn about CauseKind verification</UiText></span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
@@ -1391,7 +1393,7 @@ export function SiteHeader() {
               <div className="w-11 h-11 rounded-full overflow-hidden border border-stone-200 dark:border-zinc-800 shrink-0">
                 {avatarDataUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <LandingAttributes><img src={avatarDataUrl} alt="" className="w-full h-full object-cover" /></LandingAttributes>
+                  <img src={avatarDataUrl} alt="" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full bg-[var(--ck-role-accent)]/10 flex items-center justify-center text-lg font-black text-[var(--ck-role-accent)] uppercase">
                     {user.email[0]}
@@ -1403,8 +1405,7 @@ export function SiteHeader() {
                   {profile?.fullName || user.email.split("@")[0]}
                 </p>
                 <p className="text-xs font-semibold text-stone-500 dark:text-stone-400">
-                  <LandingText>{(roleLabel[user.role] ?? user.role)}</LandingText> · <LandingText>{livesTouched}</LandingText><LandingText> lives touched
-                </LandingText></p>
+                  {roleLabel[user.role] ?? user.role} · {t("nav.livesTouched", { count: livesTouched })}</p>
               </div>
             </div>
           ) : null
@@ -1412,18 +1413,18 @@ export function SiteHeader() {
         footer={
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><LandingText>Theme</LandingText></span>
-              <LandingAttributes><button
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Theme</UiText></span>
+              <button
                 onClick={toggleTheme}
-                aria-label="Toggle theme"
+                aria-label={t("nav.toggleTheme")}
                 className="relative flex items-center justify-center w-9 h-9 rounded-full border border-[#e5e2d5] dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-[#f0eee6] dark:hover:bg-zinc-800 transition-all active:scale-95"
               >
                 <Sun className={`w-3.5 h-3.5 absolute text-amber-500 transition-all duration-500 ${theme === "dark" ? "rotate-0 scale-100 opacity-100" : "rotate-90 scale-50 opacity-0"}`} />
                 <Moon className={`w-3.5 h-3.5 absolute text-stone-600 dark:text-stone-400 transition-all duration-500 ${theme === "light" ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`} />
-              </button></LandingAttributes>
+              </button>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><LandingText>Language</LandingText></span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Language</UiText></span>
               <LanguageSwitcher dropUp />
             </div>
             {user && (

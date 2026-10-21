@@ -49,7 +49,8 @@ vi.mock("@/components/StaggeredMenu", () => ({
 }));
 
 vi.mock("next-intl", () => ({
-  useTranslations: () => (key: string) => key,
+  // UiText checks t.has(); "no entry" makes it render the English literal.
+  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
 }));
 
 describe("Navbar - NGO Profile Button States", () => {

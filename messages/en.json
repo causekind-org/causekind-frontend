@@ -20,7 +20,8 @@
     "profileMenu": "Profile menu",
     "toggleTheme": "Toggle theme",
     "moneyDonation": "Money Donation",
-    "inKindDonation": "In-Kind Donation"
+    "inKindDonation": "In-Kind Donation",
+    "livesTouched": "{count} lives touched"
   },
   "logout": {
     "title": "Sign out?",
@@ -1809,5 +1810,43 @@
       "a3": "You can request physical goods like blankets, books, medical supplies, food packets, etc. CauseKind does not facilitate direct monetary donations for drives."
     }
   },
-  "ui": {}
+  "ui": {
+    "100_direct_giving_5785412a": "100% Direct Giving",
+    "100_free_peer_giving_9e09eb5d": "100% Free Peer Giving",
+    "administrator_b09bda2a": "Administrator",
+    "application_under_review_d406194d": "Application Under Review",
+    "browse_answers_ee771de4": "Browse answers",
+    "checking_application_f8edce9f": "Checking Application…",
+    "clear_answers_on_item_matching_5b32c945": "Clear answers on item matching, verification rules, and donor safety.",
+    "complete_profile_fd8c1b4b": "Complete Profile",
+    "dismiss_265915f3": "Dismiss",
+    "donee_374eb51c": "Donee",
+    "donor_26350273": "Donor",
+    "drives_d42b516c": "Drives",
+    "explore_community_needs_0f21f31c": "Explore Community Needs",
+    "get_in_touch_65d4952d": "Get in touch",
+    "giving_directly_to_people_in_323a4708": "Giving Directly to People in Need.",
+    "help_safety_a65ff35e": "Help & Safety",
+    "language_9a73db9b": "Language",
+    "learn_about_causekind_verification_e8a9a070": "Learn about CauseKind verification",
+    "log_in_to_donate_items_4193a4e7": "Log in to donate items or request help — it only takes a moment.",
+    "need_help_partnership_inquiries_or_baf684c2": "Need help, partnership inquiries, or donor support? Talk directly to our team.",
+    "new_here_a09f7366": "New here?",
+    "ngo_approved_de6601aa": "NGO Approved",
+    "ngo_partner_5cef2d49": "NGO Partner",
+    "open_workspace_menu_abd3a087": "Open workspace menu",
+    "our_story_mission_and_transparent_10925ac1": "Our story, mission, and transparent model for direct peer-to-peer giving.",
+    "read_our_story_3c56eac2": "Read our story",
+    "representative_3f95ca24": "Representative",
+    "smart_ai_matching_b38508fb": "Smart AI Matching",
+    "story_59a30e52": "Story",
+    "super_admin_a529f953": "Super Admin",
+    "support_6be6f488": "Support",
+    "theme_4eaf7c92": "Theme",
+    "update_application_345b35c2": "Update Application",
+    "verified_beneficiaries_02a85784": "Verified Beneficiaries",
+    "verify_application_email_19dab562": "Verify Application Email",
+    "view_application_540a0ad6": "View Application",
+    "zero_platform_fees_on_in_43495077": "Zero platform fees on in-kind donations. Every request is vetted to ensure your generosity makes an immediate impact."
+  }
 }
