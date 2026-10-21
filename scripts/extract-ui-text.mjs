@@ -103,6 +103,20 @@ for (const sf of program.getSourceFiles()) {
       fail(node, "dynamic import() of UiText is not supported; import { UiText, useUiText } statically");
     }
 
+    // Namespace imports of the module (`import * as X from …UiText`) expose the
+    // exports through member access, which bypasses the binding rules: rejected.
+    if (ts.isImportDeclaration(node) && node.importClause?.namedBindings && ts.isNamespaceImport(node.importClause.namedBindings)
+      && checker.getSymbolAtLocation(node.moduleSpecifier) === checker.getSymbolAtLocation(selfFile)) {
+      fail(node, "namespace import of UiText is not supported; use import { UiText, useUiText }");
+    }
+
+    // Member access that resolves to the exports (X.UiText, X.useUiText, <X.UiText />),
+    // through any object — rejected before member names are excluded below.
+    if (ts.isPropertyAccessExpression(node) || ts.isElementAccessExpression(node)) {
+      const sym = resolve(checker.getSymbolAtLocation(ts.isPropertyAccessExpression(node) ? node.name : node.argumentExpression));
+      if (sym === COMPONENT || sym === HOOK) fail(node, `${node.getText(sf)}: member access to ${sym.name} is not supported; use import { ${sym.name} }`);
+    }
+
     if (ts.isIdentifier(node)) {
       const parent = node.parent;
       const declares = (ts.isVariableDeclaration(parent) || ts.isParameter(parent) || ts.isBindingElement(parent) || ts.isFunctionDeclaration(parent)) && parent.name === node;
