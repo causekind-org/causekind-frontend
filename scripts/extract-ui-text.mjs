@@ -6,21 +6,28 @@
  *   node scripts/extract-ui-text.mjs --check   exit 1 if the catalogue is out of date
  *                                              or any use is unsupported
  *
- * Parses with the TypeScript compiler, so comments and string contents are never
- * confused, imports may be aliased, and literal values are read exactly as
- * JavaScript reads them (’, \x27, …). Every reference to UiText / useUiText is
- * classified; anything that isn't one of the supported shapes is an error, never
- * silently skipped:
+ * Builds a TypeScript program from tsconfig.json and uses the type checker's
+ * symbol resolution, so:
+ *  - UiText / useUiText are recognised however they're reached — aliased imports,
+ *    barrel re-exports, `export … from` chains (aliases are resolved to the real
+ *    exports in src/components/UiText.tsx);
+ *  - a translator is the specific binding created by `const x = useUiText()`; an
+ *    unrelated function or parameter with the same name is a different symbol and
+ *    is not touched;
+ *  - literal values are read exactly as JavaScript reads them, and comments are
+ *    never confused with code.
  *
- *   import { UiText, useUiText } from "@/components/UiText";   // aliases allowed
- *   const ui = useUiText();                                     // any binding name
- *   ui("Literal")            ui("Literal", "context")           // string literals only
- *   <UiText>Literal text</UiText>
- *   <UiText>{"Literal"}</UiText>
+ * Every reference that resolves to UiText, useUiText or a translator binding is
+ * classified; anything other than these shapes is an error:
+ *
+ *   const ui = useUiText();                   (any binding name)
+ *   ui("Literal")   ui("Literal", "context")  (string literals only)
+ *   <UiText>Literal text</UiText>   <UiText>{"Literal"}</UiText>
  *   <UiText context="status">Open</UiText>   <UiText context={"status"}>Open</UiText>
+ *   re-exports of UiText / useUiText (consumers are then checked as above)
  *
- * Errors are reported and nothing is written, so a bad run can never drop entries.
- * Keys come from src/lib/uiText/key.ts (Node type stripping) — the runtime's function.
+ * Dynamic import() of the module is rejected. Errors are reported and nothing is
+ * written. Keys come from src/lib/uiText/key.ts — the runtime's own function.
  *
  * This does NOT find English that was never wrapped — the coverage scan
  * (handoffs/i18n-inventory/i18n-inventory.mjs) stays the check for that.
@@ -34,10 +41,25 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ts = createRequire(import.meta.url)("typescript");
 const { uiKey, uiCatalogueValue } = await import(pathToFileURL(path.join(root, "src/lib/uiText/key.ts")).href);
 const check = process.argv.includes("--check");
-const MODULE = "@/components/UiText";
 const SELF = path.join(root, "src", "components", "UiText.tsx");
 
-// JSX text entities, as the JSX compiler decodes them. Unknown named entities are errors.
+// ── Program ───────────────────────────────────────────────────────────────
+const configPath = path.join(root, "tsconfig.json");
+const config = ts.readConfigFile(configPath, ts.sys.readFile);
+const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, root);
+const program = ts.createProgram({ rootNames: parsed.fileNames, options: { ...parsed.options, noEmit: true } });
+const checker = program.getTypeChecker();
+
+const selfFile = program.getSourceFile(SELF);
+if (!selfFile) { console.error(`✗ ${path.relative(root, SELF)} not in the program`); process.exit(1); }
+const selfExports = checker.getExportsOfModule(checker.getSymbolAtLocation(selfFile));
+const COMPONENT = selfExports.find((s) => s.name === "UiText");
+const HOOK = selfExports.find((s) => s.name === "useUiText");
+
+const resolve = (sym) => (sym && sym.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(sym) : sym);
+const symbolOf = (node) => resolve(checker.getSymbolAtLocation(node));
+
+// ── Literals ──────────────────────────────────────────────────────────────
 const NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", ldquo: "“", rdquo: "”", lsquo: "‘", rsquo: "’", mdash: "—", ndash: "–", hellip: "…", middot: "·", times: "×", rarr: "→", larr: "←", bull: "•", copy: "©", reg: "®", trade: "™", deg: "°", rupee: "₹" };
 function decodeJsxText(raw, fail) {
   return raw.replace(/&(#x[0-9a-f]+|#[0-9]+|[a-z]+);/gi, (whole, body) => {
@@ -47,93 +69,74 @@ function decodeJsxText(raw, fail) {
     return value ?? whole;
   });
 }
-
 const isLiteral = (n) => n && (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n));
 
-const files = [];
-(function walk(dir) {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) { if (e.name !== "node_modules") walk(p); }
-    else if (/\.(tsx|ts)$/.test(e.name) && !/\.test\.(tsx|ts)$/.test(e.name) && !/\.d\.ts$/.test(e.name) && p !== SELF) files.push(p);
-  }
-})(path.join(root, "src"));
-
+// ── Walk ──────────────────────────────────────────────────────────────────
+const srcDir = path.join(root, "src") + path.sep;
 const entries = new Map();
 const errors = [];
 
-for (const file of files) {
-  const code = fs.readFileSync(file, "utf8");
-  if (!code.includes("UiText")) continue;
+for (const sf of program.getSourceFiles()) {
+  const file = path.normalize(sf.fileName);
+  if (!file.startsWith(srcDir) || file === SELF || /\.test\.tsx?$/.test(file) || sf.isDeclarationFile) continue;
+  // No text prefilter: a barrel can re-export UiText under another name, so every
+  // file is checked by symbol.
   const rel = path.relative(root, file).replace(/\\/g, "/");
-  const sf = ts.createSourceFile(file, code, ts.ScriptTarget.Latest, true, file.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
   const at = (node) => `${rel}:${sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1}`;
   const fail = (node, msg) => errors.push(`${at(node)} ${msg}`);
   const add = (text, context) => { if (text.trim()) entries.set(uiKey(text, context), uiCatalogueValue(text)); };
 
-  // 1. Imports from the UiText module (aliases allowed; namespace/default imports rejected).
-  const componentNames = new Set();
-  const hookNames = new Set();
-  for (const stmt of sf.statements) {
-    if (!ts.isImportDeclaration(stmt) || !ts.isStringLiteral(stmt.moduleSpecifier)) continue;
-    const spec = stmt.moduleSpecifier.text;
-    const resolved = spec.startsWith(".") ? path.resolve(path.dirname(file), spec) : null;
-    if (spec !== MODULE && resolved !== SELF.replace(/\.tsx$/, "")) continue;
-    const clause = stmt.importClause;
-    if (!clause?.namedBindings || !ts.isNamedImports(clause.namedBindings) || clause.name) { fail(stmt, `import from ${spec} must use named imports { UiText, useUiText }`); continue; }
-    for (const el of clause.namedBindings.elements) {
-      const imported = (el.propertyName ?? el.name).text;
-      if (imported === "UiText") componentNames.add(el.name.text);
-      else if (imported === "useUiText") hookNames.add(el.name.text);
-    }
-  }
-  if (!componentNames.size && !hookNames.size) continue;
-
-  // 2. Hook bindings: `const <name> = useUiText();` only.
-  const translatorNames = new Set();
-  (function findBindings(node) {
+  // Translator bindings in this file: the symbols of `const x = useUiText()`.
+  const translators = new Set();
+  (function find(node) {
     if (ts.isVariableDeclaration(node) && node.initializer && ts.isCallExpression(node.initializer)
-      && ts.isIdentifier(node.initializer.expression) && hookNames.has(node.initializer.expression.text)) {
-      if (ts.isIdentifier(node.name) && node.initializer.arguments.length === 0) translatorNames.add(node.name.text);
+      && symbolOf(node.initializer.expression) === HOOK && ts.isIdentifier(node.name) && node.initializer.arguments.length === 0) {
+      translators.add(checker.getSymbolAtLocation(node.name));
     }
-    ts.forEachChild(node, findBindings);
+    ts.forEachChild(node, find);
   })(sf);
 
-  // 3. Classify every reference.
   (function visit(node) {
+    // Dynamic import of the module: not analysable.
+    if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword && isLiteral(node.arguments[0])
+      && /(^|\/)UiText$/.test(node.arguments[0].text)) {
+      fail(node, "dynamic import() of UiText is not supported; import { UiText, useUiText } statically");
+    }
+
     if (ts.isIdentifier(node)) {
-      const name = node.text;
       const parent = node.parent;
-      const isDeclName = (ts.isImportSpecifier(parent) || ts.isVariableDeclaration(parent) || ts.isBindingElement(parent) || ts.isParameter(parent)) && parent.name === node;
-      const isPropertyName = (ts.isPropertyAccessExpression(parent) && parent.name === node) || (ts.isPropertyAssignment(parent) && parent.name === node) || ts.isJsxAttribute(parent) || ts.isImportSpecifier(parent);
+      const declares = (ts.isVariableDeclaration(parent) || ts.isParameter(parent) || ts.isBindingElement(parent) || ts.isFunctionDeclaration(parent)) && parent.name === node;
+      const inImportExport = ts.isImportSpecifier(parent) || ts.isImportClause(parent) || ts.isExportSpecifier(parent) || ts.isNamespaceImport(parent);
+      const isMemberName = (ts.isPropertyAccessExpression(parent) && parent.name === node) || (ts.isPropertyAssignment(parent) && parent.name === node) || (ts.isJsxAttribute(parent) && parent.name === node);
 
-      if (hookNames.has(name) && !isDeclName && !isPropertyName) {
-        const call = ts.isCallExpression(parent) && parent.expression === node ? parent : null;
-        const decl = call && ts.isVariableDeclaration(call.parent) && call.parent.initializer === call ? call.parent : null;
-        if (!decl || !ts.isIdentifier(decl.name) || call.arguments.length) fail(node, `${name}() must be used as: const ui = ${name}();`);
-      }
+      if (!declares && !inImportExport && !isMemberName) {
+        const local = checker.getSymbolAtLocation(node);
+        const sym = resolve(local);
 
-      if (translatorNames.has(name) && !isDeclName && !isPropertyName) {
-        const call = ts.isCallExpression(parent) && parent.expression === node ? parent : null;
-        if (!call) fail(node, `${name} must be called directly as ${name}("literal")`);
-        else {
-          const [text, context, ...rest] = call.arguments;
-          if (!isLiteral(text)) fail(call, `${name}(…) first argument must be a string literal`);
-          else if (context !== undefined && !isLiteral(context)) fail(call, `${name}(…) context must be a string literal`);
-          else if (rest.length) fail(call, `${name}(…) takes at most (text, context)`);
-          else add(text.text, context?.text);
+        if (sym === HOOK) {
+          const call = ts.isCallExpression(parent) && parent.expression === node ? parent : null;
+          const decl = call && ts.isVariableDeclaration(call.parent) && call.parent.initializer === call ? call.parent : null;
+          if (!decl || !ts.isIdentifier(decl.name) || call.arguments.length) fail(node, `${node.text}() must be used as: const ui = ${node.text}();`);
+        } else if (sym === COMPONENT) {
+          const inTag = (ts.isJsxOpeningElement(parent) || ts.isJsxClosingElement(parent) || ts.isJsxSelfClosingElement(parent)) && parent.tagName === node;
+          if (!inTag) fail(node, `${node.text} may only be used as a JSX element`);
+          else if (ts.isJsxSelfClosingElement(parent)) fail(node, `<${node.text} /> must wrap literal text`);
+        } else if (local && translators.has(local)) {
+          const call = ts.isCallExpression(parent) && parent.expression === node ? parent : null;
+          if (!call) fail(node, `${node.text} must be called directly as ${node.text}("literal")`);
+          else {
+            const [text, context, ...rest] = call.arguments;
+            if (!isLiteral(text)) fail(call, `${node.text}(…) first argument must be a string literal`);
+            else if (context !== undefined && !isLiteral(context)) fail(call, `${node.text}(…) context must be a string literal`);
+            else if (rest.length) fail(call, `${node.text}(…) takes at most (text, context)`);
+            else add(text.text, context?.text);
+          }
         }
-      }
-
-      if (componentNames.has(name) && !isDeclName && !isPropertyName) {
-        const inTag = (ts.isJsxOpeningElement(parent) || ts.isJsxClosingElement(parent) || ts.isJsxSelfClosingElement(parent)) && parent.tagName === node;
-        if (!inTag) fail(node, `${name} may only be used as a JSX element`);
-        else if (ts.isJsxSelfClosingElement(parent)) fail(node, `<${name} /> must wrap literal text`);
       }
     }
 
-    if (ts.isJsxElement(node) && ts.isIdentifier(node.openingElement.tagName) && componentNames.has(node.openingElement.tagName.text)) {
-      const tag = node.openingElement.tagName.text;
+    if (ts.isJsxElement(node) && symbolOf(node.openingElement.tagName) === COMPONENT) {
+      const tag = node.openingElement.tagName.getText(sf);
       let context;
       let ok = true;
       for (const attr of node.openingElement.attributes.properties) {
@@ -156,6 +159,7 @@ for (const file of files) {
   })(sf);
 }
 
+// ── Catalogue ─────────────────────────────────────────────────────────────
 const enPath = path.join(root, "messages/en.json");
 const raw = fs.readFileSync(enPath, "utf8");
 const bom = raw.charCodeAt(0) === 0xfeff ? "﻿" : "";
