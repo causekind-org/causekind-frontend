@@ -78,6 +78,9 @@ async function sendBatch(batch: PendingText[], target: string, source: string) {
   let httpStatus: number | undefined;
   let googleStatus: string | undefined;
   let googleReason: string | undefined;
+  // Kept in scope so a failure while reading the body can be told apart:
+  // aborted by this timeout → timeout; otherwise an unreadable body.
+  const signal = AbortSignal.timeout(10_000);
   try {
     reserveBudget(batch.reduce((total, item) => total + item.text.length, 0));
     const response = await fetch("https://translation.googleapis.com/language/translate/v2", {
@@ -89,7 +92,7 @@ async function sendBatch(batch: PendingText[], target: string, source: string) {
       body: JSON.stringify({ q: batch.map(({ text }) => text), target, format: "text",
         ...(source === "auto" ? {} : { source }) }),
       cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
+      signal,
     });
     if (!response.ok) {
       httpStatus = response.status;
@@ -100,7 +103,13 @@ async function sendBatch(batch: PendingText[], target: string, source: string) {
       googleReason = safeCode(body?.error?.errors?.[0]?.reason ?? body?.error?.details?.[0]?.reason);
       throw new TranslationFailure("http_error");
     }
-    const data = await response.json();
+    let data: { data?: { translations?: unknown } } | null;
+    try {
+      data = await response.json();
+    } catch (readError) {
+      if (signal.aborted) throw readError; // classified as timeout below
+      throw new TranslationFailure("invalid_response");
+    }
     const translations: unknown = data?.data?.translations;
     if (!Array.isArray(translations) || translations.length !== batch.length ||
         translations.some((item) => typeof item?.translatedText !== "string" || !item.translatedText.trim())) {
@@ -111,7 +120,7 @@ async function sendBatch(batch: PendingText[], target: string, source: string) {
     // No provider body, source text or secret is logged. A short circuit breaker
     // prevents thousands of catalogue misses retrying an unavailable provider.
     const reason: TranslationFailureReason = error instanceof TranslationFailure ? error.reason
-      : error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError") ? "timeout"
+      : signal.aborted || (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) ? "timeout"
       : error instanceof TypeError ? "network" : "unknown";
     pausedUntil = Date.now() + 30_000;
     batch.forEach((item) => item.reject(new TranslationFailure(reason)));
@@ -124,15 +133,31 @@ async function sendBatch(batch: PendingText[], target: string, source: string) {
   }
 }
 
+// Strings rejected while the breaker is open, summed over one pause window and
+// logged once when it ends (pump runs every few ms during a catalogue miss, so
+// logging per call would flood the log). A failure that extends the pause
+// extends the same window.
+let pauseSkipped = 0;
+let pauseSummaryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushPauseSummary() {
+  if (Date.now() < pausedUntil) {
+    pauseSummaryTimer = setTimeout(flushPauseSummary, pausedUntil - Date.now());
+    return;
+  }
+  pauseSummaryTimer = null;
+  if (pauseSkipped) console.warn(`[translation] Circuit was open; skipped=${pauseSkipped} during the pause.`);
+  pauseSkipped = 0;
+}
+
 function pump() {
   if (Date.now() < pausedUntil) {
-    let skipped = 0;
     for (const queue of queues.values()) {
-      skipped += queue.items.length;
+      pauseSkipped += queue.items.length;
       queue.items.forEach((item) => item.reject(new TranslationFailure("circuit_open")));
     }
     queues.clear();
-    if (skipped) console.warn(`[translation] Circuit open; skipped=${skipped} resumesInMs=${pausedUntil - Date.now()}`);
+    if (pauseSkipped && !pauseSummaryTimer) pauseSummaryTimer = setTimeout(flushPauseSummary, pausedUntil - Date.now());
     return;
   }
   let expired = 0;
