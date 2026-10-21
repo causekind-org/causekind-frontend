@@ -1723,7 +1723,8 @@
     "retry": "Try again",
     "goAnyway": "Continue anyway",
     "close": "Close",
-    "stillNeeded": "Still needed ({count})"
+    "stillNeeded": "Still needed ({count})",
+    "unreachable": "We could not reach CauseKind to check your profile. Please check your connection and try again."
   },
   "NgoLanding": {
     "HeroStateA": {
@@ -2040,6 +2041,7 @@
     "support_6be6f488": "Support",
     "take_a_photo_8b458ff5": "Take a photo",
     "takes_about_5_minutes_96ae4c94": "Takes about 5 minutes",
+    "the_address_lookup_is_unavailable_1185ca39": "The address lookup is unavailable right now — please fill in the fields below.",
     "the_automated_check_flagged_an_e596449b": "The automated check flagged an issue with your listing.",
     "the_camera_is_still_starting_6718fd47": "The camera is still starting. Please wait a moment and try again.",
     "the_donor_isn_t_responding_11fbb068": "The donor isn''t responding",
@@ -2067,7 +2069,11 @@
     "view_all_4a4ffecb": "View all",
     "view_application_540a0ad6": "View Application",
     "we_couldn_t_capture_that_0a444796": "We couldn''t capture that frame. Please try again.",
+    "we_couldn_t_find_an_98829d42": "We couldn''t find an address at that spot — please fill in the fields below.",
+    "we_couldn_t_place_that_4653bd75": "We couldn''t place that exact address, so we''ll use your profile location.",
+    "we_couldn_t_place_that_81420b58": "We couldn''t place that address — check the city and PIN code.",
     "we_couldn_t_start_your_11ebd2bf": "We couldn''t start your camera. Please try again or choose a photo.",
+    "we_couldn_t_turn_that_d71891c5": "We couldn''t turn that spot into an address — please fill in the fields below.",
     "we_save_as_you_go_dea15bc5": "We save as you go",
     "weight_993014d9": "Weight",
     "what_happened_this_goes_to_10d6b817": "What happened? This goes to the CauseKind team.",
@@ -2129,5 +2135,189 @@
   },
   "withdrawIssue": {
     "withdrawNumbered": "Withdraw reported issue #{id}"
+  },
+  "notif": {
+    "fallback": {
+      "aRequest": "a request",
+      "anItem": "an item",
+      "yourRequest": "your request",
+      "yourRequestCap": "Your request"
+    },
+    "reqSubmitted": {
+      "title": "Request submitted",
+      "body": "\"{subject}\" has been received and is awaiting review"
+    },
+    "reqApproved": {
+      "title": "Request approved ✓",
+      "body": "\"{subject}\" has been verified and is being matched"
+    },
+    "reqPublished": {
+      "title": "Your request is visible to donors",
+      "body": "\"{subject}\" is now published on the need board so donors can offer to help."
+    },
+    "reqRejected": {
+      "title": "Request not approved",
+      "body": "\"{subject}\" was not approved. Contact support if you believe this is an error."
+    },
+    "reqRejectedReason": {
+      "title": "Request not approved",
+      "body": "\"{subject}\" was not approved: {reason}"
+    },
+    "offerReview": {
+      "title": "Someone wants to donate!",
+      "body": "A donor offered to fulfil \"{subject}\" — review their offer now"
+    },
+    "offerReconfirmed": {
+      "title": "Donor confirmed availability",
+      "body": "The donor reconfirmed their item for \"{subject}\" — pending admin approval"
+    },
+    "offerPurchaseApproved": {
+      "title": "Purchase approved",
+      "body": "The donor can now buy the item for \"{subject}\". Check if anything is needed from you."
+    },
+    "offerDonationApproved": {
+      "title": "Donation approved!",
+      "body": "The donation for \"{subject}\" has been approved. Handover will be scheduled."
+    },
+    "offerHandover": {
+      "title": "Handover scheduled",
+      "body": "Your donation for \"{subject}\" has a handover scheduled."
+    },
+    "offerReceived": {
+      "title": "Item received! 🎉",
+      "body": "\"{subject}\" has been successfully donated and delivered."
+    },
+    "doneeMatchPending": {
+      "title": "Your item request is under review",
+      "body": "Your request for \"{subject}\" is being reviewed by our team"
+    },
+    "contactShared": {
+      "title": "Contact details shared",
+      "body": "Donor contact was shared for \"{subject}\" — reach out to arrange pickup"
+    },
+    "doneeConfirm": {
+      "title": "Action required — confirm receipt",
+      "body": "Your match for \"{subject}\" was approved — please confirm to proceed"
+    },
+    "doneeFulfilled": {
+      "title": "Item received! 🎉",
+      "body": "\"{subject}\" has been fulfilled. Thank you for being part of CauseKind!"
+    },
+    "matchRejected": {
+      "title": "Match not approved",
+      "body": "The match for \"{subject}\" was not approved."
+    },
+    "matchRejectedReason": {
+      "title": "Match not approved",
+      "body": "The match for \"{subject}\" was not approved: {reason}"
+    },
+    "offerNeedsInfo": {
+      "title": "Action required",
+      "body": "More information is needed for your offer on \"{subject}\""
+    },
+    "offerReconfirm": {
+      "title": "Recipient accepted your offer!",
+      "body": "Please reconfirm your item is available for \"{subject}\""
+    },
+    "offerApprovedPurchase": {
+      "title": "Offer approved — open your purchase",
+      "body": "See whether you can buy the item for \"{subject}\" now"
+    },
+    "offerApprovedHandover": {
+      "title": "Offer approved! Schedule handover",
+      "body": "Your donation for \"{subject}\" was approved — schedule the handover now"
+    },
+    "offerDeclined": {
+      "title": "Offer declined",
+      "body": "The recipient declined your offer for \"{subject}\""
+    },
+    "offerComplete": {
+      "title": "Donation complete! 🎉",
+      "body": "Your donation for \"{subject}\" is done — view your certificate"
+    },
+    "listingScreening": {
+      "title": "Item submitted for review",
+      "body": "\"{subject}\" has been received and is being screened by our AI system"
+    },
+    "listingApproved": {
+      "title": "Item approved! ✓",
+      "body": "\"{subject}\" passed screening and is now live — we'll find you a match soon"
+    },
+    "listingAiRejected": {
+      "title": "Item flagged by AI screening",
+      "body": "Our AI screening could not approve \"{subject}\". You can edit and resubmit, or contact support."
+    },
+    "listingAiRejectedReason": {
+      "title": "Item flagged by AI screening",
+      "body": "Our AI screening could not approve \"{subject}\": {reason}. You can edit and resubmit, or contact support."
+    },
+    "listingRejected": {
+      "title": "Item not approved",
+      "body": "\"{subject}\" was reviewed and not approved. Contact support for more details."
+    },
+    "listingRejectedReason": {
+      "title": "Item not approved",
+      "body": "\"{subject}\" was reviewed and not approved: {reason}"
+    },
+    "listingNeedsInfo": {
+      "title": "More information needed",
+      "body": "\"{subject}\" requires additional details before it can be approved. Please update your listing."
+    },
+    "listingNeedsInfoReason": {
+      "title": "More information needed",
+      "body": "\"{subject}\" requires additional details before it can be approved: {reason}. Please update your listing."
+    },
+    "listingManualReview": {
+      "title": "Item under manual review",
+      "body": "\"{subject}\" needs a closer look from our team. You'll hear back soon."
+    },
+    "listingMatched": {
+      "title": "Item matched",
+      "body": "\"{subject}\" has been reserved for a recipient. Check your dashboard for the next step."
+    },
+    "listingFulfilled": {
+      "title": "Donation completed",
+      "body": "\"{subject}\" has been marked as donated. Thank you for helping through CauseKind!"
+    },
+    "donorConfirm": {
+      "title": "Action required — confirm donation",
+      "body": "Please accept or decline the match for \"{subject}\""
+    },
+    "donorMatch": {
+      "title": "New match!",
+      "body": "Your item matched with \"{subject}\" — contact details have been shared"
+    },
+    "donorPending": {
+      "title": "Match pending review",
+      "body": "Your donation to \"{subject}\" is under admin review"
+    },
+    "donorAwaitingDonee": {
+      "title": "Waiting for recipient confirmation",
+      "body": "Your match for \"{subject}\" was approved. The recipient now needs to confirm."
+    },
+    "donorFinalConfirm": {
+      "title": "Final confirmation needed",
+      "body": "The recipient accepted the match for \"{subject}\" — please give final confirmation"
+    },
+    "donorLogistics": {
+      "title": "Donation handover is next",
+      "body": "Your donation for \"{subject}\" is ready for logistics and handover."
+    },
+    "donorInTransit": {
+      "title": "Donation in progress",
+      "body": "\"{subject}\" is in the delivery flow and awaiting final confirmation."
+    },
+    "donorFulfilled": {
+      "title": "Donation complete! ✓",
+      "body": "\"{subject}\" was delivered successfully. Thank you!"
+    },
+    "matchCancelled": {
+      "title": "Match cancelled",
+      "body": "The match for \"{subject}\" could not continue."
+    },
+    "matchCancelledReason": {
+      "title": "Match cancelled",
+      "body": "The match for \"{subject}\" could not continue: {reason}"
+    }
   }
 }

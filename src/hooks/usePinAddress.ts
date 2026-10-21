@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useUiText } from "@/components/UiText";
 import { detectLocationFromServer, geocodeAddressFromServer, resolveLocationFromGPS } from "@/app/actions/locations";
 
 /** What a map pin turned into. Fields the lookup had nothing for are absent. */
@@ -18,6 +19,10 @@ export type PinAddress = {
 
 export type LookupState = { running: boolean; error: string | null };
 
+/** Why a lookup failed. Stored as a code and translated at render, so a
+ *  language change never touches the debounce timer or a pending lookup. */
+type LookupError = "noAddress" | "unavailable" | "failed" | "profileFallback" | "notPlaced";
+
 /**
  * Turns map pins into addresses, and (when there is no map) typed addresses
  * into coordinates. Shared by "List an item" and "Request Support", so they
@@ -29,7 +34,8 @@ export type LookupState = { running: boolean; error: string | null };
  * overwrites a newer one.
  */
 export function usePinAddress() {
-  const [state, setState] = useState<LookupState>({ running: false, error: null });
+  const [state, setState] = useState<{ running: boolean; error: LookupError | null }>({ running: false, error: null });
+  const ui = useUiText();
   const seq = useRef(0);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
@@ -58,9 +64,7 @@ export function usePinAddress() {
           onNotFound?.();
           setState({
             running: false,
-            error: geo.reason === "no-address"
-              ? "We couldn't find an address at that spot — please fill in the fields below."
-              : "The address lookup is unavailable right now — please fill in the fields below.",
+            error: geo.reason === "no-address" ? "noAddress" : "unavailable",
           });
           return;
         }
@@ -81,7 +85,7 @@ export function usePinAddress() {
       } catch {
         if (mine === seq.current) {
           onNotFound?.();
-          setState({ running: false, error: "We couldn't turn that spot into an address — please fill in the fields below." });
+          setState({ running: false, error: "failed" });
         }
       } finally {
         if (mine === seq.current) settle();
@@ -110,11 +114,19 @@ export function usePinAddress() {
     setState({
       running: false,
       error: geo.ok ? null : coords
-        ? "We couldn't place that exact address, so we'll use your profile location."
-        : "We couldn't place that address — check the city and PIN code.",
+        ? "profileFallback"
+        : "notPlaced",
     });
     return coords;
   }, []);
 
-  return { ...state, lookup, geocodeTyped, whenIdle };
+  const messages: Record<LookupError, string> = {
+    noAddress: ui("We couldn't find an address at that spot — please fill in the fields below."),
+    unavailable: ui("The address lookup is unavailable right now — please fill in the fields below."),
+    failed: ui("We couldn't turn that spot into an address — please fill in the fields below."),
+    profileFallback: ui("We couldn't place that exact address, so we'll use your profile location."),
+    notPlaced: ui("We couldn't place that address — check the city and PIN code."),
+  };
+  const error = state.error ? messages[state.error] : null;
+  return { running: state.running, error, lookup, geocodeTyped, whenIdle };
 }
