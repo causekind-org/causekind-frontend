@@ -752,19 +752,19 @@ export function SiteHeader() {
   const ngoMenuItems = [
     { label: t("nav.home"), link: "/", ariaLabel: t("nav.home"), active: isActive("/") },
     {
-      label: "My Drives",
-      ariaLabel: "My Drives",
+      label: ui("My Drives"),
+      ariaLabel: ui("My Drives"),
       children: [
-        ngoDriveItem("Post a Drive", "/ngo/drives/new",
+        ngoDriveItem(ui("Post a Drive"), "/ngo/drives/new",
           !ngoStatus.isVerified || ngoStatus.isPhotosDue, !ngoStatus.canStartDrive),
-        ngoDriveItem("Live Drives", "/dashboard/ngo#live-drives", !ngoStatus.isVerified),
-        ngoDriveItem("Handovers & Photos", "/ngo/handovers", !ngoStatus.isVerified),
+        ngoDriveItem(ui("Live Drives"), "/dashboard/ngo#live-drives", !ngoStatus.isVerified),
+        ngoDriveItem(ui("Handovers & Photos"), "/ngo/handovers", !ngoStatus.isVerified),
       ],
     },
     { label: t("nav.blog"), link: "/blog", ariaLabel: t("nav.blog"), active: isActive("/blog") },
     ...aboutMenuItems.map((l) => ({ label: l.label, link: l.href, ariaLabel: l.label, active: isActive(l.href) })),
-    { label: "Dashboard", link: "/dashboard/ngo", ariaLabel: "Go to dashboard", active: isActive("/dashboard/ngo") },
-    { label: "Profile", link: "/profile", ariaLabel: "View profile", active: isActive("/profile") },
+    { label: t("nav.dashboard"), link: "/dashboard/ngo", ariaLabel: ui("Go to dashboard"), active: isActive("/dashboard/ngo") },
+    { label: t("nav.profile"), link: "/profile", ariaLabel: ui("View profile"), active: isActive("/profile") },
   ];
 
   // Hooks must run unconditionally — keep this above the hideChrome early return.
@@ -1375,16 +1375,16 @@ export function SiteHeader() {
           })),
           ...(user
             ? [
-                ...(!isNgo ? [{ label: "Dashboard", link: dashHref, ariaLabel: "Go to dashboard" }] : []),
+                ...(!isNgo ? [{ label: t("nav.dashboard"), link: dashHref, ariaLabel: ui("Go to dashboard") }] : []),
                 {
-                  label: "My Profile",
+                  label: ui("My Profile"),
                   link: "/profile",
-                  ariaLabel: "View profile"
+                  ariaLabel: ui("View profile")
                 },
               ]
             : [
-                { label: t("nav.logIn"), link: "/login", ariaLabel: "Log in" },
-                { label: t("nav.signUp"), link: "/register", ariaLabel: "Sign up" },
+                { label: t("nav.logIn"), link: "/login", ariaLabel: t("nav.logIn") },
+                { label: t("nav.signUp"), link: "/register", ariaLabel: t("nav.signUp") },
               ]),
         ]}
         header={
