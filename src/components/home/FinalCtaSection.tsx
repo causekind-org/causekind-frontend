@@ -27,7 +27,7 @@ if (typeof window !== "undefined") {
 }
 
 /** Pre-filled WhatsApp message for launch updates (both layouts). */
-const WHATSAPP_NOTIFY_URL = `https://wa.me/917719938619?text=${encodeURIComponent(
+const WHATSAPP_NOTIFY_URL = `https://wa.me/917887890208?text=${encodeURIComponent(
   "Hi CauseKind! Please notify me when online donations and fundraising launch."
 )}`;
 

@@ -108,7 +108,7 @@ export function FinalCtaDesktop({
   }, [reduce, variant]);
 
   // WhatsApp Notify URL with pre-filled message
-  const whatsappNotifyUrl = `https://wa.me/917719938619?text=${encodeURIComponent(
+  const whatsappNotifyUrl = `https://wa.me/917887890208?text=${encodeURIComponent(
     "Hi CauseKind! Please notify me when online donations and fundraising launch."
   )}`;
 
