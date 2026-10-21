@@ -1080,7 +1080,7 @@ export function SiteHeader() {
                 entry point on the same flag hid a shipped feature. The old
                 Donate3DButton pointed at /donate — the Coming Soon screen. */}
             {!isNgoDashboard && (
-              <DonateNowButton size="sm" label="Donate" showArrow={false} />
+              <DonateNowButton size="sm" label={ui("Donate")} showArrow={false} />
             )}
 
             {/* The NGO status pill is only ever for a signed-in NGO account. */}

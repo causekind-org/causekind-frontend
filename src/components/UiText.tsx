@@ -24,7 +24,10 @@ export function useUiText() {
   const t = useTranslations("ui");
   return (text: string, context?: string): string => {
     const key = uiKey(text, context);
-    return t.has(key) ? t(key) : normalizeUiText(text);
+    // Real next-intl translators always have has(); minimal test mocks often
+    // don't — treat that as "no entry" and show the English.
+    const has = typeof t.has === "function" && t.has(key);
+    return has ? t(key) : normalizeUiText(text);
   };
 }
 

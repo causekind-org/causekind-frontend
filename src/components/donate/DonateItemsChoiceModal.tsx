@@ -1,5 +1,5 @@
 "use client";
-import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+import { UiText, useUiText } from "@/components/UiText";
 
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -21,7 +21,8 @@ import { registerUrlPreserving } from "@/lib/postAuthDestination";
  * closing, so the two never stack. "Back" does the same in reverse. Same
  * shell, cards and phone/desktop split as DonateChoice.
  *
- * <p>Copy is English-only on purpose, as in DonateChoice.
+ * <p>Copy is translated through the catalogue, as in DonateChoice; routes and
+ * the ?next= destination are unchanged.
  */
 
 const OPEN_EVENT = "ck:open-donate-items-choice";
@@ -54,6 +55,7 @@ if (typeof document !== "undefined") {
 }
 
 export function DonateItemsChoiceModal() {
+  const ui = useUiText();
   const [open, setOpen] = useState(false);
   const isPhone = useIsPhone();
   const router = useRouter();
@@ -98,30 +100,30 @@ export function DonateItemsChoiceModal() {
 
   const cards = (
     <>
-      <LandingAttributes><DesktopOption
+      <DesktopOption
         tone="items"
         icon={PackagePlus}
-        title="List an item"
-        kicker="Give what you have"
-        text="Have something you no longer use? List it in 5 short steps and we'll match it with someone nearby who needs it."
-        points={["Takes about 5 minutes", "We save as you go", "Matched to verified people nearby"]}
+        title={ui("List an item")}
+        kicker={ui("Give what you have")}
+        text={ui("Have something you no longer use? List it in 5 short steps and we'll match it with someone nearby who needs it.")}
+        points={[ui("Takes about 5 minutes"), ui("We save as you go"), ui("Matched to verified people nearby")]}
         onSelect={() => go(LIST_ITEM_HREF)}
-      /></LandingAttributes>
-      <LandingAttributes><DesktopOption
+      />
+      <DesktopOption
         tone="need"
         icon={HandHeart}
-        title="Fulfil a need"
-        kicker="Answer a request"
-        text="Browse live requests from verified people and NGOs near you, and give exactly what they're asking for."
-        points={["Every request is verified", "See exactly what's needed", "OTP-confirmed handover"]}
-        cta="Browse needs"
+        title={ui("Fulfil a need")}
+        kicker={ui("Answer a request")}
+        text={ui("Browse live requests from verified people and NGOs near you, and give exactly what they're asking for.")}
+        points={[ui("Every request is verified"), ui("See exactly what's needed"), ui("OTP-confirmed handover")]}
+        cta={ui("Browse needs")}
         onSelect={() => go(NEEDS_HREF)}
-      /></LandingAttributes>
+      />
     </>
   );
 
-  const eyebrow = <span className={POPUP.eyebrow}><LandingText>Donate items</LandingText></span>;
-  const subtitle = "List something you no longer need, or give exactly what someone has asked for.";
+  const eyebrow = <span className={POPUP.eyebrow}><UiText>Donate items</UiText></span>;
+  const subtitle = ui("List something you no longer need, or give exactly what someone has asked for.");
 
   if (isPhone) {
     return (
@@ -138,33 +140,33 @@ export function DonateItemsChoiceModal() {
               className="flex size-11 items-center justify-center rounded-full text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-stone-400 dark:hover:bg-white/10 dark:hover:text-white"
             >
               <XIcon className="size-5" aria-hidden />
-              <span className="sr-only"><LandingText>Close</LandingText></span>
+              <span className="sr-only"><UiText>Close</UiText></span>
             </DrawerClose>
           </div>
           {/* Scrolls on short screens; dragging stays on the grab handle. */}
           <div data-vaul-no-drag className="min-h-0 overflow-y-auto overscroll-contain px-4">
             <div className="mt-1 flex flex-col gap-1">
-              <LandingText>{eyebrow}</LandingText>
-              <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50"><LandingText>
+              {eyebrow}
+              <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50"><UiText>
                 How would you like to donate?
-              </LandingText></DrawerTitle>
-              <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400"><LandingText>{subtitle}</LandingText></DrawerDescription>
+              </UiText></DrawerTitle>
+              <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400">{subtitle}</DrawerDescription>
             </div>
             <div className="mt-4 flex flex-col gap-3">
-              <LandingAttributes><PhoneOption
+              <PhoneOption
                 tone="items"
                 icon={PackagePlus}
-                title="List an item"
-                text="Something you no longer use? List it in 5 short steps; we match it nearby."
+                title={ui("List an item")}
+                text={ui("Something you no longer use? List it in 5 short steps; we match it nearby.")}
                 onSelect={() => go(LIST_ITEM_HREF)}
-              /></LandingAttributes>
-              <LandingAttributes><PhoneOption
+              />
+              <PhoneOption
                 tone="need"
                 icon={HandHeart}
-                title="Fulfil a need"
-                text="Browse verified requests near you and give exactly what's asked for."
+                title={ui("Fulfil a need")}
+                text={ui("Browse verified requests near you and give exactly what's asked for.")}
                 onSelect={() => go(NEEDS_HREF)}
-              /></LandingAttributes>
+              />
             </div>
           </div>
         </DrawerContent>
@@ -181,9 +183,9 @@ export function DonateItemsChoiceModal() {
             onClick={back}
             className="-mb-1 -mt-4 [@media(max-height:720px)]:-mb-1.5 [@media(max-height:720px)]:-mt-3"
           />
-          <LandingText>{eyebrow}</LandingText>
-          <DialogTitle className={POPUP.title}><LandingText>How would you like to donate?</LandingText></DialogTitle>
-          <DialogDescription className={POPUP.subtitle}><LandingText>{subtitle}</LandingText></DialogDescription>
+          {eyebrow}
+          <DialogTitle className={POPUP.title}><UiText>How would you like to donate?</UiText></DialogTitle>
+          <DialogDescription className={POPUP.subtitle}>{subtitle}</DialogDescription>
         </div>
 
         <div className={POPUP.grid}>{cards}</div>
@@ -199,8 +201,8 @@ function BackButton({ onClick, className = "" }: { onClick: () => void; classNam
       onClick={onClick}
       className={`-ml-2 inline-flex min-h-11 w-fit items-center gap-1.5 rounded-full px-2 text-sm font-bold text-stone-600 transition-colors hover:text-stone-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-stone-300 dark:hover:text-white ${className}`}
     >
-      <ArrowLeft className="size-4" aria-hidden /><LandingText>
+      <ArrowLeft className="size-4" aria-hidden /><UiText>
       Back
-    </LandingText></button>
+    </UiText></button>
   );
 }
