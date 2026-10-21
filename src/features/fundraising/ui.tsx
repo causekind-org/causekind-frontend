@@ -3,6 +3,8 @@
 import type { FundraisingStatus } from "@/lib/api";
 import s from "./fundraising.module.css";
 
+import { useLocale } from "next-intl";
+import { useUiText, UiText } from "@/components/UiText";
 /** Status chip text per handoff §3.1 — icon + words, never colour alone. */
 const STATUS: Record<FundraisingStatus, { label: string; tone: string; icon: "check" | "alert" | "clock" | "x" | "edit" | "search" }> = {
   DRAFT: { label: "Draft", tone: s.cW, icon: "edit" },
@@ -16,16 +18,53 @@ const STATUS: Record<FundraisingStatus, { label: string; tone: string; icon: "ch
   EXPIRED: { label: "Expired", tone: s.cM, icon: "x" },
 };
 
+/** Translated status, category and step labels for donor/donee fundraising screens. */
+export function useFundraisingLabels() {
+  const ui = useUiText();
+  const locale = useLocale();
+  const status = (k: FundraisingStatus): string => ({
+    DRAFT: ui("Draft", "fundraising status"), SUBMITTED: ui("Submitted", "fundraising status"),
+    IN_REVIEW: ui("In review", "fundraising status"), INFORMATION_REQUESTED: ui("Action needed", "fundraising status"),
+    RESUBMITTED: ui("Resubmitted", "fundraising status"), APPROVED: ui("Approved", "fundraising status"),
+    NOT_APPROVED: ui("Not approved", "fundraising status"), WITHDRAWN: ui("Withdrawn", "fundraising status"),
+    EXPIRED: ui("Expired", "fundraising status"),
+  })[k];
+  const campaign = (k: string): string | undefined => ({
+    DRAFT: ui("Draft", "campaign status"), PUBLICATION_REVIEW: ui("Publication review", "campaign status"),
+    CHANGES_REQUESTED: ui("Changes requested", "campaign status"), PUBLICATION_DECLINED: ui("Publication declined", "campaign status"),
+    APPROVED_SETUP_INCOMPLETE: ui("Approved — setup incomplete", "campaign status"), APPROVED: ui("Live", "campaign status"),
+    CANCELLED: ui("Cancelled", "campaign status"), PENDING_APPROVAL: ui("Pending approval", "campaign status"),
+    REJECTED: ui("Rejected", "campaign status"), COLLECTIONS_CLOSED: ui("Collections closed", "campaign status"),
+    PAUSED: ui("Paused", "campaign status"), OUTCOME_REPORTING: ui("Outcome reporting", "campaign status"),
+  } as Record<string, string>)[k];
+  const review = (k: string): string | undefined => ({
+    DRAFT: ui("Draft", "review status"), SUBMITTED: ui("Submitted", "review status"),
+    CHANGES_REQUESTED: ui("Changes requested", "review status"), APPROVED: ui("Published", "review status"),
+    DECLINED: ui("Declined", "review status"),
+  } as Record<string, string>)[k];
+  const category = (k: keyof typeof CATEGORY_LABEL): string => ({
+    MEDICAL: ui("Medical", "fundraising category"), EDUCATION: ui("Education", "fundraising category"),
+    EMERGENCY_HOUSEHOLD: ui("Emergency household support", "fundraising category"), OTHER: ui("Other", "fundraising category"),
+  })[k];
+  const wizardSteps = [ui("About you", "wizard step"), ui("Who needs help", "wizard step"), ui("The need", "wizard step"), ui("Evidence", "wizard step"), ui("Review", "wizard step")];
+  const campaignSteps = [ui("Basics", "campaign step"), ui("Story", "campaign step"), ui("Target", "campaign step"), ui("Privacy", "campaign step"), ui("Preview", "campaign step")];
+  /** Same format as formatDate, in the reader's language. */
+  const date = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" }) : "—");
+  return { status, campaign, review, category, wizardSteps, campaignSteps, date };
+}
+
 export function statusLabel(status: FundraisingStatus) {
   return STATUS[status].label;
 }
 
-export function StatusChip({ status }: { status: FundraisingStatus }) {
+/** `localize`: translate the label (donor/donee screens). Admin screens leave it off. */
+export function StatusChip({ status, localize = false }: { status: FundraisingStatus; localize?: boolean }) {
   const c = STATUS[status];
+  const labels = useFundraisingLabels();
   return (
     <span className={`${s.chip} ${c.tone}`}>
       <Icon name={c.icon} />
-      {c.label}
+      {localize ? labels.status(status) : c.label}
     </span>
   );
 }
@@ -50,18 +89,20 @@ export function Icon({ name, className }: { name: "check" | "alert" | "clock" | 
 export type SaveState = "saved" | "saving" | "error";
 
 export function SaveIndicator({ state }: { state: SaveState }) {
-  if (state === "saving") return <span className={`${s.chip} ${s.cN}`} role="status"><Icon name="clock" />Saving…</span>;
-  if (state === "error") return <span className={`${s.chip} ${s.cX}`} role="status"><Icon name="alert" />Unable to save</span>;
-  return <span className={`${s.chip} ${s.cOk}`} role="status"><Icon name="check" />Saved</span>;
+  if (state === "saving") return <span className={`${s.chip} ${s.cN}`} role="status"><Icon name="clock" /><UiText>Saving…</UiText></span>;
+  if (state === "error") return <span className={`${s.chip} ${s.cX}`} role="status"><Icon name="alert" /><UiText>Unable to save</UiText></span>;
+  return <span className={`${s.chip} ${s.cOk}`} role="status"><Icon name="check" /><UiText>Saved</UiText></span>;
 }
 
 export const WIZARD_STEPS = ["About you", "Who needs help", "The need", "Evidence", "Review"] as const;
 
 export function Stepper({ current }: { current: number }) {
+  const ui = useUiText();
+  const labels = useFundraisingLabels();
   return (
-    <nav aria-label="Application steps">
+    <nav aria-label={ui("Application steps")}>
       <ol className={s.steps}>
-        {WIZARD_STEPS.map((label, i) => (
+        {labels.wizardSteps.map((label, i) => (
           <li
             key={label}
             className={`${s.st} ${i === current ? s.stOn : ""} ${i < current ? s.stDone : ""}`}
@@ -109,18 +150,21 @@ const CAMPAIGN: Record<string, { label: string; tone: string; icon: "check" | "a
   OUTCOME_REPORTING: { label: "Outcome reporting", tone: s.cM, icon: "lock" },
 };
 
-export function CampaignChip({ status }: { status: string }) {
+export function CampaignChip({ status, localize = false }: { status: string; localize?: boolean }) {
   const c = CAMPAIGN[status] ?? { label: status, tone: s.cM, icon: "clock" as const };
-  return <span className={`${s.chip} ${c.tone}`}><Icon name={c.icon} />{c.label}</span>;
+  const labels = useFundraisingLabels();
+  return <span className={`${s.chip} ${c.tone}`}><Icon name={c.icon} />{(localize && labels.campaign(status)) || c.label}</span>;
 }
 
 export const CAMPAIGN_STEPS = ["Basics", "Story", "Target", "Privacy", "Preview"] as const;
 
 export function CampaignStepper({ current }: { current: number }) {
+  const ui = useUiText();
+  const labels = useFundraisingLabels();
   return (
-    <nav aria-label="Campaign steps">
+    <nav aria-label={ui("Campaign steps")}>
       <ol className={s.steps}>
-        {CAMPAIGN_STEPS.map((label, i) => (
+        {labels.campaignSteps.map((label, i) => (
           <li key={label} className={`${s.st} ${i === current ? s.stOn : ""} ${i < current ? s.stDone : ""}`} aria-current={i === current ? "step" : undefined}>
             <b>{i < current ? "✓" : i + 1}</b>{label}
           </li>
@@ -139,7 +183,9 @@ const REVIEW_ITEM: Record<string, { label: string; tone: string }> = {
 };
 
 /** Status of an update, page change or closure request (Phase C2). `approvedLabel` overrides "Published". */
+/** Only used on the organiser's own workspace, so it always translates. `approvedLabel` must already be translated. */
 export function ReviewChip({ status, approvedLabel }: { status: string; approvedLabel?: string }) {
   const c = REVIEW_ITEM[status] ?? { label: status, tone: s.cM };
-  return <span className={`${s.chip} ${c.tone}`}>{status === "APPROVED" && approvedLabel ? approvedLabel : c.label}</span>;
+  const labels = useFundraisingLabels();
+  return <span className={`${s.chip} ${c.tone}`}>{status === "APPROVED" && approvedLabel ? approvedLabel : (labels.review(status) ?? c.label)}</span>;
 }

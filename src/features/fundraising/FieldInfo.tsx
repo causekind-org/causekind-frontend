@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useTranslations } from "next-intl";
 import s from "./fundraising.module.css";
 
 /**
@@ -82,8 +83,20 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   kMessage: { title: "Message to organiser", text: "Optional. What the organiser sees in their notification, e.g. âDonations are open again.â" },
 };
 
-export function FieldInfo({ k }: { k: keyof typeof FIELD_HELP | string }) {
-  const help = FIELD_HELP[k];
+/**
+ * `localize`: read the title and text from the `fieldHelp.<k>` catalogue (organiser
+ * screens). Admin screens leave it off and keep the English map; admin-only keys
+ * are not in the catalogue.
+ */
+export function FieldInfo({ k, localize = false }: { k: keyof typeof FIELD_HELP | string; localize?: boolean }) {
+  const english = FIELD_HELP[k];
+  // No provider (some tests): fall back to the English map. Fixed per tree, so hook order is stable.
+  let t: ReturnType<typeof useTranslations> | null = null;
+  let tf: ReturnType<typeof useTranslations> | null = null;
+  try { t = useTranslations("fieldHelp"); tf = useTranslations("fundraiserFlow"); } catch { /* English */ }
+  const help = english && localize && t && typeof t.has === "function" && t.has(`${k}.title`)
+    ? { title: t(`${k}.title`), text: t(`${k}.text`) }
+    : english;
   const [open, setOpen] = useState(false);
   const [hover, setHover] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -104,7 +117,7 @@ export function FieldInfo({ k }: { k: keyof typeof FIELD_HELP | string }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className={s.info} aria-label={`About ${help.title}`}
+        <button type="button" className={s.info} aria-label={localize && tf ? tf("aboutField", { field: help.title }) : `About ${help.title}`}
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((o) => !o); }}
           onMouseEnter={enter} onMouseLeave={leave}>
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">

@@ -9,6 +9,7 @@ import { Wizard } from "@/features/fundraising/Wizard";
 import { StatusView } from "@/features/fundraising/StatusView";
 import s from "@/features/fundraising/fundraising.module.css";
 
+import { UiText } from "@/components/UiText";
 /** A draft opens the wizard (F03–F07); anything else shows its status (F08). */
 export default function FundraisingApplicationPage() {
   const { id } = useParams<{ id: string }>();
@@ -31,8 +32,8 @@ function ApplicationScreen({ id }: { id: number }) {
   if (missing) {
     return (
       <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
-        <h1 className={s.serif} style={{ fontSize: 28 }}>Application not found</h1>
-        <p className={s.muted} style={{ marginTop: 8 }}><Link href="/fundraising">Back to your fundraisers</Link></p>
+        <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Application not found</UiText></h1>
+        <p className={s.muted} style={{ marginTop: 8 }}><Link href="/fundraising"><UiText>Back to your fundraisers</UiText></Link></p>
       </main>
     );
   }
