@@ -15,7 +15,9 @@
     "translate": "node --experimental-strip-types scripts/warm-translations.mjs",
     "translate:warm": "node --experimental-strip-types scripts/warm-translations.mjs",
     "build:ds": "tsup && npm run build:ds:css",
-    "build:ds:css": "tailwindcss -i src/design-system/entry.css -o dist/styles.css"
+    "build:ds:css": "tailwindcss -i src/design-system/entry.css -o dist/styles.css",
+    "i18n:extract": "node scripts/extract-ui-text.mjs",
+    "i18n:check": "node scripts/extract-ui-text.mjs --check"
   },
   "dependencies": {
     "@formatjs/icu-messageformat-parser": "3.5.20",
