@@ -1805,7 +1805,7 @@ function PastMatchRow({ m, viewer }: { m: ItemMatch; viewer: MatchViewer }) {
     <div className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">
-          <TranslatedText text={matchItemLabel(m)} />
+          <MatchItemText m={m} />
         </p>
         <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
         <WithdrawFlowButton kind="match" id={m.id} role={viewer === "DONOR" ? "DONOR" : "DONEE"} className="!min-h-[28px] !px-2" />
@@ -1849,6 +1849,16 @@ const MATCH_NEEDS_DONEE = new Set(["AWAITING_DONEE_CONFIRMATION", "DELIVERED_PEN
  */
 function matchItemLabel(m: ItemMatch, fallback = "Matched item"): string {
   return m.listingTitle || m.donorItemDescription || fallback;
+}
+
+/**
+ * The match's item name for display. Only the public listing title is sent for
+ * translation; the donor's free-text description (used when a match has no
+ * listing) is private and shown as written (Translation Coverage Inventory §6).
+ */
+function MatchItemText({ m, fallback = "Matched item" }: { m: ItemMatch; fallback?: string }) {
+  if (m.listingTitle) return <TranslatedText text={m.listingTitle} />;
+  return <>{m.donorItemDescription || fallback}</>;
 }
 
 /**
@@ -2501,7 +2511,7 @@ function DoneeDashboard({
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors truncate">
-                                <TranslatedText text={matchItemLabel(m)} />
+                                <MatchItemText m={m} />
                               </p>
                               <p className="text-xs text-stone-400 mt-0.5 truncate">For: <TranslatedText text={m.requestTitle || ""} /></p>
                             </div>
@@ -3264,7 +3274,7 @@ export default function DashboardPage() {
                                     <p className={`font-bold text-sm text-stone-900 dark:text-stone-100 transition-colors ${isDonorReview ? "" : "group-hover:text-[var(--ck-role-accent)]"}`}>
                                       Matched need for: <TranslatedText text={m.requestTitle || "Requested Need"} />
                                     </p>
-                                    <p className="text-xs text-stone-400 mt-0.5">Matched with item: <TranslatedText text={matchItemLabel(m)} /></p>
+                                    <p className="text-xs text-stone-400 mt-0.5">Matched with item: <MatchItemText m={m} /></p>
                                   </div>
                                   <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
                                 </div>
@@ -3510,7 +3520,7 @@ export default function DashboardPage() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-emerald-550 transition-colors">
-                                      Matched item: <TranslatedText text={matchItemLabel(m, "Donated Item")} />
+                                      Matched item: <MatchItemText m={m} fallback="Donated Item" />
                                     </p>
                                     <p className="text-xs text-stone-400 mt-0.5">For your need: <TranslatedText text={m.requestTitle || ""} /></p>
                                   </div>

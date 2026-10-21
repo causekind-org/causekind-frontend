@@ -8,7 +8,7 @@ import { FEATURES } from "@/lib/features";
 import { CareNestLogo } from "@/components/Navbar";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { SOCIAL_LINKS, type SocialLink } from "@/config/social";
-import { LandingText } from "@/components/LandingTranslation";
+import { useTranslations } from "next-intl";
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
 
 /**
@@ -58,6 +58,25 @@ export const FOOTER_LEGAL_LINKS = [
  * - Guest (not logged in): Create an account, My dashboard (/login), Register your NGO, Safety guidelines, Help & FAQ, Read our Blog
  * - Logged-in Donor / Donee: In-kind requests (at top!), My dashboard (/dashboard), Safety guidelines, Help & FAQ, Read our Blog
  */
+/** Catalogue key (footer.*) for each English link label; data above stays English for callers and tests. */
+const LABEL_KEYS: Record<string, string> = {
+  "In-kind requests": "inkindRequests",
+  "My dashboard": "myDashboard",
+  "Safety guidelines": "safety",
+  "Help & FAQ": "helpFaq",
+  "Read our Blog": "blog",
+  "Create an account": "createAccount",
+  "Register your NGO": "registerNgo",
+  "Register your NGO · Coming soon": "registerNgoSoon",
+  "Privacy Policy": "legal.privacy",
+  "Terms & Conditions": "legal.terms",
+  "Refund & Cancellation Policy": "legal.refund",
+  "Razorpay Policies": "legal.razorpay",
+  "Donation Policy": "legal.donation",
+  "Campaign Policy (Coming Soon)": "legal.campaign",
+  "Contact Us": "legal.contactUs",
+};
+
 export function getSupportLinks(role?: string | null): SupportLinkItem[] {
   const isDonorOrDonee = role === "DONOR" || role === "DONEE" || role === "RECIPIENT";
   const isNgo = role === "NGO" || role === "NGO_PARTNER";
@@ -150,6 +169,9 @@ function SocialIcon({ id }: { id: SocialLink["id"] }) {
 export function Footer({ role }: FooterProps) {
   const pathname = usePathname();
   const { user, isRestoring } = useAuth();
+  // Catalogue keys work on every page (the landing helpers only ran on / and /ngo).
+  const t = useTranslations("footer");
+  const label = (english: string) => (LABEL_KEYS[english] ? t(LABEL_KEYS[english]) : english);
 
   // If role is explicitly provided, use it; otherwise read from auth state
   const effectiveRole = role !== undefined ? role : (isRestoring ? undefined : (user?.role ?? null));
@@ -191,13 +213,13 @@ export function Footer({ role }: FooterProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8 lg:gap-x-10 items-start text-sm">
           {/* Column 1: Brand */}
           <div className="col-span-2 md:col-span-1 flex flex-col items-center text-center md:items-start md:text-left space-y-3.5">
-            <Link href="/" className="inline-block" aria-label="CauseKind Home">
+            <Link href="/" className="inline-block" aria-label={t("homeAria")}>
               <div className="inline-flex items-center bg-white px-3 py-1.5 rounded-xl [&_*]:dark:text-[#120c04]! [&_.ck-logo-kind-shimmer]:text-[#B4541A]!">
                 <CareNestLogo size="md" />
               </div>
             </Link>
             <p className="text-[#D9CCBB] text-sm leading-relaxed font-medium max-w-xs mx-auto md:mx-0 md:max-w-none">
-              <LandingText>India&apos;s verified giving platform connecting donors directly with verified recipients.</LandingText>
+              {t("tagline")}
             </p>
 
             {/* Donate button for Guest and Donor (hidden for Donee) */}
@@ -205,7 +227,7 @@ export function Footer({ role }: FooterProps) {
               <div className="pt-0.5">
                 <DonateNowButton
                   size="sm"
-                  label="Donate"
+                  label={t("donate")}
                   showArrow={false}
                   className="!bg-[#B4541A] hover:!bg-[#9A4616] !text-white dark:!text-white dark:!bg-[#B4541A] dark:hover:!bg-[#9A4616] rounded-full font-semibold !px-6 !py-2.5 !h-auto text-sm transition-all duration-200 focus:outline-none focus-visible:!ring-2 focus-visible:!ring-[#B4541A] focus-visible:!ring-offset-2 focus-visible:!ring-offset-[#120c04] shadow-xs w-fit inline-flex items-center gap-2 [&_.ck-donate-sheen]:hidden [&_.ck-donate-ring]:hidden [animation:none]!"
                 />
@@ -215,7 +237,7 @@ export function Footer({ role }: FooterProps) {
             {/* Social Icons: Single line flex on mobile (6 in a row), 3x2 grid on desktop */}
             <div
               className="flex flex-nowrap justify-center gap-2 md:grid md:grid-cols-3 md:gap-3 md:w-fit pt-1"
-              aria-label="Social media links"
+              aria-label={t("socialLinks")}
             >
               {SOCIAL_LINKS.map((item) => (
                 <a
@@ -235,7 +257,7 @@ export function Footer({ role }: FooterProps) {
           {/* Column 2: Get Support */}
           <div className="col-span-1 md:col-span-1 space-y-3">
             <p className="font-bold text-white tracking-wider uppercase text-xs">
-              <LandingText>Get Support</LandingText>
+              {t("getSupport")}
             </p>
             <ul className="space-y-2 text-[#D9CCBB] text-sm font-medium">
               {supportLinks.map((link) => (
@@ -245,7 +267,7 @@ export function Footer({ role }: FooterProps) {
                       href={link.href}
                       className="hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
                     >
-                      <LandingText>{link.label}</LandingText>
+                      {label(link.label)}
                     </Link>
                   ) : (
                     <span
@@ -253,7 +275,7 @@ export function Footer({ role }: FooterProps) {
                       aria-disabled="true"
                       tabIndex={-1}
                     >
-                      <LandingText>{link.label}</LandingText>
+                      {label(link.label)}
                     </span>
                   )}
                 </li>
@@ -264,20 +286,20 @@ export function Footer({ role }: FooterProps) {
           {/* Column 3: Our Trust Promise */}
           <div className="col-span-1 md:col-span-1 space-y-3">
             <p className="font-bold text-white tracking-wider uppercase text-xs">
-              <LandingText>Our Trust Promise</LandingText>
+              {t("trust")}
             </p>
             <ul className="space-y-2.5 text-[#D9CCBB] text-sm font-medium">
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#B4541A]" aria-hidden="true" />
-                <span><LandingText>Admin-verified listings</LandingText></span>
+                <span>{t("adminVerifiedFull")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#B4541A]" aria-hidden="true" />
-                <span><LandingText>OTP-confirmed handovers</LandingText></span>
+                <span>{t("otpHandovers")}</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-[#B4541A]" aria-hidden="true" />
-                <span><LandingText>Verified delivery certificates</LandingText></span>
+                <span>{t("certificates")}</span>
               </li>
             </ul>
           </div>
@@ -285,7 +307,7 @@ export function Footer({ role }: FooterProps) {
           {/* Column 4: Contact */}
           <div className="col-span-2 md:col-span-1 space-y-4 md:space-y-3">
             <p className="font-bold text-white tracking-wider uppercase text-xs text-center md:text-left">
-              <LandingText>Contact</LandingText>
+              {t("contactHeading")}
             </p>
             <div className="space-y-5 md:space-y-3 text-sm text-[#D9CCBB]">
               {/* Item 1: Address */}
@@ -297,9 +319,8 @@ export function Footer({ role }: FooterProps) {
                   <MapPin className="w-4.5 h-4.5 md:w-4 md:h-4 text-white md:text-[#E58A4B] shrink-0" aria-hidden="true" />
                 </div>
                 <span className="leading-relaxed max-w-xs mx-auto md:max-w-none md:mx-0">
-                  <LandingText>
-                    3rd Floor, Apoorva Bldg, Flat no. 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
-                  </LandingText>
+                  {/* A postal address: shown as written, never translated. */}
+                  3rd Floor, Apoorva Bldg, Flat no. 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
                 </span>
               </div>
 
@@ -331,7 +352,7 @@ export function Footer({ role }: FooterProps) {
                   href="mailto:support@causekind.com"
                   className="min-h-[44px] md:min-h-0 inline-flex items-center justify-center hover:text-[#E58A4B] transition-colors"
                 >
-                  <LandingText>support@causekind.com</LandingText>
+                  support@causekind.com
                 </a>
               </div>
             </div>
@@ -344,7 +365,7 @@ export function Footer({ role }: FooterProps) {
         <div className="mx-auto max-w-7xl flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-[#D9CCBB] font-medium">
           {/* Left: Copyright */}
           <div className="text-center md:text-left">
-            © 2026 <span className="font-bold text-white">Cause</span><span className="font-bold text-[#E58A4B]">Kind</span>. <LandingText>Made with care in India.</LandingText>
+            © 2026 <span className="font-bold text-white">Cause</span><span className="font-bold text-[#E58A4B]">Kind</span>. {t("rights")}
           </div>
 
           {/* Right: Legal Links */}
@@ -358,7 +379,7 @@ export function Footer({ role }: FooterProps) {
                   href={item.href}
                   className="font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
                 >
-                  <LandingText>{item.label}</LandingText>
+                  {label(item.label)}
                 </Link>
               </React.Fragment>
             ))}

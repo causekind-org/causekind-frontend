@@ -547,7 +547,24 @@
       "description": "You'll need to log in again to access your account.",
       "cancel": "Cancel",
       "confirm": "Sign out"
-    }
+    },
+    "otpHandovers": "OTP-confirmed handovers",
+    "contactHeading": "Contact",
+    "safety": "Safety guidelines",
+    "registerNgo": "Register your NGO",
+    "registerNgoSoon": "Register your NGO · Coming soon",
+    "legal": {
+      "privacy": "Privacy Policy",
+      "terms": "Terms & Conditions",
+      "refund": "Refund & Cancellation Policy",
+      "razorpay": "Razorpay Policies",
+      "donation": "Donation Policy",
+      "campaign": "Campaign Policy (Coming Soon)",
+      "contactUs": "Contact Us"
+    },
+    "socialLinks": "Social media links",
+    "homeAria": "CauseKind Home",
+    "donate": "Donate"
   },
   "donate": {
     "title": "Make a Donation",

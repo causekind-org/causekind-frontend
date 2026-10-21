@@ -23,6 +23,14 @@ vi.mock("@/components/LandingTranslation", () => ({
   LandingAttributes: ({ children }: any) => <>{children}</>,
 }));
 
+// The footer reads its copy from the catalogue; return the English source text.
+vi.mock("next-intl", async () => {
+  const en = (await import("../../messages/en.json")).default as Record<string, unknown>;
+  const lookup = (ns: string, key: string) =>
+    `${ns}.${key}`.split(".").reduce<unknown>((node, part) => (node as Record<string, unknown> | undefined)?.[part], en) as string | undefined;
+  return { useTranslations: (ns: string) => (key: string) => lookup(ns, key) ?? key };
+});
+
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: vi.fn(),
 }));

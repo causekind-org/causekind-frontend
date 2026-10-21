@@ -547,7 +547,8 @@ function CampaignDetailPageInner() {
                         </span>
                       </div>
                       <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
-                        <TranslatedText text={u.content} />
+                        {/* Organiser-written update: not translated until approved (Translation Coverage Inventory §6). */}
+                        {u.content}
                       </p>
                     </div>
                   ))}
