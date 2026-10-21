@@ -196,7 +196,7 @@ export default async function RootLayout({
                 >
                   <ScrollProgress />
                   <SiteHeader />
-                  <main className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
+                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
                   <SiteFooter />
                   {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <MobileBottomNav />
