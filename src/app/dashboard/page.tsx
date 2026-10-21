@@ -53,6 +53,7 @@ import {
 import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
 import { getRequestFulfilment, groupRequestsByFulfilment, offerDeliveredQuantity, type RequestFulfilment } from "@/lib/requestFulfilment";
 import { canDeleteListing, canWithdrawListing, canPauseListing, canResumeListing } from "@/lib/listingActions";
+import { useCancellationCopy } from "@/lib/cancellationCopy";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
 import { ClosedOfferCard } from "@/components/ClosedOfferCard";
 import { displayReason, missingInfoLines } from "@/lib/rejectionReason";
@@ -1227,6 +1228,7 @@ function ReconfirmDeclineButton({ offerId, onCancelled, label, className }: {
  */
 function OfferCancelAction({ offerId, onCancelled }: { offerId: number; onCancelled: () => void }) {
   const [option, setOption] = useState<CancellationOption | null>(null);
+  const copy = useCancellationCopy();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -1248,7 +1250,7 @@ function OfferCancelAction({ offerId, onCancelled }: { offerId: number; onCancel
         // with the primary action. flex-1 still fills the row when it is alone.
         className="flex-1 min-w-0 truncate rounded-xl border border-red-200 bg-white py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/30"
       >
-        {option.actionLabel}
+        {copy.label(option)}
       </button>
       <CancelOfferDialog
         offerId={offerId}

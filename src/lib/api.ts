@@ -2125,6 +2125,11 @@ export type CancellationOption = {
   late: boolean;
   warning: string | null;
   blockedReason: string | null;
+  /** Stable codes beside the English above (backend CancellationCopy); absent from older backends.
+   *  Render through useCancellationCopy(), never by matching the English. */
+  labelCode?: string | null;
+  warningCode?: string | null;
+  blockedReasonCode?: string | null;
 };
 
 export function getOfferCancellationOptions(offerId: number) {

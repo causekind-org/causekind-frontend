@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { useTranslations } from "next-intl";
 import { UiText, useUiText } from "@/components/UiText";
+import { useCancellationCopy } from "@/lib/cancellationCopy";
 
 // Translation: interface copy and the fixed reason labels (translated by value —
 // the submitted value is unchanged). option.actionLabel / warning come from the
@@ -40,6 +41,7 @@ export function CancelOfferDialog({
   onCancelled: () => void;
 }) {
   const ui = useUiText();
+  const copy = useCancellationCopy();
   const t = useTranslations("offerCancel");
   const [reason, setReason] = useState<CancellationReason | "">("");
   const [details, setDetails] = useState("");
@@ -96,9 +98,9 @@ export function CancelOfferDialog({
     <AlertDialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>{t("titleQuestion", { action: option.actionLabel ?? ui("Cancel offer") })}</AlertDialogTitle>
+          <AlertDialogTitle>{t("titleQuestion", { action: copy.label(option) ?? ui("Cancel offer") })}</AlertDialogTitle>
           <AlertDialogDescription>
-            {option.warning ?? ui("This offer will be withdrawn and the item released.")}
+            {copy.warning(option) ?? ui("This offer will be withdrawn and the item released.")}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
@@ -161,7 +163,7 @@ export function CancelOfferDialog({
           >
             {busy
               ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> <UiText>Cancelling</UiText></>
-              : (option.actionLabel ?? ui("Cancel offer"))}
+              : (copy.label(option) ?? ui("Cancel offer"))}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

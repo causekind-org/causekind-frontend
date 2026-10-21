@@ -1848,7 +1848,9 @@
     "browse_verified_requests_near_you_0ed87073": "Browse verified requests near you and give exactly what''s asked for.",
     "camera_access_is_blocked_allow_5aa5db75": "Camera access is blocked. Allow camera access in your browser settings, then try again.",
     "camera_access_requires_a_secure_6a9fcbf3": "Camera access requires a secure HTTPS connection.",
+    "cancel_35afca3b": "Cancel",
     "cancel_offer_fc205811": "Cancel offer",
+    "cancel_this_handover_5cc3573c": "Cancel this handover",
     "cancelling_6c34d8cb": "Cancelling",
     "capture_photo_2265ce8d": "Capture photo",
     "causekind_admin_verified_and_approved_96a5f9c7": "CauseKind admin verified and approved the match.",
@@ -2059,6 +2061,7 @@
     "this_browser_doesn_t_support_8a5ce6c8": "This browser doesn''t support in-app camera access. Please choose a photo instead.",
     "this_changes_often_it_s_0f3edbb6": "This changes often — it''s worth checking back.",
     "this_changes_often_you_can_32383441": "This changes often. You can list an item anyway — it stays visible and gets matched as soon as someone nearby asks.",
+    "this_handover_will_be_cancelled_218cc400": "This handover will be cancelled and the item released.",
     "this_match_did_not_go_7f990c70": "This match did not go through. Check your matches for details.",
     "this_offer_will_be_withdrawn_e8e2cd14": "This offer will be withdrawn and the item released.",
     "try_again_213e90fa": "Try again",
@@ -2326,5 +2329,28 @@
       "title": "Match cancelled",
       "body": "The match for \"{subject}\" could not continue: {reason}"
     }
+  },
+  "cancellation": {
+    "DELETE_DRAFT": "Delete draft",
+    "WITHDRAW_REQUEST": "Withdraw request",
+    "WITHDRAW_OFFER": "Withdraw offer",
+    "WITHDRAW_LISTING": "Withdraw listing",
+    "DECLINE_OFFER": "Decline offer",
+    "DECLINE_DONATION": "Decline this donation",
+    "DECLINE_MATCH": "Decline match",
+    "CANCEL_OFFER": "Cancel offer",
+    "CANCEL_HANDOVER": "Cancel handover",
+    "CANCEL_MATCH": "Cancel match",
+    "REMOVE_FROM_DASHBOARD": "Remove from dashboard",
+    "REPORT_ISSUE": "Report an issue",
+    "WARN_COUNTERPART_WAITING": "Someone is already counting on this. They will be told immediately and the item released.",
+    "WARN_HANDOVER_ARRANGED": "A handover has already been arranged. The other person will be notified straight away and any reserved item released.",
+    "DISPUTE_ALREADY_DELIVERED": "This donation has already been handed over, so it can't be cancelled. If something was wrong with it, report an issue instead.",
+    "DISPUTE_HALF_CONFIRMED": "One side has already confirmed the handover. Cancelling now would erase that record — report an issue instead.",
+    "DISPUTE_PURCHASED": "This item has been purchased. Report a purchase issue so delivery or return can be resolved.",
+    "NOT_REQUEST_OWNER": "Only the person who posted this request can withdraw it.",
+    "NOT_LISTING_OWNER": "Only the donor who listed this item can withdraw it.",
+    "OFFER_NOT_SENT_YET": "This offer hasn't been sent to you yet.",
+    "OFFER_CLOSED": "This offer is already closed."
   }
 }
