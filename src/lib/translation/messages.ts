@@ -6,11 +6,18 @@ import { parse, TYPE, type MessageFormatElement } from "@formatjs/icu-messagefor
 import { printAST } from "@formatjs/icu-messageformat-parser/printer.js";
 import english from "../../../messages/en.json";
 import type { Locale } from "@/i18n/config";
-import { isGoogleTranslationConfigured, translateWithGoogle } from "./server";
+import { isGoogleTranslationConfigured, translateWithGoogle, TranslationFailure } from "./server";
 import { splitTranslationText } from "./text";
 
 type MessageValue = string | number | boolean | null | MessageValue[] | { [key: string]: MessageValue };
-type TranslationResult = { value: MessageValue; complete: boolean; translated: boolean };
+/** `failures`: count of untranslated strings by reason code (diagnostics only). */
+type TranslationResult = { value: MessageValue; complete: boolean; translated: boolean; failures?: Record<string, number> };
+
+function mergeFailures(results: TranslationResult[]): Record<string, number> | undefined {
+  let merged: Record<string, number> | undefined;
+  for (const r of results) for (const [k, n] of Object.entries(r.failures ?? {})) (merged ??= {})[k] = (merged[k] ?? 0) + n;
+  return merged;
+}
 
 export const englishMessages = english;
 
@@ -55,7 +62,7 @@ const cachedMessage = unstable_cache(
     void revision;
     const translated = printAST(await translateAst(parse(source), locale));
     // Reject malformed ICU rather than delivering a formatter error to the UI.
-    parse(translated);
+    try { parse(translated); } catch { throw new TranslationFailure("icu_invalid"); }
     return translated;
   },
   ["google-icu-message-v1"],
@@ -119,8 +126,9 @@ async function translateTree(value: MessageValue, locale: Locale, existing?: Mes
     try {
       const translated = await translateInterfaceMessage(value, locale);
       return { value: translated, complete: true, translated: translated !== value };
-    } catch {
-      return { value, complete: false, translated: false };
+    } catch (error) {
+      const reason = error instanceof TranslationFailure ? error.reason : "unknown";
+      return { value, complete: false, translated: false, failures: { [reason]: 1 } };
     }
   }
   if (!value || typeof value !== "object") return { value, complete: true, translated: false };
@@ -132,6 +140,7 @@ async function translateTree(value: MessageValue, locale: Locale, existing?: Mes
       : Object.fromEntries(entries.map(([key, child]) => [key, child.value])),
     complete: entries.every(([, child]) => child.complete),
     translated: entries.some(([, child]) => child.translated),
+    failures: mergeFailures(entries.map(([, child]) => child)),
   };
 }
 
@@ -175,7 +184,12 @@ export const getInterfaceCatalogue = cache(async (locale: Locale) => {
     }
   }));
   const complete = entries.every(([, result]) => result.complete);
-  if (!complete) console.warn("[translation] Interface catalogue incomplete; some messages remain English. Warm the cache before release.");
+  if (!complete) {
+    // Section names and counts only — no message text.
+    const sections = entries.filter(([, r]) => !r.complete)
+      .map(([key, r]) => `${key}(${Object.entries(r.failures ?? { no_reason_recorded: 1 }).map(([k, n]) => `${k}:${n}`).join(",")})`);
+    console.warn(`[translation] Interface catalogue incomplete; some messages remain English. Warm the cache before release. locale=${locale} sections=${sections.join(" ")}`);
+  }
   return {
     messages: Object.fromEntries(entries.map(([key, result]) => [key, result.value])) as typeof english,
     translated: entries.some(([, result]) => result.translated), complete,
