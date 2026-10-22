@@ -3084,7 +3084,9 @@
     "onlyTypeAccepted": "{file} : seules les images {types} sont acceptées",
     "imageTooLarge": "{file} : les images doivent faire moins de {size}",
     "maxPhotos": "Vous pouvez ajouter jusqu’à {max} photos",
-    "onlyMoreAdded": "{count, plural, one {Seule # photo de plus a pu être ajoutée} other {Seules # photos de plus ont pu être ajoutées}}"
+    "onlyMoreAdded": "{count, plural, one {Seule # photo de plus a pu être ajoutée} other {Seules # photos de plus ont pu être ajoutées}}",
+    "waitBeforePurchasingTitle": "Attendez que votre offre soit acceptée et affiche <strong>Prêt à acheter</strong> avant d’acheter <b>{title}</b>. CauseKind ne prend jamais de paiement.",
+    "progressLabel": "Progression"
   },
   "offerValidation": {
     "photosMin": "Ajoutez au moins {min} photos de l’objet.",

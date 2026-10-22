@@ -153,7 +153,9 @@ export function OfferPurchasePlanStep({
       <div className="flex items-start gap-2 rounded-xl bg-orange-50 p-3 text-sm leading-relaxed text-stone-700 dark:bg-orange-950/30 dark:text-stone-300">
         <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[var(--ck-role-accent)]" aria-hidden />
         <p>
-          {wt.rich("waitBeforePurchasing", { item: requestTitle || ui("the item"), strong: (chunks) => <strong>{chunks}</strong> })}
+          {requestTitle
+            ? wt.rich("waitBeforePurchasingTitle", { title: requestTitle, strong: (chunks) => <strong>{chunks}</strong>, b: (chunks) => <b>{chunks}</b> })
+            : wt.rich("waitBeforePurchasing", { item: ui("the item"), strong: (chunks) => <strong>{chunks}</strong> })}
           {direct && <> <UiText>Direct delivery must be prepaid — the recipient must never pay on delivery.</UiText></>}
         </p>
       </div>

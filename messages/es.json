@@ -3084,7 +3084,9 @@
     "onlyTypeAccepted": "{file}: solo se aceptan imágenes {types}",
     "imageTooLarge": "{file}: las imágenes deben pesar menos de {size}",
     "maxPhotos": "Puedes añadir hasta {max} fotos",
-    "onlyMoreAdded": "{count, plural, one {Solo se pudo añadir # foto más} other {Solo se pudieron añadir # fotos más}}"
+    "onlyMoreAdded": "{count, plural, one {Solo se pudo añadir # foto más} other {Solo se pudieron añadir # fotos más}}",
+    "waitBeforePurchasingTitle": "Espera a que tu oferta esté aceptada y muestre <strong>Listo para comprar</strong> antes de comprar <b>{title}</b>. CauseKind nunca cobra pagos.",
+    "progressLabel": "Progreso"
   },
   "offerValidation": {
     "photosMin": "Añade al menos {min} fotos del artículo.",

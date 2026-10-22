@@ -3084,7 +3084,9 @@
     "onlyTypeAccepted": "{file}: केवल {types} तस्वीरें स्वीकार की जाती हैं",
     "imageTooLarge": "{file}: तस्वीरें {size} से छोटी होनी चाहिए",
     "maxPhotos": "आप अधिकतम {max} फ़ोटो जोड़ सकते हैं",
-    "onlyMoreAdded": "{count, plural, one {केवल # और फ़ोटो जोड़ी जा सकी} other {केवल # और फ़ोटो जोड़ी जा सकीं}}"
+    "onlyMoreAdded": "{count, plural, one {केवल # और फ़ोटो जोड़ी जा सकी} other {केवल # और फ़ोटो जोड़ी जा सकीं}}",
+    "waitBeforePurchasingTitle": "<b>{title}</b> खरीदने से पहले तब तक इंतज़ार करें जब तक आपका प्रस्ताव स्वीकार होकर <strong>खरीदने के लिए तैयार</strong> न दिखे। CauseKind कभी भुगतान नहीं लेता।",
+    "progressLabel": "प्रगति"
   },
   "offerValidation": {
     "photosMin": "सामान की कम से कम {min} फ़ोटो जोड़ें।",

@@ -4073,7 +4073,9 @@
     "onlyTypeAccepted": "{file}: only {types} images are accepted",
     "imageTooLarge": "{file}: images must be under {size}",
     "maxPhotos": "You can add up to {max} photos",
-    "onlyMoreAdded": "{count, plural, one {Only # more photo could be added} other {Only # more photos could be added}}"
+    "onlyMoreAdded": "{count, plural, one {Only # more photo could be added} other {Only # more photos could be added}}",
+    "waitBeforePurchasingTitle": "Please wait until your offer is accepted and shows <strong>Ready to buy</strong> before purchasing <b>{title}</b>. CauseKind never takes payment.",
+    "progressLabel": "Progress"
   },
   "offerValidation": {
     "photosMin": "Add at least {min} photos of the item.",

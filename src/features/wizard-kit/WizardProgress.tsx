@@ -44,14 +44,14 @@ type Props<S extends string> = {
 };
 
 export function WizardProgressBar<S extends string>({
-  current, steps, labels, availability, onJump, navLabel = "Progress",
+  current, steps, labels, availability, onJump, navLabel,
 }: Props<S>) {
   const wt = useTranslations("wizardFlow");
   const reduced = !!useReducedMotion();
   const idx = steps.indexOf(current);
 
   return (
-    <nav aria-label={navLabel} className="lg:hidden">
+    <nav aria-label={navLabel ?? wt("progressLabel")} className="lg:hidden">
       <div className="flex items-center justify-between gap-2 px-4 pt-2">
         <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
           {wt("stepOf", { n: idx + 1, total: steps.length })}
@@ -105,14 +105,14 @@ export function WizardProgressBar<S extends string>({
 
 /** Desktop rail. Lives inside the existing dark sidebar, so it styles for dark. */
 export function WizardProgressRail<S extends string>({
-  current, steps, labels, availability, onJump, navLabel = "Progress",
+  current, steps, labels, availability, onJump, navLabel,
 }: Props<S>) {
   const wt = useTranslations("wizardFlow");
   const reduced = !!useReducedMotion();
   const idx = steps.indexOf(current);
 
   return (
-    <nav aria-label={navLabel} className="hidden lg:block">
+    <nav aria-label={navLabel ?? wt("progressLabel")} className="hidden lg:block">
       <ol className="space-y-1">
         {steps.map((step, i) => {
           const state = availability[step];
