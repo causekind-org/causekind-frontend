@@ -46,6 +46,9 @@ import { DriveLocationStep, RADIUS_PRESETS, radiusKm } from "@/features/ngo-driv
 import type { LocationStepHandle } from "@/features/item-listing-wizard/steps/LocationStep";
 import { useLocationPinHandlers, type LocationFields } from "@/hooks/useLocationPinHandlers";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
 /** Matches the backend's limit on drive details. */
 const DETAILS_MAX = 500;
 
@@ -55,11 +58,20 @@ export const REQUIRE_CLEAN_CATEGORIES = ["Clothing", "Household", "Furniture"] a
 const DAY_WORDS: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
 
 /** The handover mode in words, with the pickup radius where pickup applies. */
-export function handoverModeInWords(mode: string, radius: number | null): string {
-  const within = radius != null ? ` within ${radius} km` : "";
-  if (mode === "DROP_OFF") return "Donors drop the items off at the drive address";
-  if (mode === "PICKUP") return `I pick up from donors${within}`;
-  return `I pick up from donors${within}; donors farther away drop off at the drive address`;
+type HandoverWords = "dropOffWords" | "pickupWords" | "pickupWithinWords" | "bothWords" | "bothWithinWords";
+const HANDOVER_WORDS_EN: Record<HandoverWords, (km?: number) => string> = {
+  dropOffWords: () => "Donors drop the items off at the drive address",
+  pickupWords: () => "I pick up from donors",
+  pickupWithinWords: (km) => `I pick up from donors within ${km} km`,
+  bothWords: () => "I pick up from donors; donors farther away drop off at the drive address",
+  bothWithinWords: (km) => `I pick up from donors within ${km} km; donors farther away drop off at the drive address`,
+};
+/** `t` translates the sentence; English by default. */
+export function handoverModeInWords(mode: string, radius: number | null,
+  t: (key: HandoverWords, values?: { km: number }) => string = (key, v) => HANDOVER_WORDS_EN[key](v?.km)): string {
+  if (mode === "DROP_OFF") return t("dropOffWords");
+  if (mode === "PICKUP") return radius != null ? t("pickupWithinWords", { km: radius }) : t("pickupWords");
+  return radius != null ? t("bothWithinWords", { km: radius }) : t("bothWords");
 }
 
 export const HANDOVER_MODES = [
@@ -80,20 +92,25 @@ export function formatDateDDMMYYYY(dateStr?: string | null): string {
 type NgoDriveStep = "drive-type" | "drive-location" | "drive-details" | "beneficiaries-handover" | "review-declarations";
 
 const NGO_DRIVE_STEPS: NgoDriveStep[] = ["drive-location", "drive-details", "beneficiaries-handover", "review-declarations"];
-const STEP_LABELS: Record<NgoDriveStep, string> = {
-  "drive-type": "Drive Type",
-  "drive-location": "1 Where is this drive?",
-  "drive-details": "2 Drive details",
-  "beneficiaries-handover": "3 Beneficiaries & handover",
-  "review-declarations": "4 Review & declarations",
-};
-const STEP_INTROS: Record<NgoDriveStep, string> = {
-  "drive-type": "Choose what to collect",
-  "drive-location": "Donors near this place will see that you can pick up their items.",
-  "drive-details": "Tell givers exactly what you need.",
-  "beneficiaries-handover": "Donors near you pledge the items.",
-  "review-declarations": "Review and confirm.",
-};
+function useNgoDriveStepCopy(): { labels: Record<NgoDriveStep, string>; intros: Record<NgoDriveStep, string> } {
+  const ui = useUiText();
+  return {
+    labels: {
+      "drive-type": ui("Drive Type"),
+      "drive-location": ui("1 Where is this drive?"),
+      "drive-details": ui("2 Drive details"),
+      "beneficiaries-handover": ui("3 Beneficiaries & handover"),
+      "review-declarations": ui("4 Review & declarations"),
+    },
+    intros: {
+      "drive-type": ui("Choose what to collect"),
+      "drive-location": ui("Donors near this place will see that you can pick up their items."),
+      "drive-details": ui("Tell givers exactly what you need."),
+      "beneficiaries-handover": ui("Donors near you pledge the items."),
+      "review-declarations": ui("Review and confirm."),
+    },
+  };
+}
 
 function ngoStepIndex(s: NgoDriveStep) { return NGO_DRIVE_STEPS.indexOf(s); }
 function stepNumber(s: NgoDriveStep) { return ngoStepIndex(s) + 1; }
@@ -125,6 +142,11 @@ const URGENCIES = [
 ];
 
 function NewNgoDriveForm() {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const wt = useTranslations("wizardFlow");
+  const dc = useDriveCopy();
+  const { labels: STEP_LABELS, intros: STEP_INTROS } = useNgoDriveStepCopy();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -311,7 +333,7 @@ function NewNgoDriveForm() {
     getNgoDriveDetail(editId).then(d => {
       if (!active) return;
       if (d.status !== "CHANGES_REQUESTED" && d.status !== "PENDING_REVIEW") {
-        setEditLoadError("Only drives under review or with changes requested can be edited.");
+        setEditLoadError(ui("Only drives under review or with changes requested can be edited."));
         return;
       }
       setTitle(d.title || "");
@@ -375,7 +397,7 @@ function NewNgoDriveForm() {
       // A drive that already has its location opens at the details; older drives add it first.
       setStep(d.locationLatitude != null && d.pickupRadiusKm != null ? "drive-details" : "drive-location");
       setDraftLoaded(true);
-    }).catch(() => { if (active) setEditLoadError("We couldn't load this drive. Please try again."); });
+    }).catch(() => { if (active) setEditLoadError(ui("We couldn't load this drive. Please try again.")); });
     return () => { active = false; };
   }, [user, draftLoaded, editId]);
 
@@ -528,7 +550,7 @@ function NewNgoDriveForm() {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
     if (photos.length + files.length > 5) {
-      toast.error("You can upload a maximum of 5 photos.");
+      toast.error(ui("You can upload a maximum of 5 photos."));
       e.target.value = "";
       return;
     }
@@ -537,7 +559,7 @@ function NewNgoDriveForm() {
       const uploadedItems: DrivePhotoItem[] = [];
       for (const file of files) {
         if (file.size > 5 * 1024 * 1024) {
-          toast.error(`${file.name} is larger than 5 MB.`);
+          toast.error(df("fileTooLarge", { name: file.name }));
           continue;
         }
         const compressed = await compressImageIfNeeded(file);
@@ -549,7 +571,7 @@ function NewNgoDriveForm() {
         toast.success(`Photo${uploadedItems.length > 1 ? "s" : ""} uploaded`);
       }
     } catch (err: any) {
-      toast.error(err?.message || "Failed to attach photo");
+      toast.error(err?.message || ui("Failed to attach photo"));
     } finally {
       setPhotoUploading(false);
       e.target.value = "";
@@ -560,14 +582,14 @@ function NewNgoDriveForm() {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} is larger than 5 MB.`); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error(df("fileTooLarge", { name: file.name })); return; }
     setCoverUploading(true);
     try {
       const url = await uploadNgoDriveReferencePhoto(await compressImageIfNeeded(file));
       setCoverPhoto({ url });
-      toast.success("Cover photo uploaded");
+      toast.success(ui("Cover photo uploaded"));
     } catch (err: any) {
-      toast.error(err?.message || "Failed to attach photo");
+      toast.error(err?.message || ui("Failed to attach photo"));
     } finally {
       setCoverUploading(false);
     }
@@ -590,7 +612,7 @@ function NewNgoDriveForm() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Photo is larger than 5 MB.");
+      toast.error(ui("Photo is larger than 5 MB."));
       e.target.value = "";
       return;
     }
@@ -600,9 +622,9 @@ function NewNgoDriveForm() {
       const url = await uploadNgoDriveReferencePhoto(compressed);
       setChangemakerPhotoUrl(url);
       setChangemakerPhotoKey("");
-      toast.success("Photo uploaded");
+      toast.success(ui("Photo uploaded"));
     } catch (err: any) {
-      toast.error(err?.message || "Failed to upload photo");
+      toast.error(err?.message || ui("Failed to upload photo"));
     } finally {
       setChangemakerUploading(false);
       e.target.value = "";
@@ -612,58 +634,58 @@ function NewNgoDriveForm() {
   function validateStep(s: NgoDriveStep): boolean {
     const e: Record<string, string> = {};
     if (s === "drive-location") {
-      if (!driveLoc.countryIso) e.countryIso = "Choose the country";
-      if (!driveLoc.stateIso) e.stateIso = "Choose the state";
-      if (!driveLoc.city.trim() || driveLoc.city.length > 100) e.city = "Enter the city";
-      if (driveLoc.locality.length > 100) e.locality = "Locality cannot exceed 100 characters";
-      if (!/^[1-9][0-9]{5}$/.test(driveLoc.pincode.trim())) e.pincode = "Enter a 6-digit PIN code";
-      if (driveLoc.latitude == null || driveLoc.longitude == null) e.latitude = "Drop the pin on the map";
-      if (radiusKm(radiusChoice, customRadius) == null) e.pickupRadiusKm = "Choose a distance from 1 to 500 km";
+      if (!driveLoc.countryIso) e.countryIso = ui("Choose the country");
+      if (!driveLoc.stateIso) e.stateIso = ui("Choose the state");
+      if (!driveLoc.city.trim() || driveLoc.city.length > 100) e.city = ui("Enter the city");
+      if (driveLoc.locality.length > 100) e.locality = ui("Locality cannot exceed 100 characters");
+      if (!/^[1-9][0-9]{5}$/.test(driveLoc.pincode.trim())) e.pincode = ui("Enter a 6-digit PIN code");
+      if (driveLoc.latitude == null || driveLoc.longitude == null) e.latitude = ui("Drop the pin on the map");
+      if (radiusKm(radiusChoice, customRadius) == null) e.pickupRadiusKm = ui("Choose a distance from 1 to 500 km");
     }
     if (s === "drive-details") {
-      if (!title.trim() || title.length < 10 || title.length > 80) e.title = "Title must be 10-80 characters";
-      if (tagline.trim() && tagline.length > 100) e.tagline = "Tagline cannot exceed 100 characters";
-      if (!category) e.category = "Category is required";
-      if (!itemName.trim() || itemName.length < 2 || itemName.length > 60) e.itemName = "Item name must be 2-60 characters";
-      if (quantity === "" || quantity < 2 || quantity > 10000) e.quantity = "Drives collect in bulk: ask for 2 to 10000";
-      if (!unit) e.unit = "Unit is required";
-      if (photos.length > 5) e.photos = "Up to 5 reference photos";
-      if (!condition) e.condition = "Condition is required";
-      if (!details.trim()) e.details = "Add the details donors need";
-      else if (details.length > DETAILS_MAX) e.details = `Details cannot exceed ${DETAILS_MAX} characters`;
-      if (!whoFor.trim() || whoFor.length < 10 || whoFor.length > 300) e.whoFor = "Who is this for must be 10-300 characters";
-      if (!whyNow.trim() || whyNow.length < 10 || whyNow.length > 300) e.whyNow = "Why now must be 10-300 characters";
-      if (!whatChanges.trim() || whatChanges.length < 10 || whatChanges.length > 300) e.whatChanges = "What will change must be 10-300 characters";
+      if (!title.trim() || title.length < 10 || title.length > 80) e.title = ui("Title must be 10-80 characters");
+      if (tagline.trim() && tagline.length > 100) e.tagline = ui("Tagline cannot exceed 100 characters");
+      if (!category) e.category = ui("Category is required");
+      if (!itemName.trim() || itemName.length < 2 || itemName.length > 60) e.itemName = ui("Item name must be 2-60 characters");
+      if (quantity === "" || quantity < 2 || quantity > 10000) e.quantity = ui("Drives collect in bulk: ask for 2 to 10000");
+      if (!unit) e.unit = ui("Unit is required");
+      if (photos.length > 5) e.photos = ui("Up to 5 reference photos");
+      if (!condition) e.condition = ui("Condition is required");
+      if (!details.trim()) e.details = ui("Add the details donors need");
+      else if (details.length > DETAILS_MAX) e.details = df("detailsMax", { max: DETAILS_MAX });
+      if (!whoFor.trim() || whoFor.length < 10 || whoFor.length > 300) e.whoFor = ui("Who is this for must be 10-300 characters");
+      if (!whyNow.trim() || whyNow.length < 10 || whyNow.length > 300) e.whyNow = ui("Why now must be 10-300 characters");
+      if (!whatChanges.trim() || whatChanges.length < 10 || whatChanges.length > 300) e.whatChanges = ui("What will change must be 10-300 characters");
     }
     if (s === "beneficiaries-handover") {
-      if (!beneficiaryGroup) e.beneficiaryGroup = "Beneficiary group is required";
-      if (beneficiaryCount === "" || beneficiaryCount < 1) e.beneficiaryCount = "Enter how many people will benefit (at least 1)";
-      if (!beneficiaryDescription.trim() || beneficiaryDescription.length > 120) e.beneficiaryDescription = "About the beneficiaries must be 1-120 characters";
-      if (!neededBy) e.neededBy = "Date is required";
+      if (!beneficiaryGroup) e.beneficiaryGroup = ui("Beneficiary group is required");
+      if (beneficiaryCount === "" || beneficiaryCount < 1) e.beneficiaryCount = ui("Enter how many people will benefit (at least 1)");
+      if (!beneficiaryDescription.trim() || beneficiaryDescription.length > 120) e.beneficiaryDescription = ui("About the beneficiaries must be 1-120 characters");
+      if (!neededBy) e.neededBy = ui("Date is required");
       else {
         const d = new Date(neededBy);
         const minDate = new Date(); minDate.setDate(minDate.getDate() + 2);
         const maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 90);
-        if (d < minDate || d > maxDate) e.neededBy = "Date must be 3-90 days from today";
+        if (d < minDate || d > maxDate) e.neededBy = ui("Date must be 3-90 days from today");
       }
-      if (!handoverMode) e.handoverMode = "Select a handover mode";
-      if (availableDays.length === 0) e.availableDays = "Select at least one day";
-      if (!availableFrom) e.availableFrom = "Select a start time";
-      if (!availableTo) e.availableTo = "Select an end time";
-      else if (availableFrom && availableTo <= availableFrom) e.availableTo = "End time must be after start time";
-      if (!changemakerName.trim() || changemakerName.length > 100) e.changemakerName = "Name is required (up to 100 characters)";
-      if (!changemakerRole.trim() || changemakerRole.length > 100) e.changemakerRole = "Role is required (up to 100 characters)";
-      if (!changemakerPhotoUrl) e.changemakerPhoto = "Photo of the person leading this drive is required";
-      if (!changemakerWhy.trim() || changemakerWhy.length < 30 || changemakerWhy.length > 300) e.changemakerWhy = "Why you do this work must be 30-300 characters (2 to 3 lines)";
-      if (!contactName.trim()) e.contactName = "Contact name is required";
-      { const err = phoneError(contactDial, contactPhone.trim()); if (err) e.contactPhone = err; }
+      if (!handoverMode) e.handoverMode = ui("Select a handover mode");
+      if (availableDays.length === 0) e.availableDays = ui("Select at least one day");
+      if (!availableFrom) e.availableFrom = ui("Select a start time");
+      if (!availableTo) e.availableTo = ui("Select an end time");
+      else if (availableFrom && availableTo <= availableFrom) e.availableTo = ui("End time must be after start time");
+      if (!changemakerName.trim() || changemakerName.length > 100) e.changemakerName = ui("Name is required (up to 100 characters)");
+      if (!changemakerRole.trim() || changemakerRole.length > 100) e.changemakerRole = ui("Role is required (up to 100 characters)");
+      if (!changemakerPhotoUrl) e.changemakerPhoto = ui("Photo of the person leading this drive is required");
+      if (!changemakerWhy.trim() || changemakerWhy.length < 30 || changemakerWhy.length > 300) e.changemakerWhy = ui("Why you do this work must be 30-300 characters (2 to 3 lines)");
+      if (!contactName.trim()) e.contactName = ui("Contact name is required");
+      { const err = phoneError(contactDial, contactPhone.trim()); if (err) { const c = PHONE_COUNTRIES.find((x) => x.code === contactDial) ?? PHONE_COUNTRIES[0]; e.contactPhone = df("phoneInvalid", { country: dc(c.label), hint: dc(c.hint) }); } }
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
-        if (!isEmail && !isPhone) e.altContact = "Alternate contact must be a valid email or 10-digit phone";
+        if (!isEmail && !isPhone) e.altContact = ui("Alternate contact must be a valid email or 10-digit phone");
       }
       if (pastWorkUrl.trim()) {
-        if (!/^https?:\/\/.+/i.test(pastWorkUrl.trim())) e.pastWorkUrl = "Past work link must be a valid http or https URL";
+        if (!/^https?:\/\/.+/i.test(pastWorkUrl.trim())) e.pastWorkUrl = ui("Past work link must be a valid http or https URL");
       }
     }
     setFieldErrors(e);
@@ -672,7 +694,7 @@ function NewNgoDriveForm() {
 
   async function handleNext() {
     if (step === "drive-location" && locationStepRef.current && !(await locationStepRef.current.flush())) return;
-    if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
+    if (!validateStep(step)) { toast.error(ui("Please fix the highlighted fields")); return; }
     const i = ngoStepIndex(step);
     if (i < NGO_DRIVE_STEPS.length - 1) goToStep(NGO_DRIVE_STEPS[i + 1], 1);
   }
@@ -685,7 +707,7 @@ function NewNgoDriveForm() {
 
   async function handleSaveExit() {
     await saveDraft();
-    toast.success("Draft saved");
+    toast.success(ui("Draft saved"));
     router.push("/dashboard/ngo");
   }
 
@@ -778,7 +800,7 @@ function NewNgoDriveForm() {
         setFieldErrors(byField);
         toast.error(errors.map(f => f.message).join(" · "));
       } else {
-        toast.error(e instanceof Error && e.message ? e.message : "Something went wrong. Please try again.");
+        toast.error(e instanceof Error && e.message ? e.message : ui("Something went wrong. Please try again."));
       }
     } finally {
       setSubmitting(false);
@@ -801,9 +823,9 @@ function NewNgoDriveForm() {
   if (editLoadError) {
     return (
       <div role="alert" className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
-        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">This drive can&apos;t be edited</h1>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2"><UiText>This drive can&apos;t be edited</UiText></h1>
         <p className="text-stone-500 mb-6">{editLoadError}</p>
-        <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">Go to dashboard</Link>
+        <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600"><UiText>Go to dashboard</UiText></Link>
       </div>
     );
   }
@@ -811,10 +833,10 @@ function NewNgoDriveForm() {
     if (statusError && !statusLoading) {
       return (
         <div role="alert" className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
-          <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">We couldn&apos;t check your NGO status</h1>
+          <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2"><UiText>We couldn&apos;t check your NGO status</UiText></h1>
           <p className="text-stone-500 mb-6">{statusError}</p>
           <button type="button" onClick={() => void refreshStatus()} className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
-            Try again
+            <UiText>Try again</UiText>
           </button>
         </div>
       );
@@ -826,10 +848,10 @@ function NewNgoDriveForm() {
     return (
       <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
-        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">One drive at a time</h1>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2"><UiText>One drive at a time</UiText></h1>
         <p className="text-stone-500 mb-6 max-w-md">{driveLockReason}</p>
         <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
-          Go to dashboard
+          <UiText>Go to dashboard</UiText>
         </Link>
       </div>
     );
@@ -839,13 +861,13 @@ function NewNgoDriveForm() {
     return (
       <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
-        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Handover photos due</h1>
-        <p className="text-stone-500 mb-6">Upload the handover photos for {photosDueRequestName || "your recent handover"} before starting another drive.</p>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2"><UiText>Handover photos due</UiText></h1>
+        <p className="text-stone-500 mb-6">{df("uploadHandoverPhotosFirst", { name: photosDueRequestName || ui("your recent handover") })}</p>
         <Link href="/ngo/handovers" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
-          Go to Handovers &amp; Photos
+          <UiText>Go to Handovers &amp; Photos</UiText>
         </Link>
         <Link href="/dashboard/ngo" className="mt-3 text-sm font-bold text-ngo-700 hover:underline">
-          Go to dashboard
+          <UiText>Go to dashboard</UiText>
         </Link>
       </div>
     );
@@ -858,19 +880,19 @@ function NewNgoDriveForm() {
         <div className="w-16 h-16 bg-ngo-100 dark:bg-ngo-900/30 text-ngo-700 dark:text-ngo-300 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <ShieldCheck className="w-8 h-8" aria-hidden />
         </div>
-        <DialogTitle className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-2">Drive submitted!</DialogTitle>
+        <DialogTitle className="text-2xl font-bold text-stone-900 dark:text-stone-100 mb-2"><UiText>Drive submitted!</UiText></DialogTitle>
         <DialogDescription className="text-stone-500 dark:text-stone-400 text-sm mb-6 leading-relaxed">
-          Our team is reviewing your drive to ensure all details and safeguards are met. It usually goes live within 2 to 4 hours.
+          <UiText>Our team is reviewing your drive to ensure all details and safeguards are met. It usually goes live within 2 to 4 hours.</UiText>
         </DialogDescription>
         <div className="space-y-3">
           <Link href="/dashboard/ngo" className="block w-full py-3 px-4 rounded-xl bg-ngo-700 hover:bg-ngo-800 text-white font-bold text-sm transition-colors">
-            Go to NGO dashboard
+            <UiText>Go to NGO dashboard</UiText>
           </Link>
           <button type="button" disabled aria-describedby="one-drive-note"
             className="block w-full py-3 px-4 rounded-xl border border-stone-200 dark:border-zinc-800 text-stone-400 dark:text-stone-500 font-semibold text-sm cursor-not-allowed">
-            Start another drive
+            <UiText>Start another drive</UiText>
           </button>
-          <p id="one-drive-note" className="text-xs text-stone-500 dark:text-stone-400">You can start another drive once this one is completed with proof.</p>
+          <p id="one-drive-note" className="text-xs text-stone-500 dark:text-stone-400"><UiText>You can start another drive once this one is completed with proof.</UiText></p>
         </div>
       </DialogContent>
     </Dialog>
@@ -881,24 +903,24 @@ function NewNgoDriveForm() {
       <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950 flex flex-col justify-center items-center p-4">
         <div className="max-w-xl w-full">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100 mb-2" style={{ fontFamily: "serif" }}>What kind of drive?</h1>
-            <p className="text-stone-500 text-sm">Choose the category of drive you want to organize.</p>
+            <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100 mb-2" style={{ fontFamily: "serif" }}><UiText>What kind of drive?</UiText></h1>
+            <p className="text-stone-500 text-sm"><UiText>Choose the category of drive you want to organize.</UiText></p>
           </div>
           <div className="grid sm:grid-cols-2 gap-4">
             <button onClick={() => goToStep("drive-location", 1)} className="text-left bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 hover:border-ngo-600 dark:hover:border-ngo-500 rounded-2xl p-6 transition-all hover:shadow-md group">
               <div className="w-10 h-10 rounded-xl bg-ngo-50 dark:bg-ngo-900/30 text-ngo-700 dark:text-ngo-300 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
                 <Layers className="w-5 h-5" />
               </div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">Item drive</h2>
-              <p className="text-stone-500 text-sm leading-relaxed">Collect tangible items like blankets, books, food, clothes, or stationery.</p>
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2"><UiText>Item drive</UiText></h2>
+              <p className="text-stone-500 text-sm leading-relaxed"><UiText>Collect tangible items like blankets, books, food, clothes, or stationery.</UiText></p>
               <div className="mt-4 flex items-center text-xs font-bold text-ngo-700 dark:text-ngo-400">
-                Start an item drive <ArrowRight className="w-3.5 h-3.5 ml-1" />
+                <UiText>Start an item drive</UiText> <ArrowRight className="w-3.5 h-3.5 ml-1" />
               </div>
             </button>
             <button disabled aria-disabled className="text-left bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl p-6 opacity-60 relative">
-              <div className="absolute top-4 right-4 bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 text-2xs font-black uppercase tracking-wider px-2 py-1 rounded-md">Coming soon</div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2">Money drive</h2>
-              <p className="text-stone-500 text-sm leading-relaxed">Raise funds for what you need.</p>
+              <div className="absolute top-4 right-4 bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 text-2xs font-black uppercase tracking-wider px-2 py-1 rounded-md"><UiText>Coming soon</UiText></div>
+              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2"><UiText>Money drive</UiText></h2>
+              <p className="text-stone-500 text-sm leading-relaxed"><UiText>Raise funds for what you need.</UiText></p>
             </button>
           </div>
         </div>
@@ -933,44 +955,44 @@ function NewNgoDriveForm() {
       <div className="min-w-0 space-y-5">
         {/* 1. Drive Parameters */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="params-heading">
-          <h3 id="params-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">1. Drive Parameters</h3>
+          <h3 id="params-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>1. Drive Parameters</UiText></h3>
           
-          <WizardField label="Drive title" required error={fieldErrors.title} hint={`${title.length}/80`}>
+          <WizardField label={ui("Drive title")} required error={fieldErrors.title} hint={`${title.length}/80`}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="title" maxLength={80} placeholder="e.g. Winter blankets for Kandivali Elder Shelter" value={title} onChange={e => setTitle(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="title" maxLength={80} placeholder={ui("e.g. Winter blankets for Kandivali Elder Shelter")} value={title} onChange={e => setTitle(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
-          <WizardField label="Short tagline" error={fieldErrors.tagline} hint={`${tagline.length}/100`}>
+          <WizardField label={ui("Short tagline")} error={fieldErrors.tagline} hint={`${tagline.length}/100`}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="tagline" maxLength={100} placeholder="e.g. 50 students are sitting in class without a pen" value={tagline} onChange={e => setTagline(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="tagline" maxLength={100} placeholder={ui("e.g. 50 students are sitting in class without a pen")} value={tagline} onChange={e => setTagline(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
           
-          <WizardField label="Category" required error={fieldErrors.category}>
+          <WizardField label={ui("Category")} required error={fieldErrors.category}>
             {({ id, describedBy, invalid }) => (
               <Select value={category} onValueChange={setCategory}>
                 <SelectTrigger id={id} data-field="category" aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`}>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue placeholder={ui("Select category")} />
                 </SelectTrigger>
                 <SelectContent>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             )}
           </WizardField>
   
-          <WizardField label="Item name" required error={fieldErrors.itemName}>
+          <WizardField label={ui("Item name")} required error={fieldErrors.itemName}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="itemName" maxLength={60} placeholder="e.g. Blankets" value={itemName} onChange={e => setItemName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="itemName" maxLength={60} placeholder={ui("e.g. Blankets")} value={itemName} onChange={e => setItemName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
   
           <div className="grid grid-cols-2 gap-4">
-            <WizardField label="Quantity" required error={fieldErrors.quantity}>
+            <WizardField label={ui("Quantity")} required error={fieldErrors.quantity}>
               {({ id, describedBy, invalid }) => (
                 <Input id={id} name="quantity" type="number" min={2} max={10000} placeholder="e.g. 40" value={quantity} onChange={e => setQuantity(e.target.value ? Number(e.target.value) : "")} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
-            <WizardField label="Unit" required error={fieldErrors.unit}>
+            <WizardField label={ui("Unit")} required error={fieldErrors.unit}>
               {({ id, describedBy, invalid }) => (
                 <Select value={unit} onValueChange={setUnit as any}>
                   <SelectTrigger id={id} data-field="unit" aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`}>
@@ -988,9 +1010,9 @@ function NewNgoDriveForm() {
 
         {/* 4. Drive Story */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="story-heading">
-          <h3 id="story-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">4. Drive Story</h3>
+          <h3 id="story-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Drive Story</UiText></h3>
           
-          <WizardField label="Details" required error={fieldErrors.details} hint={`Include sizes, condition, colours, brands or anything else donors should know. ${details.length}/${DETAILS_MAX}`}>
+          <WizardField label={ui("Details")} required error={fieldErrors.details} hint={df("detailsHint", { count: details.length, max: DETAILS_MAX })}>
             {({ id, describedBy, invalid }) => (
               <Textarea id={id} name="details" rows={3} maxLength={DETAILS_MAX} value={details} onChange={e => setDetails(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
@@ -998,26 +1020,26 @@ function NewNgoDriveForm() {
 
           {legacyDescription && (
             <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-              <p className="font-semibold mb-1">Previous description (rewrite into the three sections below):</p>
+              <p className="font-semibold mb-1"><UiText>Previous description (rewrite into the three sections below):</UiText></p>
               <p className="whitespace-pre-wrap">{legacyDescription}</p>
             </div>
           )}
 
-          <WizardField label="Who is this for?" required error={fieldErrors.whoFor} hint={`Who will receive these items and what is their current situation? ${whoFor.length}/300`}>
+          <WizardField label={ui("Who is this for?")} required error={fieldErrors.whoFor} hint={df("whoForHint", { count: whoFor.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="whoFor" rows={3} maxLength={300} placeholder="e.g. 50 children residing in our rural learning center..." value={whoFor} onChange={e => setWhoFor(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="whoFor" rows={3} maxLength={300} placeholder={ui("e.g. 50 children residing in our rural learning center...")} value={whoFor} onChange={e => setWhoFor(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
-          <WizardField label="Why now?" required error={fieldErrors.whyNow} hint={`What makes this need urgent or timely right now? ${whyNow.length}/300`}>
+          <WizardField label={ui("Why now?")} required error={fieldErrors.whyNow} hint={df("whyNowHint", { count: whyNow.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="whyNow" rows={3} maxLength={300} placeholder="e.g. The monsoon season has started and leaky roofs damaged the previous stock..." value={whyNow} onChange={e => setWhyNow(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="whyNow" rows={3} maxLength={300} placeholder={ui("e.g. The monsoon season has started and leaky roofs damaged the previous stock...")} value={whyNow} onChange={e => setWhyNow(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
-          <WizardField label="What will change after donors give?" required error={fieldErrors.whatChanges} hint={`How will these items directly improve their lives? ${whatChanges.length}/300`}>
+          <WizardField label={ui("What will change after donors give?")} required error={fieldErrors.whatChanges} hint={df("whatChangesHint", { count: whatChanges.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="whatChanges" rows={3} maxLength={300} placeholder="e.g. Students will attend school daily without falling sick..." value={whatChanges} onChange={e => setWhatChanges(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="whatChanges" rows={3} maxLength={300} placeholder={ui("e.g. Students will attend school daily without falling sick...")} value={whatChanges} onChange={e => setWhatChanges(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -1028,9 +1050,9 @@ function NewNgoDriveForm() {
       <div className="min-w-0 space-y-5">
         {/* 2. Urgency Classification */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="urgency-heading">
-          <h3 id="urgency-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">2. Urgency Classification</h3>
+          <h3 id="urgency-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>2. Urgency Classification</UiText></h3>
           <fieldset className="space-y-1">
-            <legend className="text-xs font-bold text-stone-700 dark:text-stone-200 mb-1">Urgency Level</legend>
+            <legend className="text-xs font-bold text-stone-700 dark:text-stone-200 mb-1"><UiText>Urgency Level</UiText></legend>
             <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
               {URGENCIES.map(u => (
                 <button key={u.value} type="button" onClick={() => setUrgency(u.value as any)}
@@ -1040,22 +1062,22 @@ function NewNgoDriveForm() {
                 </button>
               ))}
             </div>
-            <p className="text-xs text-stone-500 mt-2">Use High or Critical only when the need is time-sensitive.</p>
+            <p className="text-xs text-stone-500 mt-2"><UiText>Use High or Critical only when the need is time-sensitive.</UiText></p>
           </fieldset>
         </section>
   
         {/* 3. Item Requirements */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="item-req-heading">
-          <h3 id="item-req-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">3. Item Requirements</h3>
+          <h3 id="item-req-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Item Requirements</UiText></h3>
           
-          <WizardField label="Condition accepted" required error={fieldErrors.condition} hint={wizardConditionHelper(condition) ?? undefined}>
+          <WizardField label={ui("Condition accepted")} required error={fieldErrors.condition} hint={wizardConditionHelper(condition) ? dc(wizardConditionHelper(condition)) : undefined}>
             {({ id, describedBy, invalid }) => (
               <Select value={condition} onValueChange={setCondition as any}>
                 <SelectTrigger id={id} data-field="condition" aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {WIZARD_DRIVE_CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  {WIZARD_DRIVE_CONDITIONS.map(c => <SelectItem key={c.value} value={c.value}>{dc(c.label)}</SelectItem>)}
                 </SelectContent>
               </Select>
             )}
@@ -1070,7 +1092,7 @@ function NewNgoDriveForm() {
                 className="w-4 h-4 rounded border-slate-300 text-ngo-600 focus:ring-ngo-500"
               />
               <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">
-                Items must be in working order
+                <UiText>Items must be in working order</UiText>
               </span>
             </label>
           )}
@@ -1084,7 +1106,7 @@ function NewNgoDriveForm() {
                 className="w-4 h-4 rounded border-slate-300 text-ngo-600 focus:ring-ngo-500"
               />
               <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">
-                Items must be washed and clean
+                <UiText>Items must be washed and clean</UiText>
               </span>
             </label>
           )}
@@ -1092,21 +1114,21 @@ function NewNgoDriveForm() {
 
         {/* Photos: the drive cover and the optional reference photos */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="photos-heading">
-          <h3 id="photos-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">Photos</h3>
+          <h3 id="photos-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>Photos</UiText></h3>
           <div className="space-y-2" data-testid="drive-cover-field">
-            <p className="text-xs font-semibold text-stone-700 dark:text-stone-200">Drive cover photo <span className="text-stone-400 font-normal">(optional)</span></p>
-            <p className="text-2xs text-stone-500 dark:text-stone-400">A real photo of your work, such as volunteers with collected items or a past distribution. Landscape, no identifiable faces of children.</p>
+            <p className="text-xs font-semibold text-stone-700 dark:text-stone-200"><UiText>Drive cover photo</UiText> <span className="text-stone-400 font-normal"><UiText>(optional)</UiText></span></p>
+            <p className="text-2xs text-stone-500 dark:text-stone-400"><UiText>A real photo of your work, such as volunteers with collected items or a past distribution. Landscape, no identifiable faces of children.</UiText></p>
             {coverPhoto ? (
               <div className="relative aspect-[16/9] w-full max-w-xs overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-700">
                 {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
-                <img src={coverPhoto.url} alt="Drive cover" className="h-full w-full object-cover" />
-                <button type="button" onClick={() => setCoverPhoto(null)} aria-label="Remove cover photo"
+                <img src={coverPhoto.url} alt={ui("Drive cover")} className="h-full w-full object-cover" />
+                <button type="button" onClick={() => setCoverPhoto(null)} aria-label={ui("Remove cover photo")}
                   className="absolute top-1 right-1 rounded-full bg-red-600 p-1 text-white shadow hover:bg-red-700"><X className="w-3 h-3" /></button>
               </div>
             ) : (
               <button type="button" onClick={() => document.getElementById("cover-upload")?.click()} disabled={coverUploading}
                 className="flex aspect-[16/9] w-full max-w-xs flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-xs font-semibold text-slate-600 hover:border-ngo-600 dark:border-zinc-700 dark:text-slate-300">
-                {coverUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UploadCloud className="w-5 h-5 mb-1" />Add cover photo</>}
+                {coverUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><UploadCloud className="w-5 h-5 mb-1" /><UiText>Add cover photo</UiText></>}
               </button>
             )}
             <input id="cover-upload" type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handleCoverUpload} />
@@ -1114,18 +1136,18 @@ function NewNgoDriveForm() {
           {/* Reference photos (optional, 0 to 5): shown only on the drive page */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-stone-700 dark:text-stone-200 block">
-              Reference photos: how you&apos;d like the items to look <span className="text-stone-400 font-normal">(optional, {photos.length}/5)</span>
+              <UiText>Reference photos: how you&apos;d like the items to look</UiText> <span className="text-stone-400 font-normal">{df("optionalCount", { count: photos.length, max: 5 })}</span>
             </label>
-            <p className="text-xs text-stone-500">Show the need, not identifiable faces of children without consent.</p>
+            <p className="text-xs text-stone-500"><UiText>Show the need, not identifiable faces of children without consent.</UiText></p>
             {fieldErrors.photos && <p className="text-xs text-red-500">{fieldErrors.photos}</p>}
             
             <div className="flex flex-wrap items-center gap-3 pt-1">
               {photos.map((photo, idx) => (
                 <div key={photo.url + idx} className="relative w-20 h-20 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0 group">
-                  <img src={photo.url} alt={`Drive photo ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={photo.url} alt={df("drivePhotoN", { n: idx + 1 })} className="w-full h-full object-cover" />
                   {idx === 0 ? (
                     <span className="absolute top-1 left-1 bg-ngo-700 text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                      Cover
+                      <UiText>Cover</UiText>
                     </span>
                   ) : (
                     <button
@@ -1133,13 +1155,13 @@ function NewNgoDriveForm() {
                       onClick={() => handleMakeCover(idx)}
                       className="absolute bottom-1 left-1 right-1 bg-black/75 hover:bg-black text-white text-[9px] font-bold py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-center"
                     >
-                      Make cover
+                      <UiText>Make cover</UiText>
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={() => handleRemovePhoto(idx)}
-                    aria-label={`Remove photo ${idx + 1}`}
+                    aria-label={df("removePhotoN", { n: idx + 1 })}
                     className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full shadow"
                   >
                     <X className="w-3 h-3" />
@@ -1155,7 +1177,7 @@ function NewNgoDriveForm() {
                   className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-300 dark:border-zinc-700 hover:border-ngo-600 dark:hover:border-ngo-400 flex flex-col items-center justify-center text-xs font-semibold text-slate-600 dark:text-slate-300 transition-colors"
                 >
                   <UploadCloud className="w-5 h-5 mb-1" />
-                  {photoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Add photo"}
+                  {photoUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : ui("Add photo")}
                 </button>
               )}
               <input
@@ -1167,17 +1189,17 @@ function NewNgoDriveForm() {
                 onChange={handlePhotoUpload}
               />
             </div>
-            <p className="text-2xs text-stone-400">Show donors the kind of items you want, e.g. a sample blanket. Up to 5 images, 5 MB each.</p>
+            <p className="text-2xs text-stone-400"><UiText>Show donors the kind of items you want, e.g. a sample blanket. Up to 5 images, 5 MB each.</UiText></p>
           </div>
         </section>
         {/* 5. Drive Location */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="location-heading">
-          <h3 id="location-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Drive address for donors</h3>
+          <h3 id="location-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>5. Drive address for donors</UiText></h3>
           
           <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 text-xs">
-            <span className="font-semibold text-stone-700 dark:text-stone-300 block mb-0.5">Registered office address</span>
-            <p className="text-stone-600 dark:text-stone-400">{registeredOfficeAddress || "Registered address on file"}</p>
-            <p className="text-2xs text-stone-500 mt-1.5">Your registered address will be shown to donors on the drive page so they can visit you.</p>
+            <span className="font-semibold text-stone-700 dark:text-stone-300 block mb-0.5"><UiText>Registered office address</UiText></span>
+            <p className="text-stone-600 dark:text-stone-400">{registeredOfficeAddress || ui("Registered address on file")}</p>
+            <p className="text-2xs text-stone-500 mt-1.5"><UiText>Your registered address will be shown to donors on the drive page so they can visit you.</UiText></p>
           </div>
         </section>
       </div>
@@ -1190,43 +1212,43 @@ function NewNgoDriveForm() {
       <div className="min-w-0 space-y-5">
         {/* 1. Who Benefits */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="who-heading">
-          <h3 id="who-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">1. Who Benefits</h3>
+          <h3 id="who-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>1. Who Benefits</UiText></h3>
           
-          <WizardField label="Group" required error={fieldErrors.beneficiaryGroup}>
+          <WizardField label={ui("Group")} required error={fieldErrors.beneficiaryGroup}>
             {({ id, describedBy, invalid }) => (
               <Select value={beneficiaryGroup} onValueChange={setBeneficiaryGroup}>
                 <SelectTrigger id={id} data-field="beneficiaryGroup" aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`}>
-                  <SelectValue placeholder="Select group" />
+                  <SelectValue placeholder={ui("Select group")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {BENEFICIARY_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
+                  {BENEFICIARY_GROUPS.map(g => <SelectItem key={g} value={g}>{dc(g)}</SelectItem>)}
                 </SelectContent>
               </Select>
             )}
           </WizardField>
   
-          <WizardField label="How many people will benefit?" required error={fieldErrors.beneficiaryCount} hint="People or families helped, not the number of items.">
+          <WizardField label={ui("How many people will benefit?")} required error={fieldErrors.beneficiaryCount} hint={ui("People or families helped, not the number of items.")}>
             {({ id, describedBy, invalid }) => (
               <Input id={id} name="beneficiaryCount" type="number" min={1} value={beneficiaryCount} onChange={e => setBeneficiaryCount(e.target.value ? Number(e.target.value) : "")} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
-          <WizardField label="About the beneficiaries" required error={fieldErrors.beneficiaryDescription} hint={`${beneficiaryDescription.length}/120`}>
+          <WizardField label={ui("About the beneficiaries")} required error={fieldErrors.beneficiaryDescription} hint={`${beneficiaryDescription.length}/120`}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="beneficiaryDescription" maxLength={120} placeholder="e.g. Class 5 students at a municipal school" value={beneficiaryDescription} onChange={e => setBeneficiaryDescription(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="beneficiaryDescription" maxLength={120} placeholder={ui("e.g. Class 5 students at a municipal school")} value={beneficiaryDescription} onChange={e => setBeneficiaryDescription(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
   
         {/* 2. Timeline */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="timeline-heading">
-          <h3 id="timeline-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">2. Timeline</h3>
-          <WizardField label="Needed by" required error={fieldErrors.neededBy}>
+          <h3 id="timeline-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>2. Timeline</UiText></h3>
+          <WizardField label={ui("Needed by")} required error={fieldErrors.neededBy}>
             {({ id, describedBy, invalid }) => (
               <div>
                 <Input id={id} name="neededBy" type="date" min={minDateStr} max={maxDateStr} value={neededBy} onChange={e => setNeededBy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
                 {neededBy && (
-                  <p className="text-xs text-stone-500 mt-1">Needed by: {formatDateDDMMYYYY(neededBy)}</p>
+                  <p className="text-xs text-stone-500 mt-1">{df("neededByColon", { date: formatDateDDMMYYYY(neededBy) })}</p>
                 )}
               </div>
             )}
@@ -1235,24 +1257,24 @@ function NewNgoDriveForm() {
 
         {/* 4. Who is behind the drive */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="changemaker-heading">
-          <h3 id="changemaker-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">4. Who is Behind the Drive</h3>
+          <h3 id="changemaker-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>4. Who is Behind the Drive</UiText></h3>
 
           <div className="grid grid-cols-2 gap-4">
-            <WizardField label="Name" required error={fieldErrors.changemakerName} hint={`${changemakerName.length}/100`}>
+            <WizardField label={ui("Name")} required error={fieldErrors.changemakerName} hint={`${changemakerName.length}/100`}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="changemakerName" maxLength={100} placeholder="e.g. Priya Nair" value={changemakerName} onChange={e => setChangemakerName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <Input id={id} name="changemakerName" maxLength={100} placeholder={ui("e.g. Priya Nair")} value={changemakerName} onChange={e => setChangemakerName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
-            <WizardField label="Role" required error={fieldErrors.changemakerRole} hint={`${changemakerRole.length}/100`}>
+            <WizardField label={ui("Role")} required error={fieldErrors.changemakerRole} hint={`${changemakerRole.length}/100`}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="changemakerRole" maxLength={100} placeholder="e.g. Program Coordinator" value={changemakerRole} onChange={e => setChangemakerRole(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <Input id={id} name="changemakerRole" maxLength={100} placeholder={ui("e.g. Program Coordinator")} value={changemakerRole} onChange={e => setChangemakerRole(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
           </div>
 
           <div>
             <label className="text-xs font-bold text-stone-700 dark:text-stone-200 block mb-1">
-              Photo<span className="text-red-500">*</span>
+              <UiText>Photo</UiText><span className="text-red-500">*</span>
             </label>
             {fieldErrors.changemakerPhoto && <p className="text-xs text-red-500 mb-1">{fieldErrors.changemakerPhoto}</p>}
             <div className="flex items-center gap-4">
@@ -1263,7 +1285,7 @@ function NewNgoDriveForm() {
                 className="flex items-center gap-2 px-4 py-2 border border-slate-200 dark:border-zinc-700 rounded-lg hover:bg-slate-50 dark:hover:bg-zinc-800 text-xs font-semibold text-slate-700 dark:text-slate-300"
               >
                 <UploadCloud className="w-4 h-4" />
-                {changemakerUploading ? "Uploading…" : "Upload Photo"}
+                {changemakerUploading ? ui("Uploading…") : ui("Upload Photo")}
               </button>
               <input
                 id="changemaker-photo-upload"
@@ -1274,7 +1296,7 @@ function NewNgoDriveForm() {
               />
               {changemakerPhotoUrl && (
                 <div className="relative w-12 h-12 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
-                  <img src={changemakerPhotoUrl} alt="Changemaker" className="w-full h-full object-cover" />
+                  <img src={changemakerPhotoUrl} alt={ui("Changemaker")} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => { setChangemakerPhotoUrl(""); setChangemakerPhotoKey(""); }}
@@ -1285,12 +1307,12 @@ function NewNgoDriveForm() {
                 </div>
               )}
             </div>
-            <p className="text-2xs text-stone-500 mt-1.5">Max 5 MB. JPG, PNG, WEBP.</p>
+            <p className="text-2xs text-stone-500 mt-1.5"><UiText>Max 5 MB. JPG, PNG, WEBP.</UiText></p>
           </div>
 
-          <WizardField label="Why you do this work" required error={fieldErrors.changemakerWhy} hint={`2 to 3 lines (${changemakerWhy.length}/300)`}>
+          <WizardField label={ui("Why you do this work")} required error={fieldErrors.changemakerWhy} hint={df("twoToThreeLines", { count: changemakerWhy.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="changemakerWhy" rows={3} maxLength={300} placeholder="e.g. Having grown up in this community, ensuring every child has school supplies has been my personal calling for 6 years." value={changemakerWhy} onChange={e => setChangemakerWhy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="changemakerWhy" rows={3} maxLength={300} placeholder={ui("e.g. Having grown up in this community, ensuring every child has school supplies has been my personal calling for 6 years.")} value={changemakerWhy} onChange={e => setChangemakerWhy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -1300,13 +1322,13 @@ function NewNgoDriveForm() {
       <div className="min-w-0 space-y-5">
         {/* 3. Handover Availability */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="handover-heading">
-          <h3 id="handover-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">3. Handover Availability</h3>
+          <h3 id="handover-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>3. Handover Availability</UiText></h3>
           <div className="p-3 bg-ngo-50 dark:bg-ngo-900/20 border border-ngo-100 dark:border-ngo-800 rounded-lg text-xs text-ngo-800 dark:text-ngo-200 leading-relaxed mb-4">
-            Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.
+            <UiText>Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.</UiText>
           </div>
 
           <fieldset className="space-y-1">
-            <legend className="text-xs font-bold text-stone-700 dark:text-stone-200 mb-1">Handover mode*</legend>
+            <legend className="text-xs font-bold text-stone-700 dark:text-stone-200 mb-1"><UiText>Handover mode*</UiText></legend>
             <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
               {HANDOVER_MODES.map(m => (
                 <button
@@ -1316,14 +1338,14 @@ function NewNgoDriveForm() {
                   aria-pressed={handoverMode === m.value}
                   className={`min-h-10 flex-1 rounded-md px-2 py-2 text-xs font-semibold transition-colors ${handoverMode === m.value ? "bg-white text-ngo-900 shadow-sm dark:bg-slate-700 dark:text-ngo-200" : "text-slate-500 hover:bg-white/60 dark:text-slate-300 dark:hover:bg-slate-700"}`}
                 >
-                  {m.label}
+                  {dc(m.label)}
                 </button>
               ))}
             </div>
             {fieldErrors.handoverMode && <p className="text-xs text-red-500 mt-1">{fieldErrors.handoverMode}</p>}
           </fieldset>
           
-          <WizardField label="Available days" required error={fieldErrors.availableDays} hint="Days you can receive items or do pickups.">
+          <WizardField label={ui("Available days")} required error={fieldErrors.availableDays} hint={ui("Days you can receive items or do pickups.")}>
             {({ id, describedBy }) => (
               <div id={id} data-field="availableDays" aria-describedby={describedBy} className="flex flex-wrap gap-2">
                 {(() => {
@@ -1332,7 +1354,7 @@ function NewNgoDriveForm() {
                     <button type="button" aria-pressed={allSelected}
                       onClick={() => setAvailableDays(allSelected ? [] : DROP_OFF_DAYS.map(d => d.id))}
                       className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${allSelected ? 'bg-ngo-700 border-ngo-700 text-white' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}>
-                      All
+                      <UiText>All</UiText>
                     </button>
                   );
                 })()}
@@ -1340,7 +1362,7 @@ function NewNgoDriveForm() {
                   const active = availableDays.includes(day.id);
                   return (
                     <button key={day.id} type="button" onClick={() => setAvailableDays(prev => active ? prev.filter(d => d !== day.id) : [...prev, day.id])} className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${active ? 'bg-ngo-700 border-ngo-700 text-white' : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'}`}>
-                      {day.label}
+                      {dc(day.label)}
                     </button>
                   );
                 })}
@@ -1349,12 +1371,12 @@ function NewNgoDriveForm() {
           </WizardField>
           
           <div className="grid grid-cols-2 gap-4">
-            <WizardField label="From (time)" required error={fieldErrors.availableFrom}>
+            <WizardField label={ui("From (time)")} required error={fieldErrors.availableFrom}>
               {({ id, describedBy, invalid }) => (
                 <Input id={id} name="availableFrom" type="time" value={availableFrom} onChange={e => setAvailableFrom(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
-            <WizardField label="To (time)" required error={fieldErrors.availableTo}>
+            <WizardField label={ui("To (time)")} required error={fieldErrors.availableTo}>
               {({ id, describedBy, invalid }) => (
                 <Input id={id} name="availableTo" type="time" value={availableTo} onChange={e => setAvailableTo(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
@@ -1364,35 +1386,35 @@ function NewNgoDriveForm() {
   
         {/* 5. Contact Person */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="contact-heading">
-          <h3 id="contact-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Contact Person</h3>
+          <h3 id="contact-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300"><UiText>5. Contact Person</UiText></h3>
           
-          <WizardField label="Contact name" required error={fieldErrors.contactName}>
+          <WizardField label={ui("Contact name")} required error={fieldErrors.contactName}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="contactName" placeholder="e.g. Rahul Sharma" value={contactName} onChange={e => setContactName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="contactName" placeholder={ui("e.g. Rahul Sharma")} value={contactName} onChange={e => setContactName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
           
-          <WizardField label="Contact phone" required error={fieldErrors.contactPhone}>
+          <WizardField label={ui("Contact phone")} required error={fieldErrors.contactPhone}>
             {({ id, describedBy, invalid }) => (
               <div className="flex gap-2">
-                <select aria-label="Country code" value={contactDial} onChange={e => setContactDial(e.target.value)}
+                <select aria-label={ui("Country code")} value={contactDial} onChange={e => setContactDial(e.target.value)}
                   className="h-11 shrink-0 rounded-md border border-input bg-background px-2 text-sm">
-                  {PHONE_COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                  {PHONE_COUNTRIES.map(c => <option key={c.code} value={c.code}>{dc(c.label)}</option>)}
                 </select>
-                <Input id={id} name="contactPhone" type="tel" inputMode="numeric" maxLength={10} placeholder="Mobile number" value={contactPhone} onChange={e => setContactPhone(e.target.value.replace(/\D/g, ""))} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <Input id={id} name="contactPhone" type="tel" inputMode="numeric" maxLength={10} placeholder={ui("Mobile number")} value={contactPhone} onChange={e => setContactPhone(e.target.value.replace(/\D/g, ""))} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               </div>
             )}
           </WizardField>
 
-          <WizardField label="Alternate contact (phone or email)" error={fieldErrors.altContact} hint="Optional: phone or email">
+          <WizardField label={ui("Alternate contact (phone or email)")} error={fieldErrors.altContact} hint={ui("Optional: phone or email")}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="altContact" placeholder="e.g. alternate@ngo.org or 9876543210" value={altContact} onChange={e => setAltContact(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="altContact" placeholder={ui("e.g. alternate@ngo.org or 9876543210")} value={altContact} onChange={e => setAltContact(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
-          <WizardField label="Past work link" error={fieldErrors.pastWorkUrl} hint="Optional: Website, Instagram page or earlier drive photos">
+          <WizardField label={ui("Past work link")} error={fieldErrors.pastWorkUrl} hint={ui("Optional: Website, Instagram page or earlier drive photos")}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="pastWorkUrl" type="url" placeholder="https://instagram.com/our_ngo or https://ourngo.org" value={pastWorkUrl} onChange={e => setPastWorkUrl(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="pastWorkUrl" type="url" placeholder={ui("https://instagram.com/our_ngo or https://ourngo.org")} value={pastWorkUrl} onChange={e => setPastWorkUrl(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -1401,31 +1423,31 @@ function NewNgoDriveForm() {
   );
 
   const DECLARATIONS = [
-    { id: "declAccurate", checked: declAccurate, setter: setDeclAccurate, text: "The information in this drive is true and accurate to the best of our knowledge." },
-    { id: "declUsedOnly", checked: declUsedOnly, setter: setDeclUsedOnly, text: "Donated items will be used only for the beneficiaries described here, and will never be sold, rented, or exchanged for money." },
-    { id: "declProof", checked: declProof, setter: setDeclProof, text: "We will upload handover photos within 48 hours of distributing the items, and understand we can't start a new drive until this one is completed and its photos are approved." },
-    { id: "declFaces", checked: declFaces, setter: setDeclFaces, text: "People's faces, including the person leading this drive, will appear in photos only with their consent (a guardian's consent for children)." },
-    { id: "declNotDuplicate", checked: declNotDuplicate, setter: setDeclNotDuplicate, text: "This drive is not a duplicate of another active drive on CauseKind." },
-    { id: "declFalseInfo", checked: declFalseInfo, setter: setDeclFalseInfo, text: "We understand that false information may lead to this drive being removed and our NGO's verification being suspended." },
-    { id: "declContact", checked: declContact, setter: setDeclContact, text: "We consent to CauseKind contacting the listed contact person to verify this drive." },
+    { id: "declAccurate", checked: declAccurate, setter: setDeclAccurate, text: ui("The information in this drive is true and accurate to the best of our knowledge.") },
+    { id: "declUsedOnly", checked: declUsedOnly, setter: setDeclUsedOnly, text: ui("Donated items will be used only for the beneficiaries described here, and will never be sold, rented, or exchanged for money.") },
+    { id: "declProof", checked: declProof, setter: setDeclProof, text: ui("We will upload handover photos within 48 hours of distributing the items, and understand we can't start a new drive until this one is completed and its photos are approved.") },
+    { id: "declFaces", checked: declFaces, setter: setDeclFaces, text: ui("People's faces, including the person leading this drive, will appear in photos only with their consent (a guardian's consent for children).") },
+    { id: "declNotDuplicate", checked: declNotDuplicate, setter: setDeclNotDuplicate, text: ui("This drive is not a duplicate of another active drive on CauseKind.") },
+    { id: "declFalseInfo", checked: declFalseInfo, setter: setDeclFalseInfo, text: ui("We understand that false information may lead to this drive being removed and our NGO's verification being suspended.") },
+    { id: "declContact", checked: declContact, setter: setDeclContact, text: ui("We consent to CauseKind contacting the listed contact person to verify this drive.") },
   ];
 
   const step3 = (
     <div className="space-y-6">
       <section className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
-        <h3 className="mb-4 text-sm font-bold text-stone-800 dark:text-stone-100">Drive summary</h3>
+        <h3 className="mb-4 text-sm font-bold text-stone-800 dark:text-stone-100"><UiText>Drive summary</UiText></h3>
         
         {/* Photos thumbnails strip */}
         {photos.length > 0 && (
           <div className="mb-4 pb-4 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-xs text-stone-500 block mb-2">Photos ({photos.length})</span>
+            <span className="text-xs text-stone-500 block mb-2">{df("photosCount", { count: photos.length })}</span>
             <div className="flex gap-2 flex-wrap">
               {photos.map((p, idx) => (
                 <div key={p.url + idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-zinc-700">
                   <img src={p.url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
                   {idx === 0 && (
                     <span className="absolute bottom-0 inset-x-0 bg-ngo-700 text-white text-[8px] font-bold text-center py-0.5">
-                      Cover
+                      <UiText>Cover</UiText>
                     </span>
                   )}
                 </div>
@@ -1436,7 +1458,7 @@ function NewNgoDriveForm() {
 
         <div className="space-y-3 text-sm">
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Title & Item</span>
+            <span className="text-stone-500"><UiText>Title & Item</UiText></span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md truncate text-stone-900 dark:text-stone-100">
               {title}
               {tagline && <span className="block text-xs font-normal text-stone-500 italic mt-0.5">{tagline}</span>}
@@ -1445,32 +1467,32 @@ function NewNgoDriveForm() {
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Condition accepted</span>
+            <span className="text-stone-500"><UiText>Condition accepted</UiText></span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
-              {driveConditionLabel(condition)}
-              {mustBeWorking && <span className="block text-2xs text-amber-600 dark:text-amber-400">Must be in working order</span>}
-              {requireClean && <span className="block text-2xs text-sky-600 dark:text-sky-400">Items must be washed and clean</span>}
+              {dc(driveConditionLabel(condition))}
+              {mustBeWorking && <span className="block text-2xs text-amber-600 dark:text-amber-400"><UiText>Must be in working order</UiText></span>}
+              {requireClean && <span className="block text-2xs text-sky-600 dark:text-sky-400"><UiText>Items must be washed and clean</UiText></span>}
             </span>
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Drive location</span>
+            <span className="text-stone-500"><UiText>Drive location</UiText></span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
               {[driveLoc.locality, driveLoc.city, driveLoc.stateIso, driveLoc.pincode].filter(Boolean).join(", ") || `${locationArea}, ${locationCity}`}
             </span>
           </div>
 
           <div className="pb-2 border-b border-stone-100 dark:border-slate-800 space-y-1.5">
-            <span className="text-stone-500 block">Drive story</span>
+            <span className="text-stone-500 block"><UiText>Drive story</UiText></span>
             <div className="text-xs space-y-1 pl-2 border-l-2 border-ngo-600/40 text-stone-700 dark:text-stone-300">
-              <p><strong className="text-stone-900 dark:text-stone-100">Who for:</strong> {whoFor}</p>
-              <p><strong className="text-stone-900 dark:text-stone-100">Why now:</strong> {whyNow}</p>
-              <p><strong className="text-stone-900 dark:text-stone-100">What changes:</strong> {whatChanges}</p>
+              <p><strong className="text-stone-900 dark:text-stone-100"><UiText>Who for:</UiText></strong> {whoFor}</p>
+              <p><strong className="text-stone-900 dark:text-stone-100"><UiText>Why now:</UiText></strong> {whyNow}</p>
+              <p><strong className="text-stone-900 dark:text-stone-100"><UiText>What changes:</UiText></strong> {whatChanges}</p>
             </div>
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">People who will benefit</span>
+            <span className="text-stone-500"><UiText>People who will benefit</UiText></span>
             <span className="font-medium text-right max-w-[240px] text-stone-900 dark:text-stone-100">
               {beneficiaryCount} {beneficiaryGroup}
               {beneficiaryDescription && <span className="block text-xs font-normal text-stone-500">{beneficiaryDescription}</span>}
@@ -1478,37 +1500,37 @@ function NewNgoDriveForm() {
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Needed by</span>
+            <span className="text-stone-500"><UiText>Needed by</UiText></span>
             <span className="font-medium text-stone-900 dark:text-stone-100">{formatDateDDMMYYYY(neededBy)}</span>
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Handover mode</span>
+            <span className="text-stone-500"><UiText>Handover mode</UiText></span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100" data-testid="review-handover-mode">
-              {handoverModeInWords(handoverMode, radiusKm(radiusChoice, customRadius))}
+              {handoverModeInWords(handoverMode, radiusKm(radiusChoice, customRadius), (key, v) => df(key, v))}
             </span>
           </div>
           <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Pickup radius</span>
+            <span className="text-stone-500"><UiText>Pickup radius</UiText></span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
-              {radiusKm(radiusChoice, customRadius) != null ? `${radiusKm(radiusChoice, customRadius)} km` : "Not set"}
+              {radiusKm(radiusChoice, customRadius) != null ? df("kmValue", { km: radiusKm(radiusChoice, customRadius) ?? 0 }) : ui("Not set")}
             </span>
           </div>
           <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Available days</span>
+            <span className="text-stone-500"><UiText>Available days</UiText></span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100" data-testid="review-days">
-              {availableDays.length ? availableDays.map(d => DAY_WORDS[d] ?? d).join(", ") : "Not set"}
+              {availableDays.length ? availableDays.map(d => (DAY_WORDS[d] ? dc(DAY_WORDS[d]) : d)).join(", ") : ui("Not set")}
             </span>
           </div>
           <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Handover hours</span>
+            <span className="text-stone-500"><UiText>Handover hours</UiText></span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
-              {availableFrom && availableTo ? `${availableFrom} to ${availableTo}` : "Not set"}
+              {availableFrom && availableTo ? df("timeRange", { from: availableFrom, to: availableTo }) : ui("Not set")}
             </span>
           </div>
 
           <div className="pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500 block mb-1">Who is behind the drive</span>
+            <span className="text-stone-500 block mb-1"><UiText>Who is behind the drive</UiText></span>
             <div className="flex items-center gap-3">
               {changemakerPhotoUrl && (
                 <img src={changemakerPhotoUrl} alt={changemakerName} className="w-10 h-10 rounded-full object-cover border border-stone-200" />
@@ -1521,23 +1543,23 @@ function NewNgoDriveForm() {
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Contact</span>
+            <span className="text-stone-500"><UiText>Contact</UiText></span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
               {contactName}<br />
               <span className="text-stone-400 text-xs">{contactDial} {contactPhone}</span>
-              {altContact && <span className="block text-stone-400 text-xs">Alt: {altContact}</span>}
+              {altContact && <span className="block text-stone-400 text-xs">{df("altContact", { contact: altContact })}</span>}
             </span>
           </div>
         </div>
 
         <div className="mt-4 flex gap-4">
-          <button onClick={() => goToStep("drive-details", -1)} className="text-xs font-bold text-ngo-600 dark:text-ngo-400 hover:underline">Edit Details</button>
-          <button onClick={() => goToStep("beneficiaries-handover", -1)} className="text-xs font-bold text-ngo-600 dark:text-ngo-400 hover:underline">Edit Handover</button>
+          <button onClick={() => goToStep("drive-details", -1)} className="text-xs font-bold text-ngo-600 dark:text-ngo-400 hover:underline"><UiText>Edit Details</UiText></button>
+          <button onClick={() => goToStep("beneficiaries-handover", -1)} className="text-xs font-bold text-ngo-600 dark:text-ngo-400 hover:underline"><UiText>Edit Handover</UiText></button>
         </div>
       </section>
   
       <section className="space-y-4">
-        <h3 className="text-sm font-bold text-stone-800 dark:text-stone-100">Final confirmation</h3>
+        <h3 className="text-sm font-bold text-stone-800 dark:text-stone-100"><UiText>Final confirmation</UiText></h3>
 
         {DECLARATIONS.map(d => (
           <label key={d.id} className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-colors ${d.checked ? 'border-ngo-500 bg-ngo-50 dark:bg-ngo-900/20' : 'border-slate-200 bg-white hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:hover:bg-slate-800'}`}>
@@ -1554,12 +1576,12 @@ function NewNgoDriveForm() {
             <div className={`mt-0.5 flex w-5 h-5 shrink-0 items-center justify-center rounded-full border ${allDeclarationsChecked ? 'border-ngo-600 bg-ngo-600' : 'border-stone-300 bg-white dark:border-slate-600 dark:bg-slate-800'}`}>
               {allDeclarationsChecked && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
             </div>
-            <span className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-relaxed">Tick all declarations</span>
+            <span className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-relaxed"><UiText>Tick all declarations</UiText></span>
             <input type="checkbox" className="sr-only" checked={allDeclarationsChecked} onChange={e => toggleAllDeclarations(e.target.checked)} />
           </label>
         </div>
         <div className="text-center pt-2">
-           {!allDeclarationsChecked && <p className="text-xs text-stone-500">Tick all declarations to submit.</p>}
+           {!allDeclarationsChecked && <p className="text-xs text-stone-500"><UiText>Tick all declarations to submit.</UiText></p>}
         </div>
       </section>
     </div>
@@ -1567,7 +1589,7 @@ function NewNgoDriveForm() {
 
   const previewDrive: PublicNgoDrive = {
     id: editId ?? 0,
-    title: title || "Untitled Drive",
+    title: title || ui("Untitled Drive"),
     tagline: tagline || null,
     category: category || "Other",
     itemName: itemName || "Items",
@@ -1604,11 +1626,11 @@ function NewNgoDriveForm() {
     quantityReceived: 0,
     stillNeeded: typeof quantity === "number" ? quantity : 0,
     status: "LIVE",
-    ngoOrganizationName: ngoApp?.organizationName || "Verified NGO",
+    ngoOrganizationName: ngoApp?.organizationName || ui("Verified NGO"),
     ngoCity: ngoApp?.city || locationCity || "",
     verified: Boolean(isVerified || settled?.isVerified),
     ngo: {
-      organizationName: ngoApp?.organizationName || "Verified NGO",
+      organizationName: ngoApp?.organizationName || ui("Verified NGO"),
       city: ngoApp?.city || locationCity || null,
       legalStructure: ngoApp?.legalStructure || null,
       registrationNumber: ngoApp?.registrationNumber || null,
@@ -1635,16 +1657,15 @@ function NewNgoDriveForm() {
         <div className="relative z-10 flex flex-col h-full p-5 sm:p-8 xl:p-10">
           <div className="mb-8">
             <span className="inline-flex items-center gap-1.5 text-3xs font-black uppercase tracking-widest text-[var(--ck-role-highlight)] bg-[var(--ck-role-accent)]/25 border border-[var(--ck-role-accent)]/40 rounded-full px-3.5 py-1.5">
-              <ShieldCheck className="w-3 h-3" /> VERIFIED NGO
+              <ShieldCheck className="w-3 h-3" /> <UiText>VERIFIED NGO</UiText>
             </span>
           </div>
           <div className="mb-10">
             <h1 className="text-white text-2xl sm:text-4xl xl:text-5xl font-black leading-none tracking-tight mb-3" style={{ fontFamily: "serif" }}>
-              Start a<br />
-              <span style={{ color: "var(--ck-color-ngo-300)" }}>Drive</span>
+              {df.rich("startADriveHeading", { br: () => <br />, accent: (chunks) => <span style={{ color: "var(--ck-color-ngo-300)" }}>{chunks}</span> })}
             </h1>
             <p className="text-ngo-100/70 text-sm leading-relaxed">
-              Tell givers exactly what you need. Donors near you pledge the items, and every handover ends with proof.
+              <UiText>Tell givers exactly what you need. Donors near you pledge the items, and every handover ends with proof.</UiText>
             </p>
           </div>
 
@@ -1655,7 +1676,7 @@ function NewNgoDriveForm() {
               labels={STEP_LABELS}
               availability={availability}
               onJump={s => goToStep(s as NgoDriveStep, -1)}
-              navLabel="Drive progress"
+              navLabel={ui("Drive progress")}
             />
           </div>
 
@@ -1665,8 +1686,8 @@ function NewNgoDriveForm() {
                 <Shield className="w-4 h-4 text-[var(--ck-role-secondary)]" />
               </div>
               <div>
-                <p className="text-white text-xs font-bold leading-tight">Privacy first</p>
-                <p className="text-white/50 text-3xs">Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.</p>
+                <p className="text-white text-xs font-bold leading-tight"><UiText>Privacy first</UiText></p>
+                <p className="text-white/50 text-3xs"><UiText>Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.</UiText></p>
               </div>
             </div>
           </div>
@@ -1679,17 +1700,17 @@ function NewNgoDriveForm() {
         <div className="sticky top-0 z-30 border-b border-stone-200 bg-[#faf8f5] dark:border-zinc-800 dark:bg-zinc-950 lg:hidden">
           <div className="flex items-center justify-between px-4 pt-2">
             <button onClick={() => void handleSaveExit()} className="flex min-h-[44px] items-center gap-1 text-sm font-medium text-stone-500 focus-visible:outline-2 focus-visible:outline-ngo-600">
-              <ChevronLeft className="h-4 w-4" /> Save &amp; exit
+              <ChevronLeft className="h-4 w-4" /> <UiText>Save &amp; exit</UiText>
             </button>
             <DraftSaveStatus status={saveStatus} onRetry={() => void saveDraft()} />
           </div>
-          <WizardProgressBar current={step as NgoDriveStep} steps={NGO_DRIVE_STEPS} labels={STEP_LABELS} availability={availability} onJump={s => goToStep(s as NgoDriveStep, -1)} navLabel="Drive progress" />
+          <WizardProgressBar current={step as NgoDriveStep} steps={NGO_DRIVE_STEPS} labels={STEP_LABELS} availability={availability} onJump={s => goToStep(s as NgoDriveStep, -1)} navLabel={ui("Drive progress")} />
         </div>
 
         <div className="relative z-10 w-full mx-auto max-w-[1040px] px-4 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-10">
           <div className="mb-4 hidden items-center justify-between lg:flex">
             <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
-              Step {stepNumber(step)} of {NGO_DRIVE_STEPS.length}
+              {wt("stepOf", { n: stepNumber(step), total: NGO_DRIVE_STEPS.length })}
             </p>
             <DraftSaveStatus status={saveStatus} onRetry={() => void saveDraft()} />
           </div>
@@ -1731,31 +1752,31 @@ function NewNgoDriveForm() {
           <div className="mx-auto w-full max-w-[1040px] px-4 sm:px-8 lg:px-10 pb-6 mt-auto">
             <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
               {step === "drive-details" && (
-                <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 1</button>
+                <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden /><UiText>Back to Step 1</UiText></button>
               )}
               <button type="button" onClick={() => void saveDraft()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                {saveStatus === "saving" ? "Saving…" : "Save Draft"}
+                {saveStatus === "saving" ? ui("Saving…") : ui("Save Draft")}
               </button>
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-ngo-700 px-5 text-xs font-bold text-white transition-colors hover:bg-ngo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed">Continue to Step {step === "drive-location" ? 2 : 3} →</button>
+              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-ngo-700 px-5 text-xs font-bold text-white transition-colors hover:bg-ngo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed">{df("continueToStep", { n: step === "drive-location" ? 2 : 3 })} →</button>
             </div>
           </div>
         ) : step === "beneficiaries-handover" ? (
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
-            <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 2</button>
+            <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden /><UiText>Back to Step 2</UiText></button>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{saveStatus === "saving" ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{saveStatus === "saving" ? ui("Saving…") : ui("Save & Continue")}<ArrowRight className="size-4" aria-hidden /></button>
             </div>
           </div>
         ) : (
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
-             <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
+             <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden /><UiText>Back</UiText></button>
              <div className="flex flex-wrap gap-2">
                <button type="button" onClick={() => setShowPreviewModal(true)} disabled={submitting} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                  <Eye className="size-4" aria-hidden />
-                 Preview donor page
+                 <UiText>Preview donor page</UiText>
                </button>
-               <button type="button" onClick={() => void handleSaveExit()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">Save & exit</button>
-               <button type="button" onClick={() => void handleSubmit()} disabled={submitting || !allDeclarationsChecked} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{submitting ? "Submitting…" : "Submit for verification"}</button>
+               <button type="button" onClick={() => void handleSaveExit()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><UiText>Save & exit</UiText></button>
+               <button type="button" onClick={() => void handleSubmit()} disabled={submitting || !allDeclarationsChecked} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{submitting ? ui("Submitting…") : ui("Submit for verification")}</button>
              </div>
           </div>
         )}
@@ -1766,7 +1787,7 @@ function NewNgoDriveForm() {
         <div
           role="dialog"
           aria-modal="true"
-          aria-label="Donor page preview"
+          aria-label={ui("Donor page preview")}
           className="fixed inset-0 z-50 flex flex-col bg-stone-50 dark:bg-zinc-950 overflow-y-auto"
         >
           <div className="sticky top-0 z-50 flex items-center justify-between border-b border-stone-200 bg-white/95 px-4 py-3 backdrop-blur-md dark:border-zinc-800 dark:bg-zinc-900/95 sm:px-6">
@@ -1776,10 +1797,10 @@ function NewNgoDriveForm() {
               </span>
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-stone-900 dark:text-stone-100">
-                  Donor Page Preview
+                  <UiText>Donor Page Preview</UiText>
                 </p>
                 <p className="text-3xs text-stone-500 dark:text-stone-400">
-                  How this drive will look to donors once published
+                  <UiText>How this drive will look to donors once published</UiText>
                 </p>
               </div>
             </div>
@@ -1789,7 +1810,7 @@ function NewNgoDriveForm() {
               className="flex min-h-[36px] items-center gap-1.5 rounded-lg border border-stone-300 bg-white px-3 text-xs font-bold text-stone-700 shadow-sm hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-ngo-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-200 dark:hover:bg-zinc-700"
             >
               <X className="size-4" aria-hidden="true" />
-              Close preview
+              <UiText>Close preview</UiText>
             </button>
           </div>
           <div className="flex-1">
@@ -1825,10 +1846,10 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
         <div className="w-12 h-12 bg-red-100 dark:bg-red-900/20 text-red-600 rounded-full flex items-center justify-center mb-4">
           <X className="w-6 h-6" />
         </div>
-        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Something went wrong</h1>
-        <p className="text-stone-500 mb-6">We couldn't load the form. Please try again.</p>
+        <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2"><UiText>Something went wrong</UiText></h1>
+        <p className="text-stone-500 mb-6"><UiText>We couldn't load the form. Please try again.</UiText></p>
         <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
-          Go to dashboard
+          <UiText>Go to dashboard</UiText>
         </Link>
       </div>
     );

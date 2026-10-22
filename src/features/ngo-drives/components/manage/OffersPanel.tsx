@@ -11,6 +11,9 @@ import { errorMessage } from "@/features/ngo-drives/driveGiveState";
 import { NgoOfferReviewCard, humanize } from "./NgoOfferReviewCard";
 import type { DriveOffer } from "./useNgoOffers";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
 export type OfferSort = "oldest" | "condition" | "distance" | "quantity";
 const SORTS: [OfferSort, string][] = [["oldest", "Oldest first"], ["condition", "Condition"], ["distance", "Distance"], ["quantity", "Quantity"]];
 const CONDITION_RANK = ["Unused", "Like New", "Good", "Fair", "Needs Minor Repair"];
@@ -32,6 +35,9 @@ type Decline = { offers: DriveOffer[]; title: string };
 
 /** Offers to review (PENDING_NGO_REVIEW only), grouped by drive. Accept moves an offer to Handovers, decline to History. */
 export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: () => Promise<void> | void }) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const dc = useDriveCopy();
   const [sort, setSort] = useState<OfferSort>("oldest");
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [accepting, setAccepting] = useState<DriveOffer | null>(null);
@@ -74,10 +80,10 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
     if (!accepting) return;
     const qty = Number(acceptQty);
     const offered = accepting.quantity ?? 0;
-    if (!Number.isInteger(qty) || qty < 1 || qty > offered) { toast.error(`Accept between 1 and ${offered}.`); return; }
+    if (!Number.isInteger(qty) || qty < 1 || qty > offered) { toast.error(df("acceptBetween", { max: offered })); return; }
     const done = await run(() => reviewNgoDriveOffer(accepting.drive.id, accepting.id, "ACCEPT", undefined, qty < offered ? qty : undefined),
-      qty < offered ? `Accepted ${qty} of ${offered}. The rest went back to the drive and the donor was told.` : "Offer accepted. It's now in Handovers.",
-      "We couldn't accept this offer.");
+      qty < offered ? df("acceptedPartial", { qty, offered }) : ui("Offer accepted. It's now in Handovers."),
+      ui("We couldn't accept this offer."));
     if (done) setAccepting(null);
   }
 
@@ -88,32 +94,32 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
       () => list.length === 1
         ? reviewNgoDriveOffer(list[0].drive.id, list[0].id, "DECLINE", reason.trim())
         : Promise.all(byDriveIds(list).map(([driveId, ids]) => reviewNgoDriveOffersBulk(driveId, ids, "DECLINE", reason.trim()))),
-      list.length === 1 ? "Offer declined. The donor will see your reason." : `${list.length} offers declined. The donors will see your reason.`,
-      "We couldn't decline these offers.");
+      list.length === 1 ? ui("Offer declined. The donor will see your reason.") : df("offersDeclined", { count: list.length }),
+      ui("We couldn't decline these offers."));
     if (done) { setDeclining(null); setReason(""); }
   }
 
   async function acceptSelected() {
     await run(() => Promise.all(byDriveIds(picked).map(([driveId, ids]) => reviewNgoDriveOffersBulk(driveId, ids, "ACCEPT"))),
-      `${picked.length} offers accepted. They're now in Handovers.`, "We couldn't accept these offers.");
+      df("offersAccepted", { count: picked.length }), ui("We couldn't accept these offers."));
   }
 
-  if (offers.length === 0) return <p className="py-8 text-center text-sm text-stone-500 dark:text-stone-400">No offers waiting for your decision.</p>;
+  if (offers.length === 0) return <p className="py-8 text-center text-sm text-stone-500 dark:text-stone-400"><UiText>No offers waiting for your decision.</UiText></p>;
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300">Sort
+        <label className="flex items-center gap-2 text-sm font-semibold text-stone-700 dark:text-stone-300"><UiText>Sort</UiText>
           <select value={sort} onChange={(e) => setSort(e.target.value as OfferSort)} data-testid="offer-sort"
             className="min-h-9 rounded-lg border border-stone-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-950">
-            {SORTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            {SORTS.map(([v, l]) => <option key={v} value={v}>{dc(l)}</option>)}
           </select>
         </label>
         {picked.length > 0 && (
           <div className="flex flex-wrap items-center gap-2" data-testid="bulk-bar">
-            <span className="text-sm font-semibold text-stone-600 dark:text-stone-300">{picked.length} selected</span>
-            <Button size="sm" disabled={busy} onClick={() => void acceptSelected()} className="bg-ngo-700 hover:bg-ngo-800">Accept selected</Button>
-            <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeclining({ offers: picked, title: `Decline ${picked.length} offers?` }); setReason(""); }}>Decline selected</Button>
+            <span className="text-sm font-semibold text-stone-600 dark:text-stone-300">{df("selectedCount", { count: picked.length })}</span>
+            <Button size="sm" disabled={busy} onClick={() => void acceptSelected()} className="bg-ngo-700 hover:bg-ngo-800"><UiText>Accept selected</UiText></Button>
+            <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeclining({ offers: picked, title: df("declineN", { count: picked.length }) }); setReason(""); }}><UiText>Decline selected</UiText></Button>
           </div>
         )}
       </div>
@@ -126,18 +132,18 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
               <h3 className="font-bold text-stone-900 dark:text-stone-100">{drive.title} <span className="font-normal text-stone-500">({list.length})</span></h3>
               {covered && (
                 <Button size="sm" variant="outline" disabled={busy} data-testid="decline-remaining"
-                  onClick={() => { setDeclining({ offers: list, title: "Decline all remaining offers?" }); setReason("This drive is now covered. Thank you for offering."); }}>
-                  Decline all remaining
+                  onClick={() => { setDeclining({ offers: list, title: ui("Decline all remaining offers?") }); setReason("This drive is now covered. Thank you for offering."); }}>
+                  <UiText>Decline all remaining</UiText>
                 </Button>
               )}
             </div>
             <ul className="space-y-3">
               {list.map((offer) => (
-                <NgoOfferReviewCard key={offer.id} offer={offer} unit={drive.unit} stillNeeded={stillNeeded(drive)} label={covered ? "Drive covered" : null}
-                  select={<input type="checkbox" aria-label={`Select offer from ${offer.donorDisplayName || "donor"}`} checked={selected.has(offer.id)} onChange={() => toggle(offer.id)} className="mt-1 h-4 w-4 shrink-0 accent-ngo-700" />}
+                <NgoOfferReviewCard key={offer.id} offer={offer} unit={drive.unit} stillNeeded={stillNeeded(drive)} label={covered ? ui("Drive covered") : null}
+                  select={<input type="checkbox" aria-label={offer.donorDisplayName ? df("selectOfferFrom", { name: offer.donorDisplayName }) : ui("Select offer from donor")} checked={selected.has(offer.id)} onChange={() => toggle(offer.id)} className="mt-1 h-4 w-4 shrink-0 accent-ngo-700" />}
                   actions={<>
-                    <Button size="sm" disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" onClick={() => { setAccepting(offer); setAcceptQty(String(offer.quantity ?? "")); }}>Accept</Button>
-                    <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeclining({ offers: [offer], title: "Decline this offer?" }); setReason(""); }}>Decline</Button>
+                    <Button size="sm" disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" onClick={() => { setAccepting(offer); setAcceptQty(String(offer.quantity ?? "")); }}><UiText>Accept</UiText></Button>
+                    <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeclining({ offers: [offer], title: ui("Decline this offer?") }); setReason(""); }}><UiText>Decline</UiText></Button>
                   </>} />
               ))}
             </ul>
@@ -148,22 +154,22 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
       <Dialog open={!!accepting} onOpenChange={(o) => { if (!o) setAccepting(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Accept this offer?</DialogTitle>
+            <DialogTitle><UiText>Accept this offer?</UiText></DialogTitle>
             <DialogDescription>
-              You can accept less than offered. The rest goes back to the drive and the donor is told.
+              <UiText>You can accept less than offered. The rest goes back to the drive and the donor is told.</UiText>
             </DialogDescription>
           </DialogHeader>
           {accepting && (
-            <label className="block text-sm font-bold">How many do you accept? (1–{accepting.quantity})
+            <label className="block text-sm font-bold">{df("howManyAccept", { max: accepting.quantity ?? 0 })}
               <input type="number" min={1} max={accepting.quantity ?? undefined} value={acceptQty} onChange={(e) => setAcceptQty(e.target.value)} data-testid="accept-qty"
                 className="mt-1 block w-full max-w-[10rem] rounded-lg border border-stone-300 p-2 font-normal dark:border-zinc-700 dark:bg-zinc-950" />
-              <span className="mt-1 block text-xs font-normal text-stone-500">Offered: {accepting.quantity} {humanize(accepting.drive.unit)}</span>
+              <span className="mt-1 block text-xs font-normal text-stone-500">{df("offeredQty", { qty: accepting.quantity ?? "", unit: humanize(accepting.drive.unit) })}</span>
             </label>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAccepting(null)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setAccepting(null)}><UiText>Cancel</UiText></Button>
             <Button disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" onClick={() => void confirmAccept()}>
-              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Accept
+              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} <UiText>Accept</UiText>
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -173,15 +179,15 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{declining?.title}</DialogTitle>
-            <DialogDescription>The donor will see your reason. Their quantity goes back to the drive.</DialogDescription>
+            <DialogDescription><UiText>The donor will see your reason. Their quantity goes back to the drive.</UiText></DialogDescription>
           </DialogHeader>
-          <label className="block text-sm font-bold">Reason
+          <label className="block text-sm font-bold"><UiText>Reason</UiText>
             <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={3} maxLength={500} data-testid="decline-reason"
               className="mt-1 block w-full rounded-lg border border-stone-300 p-2 font-normal dark:border-zinc-700 dark:bg-zinc-950" />
           </label>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeclining(null)}>Cancel</Button>
-            <Button variant="destructive" disabled={!reason.trim() || busy} onClick={() => void confirmDecline()}>Decline</Button>
+            <Button variant="outline" onClick={() => setDeclining(null)}><UiText>Cancel</UiText></Button>
+            <Button variant="destructive" disabled={!reason.trim() || busy} onClick={() => void confirmDecline()}><UiText>Decline</UiText></Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

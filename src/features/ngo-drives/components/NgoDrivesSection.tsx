@@ -9,6 +9,9 @@ import { LiveBoardHeader } from "@/components/home/LiveBoardHeader";
 import { CategoryChipsRow } from "@/components/home/CategoryChipsRow";
 import { LiveBoardBanner } from "@/components/home/LiveBoardBanner";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useCategoryLabel } from "@/lib/categoryLabel";
 const DRIVES_SHOWN = 3;
 
 export type NgoDrivesSectionProps = {
@@ -18,6 +21,9 @@ export type NgoDrivesSectionProps = {
 };
 
 export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSectionProps) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const categoryLabel = useCategoryLabel();
   const [drives, setDrives] = useState<PublicNgoDrive[]>(initialDrives ?? []);
   const [loading, setLoading] = useState<boolean>(!initialDrives);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -83,16 +89,16 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
         {/* ── Section Header ── */}
         <LiveBoardHeader
           headingId="ngo-drives-heading"
-          badgeLabel="VERIFIED INITIATIVES"
+          badgeLabel={ui("VERIFIED INITIATIVES")}
           badgeDotClassName="bg-emerald-600 dark:bg-emerald-400"
           badgeClassName="mb-5 inline-flex w-max items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/30"
-          headlinePrimary="Real organisations."
-          headlineAccent="Real impact."
+          headlinePrimary={ui("Real organisations.")}
+          headlineAccent={ui("Real impact.")}
           headlineAccentClassName="text-emerald-700 dark:text-emerald-400"
-          subtitle="Community drives run by verified NGOs across India. Give the exact items they are collecting, and see the proof."
+          subtitle={ui("Community drives run by verified NGOs across India. Give the exact items they are collecting, and see the proof.")}
           trustCard={{
-            title: "Every NGO is verified",
-            description: "Registration, address and contact person checked before a drive goes live",
+            title: ui("Every NGO is verified"),
+            description: ui("Registration, address and contact person checked before a drive goes live"),
             iconBoxClassName: "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
           }}
         />
@@ -104,7 +110,7 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
           categoryCounts={categoryCounts}
           disableEmpty
           activeClassName="bg-emerald-700 text-white shadow-sm shadow-emerald-950/20 ring-2 ring-emerald-600/30 dark:bg-emerald-600"
-          groupAriaLabel="Filter NGO drives by category"
+          groupAriaLabel={ui("Filter NGO drives by category")}
         />
 
         {/* ── Cards Grid / Loading / Empty State ── */}
@@ -123,24 +129,24 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
               <Sparkles className="w-6 h-6" />
             </div>
             <p className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-200">
-              No active drives in {selectedCategory} right now
+              {df("noActiveDrivesIn", { category: categoryLabel(selectedCategory) })}
             </p>
             <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 max-w-sm">
-              Check back soon — new drives are added regularly. Try another category in the meantime.
+              <UiText>Check back soon — new drives are added regularly. Try another category in the meantime.</UiText>
             </p>
             <button
               type="button"
               onClick={() => setSelectedCategory("All")}
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold px-5 py-2.5 text-xs uppercase tracking-wider transition-all shadow-md active:scale-95"
             >
-              <span>Show all categories</span>
+              <span><UiText>Show all categories</UiText></span>
             </button>
           </div>
         ) : (
           <div
             className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
             role="region"
-            aria-label="Active NGO drives"
+            aria-label={ui("Active NGO drives")}
           >
             {visibleDrives.map((drive) => (
               <NgoDriveCard key={drive.id} drive={drive} />
@@ -150,9 +156,9 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
 
         {/* ── Bottom Banner ── */}
         <LiveBoardBanner
-          heading="Want to see every drive?"
-          subtext="Browse all verified NGO drives and give the items they need."
-          buttonLabel="SEE ALL DRIVES"
+          heading={ui("Want to see every drive?")}
+          subtext={ui("Browse all verified NGO drives and give the items they need.")}
+          buttonLabel={ui("SEE ALL DRIVES")}
           buttonHref="/requests?source=ngo"
           iconBoxClassName="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0"
           buttonClassName="inline-flex items-center gap-2 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold px-5 py-2.5 lg:min-h-12 lg:px-7 text-xs uppercase tracking-wider transition-all lg:duration-500 lg:ease-[cubic-bezier(0.32,0.72,0,1)] shadow-md shadow-emerald-950/20 active:scale-95 lg:active:scale-[0.98] shrink-0"

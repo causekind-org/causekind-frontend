@@ -151,15 +151,25 @@ export function formatDaysLeft(neededBy?: string | null): { label: string; isAmb
  * Formats "Support {count} {beneficiaryGroup}".
  * Uses correct singular/plural and handles unknown groups cleanly.
  */
-export function formatBeneficiarySupport(count?: number | null, group?: string | null): string {
+export type SupportMessage = "supportCommunity" | "supportGroupOnly" | "supportPeople" | "supportCountGroup";
+const SUPPORT_EN: Record<SupportMessage, (v: { count?: number; group?: string }) => string> = {
+  supportCommunity: () => "Support community",
+  supportGroupOnly: (v) => `Support ${v.group}`,
+  supportPeople: (v) => (v.count === 1 ? "Support 1 person" : `Support ${v.count} people`),
+  supportCountGroup: (v) => `Support ${v.count} ${v.group}`,
+};
+
+/** `t` translates the sentence; the group is the NGO's own words and is passed through. English by default. */
+export function formatBeneficiarySupport(count?: number | null, group?: string | null,
+  t: (key: SupportMessage, values: { count?: number; group?: string }) => string = (key, v) => SUPPORT_EN[key](v)): string {
   const c = count != null && count > 0 ? count : null;
   const rawGroup = group?.trim();
 
-  if (!c && !rawGroup) return "Support community";
-  if (!c) return `Support ${rawGroup}`;
+  if (!c && !rawGroup) return t("supportCommunity", {});
+  if (!c) return t("supportGroupOnly", { group: rawGroup });
 
   if (!rawGroup) {
-    return c === 1 ? "Support 1 person" : `Support ${c} people`;
+    return t("supportPeople", { count: c });
   }
 
   // Handle pluralization gracefully if group is generic singular word
@@ -177,7 +187,7 @@ export function formatBeneficiarySupport(count?: number | null, group?: string |
     else if (g.toLowerCase() === "person") g = "People";
   }
 
-  return `Support ${c} ${g}`;
+  return t("supportCountGroup", { count: c, group: g });
 }
 
 /**

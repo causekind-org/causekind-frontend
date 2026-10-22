@@ -14,6 +14,8 @@ import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import { giveState, stillNeeded } from "@/features/ngo-drives/driveGiveState";
 import { formatBeneficiarySupport } from "@/features/ngo-drives/ngoDriveFilters";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 export type NgoDriveCardProps = {
   drive: PublicNgoDrive;
   /** Optional custom click handler or link */
@@ -22,6 +24,8 @@ export type NgoDriveCardProps = {
 };
 
 export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCardProps) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
   const router = useRouter();
   const { user } = useAuth();
   // A cover that fails to load (expired link, missing file) falls back to the category icon.
@@ -35,7 +39,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
   const receivedPct = Math.min(100, ((drive.quantityReceived ?? 0) / total) * 100);
   const pledgedPct = Math.min(100 - receivedPct, ((drive.quantityPledged ?? 0) / total) * 100);
 
-  const beneficiaryText = formatBeneficiarySupport(drive.beneficiaryCount, drive.beneficiaryGroup);
+  const beneficiaryText = formatBeneficiarySupport(drive.beneficiaryCount, drive.beneficiaryGroup, (key, v) => df(key, v));
 
   const isMoney = (drive.driveType ?? "").toUpperCase() === "MONEY";
   const urgencyUpper = (drive.urgency ?? "").toUpperCase();
@@ -52,24 +56,24 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
   const isDoneeOrNgo = roleUpper === "DONEE" || roleUpper === "NGO" || roleUpper === "NGO_PARTNER";
 
   // Button text and target
-  let ctaLabel = "View drive & give";
+  let ctaLabel = ui("View drive & give");
   let ctaHref = `/drives/${drive.id}`;
   let ctaDisabled = false;
 
   if (isDoneeOrNgo) {
-    ctaLabel = "View drive";
+    ctaLabel = ui("View drive");
     ctaHref = `/drives/${drive.id}`;
   } else if (state.kind === "login" || state.kind === "give") {
-    ctaLabel = "View drive & give";
+    ctaLabel = ui("View drive & give");
     ctaHref = `/drives/${drive.id}`;
   } else if (state.kind === "continue") {
-    ctaLabel = "Continue offer";
+    ctaLabel = ui("Continue offer");
     ctaHref = state.href;
   } else if (state.kind === "offered") {
-    ctaLabel = "View your offer";
+    ctaLabel = ui("View your offer");
     ctaHref = state.href;
   } else if (state.kind === "closed") {
-    ctaLabel = needed === 0 ? "Fully offered" : "Drive closed";
+    ctaLabel = needed === 0 ? ui("Fully offered") : ui("Drive closed");
     ctaDisabled = true;
     ctaHref = `/drives/${drive.id}`;
   }
@@ -89,7 +93,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
         <Link
           href={`/drives/${drive.id}`}
           className="absolute inset-0 z-0 rounded-[1.25rem] lg:rounded-[2rem]"
-          aria-label={`View drive: ${drive.title}`}
+          aria-label={df("viewDriveTitle", { title: drive.title })}
           tabIndex={-1}
         />
       )}
@@ -124,14 +128,14 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
                 data-testid="drive-urgent-badge"
                 className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-1 text-4xs font-black uppercase tracking-wider text-white shadow-sm animate-pulse"
               >
-                Urgent
+                <UiText>Urgent</UiText>
               </span>
             ) : isHigh ? (
               <span
                 data-testid="drive-high-badge"
                 className="inline-flex items-center gap-1 rounded-full bg-amber-500/90 px-2.5 py-1 text-4xs font-black uppercase tracking-wider text-white shadow-sm"
               >
-                High
+                <UiText>High</UiText>
               </span>
             ) : null}
           </div>
@@ -143,7 +147,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
                 data-testid="drive-tax-badge"
                 className="inline-flex items-center gap-1 rounded-full bg-emerald-700/90 backdrop-blur-md px-2.5 py-1 text-4xs font-bold uppercase tracking-wider text-white shadow-sm"
               >
-                <Award className="size-3" aria-hidden="true" /> Tax benefits
+                <Award className="size-3" aria-hidden="true" /> <UiText>Tax benefits</UiText>
               </span>
             ) : !isMoney ? (
               <span
@@ -151,7 +155,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
                 className="inline-flex items-center gap-1.5 rounded-full bg-emerald-700 px-2.5 py-1 text-4xs font-bold tracking-wide text-white shadow-sm"
               >
                 <span className="h-1.5 w-1.5 rounded-full bg-ngo-400" aria-hidden="true" />
-                Verified by CauseKind
+                <UiText>Verified by CauseKind</UiText>
               </span>
             ) : null}
           </div>
@@ -190,7 +194,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
           {/* By NGO + Location */}
           <div className="mt-1.5 flex items-center justify-between gap-2 text-xs font-medium text-stone-500 dark:text-stone-400">
             <span className="truncate">
-              By {drive.ngoOrganizationName || "Verified NGO"}
+              {df("byNgo", { name: drive.ngoOrganizationName || ui("Verified NGO") })}
             </span>
             {displayLocation && (
               <span className="flex shrink-0 items-center gap-1 text-stone-400 dark:text-stone-500">
@@ -202,7 +206,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
 
           {/* What's needed line */}
           <p className="mt-2 text-xs font-semibold text-stone-700 dark:text-stone-300">
-            {drive.quantityNeeded} {drive.unit?.toLowerCase() || "items"} of {drive.itemName}
+            {df("qtyUnitOfItem", { qty: drive.quantityNeeded, unit: drive.unit?.toLowerCase() || ui("items"), item: drive.itemName ?? "" })}
           </p>
 
           {/* Progress bar */}
@@ -210,19 +214,19 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
             <div
               className="flex h-2 w-full overflow-hidden rounded-full bg-stone-100 shadow-inner dark:bg-zinc-800"
               role="progressbar"
-              aria-label="Drive collection progress"
+              aria-label={ui("Drive collection progress")}
               aria-valuenow={drive.quantityReceived + drive.quantityPledged}
               aria-valuemax={drive.quantityNeeded}
             >
               <div
                 className="h-full bg-emerald-600 transition-all duration-500 ease-out"
                 style={{ width: `${receivedPct}%` }}
-                title={`${drive.quantityReceived} received`}
+                title={df("nReceived", { count: drive.quantityReceived })}
               />
               <div
                 className="h-full bg-emerald-300 transition-all duration-500 ease-out dark:bg-emerald-700"
                 style={{ width: `${pledgedPct}%` }}
-                title={`${drive.quantityPledged} on the way`}
+                title={df("nOnTheWay", { count: drive.quantityPledged })}
               />
             </div>
 
@@ -230,11 +234,11 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-stone-800 dark:text-stone-200">
                 {isMoney ? (
-                  `₹${(drive.quantityReceived || 0).toLocaleString("en-IN")} raised`
+                  df("amountRaised", { amount: `₹${(drive.quantityReceived || 0).toLocaleString("en-IN")}` })
                 ) : needed === 0 ? (
-                  <span className="text-emerald-600 dark:text-emerald-400">Fully offered</span>
+                  <span className="text-emerald-600 dark:text-emerald-400"><UiText>Fully offered</UiText></span>
                 ) : (
-                  `${needed} still needed`
+                  df("nStillNeeded", { count: needed })
                 )}
               </span>
 
@@ -245,7 +249,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
                   className="flex items-center gap-1 text-3xs font-semibold text-stone-500 dark:text-stone-400"
                 >
                   <Heart className="size-3 fill-rose-500/20 text-rose-500" aria-hidden="true" />
-                  {drive.donorCount} {drive.donorCount === 1 ? "Donor" : "Donors"}
+                  {drive.donorCount} {drive.donorCount === 1 ? ui("Donor") : ui("Donors")}
                 </span>
               ) : null}
             </div>

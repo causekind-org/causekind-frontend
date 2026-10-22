@@ -11,7 +11,9 @@ import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/
 import { errorMessage, giveState, isNotFound } from "@/features/ngo-drives/driveGiveState";
 import { DriveDetailView } from "@/features/ngo-drives/components/DriveDetailView";
 
+import { useUiText } from "@/components/UiText";
 export default function DriveDetailPage() {
+  const ui = useUiText();
   const params = useParams();
   const id = Number(params.id);
   const { user, isLoading: authLoading } = useAuth();
@@ -45,7 +47,7 @@ export default function DriveDetailPage() {
     try {
       setDrive(await getNgoDrive(id));
     } catch (e) {
-      setLoadError({ notFound: isNotFound(e), message: errorMessage(e, "Please check your connection and try again.") });
+      setLoadError({ notFound: isNotFound(e), message: errorMessage(e, ui("Please check your connection and try again.")) });
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export default function DriveDetailPage() {
     try {
       setOffers(await getMyNgoDriveOffers());
     } catch (e) {
-      setOffersError(errorMessage(e, "We couldn't check your offers."));
+      setOffersError(errorMessage(e, ui("We couldn't check your offers.")));
     }
   }, [isDonor]);
 
@@ -79,11 +81,11 @@ export default function DriveDetailPage() {
   });
 
   if (loading || authLoading) return <PageSkeleton><div className="h-96" /></PageSkeleton>;
-  if (loadError?.notFound) return <DriveNotFound backHref="/requests" backLabel="Back to browse" />;
+  if (loadError?.notFound) return <DriveNotFound backHref="/requests" backLabel={ui("Back to browse")} />;
   if (loadError || !drive) {
     return (
       <DriveLoadError
-        message={loadError?.message ?? "Something went wrong."}
+        message={loadError?.message ?? ui("Something went wrong.")}
         onRetry={() => {
           setLoading(true);
           void loadDrive();

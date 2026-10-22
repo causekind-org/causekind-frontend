@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { POPUP, useIsPhone } from "@/components/donate/DonateChoice";
 
+import { UiText } from "@/components/UiText";
 /** Where "Items drive" goes: the drive form, past the type page. */
 export const ITEMS_DRIVE_HREF = "/ngo/drives/new?type=items";
 const OPEN_EVENT = "ck:open-start-drive-choice";
@@ -60,28 +61,28 @@ export function StartDriveChoice() {
           <Layers className="size-[25px]" strokeWidth={1.8} aria-hidden />
         </span>
         <span className="flex flex-col gap-1">
-          <span className="text-[19px] font-extrabold text-stone-900 dark:text-stone-50">Items drive</span>
+          <span className="text-[19px] font-extrabold text-stone-900 dark:text-stone-50"><UiText>Items drive</UiText></span>
           <span className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-            Collect blankets, books, ration kits and more. Donors near you pledge the items.
+            <UiText>Collect blankets, books, ration kits and more. Donors near you pledge the items.</UiText>
           </span>
         </span>
         {!phone && (
           <span className="mt-auto flex h-11 shrink-0 items-center justify-center rounded-full bg-ngo-700 text-[15px] font-bold text-white transition-colors group-hover:bg-ngo-800">
-            Start an items drive
+            <UiText>Start an items drive</UiText>
           </span>
         )}
       </button>
       <button type="button" disabled aria-disabled="true"
         className={`relative flex ${phone ? "items-center gap-3.5 p-4" : "flex-col gap-3.5 p-5"} cursor-not-allowed rounded-[22px] border-2 border-[#ece4da] bg-stone-50 text-left opacity-60 dark:border-zinc-700 dark:bg-white/[0.02]`}>
         <span className="absolute right-4 top-4 rounded-md bg-stone-200 px-2 py-1 text-2xs font-black uppercase tracking-wider text-stone-600 dark:bg-zinc-800 dark:text-stone-400">
-          Coming soon
+          <UiText>Coming soon</UiText>
         </span>
         <span className="flex size-[50px] shrink-0 items-center justify-center rounded-2xl bg-stone-100 text-stone-500 dark:bg-zinc-800">
           <HandCoins className="size-[25px]" strokeWidth={1.8} aria-hidden />
         </span>
         <span className="flex flex-col gap-1">
-          <span className="text-[19px] font-extrabold text-stone-900 dark:text-stone-50">Money drive</span>
-          <span className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">Raise funds for what you need.</span>
+          <span className="text-[19px] font-extrabold text-stone-900 dark:text-stone-50"><UiText>Money drive</UiText></span>
+          <span className="text-sm leading-relaxed text-stone-500 dark:text-stone-400"><UiText>Raise funds for what you need.</UiText></span>
         </span>
       </button>
     </div>
@@ -92,10 +93,10 @@ export function StartDriveChoice() {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="rounded-t-[26px] bg-white px-4 pb-7 pt-1 dark:bg-zinc-900">
           <div className="mt-3 flex flex-col gap-1">
-            <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-ngo-700 dark:text-ngo-300">Start a drive</span>
-            <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50">What kind of drive?</DrawerTitle>
+            <span className="text-xs font-extrabold uppercase tracking-[0.14em] text-ngo-700 dark:text-ngo-300"><UiText>Start a drive</UiText></span>
+            <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50"><UiText>What kind of drive?</UiText></DrawerTitle>
             <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400">
-              Pick what your organization needs.
+              <UiText>Pick what your organization needs.</UiText>
             </DrawerDescription>
           </div>
           {options(true)}
@@ -108,9 +109,9 @@ export function StartDriveChoice() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className={POPUP.content}>
         <div className={POPUP.header}>
-          <span className={`${POPUP.eyebrow} !text-ngo-700 dark:!text-ngo-300`}>Start a drive</span>
-          <DialogTitle className={POPUP.title}>What kind of drive?</DialogTitle>
-          <DialogDescription className={POPUP.subtitle}>Pick what your organization needs.</DialogDescription>
+          <span className={`${POPUP.eyebrow} !text-ngo-700 dark:!text-ngo-300`}><UiText>Start a drive</UiText></span>
+          <DialogTitle className={POPUP.title}><UiText>What kind of drive?</UiText></DialogTitle>
+          <DialogDescription className={POPUP.subtitle}><UiText>Pick what your organization needs.</UiText></DialogDescription>
         </div>
         {options(false)}
       </DialogContent>

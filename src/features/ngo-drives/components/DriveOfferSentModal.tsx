@@ -3,13 +3,19 @@
 import Link from "next/link";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
-export const DRIVE_OFFER_NEXT_STEPS = [
-  ["We check your photos", "Usually within minutes."],
-  ["The NGO accepts or declines", "You'll get a notification either way. The drive contact person's phone number is shared after the NGO accepts your offer."],
-  ["You plan the handover", "Drop off at the NGO or ask for a pickup, on a day and time that suits the NGO."],
-  ["Show your code at the handover", "The NGO enters it to confirm it received your items."],
-  ["See the impact", "Once the NGO distributes the items, you'll see the photos and your certificate."],
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+/** Display copy for DRIVE_OFFER_NEXT_STEPS, translated (was a module constant). */
+function useDriveOfferNextStepsCopy() {
+  const ui = useUiText();
+  return [
+  [ui("We check your photos"), ui("Usually within minutes.")],
+  [ui("The NGO accepts or declines"), ui("You'll get a notification either way. The drive contact person's phone number is shared after the NGO accepts your offer.")],
+  [ui("You plan the handover"), ui("Drop off at the NGO or ask for a pickup, on a day and time that suits the NGO.")],
+  [ui("Show your code at the handover"), ui("The NGO enters it to confirm it received your items.")],
+  [ui("See the impact"), ui("Once the NGO distributes the items, you'll see the photos and your certificate.")],
 ] as const;
+}
 
 export type DriveOfferSent = { quantity: number; unit?: string | null; ngoName?: string | null; driveTitle: string };
 
@@ -18,16 +24,19 @@ export const offerSentKey = (driveId: number) => `ck-drive-offer-sent-${driveId}
 
 /** "Offer sent" over the drive page, after the donor submits. Green, like the give form. */
 export function DriveOfferSentModal({ sent, onClose }: { sent: DriveOfferSent; onClose: () => void }) {
+  const DRIVE_OFFER_NEXT_STEPS = useDriveOfferNextStepsCopy();
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
   return (
     <Dialog open onOpenChange={o => { if (!o) onClose(); }}>
       {/* The dialog portals out of the page, so the NGO theme goes on the content itself. */}
       <DialogContent data-ck-role-theme="ngo" data-testid="drive-offer-sent" className="block max-h-[90dvh] overflow-y-auto p-6 sm:max-w-lg sm:p-8">
-        <p className="pr-10 text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Offer sent</p>
+        <p className="pr-10 text-xs font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400"><UiText>Offer sent</UiText></p>
         <DialogTitle className="mt-1 pr-10 text-2xl font-black text-stone-900 dark:text-stone-100">
-          Thank you! {sent.quantity} {sent.unit?.toLowerCase()} reserved for this drive
+          {df("thankYouReserved", { qty: sent.quantity, unit: sent.unit?.toLowerCase() ?? "" })}
         </DialogTitle>
         <DialogDescription className="mt-2 text-sm text-stone-600 dark:text-stone-400">
-          Your offer to {sent.ngoName || "the NGO"} for &ldquo;{sent.driveTitle}&rdquo; is on its way. Here&apos;s what happens next:
+          {df("offerOnItsWay", { ngo: sent.ngoName || ui("the NGO"), title: sent.driveTitle })}
         </DialogDescription>
         <ol className="mt-5 space-y-4">
           {DRIVE_OFFER_NEXT_STEPS.map(([title, body], i) => (
@@ -41,8 +50,8 @@ export function DriveOfferSentModal({ sent, onClose }: { sent: DriveOfferSent; o
           ))}
         </ol>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Link href="/dashboard" className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-bold text-white outline-none hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2">Track it on your dashboard</Link>
-          <button type="button" onClick={onClose} className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-stone-300 px-5 text-sm font-bold text-stone-800 outline-none hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 dark:border-zinc-700 dark:text-stone-100 dark:hover:bg-zinc-800">Back to the drive</button>
+          <Link href="/dashboard" className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-emerald-700 px-5 text-sm font-bold text-white outline-none hover:bg-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2"><UiText>Track it on your dashboard</UiText></Link>
+          <button type="button" onClick={onClose} className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-stone-300 px-5 text-sm font-bold text-stone-800 outline-none hover:bg-stone-50 focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 dark:border-zinc-700 dark:text-stone-100 dark:hover:bg-zinc-800"><UiText>Back to the drive</UiText></button>
         </div>
       </DialogContent>
     </Dialog>
