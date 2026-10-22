@@ -17,6 +17,8 @@ import { registerUrlPreserving } from "@/lib/postAuthDestination";
 import { NgoDriveCard } from "@/features/ngo-drives/components/NgoDriveCard";
 import type { UnifiedNeedItem } from "@/features/ngo-drives/ngoDriveFilters";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * The signed-in Category Directory: category rail (desktop) / chip row (phone)
  * beside a card grid, under the page's existing hero.
@@ -81,6 +83,8 @@ const URGENCIES = [
 ];
 
 export function RequestDirectory(props: Props) {
+  const rt = useTranslations("requestsArea");
+  const ui = useUiText();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const {
     items, requests = [], total, counts, typeCounts, categories, toggleCategory, clearCategories,
@@ -115,23 +119,23 @@ export function RequestDirectory(props: Props) {
     }`;
 
   return (
-    <section aria-label="Request directory" className="w-full px-3 py-5 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
+    <section aria-label={ui("Request directory")} className="w-full px-3 py-5 sm:px-6 sm:py-8 lg:px-8 xl:px-10">
       {/* ── Toolbar ── */}
       <div className="flex flex-col gap-2.5 lg:flex-row lg:flex-wrap lg:items-center">
         <div className="relative min-w-0 lg:min-w-[240px] lg:flex-1">
           <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" aria-hidden />
           <input
             type="search"
-            aria-label="Search requests by item, category, city or organisation"
+            aria-label={ui("Search requests by item, category, city or organisation")}
             value={search}
             onChange={e => setSearch(e.target.value)}
             maxLength={100}
-            placeholder="Search needs…"
+            placeholder={ui("Search needs…")}
             className="min-h-11 w-full rounded-lg border border-stone-200 bg-white py-2 ps-9 pe-3 text-base placeholder:text-stone-400 focus:border-[var(--ck-role-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]/30 dark:border-zinc-700 dark:bg-zinc-900"
           />
         </div>
 
-        <div role="group" aria-label="Who posted the request" className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0">
+        <div role="group" aria-label={ui("Who posted the request")} className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-0.5 sm:mx-0 sm:px-0">
           {AUDIENCE_OPTIONS.map(o => {
             const Icon = tabIcon[o.urlType];
             const on = audience === o.urlType;
@@ -155,19 +159,19 @@ export function RequestDirectory(props: Props) {
             className={pill(false)}
           >
             <SlidersHorizontal className="size-4" aria-hidden />
-            Urgency{urgencies.length ? ` (${urgencies.length})` : ""}
+            <UiText>Urgency</UiText>{urgencies.length ? ` (${urgencies.length})` : ""}
           </button>
-          <label htmlFor="request-directory-sort" className="sr-only">Sort requests</label>
+          <label htmlFor="request-directory-sort" className="sr-only"><UiText>Sort requests</UiText></label>
           <select
             id="request-directory-sort"
             value={sort}
             onChange={e => setSort(e.target.value as DirectorySort)}
             className="min-h-11 min-w-0 flex-1 rounded-lg border border-stone-200 bg-white px-2.5 text-sm font-semibold text-stone-700 focus:border-[var(--ck-role-accent)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200 sm:flex-none"
           >
-            <option value="newest">Just added</option>
-            {location === "on" && <option value="nearest">Nearest first</option>}
-            <option value="urgent">Most urgent</option>
-            <option value="qty">Highest quantity</option>
+            <option value="newest"><UiText>Just added</UiText></option>
+            {location === "on" && <option value="nearest"><UiText>Nearest first</UiText></option>}
+            <option value="urgent"><UiText>Most urgent</UiText></option>
+            <option value="qty"><UiText>Highest quantity</UiText></option>
           </select>
           {location !== "on" && (
             <button
@@ -179,7 +183,7 @@ export function RequestDirectory(props: Props) {
               {location === "locating"
                 ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden />
                 : <LocateFixed className="size-4" aria-hidden />}
-              {location === "locating" ? "Locating…" : "Use my location"}
+              {location === "locating" ? ui("Locating…") : ui("Use my location")}
             </button>
           )}
         </div>
@@ -187,12 +191,12 @@ export function RequestDirectory(props: Props) {
 
       {location === "denied" && (
         <p role="status" className="mt-2 text-xs text-stone-500 dark:text-stone-400">
-          Location isn&apos;t available, so nearest-first sorting is off. You can keep browsing every request.
+          <UiText>Location isn&apos;t available, so nearest-first sorting is off. You can keep browsing every request.</UiText>
         </p>
       )}
 
       <div id="request-directory-filters" hidden={!filtersOpen} className="mt-2.5">
-        <div role="group" aria-label="Filter by urgency" className="flex flex-wrap gap-2">
+        <div role="group" aria-label={ui("Filter by urgency")} className="flex flex-wrap gap-2">
           {URGENCIES.map(u => (
             <button key={u.value} type="button" aria-pressed={urgencies.includes(u.value)} onClick={() => toggleUrgency(u.value)} className={pill(urgencies.includes(u.value))}>
               {u.label}
@@ -203,13 +207,13 @@ export function RequestDirectory(props: Props) {
 
       {/* ── Category navigation + results ── */}
       <div className="mt-4 grid items-start gap-4 lg:mt-6 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
-        <nav aria-label="Request categories" className="min-w-0 lg:sticky lg:top-24">
-          <p className="mb-2 hidden text-xs font-bold uppercase tracking-wider text-stone-500 lg:block">Categories</p>
+        <nav aria-label={ui("Request categories")} className="min-w-0 lg:sticky lg:top-24">
+          <p className="mb-2 hidden text-xs font-bold uppercase tracking-wider text-stone-500 lg:block"><UiText>Categories</UiText></p>
 
           {/* Phone/tablet: one horizontally scrolling chip row. */}
           <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:px-0 lg:hidden">
             <button type="button" onClick={clearCategories} aria-pressed={!categories.length} className={pill(!categories.length)}>
-              All categories
+              <UiText>All categories</UiText>
             </button>
             {ALL_REQUEST_CATEGORIES.map(category => {
               const visual = CATEGORY_VISUALS[category];
@@ -229,7 +233,7 @@ export function RequestDirectory(props: Props) {
             <li>
               <button type="button" onClick={clearCategories} aria-pressed={!categories.length} className={railItem(!categories.length)}>
                 <LayoutGrid className="size-4 shrink-0" aria-hidden />
-                <span className="min-w-0 flex-1 truncate">All categories</span>
+                <span className="min-w-0 flex-1 truncate"><UiText>All categories</UiText></span>
                 <span className="text-xs tabular-nums opacity-75">{allCount}</span>
               </button>
             </li>
@@ -252,25 +256,19 @@ export function RequestDirectory(props: Props) {
         <div className="min-w-0">
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-semibold tracking-tight sm:text-2xl">
-              {categories.length === 1 ? <TranslatedText text={categories[0]} /> : categories.length ? "Selected categories" : "All local needs"}
+              {categories.length === 1 ? <TranslatedText text={categories[0]} /> : categories.length ? ui("Selected categories") : ui("All local needs")}
             </h2>
             <div className="flex items-center gap-3">
               <span role="status" className="text-xs text-stone-500 dark:text-stone-400">
                 {loading
-                  ? "Loading needs…"
+                  ? ui("Loading needs…")
                   : failed
                   ? ""
-                  : `${total} ${
-                      audience === "ngos"
-                        ? total === 1 ? "drive" : "drives"
-                        : audience === "people"
-                        ? total === 1 ? "request" : "requests"
-                        : total === 1 ? "need" : "needs"
-                    }`}
+                  : rt(audience === "ngos" ? "drivesCount" : audience === "people" ? "requestsCount" : "needsCount", { count: total })}
               </span>
               {narrowing && (
                 <button type="button" onClick={reset} className="min-h-11 text-xs font-semibold text-[var(--ck-role-accent)] underline underline-offset-4">
-                  Clear filters
+                  <UiText>Clear filters</UiText>
                 </button>
               )}
             </div>
@@ -298,22 +296,22 @@ export function RequestDirectory(props: Props) {
           ) : failed ? (
             <div className="flex flex-wrap items-center gap-3 rounded-xl border border-stone-200 bg-white p-5 text-sm dark:border-zinc-800 dark:bg-zinc-900">
               <AlertTriangle className="size-4 text-amber-600" aria-hidden />
-              <span className="flex-1">We couldn&apos;t load requests right now.</span>
+              <span className="flex-1"><UiText>We couldn&apos;t load requests right now.</UiText></span>
               <button type="button" onClick={onRetry} className={pill(false)}>
-                <RefreshCw className="size-4" aria-hidden /> Try again
+                <RefreshCw className="size-4" aria-hidden /> <UiText>Try again</UiText>
               </button>
             </div>
           ) : renderedItems.length === 0 ? (
             <div className="rounded-xl border border-stone-200 bg-white px-5 py-10 text-center dark:border-zinc-800 dark:bg-zinc-900">
               <SearchX className="mx-auto mb-3 size-7 text-stone-400" aria-hidden />
-              <h3 className="text-sm font-semibold">No needs match your filters</h3>
-              <p className="mt-1 text-xs text-stone-500">Try another category, urgency or search term.</p>
+              <h3 className="text-sm font-semibold"><UiText>No needs match your filters</UiText></h3>
+              <p className="mt-1 text-xs text-stone-500"><UiText>Try another category, urgency or search term.</UiText></p>
               <button
                 type="button"
                 onClick={reset}
                 className="mt-3 min-h-11 text-sm font-semibold text-[var(--ck-role-accent)] underline underline-offset-4"
               >
-                Clear filters
+                <UiText>Clear filters</UiText>
               </button>
             </div>
           ) : (
@@ -335,7 +333,7 @@ export function RequestDirectory(props: Props) {
                             byName: item.data.requesterType === "NGO" ? item.data.organizationName : item.data.doneeName || null,
                           }}
                           href={registerUrlPreserving(`/requests/${item.data.id}/offer`)}
-                          ctaLabel="Log in to offer this item"
+                          ctaLabel={ui("Log in to offer this item")}
                           locked
                           onCardClick={() => onOffer(item.data)}
                         />
@@ -362,13 +360,13 @@ export function RequestDirectory(props: Props) {
               )}
 
               {totalPages > 1 && (
-                <nav aria-label="Pages of requests" className="mt-6 flex items-center justify-between gap-3">
+                <nav aria-label={ui("Pages of requests")} className="mt-6 flex items-center justify-between gap-3">
                   <button type="button" onClick={() => onPage(page - 1)} disabled={page <= 1} className={`${pill(false)} disabled:pointer-events-none disabled:opacity-40`}>
-                    <ChevronLeft className="size-4" aria-hidden /> Previous
+                    <ChevronLeft className="size-4" aria-hidden /> <UiText>Previous</UiText>
                   </button>
-                  <span className="text-xs text-stone-500 dark:text-stone-400">Page {page} of {totalPages}</span>
+                  <span className="text-xs text-stone-500 dark:text-stone-400">{rt("pageOf", { page, total: totalPages })}</span>
                   <button type="button" onClick={() => onPage(page + 1)} disabled={page >= totalPages} className={`${pill(false)} disabled:pointer-events-none disabled:opacity-40`}>
-                    Next <ChevronRight className="size-4" aria-hidden />
+                    <UiText>Next</UiText> <ChevronRight className="size-4" aria-hidden />
                   </button>
                 </nav>
               )}
@@ -381,9 +379,11 @@ export function RequestDirectory(props: Props) {
 }
 
 function DirectoryCard({ request: r, canOffer, onOffer }: { request: ItemRequest; canOffer: boolean; onOffer: (r: ItemRequest) => void }) {
+  const rt = useTranslations("requestsArea");
+  const ui = useUiText();
   const visual = CATEGORY_VISUALS[r.category];
   const isNgo = r.requesterType === "NGO";
-  const urgentLabel = r.isEmergency ? "Emergency" : r.urgency === "CRITICAL" ? "Critical" : r.urgency === "HIGH" ? "High priority" : null;
+  const urgentLabel = r.isEmergency ? ui("Emergency", "urgency") : r.urgency === "CRITICAL" ? ui("Critical", "urgency") : r.urgency === "HIGH" ? ui("High priority", "urgency") : null;
   const urgentTone = r.isEmergency || r.urgency === "CRITICAL"
     ? "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300"
     : "bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300";
@@ -400,7 +400,7 @@ function DirectoryCard({ request: r, canOffer, onOffer }: { request: ItemRequest
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold sm:text-xs">
             <span className="inline-flex items-center gap-1 text-[var(--ck-role-accent)]">
               {isNgo ? <Building2 className="size-3" aria-hidden /> : <UserRound className="size-3" aria-hidden />}
-              {isNgo ? "NGO" : "Person"}
+              {isNgo ? ui("NGO") : ui("Person")}
             </span>
             <span className="text-stone-500"><TranslatedText text={r.category} /></span>
             {urgentLabel && <span className={`rounded px-1.5 py-0.5 ${urgentTone}`}>{urgentLabel}</span>}
@@ -423,9 +423,9 @@ function DirectoryCard({ request: r, canOffer, onOffer }: { request: ItemRequest
         )}
         <span className="flex min-w-0 items-center gap-1">
           <MapPin className="size-3 shrink-0" aria-hidden />
-          <span className="truncate"><TranslatedText text={r.city || "Location not provided"} /></span>
+          <span className="truncate">{r.city ? <TranslatedText text={r.city} /> : ui("Location not provided")}</span>
         </span>
-        <span className="tabular-nums">Quantity requested: {r.quantity.toLocaleString("en-IN")}</span>
+        <span className="tabular-nums">{rt("quantityRequested", { quantity: r.quantity.toLocaleString("en-IN") })}</span>
       </div>
 
       <div className="mt-auto flex flex-wrap items-center gap-2 pt-3">
@@ -433,16 +433,16 @@ function DirectoryCard({ request: r, canOffer, onOffer }: { request: ItemRequest
           href={`/requests/${r.id}`}
           className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-stone-700 hover:text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:text-stone-300"
         >
-          View need <ArrowUpRight className="size-4" aria-hidden />
+          <UiText>View need</UiText> <ArrowUpRight className="size-4" aria-hidden />
         </Link>
         {canOffer && (
           <button
             type="button"
             onClick={() => onOffer(r)}
-            aria-label={`Offer an item for ${r.title}`}
+            aria-label={rt("offerFor", { title: r.title })}
             className="ms-auto inline-flex min-h-11 items-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-3.5 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-900"
           >
-            Offer an item <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
+            <UiText>Offer an item</UiText> <ArrowRight className="size-4 rtl:rotate-180" aria-hidden />
           </button>
         )}
       </div>
