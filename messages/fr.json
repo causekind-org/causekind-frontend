@@ -3814,7 +3814,25 @@
     "your_offer_needs_additional_details_8a09215a": "Votre offre nécessite des détails supplémentaires pour continuer.",
     "your_offer_was_approved_please_73f66c49": "Votre offre a été approuvée. Programmez la remise maintenant.",
     "your_updated_item_details_are_c6d88b7d": "L’IA revérifie les détails actualisés de votre objet.",
-    "your_verified_request_is_being_c93018d2": "Votre demande vérifiée est comparée aux objets des donateurs, y compris aux nouvelles annonces. Les correspondances apparaîtront ici et nous vous préviendrons."
+    "your_verified_request_is_being_c93018d2": "Votre demande vérifiée est comparée aux objets des donateurs, y compris aux nouvelles annonces. Les correspondances apparaîtront ici et nous vous préviendrons.",
+    "arrange_handover_88739d6a": "Organiser la remise",
+    "choose_your_focus_areas_968bf14d": "Choisissez vos domaines d?action",
+    "close_cd86acc3": "Fermer",
+    "close_it_stays_in_your_63e7becd": "Fermer (reste dans vos notifications)",
+    "complete_your_profile_b7e9af7c": "Compl?tez votre profil",
+    "list_8d2937a1": "Publier",
+    "list_an_item_prompt_b0390e1b": "Invitation ? proposer un objet",
+    "need_to_list_an_item_ab4dedd1": "Besoin de demander un objet ?",
+    "ngo_portal_4179cd1b": "Espace ONG",
+    "post_f0c79167": "Publier",
+    "review_offer_1df58707": "Examiner l?offre",
+    "show_all_needs_8f1a0272": "Voir tous les besoins",
+    "start_a_drive_prompt_89babf0a": "Invitation ? lancer une collecte",
+    "tell_donors_what_you_need_f9237fc2": "Dites aux donateurs ce dont vous avez besoin.",
+    "unlock_verification_and_drives_9dfc125e": "Acc?dez ? la v?rification et aux collectes",
+    "upload_proof_10ebbbb2": "Importer un justificatif",
+    "we_ll_show_you_the_0033327a": "Nous vous montrerons les besoins les plus urgents pr?s de chez vous.",
+    "where_will_you_make_an_f7933f35": "O? souhaitez-vous agir ?"
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",
@@ -4449,5 +4467,21 @@
     "requestedOn": "Demand? le {date}",
     "taskRequests": "{count, plural, one {# demande} other {# demandes}}",
     "dontBuyYet": "N’achetez pas encore : attendez que notre équipe approuve et que l’offre affiche <strong>Prêt à acheter</strong>."
+  },
+  "globalPrompts": {
+    "selected": "{count, plural, =0 {Aucun domaine s?lectionn?} one {# domaine s?lectionn?} other {# domaines s?lectionn?s}}",
+    "apply": "Appliquer ({count})",
+    "unread": "{count, plural, one {# non lue} other {# non lues}}",
+    "blurb": {
+      "medical": "Fauteuils roulants, m?dicaments, appareils auditifs et autres besoins de sant?.",
+      "education": "Livres, cartables, fournitures et soutien aux ?tudes.",
+      "livelihood": "Outils, machines ? coudre et objets aidant ? gagner sa vie.",
+      "relief": "Produits essentiels pour les familles touch?es par des urgences, des inondations ou des difficult?s.",
+      "household": "Objets du quotidien : ustensiles, literie et articles de cuisine.",
+      "furniture": "Lits, chaises, tables et rangements pour les foyers qui en ont besoin.",
+      "clothing": "V?tements propres et portables pour tous les ?ges et toutes les saisons.",
+      "electronics": "T?l?phones, ordinateurs portables et appareils en ?tat de marche, encore utiles ? quelqu?un.",
+      "sports": "Mat?riel de sport, v?los et ?quipements de fitness pour enfants et adultes."
+    }
   }
 }

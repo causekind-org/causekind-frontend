@@ -1,5 +1,7 @@
 "use client";
 
+import { UiText, useUiText } from "@/components/UiText";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/AppLink";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -14,6 +16,7 @@ const REPEAT_DELAY_MS = 30_000;
 const EXIT_MS = 500;
 
 export function DoneeListingPrompt() {
+  const ui = useUiText();
   const { user, isLoading } = useAuth();
   const isDesktop = useIsDesktop();
   const pathname = usePathname();
@@ -111,7 +114,7 @@ export function DoneeListingPrompt() {
     <div className="fixed top-[8.5rem] lg:top-[10rem] left-0 z-[9980] pointer-events-none">
       <div
         aria-live="polite"
-        aria-label="List an item prompt"
+        aria-label={ui("List an item prompt")}
         className="pointer-events-auto w-[calc(100vw-2rem)] max-w-[300px] sm:max-w-[320px]"
         style={{
           opacity: entered ? 1 : 0,
@@ -144,13 +147,13 @@ export function DoneeListingPrompt() {
 
             <div className="min-w-0 flex-1">
               <p className="text-4xs font-black uppercase tracking-[0.16em] text-emerald-700">
-                Donee Portal
+                <UiText>Donee Portal</UiText>
               </p>
               <p className="mt-0.5 truncate text-sm font-black leading-tight text-stone-950">
-                Need to list an item?
+                <UiText>Need to list an item?</UiText>
               </p>
               <p className="mt-0.5 truncate text-2xs font-semibold leading-snug text-stone-600">
-                Tell donors what you need.
+                <UiText>Tell donors what you need.</UiText>
               </p>
             </div>
 
@@ -159,13 +162,13 @@ export function DoneeListingPrompt() {
               onClick={handleAction}
               className="group flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#1e3a60] px-2.5 text-2xs font-black uppercase text-white shadow-[0_7px_14px_rgba(30,58,96,0.23)] transition-all hover:bg-[#16304d] active:scale-95"
             >
-              List
+              <UiText>List</UiText>
               <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
             </NewRequestLink>
 
             <button
               onClick={dismiss}
-              aria-label="Dismiss"
+              aria-label={ui("Dismiss")}
               className="grid h-6 w-6 shrink-0 place-items-center rounded-full text-stone-400 transition-all hover:bg-stone-100 hover:text-stone-700"
             >
               <X className="h-3 w-3" />

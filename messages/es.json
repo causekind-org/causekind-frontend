@@ -3814,7 +3814,25 @@
     "your_offer_needs_additional_details_8a09215a": "Tu oferta necesita más detalles para continuar.",
     "your_offer_was_approved_please_73f66c49": "Tu oferta fue aprobada. Programa ahora la entrega.",
     "your_updated_item_details_are_c6d88b7d": "La IA vuelve a revisar los detalles actualizados del artículo.",
-    "your_verified_request_is_being_c93018d2": "Tu solicitud verificada se compara con los artículos de donantes y los nuevos anuncios. Las coincidencias aparecerán aquí y te avisaremos."
+    "your_verified_request_is_being_c93018d2": "Tu solicitud verificada se compara con los artículos de donantes y los nuevos anuncios. Las coincidencias aparecerán aquí y te avisaremos.",
+    "arrange_handover_88739d6a": "Organizar la entrega",
+    "choose_your_focus_areas_968bf14d": "Elige tus ?reas de inter?s",
+    "close_cd86acc3": "Cerrar",
+    "close_it_stays_in_your_63e7becd": "Cerrar (permanece en tus notificaciones)",
+    "complete_your_profile_b7e9af7c": "Completa tu perfil",
+    "list_8d2937a1": "Publicar",
+    "list_an_item_prompt_b0390e1b": "Sugerencia para publicar un art?culo",
+    "need_to_list_an_item_ab4dedd1": "?Necesitas solicitar un art?culo?",
+    "ngo_portal_4179cd1b": "Portal de ONG",
+    "post_f0c79167": "Publicar",
+    "review_offer_1df58707": "Revisar la oferta",
+    "show_all_needs_8f1a0272": "Ver todas las necesidades",
+    "start_a_drive_prompt_89babf0a": "Sugerencia para iniciar una colecta",
+    "tell_donors_what_you_need_f9237fc2": "Diles a los donantes qu? necesitas.",
+    "unlock_verification_and_drives_9dfc125e": "Accede a la verificaci?n y a las colectas",
+    "upload_proof_10ebbbb2": "Subir comprobante",
+    "we_ll_show_you_the_0033327a": "Te mostraremos las necesidades m?s urgentes de tu zona.",
+    "where_will_you_make_an_f7933f35": "?D?nde quieres ayudar?"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
@@ -4449,5 +4467,21 @@
     "requestedOn": "Solicitado el {date}",
     "taskRequests": "{count, plural, one {# solicitud} other {# solicitudes}}",
     "dontBuyYet": "No compres todavía: espera a que nuestro equipo lo apruebe y la oferta muestre <strong>Listo para comprar</strong>."
+  },
+  "globalPrompts": {
+    "selected": "{count, plural, =0 {Ning?n ?rea seleccionada} one {# ?rea seleccionada} other {# ?reas seleccionadas}}",
+    "apply": "Aplicar ({count})",
+    "unread": "{count, plural, one {# sin leer} other {# sin leer}}",
+    "blurb": {
+      "medical": "Sillas de ruedas, medicamentos, aud?fonos y otras necesidades de salud.",
+      "education": "Libros, mochilas, material escolar y apoyo al estudio.",
+      "livelihood": "Herramientas, m?quinas de coser y art?culos que ayudan a ganarse la vida.",
+      "relief": "Art?culos esenciales para familias afectadas por emergencias, inundaciones o dificultades.",
+      "household": "Art?culos de uso diario: utensilios, ropa de cama y b?sicos de cocina.",
+      "furniture": "Camas, sillas, mesas y muebles de almacenamiento para hogares que los necesitan.",
+      "clothing": "Ropa limpia y en buen estado para todas las edades y estaciones.",
+      "electronics": "Tel?fonos, port?tiles y aparatos que funcionan y que alguien a?n puede usar.",
+      "sports": "Material deportivo, bicicletas y equipos de ejercicio para ni?os y adultos."
+    }
   }
 }
