@@ -60,16 +60,16 @@ export function WithdrawFlowButton({ kind, id, role, onChanged, className = "" }
           setBusy(true);
           try {
             await (kind === "match" ? hideMatch(id) : hideOffer(id));
-            toast.success("Removed from your dashboard.");
+            toast.success(ui("Removed from your dashboard."));
             changed();
           } catch (e) {
-            toast.error(e instanceof Error ? e.message : "Couldn't remove it.");
+            toast.error(e instanceof Error ? e.message : ui("Couldn't remove it."));
           } finally { setBusy(false); }
         }}
         className={`${base} border-stone-200 text-stone-500 hover:bg-stone-50 dark:border-zinc-700 dark:text-stone-400 dark:hover:bg-zinc-800`}
       >
         {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Trash2 className="h-3.5 w-3.5" aria-hidden />}
-        Remove from dashboard
+        {ui("Remove from dashboard")}
       </button>
     );
   }

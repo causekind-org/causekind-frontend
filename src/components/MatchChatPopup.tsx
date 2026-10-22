@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
 import MatchChatWindow from "@/components/MatchChatWindow";
 
+import { useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 // Floating chat preview — same MatchChatWindow (and thus the exact same thread,
 // polling + SSE push) as the Handover Hub page, just docked bottom-right in a
 // springy popup. Bottom sheet with a backdrop on mobile.
@@ -24,6 +26,8 @@ export default function MatchChatPopup({
   locked?: boolean;
   onClose: () => void;
 }) {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
   const [closing, setClosing] = useState(false);
   const colors = ACCENTS[accent];
 
@@ -48,7 +52,7 @@ export default function MatchChatPopup({
       />
       <div
         role="dialog"
-        aria-label={`Chat with ${partnerName}`}
+        aria-label={dt("chatWith", { name: partnerName })}
         onAnimationEnd={() => { if (closing) onClose(); }}
         className={`fixed z-[70] inset-x-2 bottom-[calc(var(--ck-bottom-chrome)+0.5rem)] sm:inset-x-auto sm:bottom-[calc(var(--ck-bottom-chrome)+1.25rem)] sm:right-5 sm:w-[380px] ${closing ? "animate-chat-pop-out" : "animate-chat-pop-in"}`}
       >
@@ -63,13 +67,13 @@ export default function MatchChatPopup({
               <div className="min-w-0">
                 <p className="truncate text-sm font-bold leading-tight">{partnerName}</p>
                 <p className="truncate text-2xs text-white/70">
-                  {itemTitle ? itemTitle : "Live chat — synced with the Handover Hub"}
+                  {itemTitle ? itemTitle : ui("Live chat — synced with the Handover Hub")}
                 </p>
               </div>
             </div>
             <button
               onClick={requestClose}
-              aria-label="Close chat"
+              aria-label={ui("Close chat")}
               className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/15 hover:text-white"
             >
               <X className="h-4 w-4" />

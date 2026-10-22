@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ClipboardList, AlertTriangle, Check, Camera, Upload } from "lucide-react";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * "We need something from you" — the user's side of an information request.
  *
@@ -23,6 +25,8 @@ import { Loader2, ClipboardList, AlertTriangle, Check, Camera, Upload } from "lu
  * Admin console rolls its own theme.
  */
 export function MyTasksCard() {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
   const [tasks, setTasks] = useState<MyTask[] | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,9 +46,9 @@ export function MyTasksCard() {
       <header className="mb-3 flex items-center gap-2">
         <ClipboardList className="size-4 text-amber-700 dark:text-amber-400" />
         <h2 className="text-sm font-semibold">
-          We need something from you
+          <UiText>We need something from you</UiText>
           <span className="ml-1.5 font-normal text-muted-foreground">
-            ({tasks.length} {tasks.length === 1 ? "request" : "requests"})
+            ({dt("taskRequests", { count: tasks.length })})
           </span>
         </h2>
       </header>
@@ -71,6 +75,8 @@ export function MyTasksCard() {
 }
 
 function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void }) {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState(false);
 
@@ -82,7 +88,7 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
       Object.entries(answers).filter(([, v]) => v.trim().length > 0)
     );
     if (Object.keys(filled).length === 0) {
-      toast.error("Fill in at least one answer first.");
+      toast.error(ui("Fill in at least one answer first."));
       return;
     }
     setSaving(true);
@@ -95,10 +101,10 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
       );
       onDone(updated);
       toast.success(
-        updated.status === "ANSWERED" ? "Thanks — that's everything we needed." : "Saved."
+        updated.status === "ANSWERED" ? ui("Thanks — that's everything we needed.") : ui("Saved.")
       );
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't save that.");
+      toast.error(e instanceof Error ? e.message : ui("Couldn't save that."));
     } finally {
       setSaving(false);
     }
@@ -110,14 +116,14 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
         <p className="text-sm">{task.instructions}</p>
         {task.overdue && (
           <Badge variant="destructive" className="gap-1 text-[10px]">
-            <AlertTriangle className="size-3" /> Overdue
+            <AlertTriangle className="size-3" /> <UiText>Overdue</UiText>
           </Badge>
         )}
       </div>
 
       {task.dueAt && !task.overdue && (
         <p className="mt-1 text-xs text-muted-foreground">
-          Please reply by {serverDate(task.dueAt).toLocaleDateString()}
+          {dt("replyBy", { date: serverDate(task.dueAt).toLocaleDateString() })}
         </p>
       )}
 
@@ -132,7 +138,7 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
             <div key={item.id}>
               <label htmlFor={`item-${item.id}`} className="text-xs font-medium">
                 {item.label}
-                {!item.required && <span className="text-muted-foreground"> (optional)</span>}
+                {!item.required && <span className="text-muted-foreground"> <UiText>(optional)</UiText></span>}
               </label>
               {item.itemType === "CONFIRMATION" ? (
                 <div className="mt-1 flex gap-2">
@@ -142,7 +148,7 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
                     variant={answers[item.id] === "true" ? "default" : "outline"}
                     onClick={() => setAnswers((a) => ({ ...a, [item.id]: "true" }))}
                   >
-                    Yes
+                    <UiText>Yes</UiText>
                   </Button>
                   <Button
                     type="button"
@@ -150,7 +156,7 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
                     variant={answers[item.id] === "false" ? "default" : "outline"}
                     onClick={() => setAnswers((a) => ({ ...a, [item.id]: "false" }))}
                   >
-                    No
+                    <UiText>No</UiText>
                   </Button>
                 </div>
               ) : item.itemType === "TEXT" ? (
@@ -180,11 +186,11 @@ function TaskItem({ task, onDone }: { task: MyTask; onDone: (t: MyTask) => void 
       <div className="mt-3 flex items-center gap-3">
         <Button size="sm" onClick={submit} disabled={saving}>
           {saving && <Loader2 className="size-3.5 animate-spin" />}
-          {requiredLeft > 1 ? "Save answers" : "Send"}
+          {requiredLeft > 1 ? ui("Save answers") : ui("Send")}
         </Button>
         {requiredLeft > 0 && (
           <span className="text-xs text-muted-foreground">
-            {requiredLeft} still needed
+            {dt("nStillNeeded", { count: requiredLeft })}
           </span>
         )}
       </div>
@@ -217,6 +223,8 @@ function PhotoAnswer({
   value: string;
   onChange: (url: string) => void;
 }) {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
   const [busy, setBusy] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -229,9 +237,9 @@ function PhotoAnswer({
       // single-pass the documents keep.
       const prepared = file.type === "application/pdf" ? file : await compressDisplayPhoto(file);
       onChange(await uploadTaskAttachment(requestId, prepared));
-      toast.success("Photo attached.");
+      toast.success(ui("Photo attached."));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't upload that photo.");
+      toast.error(e instanceof Error ? e.message : ui("Couldn't upload that photo."));
     } finally {
       setBusy(false);
     }
@@ -256,17 +264,17 @@ function PhotoAnswer({
       {value ? (
         <div className="flex items-center gap-2">
           {/\.pdf(\?|$)/i.test(value) ? (
-            <a href={value} target="_blank" rel="noreferrer" className="flex size-12 items-center justify-center rounded border text-xs font-semibold">PDF</a>
+            <a href={value} target="_blank" rel="noreferrer" className="flex size-12 items-center justify-center rounded border text-xs font-semibold"><UiText>PDF</UiText></a>
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value} alt="Your uploaded photo" className="size-12 rounded object-cover border" />
+            <img src={value} alt={ui("Your uploaded photo")} className="size-12 rounded object-cover border" />
           )}
           <span className="flex items-center gap-1 text-xs text-emerald-700 dark:text-emerald-400">
-            <Check className="size-3" /> Attached
+            <Check className="size-3" /> <UiText>Attached</UiText>
           </span>
           <Button type="button" size="sm" variant="ghost" disabled={busy}
             onClick={() => fileRef.current?.click()}>
-            Replace
+            <UiText>Replace</UiText>
           </Button>
         </div>
       ) : (
@@ -274,12 +282,12 @@ function PhotoAnswer({
           <Button type="button" size="sm" variant="outline" disabled={busy}
             onClick={() => setCameraOpen(true)}>
             {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Camera className="size-3.5" />}
-            Take photo
+            <UiText>Take photo</UiText>
           </Button>
           <Button type="button" size="sm" variant="outline" disabled={busy}
             onClick={() => fileRef.current?.click()}>
             <Upload className="size-3.5" />
-            Upload
+            <UiText>Upload</UiText>
           </Button>
         </div>
       )}
@@ -291,8 +299,8 @@ function PhotoAnswer({
         // Rear camera here too, so the same un-mirroring applies: a document
         // photographed through a mirrored preview comes back with every line of
         // its text reversed.
-        title="Take a photo"
-        instructions="Fill the frame and keep the whole thing readable."
+        title={ui("Take a photo")}
+        instructions={ui("Fill the frame and keep the whole thing readable.")}
         filenamePrefix="task-photo"
         onCapture={(file) => { setCameraOpen(false); void store(file); }}
         onChoosePhoto={() => { setCameraOpen(false); fileRef.current?.click(); }}

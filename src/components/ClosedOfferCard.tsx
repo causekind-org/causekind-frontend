@@ -13,6 +13,7 @@ import { toast } from "@/lib/toast";
 import { displayReason } from "@/lib/rejectionReason";
 import { hideOffer, unhideOffer, type DonationOffer } from "@/lib/api";
 
+import { UiText, useUiText } from "@/components/UiText";
 /**
  * A finished offer, at the weight a finished offer deserves.
  *
@@ -25,32 +26,48 @@ import { hideOffer, unhideOffer, type DonationOffer } from "@/lib/api";
  * <p>So: a one-line summary by default, the explanation on demand, and a way out.
  */
 
-const CLOSED_LABELS: Record<string, { label: string; tone: string }> = {
-  ADMIN_REJECTED: { label: "Not approved", tone: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" },
-  DONEE_DECLINED: { label: "Recipient declined", tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
-  CANCELLED:      { label: "Cancelled", tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
-  WITHDRAWN:      { label: "Withdrawn", tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
+/** Display copy for CLOSED_LABELS, translated (was a module constant). */
+function useClosedLabelsCopy(): Record<string, { label: string; tone: string }> {
+  const ui = useUiText();
+  return {
+  ADMIN_REJECTED: { label: ui("Not approved"), tone: "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400" },
+  DONEE_DECLINED: { label: ui("Recipient declined"), tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
+  CANCELLED:      { label: ui("Cancelled"), tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
+  WITHDRAWN:      { label: ui("Withdrawn"), tone: "bg-stone-100 text-stone-600 dark:bg-zinc-800 dark:text-stone-400" },
 };
+}
 
 /** What happened, in plain words — so the panel is never empty (2026-10-08). */
-const CLOSED_EXPLAINED: Record<string, string> = {
-  WITHDRAWN: "You withdrew this offer. Nothing was handed over, and the request stays open for other donors.",
-  CANCELLED: "This offer was cancelled before the handover, so nothing changed hands.",
-  DONEE_DECLINED: "The recipient decided this item was not right for them. Your item is still yours.",
-  ADMIN_REJECTED: "Our team could not approve this offer.",
+/** Display copy for CLOSED_EXPLAINED, translated (was a module constant). */
+function useClosedExplainedCopy(): Record<string, string> {
+  const ui = useUiText();
+  return {
+  WITHDRAWN: ui("You withdrew this offer. Nothing was handed over, and the request stays open for other donors."),
+  CANCELLED: ui("This offer was cancelled before the handover, so nothing changed hands."),
+  DONEE_DECLINED: ui("The recipient decided this item was not right for them. Your item is still yours."),
+  ADMIN_REJECTED: ui("Our team could not approve this offer."),
 };
+}
 
-const NEXT_STEPS = [
-  { href: "/requests", icon: "🔍", title: "Offer to a different request",
-    blurb: "Browse verified requests and find a better match for your item." },
-  { href: "/items/new", icon: "📦", title: "List the item as a general listing",
-    blurb: "Let the system find any suitable recipient automatically." },
+/** Display copy for NEXT_STEPS, translated (was a module constant). */
+function useNextStepsCopy() {
+  const ui = useUiText();
+  return [
+  { href: "/requests", icon: "🔍", title: ui("Offer to a different request"),
+    blurb: ui("Browse verified requests and find a better match for your item.") },
+  { href: "/items/new", icon: "📦", title: ui("List the item as a general listing"),
+    blurb: ui("Let the system find any suitable recipient automatically.") },
 ];
+}
 
 export function ClosedOfferCard({ offer, onChanged }: {
   offer: DonationOffer;
   onChanged: () => void;
 }) {
+  const NEXT_STEPS = useNextStepsCopy();
+  const CLOSED_EXPLAINED = useClosedExplainedCopy();
+  const CLOSED_LABELS = useClosedLabelsCopy();
+  const ui = useUiText();
   const [expanded, setExpanded] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -76,16 +93,16 @@ export function ClosedOfferCard({ offer, onChanged }: {
       await hideOffer(offer.id);
       setConfirming(false);
       setRemoved(true);                     // animate out before the refetch
-      toast.success("Offer removed from dashboard.", {
+      toast.success(ui("Offer removed from dashboard."), {
         action: {
-          label: "Undo",
+          label: ui("Undo"),
           onClick: async () => {
             try {
               await unhideOffer(offer.id);
               setRemoved(false);
               onChanged();
             } catch {
-              toast.error("Couldn't restore this offer. Try the Archived filter on your offers page.");
+              toast.error(ui("Couldn't restore this offer. Try the Archived filter on your offers page."));
             }
           },
         },
@@ -95,7 +112,7 @@ export function ClosedOfferCard({ offer, onChanged }: {
     } catch (e) {
       // The card stays exactly where it was — nothing was removed, so nothing
       // should look removed.
-      toast.error(e instanceof Error ? e.message : "Couldn't remove this offer. Please try again.");
+      toast.error(e instanceof Error ? e.message : ui("Couldn't remove this offer. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -118,7 +135,7 @@ export function ClosedOfferCard({ offer, onChanged }: {
                   {meta.label}
                 </span>
                 <span className="text-3xs text-stone-400">
-                  Closed {new Date(closedOn).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  <UiText>Closed</UiText> {new Date(closedOn).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                 </span>
               </div>
               <p className="mt-1 truncate text-sm font-semibold text-stone-800 dark:text-stone-200">
@@ -138,15 +155,15 @@ export function ClosedOfferCard({ offer, onChanged }: {
                 aria-expanded={expanded}
                 className="flex items-center gap-1 rounded-lg px-2 py-1 text-2xs font-semibold text-stone-500 transition-colors hover:bg-stone-50 hover:text-stone-700 dark:hover:bg-zinc-800 dark:hover:text-stone-300"
               >
-                View details
+                <UiText>View details</UiText>
                 <ChevronDown className={`h-3 w-3 transition-transform ${expanded ? "rotate-180" : ""}`} />
               </button>
               <button
                 type="button"
                 onClick={() => setConfirming(true)}
                 disabled={busy}
-                aria-label="Remove from dashboard"
-                title="Remove from dashboard"
+                aria-label={ui("Remove from dashboard")}
+                title={ui("Remove from dashboard")}
                 className="rounded-lg p-1.5 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:hover:bg-red-950/30 dark:hover:text-red-400"
               >
                 {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
@@ -158,31 +175,31 @@ export function ClosedOfferCard({ offer, onChanged }: {
           {expanded && (
             <div className="space-y-3 border-t border-stone-100 px-3 py-3 dark:border-zinc-800">
               <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-                {CLOSED_EXPLAINED[offer.status] ?? "This offer is closed."}
+                {CLOSED_EXPLAINED[offer.status] ?? ui("This offer is closed.")}
               </p>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-2xs sm:grid-cols-3">
-                <div><dt className="text-stone-400">Request</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestTitle}</dd></div>
-                {offer.requestCity && <div><dt className="text-stone-400">Where</dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestCity}</dd></div>}
-                <div><dt className="text-stone-400">Offered on</dt><dd className="font-semibold text-stone-700 dark:text-stone-300">{serverDate(offer.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</dd></div>
+                <div><dt className="text-stone-400"><UiText>Request</UiText></dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestTitle}</dd></div>
+                {offer.requestCity && <div><dt className="text-stone-400"><UiText>Where</UiText></dt><dd className="truncate font-semibold text-stone-700 dark:text-stone-300">{offer.requestCity}</dd></div>}
+                <div><dt className="text-stone-400"><UiText>Offered on</UiText></dt><dd className="font-semibold text-stone-700 dark:text-stone-300">{serverDate(offer.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</dd></div>
               </dl>
               {offer.status !== "ADMIN_REJECTED" && (
                 <Link href={`/requests/${offer.requestId}/offer`}
                   className="inline-flex items-center gap-1 text-2xs font-bold text-[var(--ck-role-accent)] hover:underline">
-                  Offer to this request again →
+                  <UiText>Offer to this request again →</UiText>
                 </Link>
               )}
               {reason && (
                 <div className="rounded-lg bg-stone-50 px-3 py-2 text-xs leading-relaxed text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
-                  <span className="font-semibold">Reason: </span>{reason}
+                  <span className="font-semibold"><UiText>Reason:</UiText> </span>{reason}
                 </div>
               )}
               {offer.status === "ADMIN_REJECTED" && (
                 <div className="space-y-1.5">
-                  <p className="text-3xs font-bold uppercase tracking-wide text-stone-400">What you can do next</p>
+                  <p className="text-3xs font-bold uppercase tracking-wide text-stone-400"><UiText>What you can do next</UiText></p>
                   {[...NEXT_STEPS, {
                     href: `/requests/${offer.requestId}/offer`, icon: "✏️",
-                    title: "Re-offer with updated details",
-                    blurb: "Address the reason above and submit a fresh offer for the same request.",
+                    title: ui("Re-offer with updated details"),
+                    blurb: ui("Address the reason above and submit a fresh offer for the same request."),
                   }].map(step => (
                     <Link key={step.href} href={step.href}
                       className="flex items-start gap-2 rounded-lg border border-stone-200 px-3 py-2 transition-colors hover:border-[var(--ck-role-accent)] dark:border-zinc-700">
@@ -201,20 +218,20 @@ export function ClosedOfferCard({ offer, onChanged }: {
           <AlertDialog open={confirming} onOpenChange={(o) => { if (!busy) setConfirming(o); }}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Remove this offer from your dashboard?</AlertDialogTitle>
+                <AlertDialogTitle><UiText>Remove this offer from your dashboard?</UiText></AlertDialogTitle>
                 <AlertDialogDescription>
-                  This closed offer will no longer appear on your dashboard. CauseKind will
-                  retain its record for support, safety, and auditing.
+                  <UiText>This closed offer will no longer appear on your dashboard. CauseKind will
+                  retain its record for support, safety, and auditing.</UiText>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={busy}>Keep offer</AlertDialogCancel>
+                <AlertDialogCancel disabled={busy}><UiText>Keep offer</UiText></AlertDialogCancel>
                 <AlertDialogAction
                   disabled={busy}
                   onClick={(e) => { e.preventDefault(); remove(); }}
                   className="border-0 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
                 >
-                  {busy ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Removing</> : "Remove"}
+                  {busy ? <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> <UiText>Removing</UiText></> : ui("Remove")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
