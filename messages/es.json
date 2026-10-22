@@ -4447,6 +4447,7 @@
     "notAvailableFor": "?No est?s disponible para ?<title>solicitud</title>??",
     "waitingForAnswer": "?<title>solicitud</title>? espera tu respuesta",
     "requestedOn": "Solicitado el {date}",
-    "taskRequests": "{count, plural, one {# solicitud} other {# solicitudes}}"
+    "taskRequests": "{count, plural, one {# solicitud} other {# solicitudes}}",
+    "dontBuyYet": "No compres todavía: espera a que nuestro equipo lo apruebe y la oferta muestre <strong>Listo para comprar</strong>."
   }
 }

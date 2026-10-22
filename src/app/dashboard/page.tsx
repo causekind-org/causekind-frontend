@@ -833,6 +833,7 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
 /* One compact line per request on the admin's Donee tab: status badge, how much
    has arrived, and the actions a pending or closed request can still take. */
 function CompactRequestRow({ request: r }: { request: ItemRequest }) {
+  const dc = useDashCopy();
   const pl = usePageLabels();
   const dt = useTranslations("dashFlow");
   const badge = getRequestStatusBadge(r.status);

@@ -5436,6 +5436,7 @@
     "notAvailableFor": "Not available for ?<title>request</title>??",
     "waitingForAnswer": "?<title>request</title>? is waiting for your answer",
     "requestedOn": "Requested {date}",
-    "taskRequests": "{count, plural, one {# request} other {# requests}}"
+    "taskRequests": "{count, plural, one {# request} other {# requests}}",
+    "dontBuyYet": "Don’t buy yet — wait until our team approves and the offer shows <strong>Ready to buy</strong>."
   }
 }
