@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOfferErrorText } from "@/features/donation-offer-wizard/offerErrorText";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -241,7 +242,13 @@ export function NgoDriveOfferWizard({
     commitLoc({ ...locRef.current, [key]: value });
   }, [commitLoc]);
   const [direction, setDirection] = useState(1);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [rawErrors, setErrors] = useState<Record<string, string>>({});
+  const offerErrorText = useOfferErrorText();
+  // Validation codes from offerSchema → text in the reader's language, at render.
+  const errors = useMemo(
+    () => Object.fromEntries(Object.entries(rawErrors).map(([k, v]) => [k, offerErrorText(v) ?? v])) as Record<string, string>,
+    [rawErrors, offerErrorText],
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);

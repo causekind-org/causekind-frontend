@@ -5,6 +5,8 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { OfferLocationStep, type OfferLocationStatus } from "./steps/OfferLocationStep";
 import { emptyOfferModel, type OfferModel } from "./offerModel";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /** What the gate hands to the offer form: the pickup location and the travel answer. */
 export type PassedOfferLocation = Pick<OfferModel,
   "latitude" | "longitude" | "pickupCity" | "pickupPincode" | "pickupLocality" | "donorDropOffAvailable">;
@@ -42,6 +44,8 @@ export function OfferLocationGate({ requestId, requestTitle, onPass, onDecline }
   onPass: (location: PassedOfferLocation) => void;
   onDecline: () => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const ui = useUiText();
   const [model, setModel] = useState<OfferModel>(emptyOfferModel);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<OfferLocationStatus>({ busy: false, needsConsent: false, ready: false });
@@ -53,9 +57,9 @@ export function OfferLocationGate({ requestId, requestTitle, onPass, onDecline }
 
   function proceed() {
     if (status.busy) return;
-    if (status.needsConsent) { setErrors({ donorDropOffAvailable: "Answer the question above to continue." }); return; }
-    if (model.latitude == null || model.longitude == null) { setErrors({ latitude: "Use your current location, or find it on the map, to continue." }); return; }
-    if (!model.pickupCity.trim()) { setErrors({ pickupCity: "Add your city." }); return; }
+    if (status.needsConsent) { setErrors({ donorDropOffAvailable: ui("Answer the question above to continue.") }); return; }
+    if (model.latitude == null || model.longitude == null) { setErrors({ latitude: ui("Use your current location, or find it on the map, to continue.") }); return; }
+    if (!model.pickupCity.trim()) { setErrors({ pickupCity: ui("Add your city.") }); return; }
     if (!status.ready) return;
     const passed: PassedOfferLocation = {
       latitude: model.latitude, longitude: model.longitude,
@@ -68,12 +72,12 @@ export function OfferLocationGate({ requestId, requestTitle, onPass, onDecline }
 
   return (
     <section className="mx-auto w-full max-w-2xl rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      <p className="text-2xs font-bold uppercase tracking-wider text-[var(--ck-role-accent)]">Before you offer</p>
+      <p className="text-2xs font-bold uppercase tracking-wider text-[var(--ck-role-accent)]"><UiText>Before you offer</UiText></p>
       <h1 className="mt-1 text-lg font-bold text-stone-900 sm:text-xl dark:text-stone-100" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-        Check your location
+        <UiText>Check your location</UiText>
       </h1>
       {requestTitle && (
-        <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">For: <b className="text-stone-700 dark:text-stone-200">{requestTitle}</b></p>
+        <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">{wt.rich("forTitle", { title: requestTitle, b: (chunks) => <b className="text-stone-700 dark:text-stone-200">{chunks}</b> })}</p>
       )}
 
       <div className="mt-4">
@@ -86,13 +90,13 @@ export function OfferLocationGate({ requestId, requestTitle, onPass, onDecline }
       <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-stone-200 pt-4 dark:border-zinc-800">
         <button type="button" onClick={onDecline}
           className="min-h-[44px] rounded-xl px-3 text-sm font-semibold text-stone-500 hover:text-stone-700 dark:text-stone-400">
-          Cancel
+          <UiText>Cancel</UiText>
         </button>
         <button type="button" onClick={proceed} disabled={status.busy || !status.ready}
           className="inline-flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-5 text-sm font-bold text-white transition-colors hover:bg-[var(--ck-role-hover)] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]">
           {status.busy
-            ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Checking location…</>
-            : <>Continue to offer <ArrowRight className="h-4 w-4" aria-hidden /></>}
+            ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> <UiText>Checking location…</UiText></>
+            : <><UiText>Continue to offer</UiText> <ArrowRight className="h-4 w-4" aria-hidden /></>}
         </button>
       </div>
     </section>
