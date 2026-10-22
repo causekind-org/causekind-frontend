@@ -868,7 +868,7 @@ export function NgoDriveOfferWizard({
                             model={model} errors={errors} requestTitle={requestTitle} compat={compat}
                             declarationsInvalidated={declarationsInvalidated}
                             onChange={setField} onEdit={s => goTo(s, -1)}
-                            declarationGroups={DRIVE_OFFER_DECLARATION_GROUPS}
+                            declarationGroups={DRIVE_OFFER_DECLARATION_GROUPS.map(g => ({ ...g, items: g.items.map(dc) }))}
                             hidePickup
                             driveDetails
                             photoGallery={photos => (
