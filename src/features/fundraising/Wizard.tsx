@@ -67,7 +67,9 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
     pending.current = {};
     setSave("saving");
     try {
-      const next = await fundraising.save(app.id, body);
+      // A cleared amount is null; name it in `clear`, or the server keeps the old value.
+      const clear = CLEARABLE.filter((k) => k in body && body[k] == null);
+      const next = await fundraising.save(app.id, clear.length ? { ...body, clear } : body);
       setApp((cur) => ({ ...next, ...pendingOverlay(cur, pending.current) }));
       setSave("saved");
       return true;
@@ -136,6 +138,8 @@ function pendingOverlay(cur: FundraisingApplication, p: FundraisingSave): Partia
 }
 
 type SetFn = (patch: FundraisingSave) => void;
+
+const CLEARABLE = ["requestedAmount", "insuranceAmount", "ownContribution", "grantsAmount", "otherFundraisingAmount"] as const;
 
 function Nav({ onBack, onNext, nextLabel }: { onBack?: () => void; onNext: () => void; nextLabel?: string }) {
   const ui = useUiText();
@@ -261,7 +265,13 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
   const help = (app.insuranceAmount ?? 0) + (app.ownContribution ?? 0) + (app.grantsAmount ?? 0) + (app.otherFundraisingAmount ?? 0);
   const gap = total - help;
   const mismatch = app.requestedAmount != null && total > 0 && Math.abs(app.requestedAmount - gap) > 0.5;
-  const rowErrors = costs.map((c) => c.expense.trim() !== "" && c.amount == null);
+  // A row in use needs an amount and a supporting reference (owner, 2026-10-26).
+  const used = (c: FundraisingCostItem) => c.expense.trim() !== "" || c.amount != null;
+  const amountMissing = costs.map((c) => used(c) && c.amount == null);
+  const refMissing = costs.map((c) => used(c) && !(c.reference ?? "").trim());
+  const rowErrors = costs.map((_, i) => amountMissing[i] || refMissing[i]);
+  const shownAmount = tried ? amountMissing : costs.map(() => false);
+  const shownRef = tried ? refMissing : costs.map(() => false);
   const errors = tried ? rowErrors.map((e, i) => (e ? i : -1)).filter((i) => i >= 0) : [];
   const pill = (sel: boolean, open: boolean) => ({
     display: "inline-flex", alignItems: "center", minHeight: 40, padding: "0 16px", borderRadius: 999, fontWeight: 600, fontSize: 14,
@@ -275,7 +285,9 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
       {errors.length > 0 && (
         <div role="alert" style={{ maxWidth: 820, border: "2px solid #b42318", borderRadius: 12, background: "#fff", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
           <strong style={{ color: "#8f1d1d" }}>{t("thingsToFix", { count: errors.length })}</strong>
-          {errors.map((i) => <a key={i} href={`#amt${i}`}>{t("costRowMissing", { n: i + 1 })}</a>)}
+          {errors.map((i) => amountMissing[i]
+            ? <a key={i} href={`#amt${i}`}>{t("costRowMissing", { n: i + 1 })}</a>
+            : <a key={i} href={`#ref${i}`}>{t("costRowReference", { n: i + 1 })}</a>)}
         </div>
       )}
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 820 }}>
@@ -304,16 +316,19 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
           <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>Cost breakdown</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span> <FieldInfo localize k="costs" /></h2>
           <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
-            <span><UiText>Expense</UiText></span><span style={{ textAlign: "right" }}><UiText>Estimated amount (₹)</UiText></span><span><UiText>Supporting reference</UiText></span><span />
+            <span><UiText>Expense</UiText></span><span style={{ textAlign: "right" }}><UiText>Estimated amount (₹)</UiText></span><span><UiText>Supporting reference</UiText> <FieldInfo localize k="ref" /></span><span />
           </div>
           {costs.map((c, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, alignItems: "start" }}>
               <input className={s.in} aria-label={`Expense ${i + 1}`} value={c.expense} onChange={(e) => edit(i, { expense: e.target.value })} maxLength={160} />
               <div>
-                <input id={`amt${i}`} className={`${s.in} ${s.tabular}`} style={{ textAlign: "right" }} aria-label={`Amount ${i + 1}`} inputMode="decimal" value={c.amount ?? ""} aria-invalid={errors.includes(i) || undefined} aria-describedby={errors.includes(i) ? `e${i}` : undefined} onChange={(e) => edit(i, { amount: num(e.target.value) })} />
-                {errors.includes(i) && <p id={`e${i}`} className={s.errText}><Icon name="alert" /><UiText>Enter an amount</UiText></p>}
+                <input id={`amt${i}`} className={`${s.in} ${s.tabular}`} style={{ textAlign: "right" }} aria-label={`Amount ${i + 1}`} inputMode="decimal" value={c.amount ?? ""} aria-invalid={shownAmount[i] || undefined} aria-describedby={shownAmount[i] ? `e${i}` : undefined} onChange={(e) => edit(i, { amount: num(e.target.value) })} />
+                {shownAmount[i] && <p id={`e${i}`} className={s.errText}><Icon name="alert" /><UiText>Enter an amount</UiText></p>}
               </div>
-              <input className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Optional")} value={c.reference ?? ""} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
+              <div>
+                <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Bill, quote or receipt no.")} value={c.reference ?? ""} aria-invalid={shownRef[i] || undefined} aria-describedby={shownRef[i] ? `r${i}` : undefined} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
+                {shownRef[i] && <p id={`r${i}`} className={s.errText}><Icon name="alert" /><UiText>Add a reference</UiText></p>}
+              </div>
               <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: 0 }} aria-label={t("removeRow", { n: i + 1 })} onClick={() => setCosts(costs.filter((_, j) => j !== i))}>✕</button>
             </div>
           ))}

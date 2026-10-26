@@ -1918,6 +1918,7 @@
     "add_9dc3aa14": "Add",
     "add_a_main_photo_and_c2499d24": "Add a main photo and a second angle. You can add up to 3 more. We only check them for things we cannot accept.",
     "add_a_quantity_and_condition_226bb42b": "Add a quantity and condition and we''ll check how well this matches.",
+    "add_a_reference_9ab0043a": "Add a reference",
     "add_a_short_video_00f1eff2": "Add a short video",
     "add_an_expense_c6bf0998": "+ Add an expense",
     "add_an_item_d16a13ea": "Add an item",
@@ -2087,6 +2088,7 @@
     "beneficiary_hidden_c914272a": "Beneficiary hidden",
     "beneficiary_name_c48183a9": "Beneficiary name",
     "beneficiary_name_shown_to_donors_60474ee2": "Beneficiary name shown to donors",
+    "bill_quote_or_receipt_no_aed1424e": "Bill, quote or receipt no.",
     "books_clothes_electronics_someone_needs_ef6e5e73": "Books, clothes, electronics — someone needs them",
     "both_516318c2": "Both",
     "both_go_to_verified_people_40c6bc95": "Both go to verified people and NGOs. Pick the way that suits you.",
@@ -4916,7 +4918,7 @@
     },
     "costs": {
       "title": "Cost breakdown",
-      "text": "Optional, but it helps reviewers. List each expense with its amount, e.g. âSurgery â¹80,000â, âMedicines â¹12,000â. Add the bill or quote number if you have it."
+      "text": "Optional, but it helps reviewers. List each expense with its amount and the bill, quote or receipt number, e.g. “Surgery ₹80,000 · Quote 4512”."
     },
     "help": {
       "title": "Other help",
@@ -4940,7 +4942,7 @@
     },
     "ask": {
       "title": "Amount to raise",
-      "text": "How much you want to raise here. If you listed costs, it should match the gap shown above â otherwise tell us why."
+      "text": "How much you want to raise here. If you list costs below, it should match the gap shown — otherwise tell us why."
     },
     "ev_ORGANISER_ID": {
       "title": "Your identity",
@@ -5037,6 +5039,10 @@
     "pMessage": {
       "title": "Message to the organiser",
       "text": "Optional. A short note they see with the approval, e.g. âLooks good â thank you.â"
+    },
+    "ref": {
+      "title": "Supporting reference",
+      "text": "The bill, quote, invoice or receipt number for this cost, so reviewers can match it to your evidence."
     }
   },
   "fundraiserFlow": {
@@ -5126,7 +5132,8 @@
     "beneficiaryPrivate": "{legal} (private) · shown as “{shown}”",
     "costsAcross": "{amount} across {count, plural, one {# item} other {# items}}",
     "documentsReady": "{count, plural, one {# document ready} other {# documents ready}} · private to reviewers",
-    "forBeneficiary": " for {name}"
+    "forBeneficiary": " for {name}",
+    "costRowReference": "Cost breakdown, row {n}: add a supporting reference"
   },
   "requestsArea": {
     "charsMin": "{count}/20 min",

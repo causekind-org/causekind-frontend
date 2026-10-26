@@ -6064,7 +6064,10 @@ export type FundraisingApplication = {
 export type FundraisingSave = Partial<Omit<FundraisingApplication,
   "id" | "reference" | "version" | "status" | "totalCosts" | "outstandingGap" | "evidence" | "infoRequests" |
   "decisionScope" | "decisionConditions" | "decisionReason" | "resubmissionAllowed" | "decidedAt" | "submittedAt" |
-  "createdAt" | "updatedAt" | "missing">>;
+  "createdAt" | "updatedAt" | "missing">> & {
+  /** Amount fields to empty (a null amount alone means "unchanged" on the server). */
+  clear?: string[];
+};
 export type FundraisingAdminApplication = {
   application: FundraisingApplication; applicantId: number; applicantName: string; applicantEmail: string;
   internalNote: string | null; decidedBy: string | null;

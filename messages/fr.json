@@ -3838,7 +3838,9 @@
     "not_added_yet_18e34a9e": "Pas encore ajouté",
     "something_wrong_or_missing_change_42928e5c": "Quelque chose d’incorrect ou de manquant ? Modifiez-le dans votre profil, puis revenez : votre demande est enregistrée.",
     "these_details_come_from_your_b767d1ad": "Ces informations viennent de votre profil et ne peuvent pas être modifiées ici. Si quelque chose est incorrect, modifiez-le dans votre profil : la modification apparaîtra ici à votre retour.",
-    "amount_you_want_to_raise_0c849b11": "Montant que vous voulez collecter"
+    "amount_you_want_to_raise_0c849b11": "Montant que vous voulez collecter",
+    "bill_quote_or_receipt_no_aed1424e": "N° de facture, devis ou reçu",
+    "add_a_reference_9ab0043a": "Ajoutez une référence"
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",
@@ -3954,7 +3956,8 @@
     "beneficiaryPrivate": "{legal} (privé) · affiché comme « {shown} »",
     "costsAcross": "{amount} répartis sur {count, plural, one {# poste} other {# postes}}",
     "documentsReady": "{count, plural, one {# document prêt} other {# documents prêts}} · réservés aux examinateurs",
-    "forBeneficiary": " pour {name}"
+    "forBeneficiary": " pour {name}",
+    "costRowReference": "Détail des coûts, ligne {n} : ajoutez une référence justificative"
   },
   "fieldHelp": {
     "nm": {
@@ -4019,7 +4022,7 @@
     },
     "costs": {
       "title": "Détail des coûts",
-      "text": "Facultatif, mais utile aux examinateurs. Listez chaque dépense avec son montant, par ex. « Opération 80 000 ₹ », « Médicaments 12 000 ₹ ». Ajoutez le numéro de facture ou de devis si vous l’avez."
+      "text": "Facultatif, mais utile pour l’équipe. Indiquez chaque dépense avec son montant et le numéro de facture, de devis ou de reçu, par ex. « Chirurgie 80 000 ₹ · Devis 4512 »."
     },
     "help": {
       "title": "Autre aide",
@@ -4043,7 +4046,7 @@
     },
     "ask": {
       "title": "Montant à collecter",
-      "text": "Combien vous souhaitez collecter ici. Si vous avez listé des coûts, il doit correspondre à l’écart affiché ci-dessus — sinon, expliquez pourquoi."
+      "text": "Le montant que vous voulez collecter ici. Si vous indiquez des coûts plus bas, il doit correspondre à l’écart affiché ; sinon, dites-nous pourquoi."
     },
     "ev_ORGANISER_ID": {
       "title": "Votre identité",
@@ -4140,6 +4143,10 @@
     "pMessage": {
       "title": "Message à l’organisateur",
       "text": "Facultatif. Un court mot affiché avec l’approbation, par ex. « C’est parfait — merci. »"
+    },
+    "ref": {
+      "title": "Référence justificative",
+      "text": "Le numéro de facture, de devis ou de reçu pour cette dépense, afin que l’équipe puisse le rapprocher de vos justificatifs."
     }
   },
   "requestsArea": {

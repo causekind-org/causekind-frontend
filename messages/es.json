@@ -3838,7 +3838,9 @@
     "not_added_yet_18e34a9e": "Aún no añadido",
     "something_wrong_or_missing_change_42928e5c": "¿Algo incorrecto o falta algo? Cámbialo en tu perfil y vuelve: tu solicitud está guardada.",
     "these_details_come_from_your_b767d1ad": "Estos datos vienen de tu perfil y no se pueden cambiar aquí. Si algo está mal, cámbialo en tu perfil: el cambio aparecerá aquí cuando vuelvas.",
-    "amount_you_want_to_raise_0c849b11": "Cantidad que quieres recaudar"
+    "amount_you_want_to_raise_0c849b11": "Cantidad que quieres recaudar",
+    "bill_quote_or_receipt_no_aed1424e": "N.º de factura, presupuesto o recibo",
+    "add_a_reference_9ab0043a": "Añade una referencia"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
@@ -3954,7 +3956,8 @@
     "beneficiaryPrivate": "{legal} (privado) · se muestra como «{shown}»",
     "costsAcross": "{amount} en {count, plural, one {# concepto} other {# conceptos}}",
     "documentsReady": "{count, plural, one {# documento listo} other {# documentos listos}} · solo para revisores",
-    "forBeneficiary": " para {name}"
+    "forBeneficiary": " para {name}",
+    "costRowReference": "Desglose de costes, fila {n}: añade una referencia de respaldo"
   },
   "fieldHelp": {
     "nm": {
@@ -4019,7 +4022,7 @@
     },
     "costs": {
       "title": "Desglose de costes",
-      "text": "Opcional, pero ayuda a los revisores. Indica cada gasto con su importe, p. ej., «Operación ₹80.000», «Medicamentos ₹12.000». Añade el número de factura o presupuesto si lo tienes."
+      "text": "Opcional, pero ayuda al equipo. Indica cada gasto con su importe y el número de factura, presupuesto o recibo, p. ej., «Cirugía ₹80.000 · Presupuesto 4512»."
     },
     "help": {
       "title": "Otra ayuda",
@@ -4042,8 +4045,8 @@
       "text": "Dinero recaudado en otro sitio: otra web, tu trabajo, colectas de la comunidad. 0 si no hay."
     },
     "ask": {
-      "title": "Importe a recaudar",
-      "text": "Cuánto quieres recaudar aquí. Si indicaste costes, debería coincidir con la diferencia de arriba; si no, explica por qué."
+      "title": "Cantidad a recaudar",
+      "text": "Cuánto quieres recaudar aquí. Si indicas costes más abajo, debe coincidir con la diferencia mostrada; si no, explícanos por qué."
     },
     "ev_ORGANISER_ID": {
       "title": "Tu identidad",
@@ -4140,6 +4143,10 @@
     "pMessage": {
       "title": "Mensaje al organizador",
       "text": "Opcional. Una nota breve que verá con la aprobación, p. ej., «Todo bien, gracias»."
+    },
+    "ref": {
+      "title": "Referencia de respaldo",
+      "text": "El número de factura, presupuesto o recibo de este gasto, para que el equipo pueda cotejarlo con tus pruebas."
     }
   },
   "requestsArea": {
