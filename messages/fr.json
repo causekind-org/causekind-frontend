@@ -3840,7 +3840,37 @@
     "these_details_come_from_your_b767d1ad": "Ces informations viennent de votre profil et ne peuvent pas être modifiées ici. Si quelque chose est incorrect, modifiez-le dans votre profil : la modification apparaîtra ici à votre retour.",
     "amount_you_want_to_raise_0c849b11": "Montant que vous voulez collecter",
     "bill_quote_or_receipt_no_aed1424e": "N° de facture, devis ou reçu",
-    "add_a_reference_9ab0043a": "Ajoutez une référence"
+    "add_a_reference_9ab0043a": "Ajoutez une référence",
+    "what_do_you_need_money_65b74127": "Pourquoi avez-vous besoin d’argent ?",
+    "tell_us_in_simple_words_f06ffd5b": "Expliquez avec des mots simples. Vous pourrez écrire toute l’histoire plus tard.",
+    "what_is_the_money_for_6c36375a": "À quoi sert l’argent ?",
+    "some_choices_are_not_open_4aa8a42e": "Certains choix ne sont pas encore ouverts.",
+    "what_happened_what_help_do_c1b60207": "Que s’est-il passé ? De quelle aide avez-vous besoin ?",
+    "by_which_date_do_you_77d90c07": "Pour quelle date vous faut-il l’argent ?",
+    "for_example_the_day_of_a281edab": "Par exemple le jour de l’opération, ou le dernier jour pour payer les frais.",
+    "how_much_money_do_you_bcc1f46f": "De combien d’argent avez-vous besoin ? (₹)",
+    "what_will_the_money_pay_a24188cc": "Qu’est-ce que l’argent va payer ?",
+    "you_can_skip_this_422203e8": "(vous pouvez passer)",
+    "what_is_it_ce8533df": "Qu’est-ce que c’est ?",
+    "how_much_97365331": "Combien ? (₹)",
+    "bill_or_receipt_number_a55beae6": "Numéro de facture ou de reçu",
+    "number_on_the_bill_3bb41963": "Numéro sur la facture",
+    "write_the_bill_number_6fd47945": "Écrivez le numéro de facture",
+    "write_the_amount_8d7e04a9": "Écrivez le montant",
+    "add_one_more_thing_f6fe7a1e": "+ Ajouter une autre chose",
+    "new_item_b59cbbe4": "Nouvel élément",
+    "money_you_already_have_or_4effddd9": "L’argent que vous avez déjà, ou que vous recevrez",
+    "from_insurance_0ec83709": "De l’assurance",
+    "from_you_or_your_family_b9cb2532": "De vous ou de votre famille",
+    "from_government_schemes_or_grants_527638f8": "D’aides publiques ou de bourses",
+    "from_other_fundraising_d91bc189": "D’autres collectes",
+    "money_still_needed_4b62432e": "Argent encore nécessaire",
+    "total_cost_3e3ccbbe": "Coût total",
+    "money_you_already_have_d7992a7e": "Argent que vous avez déjà",
+    "money_you_asked_for_4d015d3b": "Argent demandé",
+    "the_numbers_do_not_match_9c5997b7": "Les chiffres ne correspondent pas.",
+    "the_money_you_asked_for_e6b81d34": "L’argent demandé n’est pas égal à l’argent encore nécessaire. Il manque peut-être quelque chose dans la liste ci-dessus. Ajoutez-le, ou dites-nous pourquoi en une ligne.",
+    "why_is_it_different_39ce8022": "Pourquoi est-ce différent ?"
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",
@@ -3948,7 +3978,7 @@
     "publicLink": "Lien public :",
     "applicationDraft": "Demande de collecte · Brouillon · {reference}",
     "thingsToFix": "{count, plural, one {# point à corriger avant de continuer} other {# points à corriger avant de continuer}}",
-    "costRowMissing": "Détail des coûts, ligne {n} : saisissez un montant",
+    "costRowMissing": "Ligne {n} de la liste : écrivez le montant",
     "removeRow": "Supprimer la ligne {n}",
     "evidenceIntro": "Cette liste dépend de vos réponses{category}{forOther}. PDF, JPG ou PNG.",
     "evidenceIntroCategory": " — besoin : {category}",
@@ -3957,7 +3987,7 @@
     "costsAcross": "{amount} répartis sur {count, plural, one {# poste} other {# postes}}",
     "documentsReady": "{count, plural, one {# document prêt} other {# documents prêts}} · réservés aux examinateurs",
     "forBeneficiary": " pour {name}",
-    "costRowReference": "Détail des coûts, ligne {n} : ajoutez une référence justificative"
+    "costRowReference": "Ligne {n} de la liste : écrivez le numéro de facture"
   },
   "fieldHelp": {
     "nm": {
@@ -4005,48 +4035,48 @@
       "text": "En quelques lignes, pourquoi vous êtes la bonne personne pour collecter pour elle. Par exemple : « Je suis son fils et je gère les factures de l’hôpital. »"
     },
     "cat": {
-      "title": "Catégorie",
-      "text": "À quoi sert principalement l’argent. Choisissez la plus proche — elle détermine les documents demandés."
+      "title": "À quoi sert l’argent ?",
+      "text": "Choisissez ce qui ressemble le plus à votre besoin. Cela nous dit quels papiers vous demander."
     },
     "wh": {
       "title": "Ce qui s’est passé",
-      "text": "Expliquez simplement ce qui s’est passé et ce que l’argent paiera. Les examinateurs le lisent ; vous écrirez l’histoire publique plus tard."
+      "text": "Dites avec vos mots ce qui s’est passé et à quoi servira l’argent. Seule notre équipe le lit."
     },
     "ur": {
-      "title": "Pour quand",
-      "text": "La date à laquelle vous avez besoin de l’argent — date de l’opération, échéance des frais ou d’une facture. Soyez aussi précis que possible."
+      "title": "Date",
+      "text": "Le jour où il vous faut l’argent. Par exemple le jour de l’opération ou le dernier jour pour payer les frais."
     },
     "rq": {
       "title": "Demande d’objets associée",
       "text": "Uniquement si vous avez aussi demandé des objets (pas de l’argent) sur CauseKind pour le même besoin. Indiquez ce numéro de demande. Sinon, laissez vide."
     },
     "costs": {
-      "title": "Détail des coûts",
-      "text": "Facultatif, mais utile pour l’équipe. Indiquez chaque dépense avec son montant et le numéro de facture, de devis ou de reçu, par ex. « Chirurgie 80 000 ₹ · Devis 4512 »."
+      "title": "Ce que l’argent paie",
+      "text": "Vous pouvez passer, mais cela aide. Écrivez chaque chose, son prix et le numéro de sa facture. Exemple : « Opération 80 000 ₹ · Facture 4512 »."
     },
     "help": {
-      "title": "Autre aide",
-      "text": "L’argent que vous avez déjà ou attendez d’ailleurs. Nous le déduisons de vos coûts pour calculer ce qui manque. Saisissez 0 s’il n’y en a pas."
+      "title": "Argent que vous avez déjà",
+      "text": "L’argent que vous avez déjà, ou que vous recevrez d’ailleurs. Nous l’enlevons du coût total. Écrivez 0 s’il n’y en a pas."
     },
     "insuranceAmount": {
-      "title": "Assurance",
-      "text": "Ce que votre assurance paiera pour ces coûts. 0 s’il n’y en a pas."
+      "title": "De l’assurance",
+      "text": "Ce que votre assurance paiera. Écrivez 0 s’il n’y en a pas."
     },
     "ownContribution": {
-      "title": "Contribution personnelle ou familiale",
-      "text": "Ce que vous ou votre famille pouvez payer vous-mêmes. 0 s’il n’y en a pas."
+      "title": "De vous ou de votre famille",
+      "text": "Ce que vous ou votre famille pouvez payer. Écrivez 0 s’il n’y en a pas."
     },
     "grantsAmount": {
-      "title": "Aides ou programmes",
-      "text": "L’argent de programmes publics, de bourses ou de fondations. 0 s’il n’y en a pas."
+      "title": "D’aides ou de programmes",
+      "text": "L’argent d’un programme public, d’une bourse ou d’une fondation. Écrivez 0 s’il n’y en a pas."
     },
     "otherFundraisingAmount": {
-      "title": "Autres collectes",
-      "text": "L’argent collecté ailleurs — autre site, lieu de travail, collectes locales. 0 s’il n’y en a pas."
+      "title": "D’autres collectes",
+      "text": "L’argent collecté ailleurs, comme un autre site, votre travail ou votre quartier. Écrivez 0 s’il n’y en a pas."
     },
     "ask": {
-      "title": "Montant à collecter",
-      "text": "Le montant que vous voulez collecter ici. Si vous indiquez des coûts plus bas, il doit correspondre à l’écart affiché ; sinon, dites-nous pourquoi."
+      "title": "Combien d’argent",
+      "text": "L’argent total dont vous avez besoin. Si vous listez des coûts plus bas, il doit être égal à « Encore nécessaire » ; sinon, dites-nous pourquoi."
     },
     "ev_ORGANISER_ID": {
       "title": "Votre identité",
@@ -4145,8 +4175,8 @@
       "text": "Facultatif. Un court mot affiché avec l’approbation, par ex. « C’est parfait — merci. »"
     },
     "ref": {
-      "title": "Référence justificative",
-      "text": "Le numéro de facture, de devis ou de reçu pour cette dépense, afin que l’équipe puisse le rapprocher de vos justificatifs."
+      "title": "Numéro de facture ou de reçu",
+      "text": "Le numéro imprimé sur la facture, le reçu ou le devis de cette chose. Il nous aide à vérifier vos papiers."
     }
   },
   "requestsArea": {

@@ -281,7 +281,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
 
   return (
     <>
-      <Heading title={ui("The need and what it costs")} sub={ui("Plain facts are enough. You will write the public story later.")} />
+      <Heading title={ui("What do you need money for?")} sub={ui("Tell us in simple words. You can write the full story later.")} />
       {errors.length > 0 && (
         <div role="alert" style={{ maxWidth: 820, border: "2px solid #b42318", borderRadius: 12, background: "#fff", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
           <strong style={{ color: "#8f1d1d" }}>{t("thingsToFix", { count: errors.length })}</strong>
@@ -292,68 +292,68 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
       )}
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 820 }}>
         <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-          <legend className={s.lbl}><UiText>Category</UiText> <FieldInfo localize k="cat" /></legend>
+          <legend className={s.lbl}><UiText>What is the money for?</UiText> <FieldInfo localize k="cat" /></legend>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {CATEGORIES.map((c) => {
               const open = OPEN.includes(c);
               return <button key={c} type="button" aria-pressed={app.category === c} disabled={!open} style={pill(app.category === c, open)} onClick={() => set({ category: c })}>{fmt.category(c)}</button>;
             })}
           </div>
-          <p className={s.hint}><UiText>Which categories are offered at launch is still being decided.</UiText></p>
+          <p className={s.hint}><UiText>Some choices are not open yet.</UiText></p>
         </fieldset>
-        <div><label className={s.lbl} htmlFor="wh"><UiText>What happened, and what help is needed?</UiText> <FieldInfo localize k="wh" /></label><textarea id="wh" className={s.in} rows={4} value={app.whatHappened ?? ""} onChange={(e) => set({ whatHappened: e.target.value })} maxLength={8000} style={{ resize: "vertical" }} /></div>
+        <div><label className={s.lbl} htmlFor="wh"><UiText>What happened? What help do you need?</UiText> <FieldInfo localize k="wh" /></label><textarea id="wh" className={s.in} rows={4} value={app.whatHappened ?? ""} onChange={(e) => set({ whatHappened: e.target.value })} maxLength={8000} style={{ resize: "vertical" }} /></div>
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="ur"><UiText>When is the money needed by?</UiText> <FieldInfo localize k="ur" /></label>
+          <div><label className={s.lbl} htmlFor="ur"><UiText>By which date do you need the money?</UiText> <FieldInfo localize k="ur" /></label>
             {/* Stored as an ISO date (yyyy-mm-dd) in the urgency field. */}
             <input id="ur" type="date" className={s.in} min={new Date().toISOString().slice(0, 10)}
               value={/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? app.urgency! : ""}
               onChange={(e) => set({ urgency: e.target.value })} />
-            <p className={s.hint}><UiText>The date of the surgery, fee deadline or bill — as exact as you can.</UiText></p></div>
+            <p className={s.hint}><UiText>For example, the day of the operation, or the last day to pay the fees.</UiText></p></div>
           {/* The amount comes first (owner, 2026-10-26); the breakdown below explains it. */}
-          <div><label className={s.lbl} htmlFor="ask"><UiText>Amount you want to raise (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
+          <div><label className={s.lbl} htmlFor="ask"><UiText>How much money do you need? (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
         </div>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
-          <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>Cost breakdown</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span> <FieldInfo localize k="costs" /></h2>
+          <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>What will the money pay for?</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(you can skip this)</UiText></span> <FieldInfo localize k="costs" /></h2>
           <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
-            <span><UiText>Expense</UiText></span><span style={{ textAlign: "right" }}><UiText>Estimated amount (₹)</UiText></span><span><UiText>Supporting reference</UiText> <FieldInfo localize k="ref" /></span><span />
+            <span><UiText>What is it?</UiText></span><span style={{ textAlign: "right" }}><UiText>How much? (₹)</UiText></span><span><UiText>Bill or receipt number</UiText> <FieldInfo localize k="ref" /></span><span />
           </div>
           {costs.map((c, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, alignItems: "start" }}>
               <input className={s.in} aria-label={`Expense ${i + 1}`} value={c.expense} onChange={(e) => edit(i, { expense: e.target.value })} maxLength={160} />
               <div>
                 <input id={`amt${i}`} className={`${s.in} ${s.tabular}`} style={{ textAlign: "right" }} aria-label={`Amount ${i + 1}`} inputMode="decimal" value={c.amount ?? ""} aria-invalid={shownAmount[i] || undefined} aria-describedby={shownAmount[i] ? `e${i}` : undefined} onChange={(e) => edit(i, { amount: num(e.target.value) })} />
-                {shownAmount[i] && <p id={`e${i}`} className={s.errText}><Icon name="alert" /><UiText>Enter an amount</UiText></p>}
+                {shownAmount[i] && <p id={`e${i}`} className={s.errText}><Icon name="alert" /><UiText>Write the amount</UiText></p>}
               </div>
               <div>
-                <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Bill, quote or receipt no.")} value={c.reference ?? ""} aria-invalid={shownRef[i] || undefined} aria-describedby={shownRef[i] ? `r${i}` : undefined} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
-                {shownRef[i] && <p id={`r${i}`} className={s.errText}><Icon name="alert" /><UiText>Add a reference</UiText></p>}
+                <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Number on the bill")} value={c.reference ?? ""} aria-invalid={shownRef[i] || undefined} aria-describedby={shownRef[i] ? `r${i}` : undefined} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
+                {shownRef[i] && <p id={`r${i}`} className={s.errText}><Icon name="alert" /><UiText>Write the bill number</UiText></p>}
               </div>
               <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: 0 }} aria-label={t("removeRow", { n: i + 1 })} onClick={() => setCosts(costs.filter((_, j) => j !== i))}>✕</button>
             </div>
           ))}
-          <div><button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setCosts([...costs, { expense: ui("New expense"), amount: null, reference: null }])}><UiText>+ Add an expense</UiText></button></div>
+          <div><button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setCosts([...costs, { expense: ui("New item"), amount: null, reference: null }])}><UiText>+ Add one more thing</UiText></button></div>
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="oh">
-          <h2 id="oh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>Other help received or expected</UiText> <FieldInfo localize k="help" /></h2>
+          <h2 id="oh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>Money you already have, or will get</UiText> <FieldInfo localize k="help" /></h2>
           <div className={s.grid2}>
-            {([["insuranceAmount", ui("Insurance")], ["ownContribution", ui("Own or family contribution")], ["grantsAmount", ui("Grants or schemes")], ["otherFundraisingAmount", ui("Other fundraising")]] as const).map(([k, label]) => (
+            {([["insuranceAmount", ui("From insurance")], ["ownContribution", ui("From you or your family")], ["grantsAmount", ui("From government schemes or grants")], ["otherFundraisingAmount", ui("From other fundraising")]] as const).map(([k, label]) => (
               <div key={k}><label className={s.lbl} htmlFor={k}>{label} <FieldInfo localize k={k} /></label><input id={k} className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app[k] ?? ""} onChange={(e) => set({ [k]: num(e.target.value) })} /></div>
             ))}
           </div>
         </section>
 
         <section className={s.card} style={{ background: "#fbf8f4", padding: "18px 20px" }} aria-labelledby="gap">
-          <h2 id="gap" className={s.sec} style={{ marginBottom: 6 }}><UiText>Funding gap</UiText></h2>
-          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Total costs entered</UiText></span><span>{formatINR(total)}</span></div>
-          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Other help</UiText></span><span>− {formatINR(help)}</span></div>
-          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #e7ddd2", fontWeight: 700 }}><span><UiText>Outstanding gap</UiText></span><span>{formatINR(gap)}</span></div>
-          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Amount you want to raise</UiText></span><span>{formatINR(app.requestedAmount ?? 0)}</span></div>
+          <h2 id="gap" className={s.sec} style={{ marginBottom: 6 }}><UiText>Money still needed</UiText></h2>
+          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Total cost</UiText></span><span>{formatINR(total)}</span></div>
+          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Money you already have</UiText></span><span>− {formatINR(help)}</span></div>
+          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #e7ddd2", fontWeight: 700 }}><span><UiText>Still needed</UiText></span><span>{formatINR(gap)}</span></div>
+          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Money you asked for</UiText></span><span>{formatINR(app.requestedAmount ?? 0)}</span></div>
           {mismatch && (
             <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", borderRadius: 10, background: "#fdf3e1", color: "#5c3800", flexDirection: "column" }}>
-              <p className={s.small}><strong><UiText>These don&apos;t add up yet.</UiText></strong> <UiText>The amount you want to raise differs from the gap shown. That&apos;s often a missing cost — add it above, or tell us why in a sentence. Reviewers will ask about any difference.</UiText></p>
-              <input className={s.in} aria-label={ui("Reason for the difference")} placeholder={ui("Reason for the difference")} value={app.amountDifferenceReason ?? ""} onChange={(e) => set({ amountDifferenceReason: e.target.value })} />
+              <p className={s.small}><strong><UiText>The numbers do not match.</UiText></strong> <UiText>The money you asked for is not the same as the money still needed. Maybe something is missing in the list above. Add it, or tell us why in one line.</UiText></p>
+              <input className={s.in} aria-label={ui("Why is it different?")} placeholder={ui("Why is it different?")} value={app.amountDifferenceReason ?? ""} onChange={(e) => set({ amountDifferenceReason: e.target.value })} />
             </div>
           )}
         </section>

@@ -3840,7 +3840,37 @@
     "these_details_come_from_your_b767d1ad": "Estos datos vienen de tu perfil y no se pueden cambiar aquí. Si algo está mal, cámbialo en tu perfil: el cambio aparecerá aquí cuando vuelvas.",
     "amount_you_want_to_raise_0c849b11": "Cantidad que quieres recaudar",
     "bill_quote_or_receipt_no_aed1424e": "N.º de factura, presupuesto o recibo",
-    "add_a_reference_9ab0043a": "Añade una referencia"
+    "add_a_reference_9ab0043a": "Añade una referencia",
+    "what_do_you_need_money_65b74127": "¿Para qué necesitas dinero?",
+    "tell_us_in_simple_words_f06ffd5b": "Cuéntanos con palabras sencillas. Puedes escribir la historia completa después.",
+    "what_is_the_money_for_6c36375a": "¿Para qué es el dinero?",
+    "some_choices_are_not_open_4aa8a42e": "Algunas opciones aún no están abiertas.",
+    "what_happened_what_help_do_c1b60207": "¿Qué pasó? ¿Qué ayuda necesitas?",
+    "by_which_date_do_you_77d90c07": "¿Para qué fecha necesitas el dinero?",
+    "for_example_the_day_of_a281edab": "Por ejemplo, el día de la operación o el último día para pagar.",
+    "how_much_money_do_you_bcc1f46f": "¿Cuánto dinero necesitas? (₹)",
+    "what_will_the_money_pay_a24188cc": "¿Qué va a pagar el dinero?",
+    "you_can_skip_this_422203e8": "(puedes saltarlo)",
+    "what_is_it_ce8533df": "¿Qué es?",
+    "how_much_97365331": "¿Cuánto? (₹)",
+    "bill_or_receipt_number_a55beae6": "Número de factura o recibo",
+    "number_on_the_bill_3bb41963": "Número de la factura",
+    "write_the_bill_number_6fd47945": "Escribe el número de factura",
+    "write_the_amount_8d7e04a9": "Escribe la cantidad",
+    "add_one_more_thing_f6fe7a1e": "+ Añadir otra cosa",
+    "new_item_b59cbbe4": "Nuevo elemento",
+    "money_you_already_have_or_4effddd9": "Dinero que ya tienes o que recibirás",
+    "from_insurance_0ec83709": "Del seguro",
+    "from_you_or_your_family_b9cb2532": "De ti o tu familia",
+    "from_government_schemes_or_grants_527638f8": "De programas del gobierno o becas",
+    "from_other_fundraising_d91bc189": "De otras colectas",
+    "money_still_needed_4b62432e": "Dinero que aún falta",
+    "total_cost_3e3ccbbe": "Coste total",
+    "money_you_already_have_d7992a7e": "Dinero que ya tienes",
+    "money_you_asked_for_4d015d3b": "Dinero que pediste",
+    "the_numbers_do_not_match_9c5997b7": "Los números no coinciden.",
+    "the_money_you_asked_for_e6b81d34": "El dinero que pediste no es igual al dinero que aún falta. Quizá falta algo en la lista de arriba. Añádelo o dinos por qué en una línea.",
+    "why_is_it_different_39ce8022": "¿Por qué es diferente?"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
@@ -3948,7 +3978,7 @@
     "publicLink": "Enlace público:",
     "applicationDraft": "Solicitud de recaudación · Borrador · {reference}",
     "thingsToFix": "{count, plural, one {# cosa que corregir antes de continuar} other {# cosas que corregir antes de continuar}}",
-    "costRowMissing": "Desglose de costes, fila {n}: introduce un importe",
+    "costRowMissing": "Fila {n} de la lista: escribe la cantidad",
     "removeRow": "Quitar la fila {n}",
     "evidenceIntro": "Esta lista se basa en tus respuestas{category}{forOther}. PDF, JPG o PNG.",
     "evidenceIntroCategory": " — necesidad de {category}",
@@ -3957,7 +3987,7 @@
     "costsAcross": "{amount} en {count, plural, one {# concepto} other {# conceptos}}",
     "documentsReady": "{count, plural, one {# documento listo} other {# documentos listos}} · solo para revisores",
     "forBeneficiary": " para {name}",
-    "costRowReference": "Desglose de costes, fila {n}: añade una referencia de respaldo"
+    "costRowReference": "Fila {n} de la lista: escribe el número de factura"
   },
   "fieldHelp": {
     "nm": {
@@ -4005,48 +4035,48 @@
       "text": "En unas líneas, por qué eres la persona adecuada para recaudar por ella. Por ejemplo: «Soy su hijo y me encargo de las facturas del hospital»."
     },
     "cat": {
-      "title": "Categoría",
-      "text": "Para qué es principalmente el dinero. Elige la más cercana: de ella dependen los documentos que pedimos."
+      "title": "¿Para qué es el dinero?",
+      "text": "Elige lo que más se parece a tu necesidad. Así sabemos qué papeles pedirte."
     },
     "wh": {
       "title": "Qué pasó",
-      "text": "Explica con sencillez qué pasó y qué pagará el dinero. Lo leen los revisores; la historia pública la escribirás más adelante."
+      "text": "Cuéntanos con tus palabras qué pasó y para qué es el dinero. Solo lo lee nuestro equipo."
     },
     "ur": {
-      "title": "Para cuándo",
-      "text": "La fecha para la que necesitas el dinero: la de la operación, el plazo de pago o el vencimiento de la factura. Lo más exacta posible."
+      "title": "Fecha",
+      "text": "El día en que necesitas el dinero. Por ejemplo, el día de la operación o el último día para pagar."
     },
     "rq": {
       "title": "Solicitud de artículos relacionada",
       "text": "Solo si también pediste artículos (no dinero) en CauseKind para la misma necesidad. Escribe ese número de solicitud. Si no, déjalo en blanco."
     },
     "costs": {
-      "title": "Desglose de costes",
-      "text": "Opcional, pero ayuda al equipo. Indica cada gasto con su importe y el número de factura, presupuesto o recibo, p. ej., «Cirugía ₹80.000 · Presupuesto 4512»."
+      "title": "Qué paga el dinero",
+      "text": "Puedes saltarlo, pero ayuda. Escribe cada cosa, cuánto cuesta y el número de su factura. Ejemplo: «Operación ₹80.000 · Factura 4512»."
     },
     "help": {
-      "title": "Otra ayuda",
-      "text": "El dinero que ya tienes o esperas de otras fuentes. Lo restamos de tus costes para calcular lo que falta. Pon 0 si no hay."
+      "title": "Dinero que ya tienes",
+      "text": "El dinero que ya tienes o que recibirás de otro lugar. Lo restamos del coste total. Escribe 0 si no hay."
     },
     "insuranceAmount": {
-      "title": "Seguro",
-      "text": "Cuánto pagará tu seguro de estos costes. 0 si no hay."
+      "title": "Del seguro",
+      "text": "Cuánto pagará tu seguro. Escribe 0 si no hay."
     },
     "ownContribution": {
-      "title": "Aportación propia o familiar",
-      "text": "Lo que tú o tu familia podéis pagar. 0 si no hay."
+      "title": "De ti o tu familia",
+      "text": "Cuánto puedes pagar tú o tu familia. Escribe 0 si no hay."
     },
     "grantsAmount": {
-      "title": "Ayudas o programas",
-      "text": "Dinero de programas públicos, becas o fundaciones. 0 si no hay."
+      "title": "De ayudas o programas",
+      "text": "Dinero de un programa del gobierno, beca o fundación. Escribe 0 si no hay."
     },
     "otherFundraisingAmount": {
-      "title": "Otras recaudaciones",
-      "text": "Dinero recaudado en otro sitio: otra web, tu trabajo, colectas de la comunidad. 0 si no hay."
+      "title": "De otras colectas",
+      "text": "Dinero reunido en otro lugar, como otra web, tu trabajo o tu comunidad. Escribe 0 si no hay."
     },
     "ask": {
-      "title": "Cantidad a recaudar",
-      "text": "Cuánto quieres recaudar aquí. Si indicas costes más abajo, debe coincidir con la diferencia mostrada; si no, explícanos por qué."
+      "title": "Cuánto dinero",
+      "text": "El dinero total que necesitas. Si pones costes abajo, debe ser igual a «Aún falta»; si no, dinos por qué."
     },
     "ev_ORGANISER_ID": {
       "title": "Tu identidad",
@@ -4145,8 +4175,8 @@
       "text": "Opcional. Una nota breve que verá con la aprobación, p. ej., «Todo bien, gracias»."
     },
     "ref": {
-      "title": "Referencia de respaldo",
-      "text": "El número de factura, presupuesto o recibo de este gasto, para que el equipo pueda cotejarlo con tus pruebas."
+      "title": "Número de factura o recibo",
+      "text": "El número impreso en la factura, el recibo o el presupuesto de esta cosa. Nos ayuda a revisar tus papeles."
     }
   },
   "requestsArea": {
