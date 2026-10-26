@@ -75,11 +75,12 @@ export default function AdminFundraisingReviewPage() {
             <dl style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: "4px 12px" }}>
               {app.costItems.map((c, i) => <Row key={i} k={c.expense} v={formatINR(c.amount)} />)}
               <Row k="Total" v={formatINR(app.totalCosts)} bold />
-              <Row k="Insurance" v={`− ${formatINR(app.insuranceAmount ?? 0)}`} />
-              <Row k="Own / family" v={`− ${formatINR(app.ownContribution ?? 0)}`} />
-              <Row k="Grants" v={`− ${formatINR(app.grantsAmount ?? 0)}`} />
-              <Row k="Other fundraising" v={`− ${formatINR(app.otherFundraisingAmount ?? 0)}`} />
-              <Row k="Gap" v={formatINR(app.outstandingGap)} bold />
+              {/* Money already in hand is shown for context only; it is not subtracted (owner, 2026-10-26). */}
+              <Row k="Insurance (not subtracted)" v={formatINR(app.insuranceAmount ?? 0)} />
+              <Row k="Own / family (not subtracted)" v={formatINR(app.ownContribution ?? 0)} />
+              <Row k="Grants (not subtracted)" v={formatINR(app.grantsAmount ?? 0)} />
+              <Row k="Other fundraising (not subtracted)" v={formatINR(app.otherFundraisingAmount ?? 0)} />
+              <Row k="Still needed" v={formatINR(app.outstandingGap)} bold />
               <Row k="Requested" v={formatINR(app.requestedAmount)} bold />
             </dl>
             {app.amountDifferenceReason && <p className={a.small}><span className={a.muted}>Difference explained:</span> {app.amountDifferenceReason}</p>}

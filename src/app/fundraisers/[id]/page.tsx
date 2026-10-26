@@ -68,7 +68,6 @@ export default function FundraiserPage() {
             <table className={s.tabular} style={{ width: "100%", borderCollapse: "collapse", fontSize: 15 }}>
               <tbody>
                 {d.costs.map((r, i) => <tr key={i}><td style={{ padding: "10px 0", borderBottom: "1px solid #efe7de" }}>{r.expense}</td><td style={{ textAlign: "right", borderBottom: "1px solid #efe7de" }}>{formatINR(r.amount)}</td></tr>)}
-                {d.otherHelp > 0 && <tr><td className={s.muted} style={{ padding: "10px 0", borderBottom: "1px solid #efe7de" }}><UiText>Covered by insurance and family</UiText></td><td className={s.muted} style={{ textAlign: "right", borderBottom: "1px solid #efe7de" }}>− {formatINR(d.otherHelp)}</td></tr>}
                 <tr><td style={{ padding: "10px 0" }}><strong><UiText>Raising</UiText></strong></td><td style={{ textAlign: "right" }}><strong>{formatINR(c.target)}</strong></td></tr>
               </tbody>
             </table>

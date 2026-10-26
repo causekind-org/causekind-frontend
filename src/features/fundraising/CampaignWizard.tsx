@@ -234,8 +234,6 @@ function Target({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: Reac
             </div>
           ))}
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderTop: "1px solid #efe7de", fontWeight: 700 }}><span><UiText>Total</UiText></span><span>{formatINR(c.totalCosts)}</span></div>
-          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0" }}><span><UiText>Other funding</UiText></span><span>− {formatINR(c.otherHelp)}</span></div>
-          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontWeight: 700 }}><span><UiText>Remaining gap</UiText></span><span>{formatINR(c.remainingGap)}</span></div>
         </section>
         {c.hasMaterialChanges && (
           <div style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000", flexDirection: "column" }}>
