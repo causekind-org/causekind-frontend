@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Calendar, Heart, Loader2, Trash2 } from "lucide-react";
 import type { NgoDrive } from "@/lib/api";
+import { formatIST } from "@/lib/formatIST";
 import { serverDate } from "@/lib/serverTime";
 import { Badge } from "@/components/ui/badge";
 import { DriveQuantityBar } from "@/features/ngo-drives/components/DriveQuantityBar";
@@ -83,7 +84,7 @@ export function YourDrivesTab({ drives, offers, loading, error, onRetry, startDr
                   <p className="mb-3 text-sm font-medium text-stone-600 dark:text-stone-400">{drive.quantityNeeded} {unit} of {drive.itemName}</p>
                   <div className="mb-4 flex flex-wrap gap-4 text-xs text-stone-500 dark:text-stone-400">
                     <span className="flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" /> For {drive.beneficiaryCount} {drive.beneficiaryGroup}</span>
-                    {drive.neededBy && <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Needed by {new Date(drive.neededBy).toLocaleDateString()}</span>}
+                    {drive.neededBy && <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Needed by {formatIST(drive.neededBy)}</span>}
                   </div>
                   {(drive.status === "CHANGES_REQUESTED" || drive.status === "REJECTED") && drive.adminReason && (
                     <p className="mb-3 text-sm text-stone-600 dark:text-stone-400"><strong>Reason:</strong> {drive.adminReason}</p>

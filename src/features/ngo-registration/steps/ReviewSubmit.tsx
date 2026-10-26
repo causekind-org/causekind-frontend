@@ -3,9 +3,11 @@
 import { useMemo, useState } from "react";
 import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
 import { getNgoFileLink } from "@/lib/api";
-import { ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
 import {
   PAN_DOC,
+  NGO_STEPS,
+  NGO_STEP_FULL_TITLES,
   authorizationDocumentLabel,
   getRegistrationCertificateDoc,
   isRepresentativeEmpty,
@@ -106,7 +108,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
 
       <div className="space-y-4">
         {/* Section 1: Organization Details */}
-        <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <section className="rounded-xl border border-[#EADBCE] bg-[#FAF7F2] p-4 dark:border-emerald-950/80 dark:bg-[#141E18]">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
@@ -181,6 +183,12 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
               </dd>
             </div>
             <div className="sm:col-span-2">
+              <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Email Address</dt>
+              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+                {data.officialEmail || "—"}
+              </dd>
+            </div>
+            <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Phone Number</dt>
               <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.organizationPhone || "—"}
@@ -196,7 +204,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         </section>
 
         {/* Section 2: Legal Documents */}
-        <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <section className="rounded-xl border border-[#EADBCE] bg-[#FAF7F2] p-4 dark:border-emerald-950/80 dark:bg-[#141E18]">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
@@ -246,7 +254,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         </section>
 
         {/* Section 3: Authorized Representative */}
-        <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <section className="rounded-xl border border-[#EADBCE] bg-[#FAF7F2] p-4 dark:border-emerald-950/80 dark:bg-[#141E18]">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
@@ -289,7 +297,17 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                   </div>
                   <div>
                     <dt className="text-3xs font-semibold uppercase text-stone-400">PAN</dt>
-                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">{normalizePan(card.panNumber) || "—"}</dd>
+                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">
+                      {normalizePan(card.panNumber) || (
+                        <button
+                          type="button"
+                          onClick={() => onEditStep("authorized-rep")}
+                          className="text-red-600 dark:text-red-400 font-semibold underline underline-offset-2 hover:text-red-700"
+                        >
+                          Missing — enter in Step 3
+                        </button>
+                      )}
+                    </dd>
                   </div>
                   <div className="min-w-0">
                     <dt className="text-3xs font-semibold uppercase text-stone-400">ID proof</dt>
@@ -306,7 +324,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         </section>
 
         {/* Section 4: Organization Photos */}
-        <section className="rounded-xl border border-stone-200 bg-stone-50/70 p-4 dark:border-zinc-800 dark:bg-zinc-900/50">
+        <section className="rounded-xl border border-[#EADBCE] bg-[#FAF7F2] p-4 dark:border-emerald-950/80 dark:bg-[#141E18]">
           <div className="flex items-center justify-between gap-2 border-b border-stone-200/60 dark:border-zinc-800/80 pb-2 mb-3">
             <div className="flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-md bg-ngo-100 text-ngo-700 dark:bg-ngo-900/40 dark:text-ngo-300 text-xs">
@@ -412,9 +430,30 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           </button>
         </div>
         {!prevStepsComplete && (
-          <p className="text-3xs text-stone-500 dark:text-stone-400 text-right pr-1">
-            Complete previous steps to submit.
-          </p>
+          <div role="alert" className="w-full rounded-xl border border-amber-300 bg-amber-50 dark:border-amber-700/50 dark:bg-amber-950/40 p-4 text-xs text-amber-900 dark:text-amber-100">
+            <p className="font-bold flex items-center gap-1.5">
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              Please complete the required items before submitting:
+            </p>
+            <ul className="mt-2 space-y-1.5 pl-5 list-disc">
+              {incompleteSteps.flatMap((step) =>
+                getNgoStillNeededItems(step, data).map((item) => (
+                  <li key={`${step}-${item}`}>
+                    <button
+                      type="button"
+                      onClick={() => onEditStep(step)}
+                      className="font-semibold underline underline-offset-2 hover:text-ngo-700 dark:hover:text-ngo-300"
+                    >
+                      {item}
+                    </button>
+                    <span className="text-stone-500 dark:text-stone-400 font-normal">
+                      {" "}({NGO_STEP_FULL_TITLES[step]} — Step {NGO_STEPS.indexOf(step) + 1})
+                    </span>
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>
         )}
       </div>
     </div>

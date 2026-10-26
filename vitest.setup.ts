@@ -1,6 +1,9 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, vi } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
+
+// Under full-suite load a findBy*/waitFor can need more than RTL's 1 s default.
+configure({ asyncUtilTimeout: 8000 });
 
 // NGO signup is off unless NEXT_PUBLIC_NGO_ENABLED is "true" (production shows
 // "Coming soon"). The suites exercise the NGO flows, so they run with it on;

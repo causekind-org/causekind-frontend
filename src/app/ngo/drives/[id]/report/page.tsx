@@ -12,10 +12,11 @@ import { FilePreviewDialog } from "@/components/FilePreviewDialog";
 import { DriveProofCard } from "@/features/ngo-drives/components/DriveProofCard";
 import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
 import { errorMessage, isNotFound } from "@/features/ngo-drives/driveGiveState";
+import { formatISTDate } from "@/lib/formatIST";
 
 const CONTAINER = "mx-auto w-full max-w-3xl px-4 sm:px-6";
 const unitWords = (u?: string | null) => (u ? u.replaceAll("_", " ").toLowerCase() : "items");
-const fmt = (d?: string | null) => (d ? new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—");
+const fmt = (d?: string | null) => (d ? formatISTDate(d) : "—");
 const methodWords = (m?: string | null) => (m === "PICKUP" || m === "NGO_PICKUP" ? "NGO pickup" : m ? "Drop-off" : "—");
 
 /** The NGO's own drive report: the impact tiles, the proof, and the donors whose items arrived (names only). */

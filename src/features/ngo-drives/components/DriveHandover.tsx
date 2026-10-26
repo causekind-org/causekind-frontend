@@ -14,6 +14,7 @@ import {
   type NgoDriveOfferResponse, type NgoDriveOfferHandoverRecordResponse,
 } from "@/lib/api";
 import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
+import { formatIST } from "@/lib/formatIST";
 
 /**
  * The handover for an offer to an NGO drive, for the donor or the drive's NGO.
@@ -165,7 +166,7 @@ function PlanSummary({ offer, handover, role }: { offer: NgoDriveOfferResponse; 
         {dropOff ? (role === "DONOR" ? "You drop off at the NGO" : "The donor drops off at your address") : (role === "DONOR" ? "The NGO picks up from you" : "You pick up from the donor")}
       </p>
       <p className="mt-1 text-stone-700 dark:text-stone-300">
-        {when.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })} at {when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+        {formatIST(handover.scheduledDateTime)}
       </p>
       {where && (
         <p className="mt-1.5 flex items-start gap-1.5 text-stone-700 dark:text-stone-300">

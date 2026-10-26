@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { HandoverLocationField } from "./HandoverLocationField";
 import { methodNeedsCourierFields } from "./adapters";
+import { formatISTDate } from "@/lib/formatIST";
 import { handoverScope, type HandoverViewModel } from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverInput, handoverLabel,
@@ -207,7 +208,7 @@ export function HandoverScheduleDialog({
               <br />
               {drive ? (
                 <>
-                  Available days: {drive.availableDays} (up to {new Date(drive.neededBy).toLocaleDateString()})
+                  Available days: {drive.availableDays} (up to {formatISTDate(drive.neededBy)})
                   <br/>
                   Hours: {drive.availableFrom} - {drive.availableTo}
                 </>

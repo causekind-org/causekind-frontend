@@ -63,7 +63,7 @@ describe("Donor and donee signup are unchanged by the NGO signup", () => {
   it.each(["DONOR", "DONEE"])("%s email signup form is unchanged", async (role) => {
     mockSearchParams = new URLSearchParams(`role=${role}`);
     render(<RegisterPage />);
-    expect(fieldIds()).toEqual(["fullName", "email", "phone", "password", "checkbox"]);
+    expect(fieldIds()).toEqual(["fullName", "email", "phone", "password"]);
     expect(screen.queryByText(/PAN/i)).toBeNull();
     expect(screen.queryByText(/Legal structure/i)).toBeNull();
     expect(formMarkup()).toMatchSnapshot();
@@ -74,7 +74,7 @@ describe("Donor and donee signup are unchanged by the NGO signup", () => {
     sessionStorage.setItem("ck_google_token", "ya29.token");
     sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: "jane@gmail.com", fullName: "Jane Doe" }));
     render(<RegisterPage />);
-    expect(fieldIds()).toEqual(["fullName", "email", "phone", "checkbox"]);
+    expect(fieldIds()).toEqual(["fullName", "email", "phone"]);
     expect(screen.queryByText(/PAN/i)).toBeNull();
     expect(screen.queryByText(/Legal structure/i)).toBeNull();
     expect(formMarkup()).toMatchSnapshot();

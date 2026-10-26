@@ -42,7 +42,7 @@ export function FinalCtaSection({
    */
   card?: boolean;
 }) {
-  return card ? <FinalCtaCard variant={variant} /> : <FinalCtaSplit />;
+  return card ? <FinalCtaCard variant={variant} /> : <FinalCtaSplit variant={variant} />;
 }
 
 /** The original dark CTA card, unchanged. */
@@ -181,43 +181,11 @@ function FinalCtaCard({
               <span className="inline-block cta-heading-word text-[#F4A25B]"><LandingText>have.</LandingText></span>
             </h2>
 
-            {/* Subtext */}
-            <p className="mt-2.5 text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed font-normal"><LandingText>
-              Join free in a minute. Give, ask, or help your community — whichever side you're on.
-            </LandingText></p>
+            {/* No "join free" subtext or donor/donee signup buttons: this card is
+                only shown to signed-in viewers, who already have an account. */}
 
-            {/* ════════ 3 ACTION BUTTONS (1 Row on Desktop, Stacked on Mobile) ════════ */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-2xl mt-5 sm:mt-6">
-              {/* Button 1: Donor */}
-              <Link
-                href={LANDING_ROUTES.donorRegister}
-                className="cta-action-btn relative group overflow-hidden flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#B5480F] hover:bg-[#C95413] text-white font-bold text-xs sm:text-[13px] tracking-wide shadow-md transition-all duration-200 active:scale-95"
-              >
-                {/* Periodic Shimmer sweep */}
-                <span
-                  className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"
-                  aria-hidden="true"
-                />
-                <Heart className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                <span><LandingText>Join as Donor</LandingText></span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
-
-              {/* Button 2: Donee */}
-              <Link
-                href={LANDING_ROUTES.doneeRegister}
-                className="cta-action-btn relative group overflow-hidden flex items-center justify-center gap-2 px-4 py-3 sm:py-3.5 rounded-xl bg-[#1E3A60] hover:bg-[#2D5A96] text-white font-bold text-xs sm:text-[13px] tracking-wide shadow-md transition-all duration-200 active:scale-95"
-              >
-                {/* Periodic Shimmer sweep */}
-                <span
-                  className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none delay-100"
-                  aria-hidden="true"
-                />
-                <HandHeart className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                <span><LandingText>Join as a Donee</LandingText></span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
-
+            {/* ════════ NGO ACTION (the only signup left for signed-in viewers) ════════ */}
+            <div className="flex justify-center w-full max-w-2xl mt-5 sm:mt-6">
               {/* Button 3: NGO */}
               {FEATURES.ngoRegistration ? <Link
                 href={LANDING_ROUTES.ngoRegister}
@@ -320,7 +288,7 @@ const REASSURANCES = ["Free for everyone", "Verified", "Local"] as const;
  * important because an unlayered `* { border-color }` in styles.css otherwise
  * overrides every border utility.
  */
-function FinalCtaSplit() {
+function FinalCtaSplit({ variant }: { variant: "desktop" | "mobile" }) {
   return (
     <LandingAttributes><section
       id="join"
@@ -385,6 +353,9 @@ function FinalCtaSplit() {
                   ) : <LandingAttributes><Link
                     href={href}
                     aria-label={subline}
+                    // The guest tour's "guest-join" step: one anchor only, on the mobile copy,
+                    // because the hidden desktop copy reports a zero rect.
+                    data-tour={variant === "mobile" && role === HOME_ROLE_COLORS.donor ? "guest-join" : undefined}
                     className={`group flex items-center gap-4 w-full rounded-2xl bg-white dark:bg-zinc-900 border border-stone-200! hover:border-stone-400! dark:border-stone-800! dark:hover:border-stone-600! px-4 py-3.5 sm:px-5 sm:py-4 shadow-sm transition-[transform,border-color,box-shadow] duration-200 motion-safe:hover:translate-x-1 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF7F2] dark:focus-visible:ring-offset-[#0E0C0A] ${ring}`}
                   >
                     <span className={`flex items-center justify-center w-11 h-11 shrink-0 rounded-full ${role.accentBgClass}`} aria-hidden="true">

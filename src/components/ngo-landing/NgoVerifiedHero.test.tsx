@@ -1,10 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { configure, render, screen, waitFor } from "@testing-library/react";
 import { NgoLandingView } from "./NgoLandingView";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview } from "@/lib/api";
 
 // The hero renders a slideshow and motion; on a busy machine a test can pass 5 s.
-vi.setConfig({ testTimeout: 20000 });
+vi.setConfig({ testTimeout: 30000 });
+// The landing chunks load lazily; under full-suite load findBy* needs more than 1 s.
+configure({ asyncUtilTimeout: 8000 });
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" }, isLoading: false }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));

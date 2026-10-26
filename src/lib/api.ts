@@ -5441,10 +5441,10 @@ export function updateNgoAboutUs(aboutUs: string) {
 export type NgoActivityStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type NgoActivityMedia = { id: number; mediaType: "IMAGE" | "VIDEO"; url: string | null; status: string };
 export type NgoActivity = {
-  id: number; title: string; activityDate: string; description?: string | null; consentGiven: boolean;
+  id: number; title: string; activityDate: string; summary?: string | null; description?: string | null; consentGiven?: boolean;
   status: NgoActivityStatus; rejectionReason?: string | null; sortOrder: number; media: NgoActivityMedia[];
 };
-export type NgoActivityInput = { title: string; activityDate: string; description?: string; consentGiven: boolean };
+export type NgoActivityInput = { title: string; activityDate: string; summary?: string | null; description?: string; consentGiven?: boolean };
 
 export function getMyNgoActivities() {
   return request<NgoActivity[]>("/api/v1/ngo/activities");

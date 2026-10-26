@@ -20,6 +20,7 @@ import { DriveQuantityBar } from "@/features/ngo-drives/components/DriveQuantity
 import { errorMessage, isNotFound } from "@/features/ngo-drives/driveGiveState";
 import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
 import { driveSummaryParts } from "@/features/ngo-drives/components/manage/driveActivity";
+import { formatISTDate } from "@/lib/formatIST";
 
 const humanize = (v?: string | null) => (v ? v.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : "");
 
@@ -117,7 +118,7 @@ export default function NgoDriveManagePage() {
     ["People who will benefit", `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
     ["Location", [drive.locationArea, drive.locationCity, drive.locationState, drive.locationPincode].filter(Boolean).join(", ")],
     ["Pickup radius", drive.pickupRadiusKm ? `NGO picks up within ${drive.pickupRadiusKm} km; donors farther away drop off` : "Donors drop off at the drive address"],
-    ["Needed by", drive.neededBy ? new Date(drive.neededBy).toLocaleDateString() : ""],
+    ["Needed by", drive.neededBy ? formatISTDate(drive.neededBy) : ""],
     ["Handover days & hours", `${days}${drive.availableFrom ? `, ${drive.availableFrom}–${drive.availableTo}` : ""}`],
     ["Contact", `${drive.contactName ?? ""}${drive.contactPhone ? ` · ${drive.contactPhone}` : ""}`],
   ];
@@ -195,7 +196,7 @@ export default function NgoDriveManagePage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Close this drive?</DialogTitle>
-            <DialogDescription>Donors can't offer new items. Handovers already planned continue.</DialogDescription>
+            <DialogDescription>Donors can&apos;t offer new items. Handovers already planned continue.</DialogDescription>
           </DialogHeader>
           {pending.length > 0 && (
             <p role="alert" data-testid="close-blocked" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">

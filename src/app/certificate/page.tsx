@@ -191,7 +191,10 @@ export default function CertificatePage() {
 
       {/* Nav — hidden on print */}
       <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between print:hidden">
-        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+        <button
+          // Opened from an email or a new tab there is no history: an NGO drive certificate falls back to the NGO dashboard.
+          onClick={() => (window.history.length > 1 ? router.back() : router.push(type === "ngo_drive" ? "/dashboard/ngo" : "/dashboard"))}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
           <ArrowLeft size={14} /> Back
         </button>
         <button

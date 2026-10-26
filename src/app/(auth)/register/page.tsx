@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FEATURES } from "@/lib/features";
 import { useRouter, useSearchParams } from "next/navigation";
 import { resolvePostAuthDestination, socialCompletionUrl } from "@/lib/postAuthDestination";
@@ -45,14 +45,6 @@ function GoogleIcon() {
       <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
       <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05" />
       <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
-    </svg>
-  );
-}
-
-function FacebookIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.41c0-3.025 1.792-4.697 4.533-4.697 1.312 0 2.686.236 2.686.236v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.267h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" fill="#1877F2" />
     </svg>
   );
 }
@@ -257,7 +249,12 @@ function RegisterContent() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleToken, setGoogleToken] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(true);
+  // True from opening the Google popup until it resolves or is closed: the role and
+  // the submit stay locked meanwhile, so the account cannot change under it.
+  const [googlePopupOpen, setGooglePopupOpen] = useState(false);
+  const authBusy = loading || googleLoading || googlePopupOpen;
+  // A second submit in the same tick (double click / Enter) must not send twice.
+  const submittingRef = useRef(false);
   const [googleNgo404, setGoogleNgo404] = useState(false);
 
   const [dialCountry, setDialCountry] = useState("IN");
@@ -343,26 +340,38 @@ function RegisterContent() {
   const triggerGoogle = useGoogleLogin({
     scope: "openid email profile",
     onSuccess: async (tokenResponse) => {
+      setGooglePopupOpen(false);
       setGoogleLoading(true);
       try {
         const res = await googleAuth(tokenResponse.access_token);
         if (res.needsCompletion) {
           sessionStorage.setItem("ck_google_token", tokenResponse.access_token);
           sessionStorage.setItem("ck_google_profile", JSON.stringify({ email: res.email, fullName: res.fullName }));
-          // Keep the destination through account completion, as login does.
-          router.push(socialCompletionUrl(rawNext));
+          // Keep the chosen role and the destination through account completion.
+          const completion = new URL(socialCompletionUrl(rawNext), "http://completion.local");
+          completion.searchParams.set("role", form.role);
+          router.push(`${completion.pathname}${completion.search}`);
         } else {
           setUser({ email: res.email, role: res.role, fullName: res.fullName });
-          toast.success("Welcome back!");
+          toast.success(t("welcomeBackToast"));
           goAfterAuth(res.role, router.push);
         }
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Google sign-up failed");
+        toast.error(err instanceof Error ? err.message : t("googleFailed"));
       } finally {
         setGoogleLoading(false);
       }
     },
-    onError: () => toast.error("Google sign-up failed"),
+    onError: () => {
+      setGooglePopupOpen(false);
+      toast.error(t("googleFailed"));
+    },
+    // Popup closed or blocked. Closing is a normal choice, so it only unlocks the form.
+    onNonOAuthError: (err) => {
+      setGooglePopupOpen(false);
+      if (err.type === "popup_failed_to_open") toast.error(t("googlePopupBlocked"));
+      else if (err.type !== "popup_closed") toast.error(t("googleFailed"));
+    },
   });
 
   function handleCountryChange(iso: string) {
@@ -524,7 +533,17 @@ function RegisterContent() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (loading) return;
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    try {
+      await submitForm();
+    } finally {
+      submittingRef.current = false;
+    }
+  }
+
+  async function submitForm() {
+    if (authBusy) return;
 
     const firstInvalid = v.validateAll(validators);
     if (firstInvalid) {
@@ -766,6 +785,8 @@ function RegisterContent() {
             <button
               type="button"
               onClick={() => set("role", "DONOR")}
+              disabled={authBusy}
+              aria-pressed={form.role === "DONOR"}
               className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${form.role === "DONOR"
                 ? "border-[var(--accent)] bg-[var(--accent-5)] text-[var(--accent)] ring-2 ring-[var(--accent-20)] font-bold"
                 : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
@@ -777,6 +798,8 @@ function RegisterContent() {
             <button
               type="button"
               onClick={() => set("role", "DONEE")}
+              disabled={authBusy}
+              aria-pressed={form.role === "DONEE"}
               className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${form.role === "DONEE"
                 ? "border-[var(--accent)] bg-[var(--accent-5)] text-[var(--accent)] ring-2 ring-[var(--accent-20)] font-bold"
                 : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
@@ -789,6 +812,8 @@ function RegisterContent() {
             <button
               type="button"
               onClick={() => set("role", "NGO_PARTNER")}
+              disabled={authBusy}
+              aria-pressed={form.role === "NGO_PARTNER"}
               className={`flex flex-col items-center justify-center p-2.5 sm:p-3 rounded-xl border text-center transition-all ${form.role === "NGO_PARTNER"
                 ? "border-[var(--accent)] bg-[var(--accent-5)] text-[var(--accent)] ring-2 ring-[var(--accent-20)] font-bold"
                 : "border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 text-stone-600 dark:text-stone-400 hover:bg-stone-100/55"
@@ -1145,28 +1170,11 @@ function RegisterContent() {
           </Reveal>
         )}
 
-        <Reveal delay={285}>
-          <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={e => setRememberMe(e.target.checked)}
-              className="w-4 h-4 rounded border-stone-300 accent-[var(--accent)] cursor-pointer"
-            />
-            <span className="text-sm text-stone-600 dark:text-stone-400 group-hover:text-stone-800 dark:group-hover:text-stone-200 transition-colors">
-              Remember me
-            </span>
-            <span className="ml-auto text-xs text-stone-400 dark:text-stone-500">
-              {rememberMe ? "Stay logged in" : "Log out on close"}
-            </span>
-          </label>
-        </Reveal>
-
         <Reveal delay={300}>
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={authBusy}
             className="w-full rounded-xl disabled:cursor-not-allowed text-white font-semibold py-3 sm:py-3.5 text-sm tracking-wide transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 mt-2 animate-heartbeat disabled:animate-none bg-[var(--accent)] hover:bg-[var(--accent-hover)] disabled:opacity-60 focus-visible:ring-[var(--accent)]"
           >
             {loading
@@ -1185,34 +1193,26 @@ function RegisterContent() {
           <Reveal delay={340}>
             <button
               type="button"
-              disabled={googleLoading}
+              disabled={authBusy}
               onClick={() => {
                 if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
                   toast.error("Google Sign-In is not configured.");
                   return;
                 }
-                triggerGoogle();
+                if (googlePopupOpen) return;
+                setGooglePopupOpen(true);
+                try {
+                  triggerGoogle();
+                } catch {
+                  setGooglePopupOpen(false);
+                  toast.error(t("googleFailed"));
+                }
               }}
               className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-400 disabled:opacity-50"
             >
               <GoogleIcon />
-              {googleLoading ? t("creating") : t("google")}
+              {googleLoading ? t("creating") : googlePopupOpen ? t("googleOpening") : t("google")}
             </button>
-          </Reveal>
-          <Reveal delay={380}>
-            <div className="relative">
-              <button
-                type="button"
-                disabled
-                className="w-full flex items-center justify-center gap-2.5 rounded-xl border border-stone-100 dark:border-zinc-800/60 bg-stone-50 dark:bg-zinc-900/60 px-3.5 py-3 sm:px-4 sm:py-3.5 text-sm font-medium text-stone-400 dark:text-stone-600 cursor-not-allowed opacity-70"
-              >
-                <FacebookIcon />
-                {t("facebook")}
-              </button>
-              <span className="absolute -top-2 -right-2 text-4xs font-black uppercase tracking-widest text-white px-2 py-0.5 rounded-full bg-[var(--accent)] border border-[var(--accent-secondary-40)] shadow-sm pointer-events-none select-none">
-                Coming Soon
-              </span>
-            </div>
           </Reveal>
         </div>
       )}

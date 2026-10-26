@@ -10,14 +10,13 @@ import { toast } from "@/lib/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { IS_NGO_DEMO_MODE } from "@/features/ngo-registration/ngoRegistrationModel";
 import { useLocations } from "@/hooks/useLocations";
-import { resolveLocationFromGPS, getDialCodes } from "@/app/actions/locations";
+import { getDialCodes } from "@/app/actions/locations";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import {
   getProfile,
   updateProfile,
-  updateLocation,
   getMyNgoApplication,
   getNgoDraft,
   saveNgoDraft,
@@ -56,14 +55,13 @@ import {
   Clock,
   ShieldCheck,
   CheckCircle2,
-  Download,
   ArrowRight,
   AlertCircle,
   Building2,
-  Navigation,
   BookOpen,
   Megaphone,
 } from "lucide-react";
+import { formatIST } from "@/lib/formatIST";
 
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -221,8 +219,6 @@ export function NgoProfileView() {
   const [cityFreeText, setCityFreeText] = useState<string>("");
   const [forceFreeTextCity, setForceFreeTextCity] = useState(false);
 
-  // GPS Location
-  const [locStatus, setLocStatus] = useState<"idle" | "requesting" | "saved" | "error">("idle");
 
   const { countries: countryOptions, states: stateOptions, cities: cityOptions, dialCodes: dialCodeOptions } =
     useLocations(countryIso, stateIso);
@@ -298,79 +294,6 @@ export function NgoProfileView() {
     setForceFreeTextCity(false);
   }
 
-  function handleUseMyLocation() {
-    if (!navigator.geolocation) {
-      toast.error("Geolocation is not supported by your browser");
-      return;
-    }
-    setLocStatus("requesting");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          const updated = await updateLocation(lat, lng);
-          setProfile(updated);
-          setLocStatus("saved");
-          toast.success("GPS location saved successfully");
-
-          try {
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`
-            );
-            if (res.ok) {
-              const data = await res.json();
-              const address = data.address;
-              if (address) {
-                const countryCode = address.country_code?.toUpperCase();
-                const stateName = address.state;
-                const cityName = address.city || address.town || address.village || address.suburb;
-
-                if (countryCode) {
-                  setDialCountry(countryCode);
-                  setCountryIso(countryCode);
-                  const { stateIso: resolvedState, cityValue: resolvedCity } =
-                    await resolveLocationFromGPS(countryCode, stateName, cityName);
-
-                  if (resolvedState) {
-                    setStateIso(resolvedState);
-                    if (resolvedCity) {
-                      setCityValue(resolvedCity);
-                      setCityFreeText("");
-                      setForceFreeTextCity(false);
-                    } else if (cityName) {
-                      setCityValue("");
-                      setCityFreeText(cityName);
-                      setForceFreeTextCity(true);
-                    }
-                  } else {
-                    setStateIso("");
-                    setCityValue("");
-                    if (cityName) {
-                      setCityFreeText(cityName);
-                      setForceFreeTextCity(true);
-                    }
-                  }
-                }
-              }
-            }
-          } catch (e) {
-            console.error("Reverse geocoding failed", e);
-          }
-        } catch {
-          setLocStatus("error");
-          toast.error("Failed to save location");
-        }
-      },
-      (err) => {
-        setLocStatus("error");
-        toast.error(
-          err.code === 1 ? "Location permission denied" : "Location unavailable"
-        );
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-    );
-  }
 
   // Check auth & load initial profile/draft/locations
   useEffect(() => {
@@ -675,26 +598,9 @@ export function NgoProfileView() {
     setTimeout(() => setCopiedAppId(false), 2500);
   }
 
-  function handleDownloadSummary() {
-    toast.success("Application summary downloaded.");
-  }
-
   function formatSubmissionDate(dateStr?: string | null) {
     if (!dateStr) return "Recently submitted";
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
-      return d.toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true,
-      });
-    } catch {
-      return dateStr;
-    }
+    return formatIST(dateStr) || dateStr;
   }
 
   const statsRow = [
@@ -793,7 +699,7 @@ export function NgoProfileView() {
               CAUSEKIND NGO PARTNER
             </p>
             <h1
-              className="mt-1.5 sm:mt-2 text-2xl sm:text-4xl md:text-5xl leading-[1.05] break-words"
+              className="mt-1.5 sm:mt-2 text-2xl sm:text-4xl md:text-5xl leading-[1.05] break-words [overflow-wrap:anywhere] min-w-0"
               style={{
                 fontFamily: "var(--font-lora), serif",
                 fontStyle: "italic",
@@ -871,11 +777,11 @@ export function NgoProfileView() {
         </div>
 
       {/* ── Main Body: 2-column layout with Your Journey & Milestones (matching Donee) ── */}
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-12 space-y-8">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 mt-8 sm:mt-12 space-y-4 sm:space-y-6">
         {/* If application is submitted, show application status & compliance details */}
         {isApplicationSubmitted && application && application.status !== "APPROVED" && (
-          <div className="rounded-2xl sm:rounded-3xl border border-stone-200/80 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/90 p-5 sm:p-8 shadow-sm backdrop-blur-sm space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200/80 dark:border-zinc-800 pb-5">
+          <div className="rounded-2xl sm:rounded-3xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2]/95 dark:bg-[#141E18]/95 p-5 sm:p-8 shadow-sm backdrop-blur-sm space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#EADBCE]/80 dark:border-emerald-950/60 pb-5">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-ngo-800 to-ngo-600 flex items-center justify-center text-white shadow-md shadow-ngo-700/20">
                   <ShieldCheck className="w-6 h-6" />
@@ -916,7 +822,7 @@ export function NgoProfileView() {
             </div>
 
             {/* Reference Details Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-stone-50/80 dark:bg-zinc-800/50 p-4 sm:p-5 rounded-2xl border border-stone-200/60 dark:border-zinc-700/60 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#F5EFE6]/80 dark:bg-[#121c17]/60 p-4 sm:p-5 rounded-2xl border border-[#EADBCE]/80 dark:border-emerald-950/50 text-xs">
               <div>
                 <span className="text-3xs uppercase font-bold text-stone-400 block">Application Reference ID</span>
                 <div className="flex items-center gap-1.5 mt-1">
@@ -1002,27 +908,9 @@ export function NgoProfileView() {
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleDownloadSummary}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-5 py-3 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors shadow-sm"
-              >
-                <Download className="h-4 w-4 text-ngo-700" />
-                Download Application Summary (PDF)
-              </button>
-
-              {application.status !== "APPROVED" && (
-                <Link
-                  href="/profile/ngo-details"
-                  className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 hover:bg-stone-50 dark:hover:bg-zinc-800 px-5 py-3 text-xs font-bold text-stone-700 dark:text-stone-300 transition-colors shadow-sm"
-                >
-                  View / Edit Submission Details
-                </Link>
-              )}
-
               <Link
                 href="/"
-                className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
+                className="w-full sm:w-auto flex items-center justify-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm min-h-[44px]"
               >
                 Return to Home
                 <ArrowRight className="h-3.5 w-3.5" />
@@ -1032,7 +920,7 @@ export function NgoProfileView() {
         )}
 
         {application?.status === "APPROVED" && (
-          <div className="grid gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 items-stretch min-w-0">
             <NgoAboutSection ngo={{
               organizationName: application.organizationName,
               founderName: application.founderName,
@@ -1046,138 +934,143 @@ export function NgoProfileView() {
           </div>
         )}
 
-        {/* 2-Column Grid: Your Journey (left) & Milestones (right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 sm:gap-12 items-start">
+        {/* 2-Column Grid: Your Journey (left) & Milestones (right) with equal 16px mobile gutters */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 sm:gap-6 items-stretch min-w-0">
           {/* Your Journey: a chronicle of real events */}
-          <section data-tour="story">
-            <div className="border-b-2 border-stone-200 dark:border-zinc-800 pb-2.5 sm:pb-3">
-              <p className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-300">
-                Your Journey
-              </p>
-              <p className="text-xs text-stone-400 mt-1">
-                Everything that has happened on your CauseKind journey, newest first.
-              </p>
-            </div>
-
-            {story.length === 0 ? (
-              <div className="py-10 sm:py-14 text-center space-y-3">
-                <div className="w-11 h-11 sm:w-14 sm:h-14 bg-ngo-50 dark:bg-ngo-900/20 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
-                  <BookOpen className="w-6 h-6 text-ngo-700 dark:text-ngo-300" />
-                </div>
-                <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">
-                  Your story starts here
+          <section data-tour="story" className="rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0 flex flex-col justify-between">
+            <div>
+              <div className="border-b border-[#EADBCE]/80 dark:border-emerald-950/60 pb-3">
+                <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight">
+                  Your Journey
+                </h2>
+                <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+                  Everything that has happened on your CauseKind journey, newest first.
                 </p>
-                <p className="text-xs text-stone-400 max-w-[280px] mx-auto">
-                  Complete your NGO profile to unlock verification, verified badges, and drives.
-                </p>
-                <Link href="/profile/ngo-details" className="inline-block">
-                  <Button size="sm" className="bg-ngo-700 hover:bg-ngo-600 text-white mt-2">
-                    Complete Profile
-                  </Button>
-                </Link>
               </div>
-            ) : (
-              <ol className="relative mt-2 border-l-2 border-stone-200 dark:border-zinc-800 ml-2">
-                {story.map((ev, i) => (
-                  <motion.li
-                    key={`${ev.title}-${ev.at}`}
-                    initial={{ opacity: 0, x: -12 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.4, delay: i * 0.08 }}
-                    className="relative pl-6 py-2.5 sm:pl-8 sm:py-4 group"
-                  >
-                    <span
-                      className={`absolute -left-[8px] sm:-left-[9px] top-3.5 sm:top-5 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full border-2 flex items-center justify-center ${
-                        ev.broken
-                          ? "bg-red-500 border-red-500"
-                          : ev.done
-                          ? "bg-emerald-500 border-emerald-500"
-                          : "bg-[#F7F0E8] dark:bg-zinc-950 border-stone-300"
-                      }`}
+
+              {story.length === 0 ? (
+                <div className="py-10 sm:py-14 text-center space-y-3">
+                  <div className="w-12 h-12 bg-ngo-50 dark:bg-ngo-900/20 text-ngo-700 dark:text-ngo-300 rounded-2xl flex items-center justify-center mx-auto">
+                    <BookOpen className="w-6 h-6" />
+                  </div>
+                  <p className="text-sm font-bold text-stone-800 dark:text-stone-200">
+                    Your story starts here
+                  </p>
+                  <p className="text-xs text-stone-400 max-w-[280px] mx-auto leading-relaxed">
+                    Complete your NGO profile to unlock verification, verified badges, and drives.
+                  </p>
+                  <Link href="/profile/ngo-details" className="inline-block mt-2">
+                    <Button size="sm" className="rounded-full bg-ngo-700 hover:bg-ngo-600 text-white font-bold px-4 py-2 text-xs">
+                      Complete Profile
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <ol className="relative mt-4 border-l-2 border-stone-200/90 dark:border-zinc-800 ml-3 space-y-5">
+                  {story.map((ev, i) => (
+                    <motion.li
+                      key={`${ev.title}-${ev.at}`}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.35, delay: i * 0.06 }}
+                      className="relative pl-6 min-w-0"
                     >
-                      {(ev.done || ev.broken) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
-                    </span>
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-3 sm:gap-x-4 gap-y-1">
-                      <p
-                        className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug hover:text-ngo-700 transition-colors"
-                        style={{ fontFamily: "var(--font-source-serif-4), serif" }}
+                      <span
+                        className={`absolute -left-[9px] top-1 w-4 h-4 rounded-full border-2 flex items-center justify-center ${
+                          ev.broken
+                            ? "bg-rose-500 border-rose-500"
+                            : ev.done
+                            ? "bg-emerald-500 border-emerald-500"
+                            : "bg-[#F7F0E8] dark:bg-zinc-950 border-stone-300 dark:border-zinc-700"
+                        }`}
                       >
-                        {ev.title}
-                      </p>
-                      <span className="text-3xs font-bold uppercase tracking-wider text-stone-400 shrink-0">
-                        {formatSubmissionDate(ev.at)}
+                        {(ev.done || ev.broken) && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </span>
-                    </div>
-                    <p
-                      className={`text-2xs sm:text-xs mt-0.5 capitalize ${
-                        ev.broken
-                          ? "text-red-500"
-                          : ev.done
-                          ? "text-emerald-600 dark:text-emerald-400"
-                          : "text-stone-400"
-                      }`}
-                    >
-                      {ev.detail}
-                    </p>
-                  </motion.li>
-                ))}
-              </ol>
-            )}
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 min-w-0">
+                        <p
+                          className="font-serif text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug break-words [overflow-wrap:anywhere] min-w-0"
+                        >
+                          {ev.title}
+                        </p>
+                        <span className="inline-flex items-center rounded-full bg-stone-100 dark:bg-zinc-800 px-2 py-0.5 text-3xs font-semibold text-stone-500 dark:text-stone-400 shrink-0">
+                          {formatSubmissionDate(ev.at)}
+                        </span>
+                      </div>
+                      <p
+                        className={`text-2xs sm:text-xs mt-1 capitalize leading-relaxed break-words [overflow-wrap:anywhere] ${
+                          ev.broken
+                            ? "text-rose-600 dark:text-rose-400 font-medium"
+                            : ev.done
+                            ? "text-emerald-700 dark:text-emerald-400"
+                            : "text-stone-500 dark:text-stone-400"
+                        }`}
+                      >
+                        {ev.detail}
+                      </p>
+                    </motion.li>
+                  ))}
+                </ol>
+              )}
+            </div>
           </section>
 
           {/* Milestones: Earned by doing, never bought */}
-          <aside data-tour="milestones">
-            <div className="border-b-2 border-stone-200 dark:border-zinc-800 pb-2.5 sm:pb-3">
-              <p className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-300">
-                Milestones
-              </p>
-              <p className="text-xs text-stone-400 mt-1">Earned by doing, never bought.</p>
-            </div>
+          <aside data-tour="milestones" className="rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0 flex flex-col justify-between">
+            <div>
+              <div className="border-b border-[#EADBCE]/80 dark:border-emerald-950/60 pb-3">
+                <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight">
+                  Milestones
+                </h2>
+                <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">
+                  Earned by doing, never bought.
+                </p>
+              </div>
 
-            <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-5">
-              {milestones.map(({ label, desc, icon: Icon, earned }, i) => (
-                <motion.div
-                  key={label}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.4, delay: 0.15 + i * 0.12 }}
-                  className="flex items-center gap-3 sm:gap-4"
-                >
-                  <div
-                    className={`relative w-9 h-9 sm:w-14 sm:h-14 rounded-full flex items-center justify-center shrink-0 ${
-                      earned
-                        ? "bg-gradient-to-tr from-ngo-800 to-ngo-600 text-white shadow-md shadow-ngo-700/20"
-                        : "border-2 border-dashed border-stone-300 dark:border-zinc-700 text-stone-300 dark:text-zinc-600"
-                    }`}
+              <div className="mt-4 space-y-4">
+                {milestones.map(({ label, desc, icon: Icon, earned }, i) => (
+                  <motion.div
+                    key={label}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.35, delay: 0.1 + i * 0.08 }}
+                    className="flex items-center gap-3.5 min-w-0"
                   >
-                    {earned && (
-                      <span className="absolute inset-[-4px] rounded-full border border-ngo-300 dark:border-ngo-700/40" />
-                    )}
-                    <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                  </div>
-                  <div className="min-w-0">
-                    <p
-                      className={`text-sm sm:text-sm font-bold ${
-                        earned ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-zinc-600"
+                    <div
+                      className={`relative w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 transition-all ${
+                        earned
+                          ? "bg-gradient-to-tr from-ngo-800 to-ngo-600 text-white shadow-md shadow-ngo-700/20"
+                          : "border border-dashed border-stone-300 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800/40 text-stone-300 dark:text-zinc-600"
                       }`}
                     >
-                      {label}
-                    </p>
-                    <p className="text-3xs sm:text-2xs text-stone-400 dark:text-zinc-600 mt-0.5">
-                      {earned ? desc : `Locked - ${desc.toLowerCase()}`}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+                      {earned && (
+                        <span className="absolute inset-[-3px] rounded-xl border border-ngo-300/80 dark:border-ngo-700/40" />
+                      )}
+                      <Icon className="w-5 h-5 sm:w-5.5 sm:h-5.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={`text-xs sm:text-sm font-bold break-words [overflow-wrap:anywhere] ${
+                          earned ? "text-stone-900 dark:text-stone-100" : "text-stone-400 dark:text-zinc-500"
+                        }`}
+                      >
+                        {label}
+                      </p>
+                      <p className="text-3xs sm:text-2xs text-stone-400 dark:text-zinc-500 mt-0.5 break-words [overflow-wrap:anywhere] leading-snug">
+                        {earned ? desc : `Locked • ${desc.toLowerCase()}`}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           </aside>
         </div>
       </div>
 
-      {/* ── Edit Account Details Modal Matching Donee's Full Field Set ── */}
+      {/* ── Edit Account Details Modal (Bottom sheet on mobile, max-height 100dvh, scrolling body, sticky footer) ── */}
       <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:top-auto max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-full max-sm:max-w-full max-sm:rounded-b-none max-sm:rounded-t-2xl max-sm:max-h-[100dvh] max-sm:h-auto max-sm:border-x-0 max-sm:border-b-0 flex flex-col bg-[#FAF7F2] dark:bg-[#141E18] border-[#EADBCE] dark:border-emerald-950/80 p-0 overflow-hidden">
+          <DialogHeader className="px-5 py-4 border-b border-[#EADBCE]/80 dark:border-emerald-950/60 shrink-0">
             <DialogTitle className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-300">
               Account settings
             </DialogTitle>
@@ -1186,8 +1079,8 @@ export function NgoProfileView() {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSaveAccountDetails} className="contents">
-            <DialogBody className="space-y-4 sm:space-y-5">
+          <form onSubmit={handleSaveAccountDetails} className="flex flex-col flex-1 min-h-0">
+            <DialogBody className="space-y-4 sm:space-y-5 overflow-y-auto flex-1 min-h-0 px-5 py-4">
               {/* Avatar Upload */}
               <div className="flex justify-center">
                 <AvatarUpload
@@ -1208,7 +1101,7 @@ export function NgoProfileView() {
                     <Building2 className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                     <Input
                       id="orgName"
-                      className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-ngo-700"
+                      className="pl-10 rounded-xl border-[#EADBCE] py-3.5 sm:py-5 font-medium text-base focus-visible:ring-ngo-700 min-h-[44px]"
                       placeholder="e.g. Hope Welfare Foundation"
                       value={editOrgName}
                       onChange={(e) => setEditOrgName(e.target.value)}
@@ -1226,7 +1119,7 @@ export function NgoProfileView() {
                     <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                     <Input
                       id="orgEmail"
-                      className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium bg-stone-50 dark:bg-zinc-800 text-stone-400 cursor-not-allowed"
+                      className="pl-10 rounded-xl border-[#EADBCE] py-3.5 sm:py-5 font-medium text-base bg-[#F5EFE6]/60 dark:bg-zinc-800 text-stone-400 cursor-not-allowed min-h-[44px]"
                       value={displayEmail}
                       disabled
                     />
@@ -1234,13 +1127,13 @@ export function NgoProfileView() {
                 </div>
               </div>
 
-              {/* Phone with dial-code dropdown */}
+              {/* Phone with dial-code dropdown — stacks on mobile */}
               <div className="space-y-1.5">
                 <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
                   <Phone className="w-3.5 h-3.5" /> Official Phone Number
                 </Label>
-                <div className="flex gap-2">
-                  <div className="w-[96px] sm:w-[120px] shrink-0">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="w-full sm:w-[120px] shrink-0">
                     <SearchableSelect
                       options={dialCodeOptions}
                       value={dialCountry}
@@ -1259,7 +1152,7 @@ export function NgoProfileView() {
                     type="tel"
                     inputMode="numeric"
                     maxLength={maxPhoneLength}
-                    className="flex-1 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-ngo-700"
+                    className="w-full flex-1 rounded-xl border-[#EADBCE] py-3.5 sm:py-5 font-medium text-base focus-visible:ring-ngo-700 min-h-[44px]"
                     placeholder="Phone number"
                     value={phoneNumber}
                     onChange={(e) => {
@@ -1270,7 +1163,7 @@ export function NgoProfileView() {
                 </div>
               </div>
 
-              {/* Location Selection (Country / State / City) */}
+              {/* Location Selection (Country / State / City) — 1 column on mobile */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
                 <div className="space-y-1">
                   <Label htmlFor="country" className="text-xs text-stone-500">Country</Label>
@@ -1311,7 +1204,7 @@ export function NgoProfileView() {
                       <MapPin className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
                       <Input
                         id="city"
-                        className="pl-10 rounded-xl border-stone-200 py-3.5 sm:py-5 font-medium focus-visible:ring-ngo-700"
+                        className="pl-10 rounded-xl border-[#EADBCE] py-3.5 sm:py-5 font-medium text-base focus-visible:ring-ngo-700 min-h-[44px]"
                         placeholder="Enter city"
                         value={cityFreeText}
                         onChange={(e) => setCityFreeText(e.target.value)}
@@ -1332,58 +1225,14 @@ export function NgoProfileView() {
                 </div>
               </div>
 
-              {/* GPS Coordinates & "Use GPS" */}
-              <div className="space-y-2">
-                <Label className="text-xs font-bold uppercase tracking-wider text-stone-400 flex items-center gap-1">
-                  <Navigation className="w-3.5 h-3.5" /> GPS Location
-                </Label>
-                <div className="flex items-center gap-3 rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/20 p-3">
-                  <div className="flex-1 min-w-0">
-                    {profile?.latitude && profile?.longitude ? (
-                      <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                        <div>
-                          <p className="text-xs font-bold text-stone-850 dark:text-white">Location saved</p>
-                          <p className="text-3xs text-stone-400">
-                            {profile.latitude.toFixed(4)}, {profile.longitude.toFixed(4)}
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4 text-amber-500 shrink-0" />
-                        <div>
-                          <p className="text-xs font-bold text-stone-850 dark:text-white">No GPS location saved</p>
-                          <p className="text-3xs text-stone-400">Enables precise donor and item match routing nearby</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleUseMyLocation}
-                    disabled={locStatus === "requesting"}
-                    className="shrink-0 flex items-center gap-1.5 rounded-lg bg-ngo-700 hover:bg-ngo-600 px-3 py-2 text-xs font-semibold text-white transition-colors disabled:opacity-60"
-                  >
-                    {locStatus === "requesting" ? (
-                      <><Loader2 className="w-3 h-3 animate-spin" /> Getting…</>
-                    ) : (
-                      <><Navigation className="w-3 h-3" /> Use GPS</>
-                    )}
-                  </button>
-                </div>
-                <p className="text-3xs text-stone-400 leading-relaxed">
-                  Your exact coordinates are never shown publicly. Only approximate proximity (e.g. ~2.4 km away) is used for matching.
-                </p>
-              </div>
             </DialogBody>
 
-            <DialogFooter>
+            <DialogFooter className="sticky bottom-0 bg-[#FAF7F2] dark:bg-[#141E18] z-10 border-t border-[#EADBCE] dark:border-zinc-800 px-5 py-3.5 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] shrink-0 flex flex-col-reverse sm:flex-row gap-2">
               <DialogClose asChild>
                 <Button
                   type="button"
                   variant="outline"
-                  className="rounded-xl py-4 font-bold text-sm"
+                  className="rounded-xl min-h-[44px] py-2.5 font-bold text-sm w-full sm:w-auto"
                   disabled={saving}
                 >
                   Cancel
@@ -1391,7 +1240,7 @@ export function NgoProfileView() {
               </DialogClose>
               <Button
                 type="submit"
-                className="bg-ngo-700 hover:bg-ngo-600 text-white rounded-xl py-4 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors"
+                className="bg-ngo-700 hover:bg-ngo-600 text-white rounded-xl min-h-[44px] py-2.5 font-extrabold text-sm shadow-md flex items-center justify-center gap-2 transition-colors w-full sm:w-auto"
                 disabled={saving}
               >
                 {saving ? (

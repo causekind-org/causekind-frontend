@@ -45,7 +45,7 @@ describe("Step 1: Organization", () => {
     render(<Harness initial={INITIAL_NGO_FORM} step="org" onForm={() => {}} />);
     const labels = [...document.querySelectorAll("label, [aria-label^='Upload ']")].map((el) =>
       (el.getAttribute("aria-label") ?? el.textContent ?? "").replace("*", "").trim());
-    const order = ["Organization Name", "Legal Structure", "Upload PAN card", "PAN Number", "Registration Number", "Year of Establishment", "Registered Office Address", "Organization Phone Number"];
+    const order = ["Organization Name", "Legal Structure", "Upload PAN card", "PAN Number", "Registration Number", "Year of Establishment", "Registered Office Address", "Organization Email Address", "Organization Phone Number"];
     const positions = order.map((l) => labels.findIndex((x) => x.startsWith(l)));
     expect(positions.every((p) => p >= 0)).toBe(true);
     expect([...positions].sort((a, b) => a - b)).toEqual(positions);
@@ -168,7 +168,7 @@ describe("Step 3: Authorized representatives", { timeout: 20000 }, () => {
   });
 
   it("continues only when card 1 is complete and every filled card is complete", () => {
-    const card = { fullName: "A", designation: "Trustee", mobileNumber: "+919876543210", email: "a@ngo.test", panNumber: "", idProof: file("id.pdf"), emailVerified: true };
+    const card = { fullName: "A", designation: "Trustee", mobileNumber: "+919876543210", email: "a@ngo.test", panNumber: "ABCPS1234K", idProof: file("id.pdf"), emailVerified: true };
     const done = { ...ready, authorizationLetter: file("res.pdf"), representatives: [card, { ...card, fullName: "B", email: "b@ngo.test", idProof: null }] };
     const { unmount } = render(<Harness initial={done} step="rep" onForm={() => {}} />);
     expect(screen.getByRole("button", { name: /Continue/i })).toBeDisabled();
@@ -180,10 +180,10 @@ describe("Step 3: Authorized representatives", { timeout: 20000 }, () => {
 
   it("submits card 1 as the contact and drops empty extra cards", () => {
     const card = { fullName: "A", designation: "Trustee", mobileNumber: "+919876543210", email: "a@ngo.test", panNumber: "abcps1234k", idProof: file("id.pdf", 7), emailVerified: true };
-    const payload = buildSubmitPayload({ ...ready, legalStructure: "trust", panNumber: "aaath 1234k",
+    const payload = buildSubmitPayload({ ...ready, officialEmail: "official@ngo.test", legalStructure: "trust", panNumber: "aaath 1234k",
       documents: { pan: file("p.pdf"), "trust-deed": file("d.pdf"), "society-moa": file("old.pdf"), "trustee-info": file("old2.pdf") },
       representatives: [card, { ...INITIAL_NGO_FORM.representatives[0] }] });
-    expect(payload.officialEmail).toBe("a@ngo.test");
+    expect(payload.officialEmail).toBe("official@ngo.test");
     expect(payload.representativeName).toBe("A");
     expect(payload.panNumber).toBe("AAATH1234K");
     expect(payload.representatives).toHaveLength(1);

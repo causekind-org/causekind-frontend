@@ -61,7 +61,11 @@ describe("/profile NGO application card", { timeout: 20000 }, () => {
     expect(steps).not.toHaveTextContent(/Representative Verification Call/);
     expect(screen.queryByText(/Representative Verification Call/)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Application submitted" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "View / Edit Submission Details" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "View / Edit Submission Details" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Download Application Summary \(PDF\)/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Return to Home" })).toBeInTheDocument();
+    // 2026-09-09T10:00:00 in IST (treated as UTC -> +5:30 -> 3:30 pm IST)
+    expect(screen.getAllByText(/9 Sep 2026, 3:30 pm IST/).length).toBeGreaterThan(0);
   });
 
   it("NEEDS_INFORMATION: step 2 says Action needed and links to fix the items", async () => {

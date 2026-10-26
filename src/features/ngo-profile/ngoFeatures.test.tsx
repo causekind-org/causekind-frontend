@@ -246,19 +246,35 @@ describe("3. About the NGO card and public page", () => {
 });
 
 describe("4. past activity", () => {
-  it("cannot be saved without the consent tick", async () => {
+  it("validates required fields and saves without a consent checkbox", async () => {
     api.getMyNgoActivities.mockResolvedValue([]);
     render(<NgoActivitiesManager />);
-    fireEvent.click(await screen.findByRole("button", { name: "Add activity" }));
-    fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Meal drive" } });
-    fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-09-01" } });
+    fireEvent.click(await screen.findByRole("button", { name: /Add activity|Add first activity/ }));
+    fireEvent.change(screen.getByLabelText(/Activity name/i), { target: { value: "Meal drive" } });
+    fireEvent.change(screen.getByLabelText(/When did this happen/i), { target: { value: "2026-09-01" } });
+    // Description is required
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Confirm that people shown have given consent.")).toBeInTheDocument();
+    expect(await screen.findByText("Please describe what work you did.")).toBeInTheDocument();
+    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
     expect(api.createNgoActivity).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("checkbox"));
-    api.createNgoActivity.mockResolvedValue({ id: 5, title: "Meal drive", activityDate: "2026-09-01", consentGiven: true, status: "PENDING", sortOrder: 0, media: [] });
+
+    fireEvent.change(screen.getByLabelText(/What work did you do/i), { target: { value: "Distributed 300 meals." } });
+    api.createNgoActivity.mockResolvedValue({
+      id: 5,
+      title: "Meal drive",
+      activityDate: "2026-09-01",
+      summary: null,
+      description: "Distributed 300 meals.",
+      status: "PENDING",
+      sortOrder: 0,
+      media: [],
+    });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() => expect(api.createNgoActivity).toHaveBeenCalledWith(expect.objectContaining({ consentGiven: true, title: "Meal drive" })));
+    await waitFor(() =>
+      expect(api.createNgoActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ title: "Meal drive", activityDate: "2026-09-01", description: "Distributed 300 meals." })
+      )
+    );
   });
 
   it("the admin must give a reason to send an entry back", async () => {

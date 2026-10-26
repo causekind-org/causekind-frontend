@@ -1826,7 +1826,7 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
           <X className="w-6 h-6" />
         </div>
         <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Something went wrong</h1>
-        <p className="text-stone-500 mb-6">We couldn't load the form. Please try again.</p>
+        <p className="text-stone-500 mb-6">We couldn&apos;t load the form. Please try again.</p>
         <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
           Go to dashboard
         </Link>

@@ -206,21 +206,24 @@ export default function NgoDashboardPage() {
           <Link href="/profile" className="ml-auto shrink-0 font-bold text-ngo-700 dark:text-ngo-400 hover:underline">Edit profile</Link>
         </div>
 
-        <Suspense fallback={null}>
-          <NgoDashboardSections drives={requests} verified={showSections} loading={loadingRequests} error={!!isHardError}
-            onRetry={refetchRequests} startDrive={canPostRequest ? (
-              <Link href="/ngo/drives/new">
-                <Button size="sm" className="bg-ngo-700 hover:bg-ngo-800 text-white mt-2">Start a Drive</Button>
-              </Link>
-            ) : (
-              <div className="space-y-1">
-                <Button size="sm" disabled className="mt-2 bg-stone-200 text-stone-500 cursor-not-allowed">
-                  <Lock className="w-3.5 h-3.5 mr-1" /> Start a Drive
-                </Button>
-                <p className="text-2xs text-stone-500 max-w-[260px] mx-auto">{lockReason}</p>
-              </div>
-            )} />
-        </Suspense>
+        {/* Target of every "/dashboard/ngo#live-drives" link. */}
+        <div id="live-drives" className="scroll-mt-24">
+          <Suspense fallback={null}>
+            <NgoDashboardSections drives={requests} verified={showSections} loading={loadingRequests} error={!!isHardError}
+              onRetry={refetchRequests} startDrive={canPostRequest ? (
+                <Link href="/ngo/drives/new">
+                  <Button size="sm" className="bg-ngo-700 hover:bg-ngo-800 text-white mt-2">Start a Drive</Button>
+                </Link>
+              ) : (
+                <div className="space-y-1">
+                  <Button size="sm" disabled className="mt-2 bg-stone-200 text-stone-500 cursor-not-allowed">
+                    <Lock className="w-3.5 h-3.5 mr-1" /> Start a Drive
+                  </Button>
+                  <p className="text-2xs text-stone-500 max-w-[260px] mx-auto">{lockReason}</p>
+                </div>
+              )} />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

@@ -1,17 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { configure, render, screen, waitFor } from "@testing-library/react";
 import { NgoLandingView } from "./NgoLandingView";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview } from "@/lib/api";
 
 // The hero renders a slideshow and motion; on a busy machine a test can pass 5 s.
-vi.setConfig({ testTimeout: 20000 });
+vi.setConfig({ testTimeout: 30000 });
+// The landing chunks load lazily; under full-suite load findBy* needs more than 1 s.
+configure({ asyncUtilTimeout: 8000 });
 
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" }, isLoading: false }) }));
+const auth = vi.hoisted(() => ({ user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" } as Record<string, unknown> | null }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: auth.user, isLoading: false }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/lib/api", () => ({ getMyNgoApplication: vi.fn(), getNgoDraft: vi.fn(), getNgoOverview: vi.fn() }));
 const totals = { activeRequests: 3, itemsPledged: 12, dropoffsToConfirm: 1, photosDue: 0, photosDueRequestName: "", verifiedDeliveries: 2, handovers: [] };
 beforeEach(() => {
   vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear();
+  auth.user = { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" };
   localStorage.setItem("ngo-verified-welcome-shown-101", "true");
   vi.mocked(getMyNgoApplication).mockResolvedValue(null);
   vi.mocked(getNgoDraft).mockResolvedValue(null);
@@ -27,7 +31,7 @@ describe("NGO landing with server-backed status", () => {
   });
   it("opens the next incomplete section from the server draft", async () => {
     vi.mocked(getNgoDraft).mockResolvedValue({ organizationName: "Helping Hands", legalStructure: "trust", registrationNumber: "REG-1", registeredOfficeAddress: "Pune", yearOfEstablishment: "2005",
-      panNumber: "ABCDE1234F", organizationPhone: "+919876543210",
+      panNumber: "ABCDE1234F", organizationPhone: "+919876543210", officialEmail: "info@helpinghands.org",
       aboutUs: "We collect school bags and books for children in rural Pune and run weekend reading classes for them.",
       documents: { pan: { name: "pan.pdf" }, "trust-reg-cert": { name: "cert.pdf" } } } as never);
     render(<NgoLandingView />);
@@ -41,15 +45,41 @@ describe("NGO landing with server-backed status", () => {
   it("unlocks drive creation only after server approval", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
-    await screen.findByText("Verified by CauseKind");
-    expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new");
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new"), { timeout: 5000 });
   });
-  it("shows a failed activity read as an error rather than zero activity", async () => {
+  it("keeps an approved NGO approved when the activity counters fail, showing them as —", async () => {
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     vi.mocked(getNgoOverview).mockRejectedValue(new Error("Activity unavailable"));
     render(<NgoLandingView />);
-    expect(await screen.findByRole("alert")).toHaveTextContent("Activity unavailable");
-    expect(screen.queryByText("Verified by CauseKind")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Retry" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new"), { timeout: 5000 });
+    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+  it("asks an NGO with a pending OTP to verify its email, not to wait for review", async () => {
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "PENDING_VERIFICATION", organizationName: "Hope Foundation" } as never);
+    render(<NgoLandingView />);
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /Verify your email/i })[0]).toHaveAttribute("href", "/profile/ngo-details"));
+    expect(screen.queryByRole("link", { name: /View application status/i })).not.toBeInTheDocument();
+  });
+  it("shows a rejection with its reason and no Fix documents action", async () => {
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "REJECTED", organizationName: "Hope Foundation", rejectionReason: "Registration could not be confirmed." } as never);
+    render(<NgoLandingView />);
+    expect((await screen.findAllByText(/Registration could not be confirmed\./)).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("link", { name: /Fix documents/i })).not.toBeInTheDocument();
+  });
+  it("sends a guest to log in instead of the wizard, without NGO API calls", async () => {
+    auth.user = null;
+    render(<NgoLandingView />);
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /Log in as an NGO to apply/i })[0]).toHaveAttribute("href", "/login?next=/ngo"));
+    expect(getMyNgoApplication).not.toHaveBeenCalled();
+  });
+  it("shows donors a neutral notice and makes no NGO API calls", async () => {
+    auth.user = { id: 7, email: "giver@example.test", role: "DONOR" };
+    render(<NgoLandingView />);
+    expect(await screen.findByText("This area is for NGO partners.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Go to home/i })).toHaveAttribute("href", "/");
+    expect(getMyNgoApplication).not.toHaveBeenCalled();
+    expect(getNgoOverview).not.toHaveBeenCalled();
   });
   it("does not present sample donations or testimonials as live evidence", async () => {
     render(<NgoLandingView />);

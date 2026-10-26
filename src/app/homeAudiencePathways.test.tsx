@@ -3,6 +3,9 @@ import { act, render, screen } from "@testing-library/react";
 
 import enMessages from "../../messages/en.json";
 
+// HomeClient renders the whole landing tree; under parallel load a render can pass 5 s.
+vi.setConfig({ testTimeout: 20000 });
+
 /**
  * The donor/donee signup pathways are guest-only.
  *
@@ -182,10 +185,12 @@ describe("a guest, once auth has resolved", () => {
    * trees is the guest's way in, not this particular component. Both halves are
    * asserted here so a regression that drops either one still fails.
    */
-  it("keeps the pathways section in the desktop tree only", async () => {
+  // The pathways section was replaced by the final "choose your path" CTA in the
+  // landing redesign (198fdfb), which is rendered once in each tree on purpose.
+  it("gives the guest the join CTA once in each tree (desktop and mobile)", async () => {
     await renderHome();
 
-    expect(headings()).toHaveLength(1);
+    expect(headings()).toHaveLength(2);
   });
 
   it("gives a guest both doors on mobile, without duplicating the desktop CTAs", async () => {

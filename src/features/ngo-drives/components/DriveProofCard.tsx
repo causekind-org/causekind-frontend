@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { Calendar, MapPin, Package, Users } from "lucide-react";
 import { getNgoDriveProof, type NgoDriveProofResponse } from "@/lib/api";
 import { FilePreviewDialog } from "@/components/FilePreviewDialog";
+import { formatISTDate } from "@/lib/formatIST";
 
-const fmtDate = (d?: string | null) => (d ? new Date(`${d.slice(0, 10)}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null);
+const fmtDate = (d?: string | null) => (d ? formatISTDate(d) : null);
 
 /**
  * Everything the NGO published with its distribution proof, in one card: photos (click to

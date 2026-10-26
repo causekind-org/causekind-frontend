@@ -46,7 +46,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/dashboard/ngo/complete-profile",
-        destination: "/dashboard/ngo/profile",
+        destination: "/profile/ngo-details",
         permanent: false,
       },
     ];

@@ -60,12 +60,12 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     render(<NgoDetailsPage />);
 
     expect(await screen.findByLabelText(/Organization Name/i)).toHaveValue("Hope Welfare Trust");
-    // The signup phone is the organization's phone; Representative 1 enters their own mobile.
-    expect(screen.getByLabelText(/Organization Phone Number/i)).toHaveValue("+919876543210");
+    expect(screen.getByLabelText(/Organization Email Address/i)).toHaveValue("hope@ngo.test");
+    // The signup phone is the organization's phone (10 digits with fixed +91 prefix); Representative 1 enters their own mobile.
+    expect(screen.getByLabelText(/Organization Phone Number/i)).toHaveValue("9876543210");
     await openStep(/Authorized Representative/i);
     expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("");
-    expect(screen.getByLabelText(/^Email/i)).toHaveValue("hope@ngo.test");
-    expect(screen.getByRole("button", { name: "Send code" })).toBeEnabled();
+    expect(screen.getByLabelText(/^Email/i)).toHaveValue("");
   }, 15000);
 
   it("fills them when a saved draft has them empty, and keeps what the NGO typed", async () => {
@@ -77,9 +77,10 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     render(<NgoDetailsPage />);
 
     expect(await screen.findByLabelText(/Organization Name/i)).toHaveValue("Typed Name Trust");
-    expect(screen.getByLabelText(/Organization Phone Number/i)).toHaveValue("+919876543210");
+    expect(screen.getByLabelText(/Organization Email Address/i)).toHaveValue("hope@ngo.test");
+    expect(screen.getByLabelText(/Organization Phone Number/i)).toHaveValue("9876543210");
     await openStep(/Authorized Representative/i);
-    expect(screen.getByLabelText(/^Email/i)).toHaveValue("hope@ngo.test");
+    expect(screen.getByLabelText(/^Email/i)).toHaveValue("");
   }, 15000);
 
   it("fills the phone when it arrives after login, without resetting what was typed", async () => {
@@ -96,7 +97,7 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
 
     expect(screen.getByLabelText(/Registration Number/i)).toHaveValue("TR-1");
     expect(getMyNgoApplication).toHaveBeenCalledTimes(1);
-    expect(await screen.findByLabelText(/Organization Phone Number/i)).toHaveValue("+919876543210");
+    expect(await screen.findByLabelText(/Organization Phone Number/i)).toHaveValue("9876543210");
   }, 15000);
 });
 
@@ -172,7 +173,7 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
 
     // Steps 3 and 4 carried over too, with no notes; the verified email stays verified.
     await openStep(/Authorized Representative/i);
-    expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("+919876543210");
+    expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("9876543210");
     expect(screen.getByLabelText(/^Email/i)).toHaveValue("contact@hope.test");
     expect(screen.getByText("Verified")).toBeInTheDocument();
     expect(screen.getByText("letter.pdf")).toBeInTheDocument();

@@ -84,11 +84,13 @@ describe("ngoRegistrationModel", () => {
   });
 
   it("step 1 needs the PAN card, PAN number and registration certificate", () => {
-    const base = { ...INITIAL_NGO_FORM, organizationName: "Hope", legalStructure: "trust" as const, registrationNumber: "R1",
+    const base = { ...INITIAL_NGO_FORM, organizationName: "Hope", officialEmail: "contact@hope.test", legalStructure: "trust" as const, registrationNumber: "R1",
       yearOfEstablishment: "2019", registeredOfficeAddress: "Pune", organizationPhone: "+919876543210",
       aboutUs: "We collect school bags and books for children in rural Pune and run weekend reading classes for them." };
     expect(getNgoStillNeededItems("org-details", base)).toEqual(
       ["PAN card upload", "Organization PAN number (10 characters)", "Trust Registration Certificate"]);
+    expect(getNgoStillNeededItems("org-details", { ...base, officialEmail: "" })).toContain(
+      "Organization email");
     expect(getNgoStillNeededItems("org-details", { ...base, organizationPhone: "" })).toContain(
       "Organization phone number (10 digits)");
     expect(getNgoStillNeededItems("org-details", { ...base, aboutUs: "Too short" })).toContain(
@@ -99,12 +101,14 @@ describe("ngoRegistrationModel", () => {
 
   it("step 3: representative 1 is required; other cards only once something is filled", () => {
     const card = { fullName: "Asha", designation: "Trustee", mobileNumber: "+919876543210", email: "asha@hope.test",
-      panNumber: "", idProof: { name: "id.pdf", documentId: 5 }, emailVerified: true };
+      panNumber: "ABCPS1234K", idProof: { name: "id.pdf", documentId: 5 }, emailVerified: true };
     const form = { ...INITIAL_NGO_FORM, authorizationLetter: { name: "a.pdf", documentId: 9 }, representatives: [card] };
     expect(getNgoStillNeededItems("authorized-rep", form)).toEqual([]);
+    expect(getNgoStillNeededItems("authorized-rep", { ...form, representatives: [{ ...card, panNumber: "" }] }))
+      .toEqual(["Representative 1: PAN number"]);
     expect(getNgoStillNeededItems("authorized-rep", { ...form, representatives: [card, { ...EMPTY_REPRESENTATIVE }] })).toEqual([]);
     expect(getNgoStillNeededItems("authorized-rep", { ...form, representatives: [card, { ...EMPTY_REPRESENTATIVE, fullName: "Half" }] }))
-      .toEqual(expect.arrayContaining(["Representative 2: designation / role", "Representative 2: valid email", "Representative 2: ID proof"]));
+      .toEqual(expect.arrayContaining(["Representative 2: designation / role", "Representative 2: valid email", "Representative 2: PAN number", "Representative 2: ID proof"]));
     expect(getNgoStillNeededItems("authorized-rep", { ...form, representatives: [{ ...card, emailVerified: false }] }))
       .toEqual(["Representative 1: verify email with the code"]);
     expect(getNgoStillNeededItems("authorized-rep", { ...form, representatives: [EMPTY_REPRESENTATIVE] }).length).toBeGreaterThan(3);

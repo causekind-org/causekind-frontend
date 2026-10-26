@@ -13,7 +13,27 @@ import {
   fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 
-export type NgoStatusType = "loading" | "incomplete" | "under_review" | "changes_requested" | "verified";
+export type NgoStatusType =
+  | "loading" | "incomplete" | "pending_otp" | "under_review" | "changes_requested" | "rejected" | "verified";
+
+/** Who is looking at the NGO area: only "ngo" viewers get NGO status, CTAs and API calls. */
+export type NgoViewer = "guest" | "ngo" | "other";
+
+const NGO_ROLES = ["NGO", "NGO_PARTNER"];
+
+/** Where a logged-out visitor's "apply" CTAs go. */
+export const NGO_LOGIN_HREF = "/login?next=/ngo";
+
+function toNgoStatus(raw: string | undefined): NgoStatusType {
+  switch (raw) {
+    case "APPROVED": return "verified";
+    case "NEEDS_INFORMATION": return "changes_requested";
+    case "REJECTED": return "rejected";
+    case "PENDING_VERIFICATION": return "pending_otp";
+    case "UNDER_REVIEW": return "under_review";
+    default: return "incomplete";
+  }
+}
 
 function parseFormState(raw: any): NGOFormState {
   if (!raw) return INITIAL_NGO_FORM;
@@ -68,8 +88,19 @@ export function triggerNgoLockedToast(
         }
         : undefined,
     });
+  } else if (status === "pending_otp") {
+    toast.info("Verify your email to send your application for review.", {
+      action: router
+        ? {
+          label: "Verify",
+          onClick: () => router.push("/profile/ngo-details"),
+        }
+        : undefined,
+    });
   } else if (status === "under_review") {
     toast.info("Your application is under review. We'll unlock this once you're approved.");
+  } else if (status === "rejected") {
+    toast.info("Your application was not approved. See your application for the reason.");
   } else if (status === "changes_requested") {
     toast.warning("A few documents need fixing. Fix now →", {
       action: router
@@ -97,6 +128,13 @@ export interface NgoStatusData {
   refresh: () => Promise<void>;
   overview: NgoOverview | null;
   status: NgoStatusType;
+  viewer: NgoViewer;
+  /** When CauseKind approved the NGO (ISO, UTC), if it has been. */
+  verifiedAt: string | null;
+  /** The reviewer's reason, for a rejected application. */
+  rejectionReason: string | null;
+  /** The overview counters failed to load: show "—", the status itself is unaffected. */
+  statsUnavailable: boolean;
   ngoName: string;
   stepNumber: number;
   totalSteps: number;
@@ -128,6 +166,9 @@ export function useNgoStatus(): NgoStatusData {
   const [ngoName, setNgoName] = useState("Your Organization");
   const [progress, setProgress] = useState(() => calculateNgoProgress(INITIAL_NGO_FORM));
   const [overview, setOverview] = useState<NgoOverview | null>(null);
+  const [statsUnavailable, setStatsUnavailable] = useState(false);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasShownWelcome, setHasShownWelcome] = useState(true);
@@ -145,7 +186,7 @@ export function useNgoStatus(): NgoStatusData {
     const user = userRef.current;
     const request = ++sequence.current;
     if (authLoading) return;
-    if (!user || !["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) {
+    if (!user || !NGO_ROLES.includes(user.role?.toUpperCase() || "")) {
       setStatus("incomplete"); setOverview(null); setLoading(false); setError(null); return;
     }
     // Only the first load for this account shows "loading". A background refresh (focus,
@@ -154,12 +195,17 @@ export function useNgoStatus(): NgoStatusData {
     const id = String(user.id ?? user.email ?? "");
     if (loadedFor.current !== id) setLoading(true);
     try {
-      const [application, draft, totals] = await Promise.all([getMyNgoApplication(), getNgoDraft(), getNgoOverview()]);
+      // The status comes from the application alone: a failed overview only blanks the counters.
+      const totalsRequest = getNgoOverview().then(
+        (totals) => ({ totals, failed: false }),
+        () => ({ totals: null as NgoOverview | null, failed: true }),
+      );
+      const [application, draft, { totals, failed }] = await Promise.all([getMyNgoApplication(), getNgoDraft(), totalsRequest]);
       if (request !== sequence.current) return;
-      const raw = application?.status;
-      setStatus(raw === "APPROVED" ? "verified"
-        : raw === "REJECTED" || raw === "NEEDS_INFORMATION" ? "changes_requested"
-        : raw === "UNDER_REVIEW" || raw === "PENDING_VERIFICATION" ? "under_review" : "incomplete");
+      setStatus(toNgoStatus(application?.status));
+      setVerifiedAt(application?.verifiedAt ?? null);
+      setRejectionReason(application?.status === "REJECTED" ? application.rejectionReason ?? null : null);
+      setStatsUnavailable(failed);
       setNgoName(application?.organizationName || draft?.organizationName || user?.fullName || "Your Organization");
       const form = parseFormState(draft || application);
       setProgress(calculateNgoProgress(form));
@@ -215,10 +261,13 @@ export function useNgoStatus(): NgoStatusData {
     ? "Available once CauseKind verifies your NGO."
     : isPhotosDue ? `Upload handover photos for ${overview?.photosDueRequestName} before starting another drive.`
     : driveLockReason);
+  const viewer: NgoViewer = !user ? "guest" : NGO_ROLES.includes(user.role?.toUpperCase() || "") ? "ngo" : "other";
   return {
     isLoading: isLoading || authLoading, error, refresh, overview, status, ngoName,
+    viewer, verifiedAt, rejectionReason, statsUnavailable,
     stepNumber: progress.completedCount, totalSteps: 6, nextIncompleteStep: progress.nextIncompleteStep,
-    wizardHref: progress.nextIncompleteStep ? `/profile/ngo-details?step=${progress.nextIncompleteStep}` : "/profile/ngo-details",
+    wizardHref: viewer === "guest" ? NGO_LOGIN_HREF
+      : progress.nextIncompleteStep ? `/profile/ngo-details?step=${progress.nextIncompleteStep}` : "/profile/ngo-details",
     activeRequests: overview?.activeRequests ?? 0, itemsPledged: overview?.itemsPledged ?? 0,
     dropoffsToConfirm: overview?.dropoffsToConfirm ?? 0, photosDue: overview?.photosDue ?? 0,
     photosDueRequestName: overview?.photosDueRequestName ?? "", isVerified, isPhotosDue,

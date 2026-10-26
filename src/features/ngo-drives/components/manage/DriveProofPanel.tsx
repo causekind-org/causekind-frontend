@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ImagePlus, Loader2, X } from "lucide-react";
-import { serverDate } from "@/lib/serverTime";
+import { formatIST } from "@/lib/formatIST";
 import { uploadDistributionProof, type NgoDrive } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -136,7 +136,7 @@ export function DriveProofPanel({ drive, onSubmitted }: { drive: NgoDrive; onSub
           <strong>Proof needs another look:</strong> {drive.adminReason}
         </p>
       )}
-      {drive.proofDueAt && <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Due by {serverDate(drive.proofDueAt).toLocaleString()}</p>}
+      {drive.proofDueAt && <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Due by {formatIST(drive.proofDueAt)}</p>}
 
       <Group title="Photos">
         <div className="flex items-center justify-between text-sm font-semibold text-stone-800 dark:text-stone-200">

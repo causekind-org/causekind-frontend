@@ -95,6 +95,7 @@ export function buildDraftPayload(form: NGOFormState, currentStep: string): Part
     registrationNumber: form.registrationNumber,
     registeredOfficeAddress: form.registeredOfficeAddress,
     organizationPhone: fieldText(form.organizationPhone),
+    officialEmail: fieldText(form.officialEmail),
     aboutUs: (form.aboutUs ?? "").trim(),
     yearOfEstablishment: form.yearOfEstablishment,
     representatives: (form.representatives ?? []).map(representativeToDto),
@@ -107,7 +108,7 @@ export function buildDraftPayload(form: NGOFormState, currentStep: string): Part
   };
 }
 
-/** The submit request. Representative 1 is also the contact person (their email is the official email). */
+/** The submit request. The officialEmail is the organization's official email from Step 1. */
 export function buildSubmitPayload(form: NGOFormState) {
   const reps = filledRepresentatives(form);
   const first = reps[0] ?? EMPTY_REPRESENTATIVE;
@@ -118,12 +119,12 @@ export function buildSubmitPayload(form: NGOFormState) {
     registrationNumber: form.registrationNumber,
     registeredOfficeAddress: form.registeredOfficeAddress,
     organizationPhone: fieldText(form.organizationPhone),
+    officialEmail: fieldText(form.officialEmail),
     aboutUs: (form.aboutUs ?? "").trim(),
     yearOfEstablishment: form.yearOfEstablishment,
     representativeName: fieldText(first.fullName),
     designation: fieldText(first.designation),
     mobileNumber: fieldText(first.mobileNumber),
-    officialEmail: fieldText(first.email),
     representatives: reps.map(representativeToDto),
     confirmationChecked: form.confirmationChecked,
     authorizationLetter: toDto(form.authorizationLetter),

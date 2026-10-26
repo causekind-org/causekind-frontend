@@ -5,6 +5,8 @@
  * server and client components without "use client" hoisting.
  */
 
+import { formatIST } from "@/lib/formatIST";
+
 // ── Steps ──────────────────────────────────────────────────────────────────────
 
 export const NGO_STEPS = [
@@ -361,14 +363,7 @@ export function generateApplicationId(): string {
 }
 
 export function formatSubmissionTime(date: Date): string {
-  return date.toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return formatIST(date);
 }
 
 /** Human-readable label for the legal structure value. */
@@ -420,11 +415,45 @@ export function fieldText(value: unknown): string {
  * Returns an array of human-readable missing item descriptions for a given step.
  * Returns an empty array if the step is fully completed.
  */
-export const MOBILE_PATTERN = /^\+?[0-9]{10,15}$/;
+export const INDIAN_MOBILE_WITH_PREFIX_REGEX = /^\+91[6-9]\d{9}$/;
+export const INDIAN_MOBILE_DIGITS_REGEX = /^[6-9]\d{9}$/;
 export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function isValidMobile(value: string): boolean {
-  return MOBILE_PATTERN.test(fieldText(value).replace(/[\s-]/g, ""));
+  const clean = fieldText(value).replace(/[\s-]/g, "");
+  return INDIAN_MOBILE_WITH_PREFIX_REGEX.test(clean) || INDIAN_MOBILE_DIGITS_REGEX.test(clean);
+}
+
+/** Extracts the 10 digits of an Indian mobile number, or whatever digits exist without truncating saved data. */
+export function extractIndianMobileDigits(value: string): string {
+  const clean = fieldText(value).replace(/[\s-]/g, "");
+  if (clean.startsWith("+91")) return clean.slice(3);
+  if (clean.startsWith("91") && clean.length > 10) return clean.slice(2);
+  if (clean.startsWith("0") && clean.length > 10) return clean.replace(/^0+/, "");
+  return clean;
+}
+
+/** Formats a mobile number for storage and backend submit: "+91XXXXXXXXXX" */
+export function formatIndianMobileForStorage(value: string): string {
+  const digits = extractIndianMobileDigits(value);
+  return digits ? `+91${digits}` : "";
+}
+
+/** Sanitizes input on typing or paste: strips non-digits, leading "+91", "91" or "0", max 10 chars */
+export function cleanIndianMobileInput(raw: string): string {
+  let cleaned = raw.trim();
+  if (cleaned.startsWith("+91")) {
+    cleaned = cleaned.slice(3);
+  } else if (cleaned.startsWith("+")) {
+    cleaned = cleaned.slice(1);
+  }
+  cleaned = cleaned.replace(/\D/g, "");
+  if (cleaned.startsWith("91") && cleaned.length > 10) {
+    cleaned = cleaned.slice(2);
+  } else if (cleaned.startsWith("0")) {
+    cleaned = cleaned.replace(/^0+/, "");
+  }
+  return cleaned.slice(0, 10);
 }
 
 export function isValidEmail(value: string): boolean {
@@ -446,7 +475,8 @@ export function getRepresentativeIssues(card: RepresentativeCard, index: number)
   if (!isValidMobile(card.mobileNumber)) issues.push(`${who}: valid mobile number`);
   if (!isValidEmail(card.email)) issues.push(`${who}: valid email`);
   else if (!card.emailVerified) issues.push(`${who}: verify email with the code`);
-  if (fieldText(card.panNumber) && !isValidPan(card.panNumber)) issues.push(`${who}: valid PAN (or leave it empty)`);
+  if (!fieldText(card.panNumber)) issues.push(`${who}: PAN number`);
+  else if (!isValidPan(card.panNumber)) issues.push(`${who}: valid PAN number`);
   if (!card.idProof) issues.push(`${who}: ID proof`);
   return issues;
 }
@@ -478,6 +508,7 @@ export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): strin
       const cert = getRegistrationCertificateDoc(data.legalStructure);
       if (cert && !data.documents?.[cert.id]) missing.push(cert.label);
       if (!fieldText(data.registrationNumber)) missing.push("Registration number");
+      if (!isValidEmail(data.officialEmail ?? "")) missing.push("Organization email");
       if (!isValidMobile(data.organizationPhone ?? "")) missing.push("Organization phone number (10 digits)");
       if (aboutUsMissing(data)) missing.push(`About us (${ABOUT_US_MIN} to ${ABOUT_US_MAX} characters)`);
       if (!fieldText(data.yearOfEstablishment) || !/^(18|19|20)\d{2}$/.test(fieldText(data.yearOfEstablishment))) missing.push("Valid year of establishment (4 digits)");
@@ -573,15 +604,9 @@ export function prefillNgoFormWithUser(
   const skipped = new Set(skip);
   const fill = (key: "organizationName" | "organizationPhone" | "mobileNumber" | "officialEmail", value: string | null | undefined) =>
     skipped.has(key) || fieldText(form[key]) ? form[key] : fieldText(value);
-  // Representative 1 starts with the signup email (the email still needs its code).
+  // Representative email starts empty so the representative types and verifies their own email.
   // The representative mobile number starts empty so the representative enters their own number.
   const reps = form.representatives?.length ? [...form.representatives] : [{ ...EMPTY_REPRESENTATIVE }];
-  const first = { ...reps[0] };
-  if (!skipped.has("representatives.0.email") && !fieldText(first.email) && fieldText(user.email)) {
-    first.email = fieldText(user.email);
-    first.emailVerified = false;
-  }
-  reps[0] = first;
   return {
     ...form,
     organizationName: fill("organizationName", user.fullName),
@@ -634,7 +659,7 @@ export function correctionFieldLabel(field: string): string {
 
 /** Step 1 fields, including the PAN card and the registration certificate. */
 const ORG_DETAILS_FIELDS = [
-  "organizationName", "legalStructure", "panNumber", "registrationNumber", "registeredOfficeAddress", "organizationPhone", "aboutUs", "yearOfEstablishment",
+  "organizationName", "legalStructure", "panNumber", "registrationNumber", "registeredOfficeAddress", "officialEmail", "organizationPhone", "aboutUs", "yearOfEstablishment",
   "documents.pan", "documents.trust-pan", "documents.society-pan", "documents.company-pan",
   "documents.trust-reg-cert", "documents.society-reg-cert", "documents.coi",
 ];
@@ -644,7 +669,7 @@ export function correctionFieldStep(field: string): NGOStep {
   if (ORG_DETAILS_FIELDS.includes(field)) return "org-details";
   if (field.startsWith("documents.")) return "legal-documents";
   if (field.startsWith("representatives.")
-    || ["representativeName", "designation", "mobileNumber", "officialEmail", "authorizationLetter"].includes(field))
+    || ["representativeName", "designation", "mobileNumber", "authorizationLetter"].includes(field))
     return "authorized-rep";
   return "org-photos";
 }

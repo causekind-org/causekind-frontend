@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNgoStatus } from "@/components/ngo-landing/useNgoStatus";
 import { StartDriveLink } from "@/components/ngo-landing/StartDriveLink";
 import { doneeAcceptMatch, doneeRejectMatch, uploadNgoHandoverProof, type NgoHandover } from "@/lib/api";
+import { formatIST } from "@/lib/formatIST";
 
 export default function NgoHandoversPage() {
   return <Suspense fallback={<p role="status">Loading handovers…</p>}><Handovers /></Suspense>;
@@ -54,7 +55,7 @@ function Handovers() {
   if (authLoading || !user || !["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return <p role="status">Loading your account…</p>;
   return <main className="min-h-screen bg-stone-50 px-4 py-8 dark:bg-zinc-950"><div className="mx-auto max-w-4xl space-y-6">
     <Link href="/dashboard/ngo#live-drives" className="text-sm underline">Your drives</Link>
-    <header><h1 className="text-3xl font-bold">Handovers and photos</h1><p className="mt-2 text-sm text-stone-500">Track your items, confirm receipt, and share a photo of the handover.</p><p className="mt-2 text-sm"><Link href="/dashboard/ngo?tab=activity&filter=handovers" className="font-bold text-ngo-700 underline dark:text-ngo-300">Handovers for your drives are in your dashboard's Activity</Link></p></header>
+    <header><h1 className="text-3xl font-bold">Handovers and photos</h1><p className="mt-2 text-sm text-stone-500">Track your items, confirm receipt, and share a photo of the handover.</p><p className="mt-2 text-sm"><Link href="/dashboard/ngo?tab=activity&filter=handovers" className="font-bold text-ngo-700 underline dark:text-ngo-300">Handovers for your drives are in your dashboard&apos;s Activity</Link></p></header>
     <nav className="flex flex-wrap gap-4 text-sm underline"><Link href="/dashboard/ngo#live-drives">Review incoming offers</Link><StartDriveLink href="/ngo/drives/new">Start a drive</StartDriveLink>{filterId && <Link href="/ngo/handovers">Show all handovers</Link>}</nav>
     {feedback && <p role="status" className="rounded-xl bg-emerald-50 p-4 text-emerald-900">{feedback}</p>}
     {actionError && <p role="alert" className="rounded-xl border border-red-300 p-4">{actionError}</p>}
@@ -64,7 +65,7 @@ function Handovers() {
       {rows.map(row => <article key={`${row.kind}-${row.id}`} className="space-y-3 rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
         <h2 className="text-xl font-semibold">{row.title}</h2>
         <p className="text-sm capitalize">{row.status.replaceAll("_", " ").toLowerCase()} · {row.quantity} items allocated</p>
-        {row.scheduledAt && <p className="text-sm">Scheduled: {new Date(row.scheduledAt).toLocaleString()}</p>}
+        {row.scheduledAt && <p className="text-sm">Scheduled: {formatIST(row.scheduledAt)}</p>}
         <p className="text-sm">{row.dualConfirmed ? "Thank you! Receipt is confirmed by both parties and OTP." : row.received ? "Thank you for confirming receipt. The remaining handover checks are still pending." : "Please confirm receipt only after the items arrive."}</p>
         {row.kind === "MATCH" && row.status === "AWAITING_DONEE_CONFIRMATION" ? <div className="space-y-3">
           <button disabled={busy !== null} className="rounded-lg bg-ngo-700 px-4 py-2 text-white disabled:opacity-50" onClick={() => void act(row, "accept")}>Accept this match</button>

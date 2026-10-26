@@ -163,7 +163,8 @@ function NgoDetailsEditor() {
               organizationName: submittedApp.organizationName || prev.organizationName,
               applicationId: submittedApp.applicationId,
               submittedAt: submittedApp.submittedAt || "",
-              officialEmail: user?.email || prev.officialEmail,
+              // The org email stays as entered; the OTP step shows the account email it was sent to.
+              officialEmail: prev.officialEmail,
             }));
             setAwaitingVerification("restored");
             setCurrentStep("email-verification");
@@ -339,6 +340,17 @@ function NgoDetailsEditor() {
     if (data.applicationId && step !== "email-verification") return;
     if (currentStep === "submitted") return;
     setCurrentStep(step);
+    // Auto-save draft in the background so active uploads are never orphaned
+    if (!IS_NGO_DEMO_MODE && !data.applicationId) {
+      try {
+        const res = saveNgoDraft(buildDraftPayload(data, step));
+        if (res && typeof res.catch === "function") {
+          void res.catch(() => {});
+        }
+      } catch {
+        // ignore draft auto-save error
+      }
+    }
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -372,7 +384,7 @@ function NgoDetailsEditor() {
         updateData({
           applicationId: demoAppId,
           submittedAt: subTime,
-          officialEmail: user?.email || buildSubmitPayload(data).officialEmail,
+          officialEmail: buildSubmitPayload(data).officialEmail,
         });
         setAwaitingVerification("fresh");
         goToStep("email-verification");
@@ -389,7 +401,7 @@ function NgoDetailsEditor() {
       updateData({
         applicationId: response.applicationId,
         submittedAt: subTime,
-        officialEmail: response.officialEmail || user?.email || data.officialEmail,
+        officialEmail: data.officialEmail,
       });
 
       setApplicationStatus("PENDING_VERIFICATION");
@@ -416,7 +428,7 @@ function NgoDetailsEditor() {
         const payload = JSON.stringify({
           applicationId: data.applicationId,
           status: "UNDER_REVIEW",
-          submittedAt: data.submittedAt || new Date().toLocaleDateString(),
+          submittedAt: data.submittedAt || formatSubmissionTime(new Date()),
         });
         if (IS_NGO_DEMO_MODE) {
           localStorage.setItem(`ngo-demo-application-${userIdentifier}`, payload);
@@ -468,8 +480,8 @@ function NgoDetailsEditor() {
     <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950">
       <div className="flex">
         {/* ── Left Sidebar (Desktop) ─────────────────────────────────── */}
-        <aside className="sticky top-0 hidden h-screen w-[300px] shrink-0 flex-col border-r border-stone-200 bg-white lg:flex dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-4 border-b border-stone-200 px-7 pb-6 pt-8 dark:border-zinc-800">
+        <aside className="sticky top-0 hidden h-screen w-[300px] shrink-0 flex-col border-r border-[#EADBCE] bg-[#FAF7F2] lg:flex dark:border-emerald-950/80 dark:bg-[#141E18]">
+          <div className="flex flex-col gap-4 border-b border-[#EADBCE] px-7 pb-6 pt-8 dark:border-emerald-950/80">
             <Link
               href="/profile"
               className="inline-flex items-center gap-2 text-sm font-semibold text-ngo-700 hover:text-ngo-600 dark:text-ngo-300 dark:hover:text-ngo-100 transition-colors"
@@ -547,7 +559,7 @@ function NgoDetailsEditor() {
 
           {/* Still Needed Checklist for Active Step */}
           {currentStep !== "submitted" && (
-            <div className="border-t border-stone-200 px-7 py-5 dark:border-zinc-800">
+            <div className="border-t border-[#EADBCE] px-7 py-5 dark:border-emerald-950/80">
               <p className="text-3xs font-black uppercase tracking-[0.18em] text-stone-400">
                 Still needed in this step
               </p>
@@ -575,38 +587,39 @@ function NgoDetailsEditor() {
 
         {/* ── Working Pane ───────────────────────────────────────────── */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Mobile Header (lg:hidden) */}
-          <div className="border-b border-stone-200 bg-white px-5 py-4 lg:hidden dark:border-zinc-800 dark:bg-zinc-900">
-            <Link
-              href="/profile"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-ngo-700 dark:text-ngo-300"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to profile
-            </Link>
-            <div className="mt-3 flex items-baseline justify-between gap-3">
-              <h1 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                Your readiness
-              </h1>
-              <span className="text-2xl font-black tabular-nums text-ngo-700 dark:text-ngo-300">
-                {currentStep === "submitted" ? 100 : progress.percent}%
-              </span>
+          {/* Mobile Compact Top Bar (lg:hidden) */}
+          <div className="border-b border-[#EADBCE] bg-[#FAF7F2] px-4 py-2.5 lg:hidden dark:border-emerald-950/80 dark:bg-[#141E18]">
+            <div className="flex items-center justify-between gap-2">
+              <Link
+                href="/profile"
+                className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-semibold text-ngo-700 dark:text-ngo-300 hover:text-ngo-800"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                  {currentStep === "submitted"
+                    ? "Submitted"
+                    : `Step ${NGO_STEPS.indexOf(currentStep as NGOStep) + 1} of 6`}
+                </span>
+                <span className="rounded-full bg-ngo-50 dark:bg-ngo-950/50 border border-ngo-200 dark:border-ngo-800 px-2 py-0.5 text-xs font-black tabular-nums text-ngo-700 dark:text-ngo-300">
+                  {currentStep === "submitted" ? 100 : progress.percent}%
+                </span>
+              </div>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-zinc-800">
+
+            {/* Progress bar */}
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-stone-200/80 dark:bg-zinc-800">
               <div
                 className="h-full rounded-full bg-ngo-700 transition-[width] duration-500"
                 style={{ width: `${currentStep === "submitted" ? 100 : progress.percent}%` }}
               />
             </div>
-            <p className="mt-2 text-xs text-stone-500">
-              {currentStep === "submitted"
-                ? "Application submitted."
-                : awaitingVerification
-                  ? "Submitted. Enter the email code to finish."
-                  : `${remaining} ${remaining === 1 ? "step" : "steps"} left before submit.`}
-            </p>
+
+            {/* Horizontal step indicator / pills */}
             {currentStep !== "submitted" && (
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                 {NGO_STEPS.map((stepKey, index) => {
                   const isCurrent = currentStep === stepKey;
                   const isCompleted = progress.completedSteps.has(stepKey);
@@ -616,12 +629,16 @@ function NgoDetailsEditor() {
                       type="button"
                       onClick={() => goToStep(stepKey)}
                       disabled={stepKey === "email-verification" || (!!awaitingVerification && !isCurrent)}
-                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${isCurrent
-                          ? "bg-ngo-700 text-white"
-                          : "border border-stone-300 text-stone-600 dark:border-zinc-600 dark:text-stone-300"
-                        }`}
+                      className={`min-h-[36px] shrink-0 whitespace-nowrap rounded-full px-3 text-2xs font-bold transition-colors flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        isCurrent
+                          ? "bg-ngo-700 text-white shadow-sm"
+                          : isCompleted
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40"
+                          : "border border-[#EADBCE] dark:border-zinc-700 text-stone-600 dark:text-stone-300 bg-white dark:bg-zinc-800/50"
+                      }`}
                     >
-                      {isCompleted ? <Check className="w-3.5 h-3.5" /> : `${index + 1}.`} {NGO_STEP_FULL_TITLES[stepKey]}
+                      {isCompleted ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <span>{index + 1}.</span>}
+                      <span>{NGO_STEP_FULL_TITLES[stepKey]}</span>
                     </button>
                   );
                 })}
@@ -631,8 +648,25 @@ function NgoDetailsEditor() {
 
           {/* Form Content Area */}
           <div className="flex flex-1 flex-col">
-            <div className="flex-1 px-5 py-8 sm:px-10">
+            <div className="flex-1 px-4 py-6 sm:px-10 pb-28 sm:pb-24">
               <div className="max-w-3xl">
+                {/* Collapsible Still Needed in this step on mobile */}
+                {currentStep !== "submitted" && stillNeeded.length > 0 && (
+                  <details className="mb-5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 p-3 text-xs lg:hidden">
+                    <summary className="cursor-pointer font-bold text-amber-900 dark:text-amber-200 flex items-center justify-between select-none">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                        Still needed in this step ({stillNeeded.length})
+                      </span>
+                      <span className="text-3xs text-stone-400 font-semibold underline underline-offset-2">Toggle</span>
+                    </summary>
+                    <ul className="mt-2.5 space-y-1 pl-4 list-disc text-stone-700 dark:text-stone-300">
+                      {stillNeeded.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
                 {reviewMessage && <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 whitespace-pre-wrap">{reviewMessage}</div>}
                 {correctionItems.length > 0 && currentStep !== "submitted" && !awaitingVerification && (
                   <div role="status" aria-label="Changes requested" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
@@ -663,8 +697,8 @@ function NgoDetailsEditor() {
                 )}
 
                 {currentStep === "submitted" ? (
-                  <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900">
-                    <div className="flex items-center gap-3 border-b border-stone-200 pb-5 dark:border-zinc-800">
+                  <div className="rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-5 sm:p-8 dark:border-emerald-950/80 dark:bg-[#141E18]">
+                    <div className="flex items-center gap-3 border-b border-[#EADBCE] pb-5 dark:border-emerald-950/80">
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-ngo-800 to-ngo-600 flex items-center justify-center text-white shadow-md shadow-ngo-700/20">
                         <ShieldCheck className="w-6 h-6" />
                       </div>
@@ -680,7 +714,7 @@ function NgoDetailsEditor() {
                     <div className="mt-6 flex flex-wrap gap-4">
                       <Link
                         href="/profile"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
+                        className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
                       >
                         Return to Profile
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -688,7 +722,7 @@ function NgoDetailsEditor() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
+                  <div className="rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-5 sm:p-8 dark:border-emerald-950/80 dark:bg-[#141E18] shadow-sm">
                     {currentStep === "org-details" && (
                       <OrgDetails
                         data={data}
@@ -737,6 +771,7 @@ function NgoDetailsEditor() {
                         onSubmit={handleSubmitApplication}
                         onEditStep={(s) => goToStep(s)}
                         isSubmitting={busy}
+                        submitError={submitError}
                       />
                     )}
 
@@ -756,9 +791,9 @@ function NgoDetailsEditor() {
 
             {/* Bottom Sticky Action Bar */}
             {currentStep !== "submitted" && currentStep !== "email-verification" && (
-              <div className="sticky bottom-0 border-t border-stone-200 bg-white px-5 py-4 sm:px-10 dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="flex max-w-3xl flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-stone-500">
+              <div className="sticky bottom-0 z-20 border-t border-[#EADBCE] bg-[#FAF7F2]/95 backdrop-blur-sm px-4 py-3 sm:px-10 dark:border-emerald-950/80 dark:bg-[#141E18]/95 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+                <div className="flex max-w-3xl flex-wrap items-center justify-between gap-2.5">
+                  <p className="text-xs sm:text-sm font-semibold text-stone-500 dark:text-stone-400">
                     Step {NGO_STEPS.indexOf(currentStep as NGOStep) + 1} of 6:{" "}
                     <span className="text-stone-900 dark:text-stone-100 font-bold">
                       {NGO_STEP_FULL_TITLES[currentStep as NGOStep]}
@@ -766,12 +801,12 @@ function NgoDetailsEditor() {
                   </p>
                   {/* Not rendered (rather than hidden) once submitted, so neither action is reachable by keyboard either. */}
                   {!awaitingVerification && (
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         disabled={busy}
                         onClick={handleSaveDraft}
-                        className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                        className="min-h-[44px] rounded-xl border border-stone-300 dark:border-zinc-700 px-3.5 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                       >
                         {busy ? "Saving…" : "Save draft"}
                       </button>
@@ -780,9 +815,20 @@ function NgoDetailsEditor() {
                           type="button"
                           disabled={busy}
                           onClick={handlePreviousSection}
-                          className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                          className="min-h-[44px] rounded-xl border border-stone-300 dark:border-zinc-700 px-3.5 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                         >
                           Previous
+                        </button>
+                      )}
+                      {currentStep !== "review-submit" && (
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={handleNextSection}
+                          className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-4 py-2 text-xs font-bold text-white transition-colors shadow-sm disabled:opacity-50"
+                        >
+                          Save & Continue
+                          <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </div>

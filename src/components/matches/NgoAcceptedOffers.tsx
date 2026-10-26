@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { formatISTDate } from "@/lib/formatIST";
 
 /**
  * The donor's offers to NGO drives shown in Matches > NGO: from "Offer sent" until the NGO
@@ -31,7 +32,7 @@ export type AcceptedDriveOffer = {
 const RECEIVED = new Set(["ISSUE_WINDOW_OPEN", "ISSUE_RAISED"]);
 /** "Received on 19 Oct 2026 · 5 pieces". */
 function receivedText(o: AcceptedDriveOffer): string {
-  const when = o.receivedAt ? new Date(o.receivedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
+  const when = o.receivedAt ? formatISTDate(o.receivedAt) : null;
   const qty = o.receivedQuantity ?? o.quantity;
   return ["Received" + (when ? ` on ${when}` : ""), qty != null ? `${qty} ${(o.driveUnit ?? "").replaceAll("_", " ").toLowerCase()}`.trim() : null].filter(Boolean).join(" · ");
 }

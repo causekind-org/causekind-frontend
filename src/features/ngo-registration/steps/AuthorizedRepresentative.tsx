@@ -22,9 +22,13 @@ import { sendNgoRepresentativeEmailCode, verifyNgoRepresentativeEmailCode } from
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
+import { IndianPhoneInput } from "@/features/ngo-registration/components/IndianPhoneInput";
 import { NgoOtpInput } from "@/features/ngo-registration/components/NgoOtpInput";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 import { WizardSelect } from "@/features/ngo-registration/components/WizardSelect";
+import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
+import { getNgoFileLink } from "@/lib/api";
+import { useMemo } from "react";
 
 interface AuthorizedRepresentativeProps {
   data: NGOFormState;
@@ -75,8 +79,56 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
 
   const missing = getNgoStillNeededItems("authorized-rep", data);
 
+  // Full-size preview dialog for all uploaded files in this step
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const previewFiles = useMemo(() => {
+    const out: { id: string; file: PreviewFile }[] = [];
+    if (data.authorizationLetter && !data.authorizationLetter.demo) {
+      out.push({
+        id: "auth",
+        file: {
+          name: `${authorizationDocumentLabel(data.legalStructure)}: ${data.authorizationLetter.name}`,
+          mimeType: data.authorizationLetter.mimeType,
+          resolve:
+            data.authorizationLetter.documentId != null
+              ? async () => (await getNgoFileLink("document", data.authorizationLetter!.documentId!)).url
+              : undefined,
+          url: data.authorizationLetter.documentId == null ? data.authorizationLetter.s3Url : undefined,
+        },
+      });
+    }
+    reps.forEach((r, i) => {
+      if (r.idProof && !r.idProof.demo) {
+        out.push({
+          id: `rep-${i}`,
+          file: {
+            name: `${r.fullName || `Representative ${i + 1}`} ID proof: ${r.idProof.name}`,
+            mimeType: r.idProof.mimeType,
+            resolve:
+              r.idProof.documentId != null
+                ? async () => (await getNgoFileLink("document", r.idProof!.documentId!)).url
+                : undefined,
+            url: r.idProof.documentId == null ? r.idProof.s3Url : undefined,
+          },
+        });
+      }
+    });
+    return out;
+  }, [data.authorizationLetter, data.legalStructure, reps]);
+
+  const openPreview = (id: string) => {
+    const idx = previewFiles.findIndex((x) => x.id === id);
+    if (idx >= 0) setPreviewIndex(idx);
+  };
+
   return (
     <div className="space-y-6">
+      <FilePreviewDialog
+        files={previewFiles.map((x) => x.file)}
+        index={previewIndex}
+        onIndexChange={setPreviewIndex}
+        onClose={() => setPreviewIndex(null)}
+      />
       {/* Header */}
       <div className="space-y-1">
         <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
@@ -102,6 +154,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
           uploaded={data.authorizationLetter}
           onUpload={(file) => onChange({ authorizationLetter: file })}
           onRemove={() => onChange({ authorizationLetter: null })}
+          onPreview={() => openPreview("auth")}
         />
         <CorrectionNote note={corrections?.authorizationLetter} />
       </section>
@@ -117,6 +170,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
             corrections={corrections}
             onChange={(patch) => updateCard(index, patch)}
             onRemove={index > 0 ? () => removeCard(index) : undefined}
+            onPreview={() => openPreview(`rep-${index}`)}
           />
         ))}
       </section>
@@ -167,13 +221,15 @@ interface RepresentativeCardEditorProps {
   corrections?: NgoCorrections;
   onChange: (patch: Partial<RepresentativeCard>) => void;
   onRemove?: () => void;
+  onPreview?: () => void;
 }
 
-function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove }: RepresentativeCardEditorProps) {
+function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove, onPreview }: RepresentativeCardEditorProps) {
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState<"send" | "verify" | null>(null);
   const [codeError, setCodeError] = useState<string | null>(null);
+  const [panTouched, setPanTouched] = useState(false);
   const codeRef = useRef<HTMLInputElement>(null);
   const prefix = `rep-${index}`;
   const pan = normalizePan(card.panNumber);
@@ -230,7 +286,7 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
 
   return (
     <div role="group" aria-label={`Representative ${index + 1}`}
-      className="space-y-3 rounded-xl border border-stone-200 p-4 dark:border-zinc-800">
+      className="space-y-3 rounded-xl border border-[#EADBCE] bg-[#FAF7F2] p-4 dark:border-emerald-950/80 dark:bg-[#141E18]">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-bold text-stone-800 dark:text-stone-200">
           Representative {index + 1}
@@ -240,7 +296,7 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
         </p>
         {onRemove && (
           <button type="button" onClick={onRemove} aria-label={`Remove representative ${index + 1}`}
-            className="inline-flex items-center gap-1 text-2xs font-bold text-stone-400 hover:text-red-600">
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 text-2xs font-bold text-stone-400 hover:text-red-600 transition-colors">
             <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
           </button>
         )}
@@ -249,8 +305,8 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <label htmlFor={`${prefix}-name`} className={labelClass}>Full name {required}</label>
-          <input id={`${prefix}-name`} type="text" autoComplete="off" value={card.fullName}
-            onChange={(e) => onChange({ fullName: e.target.value })} className={controlClass} />
+          <input id={`${prefix}-name`} name={`${prefix}-name`} type="text" autoComplete="off" value={card.fullName}
+            onChange={(e) => onChange({ fullName: e.target.value })} className={cn(controlClass, "min-h-[44px]")} />
           {note("fullName")}
         </div>
         <div className="space-y-1">
@@ -266,21 +322,40 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
         </div>
         <div className="space-y-1">
           <label htmlFor={`${prefix}-mobile`} className={labelClass}>Mobile number {required}</label>
-          <input id={`${prefix}-mobile`} type="tel" inputMode="tel" autoComplete="off" value={card.mobileNumber}
+          <IndianPhoneInput
+            id={`${prefix}-mobile`}
+            name={`${prefix}-mobile`}
+            value={card.mobileNumber}
+            hasError={!!fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber)}
             aria-invalid={!!fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber)}
-            onChange={(e) => onChange({ mobileNumber: e.target.value })}
-            className={cn(controlClass, fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber) && "border-red-400")} />
+            onChange={(formattedVal) => onChange({ mobileNumber: formattedVal })}
+          />
           {fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber) && (
-            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">Enter 10 to 15 digits, e.g. +919876543210.</p>
+            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">Enter a 10-digit mobile number.</p>
           )}
           {note("mobileNumber")}
         </div>
         <div className="space-y-1">
-          <label htmlFor={`${prefix}-pan`} className={labelClass}>PAN number</label>
-          <input id={`${prefix}-pan`} type="text" autoComplete="off" maxLength={12} value={card.panNumber}
-            onChange={(e) => onChange({ panNumber: e.target.value.toUpperCase() })}
-            className={cn(controlClass, "font-mono uppercase")} />
-          {pan.length >= 10 && !isValidPan(pan) && (
+          <label htmlFor={`${prefix}-pan`} className={labelClass}>PAN number {required}</label>
+          <input
+            id={`${prefix}-pan`}
+            name={`${prefix}-pan`}
+            type="text"
+            autoComplete="off"
+            maxLength={10}
+            value={card.panNumber}
+            onBlur={() => setPanTouched(true)}
+            aria-invalid={!!((panTouched && !pan) || (pan.length > 0 && !isValidPan(pan)))}
+            onChange={(e) => {
+              onChange({ panNumber: e.target.value.toUpperCase() });
+              if (panTouched) setPanTouched(false);
+            }}
+            className={cn(controlClass, "min-h-[44px] font-mono uppercase", ((panTouched && !pan) || (pan.length > 0 && !isValidPan(pan))) && "border-red-400")}
+          />
+          {panTouched && !pan && (
+            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">PAN number is required.</p>
+          )}
+          {pan.length > 0 && !isValidPan(pan) && (
             <p className="text-3xs font-semibold text-red-600 dark:text-red-400">A PAN is 5 letters, 4 digits and 1 letter.</p>
           )}
           {isValidPan(pan) && !isPersonalPan(pan) && (
@@ -296,23 +371,23 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
       {/* Email with code */}
       <div className="space-y-1">
         <label htmlFor={`${prefix}-email`} className={labelClass}>Email {required}</label>
-        <div className="flex flex-wrap items-center gap-2">
-          <input id={`${prefix}-email`} type="email" autoComplete="off" value={card.email}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <input id={`${prefix}-email`} name={`${prefix}-email`} type="email" autoComplete="off" value={card.email}
             onChange={(e) => {
               onChange({ email: e.target.value, emailVerified: false });
               setCodeSent(false);
               setCode("");
               setCodeError(null);
             }}
-            className={cn(controlClass, "min-w-0 flex-1")} />
+            className={cn(controlClass, "min-w-0 flex-1 min-h-[44px]")} />
           {card.emailVerified ? (
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 py-1 sm:py-0">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />
               Verified
             </span>
           ) : (
             <button type="button" onClick={sendCode} disabled={!isValidEmail(card.email) || busy !== null}
-              className="rounded-lg border border-ngo-700/50 px-3 py-2 text-xs font-bold text-ngo-700 hover:bg-ngo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-ngo-300">
+              className="w-full sm:w-auto inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ngo-700/50 px-4 py-2 text-xs font-bold text-ngo-700 hover:bg-ngo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-ngo-300">
               {busy === "send" ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Sending" /> : codeSent ? "Resend code" : "Send code"}
             </button>
           )}
@@ -344,6 +419,7 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
           uploaded={card.idProof}
           onUpload={(file) => onChange({ idProof: file })}
           onRemove={() => onChange({ idProof: null })}
+          onPreview={onPreview}
         />
         {note("idProof")}
       </div>

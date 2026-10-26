@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, configure, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
@@ -35,7 +36,7 @@ export const offer = (id: number, status: string, extra: Record<string, unknown>
 });
 
 const renderSections = (drives: unknown[]) => render(
-  <NgoDashboardSections drives={drives as never} verified loading={false} error={false} onRetry={vi.fn()} startDrive={<a href="/ngo/drives/new">Start a Drive</a>} />,
+  <NgoDashboardSections drives={drives as never} verified loading={false} error={false} onRetry={vi.fn()} startDrive={<Link href="/ngo/drives/new">Start a Drive</Link>} />,
 );
 
 beforeEach(() => {

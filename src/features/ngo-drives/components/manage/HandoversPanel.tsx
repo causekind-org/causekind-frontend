@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { releaseNgoDriveOffer } from "@/lib/api";
+import { formatISTDate } from "@/lib/formatIST";
 import { toast } from "@/lib/toast";
 import { serverDate } from "@/lib/serverTime";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,7 @@ const PILL: Record<HandoverChip, string> = {
 };
 /** "Received on 19 Oct 2026 · 5 Pieces". */
 export function receivedLine(o: { receivedAt?: string | null; receivedQuantity?: number | null; quantity?: number | null; drive: { unit?: string | null } }): string {
-  const when = o.receivedAt ? serverDate(o.receivedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : null;
+  const when = o.receivedAt ? formatISTDate(o.receivedAt) : null;
   const qty = o.receivedQuantity ?? o.quantity;
   return ["Received" + (when ? ` on ${when}` : ""), qty != null ? `${qty} ${humanize(o.drive.unit)}` : null].filter(Boolean).join(" · ");
 }

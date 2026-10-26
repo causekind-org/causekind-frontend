@@ -8,6 +8,7 @@ import {
   STRUCTURE_INDEPENDENT_DOC_IDS,
   getRegistrationCertificateDoc,
   isValidMobile,
+  isValidEmail,
   aboutUsMissing,
   ABOUT_US_MIN,
   ABOUT_US_MAX,
@@ -22,6 +23,7 @@ import {
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { LegalStructureCard } from "@/features/ngo-registration/components/LegalStructureCard";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
+import { IndianPhoneInput } from "@/features/ngo-registration/components/IndianPhoneInput";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
@@ -76,7 +78,8 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
     if (!isValidPan(pan)) next.panNumber = "Enter the 10-character PAN (5 letters, 4 digits, 1 letter).";
     if (!fieldText(data.registrationNumber)) next.registrationNumber = "Registration number is required.";
     if (!fieldText(data.registeredOfficeAddress)) next.registeredOfficeAddress = "Registered office address is required.";
-    if (!isValidMobile(data.organizationPhone ?? "")) next.organizationPhone = "Valid 10-digit mobile number is required.";
+    if (!isValidEmail(data.officialEmail ?? "")) next.officialEmail = "Enter a valid email address.";
+    if (!isValidMobile(data.organizationPhone ?? "")) next.organizationPhone = "Enter a 10-digit mobile number.";
     if (aboutUsMissing(data)) next.aboutUs = `Write ${ABOUT_US_MIN} to ${ABOUT_US_MAX} characters about your NGO.`;
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -317,21 +320,36 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
           {field("registeredOfficeAddress")}
         </div>
 
-        {/* 9. Organization Phone Number */}
+        {/* 9. Organization Email Address */}
+        <div className="space-y-1">
+          <label htmlFor="ngo-org-email" className={label}>Organization Email Address {required}</label>
+          <input
+            id="ngo-org-email"
+            type="email"
+            autoComplete="email"
+            value={data.officialEmail ?? ""}
+            aria-invalid={!!errors.officialEmail}
+            onChange={(e) => {
+              onChange({ officialEmail: e.target.value });
+              if (errors.officialEmail) setErrors((p) => ({ ...p, officialEmail: "" }));
+            }}
+            className={cn(controlClass, errors.officialEmail && "border-red-400 focus-visible:border-red-400 focus-visible:outline-red-400")}
+          />
+          {field("officialEmail")}
+        </div>
+
+        {/* 10. Organization Phone Number */}
         <div className="space-y-1">
           <label htmlFor="ngo-org-phone" className={label}>Organization Phone Number {required}</label>
-          <input
+          <IndianPhoneInput
             id="ngo-org-phone"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={data.organizationPhone}
+            value={data.organizationPhone ?? ""}
+            hasError={!!errors.organizationPhone}
             aria-invalid={!!errors.organizationPhone}
-            onChange={(e) => {
-              onChange({ organizationPhone: e.target.value });
+            onChange={(formattedVal) => {
+              onChange({ organizationPhone: formattedVal });
               if (errors.organizationPhone) setErrors((p) => ({ ...p, organizationPhone: "" }));
             }}
-            className={cn(controlClass, errors.organizationPhone && "border-red-400 focus-visible:border-red-400 focus-visible:outline-red-400")}
           />
           {field("organizationPhone")}
         </div>

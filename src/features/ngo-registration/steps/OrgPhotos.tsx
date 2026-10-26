@@ -1,15 +1,17 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Camera, Check, FileImage, ImagePlus, Trash2, Upload, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { useMemo, useRef, useState, useEffect } from "react";
+import { ArrowLeft, ArrowRight, Camera, ImagePlus, Upload, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import {
   IS_NGO_DEMO_MODE,
-  getNextDemoPhotoId,
   type NGOFormState,
-  type UploadedFile,
   getNgoStillNeededItems,
 } from "@/features/ngo-registration/ngoRegistrationModel";
-import { NGO_PHOTO_RULE, uploadNgoPhoto } from "@/lib/api";
+import { NGO_PHOTO_RULE, uploadNgoPhoto, getNgoFileLink } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { UploadedFilePreview } from "@/features/ngo-registration/components/UploadedFilePreview";
+import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
 
 /** Photos: JPG, PNG or WebP, up to 10 MB (the server checks the real file too). */
 const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -17,8 +19,6 @@ export function checkNgoPhotoFile(file: File): string | null {
   const typeOk = PHOTO_TYPES.includes(file.type) || (!file.type && /\.(jpe?g|png|webp)$/i.test(file.name));
   return !typeOk || file.size === 0 || file.size > 10 * 1024 * 1024 ? NGO_PHOTO_RULE : null;
 }
-import { cn } from "@/lib/utils";
-import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 
 interface OrgPhotosProps {
   data: NGOFormState;
@@ -41,6 +41,11 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
   const [draggingLogo, setDraggingLogo] = useState(false);
   const [draggingOffice, setDraggingOffice] = useState(false);
 
+  // Local immediate blob preview URLs
+  const [localLogoBlob, setLocalLogoBlob] = useState<string | null>(null);
+  const [localOfficeBlob, setLocalOfficeBlob] = useState<string | null>(null);
+  const [localActivityBlobs, setLocalActivityBlobs] = useState<(string | null)[]>([null, null, null]);
+
   // Uploading and error state per section
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -54,12 +59,100 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
   const [activityErrors, setActivityErrors] = useState<(string | null)[]>([null, null, null]);
   const [lastActivityFiles, setLastActivityFiles] = useState<(File | null)[]>([null, null, null]);
 
+  function safeCreateObjectURL(file: File): string | null {
+    if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+      try {
+        return URL.createObjectURL(file);
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  function safeRevokeObjectURL(url: string | null) {
+    if (url && typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+      try {
+        URL.revokeObjectURL(url);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  // Clean up blob URLs on unmount
+  useEffect(() => {
+    return () => {
+      safeRevokeObjectURL(localLogoBlob);
+      safeRevokeObjectURL(localOfficeBlob);
+      localActivityBlobs.forEach((b) => {
+        safeRevokeObjectURL(b);
+      });
+    };
+  }, [localLogoBlob, localOfficeBlob, localActivityBlobs]);
+
+  // Step-level full-size viewer with previous/next arrows across all uploaded photos
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const stepPreviewFiles = useMemo(() => {
+    const out: { id: string; file: PreviewFile }[] = [];
+    if (data.logo && !data.logo.demo) {
+      out.push({
+        id: "logo",
+        file: {
+          name: `Organization Logo: ${data.logo.name}`,
+          mimeType: data.logo.mimeType,
+          resolve:
+            data.logo.photoId != null
+              ? async () => (await getNgoFileLink("photo", data.logo!.photoId!)).url
+              : undefined,
+          url: data.logo.photoId == null ? data.logo.s3Url : undefined,
+        },
+      });
+    }
+    if (data.officePhoto && !data.officePhoto.demo) {
+      out.push({
+        id: "office",
+        file: {
+          name: `Registered Office Photo: ${data.officePhoto.name}`,
+          mimeType: data.officePhoto.mimeType,
+          resolve:
+            data.officePhoto.photoId != null
+              ? async () => (await getNgoFileLink("photo", data.officePhoto!.photoId!)).url
+              : undefined,
+          url: data.officePhoto.photoId == null ? data.officePhoto.s3Url : undefined,
+        },
+      });
+    }
+    data.activityPhotos.forEach((f, i) => {
+      if (f && !f.demo) {
+        out.push({
+          id: `activity-${i}`,
+          file: {
+            name: `Activity Photo ${i + 1}: ${f.name}`,
+            mimeType: f.mimeType,
+            resolve:
+              f.photoId != null
+                ? async () => (await getNgoFileLink("photo", f!.photoId!)).url
+                : undefined,
+            url: f.photoId == null ? f.s3Url : undefined,
+          },
+        });
+      }
+    });
+    return out;
+  }, [data.logo, data.officePhoto, data.activityPhotos]);
+
+  const openPreview = (id: string) => {
+    const idx = stepPreviewFiles.findIndex((x) => x.id === id);
+    if (idx >= 0) setPreviewIndex(idx);
+  };
+
   async function performLogoUpload(file: File) {
+    const blob = safeCreateObjectURL(file);
+    setLocalLogoBlob(blob);
     setUploadingLogo(true);
     setLogoError(null);
     setLastLogoFile(file);
-
-
 
     try {
       const res = await uploadNgoPhoto(file, "logo");
@@ -74,20 +167,22 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
           demo: false,
         },
       });
+      setLogoError(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Logo upload failed. Please try another image.";
       setLogoError(msg);
+      // Keep existing data.logo intact
     } finally {
       setUploadingLogo(false);
     }
   }
 
   async function performOfficeUpload(file: File) {
+    const blob = safeCreateObjectURL(file);
+    setLocalOfficeBlob(blob);
     setUploadingOffice(true);
     setOfficeError(null);
     setLastOfficeFile(file);
-
-
 
     try {
       const res = await uploadNgoPhoto(file, "office_photo");
@@ -102,15 +197,22 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
           demo: false,
         },
       });
+      setOfficeError(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Office photo upload failed. Please try another image.";
       setOfficeError(msg);
+      // Keep existing data.officePhoto intact
     } finally {
       setUploadingOffice(false);
     }
   }
 
   async function performActivityUpload(index: number, file: File) {
+    const blob = safeCreateObjectURL(file);
+    const nextBlobs = [...localActivityBlobs];
+    nextBlobs[index] = blob;
+    setLocalActivityBlobs(nextBlobs);
+
     const nextUploading = [...uploadingActivity];
     nextUploading[index] = true;
     setUploadingActivity(nextUploading);
@@ -122,8 +224,6 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
     const nextFiles = [...lastActivityFiles];
     nextFiles[index] = file;
     setLastActivityFiles(nextFiles);
-
-
 
     try {
       const res = await uploadNgoPhoto(file, "activity_photo");
@@ -155,6 +255,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
     const refused = checkNgoPhotoFile(files[0]);
     if (refused) return setLogoError(refused);
     performLogoUpload(files[0]);
+    if (logoInputRef.current) logoInputRef.current.value = "";
   }
 
   function handleOfficeFiles(files: FileList | null) {
@@ -162,6 +263,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
     const refused = checkNgoPhotoFile(files[0]);
     if (refused) return setOfficeError(refused);
     performOfficeUpload(files[0]);
+    if (officeInputRef.current) officeInputRef.current.value = "";
   }
 
   function handleActivityFile(index: number, files: FileList | null) {
@@ -174,6 +276,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
       return;
     }
     performActivityUpload(index, files[0]);
+    if (activityInputRefs[index]?.current) activityInputRefs[index].current!.value = "";
   }
 
   function removeActivityPhoto(index: number) {
@@ -183,12 +286,22 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
     const nextErrors = [...activityErrors];
     nextErrors[index] = null;
     setActivityErrors(nextErrors);
+    const nextBlobs = [...localActivityBlobs];
+    nextBlobs[index] = null;
+    setLocalActivityBlobs(nextBlobs);
   }
 
   const missing = getNgoStillNeededItems("org-photos", data);
 
   return (
     <div className="space-y-6">
+      <FilePreviewDialog
+        files={stepPreviewFiles.map((x) => x.file)}
+        index={previewIndex}
+        onIndexChange={setPreviewIndex}
+        onClose={() => setPreviewIndex(null)}
+      />
+
       {/* Header */}
       <div className="space-y-1">
         <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
@@ -215,103 +328,111 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
               </p>
               <CorrectionNote note={corrections?.logo} />
             </div>
-            {data.logo && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-3xs font-bold text-green-700 dark:text-green-300">
-                <Check className="h-3 w-3" /> Uploaded
-              </span>
-            )}
           </div>
 
-          {data.logo ? (
-            <div className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 p-3.5 dark:border-green-900/40 dark:bg-green-950/20">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 font-bold text-xs">
-                  <FileImage className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
-                    {data.logo.name}
-                  </p>
-                  {data.logo.rejectedReason && (
-                    <p role="alert" className="mt-0.5 text-3xs font-semibold text-red-700 dark:text-red-300">{data.logo.rejectedReason}</p>
+          <input
+            ref={logoInputRef}
+            type="file"
+            accept=".png,.jpg,.jpeg,.webp"
+            className="sr-only"
+            id="ngo-logo-upload"
+            disabled={uploadingLogo}
+            onChange={(e) => handleLogoFiles(e.target.files)}
+          />
+
+          {uploadingLogo ? (
+            <div className="rounded-xl border border-ngo-300 bg-[#FAF7F2] p-4 dark:border-emerald-900/60 dark:bg-[#141E18]">
+              <div className="flex items-center gap-3">
+                <div className="h-14 w-14 shrink-0 rounded-lg overflow-hidden border border-stone-200 dark:border-zinc-700 bg-stone-100 dark:bg-zinc-800 flex items-center justify-center">
+                  {localLogoBlob ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={localLogoBlob} alt="Uploading logo" className="h-full w-full object-cover" />
+                  ) : (
+                    <Loader2 className="h-5 w-5 animate-spin text-ngo-700" />
                   )}
-                  <p className="text-3xs text-stone-500 dark:text-stone-400">
-                    {data.logo.demo ? "Demo Logo Asset" : "Uploaded Image"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-ngo-700 dark:text-ngo-300 shrink-0" />
+                    <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                      Uploading & moderating logo…
+                    </p>
+                  </div>
+                  <p className="mt-0.5 text-3xs text-stone-500 dark:text-stone-400">
+                    Running AI content moderation check
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
+            </div>
+          ) : data.logo ? (
+            <div>
+              <UploadedFilePreview
+                file={data.logo}
+                label="Organization Logo"
+                kind="photo"
+                localBlobUrl={localLogoBlob}
+                onPreview={() => openPreview("logo")}
+                onReplace={() => logoInputRef.current?.click()}
+                onRemove={() => {
+                  setLocalLogoBlob(null);
                   onChange({ logo: null });
                   setLogoError(null);
                 }}
-                className="text-2xs font-bold text-stone-400 hover:text-red-500 transition-colors p-1"
-                aria-label="Remove logo"
-              >
-                Remove
-              </button>
+              />
+              {logoError && (
+                <div className="mt-1.5 rounded-lg border border-red-200 bg-red-50 p-2 text-2xs text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    Replacement failed: {logoError} (kept previous logo)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (lastLogoFile) performLogoUpload(lastLogoFile);
+                      else logoInputRef.current?.click();
+                    }}
+                    className="shrink-0 font-bold underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/60 dark:bg-zinc-900/40 overflow-hidden">
-              <input
-                ref={logoInputRef}
-                type="file"
-                accept=".png,.jpg,.jpeg,.webp"
-                className="sr-only"
-                id="ngo-logo-upload"
-                disabled={uploadingLogo}
-                onChange={(e) => handleLogoFiles(e.target.files)}
-              />
+            <div className="rounded-xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] overflow-hidden">
               <div
                 role="button"
                 tabIndex={0}
                 onDragOver={(e) => {
-                  if (uploadingLogo) return;
                   e.preventDefault();
                   setDraggingLogo(true);
                 }}
                 onDragLeave={() => setDraggingLogo(false)}
                 onDrop={(e) => {
-                  if (uploadingLogo) return;
                   e.preventDefault();
                   setDraggingLogo(false);
                   handleLogoFiles(e.dataTransfer.files);
                 }}
-                onClick={() => {
-                  if (!uploadingLogo) logoInputRef.current?.click();
-                }}
+                onClick={() => logoInputRef.current?.click()}
                 onKeyDown={(e) => {
-                  if (!uploadingLogo && (e.key === "Enter" || e.key === " ")) {
+                  if (e.key === "Enter" || e.key === " ") {
                     logoInputRef.current?.click();
                   }
                 }}
                 aria-label="Upload organization logo"
                 className={cn(
                   "m-3 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed py-4 transition-colors",
-                  uploadingLogo
-                    ? "border-ngo-700/40 bg-ngo-700/5 cursor-wait"
-                    : draggingLogo
+                  draggingLogo
                     ? "border-ngo-700 bg-ngo-700/5 cursor-pointer"
                     : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50 cursor-pointer"
                 )}
               >
-                {uploadingLogo ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin text-ngo-700" aria-hidden />
-                    <p className="text-2xs font-bold text-ngo-700">Uploading & moderating logo…</p>
-                    <p className="text-3xs text-stone-400">Running AI content moderation check</p>
-                  </>
-                ) : (
-                  <>
-                    <Upload className="h-5 w-5 text-stone-400" aria-hidden />
-                    <p className="text-2xs font-semibold text-stone-600 dark:text-stone-300">Click or drag logo here</p>
-                    <p className="text-3xs text-stone-400">PNG, JPG or WebP · Max 10 MB</p>
-                  </>
-                )}
+                <Upload className="h-5 w-5 text-stone-400" aria-hidden />
+                <p className="text-2xs font-semibold text-stone-600 dark:text-stone-300">Click or drag logo here</p>
+                <p className="text-3xs text-stone-400">PNG, JPG or WebP · Max 10 MB</p>
               </div>
 
-              {/* TEMPORARY: Demo Mode shortcut — instant complete on click */}
+              {/* Demo Mode shortcut */}
               {IS_NGO_DEMO_MODE && (
                 <div className="border-t border-stone-200/70 dark:border-zinc-800 px-3.5 py-1.5 flex items-center justify-between bg-stone-100/50 dark:bg-zinc-800/40">
                   <span className="text-3xs font-medium text-stone-400 dark:text-stone-500">Demo mode active</span>
@@ -366,103 +487,111 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
               </p>
               <CorrectionNote note={corrections?.officePhoto} />
             </div>
-            {data.officePhoto && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/40 px-2 py-0.5 text-3xs font-bold text-green-700 dark:text-green-300">
-                <Check className="h-3 w-3" /> Uploaded
-              </span>
-            )}
           </div>
 
-          {data.officePhoto ? (
-            <div className="flex items-center justify-between rounded-xl border border-green-200 bg-green-50 p-3.5 dark:border-green-900/40 dark:bg-green-950/20">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 font-bold text-xs">
-                  <Camera className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-stone-800 dark:text-stone-200 truncate">
-                    {data.officePhoto.name}
-                  </p>
-                  {data.officePhoto.rejectedReason && (
-                    <p role="alert" className="mt-0.5 text-3xs font-semibold text-red-700 dark:text-red-300">{data.officePhoto.rejectedReason}</p>
+          <input
+            ref={officeInputRef}
+            type="file"
+            accept=".png,.jpg,.jpeg,.webp"
+            className="sr-only"
+            id="ngo-office-upload"
+            disabled={uploadingOffice}
+            onChange={(e) => handleOfficeFiles(e.target.files)}
+          />
+
+          {uploadingOffice ? (
+            <div className="rounded-xl border border-ngo-300 bg-[#FAF7F2] p-4 dark:border-emerald-900/60 dark:bg-[#141E18]">
+              <div className="flex items-center gap-3">
+                <div className="h-14 w-14 shrink-0 rounded-lg overflow-hidden border border-stone-200 dark:border-zinc-700 bg-stone-100 dark:bg-zinc-800 flex items-center justify-center">
+                  {localOfficeBlob ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={localOfficeBlob} alt="Uploading office photo" className="h-full w-full object-cover" />
+                  ) : (
+                    <Loader2 className="h-5 w-5 animate-spin text-ngo-700" />
                   )}
-                  <p className="text-3xs text-stone-500 dark:text-stone-400">
-                    {data.officePhoto.demo ? "Demo Office Image" : "Uploaded Image"}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin text-ngo-700 dark:text-ngo-300 shrink-0" />
+                    <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                      Uploading office photo…
+                    </p>
+                  </div>
+                  <p className="mt-0.5 text-3xs text-stone-500 dark:text-stone-400">
+                    Running AI moderation check
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
+            </div>
+          ) : data.officePhoto ? (
+            <div>
+              <UploadedFilePreview
+                file={data.officePhoto}
+                label="Registered Office Photo"
+                kind="photo"
+                localBlobUrl={localOfficeBlob}
+                onPreview={() => openPreview("office")}
+                onReplace={() => officeInputRef.current?.click()}
+                onRemove={() => {
+                  setLocalOfficeBlob(null);
                   onChange({ officePhoto: null });
                   setOfficeError(null);
                 }}
-                className="text-2xs font-bold text-stone-400 hover:text-red-500 transition-colors p-1"
-                aria-label="Remove office photo"
-              >
-                Remove
-              </button>
+              />
+              {officeError && (
+                <div className="mt-1.5 rounded-lg border border-red-200 bg-red-50 p-2 text-2xs text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-1.5">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                    Replacement failed: {officeError} (kept previous photo)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (lastOfficeFile) performOfficeUpload(lastOfficeFile);
+                      else officeInputRef.current?.click();
+                    }}
+                    className="shrink-0 font-bold underline"
+                  >
+                    Retry
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
-            <div className="rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/60 dark:bg-zinc-900/40 overflow-hidden">
-              <input
-                ref={officeInputRef}
-                type="file"
-                accept=".png,.jpg,.jpeg,.webp"
-                className="sr-only"
-                id="ngo-office-upload"
-                disabled={uploadingOffice}
-                onChange={(e) => handleOfficeFiles(e.target.files)}
-              />
+            <div className="rounded-xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] overflow-hidden">
               <div
                 role="button"
                 tabIndex={0}
                 onDragOver={(e) => {
-                  if (uploadingOffice) return;
                   e.preventDefault();
                   setDraggingOffice(true);
                 }}
                 onDragLeave={() => setDraggingOffice(false)}
                 onDrop={(e) => {
-                  if (uploadingOffice) return;
                   e.preventDefault();
                   setDraggingOffice(false);
                   handleOfficeFiles(e.dataTransfer.files);
                 }}
-                onClick={() => {
-                  if (!uploadingOffice) officeInputRef.current?.click();
-                }}
+                onClick={() => officeInputRef.current?.click()}
                 onKeyDown={(e) => {
-                  if (!uploadingOffice && (e.key === "Enter" || e.key === " ")) {
+                  if (e.key === "Enter" || e.key === " ") {
                     officeInputRef.current?.click();
                   }
                 }}
                 aria-label="Upload office photo"
                 className={cn(
                   "m-3 flex flex-col items-center justify-center gap-1.5 rounded-lg border-2 border-dashed py-4 transition-colors",
-                  uploadingOffice
-                    ? "border-ngo-700/40 bg-ngo-700/5 cursor-wait"
-                    : draggingOffice
+                  draggingOffice
                     ? "border-ngo-700 bg-ngo-700/5 cursor-pointer"
                     : "border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50 cursor-pointer"
                 )}
               >
-                {uploadingOffice ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin text-ngo-700" aria-hidden />
-                    <p className="text-2xs font-bold text-ngo-700">Uploading office photo…</p>
-                    <p className="text-3xs text-stone-400">Running AI moderation check</p>
-                  </>
-                ) : (
-                  <>
-                    <Camera className="h-5 w-5 text-stone-400" aria-hidden />
-                    <p className="text-2xs font-semibold text-stone-600 dark:text-stone-300">Click or drag office photo</p>
-                    <p className="text-3xs text-stone-400">JPG, PNG, WebP · Max 10 MB</p>
-                  </>
-                )}
+                <Camera className="h-5 w-5 text-stone-400" aria-hidden />
+                <p className="text-2xs font-semibold text-stone-600 dark:text-stone-300">Click or drag office photo</p>
+                <p className="text-3xs text-stone-400">JPG, PNG, WebP · Max 10 MB</p>
               </div>
 
-              {/* TEMPORARY: Demo Mode shortcut — instant complete on click */}
+              {/* Demo Mode shortcut */}
               {IS_NGO_DEMO_MODE && (
                 <div className="border-t border-stone-200/70 dark:border-zinc-800 px-3.5 py-1.5 flex items-center justify-between bg-stone-100/50 dark:bg-zinc-800/40">
                   <span className="text-3xs font-medium text-stone-400 dark:text-stone-500">Demo mode active</span>
@@ -521,17 +650,14 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 gap-2.5">
             {[0, 1, 2].map((idx) => {
               const photo = data.activityPhotos[idx];
               const isUploadingThis = uploadingActivity[idx];
               const err = activityErrors[idx];
 
               return (
-                <div
-                  key={idx}
-                  className="rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/60 dark:bg-zinc-900/40 p-3 flex flex-col justify-between"
-                >
+                <div key={idx} className="space-y-1">
                   <CorrectionNote note={corrections?.[`activityPhotos.${idx}`]} />
                   <input
                     ref={activityInputRefs[idx]}
@@ -543,67 +669,81 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
                     onChange={(e) => handleActivityFile(idx, e.target.files)}
                   />
 
-                  {photo ? (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-md bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 text-3xs font-bold">
-                          #{idx + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => removeActivityPhoto(idx)}
-                          className="text-stone-400 hover:text-red-500 transition-colors"
-                          title="Remove photo"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <div className="rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900/30 p-2 text-center">
-                        <Check className="h-4 w-4 text-green-600 mx-auto mb-1" />
-                        <p className="text-3xs font-bold text-stone-700 dark:text-stone-300 truncate">
-                          {photo.name}
-                        </p>
-                        {photo.rejectedReason && (
-                          <p role="alert" className="mt-0.5 text-3xs font-semibold text-red-700 dark:text-red-300">{photo.rejectedReason}</p>
-                        )}
+                  {isUploadingThis ? (
+                    <div className="rounded-xl border border-ngo-300 bg-[#FAF7F2] p-4 dark:border-emerald-900/60 dark:bg-[#141E18]">
+                      <div className="flex items-center gap-3">
+                        <div className="h-14 w-14 shrink-0 rounded-lg overflow-hidden border border-stone-200 dark:border-zinc-700 bg-stone-100 dark:bg-zinc-800 flex items-center justify-center">
+                          {localActivityBlobs[idx] ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={localActivityBlobs[idx]!} alt={`Uploading activity photo ${idx + 1}`} className="h-full w-full object-cover" />
+                          ) : (
+                            <Loader2 className="h-5 w-5 animate-spin text-ngo-700" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-ngo-700 dark:text-ngo-300 shrink-0" />
+                            <p className="text-xs font-bold text-stone-800 dark:text-stone-200">
+                              Uploading activity photo {idx + 1}…
+                            </p>
+                          </div>
+                          <p className="mt-0.5 text-3xs text-stone-500 dark:text-stone-400">
+                            Running AI moderation check
+                          </p>
+                        </div>
                       </div>
                     </div>
+                  ) : photo ? (
+                    <div>
+                      <UploadedFilePreview
+                        file={photo}
+                        label={`Activity Photo ${idx + 1}`}
+                        kind="photo"
+                        localBlobUrl={localActivityBlobs[idx]}
+                        onPreview={() => openPreview(`activity-${idx}`)}
+                        onReplace={() => activityInputRefs[idx].current?.click()}
+                        onRemove={() => removeActivityPhoto(idx)}
+                      />
+                      {err && (
+                        <div className="mt-1 rounded-lg border border-red-200 bg-red-50 p-2 text-2xs text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 flex items-center justify-between gap-2">
+                          <span className="flex items-center gap-1.5">
+                            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                            {err}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const f = lastActivityFiles[idx];
+                              if (f) performActivityUpload(idx, f);
+                              else activityInputRefs[idx].current?.click();
+                            }}
+                            className="shrink-0 font-bold underline"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ) : (
-                    <div className="space-y-2 flex-1 flex flex-col justify-between">
+                    <div className="rounded-xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-3 flex flex-col justify-between">
                       <div
                         role="button"
                         tabIndex={0}
-                        onClick={() => {
-                          if (!isUploadingThis) activityInputRefs[idx].current?.click();
-                        }}
+                        onClick={() => activityInputRefs[idx].current?.click()}
                         onKeyDown={(e) => {
-                          if (!isUploadingThis && (e.key === "Enter" || e.key === " ")) {
+                          if (e.key === "Enter" || e.key === " ") {
                             activityInputRefs[idx].current?.click();
                           }
                         }}
-                        className={cn(
-                          "border-2 border-dashed border-stone-200 dark:border-zinc-700 hover:border-ngo-700/50 rounded-lg p-3 text-center transition-colors flex-1 flex flex-col items-center justify-center min-h-[90px]",
-                          isUploadingThis ? "cursor-wait bg-ngo-700/5 border-ngo-700/40" : "cursor-pointer"
-                        )}
+                        className="border-2 border-dashed border-[#EADBCE] dark:border-emerald-950/60 hover:border-ngo-700/50 rounded-lg p-3 text-center transition-colors flex flex-col items-center justify-center min-h-[70px] cursor-pointer"
                       >
-                        {isUploadingThis ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin text-ngo-700 mb-1" />
-                            <span className="text-3xs font-bold text-ngo-700">
-                              Uploading…
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <ImagePlus className="h-5 w-5 text-stone-400 mb-1" />
-                            <span className="text-3xs font-semibold text-stone-600 dark:text-stone-300">
-                              Add Photo {idx + 1}
-                            </span>
-                          </>
-                        )}
+                        <ImagePlus className="h-5 w-5 text-stone-400 mb-1" />
+                        <span className="text-3xs font-semibold text-stone-600 dark:text-stone-300">
+                          Add Activity Photo {idx + 1}
+                        </span>
                       </div>
 
-                      {/* TEMPORARY: Demo Mode shortcut — quick complete */}
+                      {/* Demo Mode shortcut */}
                       {IS_NGO_DEMO_MODE && (
                         <div className="pt-1 text-center">
                           <button
@@ -622,7 +762,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
                       )}
 
                       {err && (
-                        <div className="rounded bg-red-50 dark:bg-red-950/20 p-1.5 flex items-center justify-between text-3xs text-red-600">
+                        <div className="rounded bg-red-50 dark:bg-red-950/20 p-1.5 flex items-center justify-between text-3xs text-red-600 mt-1">
                           <span className="truncate">{err}</span>
                           <button
                             type="button"
