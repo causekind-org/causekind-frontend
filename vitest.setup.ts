@@ -10,6 +10,9 @@ configure({ asyncUtilTimeout: 8000 });
 // the off state has its own test (register/NgoComingSoon.test.tsx).
 process.env.NEXT_PUBLIC_NGO_ENABLED ??= "true";
 
+// jsdom logs "not implemented" for scrolling; nothing under test depends on it.
+window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();

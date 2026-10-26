@@ -245,7 +245,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
 
     render(<NgoDetailsPage />);
     await stepHeading(2);
-    expect(window.location.search).toBe("?step=legal-documents");
+    // The URL is synced in an effect after the step renders.
+    await waitFor(() => expect(window.location.search).toBe("?step=legal-documents"));
 
     // The page still reports ?step=legal-documents through useSearchParams, exactly the
     // situation in which the old effect snapped the wizard back to Step 2.
@@ -258,7 +259,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
 
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(screen.getAllByText(/Step 4 of 6/).length).toBeGreaterThanOrEqual(1);
-    expect(window.location.search).toBe("?step=org-photos");
+    // The URL is synced in an effect after the step renders.
+    await waitFor(() => expect(window.location.search).toBe("?step=org-photos"));
   }, 20000);
 
   it("prefers the URL step over the draft's saved step, and otherwise resumes the draft and writes it to the URL", async () => {
@@ -276,7 +278,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     window.history.replaceState(null, "", "/profile/ngo-details");
     render(<NgoDetailsPage />);
     await stepHeading(4);
-    expect(window.location.search).toBe("?step=org-photos");
+    // The URL is synced in an effect after the step renders.
+    await waitFor(() => expect(window.location.search).toBe("?step=org-photos"));
   }, 20000);
 
   it("ignores a ?step= that names no step or the email step", async () => {
@@ -288,7 +291,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     mockStepParam = "email-verification";
     render(<NgoDetailsPage />);
     await stepHeading(1);
-    expect(window.location.search).toBe("?step=org-details");
+    // The URL is synced in an effect after the step renders.
+    await waitFor(() => expect(window.location.search).toBe("?step=org-details"));
   }, 15000);
 
   it("offers Resend immediately on the restored OTP step and verifies against the restored application", async () => {

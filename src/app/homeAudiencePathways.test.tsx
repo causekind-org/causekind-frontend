@@ -107,6 +107,23 @@ vi.mock("@/components/home/CTASection", () => ({ CTASection: () => null }));
 // next/dynamic with ssr:false. Nothing here depends on what it draws.
 vi.mock("@/components/LightRays", () => ({ default: () => null }));
 
+// gsap-driven chrome from the cinematic landing: stubbed so no ScrollTrigger sync
+// interval or animation timer starts and outlives this file.
+// Every gsap call (to, timeline, matchMedia().add, context().revert, …) is a no-op
+// that returns another no-op, so sections can chain whatever they like.
+vi.mock("gsap", () => {
+  const noop: unknown = new Proxy(function () {}, { get: () => noop, apply: () => noop });
+  return { gsap: noop, default: noop };
+});
+vi.mock("gsap/ScrollTrigger", () => {
+  const noop: unknown = new Proxy(function () {}, { get: () => noop, apply: () => noop });
+  return { ScrollTrigger: noop, default: noop };
+});
+vi.mock("@/components/SmoothScroll", () => ({ SmoothScroll: () => null, getLenis: () => null }));
+vi.mock("@/components/cinematic/HeroFilm", () => ({
+  HeroFilm: ({ hero }: { hero: React.ReactNode }) => <>{hero}</>,
+}));
+
 import HomeClient from "./HomeClient";
 
 /**

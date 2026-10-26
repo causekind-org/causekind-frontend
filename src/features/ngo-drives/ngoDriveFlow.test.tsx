@@ -40,10 +40,16 @@ vi.mock("@/lib/api", async (importOriginal) => ({ ...(await importOriginal<Recor
 const auth = vi.hoisted(() => ({ user: { email: "ngo@x.test", role: "NGO_PARTNER" } as { email: string; role: string } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: auth.user, isLoading: false }) }));
 vi.mock("@/hooks/useEntityUpdates", () => ({ useEntityUpdates: () => {} }));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ id: "7", offerId: "11" }),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
+// One router object for every render, as Next's is: the handover page's load effect
+// depends on `router`, so a fresh object each render re-ran the load and a later
+// successful call could replace the error screen before the test saw it.
+vi.mock("next/navigation", () => {
+  const router = { push: vi.fn(), replace: vi.fn() };
+  return {
+    useParams: () => ({ id: "7", offerId: "11" }),
+    useRouter: () => router,
+  };
+});
 vi.mock("@/features/handover/HandoverHubShell", () => ({
   HandoverHubShell: ({ vm }: { vm: { state: string } }) => <div data-testid="hub">{vm.state}</div>,
 }));
