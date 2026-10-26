@@ -3837,7 +3837,8 @@
     "change_your_name_or_phone_4328c3d8": "Cambiar tu nombre o teléfono",
     "not_added_yet_18e34a9e": "Aún no añadido",
     "something_wrong_or_missing_change_42928e5c": "¿Algo incorrecto o falta algo? Cámbialo en tu perfil y vuelve: tu solicitud está guardada.",
-    "these_details_come_from_your_b767d1ad": "Estos datos vienen de tu perfil y no se pueden cambiar aquí. Si algo está mal, cámbialo en tu perfil: el cambio aparecerá aquí cuando vuelvas."
+    "these_details_come_from_your_b767d1ad": "Estos datos vienen de tu perfil y no se pueden cambiar aquí. Si algo está mal, cámbialo en tu perfil: el cambio aparecerá aquí cuando vuelvas.",
+    "amount_you_want_to_raise_0c849b11": "Cantidad que quieres recaudar"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

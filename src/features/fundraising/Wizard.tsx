@@ -297,7 +297,8 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
               value={/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? app.urgency! : ""}
               onChange={(e) => set({ urgency: e.target.value })} />
             <p className={s.hint}><UiText>The date of the surgery, fee deadline or bill — as exact as you can.</UiText></p></div>
-          <div><label className={s.lbl} htmlFor="rq"><UiText>Related CauseKind item request</UiText> <FieldInfo localize k="rq" /><span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></label><input id="rq" className={s.in} inputMode="numeric" placeholder={ui("Request number")} value={app.linkedItemRequestId ?? ""} onChange={(e) => set({ linkedItemRequestId: num(e.target.value) })} /></div>
+          {/* The amount comes first (owner, 2026-10-26); the breakdown below explains it. */}
+          <div><label className={s.lbl} htmlFor="ask"><UiText>Amount you want to raise (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
         </div>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
@@ -333,7 +334,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Total costs entered</UiText></span><span>{formatINR(total)}</span></div>
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Other help</UiText></span><span>− {formatINR(help)}</span></div>
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #e7ddd2", fontWeight: 700 }}><span><UiText>Outstanding gap</UiText></span><span>{formatINR(gap)}</span></div>
-          <div style={{ marginTop: 10 }}><label className={s.lbl} htmlFor="ask"><UiText>Amount you want to raise (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" style={{ maxWidth: 240 }} value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
+          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Amount you want to raise</UiText></span><span>{formatINR(app.requestedAmount ?? 0)}</span></div>
           {mismatch && (
             <div style={{ marginTop: 12, display: "flex", gap: 10, alignItems: "flex-start", padding: "12px 14px", borderRadius: 10, background: "#fdf3e1", color: "#5c3800", flexDirection: "column" }}>
               <p className={s.small}><strong><UiText>These don&apos;t add up yet.</UiText></strong> <UiText>The amount you want to raise differs from the gap shown. That&apos;s often a missing cost — add it above, or tell us why in a sentence. Reviewers will ask about any difference.</UiText></p>

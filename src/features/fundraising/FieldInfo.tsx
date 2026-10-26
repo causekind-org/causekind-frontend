@@ -27,7 +27,6 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   cat: { title: "Category", text: "What the money is mainly for. Pick the closest one â it decides which documents we ask for." },
   wh: { title: "What happened", text: "Explain simply what happened and what the money will pay for. Reviewers read this; you'll write the public story later." },
   ur: { title: "Needed by", text: "The date you need the money by â the surgery date, fee deadline or bill due date. Be as exact as you can." },
-  rq: { title: "Related item request", text: "Only if you also asked for items (not money) on CauseKind for the same need. Enter that request number. Otherwise leave it blank." },
   costs: { title: "Cost breakdown", text: "Optional, but it helps reviewers. List each expense with its amount, e.g. âSurgery â¹80,000â, âMedicines â¹12,000â. Add the bill or quote number if you have it." },
   help: { title: "Other help", text: "Money you already have or expect from elsewhere. We subtract it from your costs to work out what's still needed. Enter 0 if none." },
   insuranceAmount: { title: "Insurance", text: "How much your insurance will pay towards these costs. 0 if none." },
