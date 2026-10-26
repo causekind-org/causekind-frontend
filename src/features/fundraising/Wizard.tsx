@@ -262,8 +262,8 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
   const edit = (i: number, patch: Partial<FundraisingCostItem>) => setCosts(costs.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   const num = (v: string) => (v.trim() === "" ? null : Number(v.replace(/,/g, "")));
   const total = costs.reduce((t, c) => t + (c.amount ?? 0), 0);
-  const help = (app.insuranceAmount ?? 0) + (app.ownContribution ?? 0) + (app.grantsAmount ?? 0) + (app.otherFundraisingAmount ?? 0);
-  const gap = total - help;
+  // Money the donee already has is recorded for reviewers but not subtracted (owner, 2026-10-26).
+  const gap = total;
   const mismatch = app.requestedAmount != null && total > 0 && Math.abs(app.requestedAmount - gap) > 0.5;
   // A row in use needs an amount and a supporting reference (owner, 2026-10-26).
   const used = (c: FundraisingCostItem) => c.expense.trim() !== "" || c.amount != null;
@@ -347,7 +347,6 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
         <section className={s.card} style={{ background: "#fbf8f4", padding: "18px 20px" }} aria-labelledby="gap">
           <h2 id="gap" className={s.sec} style={{ marginBottom: 6 }}><UiText>Money still needed</UiText></h2>
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Total cost</UiText></span><span>{formatINR(total)}</span></div>
-          <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Money you already have</UiText></span><span>− {formatINR(help)}</span></div>
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderTop: "1px solid #e7ddd2", fontWeight: 700 }}><span><UiText>Still needed</UiText></span><span>{formatINR(gap)}</span></div>
           <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0" }}><span><UiText>Money you asked for</UiText></span><span>{formatINR(app.requestedAmount ?? 0)}</span></div>
           {mismatch && (
@@ -502,7 +501,7 @@ function Review({ app, set, flush, goTo, onSubmitted }: {
       <Heading title={ui("Check and submit")} sub={ui("Reviewers will see exactly what's below. You can't edit it while it's being reviewed.")} />
       <div className={s.card} style={{ maxWidth: 860, overflow: "hidden" }}>
         {sec(ui("Who needs help", "wizard step"), 1, <dl style={kv}><dt className={s.muted}><UiText>For</UiText></dt><dd>{app.forSelf ? ui("Myself") : t("beneficiaryPrivate", { legal: app.beneficiaryLegalName ?? "—", shown: app.beneficiaryDisplayName ?? "—" })}</dd>{!app.forSelf && <><dt className={s.muted}><UiText>Relationship</UiText></dt><dd>{app.relationship ? choiceLabel(app.relationship) : "—"} · {app.beneficiaryAgeRange ? choiceLabel(app.beneficiaryAgeRange) : "—"}</dd></>}</dl>, true)}
-        {sec(ui("The need", "wizard step"), 2, <dl style={kv}><dt className={s.muted}><UiText>Category</UiText></dt><dd>{app.category ? fmt.category(app.category) : "—"}</dd><dt className={s.muted}><UiText>Costs</UiText></dt><dd>{t("costsAcross", { amount: formatINR(app.totalCosts), count: app.costItems.length })}</dd><dt className={s.muted}><UiText>Other help</UiText></dt><dd>{formatINR(app.totalCosts - app.outstandingGap)}</dd><dt className={s.muted}><UiText>Raising</UiText></dt><dd>{formatINR(app.requestedAmount)}</dd></dl>)}
+        {sec(ui("The need", "wizard step"), 2, <dl style={kv}><dt className={s.muted}><UiText>Category</UiText></dt><dd>{app.category ? fmt.category(app.category) : "—"}</dd><dt className={s.muted}><UiText>Costs</UiText></dt><dd>{t("costsAcross", { amount: formatINR(app.totalCosts), count: app.costItems.length })}</dd><dt className={s.muted}><UiText>Other help</UiText></dt><dd>{formatINR((app.insuranceAmount ?? 0) + (app.ownContribution ?? 0) + (app.grantsAmount ?? 0) + (app.otherFundraisingAmount ?? 0))}</dd><dt className={s.muted}><UiText>Raising</UiText></dt><dd>{formatINR(app.requestedAmount)}</dd></dl>)}
         {sec(ui("Evidence", "wizard step"), 3, <p className={s.small}>{t("documentsReady", { count: app.evidence.filter((e) => !e.superseded).length })}</p>)}
       </div>
       <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>

@@ -4056,7 +4056,7 @@
     },
     "help": {
       "title": "Dinero que ya tienes",
-      "text": "El dinero que ya tienes o que recibirás de otro lugar. Lo restamos del coste total. Escribe 0 si no hay."
+      "text": "El dinero que ya tienes o que recibirás de otro lugar. Nuestro equipo lo revisa, pero no se resta del total. Escribe 0 si no hay."
     },
     "insuranceAmount": {
       "title": "Del seguro",

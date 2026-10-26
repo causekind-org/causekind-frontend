@@ -29,7 +29,7 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   ur: { title: "Date", text: "The day you need the money by. For example, the day of the operation or the last day to pay fees." },
   costs: { title: "What the money pays for", text: "You can skip this, but it helps. Write each thing, how much it costs, and the number on its bill. Example: “Operation ₹80,000 · Bill 4512”." },
   ref: { title: "Bill or receipt number", text: "The number printed on the bill, receipt or price paper for this thing. It helps us check your papers." },
-  help: { title: "Money you already have", text: "Money you have now, or will get from somewhere else. We take it away from the total cost. Write 0 if none." },
+  help: { title: "Money you already have", text: "Money you have now, or will get from somewhere else. Our team looks at it, but it is not taken away from the total. Write 0 if none." },
   insuranceAmount: { title: "From insurance", text: "How much your insurance will pay. Write 0 if none." },
   ownContribution: { title: "From you or your family", text: "How much you or your family can pay. Write 0 if none." },
   grantsAmount: { title: "From schemes or grants", text: "Money from a government scheme, scholarship or trust. Write 0 if none." },

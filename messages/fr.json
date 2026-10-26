@@ -4056,7 +4056,7 @@
     },
     "help": {
       "title": "Argent que vous avez déjà",
-      "text": "L’argent que vous avez déjà, ou que vous recevrez d’ailleurs. Nous l’enlevons du coût total. Écrivez 0 s’il n’y en a pas."
+      "text": "L’argent que vous avez déjà, ou que vous recevrez d’ailleurs. Notre équipe le regarde, mais il n’est pas retiré du total. Écrivez 0 s’il n’y en a pas."
     },
     "insuranceAmount": {
       "title": "De l’assurance",

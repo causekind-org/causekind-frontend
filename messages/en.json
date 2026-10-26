@@ -4925,7 +4925,7 @@
     },
     "help": {
       "title": "Money you already have",
-      "text": "Money you have now, or will get from somewhere else. We take it away from the total cost. Write 0 if none."
+      "text": "Money you have now, or will get from somewhere else. Our team looks at it, but it is not taken away from the total. Write 0 if none."
     },
     "insuranceAmount": {
       "title": "From insurance",
