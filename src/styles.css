@@ -5103,3 +5103,9 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   --color-emerald-900: var(--color-brand-700);
   --color-emerald-950: var(--color-brand-900);
 }
+
+/* Bottom-bar "back to top" moves focus to <main> (lib/scrollToTop.ts). Hide the
+   outline for touch/mouse, keep it for keyboard users. */
+main:focus:not(:focus-visible) {
+  outline: none;
+}

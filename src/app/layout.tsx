@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
 import Script from "next/script";
 import { RouteProgressBar } from "@/components/RouteProgressBar";
+import { FilmViewObserver } from "@/components/FilmViewObserver";
 import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -179,6 +180,7 @@ export default async function RootLayout({
                 <Suspense fallback={null}>
                   <RouteProgressBar />
                 </Suspense>
+                <FilmViewObserver />
                 <RoleThemeBridge />
                 <SuperAdminRedirect />
                 <AdminRedirect />
@@ -194,7 +196,7 @@ export default async function RootLayout({
                 >
                   <ScrollProgress />
                   <SiteHeader />
-                  <main className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
+                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
                   <SiteFooter />
                   {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <MobileBottomNav />
