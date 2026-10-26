@@ -156,8 +156,10 @@ function Heading({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-// F03 — A1 About you. Prefilled and read-only here: these live on the account
-// and donee profile, and the handoff says never ask for them twice.
+// F03 — A1 About you. Read-only here by owner decision (2026-10-26): these live on
+// the account and donee profile and are changed only there. Name and phone come
+// from useAuth, which profile saves keep current (updateUser); age and address are
+// re-fetched each time the form opens, so profile edits show up on return.
 function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNext: () => void }) {
   const ui = useUiText();
   const { user } = useAuth();
@@ -167,7 +169,7 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
   const address = profile?.details?.addressLandmark?.trim() || city || "";
   return (
     <>
-      <Heading title={ui("About you")} sub={ui("We filled in what we already know from your account and donee profile. Check it, and correct anything out of date.")} />
+      <Heading title={ui("About you")} sub={ui("These details come from your profile and can't be changed here. If anything is wrong, update it in your profile — the change shows here when you come back.")} />
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 22, maxWidth: 820 }}>
         <div className={s.grid2}>
           <div><label className={s.lbl} htmlFor="nm"><UiText>Legal name</UiText> <FieldInfo localize k="nm" /><span className={`${s.chip} ${s.cM}`}><UiText>From your profile</UiText></span></label><input id="nm" className={s.in} value={user?.fullName ?? ""} readOnly /><p className={s.hint}><UiText>As it appears on your government ID.</UiText></p></div>
@@ -178,9 +180,12 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
             : <p className={s.hint}><UiText>Not in your profile yet.</UiText> <Link href="/profile/need-details"><UiText>Add your address</UiText></Link> <UiText>— your application is saved.</UiText></p>}</div>
         <div className={s.grid2}>
           <div><label className={s.lbl} htmlFor="em"><UiText>Email</UiText> <FieldInfo localize k="em" /><span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Verified</UiText></span></label><input id="em" className={s.in} value={user?.email ?? ""} readOnly style={{ background: "#f7f3ee" }} /><p className={s.hint}><UiText>Verified with a code when you signed up.</UiText></p></div>
-          <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText> <FieldInfo localize k="ph" /><span className={`${s.chip} ${s.cM}`}><Icon name="alert" /><UiText>Not verified</UiText></span></label><input id="ph" className={s.in} value={user?.phone ?? ""} readOnly /><p className={s.hint}><UiText>We may ask you to verify this later.</UiText></p></div>
+          <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText> <FieldInfo localize k="ph" /><span className={`${s.chip} ${s.cM}`}><Icon name="alert" /><UiText>Not verified</UiText></span></label><input id="ph" className={s.in} value={user?.phone ?? ""} placeholder={ui("Not added yet")} readOnly /><p className={s.hint}><UiText>We may ask you to verify this later.</UiText></p></div>
         </div>
-        <p className={`${s.muted} ${s.small}`}><UiText>Something out of date?</UiText> <Link href="/profile/need-details"><UiText>Update your profile</UiText></Link><UiText>, then come back — your application is saved.</UiText></p>
+        <div className={`${s.muted} ${s.small}`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <p><UiText>Something wrong or missing? Change it in your profile, then come back — your application is saved.</UiText></p>
+          <p><Link href="/profile"><UiText>Change your name or phone</UiText></Link> · <Link href="/profile/need-details"><UiText>Change your age or address</UiText></Link></p>
+        </div>
         <Nav onNext={onNext} />
       </div>
     </>

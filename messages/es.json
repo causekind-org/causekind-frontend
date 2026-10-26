@@ -3832,7 +3832,12 @@
     "unlock_verification_and_drives_9dfc125e": "Accede a la verificaci?n y a las colectas",
     "upload_proof_10ebbbb2": "Subir comprobante",
     "we_ll_show_you_the_0033327a": "Te mostraremos las necesidades m?s urgentes de tu zona.",
-    "where_will_you_make_an_f7933f35": "?D?nde quieres ayudar?"
+    "where_will_you_make_an_f7933f35": "?D?nde quieres ayudar?",
+    "change_your_age_or_address_a2156c74": "Cambiar tu edad o dirección",
+    "change_your_name_or_phone_4328c3d8": "Cambiar tu nombre o teléfono",
+    "not_added_yet_18e34a9e": "Aún no añadido",
+    "something_wrong_or_missing_change_42928e5c": "¿Algo incorrecto o falta algo? Cámbialo en tu perfil y vuelve: tu solicitud está guardada.",
+    "these_details_come_from_your_b767d1ad": "Estos datos vienen de tu perfil y no se pueden cambiar aquí. Si algo está mal, cámbialo en tu perfil: el cambio aparecerá aquí cuando vuelvas."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

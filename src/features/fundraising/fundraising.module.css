@@ -63,6 +63,9 @@
   font: inherit; background: #fff; color: var(--fr-ink);
 }
 .in[aria-invalid="true"] { border: 2px solid #b42318; padding: 9px 11px; }
+/* Profile-sourced, not editable here (About you step): reads as locked, not as an empty box to type in. */
+.in[readonly] { background: #f7f3ee; border-color: #e3d9ce; cursor: default; }
+.in[readonly]:focus { outline: 2px solid #cfc3b6; outline-offset: 1px; box-shadow: none; }
 .hint { font-size: 13px; color: var(--fr-muted); margin-top: 6px; }
 .errText { font-size: 13px; color: #8f1d1d; margin-top: 6px; font-weight: 600; display: flex; gap: 6px; align-items: center; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
