@@ -43,6 +43,12 @@ type AuthContextValue = {
    * set by the server and is never accessible to JavaScript.
    */
   setUser: (user: AuthUser) => void;
+  /**
+   * Merges changed account fields (name, phone) into the signed-in user after a
+   * profile save, so every screen reading useAuth shows them at once. Unlike
+   * setUser it does not trigger the welcome overlay.
+   */
+  updateUser?: (patch: Partial<Pick<AuthUser, "fullName" | "phone">>) => void;
   logout: () => void;
   /** @deprecated use setUser() — kept for transition compatibility */
   setAuth: (token: string, remember?: boolean) => void;
@@ -53,6 +59,7 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   isRestoring: true,
   setUser: () => {},
+  updateUser: () => {},
   logout: () => {},
   setAuth: () => {},
 });
@@ -151,6 +158,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserState(newUser);
   }, []);
 
+  // ── updateUser ────────────────────────────────────────────────────────────
+  const updateUser = useCallback((patch: Partial<Pick<AuthUser, "fullName" | "phone">>) => {
+    setUserState((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...patch };
+      try { localStorage.setItem(USER_KEY, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, []);
+
   // ── logout ────────────────────────────────────────────────────────────────
   // Fix #4: clears the httpOnly cookie server-side so the browser deletes it.
   // State is cleared immediately; the server call is fire-and-forget.
@@ -180,8 +197,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [setUser]);
 
   const value = useMemo(
-    () => ({ user, isLoading, isRestoring, setUser, logout, setAuth }),
-    [user, isLoading, isRestoring, setUser, logout, setAuth],
+    () => ({ user, isLoading, isRestoring, setUser, updateUser, logout, setAuth }),
+    [user, isLoading, isRestoring, setUser, updateUser, logout, setAuth],
   );
 
   return (
