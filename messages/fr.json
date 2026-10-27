@@ -3901,7 +3901,8 @@
     "why_do_you_want_to_fd4fade0": "Pourquoi voulez-vous arrêter cette collecte ? Des dons sont en jeu : notre équipe vérifiera avant la clôture.",
     "give_up_approval_4f7e2880": "Renoncer à l’approbation",
     "stop_your_live_fundraiser_first_9c6a2b20": "Arrêtez d’abord votre collecte en ligne. Des dons sont en jeu, notre équipe vérifie cette étape.",
-    "this_gives_up_your_approval_d8c86c4a": "Vous renoncez à votre approbation et toute collecte pas encore publique sera annulée. Pour collecter à nouveau, il faudra refaire une demande. Cette action est définitive."
+    "this_gives_up_your_approval_d8c86c4a": "Vous renoncez à votre approbation et toute collecte pas encore publique sera annulée. Pour collecter à nouveau, il faudra refaire une demande. Cette action est définitive.",
+    "this_approval_can_t_be_1f3a8da7": "Impossible de renoncer à cette approbation pour le moment. Actualisez la page et réessayez."
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",

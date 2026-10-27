@@ -3901,7 +3901,8 @@
     "why_do_you_want_to_fd4fade0": "¿Por qué quieres detener esta recaudación? Hay donaciones de por medio, así que nuestro equipo lo revisará antes del cierre.",
     "give_up_approval_4f7e2880": "Renunciar a la aprobación",
     "stop_your_live_fundraiser_first_9c6a2b20": "Primero detén tu recaudación activa. Hay donaciones de por medio, así que nuestro equipo lo revisa.",
-    "this_gives_up_your_approval_d8c86c4a": "Renuncias a tu aprobación y se cancela cualquier recaudación que aún no sea pública. Para recaudar de nuevo tendrás que volver a solicitar. No se puede deshacer."
+    "this_gives_up_your_approval_d8c86c4a": "Renuncias a tu aprobación y se cancela cualquier recaudación que aún no sea pública. Para recaudar de nuevo tendrás que volver a solicitar. No se puede deshacer.",
+    "this_approval_can_t_be_1f3a8da7": "No se puede renunciar a esta aprobación ahora. Actualiza la página e inténtalo de nuevo."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
