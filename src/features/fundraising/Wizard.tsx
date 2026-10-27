@@ -135,7 +135,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         {step === 1 && <WhoNeedsHelp app={app} set={set} onBack={() => go(0)} onNext={() => go(2)} />}
         {step === 2 && <TheNeed app={app} set={set} onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
-        {step >= 4 && step <= 6 && <PageStep step={step as 4 | 5 | 6} draft={draft} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
+        {step >= 4 && step <= 6 && <PageStep step={step as 4 | 5 | 6} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
         {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
       </main>
     </>
@@ -322,7 +322,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
         <div className={s.grid2}>
           <div><label className={s.lbl} htmlFor="ur"><UiText>By which date do you need the money?</UiText> <FieldInfo localize k="ur" /></label>
             {/* Stored as an ISO date (yyyy-mm-dd) in the urgency field. */}
-            <input id="ur" type="date" className={s.in} min={new Date().toISOString().slice(0, 10)}
+            <input id="ur" type="date" className={s.in} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
               value={/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? app.urgency! : ""}
               onChange={(e) => set({ urgency: e.target.value })} />
             <p className={s.hint}><UiText>For example, the day of the operation, or the last day to pay the fees.</UiText></p></div>
@@ -507,7 +507,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
   );
 
   const stillNeeded = [...app.missing, ...pageGaps(page, {
-    title: ui("page title"), story: ui("your story"), cover: ui("cover photo"), consent: ui("cover photo permission"), endDate: ui("last day to collect money"),
+    title: ui("page title"), story: ui("your story"), cover: ui("cover photo"), consent: ui("cover photo permission"),
   })];
 
   async function submit() {
@@ -527,7 +527,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
         {sec(ui("Your page", "wizard step"), 4, <dl style={kv}>
           <dt className={s.muted}><UiText>Title</UiText></dt><dd>{page?.title || "—"}</dd>
           <dt className={s.muted}><UiText>Cover photo</UiText></dt><dd>{page?.coverUrl ? ui("Added") : "—"}</dd>
-          <dt className={s.muted}><UiText>Last day to collect money</UiText></dt><dd>{page?.endDate ? fmt.date(page.endDate) : "—"}</dd>
+          <dt className={s.muted}><UiText>Last day to collect money</UiText></dt><dd>{/^d{4}-d{2}-d{2}$/.test(app.urgency ?? "") ? fmt.date(app.urgency!) : "—"}</dd>
           <dt className={s.muted}><UiText>Shown name</UiText></dt><dd>{page?.beneficiaryDisplayName || "—"}</dd>
         </dl>)}
         {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}

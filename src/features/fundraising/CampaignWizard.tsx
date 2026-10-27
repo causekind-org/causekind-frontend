@@ -140,7 +140,7 @@ function Heading({ title, sub }: { title: string; sub: string }) {
  * nothing is approved yet, the category comes from "The need", and the end date is asked here
  * because the separate Target step is gone.
  */
-export function Basics({ c, set, setC, nav, inApplication = false }: { c: FundraisingCampaign; set: SetFn; setC: (c: FundraisingCampaign) => void; nav: React.ReactNode; inApplication?: boolean }) {
+export function Basics({ c, set, setC, nav, inApplication = false, neededBy = null }: { c: FundraisingCampaign; set: SetFn; setC: (c: FundraisingCampaign) => void; nav: React.ReactNode; inApplication?: boolean; neededBy?: string | null }) {
   const t = useTranslations("fundraiserFlow");
   const fmt = useFundraisingLabels();
   const ui = useUiText();
@@ -162,7 +162,8 @@ export function Basics({ c, set, setC, nav, inApplication = false }: { c: Fundra
           <div><label className={s.lbl} htmlFor="dn"><UiText>Beneficiary name shown to donors</UiText> <FieldInfo localize k="dn" /><span className={`${s.chip} ${s.cN}`}><UiText>From application</UiText></span></label><input id="dn" className={s.in} maxLength={80} value={c.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} /><p className={s.hint}>{inApplication ? ui("Their legal name stays private. Choose what donors see in the Privacy step.") : <UiText>Their legal name stays private. Change visibility in step 4.</UiText>}</p></div>
         </div>
         {inApplication && (
-          <div style={{ maxWidth: 320 }}><label className={s.lbl} htmlFor="ed"><UiText>Last day to collect money</UiText> <FieldInfo localize k="ed" /></label><input id="ed" type="date" className={s.in} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} value={c.endDate ?? ""} onChange={(e) => set({ endDate: e.target.value || null })} /><p className={s.hint}><UiText>After this day, people can no longer give.</UiText></p></div>
+          // Same date as step 3's "By which date do you need the money?" — copied onto the page on submit.
+          <div><span className={s.lbl}><UiText>Last day to collect money</UiText> <FieldInfo localize k="ed" /></span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{neededBy && /^d{4}-d{2}-d{2}$/.test(neededBy) ? fmt.date(neededBy) : "—"}</span><span className={`${s.muted} ${s.small}`}>{ui("From step 3 — change it there")}</span></p><p className={s.hint}><UiText>After this day, people can no longer give.</UiText></p></div>
         )}
         <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="cv">
           <h2 id="cv" className={s.lbl} style={{ margin: 0 }}><UiText>Cover photo</UiText> <FieldInfo localize k="cv" /></h2>

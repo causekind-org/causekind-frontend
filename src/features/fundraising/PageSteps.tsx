@@ -61,20 +61,21 @@ export function usePageDraft(app: FundraisingApplication, active: boolean) {
 }
 
 /** What the page still needs before the application can be submitted (mirrors the server's check). */
-export function pageGaps(page: FundraisingCampaign | null, labels: { title: string; story: string; cover: string; consent: string; endDate: string }): string[] {
-  if (!page) return [labels.title, labels.story, labels.cover, labels.endDate];
+export function pageGaps(page: FundraisingCampaign | null, labels: { title: string; story: string; cover: string; consent: string }): string[] {
+  if (!page) return [labels.title, labels.story, labels.cover];
   const gaps: string[] = [];
   if (!page.title?.trim()) gaps.push(labels.title);
   if (!page.story?.trim()) gaps.push(labels.story);
   if (!page.coverUrl) gaps.push(labels.cover);
   else if (!page.coverConsent) gaps.push(labels.consent);
-  if (!page.endDate || page.endDate <= new Date().toISOString().slice(0, 10)) gaps.push(labels.endDate);
   return gaps;
 }
 
-export function PageStep({ step, draft, nav }: {
+export function PageStep({ step, draft, nav, neededBy = null }: {
   step: 4 | 5 | 6;
   draft: ReturnType<typeof usePageDraft>;
+  /** Step 3's "by which date" — shown read-only as the page's last day. */
+  neededBy?: string | null;
   nav: ReactNode;
 }) {
   const { page, setPage, set, flush, save, loadError, reload } = draft;
@@ -96,7 +97,7 @@ export function PageStep({ step, draft, nav }: {
           <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void flush()}><UiText>Try again</UiText></button>
         </div>
       )}
-      {step === 4 && <Basics c={page} set={set} setC={setPage} nav={nav} inApplication />}
+      {step === 4 && <Basics c={page} set={set} setC={setPage} nav={nav} inApplication neededBy={neededBy} />}
       {step === 5 && <Story c={page} set={set} nav={nav} />}
       {step === 6 && <Privacy c={page} set={set} nav={nav} />}
     </>
