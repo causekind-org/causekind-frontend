@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { FrLink as Link, useFrParams } from "@/features/fundraising/adminLink";
 import { FEATURES } from "@/lib/features";
-import { fundraising, ApiError, type FundraisingAdminApplication, type FundraisingEvidence, type FundraisingScope } from "@/lib/api";
+import { fundraising, fundraisingCampaigns, ApiError, type FundraisingAdminApplication, type FundraisingCampaign, type FundraisingEvidence, type FundraisingScope } from "@/lib/api";
 import { CATEGORY_LABEL, StatusChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
@@ -20,12 +20,19 @@ export default function AdminFundraisingReviewPage() {
   const [error, setError] = useState<string | null>(null);
   const [doc, setDoc] = useState<FundraisingEvidence | null>(null);
   const [decision, setDecision] = useState<Decision | null>(null);
+  const [page, setPage] = useState<FundraisingCampaign | null>(null);
 
   const load = useCallback(() => {
     fundraising.admin.get(appId).then((d) => { setData(d); setDoc((cur) => cur ?? d.application.evidence.find((e) => !e.superseded) ?? null); })
       .catch(() => setError("Couldn't load this application."));
   }, [appId]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
+  // Single form: the public page travels with the application and is approved with it.
+  const pageId = data?.pageCampaignId ?? null;
+  useEffect(() => {
+    if (pageId == null) { setPage(null); return; }
+    fundraisingCampaigns.admin.get(pageId).then((d) => setPage(d.campaign)).catch(() => setPage(null));
+  }, [pageId]);
 
   if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
   if (!data) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}>{error ? <p role="alert" className={a.err}>{error}</p> : <div className={a.skel} style={{ width: "40%" }} />}</main></div>;
@@ -51,7 +58,7 @@ export default function AdminFundraisingReviewPage() {
         {(app.status === "SUBMITTED" || app.status === "RESUBMITTED") && <button type="button" className={`${a.btn} ${a.bs}`} onClick={startReview}>Start review</button>}
         <button type="button" className={`${a.btn} ${a.bs}`} disabled={!decidable} onClick={() => setDecision("info")}>Request information</button>
         <button type="button" className={`${a.btn} ${a.bs}`} style={{ color: "#8f1d1d" }} disabled={!decidable} onClick={() => setDecision("decline")}>Do not approve</button>
-        <button type="button" className={`${a.btn} ${a.bp}`} disabled={!decidable} onClick={() => setDecision("approve")}>Approve application</button>
+        <button type="button" className={`${a.btn} ${a.bp}`} disabled={!decidable} onClick={() => setDecision("approve")}>{data.pageCampaignId != null ? "Approve application and page" : "Approve application"}</button>
       </div>
       {app.status === "WITHDRAWN" && <div role="status" style={{ padding: "10px 28px", background: "#fdf3e1", color: "#5c3800" }}>The applicant withdrew this application. You can&apos;t record a decision.</div>}
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
@@ -91,6 +98,23 @@ export default function AdminFundraisingReviewPage() {
             <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{app.whatHappened ?? "—"}</p>
             <p className={`${a.small} ${a.muted}`}>Needed by: {app.urgency && /^\d{4}-\d{2}-\d{2}$/.test(app.urgency) ? formatDate(app.urgency) : app.urgency ?? "—"}</p>
           </section>
+          {page && (
+            <section className={`${a.card} ${a.pane}`} aria-labelledby="pg">
+              <h2 id="pg" className={a.h}>Public fundraiser page</h2>
+              <p className={`${a.small} ${a.muted}`}>Written in the same form. Approving this application publishes it (after payment setup).</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              {page.coverUrl ? <img src={page.coverUrl} alt={page.coverAltText ?? ""} style={{ width: "100%", maxWidth: 420, aspectRatio: "16 / 9", objectFit: "cover", borderRadius: 8 }} />
+                : <p className={a.small}>No cover photo.</p>}
+              <p className={a.small}><span className={a.muted}>Title:</span> <strong>{page.title || "—"}</strong></p>
+              <p className={a.small}><span className={a.muted}>Shown name:</span> {page.beneficiaryDisplayName || "—"} · <span className={a.muted}>Last day to collect:</span> {page.endDate ? formatDate(page.endDate) : "—"}</p>
+              <p className={a.small}><span className={a.muted}>Cover permission:</span> {page.coverConsent ? "Confirmed" : "Not confirmed"}</p>
+              <p className={a.small}><span className={a.muted}>Donors see:</span> beneficiary {page.beneficiaryNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · organiser {page.organiserNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · location {page.locationVisibility?.toLowerCase() ?? "—"}{page.publicEvidenceIds.length ? ` · ${page.publicEvidenceIds.length} document(s) picked to show` : ""}</p>
+              <div>
+                <div className={`${a.small} ${a.muted}`}>Story</div>
+                <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{page.story || "—"}</p>
+              </div>
+            </section>
+          )}
         </div>
 
         <section className={a.card} style={{ display: "flex", flexDirection: "column", minHeight: 720 }} aria-labelledby="ev">

@@ -6073,6 +6073,8 @@ export type FundraisingSave = Partial<Omit<FundraisingApplication,
 export type FundraisingAdminApplication = {
   application: FundraisingApplication; applicantId: number; applicantName: string; applicantEmail: string;
   internalNote: string | null; decidedBy: string | null;
+  /** The fundraiser page written inside this application (single form, 2026-10-27); approving approves it too. */
+  pageCampaignId: number | null;
 };
 export type FundraisingQueueRow = {
   id: number; reference: string; applicantName: string; forSelf: boolean; category: FundraisingCategory | null;
