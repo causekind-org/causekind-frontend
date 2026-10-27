@@ -326,7 +326,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
               <p className="text-3xs text-stone-400 dark:text-stone-500">
                 Square or transparent PNG recommended (PNG, JPG, WebP · max 10 MB)
               </p>
-              <CorrectionNote note={corrections?.logo} />
+              <CorrectionNote note={corrections?.logo} field="logo" />
             </div>
           </div>
 
@@ -485,7 +485,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
               <p className="text-3xs text-stone-400 dark:text-stone-500">
                 Front entrance or nameboard of your registered address
               </p>
-              <CorrectionNote note={corrections?.officePhoto} />
+              <CorrectionNote note={corrections?.officePhoto} field="officePhoto" />
             </div>
           </div>
 
@@ -658,7 +658,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
 
               return (
                 <div key={idx} className="space-y-1">
-                  <CorrectionNote note={corrections?.[`activityPhotos.${idx}`]} />
+                  <CorrectionNote note={corrections?.[`activityPhotos.${idx}`]} field={`activityPhotos.${idx}`} />
                   <input
                     ref={activityInputRefs[idx]}
                     type="file"

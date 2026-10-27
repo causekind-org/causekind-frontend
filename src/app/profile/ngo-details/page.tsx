@@ -30,7 +30,8 @@ import { OrgPhotos } from "@/features/ngo-registration/steps/OrgPhotos";
 import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { EmailVerification } from "@/features/ngo-registration/steps/EmailVerification";
 import { ApplicationSubmitted } from "@/features/ngo-registration/steps/ApplicationSubmitted";
-import type { NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { CorrectionStatusContext, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { changedFlaggedFields, correctionDisplayValue, fillFlaggedFileSlots, originalFlaggedValues } from "@/features/ngo-registration/ngoCorrectionFields";
 import {
   submitNgoApplication,
   getNgoDraft,
@@ -83,12 +84,21 @@ function NgoDetailsEditor() {
   // A reviewer's per-item correction request: the flagged items start empty and show these notes.
   const [correctionItems, setCorrectionItems] = useState<NgoCorrectionItem[]>([]);
   const flaggedFields = useRef<string[]>([]);
+  /** Each flagged item's value when the wizard opened; a fix must change it. */
+  const originalFlagged = useRef<Record<string, string>>({});
+  /** The status response (holds the originally submitted values of flagged items, when sent). */
+  const statusRef = useRef<Record<string, unknown> | null>(null);
+  const [overallNote, setOverallNote] = useState("");
   const corrections: NgoCorrections = Object.fromEntries(correctionItems.map((i) => [i.field, i.note]));
   // A corrections resubmission: About us is optional (it may predate the field).
   useEffect(() => {
     if (correctionItems.length > 0) setData((d) => (d.aboutUsOptional ? d : { ...d, aboutUsOptional: true }));
   }, [correctionItems.length]);
   const flaggedSteps = new Set(correctionItems.map((i) => correctionFieldStep(i.field)));
+  const resubmitting = correctionItems.length > 0;
+  const changedFields = resubmitting ? changedFlaggedFields(data, originalFlagged.current) : new Set<string>();
+  const unfixed = correctionItems.filter((i) => !changedFields.has(i.field));
+  const toFixInStep = (step: NGOStep) => unfixed.filter((i) => correctionFieldStep(i.field) === step).length;
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
@@ -148,6 +158,8 @@ function NgoDetailsEditor() {
               // Per-item request: everything else comes back filled in (fields and files).
               flaggedFields.current = items.map((i) => i.field);
               setCorrectionItems(items);
+              statusRef.current = submittedApp;
+              setOverallNote(String(submittedApp.overallNote || submittedApp.needsInformationDetails || ""));
               setReviewMessage("");
               setData(INITIAL_NGO_FORM);
             } else if (submittedApp?.status === "REJECTED" || submittedApp?.status === "NEEDS_INFORMATION") {
@@ -213,11 +225,15 @@ function NgoDetailsEditor() {
         }
 
         if (active) {
-          if (draft) {
-            setData((prev) => prefillNgoFormWithUser(applyDraft(prev, draft), user, flaggedFields.current));
-          } else {
-            setData((prev) => prefillNgoFormWithUser(prev, user, flaggedFields.current));
-          }
+          setData((prev) => {
+            let next = prefillNgoFormWithUser(draft ? applyDraft(prev, draft) : prev, user, flaggedFields.current);
+            if (flaggedFields.current.length) {
+              const sources = { ...(draft ?? {}), ...(statusRef.current ?? {}) } as Record<string, unknown>;
+              originalFlagged.current = originalFlaggedValues(next, flaggedFields.current, sources);
+              next = fillFlaggedFileSlots(next, flaggedFields.current, statusRef.current, draft);
+            }
+            return next;
+          });
         }
 
         // Choose the starting step once: a ?step= deep link wins over the saved draft step.
@@ -394,6 +410,39 @@ function NgoDetailsEditor() {
       return;
     }
 
+    if (resubmitting) {
+      if (unfixed.length > 0) { setBusy(false); return; }
+      try {
+        const response = await submitNgoApplication(buildSubmitPayload(data));
+        if (response?.status === "PENDING_VERIFICATION") {
+          // The official email changed: the server sent a code to confirm it.
+          updateData({ applicationId: response.applicationId, submittedAt: formatSubmissionTime(new Date()) });
+          setApplicationStatus("PENDING_VERIFICATION");
+          setAwaitingVerification("fresh");
+          setCorrectionItems([]);
+          flaggedFields.current = [];
+          goToStep("email-verification");
+          return;
+        }
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("ngo-application-submitted", {
+            detail: { applicationId: response?.applicationId ?? data.applicationId, status: "UNDER_REVIEW" },
+          }));
+        }
+        toast.success("Changes sent. Your application is under review again.");
+        router.push("/profile");
+      } catch (err) {
+        const rejected = markRejectedFiles(err);
+        const msg = rejected.length ? rejected.join(" · ")
+          : err instanceof Error ? err.message : "Resubmission failed. Please try again.";
+        setSubmitError(msg);
+        toast.error(msg);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+
     try {
       const response = await submitNgoApplication(buildSubmitPayload(data));
 
@@ -474,7 +523,10 @@ function NgoDetailsEditor() {
 
   const progress = calculateNgoProgress(data);
   const remaining = Math.max(0, 6 - progress.completedCount);
-  const stillNeeded = currentStep !== "submitted" ? getNgoStillNeededItems(currentStep, data) : [];
+  const stillNeeded = currentStep !== "submitted" ? [
+    ...unfixed.filter((i) => correctionFieldStep(i.field) === currentStep).map((i) => `Fix: ${correctionFieldLabel(i.field)}`),
+    ...getNgoStillNeededItems(currentStep, data),
+  ] : [];
 
   return (
     <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950">
@@ -549,9 +601,13 @@ function NgoDetailsEditor() {
                     {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                   </span>
                   <span className="truncate">{NGO_STEP_FULL_TITLES[stepKey]}</span>
-                  {flaggedSteps.has(stepKey) && (
-                    <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Needs a fix" aria-label="Needs a fix" />
-                  )}
+                  {flaggedSteps.has(stepKey) && (toFixInStep(stepKey) > 0 ? (
+                    <span data-testid={`to-fix-${stepKey}`} className="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-black text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                      {toFixInStep(stepKey)} to fix
+                    </span>
+                  ) : (
+                    <span className="ml-auto shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-3xs font-black text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200">Updated</span>
+                  ))}
                 </button>
               );
             })}
@@ -670,7 +726,9 @@ function NgoDetailsEditor() {
                 {reviewMessage && <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 whitespace-pre-wrap">{reviewMessage}</div>}
                 {correctionItems.length > 0 && currentStep !== "submitted" && !awaitingVerification && (
                   <div role="status" aria-label="Changes requested" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
-                    <p className="font-bold">
+                    <p className="text-base font-black">Our team asked for changes</p>
+                    {overallNote && <p data-testid="overall-note" className="mt-1 whitespace-pre-wrap">{overallNote}</p>}
+                    <p className="mt-2 font-bold">
                       Our team asked you to fix {correctionItems.length === 1 ? "1 item" : `${correctionItems.length} items`}
                     </p>
                     <ul className="mt-2 space-y-1">
@@ -684,6 +742,7 @@ function NgoDetailsEditor() {
                             {correctionFieldLabel(item.field)}
                           </button>
                           {": "}{item.note}
+                          {changedFields.has(item.field) && <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-3xs font-black text-emerald-800">Updated</span>}
                         </li>
                       ))}
                     </ul>
@@ -722,7 +781,12 @@ function NgoDetailsEditor() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-5 sm:p-8 dark:border-emerald-950/80 dark:bg-[#141E18] shadow-sm">
+                  <CorrectionStatusContext.Provider value={resubmitting ? changedFields : null}>
+                  {resubmitting && (
+                    // Amber border on every input that sits next to a reviewer's note (until it is changed).
+                    <style>{`.ck-resubmit div:has(> [data-testid="correction-note"]:not([data-updated])) :is(input:not([type=checkbox]):not([type=radio]),textarea,select){border-color:#f59e0b !important;box-shadow:0 0 0 1px #f59e0b}`}</style>
+                  )}
+                  <div className={`${resubmitting ? "ck-resubmit " : ""}rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-5 sm:p-8 dark:border-emerald-950/80 dark:bg-[#141E18] shadow-sm`}>
                     {currentStep === "org-details" && (
                       <OrgDetails
                         data={data}
@@ -772,6 +836,12 @@ function NgoDetailsEditor() {
                         onEditStep={(s) => goToStep(s)}
                         isSubmitting={busy}
                         submitError={submitError}
+                        resubmission={resubmitting ? {
+                          changes: correctionItems.filter((i) => changedFields.has(i.field)).map((i) => ({
+                            key: i.field, label: correctionFieldLabel(i.field), value: correctionDisplayValue(data, i.field),
+                          })),
+                          remaining: unfixed.length,
+                        } : null}
                       />
                     )}
 
@@ -785,6 +855,7 @@ function NgoDetailsEditor() {
                       />
                     )}
                   </div>
+                  </CorrectionStatusContext.Provider>
                 )}
               </div>
             </div>

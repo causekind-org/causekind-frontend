@@ -140,8 +140,8 @@ describe("3. About the NGO card and public page", () => {
     // Documents open in the preview popup (no download link).
     fireEvent.click(screen.getByRole("button", { name: /80G certificate/ }));
     expect(await screen.findByTestId("file-preview")).toBeInTheDocument();
-    expect(screen.getAllByTestId("public-activity")).toHaveLength(1);
-    expect(screen.getByTestId("activity-carousel")).toBeInTheDocument();
+    expect(screen.getAllByTestId("past-work-item")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "View photos of Meal drive", hidden: true })).toBeInTheDocument();
   });
 
   it("an NGO that is not public shows the friendly not-found page", async () => {
@@ -310,12 +310,12 @@ describe("5. Matches tab NGO segment", () => {
     expect(screen.getByRole("link", { name: "View handover" })).toHaveAttribute("href", "/ngo-drive-offers/3/handover");
   });
 
-  it("after proof approval: 'Your 10 jackets were distributed to 50 children' and View proof", () => {
+  it("after proof approval: the distributed line and View proof", () => {
     const done = { _type: "DRIVE_OFFER", id: 9, status: "COMPLETED", driveId: 4, driveTitle: "Warm jackets", quantity: 10, driveItemName: "Jackets",
       driveStatus: "FULFILLED", driveBeneficiariesReached: 50, driveBeneficiaryGroup: "Children" };
     expect(acceptedDriveOffers([done])).toEqual([]);           // completed: History, not Matches
     render(<NgoAcceptedOffersList offers={[done] as never} />);
-    expect(screen.getByTestId("drive-offer-distributed")).toHaveTextContent("Your 10 jackets were distributed to 50 children");
+    expect(screen.getByTestId("drive-offer-distributed")).toHaveTextContent("The NGO has distributed your 10 jackets. This drive reached 50 people (children).");
     expect(screen.getByRole("link", { name: /View proof/ })).toHaveAttribute("href", "/drives/4/proof");
   });
 

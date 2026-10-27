@@ -47,11 +47,12 @@ const input = "mt-1.5 block w-full rounded-xl border bg-white p-2.5 text-sm font
 const ok = "border-stone-200 focus:border-ngo-600 dark:border-zinc-700";
 const bad = "border-red-300 focus:border-red-500 dark:border-red-800";
 
-function Field({ label, error, touched, children }: { label: string; error?: string; touched: boolean; children: React.ReactNode }) {
+function Field({ label, error, touched, hint, children }: { label: string; error?: string; touched: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <label className="block text-sm font-semibold text-stone-800 dark:text-stone-200">
       {label} <span className="text-red-600" aria-hidden>*</span>
       {children}
+      {hint && <span className="mt-1 block text-xs font-normal text-stone-500 dark:text-stone-400">{hint}</span>}
       {touched && error && <span role="alert" className="mt-1 block text-xs font-medium text-red-600 dark:text-red-400">{error}</span>}
     </label>
   );
@@ -69,8 +70,9 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 /** Distribution proof: the upload card while it is due, otherwise where it stands. */
 export function DriveProofPanel({ drive, onSubmitted }: { drive: NgoDrive; onSubmitted: () => void | Promise<void> }) {
   const [form, setForm] = useState<ProofForm>(() => ({
-    files: [], reached: String(drive.beneficiaryCount ?? ""), distributedOn: "", location: "",
-    quantity: String(drive.quantityReceived ?? ""), note: "", consent: false,
+    // Counts start empty (no prefilled target/received); only a previously saved proof value is restored.
+    files: [], reached: drive.beneficiariesReached != null ? String(drive.beneficiariesReached) : "", distributedOn: "", location: "",
+    quantity: drive.proofQuantityDistributed != null ? String(drive.proofQuantityDistributed) : "", note: "", consent: false,
   }));
   const [touched, setTouched] = useState<Partial<Record<keyof ProofForm, boolean>>>({});
   const [typeError, setTypeError] = useState<string | null>(null);
@@ -173,10 +175,10 @@ export function DriveProofPanel({ drive, onSubmitted }: { drive: NgoDrive; onSub
       <Group title="What happened">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="People reached" error={errors.reached} touched={!!touched.reached}>
-            <input type="number" name="beneficiariesReached" min={1} value={form.reached} onChange={(e) => set("reached", e.target.value)} className={`${input} ${touched.reached && errors.reached ? bad : ok}`} />
+            <input type="number" name="beneficiariesReached" required step={1} inputMode="numeric" min={1} value={form.reached} onChange={(e) => set("reached", e.target.value)} className={`${input} ${touched.reached && errors.reached ? bad : ok}`} />
           </Field>
-          <Field label="Quantity distributed" error={errors.quantity} touched={!!touched.quantity}>
-            <input type="number" name="quantityDistributed" min={1} max={Math.max(1, drive.quantityReceived ?? 0)} value={form.quantity} onChange={(e) => set("quantity", e.target.value)} className={`${input} ${touched.quantity && errors.quantity ? bad : ok}`} />
+          <Field label="Quantity distributed" hint={`Items you actually distributed so far (up to ${Math.max(1, drive.quantityReceived ?? 0)} received)`} error={errors.quantity} touched={!!touched.quantity}>
+            <input type="number" name="quantityDistributed" required step={1} inputMode="numeric" min={1} max={Math.max(1, drive.quantityReceived ?? 0)} value={form.quantity} onChange={(e) => set("quantity", e.target.value)} className={`${input} ${touched.quantity && errors.quantity ? bad : ok}`} />
           </Field>
           <Field label="Date of distribution" error={errors.distributedOn} touched={!!touched.distributedOn}>
             <input type="date" name="distributedOn" min={minDistributionDate(drive)} value={form.distributedOn} onChange={(e) => set("distributedOn", e.target.value)} className={`${input} ${touched.distributedOn && errors.distributedOn ? bad : ok}`} />

@@ -98,7 +98,8 @@ export function HandoversPanel({ offers, reload }: { offers: DriveOffer[]; reloa
                   </div>
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
                     {received ? (
-                      // Received: no chat. A small link while the 7-day issue window is open; nothing once completed.
+                      // Received: no chat. "View handover" is the full read-only handover record, so it stays
+                      // visible after the issue window closes (status unchanged from before).
                       offer.status === "ISSUE_WINDOW_OPEN" && (
                         <Link href={`/ngo/drives/${offer.drive.id}/offers/${offer.id}/handover`} className="text-sm font-semibold text-ngo-700 underline dark:text-ngo-300">View handover</Link>
                       )

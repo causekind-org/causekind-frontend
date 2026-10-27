@@ -118,7 +118,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
         {errors[key] ? (
           <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
         ) : null}
-        <CorrectionNote note={corrections?.[key]} />
+        <CorrectionNote note={corrections?.[key]} field={key} />
       </>
     );
   }
@@ -208,7 +208,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
             onUpload={(file) => setDoc(PAN_DOC.id, file)}
             onRemove={() => setDoc(PAN_DOC.id, null)}
           />
-          <CorrectionNote note={corrections?.[`documents.${PAN_DOC.id}`]} />
+          <CorrectionNote note={corrections?.[`documents.${PAN_DOC.id}`]} field={`documents.${PAN_DOC.id}`} />
         </div>
 
         {/* 4. PAN number */}
@@ -262,7 +262,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
                 onUpload={(file) => setDoc(certDoc.id, file)}
                 onRemove={() => setDoc(certDoc.id, null)}
               />
-              <CorrectionNote note={corrections?.[`documents.${certDoc.id}`]} />
+              <CorrectionNote note={corrections?.[`documents.${certDoc.id}`]} field={`documents.${certDoc.id}`} />
             </>
           ) : (
             <p className="rounded-xl border border-dashed border-stone-300 px-3.5 py-3 text-xs text-stone-500 dark:border-zinc-700">

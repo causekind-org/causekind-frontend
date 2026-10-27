@@ -15,6 +15,8 @@ import {
 } from "@/lib/api";
 import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 import { formatIST } from "@/lib/formatIST";
+import { isDriveIssueWindowOpen, driveIssueWindowLabel } from "@/features/ngo-drives/driveIssueWindow";
+import { driveSlotProblem } from "@/features/handover/HandoverScheduleDialog";
 
 /**
  * The handover for an offer to an NGO drive, for the donor or the drive's NGO.
@@ -35,7 +37,6 @@ const ENDED: Record<string, string> = {
   ADMIN_REJECTED: "This offer didn't pass our checks.",
 };
 const DAY_NAMES: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
-const JS_DAY = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const ISSUE_TYPES: [string, string][] = [
   ["ITEM_NOT_RECEIVED", "Items not received"],
   ["ITEM_DAMAGED", "Items damaged"],
@@ -48,18 +49,11 @@ const hhmm = (t?: string | null) => (t ? t.slice(0, 5) : "");
 const unitLabel = (u?: string | null) => (u ? u.replaceAll("_", " ").toLowerCase() : "");
 const errorText = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
 
-/** Client-side mirror of the server's slot rule (days and hours of the drive, in the future). */
+/** Client-side mirror of the server's slot rule (days and hours of the drive, in the future), in IST. */
 export function slotProblem(offer: NgoDriveOfferResponse, date: string, time: string): string | null {
   if (!date || !time) return "Pick a date and a time.";
-  const when = new Date(`${date}T${time}:00`);
-  if (Number.isNaN(when.getTime()) || when.getTime() <= Date.now()) return "Pick a date and time in the future.";
-  const days = offer.driveAvailableDays ?? [];
-  if (days.length > 0 && !days.includes(JS_DAY[when.getDay()])) {
-    return `The NGO receives items on ${days.map((d) => DAY_NAMES[d] ?? d).join(", ")} only.`;
-  }
-  const from = hhmm(offer.driveAvailableFrom), to = hhmm(offer.driveAvailableTo);
-  if (from && to && (time < from || time > to)) return `Pick a time between ${from} and ${to}.`;
-  return null;
+  return driveSlotProblem({ availableDays: offer.driveAvailableDays ?? [], availableFrom: offer.driveAvailableFrom, availableTo: offer.driveAvailableTo },
+    `${date}T${time}`);
 }
 
 const field = "mt-1 block w-full rounded-lg border border-stone-300 bg-white p-2.5 text-sm dark:border-zinc-700 dark:bg-zinc-950 focus:border-emerald-600 focus:outline-none focus:ring-1 focus:ring-emerald-600 transition-colors";
@@ -522,11 +516,14 @@ export function DriveHandover({
 
             {/* Below-the-fold Unframed Sections (Donee Reference style) */}
             {/* Safety / Report an Issue */}
-            {status === "ISSUE_WINDOW_OPEN" && !issueSent && (
+            {status === "ISSUE_WINDOW_OPEN" && !issueSent && isDriveIssueWindowOpen(offer.issueWindowEndsAt) && (
               <details className="rounded-lg border border-stone-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <summary className="cursor-pointer font-semibold text-stone-800 dark:text-stone-200">
                   Something wrong? Report an issue
                 </summary>
+                {driveIssueWindowLabel(offer.issueWindowEndsAt) && (
+                  <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">{driveIssueWindowLabel(offer.issueWindowEndsAt)}</p>
+                )}
                 <form
                   className="mt-3 space-y-3"
                   onSubmit={(e) => {

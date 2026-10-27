@@ -46,12 +46,17 @@ export function driveOfferStage(status: string): number {
   return 3;
 }
 
-/** After the proof is approved: "Your 10 jackets were distributed to 50 children". */
+/** After the proof is approved: "The NGO has distributed your 10 jackets. This drive reached 50 people (children)." */
 export function distributedLine(o: AcceptedDriveOffer): string | null {
   if (o.driveStatus !== "FULFILLED") return null;
   const what = o.quantity ? `${o.quantity} ${(o.driveItemName ?? "items").toLowerCase()}` : (o.driveItemName ?? "items").toLowerCase();
-  const who = o.driveBeneficiariesReached ? `${o.driveBeneficiariesReached} ${(o.driveBeneficiaryGroup ?? "people").toLowerCase()}` : "people in need";
-  return `Your ${what} were distributed to ${who}`;
+  const n = o.driveBeneficiariesReached;
+  const group = (o.driveBeneficiaryGroup ?? "").trim().toLowerCase();
+  // "elderly" / "children" read as a group word, so say who they are after the number of people.
+  const who = !n ? "people in need"
+    : !group || group === "people" ? `${n} ${n === 1 ? "person" : "people"}`
+      : `${n} ${n === 1 ? "person" : "people"} (${group})`;
+  return `The NGO has distributed your ${what}. This drive reached ${who}.`;
 }
 
 export function acceptedDriveOffers<T extends { _type?: string; status: string }>(offers: T[]): T[] {

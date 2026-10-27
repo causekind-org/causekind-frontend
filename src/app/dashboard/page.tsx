@@ -1,5 +1,7 @@
 "use client";
 
+import { driveOfferDonated } from "@/features/ngo-drives/driveCertificate";
+import { imageUrlsOf, resolveMediaUrl } from "@/lib/mediaUrl";
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +26,7 @@ import { MyTasksCard } from "@/components/MyTasksCard";
 import { ListingDetailsPanel } from "@/components/listings/ListingDetailsPanel";
 import { RequestDetailsPanel } from "@/components/requests/RequestDetailsPanel";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
-import { DriveProofCardLoader } from "@/features/ngo-drives/components/DriveProofCard";
+import { DriveProofCard, DriveProofCardLoader } from "@/features/ngo-drives/components/DriveProofCard";
 import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
 import {
   MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers, distributedLine, type AcceptedDriveOffer, type MatchSegment,
@@ -72,6 +74,7 @@ import {
   type InventoryFilter, type RequestFilter,
 } from "@/lib/dashboardFilters";
 import { DashboardFilterChips } from "@/components/DashboardFilterChips";
+type NgoDriveOfferCert = Pick<NgoDriveOfferResponse, "proofPublished" | "proofQuantityDistributed" | "proofDistributedOn" | "proofLocation" | "proofNote" | "proofPhotoUrls" | "driveBeneficiariesReached" | "driveBeneficiaryGroup">;
 
 // Once both parties accept, scheduling/confirmation/chat all live on the
 // Handover Hub page instead of inline dashboard forms.
@@ -1472,22 +1475,46 @@ const doneDate = (iso?: string | null) => {
  * failed), each with its status and reason. Replaces the separate "Didn't go
  * ahead" fold and the Match history strip.
  */
-/** A completed NGO drive offer in History: after proof approval, "Your 10 jackets were distributed to 50 children" + View proof. */
+/**
+ * An NGO drive offer in History, from the moment the handover completed (code confirmed + first
+ * photo, ISSUE_WINDOW_OPEN): "Donated · certificate issued" + Certificate, and "Proof pending" until
+ * the NGO's distribution proof is approved; then the same entry shows the proof. One entry per offer.
+ */
 function driveDoneEntry(o: DonationOffer) {
-  const d = o as unknown as AcceptedDriveOffer & { closedAt?: string | null; createdAt?: string | null; submittedAt?: string | null };
-  const distributed = distributedLine(d);
-  const when = d.closedAt ?? d.createdAt ?? d.submittedAt ?? null;
+  const d = o as unknown as AcceptedDriveOffer & NgoDriveOfferCert & { closedAt?: string | null; createdAt?: string | null; submittedAt?: string | null; receivedAt?: string | null };
+  // The offer carries its own proof once published (freshly signed photos); older servers only flag FULFILLED.
+  const published = d.proofPublished === true || d.driveStatus === "FULFILLED";
+  const distributed = published ? distributedLine({ ...d, driveStatus: "FULFILLED" }) : null;
+  const proofPhotos = (d.proofPhotoUrls ?? []).map(u => resolveMediaUrl(u)).filter((u): u is string => !!u);
+  const when = d.receivedAt ?? d.closedAt ?? d.createdAt ?? d.submittedAt ?? null;
+  const photos = imageUrlsOf(o.media as never);
+  // TODO later: admin issue ruling + revoke
+  const tag = "Donated · certificate issued";
   return {
     key: `d${o.id}`,
     at: Date.parse(when ?? "") || 0,
-    text: [o.requestTitle, o.requestCity, "donated ngo drive", distributed].join(" "),
+    text: [o.requestTitle, o.requestCity, "donated ngo drive certificate", distributed, "issued"].join(" "),
     node: (
-      <div className="space-y-2">
-        <DoneRow title={o.requestTitle ?? "NGO drive"} tag={distributed ? "Donated · proof published" : "Donated · NGO drive"}
+      <div className="space-y-2" data-testid={`history-drive-offer-${o.id}`}>
+        <DoneRow title={o.requestTitle ?? "NGO drive"} tag={tag}
           sub={distributed ?? [doneDate(when), o.requestCity].filter(Boolean).join(" · ")}
-          thumb={o.media?.[0]?.mediaUrl ?? null} photos={(o.media ?? []).map(m => m.mediaUrl)}
-          href={distributed && d.driveId ? `/drives/${d.driveId}/proof` : `/ngo-drive-offers/${o.id}/handover`} />
-        {distributed && d.driveId ? <DriveProofCardLoader driveId={d.driveId} /> : null}
+          thumb={photos[0] ?? null} photos={photos}
+          href={`/certificate?offerId=${o.id}&type=ngo_drive`} />
+        {published && d.proofPublished ? (
+          <DriveProofCard proof={{
+            ngoName: null, beneficiariesReached: d.driveBeneficiariesReached ?? null, beneficiaryGroup: d.driveBeneficiaryGroup ?? null,
+            quantityDistributed: d.proofQuantityDistributed ?? null, itemName: d.driveItemName ?? null, distributedOn: d.proofDistributedOn ?? null,
+            location: d.proofLocation ?? null, ngoStatement: d.proofNote ?? null,
+            media: proofPhotos.map(u => ({ mediaUrl: u, mediaType: "IMAGE" })),
+          } as never} />
+        ) : published && d.driveId ? (
+          <DriveProofCardLoader driveId={d.driveId} />
+        ) : (
+          <p data-testid="history-proof-pending" className="text-2xs text-stone-500 dark:text-stone-400">
+            Proof pending: the NGO will share photos and details after it distributes the items.{" "}
+            <Link href={`/ngo-drive-offers/${o.id}/handover`} className="font-semibold text-emerald-700 hover:underline dark:text-emerald-400">Open handover</Link>
+          </p>
+        )}
       </div>
     ),
   };
@@ -1502,7 +1529,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
   onChanged: () => void;
 }) {
   const entries = useMemo(() => {
-    const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => isDriveOffer(o) ? driveDoneEntry(o) : ({
+    // Drive offers count as donated once the handover completed (certificate issued then).
+    const fromOffers = offers.filter(o => isDriveOffer(o) ? driveOfferDonated(o as never) : o.status === "COMPLETED").map(o => isDriveOffer(o) ? driveDoneEntry(o) : ({
       key: `o${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
       text: [o.requestTitle, o.requestCity, "donated completed your offer"].join(" "),
@@ -1526,7 +1554,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
           href={isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null} />,
       };
     });
-    const fromClosedOffers = offers.filter(o => (isDriveOffer(o) ? DRIVE_TERMINAL_STATUSES : TERMINAL_OFFER_STATUSES).includes(o.status) && o.status !== "COMPLETED").map(o => ({
+    const fromClosedOffers = offers.filter(o => (isDriveOffer(o) ? DRIVE_TERMINAL_STATUSES : TERMINAL_OFFER_STATUSES).includes(o.status) && o.status !== "COMPLETED"
+      && !(isDriveOffer(o) && driveOfferDonated(o as never))).map(o => ({
       key: `c${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
       text: [o.requestTitle, o.requestCity, o.status.replace(/_/g, " "), o.rejectionReason].join(" "),
@@ -2893,7 +2922,8 @@ export default function DashboardPage() {
   const liveNgoOfferIds = new Set(acceptedNgoOffers.map(o => o.id));
   // History: ended request offers, and drive offers that are completed or ended (each once).
   const donorHistoryOffers = donationOffers.filter(o => isDriveOffer(o)
-    ? !liveNgoOfferIds.has(o.id) && o.status !== "DRAFT" && (o.status === "COMPLETED" || DRIVE_TERMINAL_STATUSES.includes(o.status))
+    // Donated (handover completed, certificate issued) shows here at once; ended ones once they leave Matches.
+    ? driveOfferDonated(o as never) || (!liveNgoOfferIds.has(o.id) && o.status !== "DRAFT" && DRIVE_TERMINAL_STATUSES.includes(o.status))
     : !isLiveDonorOffer(o));
   const ngoOffersNeedYou = acceptedNgoOffers.some(o => ["NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED"].includes(o.status));
   const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));

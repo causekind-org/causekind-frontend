@@ -420,9 +420,38 @@ describe("Matches: Donee | NGO segments count and show each item once", () => {
     render(<DashboardPage />);
     await openTab(/History/);
     expect(await tab(/History/)).toHaveTextContent(/2/);
-    expect(await screen.findByText("Your 10 jackets were distributed to 50 children")).toBeInTheDocument();
+    expect(await screen.findByText("The NGO has distributed your 10 jackets. This drive reached 50 people (children).")).toBeInTheDocument();
     expect(screen.getByText(/School bags drive/)).toBeInTheDocument();
     expect(await tab(/Matches/)).toHaveTextContent(/0/);
+  });
+});
+
+describe("History: an NGO drive offer from handover to proof", () => {
+  const driveOffer = (id: number, status: string, over: Record<string, unknown> = {}) => ({
+    id, status, driveId: 5, driveTitle: "Winter jackets drive", ngoName: "Hope Trust", quantity: 10,
+    driveItemName: "Jackets", driveUnit: "PIECES", submittedAt: iso(2 * DAY), media: [], ...over,
+  });
+  const openHistory = async () => {
+    window.history.replaceState(null, "", "/dashboard#offers");
+    render(<DashboardPage />);
+    await openTab(/History/);
+  };
+
+  it("handover completed (ISSUE_WINDOW_OPEN): Donated · certificate issued, Certificate link, proof pending", async () => {
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "ISSUE_WINDOW_OPEN")]);
+    await openHistory();
+    const entry = await screen.findByTestId("history-drive-offer-7");
+    expect(entry).toHaveTextContent("Donated · certificate issued");
+    expect(within(entry).getByRole("link", { name: /Certificate/ })).toHaveAttribute("href", "/certificate?offerId=7&type=ngo_drive");
+    expect(within(entry).getByTestId("history-proof-pending")).toBeInTheDocument();
+  });
+
+  it("proof published: the same single entry shows the distribution line, no duplicate", async () => {
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "COMPLETED", { driveStatus: "FULFILLED", driveBeneficiariesReached: 50, driveBeneficiaryGroup: "Elderly" })]);
+    await openHistory();
+    expect(await screen.findAllByTestId("history-drive-offer-7")).toHaveLength(1);
+    expect(screen.getByText("The NGO has distributed your 10 jackets. This drive reached 50 people (elderly).")).toBeInTheDocument();
+    expect(screen.queryByTestId("history-proof-pending")).toBeNull();
   });
 });
 

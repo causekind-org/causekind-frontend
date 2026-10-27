@@ -32,12 +32,16 @@ describe("proof form validation", () => {
     expect(validateProof({ ...full, distributedOn: "2026-10-09" }, drive).distributedOn).toMatch(/on or after 2026-10-10/);
   });
 
-  it("the card: quantity defaults to the received amount, the date input has no max, Submit waits until all valid", () => {
+  it("the card: quantity and people reached open empty, the date input has no max, Submit waits until all valid", () => {
     const { container } = render(<DriveProofPanel drive={drive} onSubmitted={vi.fn()} />);
     const date = container.querySelector('input[name="distributedOn"]') as HTMLInputElement;
     expect(date.max).toBe("");
     expect(date.min).toBe("2026-10-10");
-    expect((container.querySelector('input[name="quantityDistributed"]') as HTMLInputElement).value).toBe("12");
+    const qty = container.querySelector('input[name="quantityDistributed"]') as HTMLInputElement;
+    expect(qty.value).toBe("");
+    expect(qty.max).toBe("12");
+    expect((container.querySelector('input[name="beneficiariesReached"]') as HTMLInputElement).value).toBe("");
+    expect(screen.getByText(/Items you actually distributed so far/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Submit proof/ })).toBeDisabled();
     expect(screen.getByTestId("proof-submit-hint")).toHaveTextContent(/need your attention/);
     // A wrong file type is refused inline; a photo is counted.
@@ -49,6 +53,14 @@ describe("proof form validation", () => {
     fireEvent.change(container.querySelector('input[name="location"]')!, { target: { value: "Hall" } });
     fireEvent.change(container.querySelector('textarea[name="note"]')!, { target: { value: "Done" } });
     fireEvent.click(container.querySelector('input[name="consentConfirmed"]')!);
+    // Still blocked: counts are empty.
+    expect(screen.getByRole("button", { name: /Submit proof/ })).toBeDisabled();
+    fireEvent.change(container.querySelector('input[name="beneficiariesReached"]')!, { target: { value: "40" } });
+    fireEvent.change(qty, { target: { value: "13" } });
+    expect(screen.getByRole("button", { name: /Submit proof/ })).toBeDisabled();
+    fireEvent.change(qty, { target: { value: "2.5" } });
+    expect(screen.getByRole("button", { name: /Submit proof/ })).toBeDisabled();
+    fireEvent.change(qty, { target: { value: "12" } });
     expect(screen.getByRole("button", { name: /Submit proof/ })).toBeEnabled();
   });
 });

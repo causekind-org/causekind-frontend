@@ -3,12 +3,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { approveNgoActivity, getPendingNgoActivities, rejectNgoActivity, type AdminNgoActivity } from "@/lib/api";
 import { toast } from "@/lib/toast";
+import { AdminSearchBox, NoSearchResults, matchesQuery } from "@/components/admin/AdminSearchBox";
+import { readUrlParam, writeUrlParams } from "@/components/admin/adminUrlState";
 
 /** NGO past-activity entries waiting for review: approve, or reject with a reason. */
 export function NgoActivityModerationPanel({ onChange }: { onChange?: () => void } = {}) {
   const [items, setItems] = useState<AdminNgoActivity[] | null>(null);
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
+  const [query, setQuery] = useState(() => readUrlParam("q").trim().slice(0, 100));
+  useEffect(() => { writeUrlParams({ q: query || null }); }, [query]);
+  useEffect(() => () => writeUrlParams({ q: null }), []);
 
   const load = useCallback(async () => {
     try { setItems(await getPendingNgoActivities()); } catch { setItems([]); toast.error("Couldn't load past activity to review."); }
@@ -31,13 +36,16 @@ export function NgoActivityModerationPanel({ onChange }: { onChange?: () => void
     }
   }
 
+  const shown = (items ?? []).filter(x => matchesQuery(query, x.organizationName, x.activity.title));
   return (
     <section aria-label="Past activity to review" className="rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Past activity to review</h2>
+      <div className="mt-3"><AdminSearchBox value={query} onChange={setQuery} label="Search past activity" placeholder="Search NGO name or activity title" /></div>
       {items === null ? <p role="status" className="mt-2 text-sm">Loading…</p>
-        : items.length === 0 ? <p className="mt-2 text-sm text-stone-500">Nothing waiting.</p> : (
+        : items.length === 0 ? <p className="mt-2 text-sm text-stone-500">Nothing waiting.</p>
+        : shown.length === 0 ? <div className="mt-3"><NoSearchResults query={query} onClear={() => setQuery("")} /></div> : (
         <ul className="mt-3 space-y-4">
-          {items.map(({ activity: a, organizationName }) => (
+          {shown.map(({ activity: a, organizationName }) => (
             <li key={a.id} data-testid="admin-activity" className="rounded-lg border border-stone-200 p-4 dark:border-zinc-700">
               <p className="text-xs text-stone-500">{organizationName ?? "NGO"} · {a.activityDate}</p>
               <p className="font-semibold">{a.title}</p>

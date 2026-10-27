@@ -1,5 +1,6 @@
 "use client";
 
+import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -13,6 +14,25 @@ import {
 } from "@/lib/api";
 import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
 import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
+import { formatIST, formatISTDate } from "@/lib/formatIST";
+import { AdminSearchBox, NoSearchResults, matchesQuery } from "@/components/admin/AdminSearchBox";
+import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
+import { readUrlParam, statusIndexFromUrl, writeUrlParams } from "@/components/admin/adminUrlState";
+
+/** ?q= search state for a panel; cleared from the URL when the panel unmounts. */
+function useUrlQuery(): [string, (q: string) => void] {
+  const [query, setQuery] = useState(() => readUrlParam("q").trim().slice(0, 100));
+  useEffect(() => { writeUrlParams({ q: query || null }); }, [query]);
+  useEffect(() => () => writeUrlParams({ q: null, status: null }), []);
+  return [query, setQuery];
+}
+
+/** ?status= tab state over a list of options (index; default first). */
+function useUrlStatus<T extends { value: string }>(options: T[], fallback: number): [number, (i: number) => void] {
+  const [index, setIndex] = useState(() => statusIndexFromUrl(options, fallback));
+  useEffect(() => { writeUrlParams({ status: index === fallback ? null : options[index].value }); }, [index, fallback, options]);
+  return [index, setIndex];
+}
 
 const field = "w-full rounded-lg border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
@@ -70,7 +90,9 @@ const DRIVE_DECISIONS: { value: DriveDecision; text: string; confirm: string }[]
 ];
 
 export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
-  const [status, setStatus] = useState<AdminDriveStatusFilter>("PENDING_REVIEW");
+  const [statusIndex, setStatusIndex] = useUrlStatus(DRIVE_FILTERS, 0);
+  const status = DRIVE_FILTERS[statusIndex].value;
+  const [query, setQuery] = useUrlQuery();
   const [drives, setDrives] = useState<NgoDrive[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<NgoDrive | null>(null);
@@ -116,19 +138,19 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
   }
 
   const d = detail;
+  const shownDrives = drives.filter(x => matchesQuery(query, x.title, x.id, x.ngoUser?.fullName, (x as { ngoName?: string | null }).ngoName, x.itemName));
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
-      <label className="block max-w-xs text-sm">Drive status
-        <select className={field} value={status} onChange={e => { setStatus(e.target.value as AdminDriveStatusFilter); setDetail(null); }}>
-          {DRIVE_FILTERS.map(f => <option key={f.value} value={f.value}>{f.text}</option>)}
-        </select>
-      </label>
+      <AdminStatusTabs label="Drive status" options={DRIVE_FILTERS.map(f => ({ label: f.text }))} selected={statusIndex}
+        onSelect={i => { if (i !== statusIndex) { setStatusIndex(i); setDetail(null); } }} />
+      <AdminSearchBox value={query} onChange={setQuery} label="Search drives" placeholder="Search drive title, ID, NGO name or item" />
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <section aria-label="Drives" className="space-y-3">
-          {loading ? <p role="status">Loading drives…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No drives in this status.</p> : null}
-          {drives.map(drive => (
+          {loading ? <p role="status">Loading drives…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No drives in this status.</p>
+            : shownDrives.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
+          {shownDrives.map(drive => (
             <button key={drive.id} onClick={() => void open(drive.id)}
               className={`w-full rounded-xl border bg-white p-4 text-left dark:bg-zinc-900 ${d?.id === drive.id ? "border-ngo-700 ring-1 ring-ngo-700" : "border-stone-200 dark:border-zinc-700"}`}>
               <span className="block font-semibold">{drive.title}</span>
@@ -168,7 +190,9 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
                   driveConditionLabel(d.itemCondition),
                   driveConditionRule(d.itemCondition),
                   d.mustBeWorking ? "(Must be in working order)" : null,
+                  d.requireClean ? "(Washed and clean)" : null,
                 ].filter(Boolean).join(" · "),
+                ...Object.fromEntries(categoryDetailRows(d.category, d.categoryDetails).map(r => [r.label, r.value])),
                 Urgency: label(d.urgency),
                 "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}${d.beneficiaryDescription ? ` (${d.beneficiaryDescription})` : ""}`,
                 "Needed by": d.neededBy,
@@ -273,7 +297,9 @@ const OFFER_FILTERS: { value: AdminDriveOfferFilter; text: string; empty: string
  * admin to approve here. Never shows donor contact details.
  */
 export function NgoDriveOffersPanel() {
-  const [status, setStatus] = useState<AdminDriveOfferFilter>("IN_HANDOVER");
+  const [statusIndex, setStatusIndex] = useUrlStatus(OFFER_FILTERS, OFFER_FILTERS.findIndex(f => f.value === "IN_HANDOVER"));
+  const status = OFFER_FILTERS[statusIndex].value;
+  const [query, setQuery] = useUrlQuery();
   const [offers, setOffers] = useState<AdminPendingDriveOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdminDriveOfferDetail | null>(null);
@@ -296,18 +322,18 @@ export function NgoDriveOffersPanel() {
 
   const when = (v?: string | null) => (v ? new Date(v).toLocaleString() : null);
   const empty = OFFER_FILTERS.find(f => f.value === status)?.empty;
+  const shownOffers = offers.filter(o => matchesQuery(query, o.donorName, o.ngoName, o.driveTitle, o.id));
 
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
-      <label className="block text-sm font-semibold">Status
-        <select className={`${field} mt-1 max-w-xs`} value={status} onChange={e => { setDetail(null); setStatus(e.target.value as AdminDriveOfferFilter); }}>
-          {OFFER_FILTERS.map(f => <option key={f.value} value={f.value}>{f.text}</option>)}
-        </select>
-      </label>
+      <AdminStatusTabs label="Status" options={OFFER_FILTERS.map(f => ({ label: f.text }))} selected={statusIndex}
+        onSelect={i => { if (i !== statusIndex) { setDetail(null); setStatusIndex(i); } }} />
+      <AdminSearchBox value={query} onChange={setQuery} label="Search drive offers" placeholder="Search donor, NGO, drive title or offer ID" />
       <p className="text-sm text-stone-500">Read only. The NGO accepts or declines each offer, and the handover starts as soon as it accepts.</p>
       {errorView}
-      {loading ? <p role="status">Loading drive offers…</p> : offers.length === 0 ? <p className="text-sm text-stone-500">{empty}</p> : null}
-      {offers.map(o => (
+      {loading ? <p role="status">Loading drive offers…</p> : offers.length === 0 ? <p className="text-sm text-stone-500">{empty}</p>
+        : shownOffers.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
+      {shownOffers.map(o => (
         <article key={o.id} className={card}>
           <h2 className="text-lg font-bold">{o.donorName || "Donor"} → {o.driveTitle}</h2>
           <p className="mt-1 text-sm text-stone-500">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${serverDate(o.submittedAt).toLocaleString()}` : ""}</p>
@@ -382,6 +408,8 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
+  const [query, setQuery] = useUrlQuery();
+  const [enlarged, setEnlarged] = useState<string | null>(null);
   const { fail, clear, view: errorView } = useErrors();
 
   const load = useCallback(async () => {
@@ -404,22 +432,24 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
     finally { setBusy(null); }
   }
 
+  const shownProofs = drives.filter(x => matchesQuery(query, x.ngoName, x.ngoUser?.fullName, x.title, x.id));
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
+      {enlarged && (
+        <div role="dialog" aria-modal="true" aria-label="Proof photo" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setEnlarged(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- signed URL */}
+          <img src={enlarged} alt="Proof photo, enlarged" className="max-h-[85vh] max-w-full rounded-lg object-contain" />
+          <button type="button" className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-stone-900" onClick={() => setEnlarged(null)}>Close</button>
+        </div>
+      )}
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
-      {loading ? <p role="status">Loading distribution proofs…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No distribution proofs are waiting for review.</p> : null}
-      {drives.map(d => (
-        <article key={d.id} className={card}>
-          <h2 className="text-lg font-bold">{d.title}</h2>
-          <p className="mt-1 text-sm text-stone-500">{d.ngoUser?.fullName}{d.distributionProofSubmittedAt ? ` · submitted ${serverDate(d.distributionProofSubmittedAt).toLocaleString()}` : ""}</p>
-          <p className="mt-3 text-sm">
-            Received {d.quantityReceived ?? 0} of {d.quantityNeeded} {label(d.unit)} · reached {d.beneficiariesReached ?? "not reported"} {label(d.beneficiaryGroup)}
-            <span className="block text-xs text-stone-500">The drive planned for about {d.beneficiaryCount}.</span>
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {(d.distributionProofUrls || "").split("|").filter(Boolean).map((url, i) => <Photo key={url} src={url} alt={`Proof photo ${i + 1}`} />)}
-          </div>
+      <AdminSearchBox value={query} onChange={setQuery} label="Search distribution proofs" placeholder="Search NGO name, drive title or drive ID" />
+      {loading ? <p role="status">Loading distribution proofs…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No distribution proofs are waiting for review.</p>
+        : shownProofs.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
+      {shownProofs.map(d => (
+        <article key={d.id} className={card} data-testid="proof-card">
+          <ProofDetails d={d} onEnlarge={setEnlarged} />
           <label className="mt-4 block text-sm">Reason (required to reject)
             <textarea className={field} rows={2} maxLength={500} value={reasons[d.id] ?? ""} disabled={busy === d.id}
               onChange={e => setReasons(prev => ({ ...prev, [d.id]: e.target.value }))} />
@@ -431,5 +461,56 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
         </article>
       ))}
     </div>
+  );
+}
+
+/** Everything the NGO submitted with its distribution proof, as in its own drive report. */
+export function ProofDetails({ d, onEnlarge }: { d: AdminProofDrive; onEnlarge: (url: string) => void }) {
+  const photos = d.proofPhotoUrls?.length ? d.proofPhotoUrls : (d.distributionProofUrls || "").split("|").filter(Boolean);
+  const unit = label(d.unit);
+  const yesNo = (v?: boolean | null) => (v == null ? "Not reported" : v ? "Yes" : "No");
+  const rows: [string, React.ReactNode][] = [
+    ["Drive", <>{d.title} <span className="text-stone-500">· #{d.id}</span></>],
+    ["NGO", d.ngoName || d.ngoUser?.fullName || "Not provided"],
+    ["Collection dates", [d.collectionStartedAt || d.liveAt || d.createdAt, d.collectionCompletedAt].some(Boolean)
+      ? `${formatISTDate(d.collectionStartedAt || d.liveAt || d.createdAt) || "?"} – ${formatISTDate(d.collectionCompletedAt) || "ongoing"}` : "Not recorded"],
+    ["Quantity needed / received", `${d.quantityNeeded ?? "?"} / ${d.quantityReceived ?? 0} ${unit}`],
+    ["People reached", d.beneficiariesReached != null ? `${d.beneficiariesReached} ${label(d.beneficiaryGroup)} (planned about ${d.beneficiaryCount})` : "Not reported"],
+    ["Quantity distributed", d.proofQuantityDistributed != null ? `${d.proofQuantityDistributed} ${unit}` : "Not reported"],
+    ["Distribution date", formatISTDate(d.proofDistributedOn) || "Not reported"],
+    ["Location", d.proofLocation || "Not reported"],
+    ["Note", d.proofNote || "None"],
+    ["Faces blurred / consent confirmed", d.proofFacesBlurred != null && d.proofFacesBlurred !== d.proofConsentConfirmed
+      ? `Faces blurred: ${yesNo(d.proofFacesBlurred)} · Consent: ${yesNo(d.proofConsentConfirmed)}` : yesNo(d.proofConsentConfirmed ?? d.proofFacesBlurred)],
+    ["Submitted at", formatIST(d.distributionProofSubmittedAt) || "Not recorded"],
+  ];
+  const rejection = d.previousProofRejectionReason || d.previousRejectionReason || d.proofRejectionReason;
+  const donors = d.proofDonors?.length ? d.proofDonors : (d.donors ?? []);
+  return (
+    <>
+      <h2 className="text-lg font-bold">{d.title}</h2>
+      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2" data-testid="proof-fields">
+        {rows.map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 whitespace-pre-wrap break-words">{value}</dd></div>)}
+      </dl>
+      {rejection && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100"><strong>Previous rejection reason:</strong> {rejection}</p>}
+      <p className="mt-4 text-sm font-semibold text-stone-500">Photos ({photos.length})</p>
+      <div className="mt-2 flex flex-wrap gap-3">
+        {photos.map((url, i) => (
+          <button key={url} type="button" aria-label={`Enlarge proof photo ${i + 1}`} onClick={() => onEnlarge(url)}>
+            <Photo src={url} alt={`Proof photo ${i + 1}`} />
+          </button>
+        ))}
+      </div>
+      <p className="mt-4 text-sm font-semibold text-stone-500">Donors</p>
+      {donors.length === 0 ? <p className="text-sm text-stone-500">No donor list sent.</p> : (
+        <ul className="mt-1 divide-y divide-stone-100 text-sm dark:divide-zinc-800" data-testid="proof-donors">
+          {donors.map((x, i) => (
+            <li key={x.offerId ?? i} className="py-2">
+              <span className="font-semibold">{x.donorName}</span> · {x.quantity ?? "—"} {unit} · received {formatISTDate(x.receivedAt) || "—"}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }

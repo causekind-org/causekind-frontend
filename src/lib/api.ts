@@ -2483,6 +2483,14 @@ export type Certificate = {
   certificateNumber: string;
   donorName: string;
   category: string;
+  /** NGO drive certificates: the item condition, separate from the category. */
+  condition?: string | null;
+  /** NGO drive certificates only: the receiving NGO's name. */
+  ngoName?: string | null;
+  /** NGO drive certificates only: the drive's title. */
+  driveTitle?: string | null;
+  /** Drive certificates only: readable unit, e.g. "pieces". */
+  quantityUnit?: string | null;
   quantityDelivered: number;
   handoverDate: string;
   qrCodeUrl: string | null;
@@ -5077,6 +5085,20 @@ export type NgoApplicationStatusResponse = {
   needsInformationDetails: string | null;
   /** Per-item correction request (NEEDS_INFORMATION): wizard field key and the reviewer's note. */
   correctionItems?: NgoCorrectionItem[];
+  /** Correction round number (1 = first request). */
+  correctionRound?: number | null;
+  /** True once the NGO resubmitted after a correction request. */
+  resubmitted?: boolean | null;
+  /** The reviewer's overall message for the current correction round. */
+  overallNote?: string | null;
+  correctionHistory?: NgoCorrectionRound[] | null;
+};
+
+/** One "Request corrections" round and what the NGO changed in reply. */
+export type NgoCorrectionRound = {
+  roundNumber: number; overallNote?: string | null; flaggedItems?: NgoCorrectionItem[] | null;
+  status?: string | null; createdAt?: string | null; resubmittedAt?: string | null;
+  previousValues?: Record<string, string> | null; newValues?: Record<string, string> | null;
 };
 
 /** A wizard field or file a reviewer asked to fix, e.g. "registrationNumber" or "documents.trust-deed". */
@@ -5178,10 +5200,17 @@ export type NgoReviewDetail = {
   /** Wizard keys ("documents.x") the current wizard requires / offers as optional. */
   requiredDocuments?: string[];
   optionalDocuments?: string[];
+  /** Every correction round, oldest first (absent on older servers). */
+  correctionHistory?: NgoCorrectionRound[] | null;
+  resubmitted?: boolean | null; correctionRound?: number | null;
+  previouslyFlaggedItems?: (NgoCorrectionItem & { label?: string })[] | null; previousOverallNote?: string | null;
 };
-export function adminGetNgoApplications(status: string, page = 0) {
+/** {@code q}: optional search (org name, reference, email, phone, PAN, registration no., representative). */
+export function adminGetNgoApplications(status: string, page = 0, q = "") {
   const params = new URLSearchParams({ page: String(page) });
   if (status) params.set("status", status);
+  const query = q.trim().slice(0, 100);
+  if (query) params.set("q", query);
   return request<{ content: NgoReviewApplication[]; totalPages: number; totalElements: number }>(
     `/api/v1/admin/ngo-applications?${params}`);
 }
@@ -5209,6 +5238,8 @@ export type NgoOverview = {
   photosDueRequestName: string; verifiedDeliveries: number; handovers: NgoHandover[];
   /** One drive at a time: false while an earlier drive is not finished (proof approved). */
   canStartDrive?: boolean; blockingDriveTitle?: string; blockingDriveStatus?: string;
+  /** Drives waiting for distribution proof. proofDueAt is UTC without a zone. */
+  proofDueDrives?: { id: number; title: string; quantityReceived: number; proofDueAt?: string | null }[];
 };
 export function getNgoOverview() {
   // Activity events must not reuse totals cached before the handover changed.
@@ -5231,6 +5262,22 @@ export async function uploadNgoHandoverProof(kind: NgoHandover["kind"], id: numb
 export type DrivePhotoItem = {
   url: string;
   storageKey?: string;
+  /** A short-lived link the browser can show (the bucket is private); never sent back as the url. */
+  previewUrl?: string;
+};
+
+/** Category-specific drive fields: Clothing sizing or Furniture dimensions. */
+export type DriveCategoryDetails = {
+  sizes?: string[];
+  fits?: string[];
+  /** Older single choice; read only. */
+  fit?: string;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+  weightKg?: number;
+  material?: string;
+  needsAssembly?: boolean;
 };
 
 export type CreateNgoDrivePayload = {
@@ -5254,9 +5301,12 @@ export type CreateNgoDrivePayload = {
   locationArea: string;
   locationCity: string;
   urgency: "NORMAL" | "HIGH" | "CRITICAL";
-  beneficiaryGroup: string;
+  /** Legacy single group; the wizard sends beneficiaryGroups. */
+  beneficiaryGroup?: string;
+  beneficiaryGroups: string[];
   beneficiaryCount: number;
   beneficiaryDescription: string;
+  categoryDetails?: DriveCategoryDetails;
   neededBy: string;          // ISO date YYYY-MM-DD
   availableDays: ("MON"|"TUE"|"WED"|"THU"|"FRI"|"SAT"|"SUN")[];
   availableFrom: string;     // "HH:mm"
@@ -5332,7 +5382,10 @@ export type NgoDrive = {
   proofConsentConfirmed?: boolean | null;
   pickupRadiusKm?: number | null;
   urgency: string;
+  /** Display label of the groups ("Children, Women"). */
   beneficiaryGroup: string;
+  beneficiaryGroups?: string[];
+  categoryDetails?: DriveCategoryDetails | null;
   beneficiaryCount: number;
   beneficiaryDescription?: string | null;
   neededBy: string; // ISO Date
@@ -5392,6 +5445,15 @@ export type PublicNgoInfo = {
   founderDesignation?: string | null;
   /** The public page address, /ngos/{slug}. */
   slug?: string | null;
+  /** Drop-off details for donors (optional; older servers omit them). */
+  dropOffAddress?: string | null;
+  handoverContactName?: string | null;
+  handoverContactPhone?: string | null;
+  availableDays?: string | string[] | null;
+  availableHours?: string | null;
+  /** Approved past activities, newest first. */
+  activities?: PublicNgoActivity[] | null;
+  pastActivities?: PublicNgoActivity[] | null;
 };
 
 /** The public NGO page, /ngos/{slug}. Name + designation only for representatives. */
@@ -5416,7 +5478,8 @@ export type PublicNgoProfile = {
   /** Registration certificate, 12A, 80G: short-lived links. */
   documents?: { label: string; url: string }[];
   trackRecord?: PublicNgoTrackRecord | null;
-  activities?: { id: number; title: string; activityDate: string; description?: string | null; media: { mediaType: "IMAGE" | "VIDEO"; url: string }[] }[];
+  activities?: PublicNgoActivity[];
+  pastActivities?: PublicNgoActivity[] | null;
   liveDrives?: PublicNgoDrive[];
 };
 
@@ -5533,6 +5596,8 @@ export type PublicNgoDrive = {
   pickupRadiusKm?: number | null;
   urgency?: string | null;
   beneficiaryGroup?: string;
+  beneficiaryGroups?: string[];
+  categoryDetails?: DriveCategoryDetails | null;
   beneficiaryCount?: number;
   beneficiaryDescription?: string | null;
   neededBy?: string | null;
@@ -5553,9 +5618,31 @@ export type PublicNgoDrive = {
   ngoCity?: string | null;
   verified?: boolean;
   ngo?: PublicNgoInfo | null;
+  /** Distinct donors whose offers the NGO accepted (or later). */
   donorCount?: number;
   driveType?: string;
   taxBenefit?: boolean;
+  /** The drive's own cover photo. When present (even null) it replaces referencePhotoUrl on cards. */
+  coverPhotoUrl?: string | null;
+  /** The drive's pin, when the server shares it (used for the pickup-radius check). */
+  latitude?: number | null;
+  longitude?: number | null;
+  locationLatitude?: number | null;
+  locationLongitude?: number | null;
+  /** Approved NGO past activities, newest first (detail endpoint). */
+  pastActivities?: PublicNgoActivity[] | null;
+};
+
+/** One approved NGO past activity, as the public drive / NGO pages show it. */
+export type PublicNgoActivity = {
+  id: number;
+  title: string;
+  activityDate?: string | null;
+  summary?: string | null;
+  description?: string | null;
+  status?: string | null;
+  coverPhotoUrl?: string | null;
+  media?: { mediaType?: string | null; url?: string | null }[] | null;
 };
 
 // ── Admin: NGO drives, drive offers, distribution proofs ────────────────────
@@ -5582,7 +5669,18 @@ export function adminRequestNgoDriveChanges(id: number, reason: string) {
 export function adminRejectNgoDrive(id: number, reason: string) {
   return request<NgoDrive>(`/api/v1/admin/ngo-drives/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
 }
-export type AdminProofDrive = NgoDrive & { distributionProofUrls?: string | null; distributionProofSubmittedAt?: string | null; beneficiariesReached?: number | null };
+export type AdminProofDrive = NgoDrive & {
+  distributionProofUrls?: string | null; distributionProofSubmittedAt?: string | null; beneficiariesReached?: number | null;
+  proofDistributedOn?: string | null; proofLocation?: string | null; proofQuantityDistributed?: number | null;
+  proofNote?: string | null; proofConsentConfirmed?: boolean | null; proofFacesBlurred?: boolean | null;
+  /** Signed photo links, when the server sends them as a list. */
+  proofPhotoUrls?: string[] | null;
+  collectionStartedAt?: string | null; collectionCompletedAt?: string | null; liveAt?: string | null;
+  proofRejectionReason?: string | null; previousRejectionReason?: string | null; previousProofRejectionReason?: string | null;
+  ngoName?: string | null;
+  donors?: NgoDriveReportDonor[] | null;
+  proofDonors?: Partial<NgoDriveReportDonor>[] | null;
+};
 export function adminGetNgoDriveProofs() {
   return request<AdminProofDrive[]>("/api/v1/admin/ngo-drives/proofs");
 }
@@ -5640,7 +5738,8 @@ export async function updateNgoDrive(id: number, payload: CreateNgoDrivePayload)
 }
 
 /** Uploads a drive's reference photo and returns its URL (never a data URL). */
-export async function uploadNgoDriveReferencePhoto(file: File): Promise<string> {
+/** Uploads a drive wizard photo: url is stored with the drive, previewUrl is for showing it now. */
+export async function uploadNgoDriveReferencePhoto(file: File): Promise<{ url: string; previewUrl: string }> {
   const body = new FormData(); body.append("file", file);
   const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const response = await fetch(`${BASE_URL}/api/v1/ngo-drives/uploads/reference-photo`, {
@@ -5651,8 +5750,27 @@ export async function uploadNgoDriveReferencePhoto(file: File): Promise<string> 
     const result = await response.json().catch(() => null);
     throw new ApiError(response.status, result?.fieldErrors?.[0]?.message || result?.detail || "We could not upload the photo. Please try again.", result);
   }
-  const { url } = await response.json() as { url: string };
-  return url;
+  const { url, previewUrl } = await response.json() as { url: string; previewUrl?: string };
+  return { url, previewUrl: previewUrl || url };
+}
+
+/** The wizard removed or replaced a photo: the server deletes it unless a drive still uses it. */
+export async function deleteUnusedNgoDrivePhoto(url: string): Promise<void> {
+  await request(`/api/v1/ngo-drives/uploads/reference-photo?url=${encodeURIComponent(url)}`, { method: "DELETE" });
+}
+
+/** The NGO's server-side drive wizard draft, or null when there is none. */
+export async function getNgoDriveDraft(): Promise<{ payload: Record<string, unknown>; updatedAt: string } | null> {
+  const r = await request<{ payload: Record<string, unknown>; updatedAt: string } | undefined>("/api/v1/ngo-drives/draft");
+  return r && r.payload ? r : null;
+}
+
+export async function saveNgoDriveDraft(payload: Record<string, unknown>): Promise<void> {
+  await request("/api/v1/ngo-drives/draft", { method: "PUT", body: JSON.stringify({ payload }) });
+}
+
+export async function deleteNgoDriveDraft(): Promise<void> {
+  await request("/api/v1/ngo-drives/draft", { method: "DELETE" });
 }
 
 export async function getNgoDrive(id: number): Promise<PublicNgoDrive> {
@@ -5673,6 +5791,8 @@ export async function getNgoDriveDetail(id: number): Promise<NgoDrive> {
 
 export type NgoDriveOfferResponse = {
   id: number;
+  /** UTC instant when the post-handover issue window closes (backend-computed; 3 days). Absent on older servers. */
+  issueWindowEndsAt?: string | null;
   driveId: number;
   donorDisplayName: string;
   status: string;
@@ -5746,6 +5866,23 @@ export type NgoDriveOfferResponse = {
     availableHours?: string | null;
   };
   ngoAllowsDonorCall?: boolean | null;
+  /** Issued once the handover completes. */
+  certificateIssued?: boolean | null;
+  certificateNumber?: string | null;
+  certificateIssuedAt?: string | null;
+  /** The drive's pin (for the pickup-radius check). */
+  driveLocationLatitude?: number | null;
+  driveLocationLongitude?: number | null;
+  /** Distribution proof on the offer itself, once approved (photo links freshly signed). */
+  proofPublished?: boolean | null;
+  proofQuantityDistributed?: number | null;
+  proofDistributedOn?: string | null;
+  proofLocation?: string | null;
+  proofNote?: string | null;
+  proofPhotoUrls?: string[] | null;
+  /** Distribution proof, once the admin approved it (optional fields). */
+  driveBeneficiariesReached?: number | null;
+  driveBeneficiaryGroup?: string | null;
 };
 
 export type DriveOfferLocation = {
@@ -5983,6 +6120,20 @@ export async function uploadNgoDriveReceiptPhotos(driveId: number, offerId: numb
 
 export function getNgoDriveOfferCertificate(offerId: number) {
   return request<Certificate>(`/api/v1/drive-offers/${offerId}/certificate`);
+}
+
+/** Downloads the server-rendered drive certificate PDF (donor only) as a file. */
+export async function downloadNgoDriveOfferCertificatePdf(offerId: number, certificateNumber?: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/drive-offers/${offerId}/certificate/pdf`, { credentials: "include", cache: "no-store" });
+  if (!res.ok) throw new ApiError(res.status, "Couldn't download the certificate", {});
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `CauseKind-Certificate-${certificateNumber ?? offerId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
 }
 
 export type NgoDriveProofResponse = {

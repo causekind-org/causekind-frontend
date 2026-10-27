@@ -83,16 +83,16 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
         {/* ── Section Header ── */}
         <LiveBoardHeader
           headingId="ngo-drives-heading"
-          badgeLabel="VERIFIED INITIATIVES"
+          badgeLabel="NGO DRIVES"
           badgeDotClassName="bg-emerald-600 dark:bg-emerald-400"
           badgeClassName="mb-5 inline-flex w-max items-center gap-2 rounded-full bg-emerald-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800 ring-1 ring-emerald-600/20 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/30"
-          headlinePrimary="Real organisations."
-          headlineAccent="Real impact."
+          headlinePrimary="Drives by"
+          headlineAccent="verified NGOs"
           headlineAccentClassName="text-emerald-700 dark:text-emerald-400"
-          subtitle="Community drives run by verified NGOs across India. Give the exact items they are collecting, and see the proof."
+          subtitle="NGOs across India list the exact items they need. Pick a drive and give."
           trustCard={{
             title: "Every NGO is verified",
-            description: "Registration, address and contact person checked before a drive goes live",
+            description: "We check each NGO's registration, address and contact person before its drive goes live.",
             iconBoxClassName: "bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400",
           }}
         />
@@ -151,7 +151,7 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
         {/* ── Bottom Banner ── */}
         <LiveBoardBanner
           heading="Want to see every drive?"
-          subtext="Browse all verified NGO drives and give the items they need."
+          subtext="Browse every drive by a verified NGO and give the items they need."
           buttonLabel="SEE ALL DRIVES"
           buttonHref="/requests?source=ngo"
           iconBoxClassName="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-700 dark:text-emerald-400 shrink-0"

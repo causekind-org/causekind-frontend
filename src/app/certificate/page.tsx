@@ -3,7 +3,7 @@
 import { serverDate } from "@/lib/serverTime";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certificate } from "@/lib/api";
+import { getOfferCertificate, getMatchCertificate, verifyCertificate, downloadNgoDriveOfferCertificatePdf, type Certificate } from "@/lib/api";
 import Link from "@/components/AppLink";
 import { ArrowLeft, Download } from "lucide-react";
 import QRCode from "qrcode";
@@ -85,7 +85,21 @@ export default function CertificatePage() {
   // actually clicks download. The card's 1414:1000 ratio matches A4 landscape
   // exactly, so the snapshot fills the page edge to edge with no letterboxing.
   async function handleDownload() {
-    if (!printRef.current || !cert || generating) return;
+    if (!cert || generating) return;
+    if (type === "ngo_drive" && offerId) {
+      // Drive certificates: the backend renders the PDF (NGO + Drive rows, no Condition).
+      setDownloadError(null);
+      setGenerating(true);
+      try {
+        await downloadNgoDriveOfferCertificatePdf(Number(offerId), cert.certificateNumber);
+      } catch (error) {
+        setDownloadError(error instanceof Error ? `Could not download the certificate: ${error.message}` : "Could not download the certificate. Please try again.");
+      } finally {
+        setGenerating(false);
+      }
+      return;
+    }
+    if (!printRef.current) return;
     setDownloadError(null);
     setGenerating(true);
     try {
@@ -143,6 +157,7 @@ export default function CertificatePage() {
   // Absent means in-kind: certificates issued before the field existed do not
   // carry it, and this page must keep rendering them unchanged.
   const isMoney = cert.type === "MONEY";
+  const isDrive = type === "ngo_drive" || cert.ngoName != null || cert.driveTitle != null;
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
@@ -336,7 +351,12 @@ export default function CertificatePage() {
                   holding a certificate number, and the verify endpoint is
                   unauthenticated — showing what a named person gave would turn a
                   verification check into a disclosure. */}
+              {isDrive && cert.ngoName?.trim() && <TableRow label="NGO" value={cert.ngoName} wrap />}
+              {isDrive && cert.driveTitle?.trim() && <TableRow label="Drive" value={cert.driveTitle} wrap />}
               <TableRow label={isMoney ? "Contribution" : "Item Donated"} value={cert.category} />
+              {!isDrive && cert.condition && <TableRow label="Condition" value={cert.condition} />}
+              {/* Same label/value as the backend PDF (CertificatePdfRenderer.renderDrive): a bare number, no unit. */}
+              {isDrive && <TableRow label="Quantity" value={cert.quantityUnit ? `${cert.quantityDelivered} ${cert.quantityUnit}` : String(cert.quantityDelivered)} />}
               <TableRow label="Donation Date" value={handoverDate} />
               <TableRow label="Certificate ID" value={cert.certificateNumber} />
             </tbody>
@@ -406,7 +426,7 @@ export default function CertificatePage() {
   );
 }
 
-function TableRow({ label, value }: { label: string; value: string }) {
+function TableRow({ label, value, wrap }: { label: string; value: string; wrap?: boolean }) {
   return (
     <tr>
       <td style={{
@@ -424,6 +444,7 @@ function TableRow({ label, value }: { label: string; value: string }) {
         color: "#3a2a1a",
         backgroundColor: "rgba(255,255,255,0.3)",
         minWidth: "160px",
+        ...(wrap ? { maxWidth: "420px", overflowWrap: "anywhere" as const, wordBreak: "break-word" as const } : {}),
       }}>
         {value}
       </td>

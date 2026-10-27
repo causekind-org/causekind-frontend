@@ -156,7 +156,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
           onRemove={() => onChange({ authorizationLetter: null })}
           onPreview={() => openPreview("auth")}
         />
-        <CorrectionNote note={corrections?.authorizationLetter} />
+        <CorrectionNote note={corrections?.authorizationLetter} field="authorizationLetter" />
       </section>
 
       {/* Section B: one card per person */}
@@ -237,7 +237,7 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
   function note(fieldName: string) {
     const key = `representatives.${index}.${fieldName}`;
     const older = index === 0 && OLDER_KEYS[fieldName] ? corrections?.[OLDER_KEYS[fieldName]] : undefined;
-    return <CorrectionNote note={corrections?.[key] ?? older} />;
+    return <CorrectionNote note={corrections?.[key] ?? older} field={corrections?.[key] ? key : OLDER_KEYS[fieldName]} />;
   }
 
   async function sendCode() {

@@ -335,33 +335,20 @@
   }
 }
 
-/* Underline Animation */
+/* Underline Styling (wraps cleanly per line across 1, 2, or 3 lines) */
 .ngo-gold-underline {
-  position: relative;
-  display: inline-block;
+  display: inline;
   font-style: italic;
   color: var(--ngo-gold-light);
+  text-decoration: underline;
+  text-decoration-color: var(--ngo-gold);
+  text-decoration-thickness: clamp(4px, 0.12em, 8px);
+  text-underline-offset: clamp(4px, 0.16em, 8px);
+  text-decoration-skip-ink: none;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
-.ngo-gold-underline::after {
-  content: '';
-  position: absolute;
-  bottom: 2px;
-  left: 0;
-  width: 100%;
-  height: 8px;
-  background-color: var(--ngo-gold);
-  border-radius: 4px;
-  transform: scaleX(0);
-  transform-origin: left;
-  animation: ngoScaleXIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) 1.2s forwards;
-}
-
-@keyframes ngoScaleXIn {
-  to {
-    transform: scaleX(1);
-  }
-}
 
 /* Buttons */
 .ngo-btn-pill {
@@ -819,9 +806,5 @@
   }
   .ngo-btn-shine::after {
     animation: none !important;
-  }
-  .ngo-gold-underline::after {
-    animation: none !important;
-    transform: scaleX(1) !important;
   }
 }

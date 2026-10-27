@@ -65,7 +65,7 @@ export function ActivityTab({ drives, offers, loading, error, reload, onDrivesCh
             </h3>
             {key === "offers" ? <OffersPanel offers={toReview} reload={refresh} />
               : key === "handovers" ? <HandoversPanel offers={handovers} reload={refresh} />
-              : <ProofDuePanel drives={proofDue} onSubmitted={refresh} />}
+              : <ProofDuePanel drives={proofDue} onSubmitted={refresh} focusDriveId={driveId} />}
           </section>
         ))
       )}

@@ -30,9 +30,14 @@ interface ReviewSubmitProps {
   isSubmitting?: boolean;
   /** Error message from the /submit API call, shown inline above the navigation. */
   submitError?: string | null;
+  /**
+   * Corrections resubmission: what the NGO changed (label + new value), and how many
+   * flagged items are still unchanged. Submit stays disabled until that is 0.
+   */
+  resubmission?: { changes: { key: string; label: string; value: string }[]; remaining: number } | null;
 }
 
-export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isSubmitting = false, submitError = null }: ReviewSubmitProps) {
+export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isSubmitting = false, submitError = null, resubmission = null }: ReviewSubmitProps) {
   const [error, setError] = useState<string | null>(null);
 
   const docs = getDocsForStructure(data.legalStructure);
@@ -398,6 +403,22 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
         </div>
       )}
 
+      {resubmission && (
+        <section aria-label="What you changed" data-testid="what-you-changed" className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-xs text-stone-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-stone-200">
+          <h3 className="text-sm font-bold">What you changed</h3>
+          {resubmission.changes.length === 0
+            ? <p className="mt-1 text-stone-500">Nothing yet. Fix the items our team flagged.</p>
+            : <ul className="mt-2 space-y-1">{resubmission.changes.map((c) => (
+                <li key={c.key}><span className="font-semibold">{c.label}:</span> <span className="break-words">{c.value}</span></li>
+              ))}</ul>}
+          {resubmission.remaining > 0 && (
+            <p role="alert" className="mt-2 font-semibold text-amber-800 dark:text-amber-300">
+              {resubmission.remaining === 1 ? "1 flagged item still needs a change" : `${resubmission.remaining} flagged items still need a change`} before you can resubmit.
+            </p>
+          )}
+        </section>
+      )}
+
       {/* Navigation */}
       <div className="flex flex-col items-end gap-2 pt-2">
         <div className="flex w-full items-center justify-between gap-3">
@@ -413,7 +434,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={!data.confirmationChecked || !prevStepsComplete || isSubmitting}
+            disabled={!data.confirmationChecked || !prevStepsComplete || isSubmitting || (!!resubmission && resubmission.remaining > 0)}
             className="flex items-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 active:bg-ngo-800 disabled:bg-stone-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed px-6 py-2.5 text-sm font-bold text-white transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40 shadow-sm"
           >
             {isSubmitting ? (
@@ -424,7 +445,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             ) : (
               <>
                 <ShieldCheck className="h-4 w-4" />
-                Submit Application
+                {resubmission ? "Resubmit Application" : "Submit Application"}
               </>
             )}
           </button>

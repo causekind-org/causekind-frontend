@@ -30,6 +30,10 @@ vi.mock("@/lib/api", () => {
     updateNgoDrive: vi.fn(),
     getNgoDriveDetail: (...args: unknown[]) => mockGetNgoDriveDetail(...args),
     uploadNgoDriveReferencePhoto: vi.fn(),
+    getNgoDriveDraft: vi.fn().mockResolvedValue(null),
+    saveNgoDriveDraft: vi.fn().mockResolvedValue(undefined),
+    deleteNgoDriveDraft: vi.fn().mockResolvedValue(undefined),
+    deleteUnusedNgoDrivePhoto: vi.fn().mockResolvedValue(undefined),
   };
 });
 vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));

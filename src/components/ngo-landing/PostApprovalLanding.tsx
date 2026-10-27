@@ -6,7 +6,6 @@ import Link from "next/link";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 import {
   ArrowRight,
-  ShieldCheck,
   TrendingUp,
   Package,
   Heart,
@@ -19,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { triggerNgoLockedToast, type NgoStatusData } from "./useNgoStatus";
 import { NgoHeroRedesign } from "./NgoHeroRedesign";
+import { NgoProofDueSection } from "./NgoProofDueSection";
 import {
   NgoCard,
   NgoSectionHeader,
@@ -255,8 +255,11 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
+      {/* PROOF DUE (hidden when nothing is due or on error) */}
+      <NgoProofDueSection status={status} />
+
       {/* 3. CREATE YOUR FIRST DRIVE */}
-      <section className="ngo-section ngo-band-cream">
+      <section className="ngo-section ngo-band-cream pt-0">
         <div className="ngo-container">
           <NgoSectionHeader
             eyebrow="Create your first drive"
@@ -283,78 +286,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
-      {/* 4. MANAGE YOUR DRIVES */}
-      <section className="ngo-section ngo-band-cream">
-        <div className="ngo-container">
-          <NgoSectionHeader
-            eyebrow="Manage your drives"
-            h2="View, edit and track every drive."
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <NgoCard
-              tag="Active"
-              title="Active drives"
-              body="See progress and edit details."
-            >
-              <Link href="/dashboard/ngo#live-drives" className="inline-flex items-center gap-1 text-xs font-semibold text-[#2F8F5B] dark:text-[#5BE49B] hover:underline">
-                <span>Manage active drives →</span>
-              </Link>
-            </NgoCard>
-            <NgoCard
-              tag="Completed"
-              title="Completed drives"
-              body="Review outcomes and proof."
-            >
-              <Link href="/dashboard/ngo#live-drives" className="inline-flex items-center gap-1 text-xs font-semibold text-[#2F8F5B] dark:text-[#5BE49B] hover:underline">
-                <span>View completed drives →</span>
-              </Link>
-            </NgoCard>
-            <NgoCard
-              tag="Drafts"
-              title="Drafts"
-              body="Finish and publish when ready."
-            >
-              <Link href="/dashboard/ngo#live-drives" className="inline-flex items-center gap-1 text-xs font-semibold text-[#2F8F5B] dark:text-[#5BE49B] hover:underline">
-                <span>Resume drafts →</span>
-              </Link>
-            </NgoCard>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. CONNECT WITH DONORS (Wide White Card) */}
-      <section className="ngo-section ngo-band-cream pt-0">
-        <div className="ngo-container">
-          <div className="ngo-card !p-8 md:!p-12 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-              <div className="lg:col-span-7 flex flex-col justify-center">
-                <span className="ngo-eyebrow">Connect with donors</span>
-                <h2 className="ngo-heading text-2xl sm:text-3xl md:text-4xl text-[#0B3D2E] dark:text-[#EFEADB] mb-4 leading-[1.15]">
-                  Donors who want to fulfil your needs find you.
-                </h2>
-                <p className="text-base sm:text-lg text-stone-600 dark:text-stone-300 leading-relaxed font-normal">
-                  Verified drives reach interested donors, who offer to give. You review each offer and choose how to proceed.
-                </p>
-              </div>
-              <div className="lg:col-span-5">
-                <div className="relative w-full h-[260px] sm:h-[300px] rounded-[20px] overflow-hidden border border-stone-200 dark:border-white/10 shadow-md">
-                  <Image
-                    src="/images/causekind-hero-handoff.webp"
-                    alt="Donor handing over supplies to NGO representative"
-                    fill
-                    sizes="(max-width: 860px) 100vw, 450px"
-                    className="object-cover"
-                    loading="lazy"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. DRIVE JOURNEY (Dark Green Band 1 of 2 + Sticky Scroll-Telling) */}
+      {/* 4. DRIVE JOURNEY (Dark Green Band 1 of 2 + Sticky Scroll-Telling) */}
       {/* Desktop (>= 860px): Sticky Scroll-Driven */}
       <div
         ref={journeyRef}
@@ -497,7 +429,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </div>
 
-      {/* 7. TRACK DONATIONS AND REQUESTS + DELIVERY/CERTIFICATES (Unified Section) */}
+      {/* 5. TRACK DONATIONS AND REQUESTS + DELIVERY/CERTIFICATES (Unified Section) */}
       <section className="ngo-section ngo-band-cream">
         <div className="ngo-container">
           <NgoSectionHeader
@@ -555,7 +487,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
           {/* Row 2 (48px below row 1): 2 wide cards in a 2-column grid, same total width, 24px gap, equal height */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
             {/* Wide Card 1: Delivery and handover proof */}
-            <div className="ngo-card ngo-card-interactive group h-full">
+            <div className="ngo-card group h-full">
               <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
                 <Camera className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
               </div>
@@ -568,13 +500,10 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
               <p className="text-stone-600 dark:text-stone-300 text-base leading-relaxed">
                 Once items arrive, confirm receipt and add handover photos as proof of a successful delivery.
               </p>
-              <Link href="/ngo/handovers" className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#2F8F5B] dark:text-[#5BE49B] hover:underline">
-                <span>View handovers &amp; photos →</span>
-              </Link>
             </div>
 
             {/* Wide Card 2: Certificates and recognition */}
-            <div className="ngo-card ngo-card-interactive group h-full">
+            <div className="ngo-card group h-full">
               <div className="w-11 h-11 rounded-full bg-[#F6F1E4] dark:bg-white/10 flex items-center justify-center mb-4 shrink-0">
                 <Award className="w-[22px] h-[22px] text-[#2F8F5B] stroke-[1.8]" />
               </div>
@@ -582,20 +511,17 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                 Certificates and recognition
               </span>
               <h3 className="ngo-heading text-2xl md:text-3xl text-stone-900 dark:text-stone-100 mb-3">
-                Documented impact earns recognition.
+                Donors receive a certificate for contributing.
               </h3>
               <p className="text-stone-600 dark:text-stone-300 text-base leading-relaxed">
-                Completed drives with proof become eligible for completion certificates.
+                When a donor contributes to your drive, they receive a certificate as thanks for their support.
               </p>
-              <Link href="/profile" className="mt-4 inline-flex items-center gap-1.5 text-xs font-semibold text-[#2F8F5B] dark:text-[#5BE49B] hover:underline">
-                <span>View certificates →</span>
-              </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* 10. SUCCESS STORIES */}
+      {/* 6. SUCCESS STORIES */}
       <section className="ngo-section ngo-band-cream">
         <div className="ngo-container">
           <NgoSectionHeader
@@ -694,7 +620,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
-      {/* 11. TIPS FOR BETTER DRIVES */}
+      {/* 7. TIPS FOR BETTER DRIVES */}
       <section className="ngo-section ngo-band-cream">
         <div className="ngo-container">
           <NgoSectionHeader
@@ -722,7 +648,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
-      {/* 12. FINAL CTA */}
+      {/* 8. FINAL CTA */}
       <NgoFinalCtaBand
         headline={
           <>

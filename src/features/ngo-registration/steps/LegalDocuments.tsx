@@ -122,7 +122,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
                   onRemove={() => setDoc(doc.id, null)}
                   onPreview={() => openPreview(doc.id)}
                 />
-                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} />
+                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} field={`documents.${doc.id}`} />
               </div>
             ))}
           </div>
@@ -148,7 +148,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
                   onRemove={() => setDoc(doc.id, null)}
                   onPreview={() => openPreview(doc.id)}
                 />
-                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} />
+                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} field={`documents.${doc.id}`} />
               </div>
             ))}
           </div>

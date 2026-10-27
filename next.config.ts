@@ -49,6 +49,8 @@ const nextConfig: NextConfig = {
         destination: "/profile/ngo-details",
         permanent: false,
       },
+      // The "Giving safely" checklist page was removed; old links land on the FAQ.
+      { source: "/give-safely", destination: "/faq", permanent: true },
     ];
   },
 };

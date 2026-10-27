@@ -1,6 +1,6 @@
 "use client";
 
-import { PHONE_COUNTRIES, fromStoredPhone, phoneError, toStoredPhone } from "@/features/ngo-drives/phoneCountries";
+import { fromStoredPhone } from "@/features/ngo-drives/phoneCountries";
 import React, { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -12,7 +12,12 @@ import {
   updateNgoDrive,
   getNgoDriveDetail,
   uploadNgoDriveReferencePhoto,
+  deleteUnusedNgoDrivePhoto,
+  getNgoDriveDraft,
+  saveNgoDriveDraft,
+  deleteNgoDriveDraft,
   ApiError,
+  type DriveCategoryDetails,
   type DrivePhotoItem,
   type PublicNgoDrive,
 } from "@/lib/api";
@@ -45,12 +50,46 @@ import { DriveDetailView } from "@/features/ngo-drives/components/DriveDetailVie
 import { DriveLocationStep, RADIUS_PRESETS, radiusKm } from "@/features/ngo-drives/components/DriveLocationStep";
 import type { LocationStepHandle } from "@/features/item-listing-wizard/steps/LocationStep";
 import { useLocationPinHandlers, type LocationFields } from "@/hooks/useLocationPinHandlers";
+import {
+  CLOTHING_FITS,
+  CLOTHING_SIZES,
+  categoryDetailRows,
+  showsRequireClean,
+  showsWorkingOrder,
+} from "@/features/ngo-drives/driveCategoryDetails";
 
 /** Matches the backend's limit on drive details. */
 const DETAILS_MAX = 500;
 
-export const WORKING_ORDER_CATEGORIES = ["Electronics", "Household"] as const;
-export const REQUIRE_CLEAN_CATEGORIES = ["Clothing", "Household", "Furniture"] as const;
+export { WORKING_ORDER_CATEGORIES, REQUIRE_CLEAN_CATEGORIES } from "@/features/ngo-drives/driveCategoryDetails";
+
+/**
+ * The handover mode choice (drop off / pick up / both) is hidden for now: every drive is
+ * saved as BOTH, which the backend and the handover flow handle. Set true to show it again.
+ */
+export const SHOW_HANDOVER_MODE = false;
+
+/** Role of the person behind the drive: letters, spaces and . , - &, 2 to 60 characters. Same rule as the backend. */
+export const ROLE_PATTERN = /^[A-Za-z][A-Za-z .,&-]{1,59}$/;
+
+/** Today + days as YYYY-MM-DD in India time (the backend checks needed-by dates in IST). */
+export function istDatePlus(days: number, now: number = Date.now()): string {
+  return new Date(now + 330 * 60_000 + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+/** The needed-by rule: 3 to 90 days from today (IST). */
+export function neededByError(neededBy: string, now: number = Date.now()): string {
+  if (!neededBy) return "Date is required";
+  if (neededBy < istDatePlus(3, now) || neededBy > istDatePlus(90, now)) return "Date must be 3-90 days from today";
+  return "";
+}
+
+/** The handover hours rule: "to" must be after "from" ("HH:mm" strings compare in order). */
+export function hoursError(from: string, to: string): string {
+  return from && to && to <= from ? "End time must be after start time" : "";
+}
+
+type ClothingSize = (typeof CLOTHING_SIZES)[number]["id"];
 
 const DAY_WORDS: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
 
@@ -96,6 +135,20 @@ const STEP_INTROS: Record<NgoDriveStep, string> = {
 };
 
 function ngoStepIndex(s: NgoDriveStep) { return NGO_DRIVE_STEPS.indexOf(s); }
+
+/** ?step= in the URL: one browser history entry per step, and a refresh stays on the step. */
+const STEP_SLUGS: Record<NgoDriveStep, string> = {
+  "drive-type": "type",
+  "drive-location": "location",
+  "drive-details": "details",
+  "beneficiaries-handover": "beneficiaries",
+  "review-declarations": "review",
+};
+export function stepFromSlug(slug: string | null | undefined): NgoDriveStep | null {
+  const hit = (Object.keys(STEP_SLUGS) as NgoDriveStep[]).find(k => STEP_SLUGS[k] === slug);
+  return hit ?? null;
+}
+const STEP_ORDER: NgoDriveStep[] = ["drive-type", ...NGO_DRIVE_STEPS];
 function stepNumber(s: NgoDriveStep) { return ngoStepIndex(s) + 1; }
 
 const BENEFICIARY_GROUPS = [
@@ -124,6 +177,11 @@ const URGENCIES = [
   { value: "CRITICAL", label: "Critical" },
 ];
 
+/** An old drive's single group (or a stored "A,B") as a list. */
+function splitGroups(value: unknown): string[] {
+  return typeof value === "string" ? value.split(",").map(g => g.trim()).filter(Boolean) : [];
+}
+
 function NewNgoDriveForm() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
@@ -149,7 +207,9 @@ function NewNgoDriveForm() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // ?type=items comes from the "Start a Drive" popup, which already chose the type.
-  const [step, setStep] = useState<NgoDriveStep>(searchParams?.get("type") === "items" ? "drive-location" : "drive-type");
+  const firstStep: NgoDriveStep = searchParams?.get("type") === "items" ? "drive-location" : "drive-type";
+  const urlStep = stepFromSlug(searchParams?.get("step"));
+  const [step, setStep] = useState<NgoDriveStep>(urlStep ?? firstStep);
   const [direction, setDirection] = useState(1);
   const reduced = !!useReducedMotion();
 
@@ -181,6 +241,15 @@ function NewNgoDriveForm() {
   const [condition, setCondition] = useState<DriveCondition>("NEW_ONLY");
   const [mustBeWorking, setMustBeWorking] = useState(false);
   const [requireClean, setRequireClean] = useState(false);
+  // Clothing sizing / Furniture dimensions (shown for those categories only).
+  const [sizes, setSizes] = useState<ClothingSize[]>([]);
+  const [fits, setFits] = useState<string[]>([]);
+  const [lengthCm, setLengthCm] = useState("");
+  const [breadthCm, setBreadthCm] = useState("");
+  const [heightCm, setHeightCm] = useState("");
+  const [weightKg, setWeightKg] = useState("");
+  const [material, setMaterial] = useState("");
+  const [needsAssembly, setNeedsAssembly] = useState(false);
 
   // Step 1: Drive story & details
   const [details, setDetails] = useState("");
@@ -234,7 +303,7 @@ function NewNgoDriveForm() {
   }, [commitDriveLoc]);
 
   // Step 2: Beneficiaries
-  const [beneficiaryGroup, setBeneficiaryGroup] = useState("");
+  const [beneficiaryGroups, setBeneficiaryGroups] = useState<string[]>([]);
   const [beneficiaryCount, setBeneficiaryCount] = useState<number | "">("");
   const [beneficiaryDescription, setBeneficiaryDescription] = useState("");
 
@@ -250,14 +319,14 @@ function NewNgoDriveForm() {
   const [changemakerRole, setChangemakerRole] = useState("");
   const [changemakerPhotoUrl, setChangemakerPhotoUrl] = useState("");
   const [changemakerPhotoKey, setChangemakerPhotoKey] = useState("");
+  const [changemakerPreviewUrl, setChangemakerPreviewUrl] = useState("");
   const [changemakerWhy, setChangemakerWhy] = useState("");
 
   // Step 2: Contact person
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   // Country code for the contact phone; India by default. Never prefilled from the account.
-  const [contactDial, setContactDial] = useState<string>("+91");
-  const [altContact, setAltContact] = useState("");
+const [altContact, setAltContact] = useState("");
   const [pastWorkUrl, setPastWorkUrl] = useState("");
 
   // Step 3 (Declarations)
@@ -305,6 +374,17 @@ function NewNgoDriveForm() {
 
   // Load draft or edit drive
   const [draftLoaded, setDraftLoaded] = useState(false);
+
+  /** Category fields from a drive (numbers) or a draft (strings). */
+  function restoreCategoryDetails(cd: unknown) {
+    const d = (cd && typeof cd === "object" ? cd : {}) as Record<string, unknown>;
+    const str = (v: unknown) => (v === null || v === undefined || v === "" ? "" : String(v));
+    setSizes(Array.isArray(d.sizes) ? (d.sizes.filter(x => CLOTHING_SIZES.some(c => c.id === x)) as ClothingSize[]) : []);
+    setFits(Array.isArray(d.fits) ? d.fits.filter((x): x is string => typeof x === "string") : typeof d.fit === "string" && d.fit ? [d.fit] : []);
+    setLengthCm(str(d.lengthCm)); setBreadthCm(str(d.breadthCm)); setHeightCm(str(d.heightCm));
+    setWeightKg(str(d.weightKg)); setMaterial(typeof d.material === "string" ? d.material : "");
+    setNeedsAssembly(Boolean(d.needsAssembly));
+  }
   useEffect(() => {
     if (!user || draftLoaded || editId === null) return;
     let active = true;
@@ -324,6 +404,7 @@ function NewNgoDriveForm() {
       setCondition(normalizeLegacyCondition(d.itemCondition));
       setMustBeWorking(Boolean(d.mustBeWorking));
       setRequireClean(Boolean(d.requireClean));
+      restoreCategoryDetails(d.categoryDetails);
       setDetails(d.details || "");
 
       setCoverPhoto(d.coverPhotoUrl ? { url: d.coverPhotoUrl } : null);
@@ -348,7 +429,7 @@ function NewNgoDriveForm() {
       restoreDriveLoc(d as unknown as Record<string, unknown>);
 
       // Beneficiaries
-      setBeneficiaryGroup(d.beneficiaryGroup || "");
+      setBeneficiaryGroups(d.beneficiaryGroups?.length ? d.beneficiaryGroups : splitGroups(d.beneficiaryGroup));
       setBeneficiaryCount(d.beneficiaryCount || "");
       setBeneficiaryDescription(d.beneficiaryDescription || "");
 
@@ -368,12 +449,13 @@ function NewNgoDriveForm() {
 
       // Contact
       setContactName(d.contactName || "");
-      { const ph = fromStoredPhone(d.contactPhone); setContactDial(ph.code); setContactPhone(ph.digits); }
+      setContactPhone(fromStoredPhone(d.contactPhone).digits);
       setAltContact(d.altContact || "");
       setPastWorkUrl(d.pastWorkUrl || "");
 
       // A drive that already has its location opens at the details; older drives add it first.
-      setStep(d.locationLatitude != null && d.pickupRadiusKm != null ? "drive-details" : "drive-location");
+      // A refresh keeps the step in the URL.
+      if (!urlStepRef.current) showStep(d.locationLatitude != null && d.pickupRadiusKm != null ? "drive-details" : "drive-location", "replace");
       setDraftLoaded(true);
     }).catch(() => { if (active) setEditLoadError("We couldn't load this drive. Please try again."); });
     return () => { active = false; };
@@ -381,10 +463,16 @@ function NewNgoDriveForm() {
 
   useEffect(() => {
     if (!user || draftLoaded || editId !== null) return;
+    let active = true;
+    (async () => {
     try {
-      const d = localStorage.getItem(DRAFT_KEY);
-      if (d) {
-        const p = JSON.parse(d);
+      let local: any = null;
+      try { local = JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch { local = null; }
+      const server: any = IS_NGO_DEMO_MODE ? null : await getNgoDriveDraft().then(r => r?.payload ?? null).catch(() => null);
+      if (!active) return;
+      // The server draft restores on another device; the local copy is the fallback.
+      const p = server && (!local || Number(server.savedAt || 0) >= Number(local.savedAt || 0)) ? server : local;
+      if (p) {
         setTitle(p.title || "");
         setTagline(p.tagline || "");
         setCategory(p.category || "");
@@ -395,6 +483,7 @@ function NewNgoDriveForm() {
         setCondition(normalizeLegacyCondition(p.condition));
         setMustBeWorking(Boolean(p.mustBeWorking));
         setRequireClean(Boolean(p.requireClean));
+        restoreCategoryDetails(p.categoryDetails);
         setDetails(p.details || "");
 
         setCoverPhoto(p.coverPhoto && typeof p.coverPhoto.url === "string" ? p.coverPhoto : null);
@@ -419,7 +508,7 @@ function NewNgoDriveForm() {
         restoreDriveLoc(p as unknown as Record<string, unknown>);
 
         // Beneficiaries
-        setBeneficiaryGroup(p.beneficiaryGroup || "");
+        setBeneficiaryGroups(Array.isArray(p.beneficiaryGroups) ? p.beneficiaryGroups : splitGroups(p.beneficiaryGroup));
         setBeneficiaryCount(p.beneficiaryCount || "");
         setBeneficiaryDescription(p.beneficiaryDescription || "");
 
@@ -435,11 +524,12 @@ function NewNgoDriveForm() {
         setChangemakerRole(p.changemakerRole || "");
         setChangemakerPhotoUrl(typeof p.changemakerPhotoUrl === "string" && !p.changemakerPhotoUrl.startsWith("data:") ? p.changemakerPhotoUrl : "");
         setChangemakerPhotoKey(p.changemakerPhotoKey || "");
+        setChangemakerPreviewUrl(typeof p.changemakerPhotoPreviewUrl === "string" ? p.changemakerPhotoPreviewUrl : "");
         setChangemakerWhy(p.changemakerWhy || "");
 
         // Contact
         setContactName(p.contactName || "");
-        { const ph = fromStoredPhone(p.contactPhone); setContactDial(ph.code); setContactPhone(ph.digits); }
+        setContactPhone(fromStoredPhone(p.contactPhone).digits);
         setAltContact(p.altContact || "");
         setPastWorkUrl(p.pastWorkUrl || "");
 
@@ -455,8 +545,32 @@ function NewNgoDriveForm() {
         }
       }
     } catch {}
-    setDraftLoaded(true);
-  }, [user, draftLoaded, DRAFT_KEY, editId]);
+    if (active) setDraftLoaded(true);
+    })();
+    return () => { active = false; };
+  }, [user, draftLoaded, DRAFT_KEY, editId, IS_NGO_DEMO_MODE]);
+
+  // Changing the category hides the fields it does not use, and clears them.
+  useEffect(() => {
+    if (!showsWorkingOrder(category)) setMustBeWorking(false);
+    if (!showsRequireClean(category)) setRequireClean(false);
+    if (category !== "Clothing") { setSizes([]); setFits([]); }
+    if (category !== "Furniture") {
+      setLengthCm(""); setBreadthCm(""); setHeightCm(""); setWeightKg(""); setMaterial(""); setNeedsAssembly(false);
+    }
+  }, [category]);
+
+  /** The category fields as the backend stores them; undefined for other categories. */
+  function categoryDetailsPayload(): DriveCategoryDetails | undefined {
+    if (category === "Clothing") return { sizes, fits };
+    if (category === "Furniture") {
+      return {
+        lengthCm: Number(lengthCm), breadthCm: Number(breadthCm), heightCm: Number(heightCm),
+        weightKg: weightKg ? Number(weightKg) : undefined, material: material.trim() || undefined, needsAssembly,
+      };
+    }
+    return undefined;
+  }
 
   // Set default contacts when prefills load and draft is empty
   useEffect(() => {
@@ -466,40 +580,52 @@ function NewNgoDriveForm() {
     }
   }, [ngoContactName, contactName, draftLoaded]);
 
-  const saveDraft = useCallback(async () => {
+  const serverSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveDraft = useCallback(async (flush = false) => {
     if (!draftLoaded) return;
     setSaveStatus("saving");
     try {
       const saveObj = {
+        savedAt: Date.now(),
+        categoryDetails: { sizes, fits, lengthCm, breadthCm, heightCm, weightKg, material, needsAssembly },
+        changemakerPhotoPreviewUrl: changemakerPreviewUrl,
         title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
         photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity,
         locationCountry: driveLoc.countryIso, locationState: driveLoc.stateIso, locationPincode: driveLoc.pincode,
         locationLatitude: driveLoc.latitude, locationLongitude: driveLoc.longitude,
         pickupRadiusKm: radiusKm(radiusChoice, customRadius),
-        beneficiaryGroup, beneficiaryCount, beneficiaryDescription,
+        beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
         neededBy, availableDays, availableFrom, availableTo, handoverMode,
         changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-        contactName, contactPhone: toStoredPhone(contactDial, contactPhone.trim()), altContact, pastWorkUrl,
+        contactName, contactPhone: contactPhone.trim() ? `+91${contactPhone.trim()}` : "", altContact, pastWorkUrl,
         declarations: { accurate: declAccurate, usedOnlyForBeneficiaries: declUsedOnly, proofWithin48h: declProof, facesWithConsent: declFaces, notDuplicate: declNotDuplicate, falseInfoConsequences: declFalseInfo, contactConsent: declContact }
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(saveObj));
+      // The server copy (owner only, one per NGO) restores on another device. Debounced while typing.
+      if (!IS_NGO_DEMO_MODE && editId === null) {
+        if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
+        if (flush) await saveNgoDriveDraft(saveObj).catch(() => {});
+        else serverSaveTimer.current = setTimeout(() => { void saveNgoDriveDraft(saveObj).catch(() => {}); }, 1500);
+      }
       setSaveStatus("saved");
     } catch {
       setSaveStatus("error");
     }
   }, [
     draftLoaded, title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
+    sizes, fits, lengthCm, breadthCm, heightCm, weightKg, material, needsAssembly, changemakerPreviewUrl, IS_NGO_DEMO_MODE, editId,
     photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity, driveLoc, radiusChoice, customRadius,
-    beneficiaryGroup, beneficiaryCount, beneficiaryDescription,
+    beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
     neededBy, availableDays, availableFrom, availableTo, handoverMode,
     changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-    contactName, contactPhone, contactDial, altContact, pastWorkUrl,
+    contactName, contactPhone, altContact, pastWorkUrl,
     declAccurate, declUsedOnly, declProof, declFaces, declNotDuplicate, declFalseInfo, declContact, DRAFT_KEY
   ]);
 
   useEffect(() => {
     if (draftLoaded && editId === null) saveDraft();
   }, [draftLoaded, saveDraft, editId]);
+  useEffect(() => () => { if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current); }, []);
 
   useEffect(() => {
     if (authLoading || user) return;
@@ -516,13 +642,47 @@ function NewNgoDriveForm() {
     router.replace("/dashboard/ngo");
   }, [authLoading, user, settled, lockReason, router]);
 
-  const goToStep = useCallback((next: NgoDriveStep, dir: number) => {
-    setDirection(dir);
-    setStep(next);
+  /** The wizard URL with ?step= set (edit and type kept). */
+  const stepUrl = useCallback((next: NgoDriveStep) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("step", STEP_SLUGS[next]);
+    return `${window.location.pathname}?${params.toString()}`;
+  }, []);
+
+  const showStep = useCallback((next: NgoDriveStep, history: "push" | "replace" | "none", dir?: number) => {
+    setStep(prev => {
+      setDirection(dir ?? (STEP_ORDER.indexOf(next) >= STEP_ORDER.indexOf(prev) ? 1 : -1));
+      return next;
+    });
     setFieldErrors({});
+    if (history === "push") window.history.pushState(null, "", stepUrl(next));
+    else if (history === "replace") window.history.replaceState(null, "", stepUrl(next));
     window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
     if (headingRef.current) headingRef.current.focus();
-  }, [reduced]);
+  }, [reduced, stepUrl]);
+
+  // Each step is a history entry, so the browser's Back goes to the previous step.
+  const goToStep = useCallback((next: NgoDriveStep, dir: number) => showStep(next, "push", dir), [showStep]);
+
+  // Browser Back/Forward changed ?step=: show that step.
+  useEffect(() => {
+    if (urlStep && urlStep !== step) showStep(urlStep, "none");
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- follow the URL only
+  }, [urlStep]);
+
+  // First visit: the entry before the wizard becomes the NGO dashboard, so Back from the first
+  // step leaves to /dashboard/ngo (never to an older page such as /profile). The {_N} entry is
+  // not Next.js state, so Back to it reloads the dashboard. A refresh (step already in the URL) keeps its history.
+  const urlStepRef = useRef(urlStep);
+  const historySeeded = useRef(false);
+  useEffect(() => {
+    if (historySeeded.current || urlStepRef.current) return;
+    historySeeded.current = true;
+    const wizardUrl = stepUrl(step);
+    window.history.replaceState({ _N: true }, "", "/dashboard/ngo");
+    window.history.pushState(null, "", wizardUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on mount
+  }, []);
 
   async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files || []);
@@ -541,8 +701,8 @@ function NewNgoDriveForm() {
           continue;
         }
         const compressed = await compressImageIfNeeded(file);
-        const url = await uploadNgoDriveReferencePhoto(compressed);
-        uploadedItems.push({ url });
+        const { url, previewUrl } = await uploadNgoDriveReferencePhoto(compressed);
+        uploadedItems.push({ url, previewUrl });
       }
       if (uploadedItems.length > 0) {
         setPhotos(prev => [...prev, ...uploadedItems]);
@@ -563,8 +723,9 @@ function NewNgoDriveForm() {
     if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} is larger than 5 MB.`); return; }
     setCoverUploading(true);
     try {
-      const url = await uploadNgoDriveReferencePhoto(await compressImageIfNeeded(file));
-      setCoverPhoto({ url });
+      const { url, previewUrl } = await uploadNgoDriveReferencePhoto(await compressImageIfNeeded(file));
+      if (coverPhoto) discardPhoto(coverPhoto.url);
+      setCoverPhoto({ url, previewUrl });
       toast.success("Cover photo uploaded");
     } catch (err: any) {
       toast.error(err?.message || "Failed to attach photo");
@@ -573,8 +734,24 @@ function NewNgoDriveForm() {
     }
   }
 
+  /** A removed or replaced photo: the server deletes the file unless a drive still uses it. */
+  function discardPhoto(url: string | undefined) {
+    if (url && !IS_NGO_DEMO_MODE) void deleteUnusedNgoDrivePhoto(url).catch(() => {});
+  }
+
   function handleRemovePhoto(index: number) {
+    discardPhoto(photos[index]?.url);
     setPhotos(prev => prev.filter((_, i) => i !== index));
+  }
+
+  function handleRemoveCover() {
+    discardPhoto(coverPhoto?.url);
+    setCoverPhoto(null);
+  }
+
+  function handleRemoveChangemakerPhoto() {
+    discardPhoto(changemakerPhotoUrl);
+    setChangemakerPhotoUrl(""); setChangemakerPhotoKey(""); setChangemakerPreviewUrl("");
   }
 
   function handleMakeCover(index: number) {
@@ -597,8 +774,10 @@ function NewNgoDriveForm() {
     setChangemakerUploading(true);
     try {
       const compressed = await compressImageIfNeeded(file);
-      const url = await uploadNgoDriveReferencePhoto(compressed);
+      const { url, previewUrl } = await uploadNgoDriveReferencePhoto(compressed);
+      if (changemakerPhotoUrl) discardPhoto(changemakerPhotoUrl);
       setChangemakerPhotoUrl(url);
+      setChangemakerPreviewUrl(previewUrl);
       setChangemakerPhotoKey("");
       toast.success("Photo uploaded");
     } catch (err: any) {
@@ -634,29 +813,35 @@ function NewNgoDriveForm() {
       if (!whoFor.trim() || whoFor.length < 10 || whoFor.length > 300) e.whoFor = "Who is this for must be 10-300 characters";
       if (!whyNow.trim() || whyNow.length < 10 || whyNow.length > 300) e.whyNow = "Why now must be 10-300 characters";
       if (!whatChanges.trim() || whatChanges.length < 10 || whatChanges.length > 300) e.whatChanges = "What will change must be 10-300 characters";
+      if (category === "Clothing") {
+        if (sizes.length === 0) e.sizes = "Choose at least one size";
+        if (fits.length === 0) e.fits = "Choose who the clothes are for";
+      }
+      if (category === "Furniture") {
+        const cm = (v: string) => { const n = Number(v); return v.trim() !== "" && n > 0 && n <= 1000; };
+        if (!cm(lengthCm)) e.lengthCm = "Length must be 1 to 1000 cm";
+        if (!cm(breadthCm)) e.breadthCm = "Breadth must be 1 to 1000 cm";
+        if (!cm(heightCm)) e.heightCm = "Height must be 1 to 1000 cm";
+        if (weightKg.trim() && !(Number(weightKg) > 0 && Number(weightKg) <= 2000)) e.weightKg = "Weight must be 1 to 2000 kg";
+        if (material.length > 60) e.material = "Material cannot exceed 60 characters";
+      }
     }
     if (s === "beneficiaries-handover") {
-      if (!beneficiaryGroup) e.beneficiaryGroup = "Beneficiary group is required";
+      if (beneficiaryGroups.length === 0) e.beneficiaryGroups = "Choose at least one beneficiary group";
       if (beneficiaryCount === "" || beneficiaryCount < 1) e.beneficiaryCount = "Enter how many people will benefit (at least 1)";
       if (!beneficiaryDescription.trim() || beneficiaryDescription.length > 120) e.beneficiaryDescription = "About the beneficiaries must be 1-120 characters";
-      if (!neededBy) e.neededBy = "Date is required";
-      else {
-        const d = new Date(neededBy);
-        const minDate = new Date(); minDate.setDate(minDate.getDate() + 2);
-        const maxDate = new Date(); maxDate.setDate(maxDate.getDate() + 90);
-        if (d < minDate || d > maxDate) e.neededBy = "Date must be 3-90 days from today";
-      }
-      if (!handoverMode) e.handoverMode = "Select a handover mode";
+      { const err = neededByError(neededBy); if (err) e.neededBy = err; }
+      if (SHOW_HANDOVER_MODE && !handoverMode) e.handoverMode = "Select a handover mode";
       if (availableDays.length === 0) e.availableDays = "Select at least one day";
       if (!availableFrom) e.availableFrom = "Select a start time";
       if (!availableTo) e.availableTo = "Select an end time";
-      else if (availableFrom && availableTo <= availableFrom) e.availableTo = "End time must be after start time";
+      else if (hoursError(availableFrom, availableTo)) e.availableTo = hoursError(availableFrom, availableTo);
       if (!changemakerName.trim() || changemakerName.length > 100) e.changemakerName = "Name is required (up to 100 characters)";
-      if (!changemakerRole.trim() || changemakerRole.length > 100) e.changemakerRole = "Role is required (up to 100 characters)";
+      if (!ROLE_PATTERN.test(changemakerRole.trim())) e.changemakerRole = "Role must be 2-60 letters (spaces and . , - & allowed), not numbers";
       if (!changemakerPhotoUrl) e.changemakerPhoto = "Photo of the person leading this drive is required";
       if (!changemakerWhy.trim() || changemakerWhy.length < 30 || changemakerWhy.length > 300) e.changemakerWhy = "Why you do this work must be 30-300 characters (2 to 3 lines)";
-      if (!contactName.trim()) e.contactName = "Contact name is required";
-      { const err = phoneError(contactDial, contactPhone.trim()); if (err) e.contactPhone = err; }
+      if (!contactName.trim()) e.contactName = "Handover contact name is required";
+      if (!/^\d{10}$/.test(contactPhone.trim())) e.contactPhone = "Enter a 10-digit mobile number";
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
@@ -677,14 +862,30 @@ function NewNgoDriveForm() {
     if (i < NGO_DRIVE_STEPS.length - 1) goToStep(NGO_DRIVE_STEPS[i + 1], 1);
   }
 
+  /** Back: the previous step; from the first step, the NGO dashboard. */
   function handleBack() {
+    if (step === firstStep || step === "drive-type") { router.push("/dashboard/ngo"); return; }
     const i = ngoStepIndex(step);
-    if (i > 0) goToStep(NGO_DRIVE_STEPS[i - 1], -1);
-    else goToStep("drive-type", -1);
+    goToStep(i > 0 ? NGO_DRIVE_STEPS[i - 1] : "drive-type", -1);
+  }
+
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  /** Deletes the draft here and on the server (which also deletes its photos no drive uses). */
+  async function handleDiscardDraft() {
+    setConfirmDiscard(false);
+    if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
+    try {
+      if (!IS_NGO_DEMO_MODE) await deleteNgoDriveDraft();
+      localStorage.removeItem(DRAFT_KEY);
+      toast.success("Draft discarded");
+      router.push("/dashboard/ngo");
+    } catch {
+      toast.error("We couldn't discard the draft. Please try again.");
+    }
   }
 
   async function handleSaveExit() {
-    await saveDraft();
+    await saveDraft(true);
     toast.success("Draft saved");
     router.push("/dashboard/ngo");
   }
@@ -703,6 +904,7 @@ function NewNgoDriveForm() {
         condition,
         mustBeWorking,
         requireClean,
+        categoryDetails: categoryDetailsPayload(),
         details: details.trim(),
         photos: photos.map((p, idx) => ({ url: p.url, storageKey: p.storageKey, sortOrder: idx })),
         // The card image: the cover, else the first reference photo.
@@ -721,21 +923,23 @@ function NewNgoDriveForm() {
         locationLongitude: driveLoc.longitude,
         pickupRadiusKm: radiusKm(radiusChoice, customRadius),
         urgency,
-        beneficiaryGroup,
+        beneficiaryGroups,
         beneficiaryCount: Number(beneficiaryCount),
         beneficiaryDescription: beneficiaryDescription.trim(),
         neededBy,
         availableDays,
         availableFrom,
         availableTo,
-        handoverMode,
+        // Hidden choice: every drive is BOTH (see SHOW_HANDOVER_MODE).
+        handoverMode: SHOW_HANDOVER_MODE ? handoverMode : "BOTH" as const,
         changemakerName: changemakerName.trim(),
         changemakerRole: changemakerRole.trim(),
         changemakerPhotoUrl: changemakerPhotoUrl || undefined,
         changemakerPhotoKey: changemakerPhotoKey || undefined,
         changemakerWhy: changemakerWhy.trim(),
         contactName: contactName.trim(),
-        contactPhone: toStoredPhone(contactDial, contactPhone.trim()),
+        // The handover page's Call button dials this number (handoverDetails.contactPhone).
+        contactPhone: `+91${contactPhone.trim()}`,
         altContact: altContact.trim() || undefined,
         pastWorkUrl: pastWorkUrl.trim() || undefined,
         declarationsVersion: "v2",
@@ -767,7 +971,12 @@ function NewNgoDriveForm() {
         await createNgoDrive(payload);
       }
       
-      if (editId === null) localStorage.removeItem(DRAFT_KEY);
+      if (editId === null) {
+        localStorage.removeItem(DRAFT_KEY);
+        if (serverSaveTimer.current) clearTimeout(serverSaveTimer.current);
+        // The new drive uses the draft's photos, so the server keeps them.
+        if (!IS_NGO_DEMO_MODE) void deleteNgoDriveDraft().catch(() => {});
+      }
       setSubmitted(true);
     } catch (e) {
       const body = e instanceof ApiError ? (e.data as { fieldErrors?: { field?: string; message?: string }[] } | undefined) : undefined;
@@ -801,6 +1010,7 @@ function NewNgoDriveForm() {
   if (editLoadError) {
     return (
       <div role="alert" className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+        <button type="button" onClick={() => router.push("/dashboard/ngo")} className="mb-6 inline-flex min-h-11 items-center gap-2 self-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
         <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">This drive can&apos;t be edited</h1>
         <p className="text-stone-500 mb-6">{editLoadError}</p>
         <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">Go to dashboard</Link>
@@ -811,6 +1021,7 @@ function NewNgoDriveForm() {
     if (statusError && !statusLoading) {
       return (
         <div role="alert" className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+          <button type="button" onClick={() => router.push("/dashboard/ngo")} className="mb-6 inline-flex min-h-11 items-center gap-2 self-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
           <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">We couldn&apos;t check your NGO status</h1>
           <p className="text-stone-500 mb-6">{statusError}</p>
           <button type="button" onClick={() => void refreshStatus()} className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
@@ -825,6 +1036,7 @@ function NewNgoDriveForm() {
   if (settled.isVerified && !settled.canStartDrive && editId === null && !submitted) {
     return (
       <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+        <button type="button" onClick={() => router.push("/dashboard/ngo")} className="mb-6 inline-flex min-h-11 items-center gap-2 self-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
         <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">One drive at a time</h1>
         <p className="text-stone-500 mb-6 max-w-md">{driveLockReason}</p>
@@ -838,6 +1050,7 @@ function NewNgoDriveForm() {
   if (settled.isVerified && settled.isPhotosDue && editId === null) {
     return (
       <div className="min-h-screen bg-ngo-50 dark:bg-zinc-950 flex flex-col items-center pt-24 px-4 text-center">
+        <button type="button" onClick={() => router.push("/dashboard/ngo")} className="mb-6 inline-flex min-h-11 items-center gap-2 self-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
         <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2">Handover photos due</h1>
         <p className="text-stone-500 mb-6">Upload the handover photos for {photosDueRequestName || "your recent handover"} before starting another drive.</p>
@@ -879,7 +1092,8 @@ function NewNgoDriveForm() {
   if (step === "drive-type") {
     return (
       <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950 flex flex-col justify-center items-center p-4">
-        <div className="max-w-xl w-full">
+        <div className="max-w-xl w-full flex flex-col">
+          <button type="button" onClick={handleBack} className="mb-6 inline-flex min-h-11 items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
           <div className="text-center mb-8">
             <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100 mb-2" style={{ fontFamily: "serif" }}>What kind of drive?</h1>
             <p className="text-stone-500 text-sm">Choose the category of drive you want to organize.</p>
@@ -920,12 +1134,14 @@ function NewNgoDriveForm() {
     el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
   }
 
-  const today = new Date();
-  const minDateStr = new Date(today.getTime() + 2 * 86400000).toISOString().split("T")[0];
-  const maxDateStr = new Date(today.getTime() + 90 * 86400000).toISOString().split("T")[0];
+  const minDateStr = istDatePlus(3);
+  const maxDateStr = istDatePlus(90);
 
-  const showWorkingOrderOption = WORKING_ORDER_CATEGORIES.includes(category as any);
-  const showRequireCleanOption = REQUIRE_CLEAN_CATEGORIES.includes(category as any);
+  const showWorkingOrderOption = showsWorkingOrder(category);
+  const showRequireCleanOption = showsRequireClean(category);
+  // Shown as soon as the times change; Next stays disabled while it is wrong.
+  const hoursProblem = hoursError(availableFrom, availableTo);
+  const chipClass = (active: boolean) => `px-3 py-1.5 rounded-full text-xs font-semibold transition-colors border ${active ? "bg-ngo-700 border-ngo-700 text-white" : "bg-white border-stone-200 text-stone-600 hover:bg-stone-50"}`;
 
   const step1 = (
     <div className="grid items-start gap-5 md:grid-cols-2">
@@ -1088,6 +1304,66 @@ function NewNgoDriveForm() {
               </span>
             </label>
           )}
+
+          {category === "Clothing" && (
+            <div className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700" data-testid="clothing-sizing">
+              <p className="text-xs font-bold text-stone-700 dark:text-stone-200">Sizing<span className="text-red-500">*</span></p>
+              <WizardField label="Sizes" required error={fieldErrors.sizes} hint="Choose all that you need.">
+                {({ id, describedBy }) => (
+                  <div id={id} data-field="sizes" aria-describedby={describedBy} className="flex flex-wrap gap-2">
+                    {CLOTHING_SIZES.map(sz => {
+                      const active = sizes.includes(sz.id);
+                      return (
+                        <button key={sz.id} type="button" aria-pressed={active} className={chipClass(active)}
+                          onClick={() => setSizes(prev => active ? prev.filter(x => x !== sz.id) : [...prev, sz.id])}>{sz.label}</button>
+                      );
+                    })}
+                  </div>
+                )}
+              </WizardField>
+              <WizardField label="Gender / fit" required error={fieldErrors.fits} hint="Choose all that apply.">
+                {({ id, describedBy }) => (
+                  <div id={id} data-field="fits" aria-describedby={describedBy} className="flex flex-wrap gap-2">
+                    {CLOTHING_FITS.map(f => (
+                      <button key={f.id} type="button" aria-pressed={fits.includes(f.id)} className={chipClass(fits.includes(f.id))}
+                        onClick={() => setFits(prev => prev.includes(f.id) ? prev.filter(x => x !== f.id) : [...prev, f.id])}>{f.label}</button>
+                    ))}
+                  </div>
+                )}
+              </WizardField>
+            </div>
+          )}
+
+          {category === "Furniture" && (
+            <div className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700" data-testid="furniture-dimensions">
+              <p className="text-xs font-bold text-stone-700 dark:text-stone-200">Dimensions<span className="text-red-500">*</span></p>
+              <div className="grid grid-cols-3 gap-2">
+                {([["lengthCm", "Length (cm)", lengthCm, setLengthCm], ["breadthCm", "Breadth (cm)", breadthCm, setBreadthCm], ["heightCm", "Height (cm)", heightCm, setHeightCm]] as const).map(([name, label, value, set]) => (
+                  <WizardField key={name} label={label} required error={fieldErrors[name]}>
+                    {({ id, describedBy, invalid }) => (
+                      <Input id={id} name={name} type="number" inputMode="decimal" min={1} max={1000} value={value} onChange={e => set(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                    )}
+                  </WizardField>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <WizardField label="Approx. weight (kg)" error={fieldErrors.weightKg} hint="Optional">
+                  {({ id, describedBy, invalid }) => (
+                    <Input id={id} name="weightKg" type="number" inputMode="decimal" min={1} max={2000} value={weightKg} onChange={e => setWeightKg(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                  )}
+                </WizardField>
+                <WizardField label="Material" error={fieldErrors.material} hint="Optional, e.g. wood">
+                  {({ id, describedBy, invalid }) => (
+                    <Input id={id} name="material" maxLength={60} value={material} onChange={e => setMaterial(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                  )}
+                </WizardField>
+              </div>
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input type="checkbox" checked={needsAssembly} onChange={e => setNeedsAssembly(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-ngo-600 focus:ring-ngo-500" />
+                <span className="text-xs font-semibold text-stone-700 dark:text-stone-300">Needs assembly</span>
+              </label>
+            </div>
+          )}
         </section>
 
         {/* Photos: the drive cover and the optional reference photos */}
@@ -1099,8 +1375,8 @@ function NewNgoDriveForm() {
             {coverPhoto ? (
               <div className="relative aspect-[16/9] w-full max-w-xs overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-700">
                 {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
-                <img src={coverPhoto.url} alt="Drive cover" className="h-full w-full object-cover" />
-                <button type="button" onClick={() => setCoverPhoto(null)} aria-label="Remove cover photo"
+                <img src={coverPhoto.previewUrl || coverPhoto.url} alt="Drive cover" className="h-full w-full object-cover" />
+                <button type="button" onClick={handleRemoveCover} aria-label="Remove cover photo"
                   className="absolute top-1 right-1 rounded-full bg-red-600 p-1 text-white shadow hover:bg-red-700"><X className="w-3 h-3" /></button>
               </div>
             ) : (
@@ -1122,7 +1398,7 @@ function NewNgoDriveForm() {
             <div className="flex flex-wrap items-center gap-3 pt-1">
               {photos.map((photo, idx) => (
                 <div key={photo.url + idx} className="relative w-20 h-20 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0 group">
-                  <img src={photo.url} alt={`Drive photo ${idx + 1}`} className="w-full h-full object-cover" />
+                  <img src={photo.previewUrl || photo.url} alt={`Drive photo ${idx + 1}`} className="w-full h-full object-cover" />
                   {idx === 0 ? (
                     <span className="absolute top-1 left-1 bg-ngo-700 text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
                       Cover
@@ -1170,16 +1446,6 @@ function NewNgoDriveForm() {
             <p className="text-2xs text-stone-400">Show donors the kind of items you want, e.g. a sample blanket. Up to 5 images, 5 MB each.</p>
           </div>
         </section>
-        {/* 5. Drive Location */}
-        <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="location-heading">
-          <h3 id="location-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Drive address for donors</h3>
-          
-          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-3 dark:border-slate-800 dark:bg-slate-900/40 text-xs">
-            <span className="font-semibold text-stone-700 dark:text-stone-300 block mb-0.5">Registered office address</span>
-            <p className="text-stone-600 dark:text-stone-400">{registeredOfficeAddress || "Registered address on file"}</p>
-            <p className="text-2xs text-stone-500 mt-1.5">Your registered address will be shown to donors on the drive page so they can visit you.</p>
-          </div>
-        </section>
       </div>
     </div>
   );
@@ -1192,16 +1458,17 @@ function NewNgoDriveForm() {
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="who-heading">
           <h3 id="who-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">1. Who Benefits</h3>
           
-          <WizardField label="Group" required error={fieldErrors.beneficiaryGroup}>
-            {({ id, describedBy, invalid }) => (
-              <Select value={beneficiaryGroup} onValueChange={setBeneficiaryGroup}>
-                <SelectTrigger id={id} data-field="beneficiaryGroup" aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`}>
-                  <SelectValue placeholder="Select group" />
-                </SelectTrigger>
-                <SelectContent>
-                  {BENEFICIARY_GROUPS.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-                </SelectContent>
-              </Select>
+          <WizardField label="Groups" required error={fieldErrors.beneficiaryGroups} hint="Choose all that apply.">
+            {({ id, describedBy }) => (
+              <div id={id} data-field="beneficiaryGroups" aria-describedby={describedBy} className="flex flex-wrap gap-2">
+                {BENEFICIARY_GROUPS.map(g => {
+                  const active = beneficiaryGroups.includes(g);
+                  return (
+                    <button key={g} type="button" aria-pressed={active} className={chipClass(active)}
+                      onClick={() => setBeneficiaryGroups(prev => active ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
+                  );
+                })}
+              </div>
             )}
           </WizardField>
   
@@ -1243,9 +1510,9 @@ function NewNgoDriveForm() {
                 <Input id={id} name="changemakerName" maxLength={100} placeholder="e.g. Priya Nair" value={changemakerName} onChange={e => setChangemakerName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
-            <WizardField label="Role" required error={fieldErrors.changemakerRole} hint={`${changemakerRole.length}/100`}>
+            <WizardField label="Role" required error={fieldErrors.changemakerRole} hint={`${changemakerRole.length}/60`}>
               {({ id, describedBy, invalid }) => (
-                <Input id={id} name="changemakerRole" maxLength={100} placeholder="e.g. Program Coordinator" value={changemakerRole} onChange={e => setChangemakerRole(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <Input id={id} name="changemakerRole" type="text" maxLength={60} placeholder="e.g. Program Coordinator" value={changemakerRole} onChange={e => setChangemakerRole(e.target.value.replace(/[^A-Za-z .,&-]/g, ""))} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
           </div>
@@ -1274,10 +1541,11 @@ function NewNgoDriveForm() {
               />
               {changemakerPhotoUrl && (
                 <div className="relative w-12 h-12 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
-                  <img src={changemakerPhotoUrl} alt="Changemaker" className="w-full h-full object-cover" />
+                  <img src={changemakerPreviewUrl || changemakerPhotoUrl} alt="Changemaker" className="w-full h-full object-cover" />
                   <button
                     type="button"
-                    onClick={() => { setChangemakerPhotoUrl(""); setChangemakerPhotoKey(""); }}
+                    aria-label="Remove photo"
+                    onClick={handleRemoveChangemakerPhoto}
                     className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-lg"
                   >
                     <X className="w-3 h-3" />
@@ -1305,6 +1573,7 @@ function NewNgoDriveForm() {
             Your address is shown on the drive page. Your drive contact person&apos;s phone number is shared with a donor only after you accept their offer.
           </div>
 
+          {SHOW_HANDOVER_MODE && (
           <fieldset className="space-y-1">
             <legend className="text-xs font-bold text-stone-700 dark:text-stone-200 mb-1">Handover mode*</legend>
             <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
@@ -1322,6 +1591,7 @@ function NewNgoDriveForm() {
             </div>
             {fieldErrors.handoverMode && <p className="text-xs text-red-500 mt-1">{fieldErrors.handoverMode}</p>}
           </fieldset>
+          )}
           
           <WizardField label="Available days" required error={fieldErrors.availableDays} hint="Days you can receive items or do pickups.">
             {({ id, describedBy }) => (
@@ -1354,7 +1624,7 @@ function NewNgoDriveForm() {
                 <Input id={id} name="availableFrom" type="time" value={availableFrom} onChange={e => setAvailableFrom(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
             </WizardField>
-            <WizardField label="To (time)" required error={fieldErrors.availableTo}>
+            <WizardField label="To (time)" required error={hoursProblem || fieldErrors.availableTo}>
               {({ id, describedBy, invalid }) => (
                 <Input id={id} name="availableTo" type="time" value={availableTo} onChange={e => setAvailableTo(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               )}
@@ -1364,21 +1634,19 @@ function NewNgoDriveForm() {
   
         {/* 5. Contact Person */}
         <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="contact-heading">
-          <h3 id="contact-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Contact Person</h3>
-          
-          <WizardField label="Contact name" required error={fieldErrors.contactName}>
+          <h3 id="contact-heading" className="text-[11px] font-bold uppercase tracking-wide text-ngo-700 dark:text-ngo-300">5. Handover contact: the person who handles pickup and drop-off</h3>
+          <p className="text-2xs text-stone-500">Donors call this number from the handover page once you accept their offer.</p>
+
+          <WizardField label="Name" required error={fieldErrors.contactName}>
             {({ id, describedBy, invalid }) => (
               <Input id={id} name="contactName" placeholder="e.g. Rahul Sharma" value={contactName} onChange={e => setContactName(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
           
-          <WizardField label="Contact phone" required error={fieldErrors.contactPhone}>
+          <WizardField label="Phone" required error={fieldErrors.contactPhone}>
             {({ id, describedBy, invalid }) => (
               <div className="flex gap-2">
-                <select aria-label="Country code" value={contactDial} onChange={e => setContactDial(e.target.value)}
-                  className="h-11 shrink-0 rounded-md border border-input bg-background px-2 text-sm">
-                  {PHONE_COUNTRIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
-                </select>
+                <span className="flex h-11 shrink-0 items-center rounded-md border border-input bg-slate-50 px-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300" aria-hidden>+91</span>
                 <Input id={id} name="contactPhone" type="tel" inputMode="numeric" maxLength={10} placeholder="Mobile number" value={contactPhone} onChange={e => setContactPhone(e.target.value.replace(/\D/g, ""))} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
               </div>
             )}
@@ -1453,6 +1721,13 @@ function NewNgoDriveForm() {
             </span>
           </div>
 
+          {categoryDetailRows(category, categoryDetailsPayload()).map(r => (
+            <div key={r.label} className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-category-detail">
+              <span className="text-stone-500">{r.label}</span>
+              <span className="font-medium text-right text-stone-900 dark:text-stone-100">{r.value}</span>
+            </div>
+          ))}
+
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Drive location</span>
             <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
@@ -1472,7 +1747,7 @@ function NewNgoDriveForm() {
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">People who will benefit</span>
             <span className="font-medium text-right max-w-[240px] text-stone-900 dark:text-stone-100">
-              {beneficiaryCount} {beneficiaryGroup}
+              {beneficiaryCount} {beneficiaryGroups.join(", ")}
               {beneficiaryDescription && <span className="block text-xs font-normal text-stone-500">{beneficiaryDescription}</span>}
             </span>
           </div>
@@ -1482,12 +1757,14 @@ function NewNgoDriveForm() {
             <span className="font-medium text-stone-900 dark:text-stone-100">{formatDateDDMMYYYY(neededBy)}</span>
           </div>
 
+          {SHOW_HANDOVER_MODE && (
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Handover mode</span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100" data-testid="review-handover-mode">
               {handoverModeInWords(handoverMode, radiusKm(radiusChoice, customRadius))}
             </span>
           </div>
+          )}
           <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Pickup radius</span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
@@ -1511,7 +1788,7 @@ function NewNgoDriveForm() {
             <span className="text-stone-500 block mb-1">Who is behind the drive</span>
             <div className="flex items-center gap-3">
               {changemakerPhotoUrl && (
-                <img src={changemakerPhotoUrl} alt={changemakerName} className="w-10 h-10 rounded-full object-cover border border-stone-200" />
+                <img src={changemakerPreviewUrl || changemakerPhotoUrl} alt={changemakerName} className="w-10 h-10 rounded-full object-cover border border-stone-200" />
               )}
               <div>
                 <p className="font-semibold text-stone-900 dark:text-stone-100">{changemakerName} <span className="text-xs font-normal text-stone-500">({changemakerRole})</span></p>
@@ -1521,10 +1798,10 @@ function NewNgoDriveForm() {
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
-            <span className="text-stone-500">Contact</span>
+            <span className="text-stone-500">Handover contact</span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
               {contactName}<br />
-              <span className="text-stone-400 text-xs">{contactDial} {contactPhone}</span>
+              <span className="text-stone-400 text-xs">+91 {contactPhone}</span>
               {altContact && <span className="block text-stone-400 text-xs">Alt: {altContact}</span>}
             </span>
           </div>
@@ -1576,8 +1853,8 @@ function NewNgoDriveForm() {
     condition: condition,
     conditionRule: driveConditionRule(condition),
     details: details || "",
-    referencePhotoUrl: photos[0]?.url || null,
-    photoUrls: photos.map((p) => p.url).filter(Boolean),
+    referencePhotoUrl: coverPhoto?.previewUrl || coverPhoto?.url || photos[0]?.previewUrl || photos[0]?.url || null,
+    photoUrls: photos.map((p) => p.previewUrl || p.url).filter(Boolean),
     description: [whoFor, whyNow, whatChanges].filter(Boolean).join("\n\n") || legacyDescription || "",
     whoFor: whoFor || null,
     whyNow: whyNow || null,
@@ -1587,17 +1864,19 @@ function NewNgoDriveForm() {
     locationArea: locationArea || null,
     locationCity: locationCity || null,
     urgency: urgency,
-    beneficiaryGroup: beneficiaryGroup || "",
+    beneficiaryGroup: beneficiaryGroups.join(", "),
+    beneficiaryGroups,
+    categoryDetails: categoryDetailsPayload() ?? null,
     beneficiaryCount: typeof beneficiaryCount === "number" ? beneficiaryCount : 0,
     beneficiaryDescription: beneficiaryDescription || null,
     neededBy: neededBy || new Date().toISOString().split("T")[0],
     availableDays: availableDays,
     availableFrom: availableFrom || "",
     availableTo: availableTo || "",
-    handoverMode: handoverMode,
+    handoverMode: SHOW_HANDOVER_MODE ? handoverMode : "BOTH",
     changemakerName: changemakerName || null,
     changemakerRole: changemakerRole || null,
-    changemakerPhotoUrl: changemakerPhotoUrl || null,
+    changemakerPhotoUrl: changemakerPreviewUrl || changemakerPhotoUrl || null,
     changemakerWhy: changemakerWhy || null,
     pastWorkUrl: pastWorkUrl || null,
     quantityPledged: 0,
@@ -1681,7 +1960,24 @@ function NewNgoDriveForm() {
             <button onClick={() => void handleSaveExit()} className="flex min-h-[44px] items-center gap-1 text-sm font-medium text-stone-500 focus-visible:outline-2 focus-visible:outline-ngo-600">
               <ChevronLeft className="h-4 w-4" /> Save &amp; exit
             </button>
+            {editId === null && (
+              <button type="button" onClick={() => setConfirmDiscard(true)} className="flex min-h-[44px] items-center text-sm font-medium text-red-600 hover:underline focus-visible:outline-2 focus-visible:outline-ngo-600">
+                Discard draft
+              </button>
+            )}
             <DraftSaveStatus status={saveStatus} onRetry={() => void saveDraft()} />
+            <Dialog open={confirmDiscard} onOpenChange={setConfirmDiscard}>
+              <DialogContent data-ck-role-theme="ngo" className="block max-w-sm p-6">
+                <DialogTitle className="text-lg font-bold text-stone-900 dark:text-stone-100">Discard this draft?</DialogTitle>
+                <DialogDescription className="mt-2 text-sm text-stone-500 dark:text-stone-400">
+                  Everything you entered and the photos you uploaded for it will be deleted. This can&apos;t be undone.
+                </DialogDescription>
+                <div className="mt-6 flex justify-end gap-2">
+                  <button type="button" onClick={() => setConfirmDiscard(false)} className="min-h-11 rounded-lg border border-slate-200 px-4 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300">Keep draft</button>
+                  <button type="button" onClick={() => void handleDiscardDraft()} className="min-h-11 rounded-lg bg-red-600 px-4 text-xs font-bold text-white hover:bg-red-700">Discard</button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
           <WizardProgressBar current={step as NgoDriveStep} steps={NGO_DRIVE_STEPS} labels={STEP_LABELS} availability={availability} onJump={s => goToStep(s as NgoDriveStep, -1)} navLabel="Drive progress" />
         </div>
@@ -1730,9 +2026,7 @@ function NewNgoDriveForm() {
         {step === "drive-location" || step === "drive-details" ? (
           <div className="mx-auto w-full max-w-[1040px] px-4 sm:px-8 lg:px-10 pb-6 mt-auto">
             <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
-              {step === "drive-details" && (
-                <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 1</button>
-              )}
+              <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />{step === "drive-details" ? "Back to Step 1" : "Back"}</button>
               <button type="button" onClick={() => void saveDraft()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {saveStatus === "saving" ? "Saving…" : "Save Draft"}
               </button>
@@ -1743,7 +2037,7 @@ function NewNgoDriveForm() {
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
             <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step 2</button>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{saveStatus === "saving" ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving" || Boolean(hoursProblem)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{saveStatus === "saving" ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
             </div>
           </div>
         ) : (

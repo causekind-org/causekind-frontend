@@ -59,7 +59,6 @@ describe("Footer Component", () => {
         "Create an account",
         "My dashboard",
         "Register your NGO · Coming soon",
-        "Safety guidelines",
         "Help & FAQ",
         "Read our Blog",
       ]);
@@ -75,7 +74,6 @@ describe("Footer Component", () => {
       expect(links.map((l) => l.label)).toEqual([
         "In-kind requests",
         "My dashboard",
-        "Safety guidelines",
         "Help & FAQ",
         "Read our Blog",
       ]);
@@ -88,7 +86,6 @@ describe("Footer Component", () => {
       expect(links.map((l) => l.label)).toEqual([
         "In-kind requests",
         "My dashboard",
-        "Safety guidelines",
         "Help & FAQ",
         "Read our Blog",
       ]);
@@ -120,7 +117,6 @@ describe("Footer Component", () => {
       expect(disabledSpan).toHaveClass("text-[#8A7B6B]");
       expect(disabledSpan).toHaveClass("cursor-not-allowed");
 
-      expect(screen.getByRole("link", { name: "Safety guidelines" })).toHaveAttribute("href", "/give-safely");
       expect(screen.getByRole("link", { name: "Help & FAQ" })).toHaveAttribute("href", "/faq");
       expect(screen.getByRole("link", { name: "Read our Blog" })).toHaveAttribute("href", "/blog");
 

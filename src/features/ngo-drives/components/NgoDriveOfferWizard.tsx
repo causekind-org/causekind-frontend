@@ -37,6 +37,7 @@ import {
 } from "@/features/donation-offer-wizard/offerModel";
 import { offerStepForField, validateOfferStep } from "@/features/donation-offer-wizard/offerSchema";
 import { ApiError } from "@/lib/api";
+import { formatKm, insideRadiusText, outsideRadiusText, pickupRadiusCheck, type LatLng } from "@/features/ngo-drives/drivePickupRadius";
 import { LocationStep, type LocationStepHandle } from "@/features/item-listing-wizard/steps/LocationStep";
 import { useLocationPinHandlers, type LocationFields } from "@/hooks/useLocationPinHandlers";
 
@@ -175,8 +176,14 @@ const STEP_INTROS: Record<OfferStep, string> = {
 export function NgoDriveOfferWizard({
   offerId, driveId: propDriveId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
   driveUnit, acceptedConditions, driveCategory: propDriveCategory, mustBeWorking: propMustBeWorking, requireClean: propRequireClean,
+  drivePin = null, drivePickupRadiusKm = null, onDeclineOutside = () => window.location.assign("/"),
 }: {
+  /** "No" to giving from outside the pickup radius: leaves for the home page. */
+  onDeclineOutside?: () => void;
   offerId: number;
+  /** The drive's pin and pickup radius, for the instant inside/outside message on step 1. */
+  drivePin?: LatLng | null;
+  drivePickupRadiusKm?: number | null;
   /** Donor conditions the drive accepts; null/empty shows every condition. */
   acceptedConditions?: readonly string[] | null;
   driveId?: number;
@@ -227,6 +234,12 @@ export function NgoDriveOfferWizard({
   const [locResult, setLocResult] = useState<{ distanceKm: number | null; dropOffOnly: boolean | null } | null>(
     () => offer?.donorLatitude != null ? { distanceKm: offer.distanceKm ?? null, dropOffOnly: offer.dropOffOnly ?? null } : null);
   const [outsideOpen, setOutsideOpen] = useState(false);
+  // Instant check against the drive's pin as soon as the donor's location is known.
+  const radius = pickupRadiusCheck(loc, drivePin ?? (offer?.driveLocationLatitude != null && offer?.driveLocationLongitude != null
+    ? { lat: offer.driveLocationLatitude, lng: offer.driveLocationLongitude } : null), drivePickupRadiusKm ?? offer?.pickupRadiusKm ?? null);
+  const [outsideConfirmed, setOutsideConfirmed] = useState(false);
+  const radiusKey = radius ? `${loc.latitude},${loc.longitude}` : "";
+  useEffect(() => { setOutsideConfirmed(false); }, [radiusKey]);
   const commitLoc = useCallback((next: LocationFields) => {
     locRef.current = next; locEditedRef.current = true;
     setLoc(next); setLocSaved(false); setLocResult(null);
@@ -527,8 +540,9 @@ export function NgoDriveOfferWizard({
           setAdvancing(false);
         }
       }
-      if (result.dropOffOnly) { setOutsideOpen(true); return; }
-      if (result.dropOffOnly === false) toast.success("You're within the NGO's pickup area. You can choose pickup or drop-off later.");
+      const outside = radius ? !radius.inside : result.dropOffOnly === true;
+      if (outside && !outsideConfirmed) { setOutsideOpen(true); return; }
+      if (!radius && result.dropOffOnly === false) toast.success("You're within the NGO's pickup area. You can choose pickup or drop-off later.");
       goTo("photos", 1);
       return;
     }
@@ -575,7 +589,7 @@ export function NgoDriveOfferWizard({
         setAdvancing(false);
       }
     }
-  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity, showSaveFailure, overNeedMessage, offerId, locSaved, locResult]);
+  }, [step, model, photosBlocked, flush, goTo, focusField, stillNeededQuantity, showSaveFailure, overNeedMessage, offerId, locSaved, locResult, radius, outsideConfirmed]);
 
   /** Field errors next to their fields (jumping to that step), the summary in a toast. */
   function showSaveFailure(fallback: string) {
@@ -805,7 +819,37 @@ export function NgoDriveOfferWizard({
                             onChange={setLocField} onPin={handleLocPin} onGeocodeTyped={handleLocGeocode}
                             controlRef={locStepRef} tone="ngo"
                           />
-                          {locResult?.dropOffOnly === false && (
+                          {radius?.inside === true && (
+                            <p data-testid="drive-radius-inside" role="status"
+                              className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-semibold text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200">
+                              {insideRadiusText(radius)}
+                            </p>
+                          )}
+                          {radius?.inside === false && (
+                            <div data-testid="drive-radius-outside" role="status"
+                              className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+                              <p className="font-semibold">{outsideRadiusText(radius)}</p>
+                              <p className="mt-2 text-xs">Handover: <strong>Drop-off only</strong>. Pickup is not available for your location.</p>
+                              {!outsideConfirmed ? (
+                                <div className="mt-3">
+                                  <p className="font-bold">Do you still want to give to this drive?</p>
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    <button type="button" data-testid="drive-radius-yes" onClick={() => setOutsideConfirmed(true)}
+                                      className="min-h-11 rounded-full bg-emerald-700 px-5 text-sm font-semibold text-white hover:bg-emerald-800">
+                                      Yes, I&apos;ll drop them off
+                                    </button>
+                                    <button type="button" data-testid="drive-radius-no" onClick={() => onDeclineOutside()}
+                                      className="min-h-11 rounded-full border border-stone-300 bg-white px-5 text-sm font-semibold text-stone-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100">
+                                      No
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <p className="mt-2 text-xs font-semibold">Thank you. Continue to add photos of your items.</p>
+                              )}
+                            </div>
+                          )}
+                          {!radius && locResult?.dropOffOnly === false && (
                             <p data-testid="drive-pickup-inside" role="status"
                               className="rounded-xl border border-ngo-200 bg-ngo-50 p-3 text-xs font-semibold text-ngo-800 dark:border-ngo-900 dark:bg-ngo-950/30 dark:text-ngo-200">
                               You&apos;re within the NGO&apos;s pickup area. You can choose pickup or drop-off later.
@@ -928,20 +972,21 @@ export function NgoDriveOfferWizard({
           <div role="alertdialog" aria-modal="true" aria-labelledby="drive-outside-title" data-testid="drive-outside-dialog"
             className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl dark:bg-zinc-900">
             <h2 id="drive-outside-title" className="text-base font-bold text-stone-900 dark:text-stone-100">
-              You&apos;re about {locResult?.distanceKm ?? "?"} km away
+              Outside the pickup radius
             </h2>
             <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">
-              This NGO picks up only within {offer?.pickupRadiusKm ?? "?"} km of {[offer?.driveLocationArea, offer?.driveLocationCity].filter(Boolean).join(", ") || "the drive"}.
-              {" "}You can still give by dropping the items off at the NGO.
+              {radius ? outsideRadiusText(radius)
+                : `You are ${locResult?.distanceKm != null ? formatKm(locResult.distanceKm) : "?"} km away, outside this NGO's pickup radius of ${offer?.pickupRadiusKm ?? "?"} km. You will need to drop the items off at the NGO's address yourself. The NGO will not pick them up.`}
             </p>
+            <p className="mt-3 text-sm font-bold text-stone-900 dark:text-stone-100">Do you still want to give to this drive?</p>
             <div className="mt-4 flex flex-col gap-2">
-              <button type="button" autoFocus onClick={() => { setOutsideOpen(false); goTo("photos", 1); }}
+              <button type="button" autoFocus onClick={() => { setOutsideOpen(false); setOutsideConfirmed(true); goTo("photos", 1); }}
                 className="min-h-11 rounded-full bg-ngo-700 px-4 text-sm font-semibold text-white hover:bg-ngo-800">
-                Continue with drop-off
+                Yes, continue with drop-off
               </button>
-              <button type="button" onClick={() => setOutsideOpen(false)}
+              <button type="button" onClick={() => { setOutsideOpen(false); onDeclineOutside(); }}
                 className="min-h-11 rounded-full border border-stone-300 px-4 text-sm font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-200">
-                Change location
+                No
               </button>
             </div>
           </div>

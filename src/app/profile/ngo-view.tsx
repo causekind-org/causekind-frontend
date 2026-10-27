@@ -29,6 +29,7 @@ import {
   type NGOProgressInfo,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { NgoReadinessRail } from "@/components/profile/NgoReadinessRail";
+import { ChangesRequestedCard } from "@/features/ngo-registration/components/ChangesRequestedCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -820,6 +821,8 @@ export function NgoProfileView() {
                 )}
               </div>
             </div>
+
+            <ChangesRequestedCard application={application} />
 
             {/* Reference Details Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-[#F5EFE6]/80 dark:bg-[#121c17]/60 p-4 sm:p-5 rounded-2xl border border-[#EADBCE]/80 dark:border-emerald-950/50 text-xs">

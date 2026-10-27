@@ -142,7 +142,7 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     signedIn(NGO);
     correctionRequested();
     vi.mocked(uploadNgoDocument).mockResolvedValue({ documentId: 99, s3Key: "ngo-documents/new.pdf", fileUrl: null } as never);
-    vi.mocked(submitNgoApplication).mockResolvedValue({ applicationId: "CK-NGO-2026-BBBB0002", status: "PENDING_VERIFICATION", officialEmail: "hope@ngo.test" } as never);
+    vi.mocked(submitNgoApplication).mockResolvedValue({ applicationId: "CK-NGO-2026-AAAA0001", status: "UNDER_REVIEW", officialEmail: "hope@ngo.test" } as never);
     render(<NgoDetailsPage />);
 
     // Summary at the top lists both items.
@@ -160,12 +160,12 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     expect(screen.getByLabelText(/PAN Number/i)).toHaveValue("AAATH1234K");
     expect(screen.getByText("pan.pdf")).toBeInTheDocument();
     expect(screen.getByText("reg.pdf")).toBeInTheDocument();
-    expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toEqual(["Needs a fix: Does not match the certificate"]);
+    expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toEqual(["Admin note: Does not match the certificate"]);
 
     // Step 2: bank proof and 12A carried over, the deed empty with its note.
     await openStep(/Legal Documents/i);
     await screen.findAllByText(/Step 2 of 6/i);
-    expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toEqual(["Needs a fix: The deed scan is cut off"]);
+    expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toEqual(["Admin note: The deed scan is cut off"]);
     expect(screen.getByText("bank.pdf")).toBeInTheDocument();
     expect(screen.getByText("12a.pdf")).toBeInTheDocument();
     const inputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
@@ -193,7 +193,8 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     // Resubmit.
     await openStep(/Review & Submit/i);
     fireEvent.click(await screen.findByRole("checkbox"));
-    fireEvent.click(screen.getByRole("button", { name: /Submit Application/i }));
+    expect(screen.getByTestId("what-you-changed")).toHaveTextContent("Registration number: TR/2026/1002");
+    fireEvent.click(screen.getByRole("button", { name: /Resubmit Application/i }));
     await waitFor(() => expect(submitNgoApplication).toHaveBeenCalledTimes(1));
     const body = vi.mocked(submitNgoApplication).mock.calls[0][0] as never as Record<string, any>;
     expect(body.registrationNumber).toBe("TR/2026/1002");
@@ -209,7 +210,9 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     expect(body.logo.photoId).toBe(21);
     expect(body.officePhoto.photoId).toBe(22);
     expect(body.activityPhotos[0].photoId).toBe(23);
-    expect((await screen.findAllByText(/Step 6 of 6/i)).length).toBeGreaterThan(0);
+    // Back under review: no email code, straight to /profile.
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith("/profile"));
+    expect(screen.queryAllByText(/Step 6 of 6/i)).toHaveLength(0);
   }, 30000);
 
   it("never refills a flagged signup field (organization name) from the account", async () => {
@@ -239,4 +242,67 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
     expect((await screen.findAllByText(/Step 4 of 6/i)).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Show the nameboard/)).toHaveLength(2);
   }, 15000);
+});
+
+describe("NGO wizard: resubmission mode", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    window.history.replaceState(null, "", "/profile/ngo-details");
+  });
+
+  it("highlights the flagged field, counts it per step, and keeps Resubmit disabled until it changes", async () => {
+    signedIn(NGO);
+    vi.mocked(getMyNgoApplication).mockResolvedValue({
+      applicationId: "CK-NGO-2026-AAAA0001", organizationName: "Hope Welfare Trust", status: "NEEDS_INFORMATION",
+      overallNote: "Two small fixes please",
+      correctionItems: [{ field: "registrationNumber", note: "Does not match the certificate" }],
+    } as never);
+    vi.mocked(getNgoDraft).mockResolvedValue({
+      currentStep: "org-details", organizationName: "Hope Welfare Trust", legalStructure: "trust", registrationNumber: "TR/OLD",
+      registeredOfficeAddress: "12 Shanti Nagar, Pune", yearOfEstablishment: "2019", panNumber: "AAATH1234K",
+    } as never);
+    render(<NgoDetailsPage />);
+
+    expect(await screen.findByText("Our team asked for changes")).toBeInTheDocument();
+    expect(screen.getByTestId("overall-note")).toHaveTextContent("Two small fixes please");
+    expect(screen.getByTestId("to-fix-org-details")).toHaveTextContent("1 to fix");
+    const note = screen.getByTestId("correction-note");
+    expect(note).toHaveTextContent("Admin note: Does not match the certificate");
+    expect(note).not.toHaveAttribute("data-updated");
+
+    await openStep(/Review & Submit/i);
+    fireEvent.click(await screen.findByRole("checkbox"));
+    expect(screen.getByRole("button", { name: /Resubmit Application/i })).toBeDisabled();
+    expect(screen.getByTestId("what-you-changed")).toHaveTextContent(/1 flagged item still needs a change/);
+
+    await openStep(/Organization Details/i);
+    const reg = await screen.findByLabelText(/Registration Number/i);
+    await userEvent.clear(reg);
+    await userEvent.type(reg, "TR/NEW");
+    expect(screen.getByTestId("correction-note")).toHaveAttribute("data-updated", "true");
+    expect(screen.getByTestId("correction-note")).toHaveTextContent("Does not match the certificate");
+    expect(screen.queryByTestId("to-fix-org-details")).toBeNull();
+  }, 30000);
+
+  it("loads flagged values and files with their saved values, highlighted, with Replace on the flagged file", async () => {
+    signedIn(NGO);
+    vi.mocked(getMyNgoApplication).mockResolvedValue({
+      applicationId: "CK-NGO-2026-AAAA0001", organizationName: "Hope Welfare Trust", status: "NEEDS_INFORMATION",
+      correctionItems: [{ field: "registrationNumber", note: "Check it" }, { field: "documents.pan", note: "Blurry" }],
+    } as never);
+    vi.mocked(getNgoDraft).mockResolvedValue({
+      currentStep: "org-details", organizationName: "Hope Welfare Trust", legalStructure: "trust", registrationNumber: "TR/SAVED",
+      registeredOfficeAddress: "12 Shanti Nagar, Pune", yearOfEstablishment: "2019", panNumber: "AAATH1234K",
+      documents: { pan: { documentId: 13, name: "pan.pdf", size: 1024, mimeType: "application/pdf" } },
+    } as never);
+    render(<NgoDetailsPage />);
+    expect(await screen.findByLabelText(/Registration Number/i)).toHaveValue("TR/SAVED");
+    expect(screen.getByText("pan.pdf")).toBeInTheDocument();
+    expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toEqual(
+      expect.arrayContaining(["Admin note: Check it", "Admin note: Blurry"]));
+    expect(screen.getAllByRole("button", { name: /Replace/ }).length).toBeGreaterThan(0);
+    // Unchanged saved values are not fixes.
+    expect(screen.getByTestId("to-fix-org-details")).toHaveTextContent("2 to fix");
+  }, 30000);
 });

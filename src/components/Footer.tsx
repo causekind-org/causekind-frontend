@@ -55,8 +55,8 @@ export const FOOTER_LEGAL_LINKS = [
 
 /**
  * Returns the "Get Support" links based on user role.
- * - Guest (not logged in): Create an account, My dashboard (/login), Register your NGO, Safety guidelines, Help & FAQ, Read our Blog
- * - Logged-in Donor / Donee: In-kind requests (at top!), My dashboard (/dashboard), Safety guidelines, Help & FAQ, Read our Blog
+ * - Guest (not logged in): Create an account, My dashboard (/login), Register your NGO, Help & FAQ, Read our Blog
+ * - Logged-in Donor / Donee: In-kind requests (at top!), My dashboard (/dashboard), Help & FAQ, Read our Blog
  */
 export function getSupportLinks(role?: string | null): SupportLinkItem[] {
   const isDonorOrDonee = role === "DONOR" || role === "DONEE" || role === "RECIPIENT";
@@ -66,7 +66,6 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
     return [
       { href: "/requests", label: "In-kind requests" },
       { href: "/dashboard", label: "My dashboard" },
-      { href: "/give-safely", label: "Safety guidelines" },
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
     ];
@@ -75,7 +74,6 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
   if (isNgo) {
     return [
       { href: "/", label: "My dashboard" },
-      { href: "/give-safely", label: "Safety guidelines" },
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
     ];
@@ -92,7 +90,6 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
       label: isNgoLive ? "Register your NGO" : "Register your NGO · Coming soon",
       disabled: !isNgoLive,
     },
-    { href: "/give-safely", label: "Safety guidelines" },
     { href: "/faq", label: "Help & FAQ" },
     { href: "/blog", label: "Read our Blog" },
   ];

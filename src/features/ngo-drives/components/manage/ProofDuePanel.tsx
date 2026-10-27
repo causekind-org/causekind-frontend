@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { NgoDrive } from "@/lib/api";
 import { serverDate } from "@/lib/serverTime";
 import { DriveProofPanel } from "./DriveProofPanel";
@@ -16,14 +17,22 @@ export function proofDeadline(dueAt: string | null | undefined, now = Date.now()
 }
 
 /** Collection is complete and no proof was sent yet: one upload form per drive. Sending it goes to admin review. */
-export function ProofDuePanel({ drives, onSubmitted }: { drives: NgoDrive[]; onSubmitted: () => Promise<void> | void }) {
+export function ProofDuePanel({ drives, onSubmitted, focusDriveId }: { drives: NgoDrive[]; onSubmitted: () => Promise<void> | void; focusDriveId?: number | null }) {
+  const focusPresent = focusDriveId != null && drives.some((d) => d.id === focusDriveId);
+  // Deep link (?drive=ID from the landing "Submit proof" button): bring that drive's form into view.
+  useEffect(() => {
+    if (!focusPresent) return;
+    const el = document.getElementById(`proof-drive-${focusDriveId}`);
+    el?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    el?.querySelector<HTMLElement>("input, textarea, button")?.focus?.({ preventScroll: true });
+  }, [focusPresent, focusDriveId]);
   if (drives.length === 0) return <p className="py-8 text-center text-sm text-stone-500 dark:text-stone-400">No proof due right now.</p>;
   return (
     <ul className="space-y-4">
       {drives.map((d) => {
         const deadline = proofDeadline(d.proofDueAt);
         return (
-          <li key={d.id} data-testid="proof-due-drive" className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <li key={d.id} id={`proof-drive-${d.id}`} data-testid="proof-due-drive" className="scroll-mt-24 rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-bold text-stone-900 dark:text-stone-100">{d.title}</h3>
               {d.status === "PROOF_SUBMITTED" ? (

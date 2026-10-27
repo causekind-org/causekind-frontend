@@ -8,7 +8,7 @@ import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { errorMessage } from "@/features/ngo-drives/driveGiveState";
-import { NgoOfferReviewCard, humanize } from "./NgoOfferReviewCard";
+import { NgoOfferReviewCard } from "./NgoOfferReviewCard";
 import type { DriveOffer } from "./useNgoOffers";
 
 export type OfferSort = "oldest" | "condition" | "distance" | "quantity";
@@ -34,8 +34,6 @@ type Decline = { offers: DriveOffer[]; title: string };
 export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: () => Promise<void> | void }) {
   const [sort, setSort] = useState<OfferSort>("oldest");
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [accepting, setAccepting] = useState<DriveOffer | null>(null);
-  const [acceptQty, setAcceptQty] = useState("");
   const [declining, setDeclining] = useState<Decline | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
@@ -70,15 +68,10 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
     return [...m.entries()];
   }
 
-  async function confirmAccept() {
-    if (!accepting) return;
-    const qty = Number(acceptQty);
-    const offered = accepting.quantity ?? 0;
-    if (!Number.isInteger(qty) || qty < 1 || qty > offered) { toast.error(`Accept between 1 and ${offered}.`); return; }
-    const done = await run(() => reviewNgoDriveOffer(accepting.drive.id, accepting.id, "ACCEPT", undefined, qty < offered ? qty : undefined),
-      qty < offered ? `Accepted ${qty} of ${offered}. The rest went back to the drive and the donor was told.` : "Offer accepted. It's now in Handovers.",
-      "We couldn't accept this offer.");
-    if (done) setAccepting(null);
+  /** One click: accept the full offered quantity. No quantity dialog. */
+  async function acceptOne(offer: DriveOffer) {
+    await run(() => reviewNgoDriveOffer(offer.drive.id, offer.id, "ACCEPT", undefined, offer.quantity ?? undefined),
+      "Offer accepted. It's now in Handovers.", "We couldn't accept this offer.");
   }
 
   async function confirmDecline() {
@@ -136,7 +129,7 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
                 <NgoOfferReviewCard key={offer.id} offer={offer} unit={drive.unit} stillNeeded={stillNeeded(drive)} label={covered ? "Drive covered" : null}
                   select={<input type="checkbox" aria-label={`Select offer from ${offer.donorDisplayName || "donor"}`} checked={selected.has(offer.id)} onChange={() => toggle(offer.id)} className="mt-1 h-4 w-4 shrink-0 accent-ngo-700" />}
                   actions={<>
-                    <Button size="sm" disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" onClick={() => { setAccepting(offer); setAcceptQty(String(offer.quantity ?? "")); }}>Accept</Button>
+                    <Button size="sm" disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" data-testid="accept-offer" onClick={() => void acceptOne(offer)}>Accept</Button>
                     <Button size="sm" variant="destructive" disabled={busy} onClick={() => { setDeclining({ offers: [offer], title: "Decline this offer?" }); setReason(""); }}>Decline</Button>
                   </>} />
               ))}
@@ -144,30 +137,6 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
           </section>
         );
       })}
-
-      <Dialog open={!!accepting} onOpenChange={(o) => { if (!o) setAccepting(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Accept this offer?</DialogTitle>
-            <DialogDescription>
-              You can accept less than offered. The rest goes back to the drive and the donor is told.
-            </DialogDescription>
-          </DialogHeader>
-          {accepting && (
-            <label className="block text-sm font-bold">How many do you accept? (1–{accepting.quantity})
-              <input type="number" min={1} max={accepting.quantity ?? undefined} value={acceptQty} onChange={(e) => setAcceptQty(e.target.value)} data-testid="accept-qty"
-                className="mt-1 block w-full max-w-[10rem] rounded-lg border border-stone-300 p-2 font-normal dark:border-zinc-700 dark:bg-zinc-950" />
-              <span className="mt-1 block text-xs font-normal text-stone-500">Offered: {accepting.quantity} {humanize(accepting.drive.unit)}</span>
-            </label>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setAccepting(null)}>Cancel</Button>
-            <Button disabled={busy} className="bg-ngo-700 hover:bg-ngo-800" onClick={() => void confirmAccept()}>
-              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Accept
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={!!declining} onOpenChange={(o) => { if (!o) setDeclining(null); }}>
         <DialogContent>

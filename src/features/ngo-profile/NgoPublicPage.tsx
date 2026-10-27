@@ -1,5 +1,6 @@
 "use client";
 
+import { PastWorkSection } from "@/features/ngo-drives/components/PastWorkSection";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -64,39 +65,6 @@ function Detail({ icon: Icon, label, children }: { icon: React.ElementType; labe
   );
 }
 
-/** An image / video carousel for one past-activity entry. */
-function MediaCarousel({ media, title }: { media: { mediaType: "IMAGE" | "VIDEO"; url: string }[]; title: string }) {
-  const [i, setI] = useState(0);
-  if (media.length === 0) return null;
-  const m = media[Math.min(i, media.length - 1)];
-  return (
-    <div className="relative overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-950" data-testid="activity-carousel">
-      <div className="aspect-video w-full">
-        {m.mediaType === "VIDEO"
-          ? <video controls preload="metadata" src={m.url} aria-label={`${title} video`} className="h-full w-full bg-black object-contain" />
-          : <SafeImg src={m.url} alt={`${title}, photo ${i + 1} of ${media.length}`} className="h-full w-full object-cover"
-              fallback={<div className="h-full w-full bg-stone-100 dark:bg-zinc-900" />} />}
-      </div>
-      {media.length > 1 && (
-        <>
-          <button type="button" aria-label="Previous" onClick={() => setI((i - 1 + media.length) % media.length)}
-            className="absolute left-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-stone-800 shadow">
-            <ChevronLeft className="h-5 w-5" aria-hidden />
-          </button>
-          <button type="button" aria-label="Next" onClick={() => setI((i + 1) % media.length)}
-            className="absolute right-2 top-1/2 grid h-10 w-10 -translate-y-1/2 place-items-center rounded-full bg-white/90 text-stone-800 shadow">
-            <ChevronRight className="h-5 w-5" aria-hidden />
-          </button>
-          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5">
-            {media.map((_, k) => (
-              <span key={k} className={`h-1.5 w-1.5 rounded-full ${k === i ? "bg-white" : "bg-white/50"}`} aria-hidden />
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 const DEFAULT_BANNER = "/images/ngo-default-banner.jpg";
 const DEFAULT_BANNER_MOBILE = "/images/ngo-default-banner-mobile.jpg";
@@ -281,22 +249,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
               </ul>
             </Card>
           )}
-          {(ngo.activities?.length ?? 0) > 0 && (
-            <Card title="Past activity">
-              <ul className="grid gap-4 sm:grid-cols-2">
-                {ngo.activities!.map(a => (
-                  <li key={a.id} data-testid="public-activity" className="overflow-hidden rounded-xl border border-stone-200 dark:border-zinc-800">
-                    <MediaCarousel media={a.media} title={a.title} />
-                    <div className="p-3">
-                      <p className="font-semibold text-stone-900 dark:text-stone-100">{a.title}</p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400">{formatDdMmYyyy(a.activityDate)}</p>
-                      {a.description && <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">{a.description}</p>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
+          <PastWorkSection ngoName={ngo.organizationName} activities={ngo.activities ?? ngo.pastActivities} />
 
           {(ngo.liveDrives?.length ?? 0) > 0 && (
             <Card title="Live drives">

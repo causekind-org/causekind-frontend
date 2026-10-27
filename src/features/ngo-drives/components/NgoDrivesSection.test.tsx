@@ -96,13 +96,14 @@ describe("NgoDrivesSection", () => {
     render(<NgoDrivesSection />);
 
     // Header badge & title
-    expect(await screen.findByText("VERIFIED INITIATIVES")).toBeInTheDocument();
-    expect(screen.getByText(/Real organisations\./i)).toBeInTheDocument();
-    expect(screen.getByText(/Real impact\./i)).toBeInTheDocument();
+    expect(await screen.findByText("NGO DRIVES")).toBeInTheDocument();
+    expect(screen.getByText(/Drives by/i)).toBeInTheDocument();
+    expect(screen.getByText(/verified NGOs/i)).toBeInTheDocument();
+    expect(screen.getByText("NGOs across India list the exact items they need. Pick a drive and give.")).toBeInTheDocument();
 
     // Trust card
     expect(screen.getByText("Every NGO is verified")).toBeInTheDocument();
-    expect(screen.getByText(/Registration, address and contact person checked/i)).toBeInTheDocument();
+    expect(screen.getByText(/registration, address and contact person/i)).toBeInTheDocument();
 
     // Drive cards
     expect(screen.getByText("Primary School Uniforms")).toBeInTheDocument();
@@ -121,7 +122,7 @@ describe("NgoDrivesSection", () => {
 
     // Waits for load to settle and component to unmount/return null
     await vi.waitFor(() => {
-      expect(screen.queryByText(/Real organisations\./i)).toBeNull();
+      expect(screen.queryByText(/Drives by/i)).toBeNull();
     });
 
     expect(container.firstChild).toBeNull();
@@ -196,9 +197,10 @@ describe("NgoDrivesSection", () => {
     expect(await screen.findByText("Flood Relief Medicine Kits")).toBeInTheDocument();
 
     // Check donorCount: Drive 1 has 4 donors, Drive 2 has 1 donor, Drive 3 has 0 (hidden)
-    expect(screen.getByText("4 Donors")).toBeInTheDocument();
-    expect(screen.getByText("1 Donor")).toBeInTheDocument();
-    expect(screen.queryByText("0 Donors")).toBeNull();
+    expect(screen.getByText("Donors so far: 4")).toBeInTheDocument();
+    expect(screen.getByText("Donors so far: 1")).toBeInTheDocument();
+    expect(screen.getByText("Be the first donor")).toBeInTheDocument();
+    expect(screen.queryByText("Donors so far: 0")).toBeNull();
 
     // Cards no longer show the days-left line.
     expect(screen.queryByText("Ends today")).toBeNull();

@@ -250,9 +250,14 @@ export function RequestDirectory(props: Props) {
         </nav>
 
         <div className="min-w-0">
+          {audience === "ngos" && (
+            <p data-testid="ngo-drives-intro" className="mb-2 text-sm text-stone-600 dark:text-stone-400">
+              NGOs across India list the exact items they need. Pick a drive and give. Every NGO is verified.
+            </p>
+          )}
           <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-lg font-semibold tracking-tight sm:text-2xl">
-              {categories.length === 1 ? <TranslatedText text={categories[0]} /> : categories.length ? "Selected categories" : "All local needs"}
+              {categories.length === 1 ? <TranslatedText text={categories[0]} /> : categories.length ? "Selected categories" : audience === "ngos" ? "Drives by verified NGOs" : "All local needs"}
             </h2>
             <div className="flex items-center gap-3">
               <span role="status" className="text-xs text-stone-500 dark:text-stone-400">

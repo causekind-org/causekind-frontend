@@ -1,5 +1,6 @@
 "use client";
 
+import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
 import { AboutNgoContent } from "./AboutNgoCard";
 import { BackButton } from "@/components/BackButton";
 import React, { useState, useEffect } from "react";
@@ -29,7 +30,10 @@ import {
   Flame,
 } from "lucide-react";
 import type { PublicNgoDrive, NgoDriveProofResponse } from "@/lib/api";
-import { getNgoDriveProof } from "@/lib/api";
+import { getNgoDriveProof, getPublicNgo, type PublicNgoActivity } from "@/lib/api";
+import { PastWorkSection } from "./PastWorkSection";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { EDITABLE_OFFER, offerHref, offerStatusLabel } from "@/features/ngo-drives/driveGiveState";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
 import { formatDdMmYyyy, formatHandoverMode, formatLegalStructure, getMapsUrl } from "@/features/ngo-drives/driveFormatters";
@@ -94,6 +98,20 @@ export function DriveDetailView({
         .catch(() => setProof(null));
     }
   }, [isFulfilled, isPreview, drive.id]);
+
+  // Past work by the NGO: from the drive response when the server sends it, else the NGO's public page.
+  const embeddedActivities = drive.pastActivities ?? drive.ngo?.pastActivities ?? drive.ngo?.activities ?? null;
+  const [fetchedActivities, setFetchedActivities] = useState<PublicNgoActivity[] | null>(null);
+  const ngoSlug = drive.ngo?.slug ?? null;
+  useEffect(() => {
+    if (isPreview || embeddedActivities || !ngoSlug) return;
+    let active = true;
+    getPublicNgo(ngoSlug)
+      .then((n) => { if (active) setFetchedActivities(n.activities ?? n.pastActivities ?? []); })
+      .catch(() => { /* the section just stays hidden */ });
+    return () => { active = false; };
+  }, [isPreview, embeddedActivities, ngoSlug]);
+  const pastActivities = embeddedActivities ?? fetchedActivities;
 
   // FAQ accordion state
 
@@ -407,6 +425,11 @@ export function DriveDetailView({
                     Items must be washed and clean
                   </span>
                 )}
+                {categoryDetailRows(drive.category, drive.categoryDetails).map(r => (
+                  <span key={r.label} className="mt-1.5 block text-xs text-stone-600 dark:text-stone-300" data-testid="drive-category-detail">
+                    <strong className="font-semibold">{r.label}:</strong> {r.value}
+                  </span>
+                ))}
               </Fact>
 
               {drive.beneficiaryCount != null && (
@@ -608,6 +631,13 @@ export function DriveDetailView({
             </div>
           </Card>
 
+          <PastWorkSection
+            ngoName={drive.ngoOrganizationName || drive.ngo?.organizationName}
+            activities={pastActivities}
+            limit={3}
+            seeAllHref={ngoSlug ? `/ngos/${ngoSlug}` : null}
+          />
+
           {/* 7. Updates / Impact (Only for FULFILLED drives) */}
           {isFulfilled && proof && (
             <Card title="Impact & Distribution">
@@ -650,7 +680,7 @@ export function DriveDetailView({
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             onError={(e) => { e.currentTarget.style.display = "none"; }}
-                            src={m.mediaUrl}
+                            src={resolveMediaUrl(m.mediaUrl) ?? undefined}
                             alt={`Distribution photo ${idx + 1}`}
                             className="h-full w-full object-cover"
                           />
@@ -727,10 +757,6 @@ export function DriveDetailView({
 
             <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-stone-100 pt-3 text-xs text-stone-500 dark:border-zinc-800 dark:text-stone-400">
               <span>Learn more:</span>
-              <Link href="/give-safely" className="font-bold text-emerald-700 hover:underline dark:text-emerald-400">
-                Giving safely checklist
-              </Link>
-              <span>•</span>
               <Link href="/faq?category=ngo-drives" className="font-bold text-emerald-700 hover:underline dark:text-emerald-400">
                 Frequently asked questions
               </Link>
@@ -955,20 +981,36 @@ export function DriveDetailView({
                   Continue your offer
                 </Link>
               ) : giveStateResult?.kind === "offered" ? (
-                <>
+                <div data-testid="my-drive-offers">
                   <p className="text-sm font-semibold text-stone-800 dark:text-stone-200">
-                    You already offered {giveStateResult.offer.quantity} {humanize(drive.unit)}.
+                    You already offered {giveStateResult.total} {humanize(drive.unit)}.
                   </p>
-                  <Link
-                    href={giveStateResult.href}
-                    data-testid="drive-cta-button"
-                    className="mt-3 flex min-h-[48px] w-full items-center justify-center rounded-xl border border-stone-300 text-sm font-bold text-stone-800 hover:bg-stone-50 dark:border-zinc-700 dark:text-stone-100 dark:hover:bg-zinc-800"
-                  >
-                    {giveStateResult.href.includes("/handover")
-                      ? "Open your handover"
-                      : "See your offer"}
-                  </Link>
-                </>
+                  <ul className="mt-3 space-y-2">
+                    {giveStateResult.offers.map((o) => (
+                      <li key={o.id} data-testid="my-drive-offer" className="rounded-xl border border-stone-200 p-3 dark:border-zinc-700">
+                        <p className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                          {o.quantity ?? 0} {humanize(drive.unit)}
+                        </p>
+                        <p className="text-xs text-stone-600 dark:text-stone-400">{offerStatusLabel(o.status)}</p>
+                        <Link
+                          href={EDITABLE_OFFER.has(o.status) ? `/drives/${drive.id}/give?offer=${o.id}` : offerHref(o)}
+                          className="mt-1 inline-flex min-h-11 items-center text-sm font-bold text-emerald-700 hover:underline dark:text-emerald-400"
+                        >
+                          {EDITABLE_OFFER.has(o.status) ? "Continue this offer" : offerHref(o).includes("/handover") ? "Open your handover" : "See your offer"}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                  {giveStateResult.giveAgainHref && (
+                    <Link
+                      href={giveStateResult.giveAgainHref}
+                      data-testid="drive-cta-button"
+                      className="mt-3 flex min-h-[48px] w-full items-center justify-center rounded-full bg-emerald-600 text-base font-bold text-white shadow-sm hover:bg-emerald-700"
+                    >
+                      Give again
+                    </Link>
+                  )}
+                </div>
               ) : giveStateResult?.kind === "closed" ? (
                 <>
                   <button

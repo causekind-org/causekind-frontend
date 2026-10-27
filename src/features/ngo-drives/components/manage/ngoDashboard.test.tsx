@@ -116,17 +116,15 @@ describe("Activity: offers to review", { timeout: 20000 }, () => {
     expect(screen.getByTestId("activity-chip-handovers")).toHaveTextContent(/Handovers\s*1/);
   });
 
-  it("partial accept sends the accepted quantity; never above what was offered", async () => {
+  it("one-click accept sends the full offered quantity, with no dialog", async () => {
     api.reviewNgoDriveOffer.mockResolvedValue({});
     await open("tab=activity&filter=offers");
     const card = screen.getAllByTestId("offer-review-card").find((c) => c.textContent?.includes("Donor 1"))!;
     fireEvent.click(within(card).getByRole("button", { name: "Accept" }));
-    fireEvent.change(await screen.findByTestId("accept-qty"), { target: { value: "6" } });
-    fireEvent.click(screen.getAllByRole("button", { name: "Accept" }).at(-1)!);
-    expect(api.reviewNgoDriveOffer).not.toHaveBeenCalled();
-    fireEvent.change(screen.getByTestId("accept-qty"), { target: { value: "3" } });
-    fireEvent.click(screen.getAllByRole("button", { name: "Accept" }).at(-1)!);
-    await waitFor(() => expect(api.reviewNgoDriveOffer).toHaveBeenCalledWith(1, 1, "ACCEPT", undefined, 3));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByTestId("accept-qty")).toBeNull();
+    await waitFor(() => expect(api.reviewNgoDriveOffer).toHaveBeenCalledWith(1, 1, "ACCEPT", undefined, 5));
+    expect(api.reviewNgoDriveOffer).toHaveBeenCalledTimes(1);
   });
 
   it("bulk: Accept selected and Decline selected (with a reason) per drive", async () => {

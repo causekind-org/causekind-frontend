@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { NgoDriveOfferResponse, PublicNgoDrive } from "@/lib/api";
 
 /**
@@ -30,7 +30,7 @@ const auth = vi.hoisted(() => ({ user: null as null | { email: string; role: str
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: auth.user, isLoading: false }) }));
 vi.mock("@/hooks/useEntityUpdates", () => ({ useEntityUpdates: () => {} }));
 const nav = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useParams: () => ({ id: "5" }), useRouter: () => nav }));
+vi.mock("next/navigation", () => ({ useParams: () => ({ id: "5" }), useRouter: () => nav, useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/features/ngo-drives/components/NgoDriveOfferWizard", () => ({
   NgoDriveOfferWizard: ({ offerId, stillNeededQuantity }: { offerId: number; stillNeededQuantity: number }) =>
     <div data-testid="wizard">offer {offerId} · max {stillNeededQuantity}</div>,
@@ -162,13 +162,15 @@ describe("give page /drives/[id]/give", () => {
     expect(api.createNgoDriveOfferDraft).not.toHaveBeenCalled();
   });
 
-  it("a donor who already offered sees that, with a link to their handover", async () => {
+  it("a donor who already offered is not blocked: a new offer (its own draft) starts", async () => {
     api.getNgoDrive.mockResolvedValue(drive());
     api.getMyNgoDriveOffers.mockResolvedValue([offer("NGO_ACCEPTED")]);
+    api.createNgoDriveOfferDraft.mockResolvedValue({ id: 21 });
+    api.getNgoDriveOffer.mockResolvedValue(offer("DRAFT", { id: 21 }));
     const P = await Page();
     render(<P />);
-    expect(await screen.findByText("You already offered to this drive")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Open your handover" })).toHaveAttribute("href", "/ngo-drive-offers/9/handover");
+    expect(await screen.findByTestId("wizard")).toHaveTextContent("offer 21");
+    expect(screen.queryByText("You already offered to this drive")).toBeNull();
   });
 
   it("a drive that isn't LIVE explains why instead of opening the wizard", async () => {
@@ -215,13 +217,19 @@ describe("NGO drive page /ngo/drives/[id]", () => {
     const P = await Page();
     render(<P />);
     expect(await screen.findByRole("heading", { name: /Winter blankets/ })).toBeInTheDocument();
-    expect(screen.getByText("Live")).toBeInTheDocument();
-    expect(screen.getByText("MON, TUE, 10:00–17:00")).toBeInTheDocument();
+    expect(screen.getByTestId("drive-status-badge")).toHaveTextContent("Live");
+    expect(screen.getAllByText("MON, TUE, 10:00–17:00").length).toBeGreaterThan(0);
+    // Redesign: KPI strip, attention card, report and donor preview links.
+    expect(screen.getByTestId("drive-kpis")).toHaveTextContent(/Needed/);
+    expect(screen.getByTestId("needs-attention")).toHaveTextContent("1 offer to review");
+    expect(screen.getByTestId("needs-attention")).toHaveTextContent("1 handover to confirm");
+    expect(screen.getByTestId("drive-report-link")).toHaveAttribute("href", "/ngo/drives/5/report");
+    expect(screen.getByTestId("donor-preview-link")).toHaveAttribute("href", "/drives/5");
     // Details only: no tabs; a summary line links into the dashboard's Activity.
     expect(screen.queryByRole("tab")).toBeNull();
     expect(screen.queryByRole("button", { name: /Accept/ })).toBeNull();
-    expect(screen.getByRole("link", { name: "1 offer to review" })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=offers&drive=5");
-    expect(screen.getByRole("link", { name: "1 handover" })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=handovers&drive=5");
+    expect(within(screen.getByTestId("drive-activity-summary")).getByRole("link", { name: "1 offer to review" })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=offers&drive=5");
+    expect(within(screen.getByTestId("drive-activity-summary")).getByRole("link", { name: "1 handover" })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=handovers&drive=5");
     // Closing is blocked while an offer waits for review.
     fireEvent.click(screen.getByTestId("close-drive"));
     expect(await screen.findByTestId("close-blocked")).toHaveTextContent("1 offer is waiting for your review");

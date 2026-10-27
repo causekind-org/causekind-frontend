@@ -11,7 +11,9 @@ import {
 import { NgoDriveOfferWizard } from "@/features/ngo-drives/components/NgoDriveOfferWizard";
 import { offerSentKey, type DriveOfferSent } from "@/features/ngo-drives/components/DriveOfferSentModal";
 import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
-import { errorMessage, giveState, isNotFound, stillNeeded } from "@/features/ngo-drives/driveGiveState";
+import { EDITABLE_OFFER, closedReason, errorMessage, giveState, isNotFound, stillNeeded } from "@/features/ngo-drives/driveGiveState";
+import { prefillOfferFromListing } from "@/features/ngo-drives/listingPrefill";
+import { drivePin } from "@/features/ngo-drives/drivePickupRadius";
 import { PageSkeleton } from "@/components/skeletons";
 import { driveAcceptedConditions } from "@/features/ngo-drives/driveConditions";
 
@@ -45,28 +47,48 @@ export default function DriveGivePage() {
       const role = (user.role ?? "").toUpperCase();
       const offers = role === "DONOR" ? await getMyNgoDriveOffers() : [];
       const state = giveState(drive, user, offers);
-      switch (state.kind) {
+      // ?offer=ID resumes that draft; ?new=1 starts another offer even when a draft or offer exists.
+      const query = new URLSearchParams(typeof window === "undefined" ? "" : window.location.search);
+      const wanted = Number(query.get("offer"));
+      const resume = wanted ? offers.find((o) => o.id === wanted && o.driveId === drive.id && EDITABLE_OFFER.has(o.status)) : undefined;
+      if (state.kind !== "wrong-role" && resume) {
+        setView({ kind: "wizard", drive, offer: resume });
+        return;
+      }
+      const startNew = query.get("new") === "1";
+      const fullOrClosed = closedReason(drive) ?? (stillNeeded(drive) === 0 ? closedReason({ status: "FULLY_PLEDGED" }) : null);
+      const kind = state.kind === "wrong-role" ? "wrong-role"
+        : fullOrClosed ? "closed"
+          : state.kind === "continue" && !startNew ? "continue"
+            : "give";
+      switch (kind) {
         case "wrong-role":
-          setView({ kind: "blocked", title: "You can't give to this drive", body: state.reason, link: { href: `/drives/${drive.id}`, label: "Back to the drive" } });
-          return;
-        case "offered":
-          setView({ kind: "blocked", title: "You already offered to this drive",
-            body: `Your offer of ${state.offer.quantity ?? ""} ${drive.unit ?? ""} is in progress.`,
-            link: { href: state.href, label: state.href.includes("/handover") ? "Open your handover" : "See your offer" } });
+          setView({ kind: "blocked", title: "You can't give to this drive", body: state.kind === "wrong-role" ? state.reason : "", link: { href: `/drives/${drive.id}`, label: "Back to the drive" } });
           return;
         case "closed":
-          setView({ kind: "blocked", title: "This drive isn't taking offers", body: state.reason, link: { href: `/drives/${drive.id}`, label: "Back to the drive" } });
+          setView({ kind: "blocked", title: "This drive isn't taking offers", body: fullOrClosed ?? "", link: { href: `/drives/${drive.id}`, label: "Back to the drive" } });
           return;
         case "continue":
-          setView({ kind: "wizard", drive, offer: state.offer });
-          return;
+          if (state.kind === "continue") { setView({ kind: "wizard", drive, offer: state.offer }); return; }
+          break;
         default: {
           // load() can run twice (the user object settles after login); share one draft
           // request, or the wizard autosaved to one draft and submitted the other, empty one.
+          // Each new offer has its own draft (keyed by offer id, never by drive).
           const pending = draftRequest.current?.driveId === drive.id ? draftRequest.current.promise : createNgoDriveOfferDraft(drive.id);
           draftRequest.current = { driveId: drive.id, promise: pending };
           const draft = await pending;
-          setView({ kind: "wizard", drive, offer: await getNgoDriveOffer(draft.id) });
+          const fresh = await getNgoDriveOffer(draft.id);
+          // Optional ?qty= (from a "Give to this drive" suggestion): prefill a valid quantity on a new draft.
+          // ?listingId= prefills item details and photos from the donor's own available listing; ignored if invalid.
+          const isBlank = fresh.quantity == null || fresh.quantity <= 1;
+          const fromListing = isBlank && query.get("listingId")
+            ? await prefillOfferFromListing(Number(query.get("listingId")), user.id, drive, fresh)
+            : null;
+          const qty = Number(query.get("qty"));
+          const cap = stillNeeded(drive);
+          const prefilled = fromListing ?? (Number.isInteger(qty) && qty >= 1 && qty <= cap && isBlank ? { ...fresh, quantity: qty } : fresh);
+          setView({ kind: "wizard", drive, offer: prefilled });
         }
       }
     } catch (e) {
@@ -112,6 +134,9 @@ export default function DriveGivePage() {
         driveId={drive.id}
         ngoName={drive.ngoOrganizationName || "Verified NGO"}
         driveUnit={drive.unit}
+        drivePin={drivePin(drive)}
+        drivePickupRadiusKm={drive.pickupRadiusKm ?? null}
+        onDeclineOutside={() => router.push("/")}
         driveCategory={drive.category}
         mustBeWorking={Boolean(drive.mustBeWorking)}
         requireClean={Boolean(drive.requireClean)}

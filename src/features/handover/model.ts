@@ -126,6 +126,21 @@ export type HandoverViewModel = {
   offeredQuantity: number | null;
   /** Courier destination the recipient supplies; null when the backend sends none. */
   delivery: HandoverDelivery | null;
+  /** NGO drives only: where and when the donor drops the items off (no map needed). */
+  dropOff?: HandoverDropOff | null;
+};
+
+export type HandoverDropOff = {
+  /** Drive location and the NGO's address, joined. */
+  address: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  /** MON..SUN codes. */
+  days: string[];
+  from: string | null;
+  to: string | null;
+  /** Free-text hours from the NGO profile, when the drive has no from/to. */
+  hoursText: string | null;
 };
 
 

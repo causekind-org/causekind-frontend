@@ -37,6 +37,10 @@ vi.mock("@/lib/api", () => {
     updateNgoDrive: (...args: unknown[]) => mockUpdateNgoDrive(...args),
     getNgoDriveDetail: (...args: unknown[]) => mockGetNgoDriveDetail(...args),
     uploadNgoDriveReferencePhoto: vi.fn(),
+    getNgoDriveDraft: vi.fn().mockResolvedValue(null),
+    saveNgoDriveDraft: vi.fn().mockResolvedValue(undefined),
+    deleteNgoDriveDraft: vi.fn().mockResolvedValue(undefined),
+    deleteUnusedNgoDrivePhoto: vi.fn().mockResolvedValue(undefined),
   };
 });
 vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
@@ -169,7 +173,8 @@ describe("drive form fields", { timeout: 20000 }, () => {
     expect(screen.getByDisplayValue("Elders in Kandivali")).toBeInTheDocument();
     expect(screen.getByDisplayValue("Sudden cold wave")).toBeInTheDocument();
     expect(screen.getByDisplayValue("No illness this winter")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: /5. Drive address for donors/ })).toBeInTheDocument();
+    // The read-only registered office address block was removed from this step.
+    expect(screen.queryByText("Registered office address")).not.toBeInTheDocument();
 
     // Navigate to Step 2
     fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));

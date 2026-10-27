@@ -8,6 +8,7 @@
  * component. Normalizing at the edge keeps the conditional in exactly two files.
  */
 
+import { driveCertificateIssued } from "@/features/ngo-drives/driveCertificate";
 import { toZonedIso } from "@/lib/serverTime";
 import type { DonationOffer, HandoverRecord, ItemMatch } from "@/lib/api";
 import {
@@ -328,11 +329,25 @@ export function adaptNgoOffer(
     // Outside the NGO's pickup radius only drop-off is offered.
     methodOptions: offer.dropOffOnly ? NGO_OFFER_METHODS.filter(m => m.value !== "NGO_PICKUP") : NGO_OFFER_METHODS,
     certificateCode: null, // Handled differently if needed
-    certificateHref: role === "DONOR" && offer.status === "COMPLETED"
-      ? `/certificate?offerId=${offer.id}&type=ngo_drive` : null, // Assuming this is how certificates work for NGO drives
+    // Issued when the handover completes (code + first photo → ISSUE_WINDOW_OPEN).
+    certificateHref: role === "DONOR" && driveCertificateIssued(offer)
+      ? `/certificate?offerId=${offer.id}&type=ngo_drive` : null,
     closed: state === "completed" || state === "cancelled_or_failed",
     completedAt: null, // Optional, could parse from statusHistory
     offeredQuantity: offer.quantity,
     delivery: null, // Delivery address flow is not used for NGO drives
+    dropOff: {
+      address: [
+        [offer.driveLocationArea, offer.driveLocationCity].filter(Boolean).join(", "),
+        offer.handoverDetails?.registeredOfficeAddress,
+      ].filter((x, i, all) => x && all.indexOf(x) === i).join(" · ") || null,
+      contactName: offer.handoverDetails?.contactName ?? null,
+      contactPhone: offer.handoverDetails?.contactPhone ?? null,
+      days: (offer.driveAvailableDays?.length ? offer.driveAvailableDays
+        : String(offer.handoverDetails?.availableDays ?? "").split(",")).map((d: string) => d.trim().toUpperCase().slice(0, 3)).filter(Boolean),
+      from: offer.driveAvailableFrom ?? null,
+      to: offer.driveAvailableTo ?? null,
+      hoursText: offer.handoverDetails?.availableHours ?? null,
+    },
   };
 }

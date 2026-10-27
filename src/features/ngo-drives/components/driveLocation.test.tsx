@@ -88,8 +88,8 @@ describe("donor give form step 1: where are the items?", { timeout: 20000 }, () 
     id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust", media: [],
     pickupRadiusKm: 10, driveLocationArea: "Shivajinagar", driveLocationCity: "Pune",
   };
-  const renderWizard = () => render(
-    <NgoDriveOfferWizard offerId={9} offer={draft as never} driveId={5} ngoName="Hope Trust" driveUnit="PIECES"
+  const renderWizard = (extra: Record<string, unknown> = {}) => render(
+    <NgoDriveOfferWizard {...extra} offerId={9} offer={draft as never} driveId={5} ngoName="Hope Trust" driveUnit="PIECES"
       initialQuantityReceived={0} initialQuantityPledged={0} requestTitle="Winter blankets" requestedQuantity={50}
       stillNeededQuantity={50} adminNote={null} onSubmitted={vi.fn()} onExit={vi.fn()} onSaveExit={vi.fn()} />,
   );
@@ -116,21 +116,53 @@ describe("donor give form step 1: where are the items?", { timeout: 20000 }, () 
     expect(screen.queryByTestId("drive-outside-dialog")).not.toBeInTheDocument();
   });
 
-  it("outside the radius: explains, then Change location stays and Continue with drop-off goes on", async () => {
+  it("outside the radius (server check): asks whether to still give; Yes continues with drop-off", async () => {
     api.saveNgoDriveOfferLocation.mockResolvedValue({ ...draft, distanceKm: 120.4, dropOffOnly: true, handoverMethod: "DROP_OFF" });
-    renderWizard();
+    const onDecline = vi.fn();
+    renderWizard({ onDeclineOutside: onDecline });
     fireEvent.click(screen.getByRole("button", { name: "tap map" }));
     clickContinue();
     const dialog = await screen.findByTestId("drive-outside-dialog");
-    expect(dialog).toHaveTextContent("You're about 120.4 km away");
-    expect(dialog).toHaveTextContent("This NGO picks up only within 10 km of Shivajinagar, Pune. You can still give by dropping the items off at the NGO.");
-    fireEvent.click(screen.getByRole("button", { name: "Change location" }));
-    expect(screen.queryByTestId("drive-outside-dialog")).not.toBeInTheDocument();
-    expect(heading()).toMatch(/Where are the items\?/);
+    expect(dialog).toHaveTextContent("You are 120 km away, outside this NGO's pickup radius of 10 km.");
+    expect(dialog).toHaveTextContent("Do you still want to give to this drive?");
+    fireEvent.click(screen.getByRole("button", { name: "No" }));
+    expect(onDecline).toHaveBeenCalledTimes(1);
     clickContinue();
-    fireEvent.click(await screen.findByRole("button", { name: "Continue with drop-off" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Yes, continue with drop-off" }));
     await waitFor(() => expect(heading()).toMatch(/Show the item/));
     expect(api.saveNgoDriveOfferLocation).toHaveBeenCalledTimes(1); // unchanged location is not saved again
+  });
+
+  it("instant radius check: inside shows the green message", async () => {
+    renderWizard({ drivePin: { lat: 18.53, lng: 73.85 }, drivePickupRadiusKm: 10 });
+    fireEvent.click(screen.getByRole("button", { name: "tap map" }));
+    expect(await screen.findByTestId("drive-radius-inside")).toHaveTextContent(/You are within the NGO's pickup radius \(\d+(\.\d)? km away\)\. The NGO can pick up your items\./);
+    expect(screen.queryByTestId("drive-radius-outside")).not.toBeInTheDocument();
+  });
+
+  it("instant radius check: outside forces drop-off and asks; No leaves, Yes continues", async () => {
+    api.saveNgoDriveOfferLocation.mockResolvedValue({ ...draft, distanceKm: 120, dropOffOnly: true });
+    const onDecline = vi.fn();
+    renderWizard({ drivePin: { lat: 19.076, lng: 72.8777 }, drivePickupRadiusKm: 10, onDeclineOutside: onDecline });
+    fireEvent.click(screen.getByRole("button", { name: "tap map" }));
+    const box = await screen.findByTestId("drive-radius-outside");
+    expect(box).toHaveTextContent(/You are \d+ km away, outside this NGO's pickup radius of 10 km\. You will need to drop the items off at the NGO's address yourself\. The NGO will not pick them up\./);
+    expect(box).toHaveTextContent("Drop-off only");
+    expect(box).toHaveTextContent("Do you still want to give to this drive?");
+    fireEvent.click(screen.getByTestId("drive-radius-no"));
+    expect(onDecline).toHaveBeenCalledTimes(1);
+    fireEvent.click(screen.getByTestId("drive-radius-yes"));
+    clickContinue();
+    await waitFor(() => expect(heading()).toMatch(/Show the item/));
+    expect(screen.queryByTestId("drive-outside-dialog")).not.toBeInTheDocument();
+  });
+
+  it("no location yet, or a drive without a pin: no radius message and no crash", () => {
+    renderWizard({ drivePin: null, drivePickupRadiusKm: 10 });
+    expect(screen.queryByTestId("drive-radius-inside")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "tap map" }));
+    expect(screen.queryByTestId("drive-radius-inside")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("drive-radius-outside")).not.toBeInTheDocument();
   });
 });
 

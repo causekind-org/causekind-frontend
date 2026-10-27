@@ -14,6 +14,34 @@ export function findActiveOffer(offers: NgoDriveOfferResponse[], driveId: number
   return offers.find((o) => o.driveId === driveId && !FINISHED_OFFER.has(o.status)) ?? null;
 }
 
+/** Every offer this donor made on the drive that is still going (a donor may give more than once), newest first. */
+export function activeOffersFor(offers: NgoDriveOfferResponse[], driveId: number) {
+  return offers
+    .filter((o) => o.driveId === driveId && !FINISHED_OFFER.has(o.status))
+    .sort((a, b) => b.id - a.id);
+}
+
+/** Sent offers (not drafts) the donor made on the drive. */
+export function sentOffersFor(offers: NgoDriveOfferResponse[], driveId: number) {
+  return activeOffersFor(offers, driveId).filter((o) => !EDITABLE_OFFER.has(o.status));
+}
+
+/** Plain words for a donor's offer status. */
+export function offerStatusLabel(status: string): string {
+  switch (status) {
+    case "DRAFT": return "Draft, not sent yet";
+    case "NEEDS_INFORMATION": return "The NGO asked for changes";
+    case "SUBMITTED": case "AI_ELIGIBILITY_SCREENING": case "AI_COMPATIBILITY_SCREENING": case "PENDING_NGO_REVIEW":
+      return "Waiting for the NGO";
+    case "NGO_ACCEPTED": case "PENDING_ADMIN_APPROVAL": case "ADMIN_APPROVED": return "Accepted, plan the handover";
+    case "HANDOVER_IN_PROGRESS": return "Handover planned";
+    case "HANDOVER_AT_RISK": return "Handover needs attention";
+    case "ISSUE_WINDOW_OPEN": case "COMPLETED": return "Donated";
+    case "ISSUE_RAISED": return "Issue under review";
+    default: return status.replaceAll("_", " ").toLowerCase();
+  }
+}
+
 /** Where a donor follows up an offer they already made. */
 export function offerHref(offer: NgoDriveOfferResponse) {
   return HANDOVER_OFFER.has(offer.status) ? `/ngo-drive-offers/${offer.id}/handover` : "/dashboard";
@@ -39,7 +67,7 @@ export type GiveState =
   | { kind: "login"; href: string }
   | { kind: "give"; href: string }
   | { kind: "continue"; href: string; offer: NgoDriveOfferResponse }
-  | { kind: "offered"; href: string; offer: NgoDriveOfferResponse }
+  | { kind: "offered"; href: string; offer: NgoDriveOfferResponse; offers: NgoDriveOfferResponse[]; giveAgainHref: string | null; total: number }
   | { kind: "wrong-role"; reason: string }
   | { kind: "closed"; reason: string };
 
@@ -64,12 +92,19 @@ export function giveState(
           : "Only donor accounts can give to drives.",
     };
   }
-  const offer = findActiveOffer(offers, drive.id);
-  if (offer && EDITABLE_OFFER.has(offer.status)) return { kind: "continue", href: giveHref, offer };
-  if (offer) return { kind: "offered", href: offerHref(offer), offer };
-  const reason = closedReason(drive);
+  const mine = activeOffersFor(offers, drive.id);
+  const draft = mine.find((o) => EDITABLE_OFFER.has(o.status));
+  if (draft) return { kind: "continue", href: giveHref, offer: draft };
+  const reason = closedReason(drive) ?? (stillNeeded(drive) === 0 ? closedReason({ status: "FULLY_PLEDGED" })! : null);
+  // Offering once doesn't stop a donor giving again: the offers are listed, and "Give again" starts a new one.
+  if (mine.length > 0) {
+    return {
+      kind: "offered", href: offerHref(mine[0]), offer: mine[0], offers: mine,
+      giveAgainHref: reason ? null : `${giveHref}?new=1`,
+      total: mine.reduce((n, o) => n + (o.quantity ?? 0), 0),
+    };
+  }
   if (reason) return { kind: "closed", reason };
-  if (stillNeeded(drive) === 0) return { kind: "closed", reason: closedReason({ status: "FULLY_PLEDGED" })! };
   return { kind: "give", href: giveHref };
 }
 
