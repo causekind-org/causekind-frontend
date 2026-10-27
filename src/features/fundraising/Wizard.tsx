@@ -12,10 +12,16 @@ import {
 } from "@/lib/api";
 import { useFundraisingLabels, Icon, type SaveState, SaveIndicator, Stepper, formatINR } from "./ui";
 import { FieldInfo } from "./FieldInfo";
+import { PageStep, pageGaps, usePageDraft } from "./PageSteps";
+import type { FundraisingCampaign } from "@/lib/api";
 import s from "./fundraising.module.css";
 
 import { UiText, useUiText } from "@/components/UiText";
-/** F03–F07 — the five-step application wizard (canvas F03…F07). Autosaves. */
+/**
+ * F03–F07 + F13–F16 — the single fundraiser form (owner, 2026-10-27): four application steps,
+ * then the public page (Your page, Your story, Privacy), then Review. One submit, one review.
+ * The application and the page autosave separately.
+ */
 /** Visible labels for stored English choice values (age range, relationship). */
 function useChoiceLabel() {
   const ui = useUiText();
@@ -92,14 +98,18 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
 
   useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
 
+  const draft = usePageDraft(app, step >= 4);
+
   async function go(to: number) {
     await flush();
+    await draft.flush();
     setStep(to);
     window.scrollTo({ top: 0 });
   }
 
   async function saveAndExit() {
     await flush();
+    await draft.flush();
     router.push("/fundraising");
   }
 
@@ -125,7 +135,8 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         {step === 1 && <WhoNeedsHelp app={app} set={set} onBack={() => go(0)} onNext={() => go(2)} />}
         {step === 2 && <TheNeed app={app} set={set} onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
-        {step === 4 && <Review app={app} set={set} flush={flush} goTo={go} onSubmitted={onLeftDraft} />}
+        {step >= 4 && step <= 6 && <PageStep step={step as 4 | 5 | 6} draft={draft} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
+        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
       </main>
     </>
   );
@@ -471,9 +482,9 @@ function Evidence({ app, setApp, profile, onBack, onNext }: {
 }
 
 // F07 — A5 Declarations and review
-function Review({ app, set, flush, goTo, onSubmitted }: {
+function Review({ app, set, flush, goTo, onSubmitted, page }: {
   app: FundraisingApplication; set: SetFn; flush: () => Promise<boolean>; goTo: (step: number) => void;
-  onSubmitted: (a: FundraisingApplication) => void;
+  onSubmitted: (a: FundraisingApplication) => void; page: FundraisingCampaign | null;
 }) {
   const t = useTranslations("fundraiserFlow");
   const choiceLabel = useChoiceLabel();
@@ -495,6 +506,10 @@ function Review({ app, set, flush, goTo, onSubmitted }: {
     </label>
   );
 
+  const stillNeeded = [...app.missing, ...pageGaps(page, {
+    title: ui("page title"), story: ui("your story"), cover: ui("cover photo"), consent: ui("cover photo permission"), endDate: ui("last day to collect money"),
+  })];
+
   async function submit() {
     setSubmitting(true); setError(null);
     if (!(await flush())) { setSubmitting(false); setError(ui("Your last changes haven't saved yet. Try again before submitting.")); return; }
@@ -509,6 +524,13 @@ function Review({ app, set, flush, goTo, onSubmitted }: {
         {sec(ui("Who needs help", "wizard step"), 1, <dl style={kv}><dt className={s.muted}><UiText>For</UiText></dt><dd>{app.forSelf ? ui("Myself") : t("beneficiaryPrivate", { legal: app.beneficiaryLegalName ?? "—", shown: app.beneficiaryDisplayName ?? "—" })}</dd>{!app.forSelf && <><dt className={s.muted}><UiText>Relationship</UiText></dt><dd>{app.relationship ? choiceLabel(app.relationship) : "—"} · {app.beneficiaryAgeRange ? choiceLabel(app.beneficiaryAgeRange) : "—"}</dd></>}</dl>, true)}
         {sec(ui("The need", "wizard step"), 2, <dl style={kv}><dt className={s.muted}><UiText>Category</UiText></dt><dd>{app.category ? fmt.category(app.category) : "—"}</dd><dt className={s.muted}><UiText>Costs</UiText></dt><dd>{t("costsAcross", { amount: formatINR(app.totalCosts), count: app.costItems.length })}</dd><dt className={s.muted}><UiText>Other help</UiText></dt><dd>{formatINR((app.insuranceAmount ?? 0) + (app.ownContribution ?? 0) + (app.grantsAmount ?? 0) + (app.otherFundraisingAmount ?? 0))}</dd><dt className={s.muted}><UiText>Raising</UiText></dt><dd>{formatINR(app.requestedAmount)}</dd></dl>)}
         {sec(ui("Evidence", "wizard step"), 3, <p className={s.small}>{t("documentsReady", { count: app.evidence.filter((e) => !e.superseded).length })}</p>)}
+        {sec(ui("Your page", "wizard step"), 4, <dl style={kv}>
+          <dt className={s.muted}><UiText>Title</UiText></dt><dd>{page?.title || "—"}</dd>
+          <dt className={s.muted}><UiText>Cover photo</UiText></dt><dd>{page?.coverUrl ? ui("Added") : "—"}</dd>
+          <dt className={s.muted}><UiText>Last day to collect money</UiText></dt><dd>{page?.endDate ? fmt.date(page.endDate) : "—"}</dd>
+          <dt className={s.muted}><UiText>Shown name</UiText></dt><dd>{page?.beneficiaryDisplayName || "—"}</dd>
+        </dl>)}
+        {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}
       </div>
       <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
         <legend style={{ fontWeight: 700, fontSize: 16, padding: "0 6px" }}><UiText>Please confirm</UiText></legend>
@@ -518,17 +540,17 @@ function Review({ app, set, flush, goTo, onSubmitted }: {
         {check("declaredVerificationConsent", ui("CauseKind may check these documents to verify this application."))}
         <p className={`${s.muted} ${s.small}`} style={{ paddingTop: 10 }}><UiText>How we process your documents: [PRIVACY DISCLOSURE — to be written once processing is decided]. This is not consent to any other use.</UiText></p>
       </fieldset>
-      {app.missing.length > 0 && (
+      {stillNeeded.length > 0 && (
         <div role="status" style={{ maxWidth: 860, padding: "14px 16px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000" }} className={s.small}>
-          <strong><UiText>Still needed:</UiText></strong> {app.missing.join(", ")}.
+          <strong><UiText>Still needed:</UiText></strong> {stillNeeded.join(", ")}.
         </div>
       )}
       {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
       <div style={{ maxWidth: 860, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(3)}><UiText>Back</UiText></button>
+        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(6)}><UiText>Back</UiText></button>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span className={`${s.muted} ${s.small}`}><UiText>Submitting doesn&apos;t make anything public.</UiText></span>
-          <button type="button" className={`${s.btn} ${s.bp}`} onClick={submit} disabled={submitting || app.missing.length > 0}>{submitting ? ui("Submitting…") : ui("Submit application")}</button>
+          <button type="button" className={`${s.btn} ${s.bp}`} onClick={submit} disabled={submitting || stillNeeded.length > 0}>{submitting ? ui("Submitting…") : ui("Submit for review")}</button>
         </div>
       </div>
     </>

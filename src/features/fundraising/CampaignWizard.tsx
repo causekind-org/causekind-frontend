@@ -13,7 +13,7 @@ import { useTranslations } from "next-intl";
 import s from "./fundraising.module.css";
 
 import { UiText, useUiText } from "@/components/UiText";
-type SetFn = (patch: FundraisingCampaignSave) => void;
+export type SetFn = (patch: FundraisingCampaignSave) => void;
 
 /** F13–F17 — campaign draft wizard (canvas F13…F17). Autosaves like the application wizard. */
 export function CampaignWizard({ initial, onSubmitted }: { initial: FundraisingCampaign; onSubmitted: (c: FundraisingCampaign) => void }) {
@@ -135,7 +135,12 @@ function Heading({ title, sub }: { title: string; sub: string }) {
 }
 
 // F13 — C1 Public basics
-function Basics({ c, set, setC, nav }: { c: FundraisingCampaign; set: SetFn; setC: (c: FundraisingCampaign) => void; nav: React.ReactNode }) {
+/**
+ * `inApplication`: the page is being written inside the application (single-form flow, 2026-10-27):
+ * nothing is approved yet, the category comes from "The need", and the end date is asked here
+ * because the separate Target step is gone.
+ */
+export function Basics({ c, set, setC, nav, inApplication = false }: { c: FundraisingCampaign; set: SetFn; setC: (c: FundraisingCampaign) => void; nav: React.ReactNode; inApplication?: boolean }) {
   const t = useTranslations("fundraiserFlow");
   const fmt = useFundraisingLabels();
   const ui = useUiText();
@@ -153,9 +158,12 @@ function Basics({ c, set, setC, nav }: { c: FundraisingCampaign; set: SetFn; set
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 24, maxWidth: 860 }}>
         <div><label className={s.lbl} htmlFor="t"><UiText>Campaign title</UiText> <FieldInfo localize k="t" /></label><input id="t" className={s.in} maxLength={120} value={c.title ?? ""} onChange={(e) => set({ title: e.target.value })} /><p className={s.hint}>{t("titleHint", { count: (c.title ?? "").length })}</p></div>
         <div className={s.grid2}>
-          <div><span className={s.lbl}><UiText>Category</UiText> <FieldInfo localize k="cCat" /></span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{c.category ? fmt.category(c.category) : "—"}</span><span className={`${s.muted} ${s.small}`}><UiText>Approved — can&apos;t change here</UiText></span></p></div>
-          <div><label className={s.lbl} htmlFor="dn"><UiText>Beneficiary name shown to donors</UiText> <FieldInfo localize k="dn" /><span className={`${s.chip} ${s.cN}`}><UiText>From application</UiText></span></label><input id="dn" className={s.in} maxLength={80} value={c.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} /><p className={s.hint}><UiText>Their legal name stays private. Change visibility in step 4.</UiText></p></div>
+          <div><span className={s.lbl}><UiText>Category</UiText> <FieldInfo localize k="cCat" /></span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{c.category ? fmt.category(c.category) : "—"}</span><span className={`${s.muted} ${s.small}`}>{inApplication ? ui("From step 3 — change it there") : <UiText>Approved — can&apos;t change here</UiText>}</span></p></div>
+          <div><label className={s.lbl} htmlFor="dn"><UiText>Beneficiary name shown to donors</UiText> <FieldInfo localize k="dn" /><span className={`${s.chip} ${s.cN}`}><UiText>From application</UiText></span></label><input id="dn" className={s.in} maxLength={80} value={c.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} /><p className={s.hint}>{inApplication ? ui("Their legal name stays private. Choose what donors see in the Privacy step.") : <UiText>Their legal name stays private. Change visibility in step 4.</UiText>}</p></div>
         </div>
+        {inApplication && (
+          <div style={{ maxWidth: 320 }}><label className={s.lbl} htmlFor="ed"><UiText>Last day to collect money</UiText> <FieldInfo localize k="ed" /></label><input id="ed" type="date" className={s.in} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)} value={c.endDate ?? ""} onChange={(e) => set({ endDate: e.target.value || null })} /><p className={s.hint}><UiText>After this day, people can no longer give.</UiText></p></div>
+        )}
         <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="cv">
           <h2 id="cv" className={s.lbl} style={{ margin: 0 }}><UiText>Cover photo</UiText> <FieldInfo localize k="cv" /></h2>
           <div style={{ display: "grid", gridTemplateColumns: "minmax(0,360px) minmax(0,1fr)", gap: 20, alignItems: "start" }}>
@@ -180,7 +188,7 @@ function Basics({ c, set, setC, nav }: { c: FundraisingCampaign; set: SetFn; set
 }
 
 // F14 — C2 Story
-function Story({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: React.ReactNode }) {
+export function Story({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: React.ReactNode }) {
   const t = useTranslations("fundraiserFlow");
   const ui = useUiText();
   return (
@@ -252,7 +260,7 @@ function Target({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: Reac
 }
 
 // F16 — C4 Public evidence and privacy
-function Privacy({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: React.ReactNode }) {
+export function Privacy({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: React.ReactNode }) {
   const t = useTranslations("fundraiserFlow");
   const ui = useUiText();
   const seg = <T extends string>(label: string, value: T | null, options: [T, string][], onPick: (v: T) => void) => (

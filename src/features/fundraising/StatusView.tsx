@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { useRouter } from "next/navigation";
 import { fundraising, fundraisingCampaigns, ApiError, type FundraisingApplication } from "@/lib/api";
@@ -56,14 +56,7 @@ export function StatusView({ app, onChange, justSubmitted }: { app: FundraisingA
           </div>
         )}
 
-        {app.status === "APPROVED" && (
-          <section className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="ap">
-            <h2 id="ap" style={{ fontSize: 16, fontWeight: 700 }}><UiText>Finish your fundraiser page and submit it for publication.</UiText></h2>
-            {app.decisionReason && <p>{app.decisionReason}</p>}
-            {app.decisionConditions && <p className={s.small}><strong><UiText>Condition:</UiText></strong> {app.decisionConditions}</p>}
-            <div><PrepareButton applicationId={app.id} /></div>
-          </section>
-        )}
+        {app.status === "APPROVED" && <ApprovedNext app={app} />}
 
         {app.status === "INFORMATION_REQUESTED" && (
           <section className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="iq">
@@ -162,6 +155,33 @@ function NotApproved({ app }: { app: FundraisingApplication }) {
       </section>
       <p className={`${s.muted} ${s.small}`}><UiText>This decision doesn&apos;t change any earlier approval you hold, or any campaign already live.</UiText></p>
     </main>
+  );
+}
+
+/**
+ * After approval. Single-form fundraisers (2026-10-27) were approved together with their page, so
+ * this links to it; older applications approved without a page still prepare one here.
+ */
+function ApprovedNext({ app }: { app: FundraisingApplication }) {
+  const ui = useUiText();
+  const [page, setPage] = useState<{ id: number; status: string } | null | undefined>(undefined);
+  useEffect(() => {
+    fundraisingCampaigns.mine()
+      .then((all) => setPage(all.find((c) => c.applicationId === app.id && c.status !== "DRAFT" && c.status !== "CHANGES_REQUESTED" && c.status !== "CANCELLED") ?? null))
+      .catch(() => setPage(null));
+  }, [app.id]);
+  if (page === undefined) return null;
+  return (
+    <section className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="ap">
+      <h2 id="ap" style={{ fontSize: 16, fontWeight: 700 }}>{page
+        ? (page.status === "APPROVED" ? ui("Your fundraiser is approved and live.") : ui("Your fundraiser is approved. One step left: payment setup by our team."))
+        : <UiText>Finish your fundraiser page and submit it for publication.</UiText>}</h2>
+      {app.decisionReason && <p>{app.decisionReason}</p>}
+      {app.decisionConditions && <p className={s.small}><strong><UiText>Condition:</UiText></strong> {app.decisionConditions}</p>}
+      <div>{page
+        ? <Link href={`/fundraising/campaigns/${page.id}`} className={`${s.btn} ${s.bp}`}><UiText>Open your fundraiser</UiText></Link>
+        : <PrepareButton applicationId={app.id} />}</div>
+    </section>
   );
 }
 

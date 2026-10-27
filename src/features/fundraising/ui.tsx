@@ -46,7 +46,9 @@ export function useFundraisingLabels() {
     MEDICAL: ui("Medical", "fundraising category"), EDUCATION: ui("Education", "fundraising category"),
     EMERGENCY_HOUSEHOLD: ui("Emergency household support", "fundraising category"), OTHER: ui("Other", "fundraising category"),
   })[k];
-  const wizardSteps = [ui("About you", "wizard step"), ui("Who needs help", "wizard step"), ui("The need", "wizard step"), ui("Evidence", "wizard step"), ui("Review", "wizard step")];
+  // Single form (2026-10-27): the public page steps follow the application steps.
+  const wizardSteps = [ui("About you", "wizard step"), ui("Who needs help", "wizard step"), ui("The need", "wizard step"), ui("Evidence", "wizard step"),
+    ui("Your page", "wizard step"), ui("Your story", "wizard step"), ui("Privacy", "wizard step"), ui("Review", "wizard step")];
   const campaignSteps = [ui("Basics", "campaign step"), ui("Story", "campaign step"), ui("Target", "campaign step"), ui("Privacy", "campaign step"), ui("Preview", "campaign step")];
   /** Same format as formatDate, in the reader's language. */
   const date = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" }) : "—");
