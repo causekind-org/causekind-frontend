@@ -3898,7 +3898,10 @@
     "this_cancels_your_fundraiser_you_e443bd9e": "Esto cancela tu recaudación. No se puede deshacer.",
     "this_deletes_your_draft_you_fe6825bf": "Esto borra tu borrador. No se puede deshacer.",
     "this_withdraws_your_application_and_89a294c7": "Esto retira tu solicitud y cancela su página de recaudación. No se puede deshacer.",
-    "why_do_you_want_to_fd4fade0": "¿Por qué quieres detener esta recaudación? Hay donaciones de por medio, así que nuestro equipo lo revisará antes del cierre."
+    "why_do_you_want_to_fd4fade0": "¿Por qué quieres detener esta recaudación? Hay donaciones de por medio, así que nuestro equipo lo revisará antes del cierre.",
+    "give_up_approval_4f7e2880": "Renunciar a la aprobación",
+    "stop_your_live_fundraiser_first_9c6a2b20": "Primero detén tu recaudación activa. Hay donaciones de por medio, así que nuestro equipo lo revisa.",
+    "this_gives_up_your_approval_d8c86c4a": "Renuncias a tu aprobación y se cancela cualquier recaudación que aún no sea pública. Para recaudar de nuevo tendrás que volver a solicitar. No se puede deshacer."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
-import { fundraising, fundraisingCampaigns, fundraisingManage, type FundraisingApplication, type FundraisingCampaign } from "@/lib/api";
+import { fundraising, fundraisingCampaigns, fundraisingManage, ApiError, type FundraisingApplication, type FundraisingCampaign } from "@/lib/api";
 import { DoneeGate } from "@/features/fundraising/DoneeGate";
 import { useFundraisingLabels, StatusChip, Icon, CampaignChip } from "@/features/fundraising/ui";
 import s from "@/features/fundraising/fundraising.module.css";
@@ -69,6 +69,17 @@ function Dashboard() {
     } catch { setActionError(ui("That didn't work. Check your connection and try again.")); }
     finally { setBusy(false); }
   }
+  async function giveUpApproval(a: FundraisingApplication) {
+    if (!window.confirm(ui("This gives up your approval and cancels any fundraiser that is not public yet. To fundraise again you will need to apply again. You can't undo this."))) return;
+    setBusy(true); setActionError(null);
+    try {
+      const updated = await fundraising.withdraw(a.id);
+      setApps((as) => (as ?? []).map((x) => (x.id === a.id ? updated : x)));
+      setCampaigns((cs) => (cs ?? []).filter((x) => x.applicationId !== a.id || LIVE.includes(x.status)));
+    } catch (e) {
+      setActionError(e instanceof ApiError && e.status === 409 ? ui("Stop your live fundraiser first. Our team reviews that because donations are involved.") : ui("That didn't work. Check your connection and try again."));
+    } finally { setBusy(false); }
+  }
   async function withdrawApp(a: FundraisingApplication) {
     if (!window.confirm(ui("This withdraws your application and cancels its fundraiser page. You can't undo this."))) return;
     setBusy(true); setActionError(null);
@@ -92,6 +103,7 @@ function Dashboard() {
         <h1 className={s.serif} style={{ fontSize: 36, lineHeight: 1.15 }}><UiText>Your fundraisers</UiText></h1>
         <p className={s.muted} style={{ maxWidth: 640 }}><UiText>Raise money for a need, or ask for items. You can do either without the other.</UiText></p>
       </div>
+      {actionError && <p role="alert" className={s.small} style={{ color: "#a4262c" }}>{actionError}</p>}
 
       <div className={s.grid2} style={{ gap: 16 }}>
         <Link href="/requests/new" className={s.card} style={{ padding: 22, textDecoration: "none", color: "inherit", display: "flex", gap: 16, alignItems: "flex-start" }}>
@@ -141,6 +153,7 @@ function Dashboard() {
                 </div>
               </div>
               <Link href={`/fundraising/applications/${grant.id}`} className={`${s.btn} ${s.bs}`}><UiText>View approval</UiText></Link>
+              <button type="button" className={`${s.btn} ${s.bs}`} disabled={busy} onClick={() => giveUpApproval(grant)}><UiText>Give up approval</UiText></button>
             </div>
           )}
           {others.map((a) => <ApplicationRow key={a.id} app={a} hasGrant={!!grant} busy={busy} onWithdraw={() => withdrawApp(a)} />)}
@@ -149,7 +162,6 @@ function Dashboard() {
 
       <section aria-labelledby="camps" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}><h2 id="camps" className={s.serif} style={{ fontSize: 22 }}><UiText>Campaigns</UiText></h2>{campaigns && campaigns.length > 0 && <span className={`${s.muted} ${s.small}`}><UiText>Needs your action first</UiText></span>}</div>
-        {actionError && <p role="alert" className={s.small} style={{ color: "#a4262c" }}>{actionError}</p>}
         {campaigns && campaigns.length > 0 ? (
           <div className={s.card} style={{ overflow: "hidden" }}>
             {campaigns.filter((c) => c.status !== "CANCELLED").sort((x, y) => rank(x.status) - rank(y.status)).map((c) => (
