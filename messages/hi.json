@@ -3870,7 +3870,8 @@
     "money_you_asked_for_4d015d3b": "आपने कितना माँगा",
     "the_numbers_do_not_match_9c5997b7": "संख्याएँ मेल नहीं खातीं।",
     "the_money_you_asked_for_e6b81d34": "आपने जितना पैसा माँगा, वह अभी चाहिए वाले पैसे के बराबर नहीं है। शायद ऊपर की सूची में कुछ छूट गया है। उसे जोड़ें, या एक पंक्ति में कारण बताएँ।",
-    "why_is_it_different_39ce8022": "अंतर क्यों है?"
+    "why_is_it_different_39ce8022": "अंतर क्यों है?",
+    "this_fundraiser_was_removed_your_0e28de49": "यह फ़ंडरेज़र हटा दिया गया है। आपका दान और रसीद सुरक्षित हैं।"
   },
   "fundraisersList": {
     "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",

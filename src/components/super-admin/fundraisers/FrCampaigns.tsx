@@ -15,6 +15,7 @@ const STATUS_CHIPS: { label: string; status?: string; flag?: string }[] = [
   { label: "Collections closed", status: "COLLECTIONS_CLOSED" },
   { label: "Declined", status: "PUBLICATION_DECLINED" },
   { label: "Hidden", flag: "hidden" },
+  { label: "Deleted", flag: "deleted" },
 ];
 
 const CATEGORIES = ["MEDICAL", "EDUCATION", "EMERGENCY_HOUSEHOLD", "OTHER"];
@@ -110,6 +111,7 @@ export function FrCampaigns({ t, search, onSearch, onOpen }: {
                       <td className={`px-3.5 py-3 ${t.text}`}>{shortDate(r.endDate)}</td>
                       <td className="px-3.5 py-3">
                         <div className="flex flex-wrap gap-1">
+                          {r.deleted && <Pill tone="danger">Deleted</Pill>}
                           {r.hidden && <Pill tone="muted">Hidden</Pill>}
                           {r.featured && <Pill tone="info">Featured</Pill>}
                           {!r.acceptingDonations && <Pill tone="warn">Donations off</Pill>}

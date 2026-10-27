@@ -3870,7 +3870,8 @@
     "money_you_asked_for_4d015d3b": "Argent demandé",
     "the_numbers_do_not_match_9c5997b7": "Les chiffres ne correspondent pas.",
     "the_money_you_asked_for_e6b81d34": "L’argent demandé n’est pas égal à l’argent encore nécessaire. Il manque peut-être quelque chose dans la liste ci-dessus. Ajoutez-le, ou dites-nous pourquoi en une ligne.",
-    "why_is_it_different_39ce8022": "Pourquoi est-ce différent ?"
+    "why_is_it_different_39ce8022": "Pourquoi est-ce différent ?",
+    "this_fundraiser_was_removed_your_0e28de49": "Cette collecte a été retirée. Votre don et votre reçu sont conservés."
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",

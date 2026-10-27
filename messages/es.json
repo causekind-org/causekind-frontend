@@ -3870,7 +3870,8 @@
     "money_you_asked_for_4d015d3b": "Dinero que pediste",
     "the_numbers_do_not_match_9c5997b7": "Los números no coinciden.",
     "the_money_you_asked_for_e6b81d34": "El dinero que pediste no es igual al dinero que aún falta. Quizá falta algo en la lista de arriba. Añádelo o dinos por qué en una línea.",
-    "why_is_it_different_39ce8022": "¿Por qué es diferente?"
+    "why_is_it_different_39ce8022": "¿Por qué es diferente?",
+    "this_fundraiser_was_removed_your_0e28de49": "Esta recaudación se retiró. Tu donación y tu recibo se conservan."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

@@ -14,6 +14,7 @@ const CHIPS: { label: string; status?: FundraisingStatus }[] = [
   { label: "Not approved", status: "NOT_APPROVED" },
   { label: "Draft", status: "DRAFT" },
 ];
+const DELETED_CHIP = CHIPS.length; // the extra "Deleted" chip after the status chips
 const OVERRIDE_TO: FundraisingStatus[] = ["SUBMITTED", "IN_REVIEW", "INFORMATION_REQUESTED", "APPROVED", "NOT_APPROVED", "WITHDRAWN"];
 const cat = (c: string | null) => (c ? c.charAt(0) + c.slice(1).toLowerCase().replaceAll("_", " ") : "—");
 
@@ -24,12 +25,12 @@ export function FrApplications({ t, focusId, onOpenCampaign }: { t: SaTheme; foc
   const [selected, setSelected] = useState<number | null>(focusId);
   const [detail, setDetail] = useState<FundraisingAdminApplication | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
-  const [dialog, setDialog] = useState<"override" | null>(null);
+  const [dialog, setDialog] = useState<"override" | "delete" | "restore" | null>(null);
   const [overrideTo, setOverrideTo] = useState<FundraisingStatus>("IN_REVIEW");
 
   const load = useCallback(() => {
     setError(null);
-    superAdminFundraising.applications({ status: CHIPS[chip].status })
+    superAdminFundraising.applications(chip === DELETED_CHIP ? { deleted: true } : { status: CHIPS[chip].status })
       .then((r) => { setRows(r); setSelected((s) => s ?? r[0]?.id ?? null); })
       .catch((e) => setError(errorText(e, "We couldn't load applications.")));
   }, [chip]);
@@ -49,6 +50,7 @@ export function FrApplications({ t, focusId, onOpenCampaign }: { t: SaTheme; foc
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap gap-2.5">
         {CHIPS.map((c, i) => <Chip key={c.label} t={t} active={chip === i} onClick={() => { setChip(i); setSelected(null); }}>{c.label}</Chip>)}
+        <Chip t={t} active={chip === DELETED_CHIP} onClick={() => { setChip(DELETED_CHIP); setSelected(null); }}>Deleted</Chip>
       </div>
       {error ? <ErrorLine message={error} onRetry={load} /> : !rows ? <Spinner t={t} /> : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-[400px_minmax(0,1fr)]">
@@ -121,6 +123,9 @@ export function FrApplications({ t, focusId, onOpenCampaign }: { t: SaTheme; foc
                   <div className={`mt-auto flex flex-wrap justify-end gap-2.5 border-t pt-4 ${t.cardFlat}`}>
                     <a href={`/admin/fundraising/${a.id}`} className={`min-h-10 rounded-xl border px-4 py-2 text-sm ${t.btn}`}>Review in admin (approve, request info) →</a>
                     <button type="button" onClick={() => { setOverrideTo(a.status === "IN_REVIEW" ? "SUBMITTED" : "IN_REVIEW"); setDialog("override"); }} className={`min-h-10 rounded-xl border px-4 text-sm ${t.btn}`}>Change status…</button>
+                    {row?.deleted
+                      ? <button type="button" onClick={() => setDialog("restore")} className={`min-h-10 rounded-xl border px-4 text-sm ${t.btn}`}>Restore</button>
+                      : <button type="button" onClick={() => setDialog("delete")} className="min-h-10 rounded-xl border border-red-300 px-4 text-sm text-red-700 hover:bg-red-50">Delete</button>}
                   </div>
                 </>
               )}
@@ -128,6 +133,22 @@ export function FrApplications({ t, focusId, onOpenCampaign }: { t: SaTheme; foc
         </div>
       )}
 
+      {dialog === "delete" && a && (
+        <ConfirmDialog t={t} title={`Delete application #${a.id}`} danger confirmLabel="Delete" primaryNotify="Notify the applicant" defaultNotify={false}
+          changes={[{ field: "Visibility", before: "Visible", after: row?.campaignId != null ? "Deleted, with its campaign" : "Deleted" }]}
+          extra={<p className={`text-sm ${t.muted}`}>The applicant and the review queue will no longer see it{row?.campaignId != null ? ", and the campaign made from it is deleted too" : ""}. Records are kept; restore it from the Deleted filter.</p>}
+          onCancel={() => setDialog(null)}
+          onConfirm={async (r) => {
+            await superAdminFundraising.deleteApplication(a.id, { reason: r.reason, details: r.details, notifyUser: r.notifyPrimary });
+            setDialog(null); setSelected(null); load();
+          }} />
+      )}
+      {dialog === "restore" && a && (
+        <ConfirmDialog t={t} title={`Restore application #${a.id}`} primaryNotify={null} confirmLabel="Restore"
+          changes={[{ field: "Visibility", before: "Deleted", after: "Visible again, with the campaigns deleted with it" }]}
+          onCancel={() => setDialog(null)}
+          onConfirm={async (r) => { await superAdminFundraising.restoreApplication(a.id, { reason: r.reason, details: r.details }); setDialog(null); setSelected(null); load(); }} />
+      )}
       {dialog === "override" && a && (
         <ConfirmDialog t={t} title={`Change status of application #${a.id}`} primaryNotify="Notify the applicant"
           changes={[{ field: "Status", before: APPLICATION_STATUS[a.status]?.label ?? a.status, after: APPLICATION_STATUS[overrideTo]?.label ?? overrideTo }]}

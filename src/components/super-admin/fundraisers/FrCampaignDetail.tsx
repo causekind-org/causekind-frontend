@@ -30,7 +30,8 @@ type Pending =
   | { kind: "edit"; changes: ChangeRow[]; body: Partial<Form> }
   | { kind: "flags"; changes: ChangeRow[]; flags: { hidden?: boolean; featured?: boolean; acceptingDonations?: boolean } }
   | { kind: "status"; to: CampaignFlowStatus }
-  | { kind: "close" } | { kind: "extend" } | { kind: "payout" } | { kind: "decline" } | { kind: "message" };
+  | { kind: "close" } | { kind: "extend" } | { kind: "payout" } | { kind: "decline" } | { kind: "message" }
+  | { kind: "delete" } | { kind: "restore" };
 
 export function FrCampaignDetail({ t, id, onBack, onOpenApplication }: {
   t: SaTheme; id: number; onBack: () => void; onOpenApplication: (id: number) => void;
@@ -84,6 +85,12 @@ export function FrCampaignDetail({ t, id, onBack, onOpenApplication }: {
   return (
     <div className="flex flex-col gap-4">
       <BackLink t={t} onBack={onBack} />
+      {d.deletedAt && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-900">
+          <span><b>Deleted</b> by {d.deletedBy ?? "—"} on {dateTime(d.deletedAt)}. Hidden from the donee, the public and the review queues; donations and receipts are kept.</span>
+          <button type="button" onClick={() => setPending({ kind: "restore" })} className="min-h-9 rounded-lg border border-red-300 bg-white px-3 text-[13px] font-semibold">Restore</button>
+        </div>
+      )}
       {notice && <p role="status" className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-900">{notice}</p>}
 
       <header className="flex flex-wrap items-center gap-5">
@@ -159,6 +166,9 @@ export function FrCampaignDetail({ t, id, onBack, onOpenApplication }: {
             <ActionButton t={t} onClick={() => setPending({ kind: "payout" })}>{d.payoutReady ? "Unmark payout ready" : "Mark payout ready"}</ActionButton>
             <ActionButton t={t} onClick={() => setPending({ kind: "message" })}>Message donee</ActionButton>
             <ActionButton t={t} danger onClick={() => setPending({ kind: "decline" })}>Decline / take down</ActionButton>
+            {d.deletedAt
+              ? <ActionButton t={t} onClick={() => setPending({ kind: "restore" })}>Restore fundraiser</ActionButton>
+              : <ActionButton t={t} danger onClick={() => setPending({ kind: "delete" })}>Delete fundraiser</ActionButton>}
           </Card>
 
           <Card t={t} className="flex flex-col gap-2 p-[18px] text-sm">
@@ -213,6 +223,19 @@ export function FrCampaignDetail({ t, id, onBack, onOpenApplication }: {
         <ConfirmDialog t={t} title={d.payoutReady ? "Unmark payout ready" : "Mark payout ready"} primaryNotify={null}
           changes={[{ field: "Payout ready", before: d.payoutReady ? "Yes" : "No", after: d.payoutReady ? "No" : "Yes" }]}
           onCancel={() => setPending(null)} onConfirm={async () => { await fundraisers.setPayoutReady(id, d.version, !d.payoutReady); done("Payout status updated."); }} />
+      )}
+      {pending?.kind === "delete" && (
+        <ConfirmDialog t={t} title={`Delete ${c.title || "this fundraiser"}`} danger confirmLabel="Delete" defaultNotify={false}
+          changes={[{ field: "Visibility", before: "Visible to the donee and public", after: "Deleted (hidden everywhere)" }]}
+          extra={<p className={`text-sm ${t.muted}`}>The donee, the public and the review queues will no longer see it. Donations, receipts and the audit trail are kept, and you can restore it from the Deleted filter.</p>}
+          onCancel={() => setPending(null)}
+          onConfirm={async (r) => { await superAdminFundraising.deleteCampaign(id, { reason: r.reason, details: r.details, notifyUser: r.notifyPrimary }); done("Fundraiser deleted."); }} />
+      )}
+      {pending?.kind === "restore" && (
+        <ConfirmDialog t={t} title={`Restore ${c.title || "this fundraiser"}`} primaryNotify={null} confirmLabel="Restore"
+          changes={[{ field: "Visibility", before: "Deleted", after: "Visible again (status unchanged)" }]}
+          onCancel={() => setPending(null)}
+          onConfirm={async (r) => { await superAdminFundraising.restoreCampaign(id, { reason: r.reason, details: r.details }); done("Fundraiser restored."); }} />
       )}
       {pending?.kind === "extend" && <ExtendDialog t={t} d={d} onCancel={() => setPending(null)} onDone={() => done("End date updated.")} />}
       {pending?.kind === "message" && <MessageDialog t={t} id={id} onCancel={() => setPending(null)} onDone={() => done("Message sent to the donee.")} />}

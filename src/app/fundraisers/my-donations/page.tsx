@@ -48,7 +48,9 @@ export default function MyFundraiserDonationsPage() {
                     <td className={s.tabular} style={{ textAlign: "right" }}>{formatINR(d.amount)}</td>
                     <td className={s.small} style={{ paddingLeft: 16 }}>{fmt.date(d.createdAt)}</td>
                     <td>{chip(d.status)}</td>
-                    <td style={{ paddingRight: 18 }}><Link href={d.status === "INITIATED" ? `/fundraisers/donations/${d.id}` : `/fundraisers/${d.campaignId}`} className={s.small}>{d.status === "INITIATED" ? ui("Check status") : ui("Open fundraiser")}</Link></td>
+                    <td style={{ paddingRight: 18 }}>{d.campaignRemoved && d.status !== "INITIATED"
+                      ? <span className={`${s.small} ${s.muted}`}><UiText>This fundraiser was removed. Your donation and receipt are kept.</UiText></span>
+                      : <Link href={d.status === "INITIATED" ? `/fundraisers/donations/${d.id}` : `/fundraisers/${d.campaignId}`} className={s.small}>{d.status === "INITIATED" ? ui("Check status") : ui("Open fundraiser")}</Link>}</td>
                   </tr>
                 ))}
               </tbody>

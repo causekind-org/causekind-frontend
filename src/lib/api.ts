@@ -648,6 +648,8 @@ export type Donation = {
   status: string;
   createdAt: string;
   donorName?: string;
+  /** True when a super admin deleted the fundraiser; the donation and receipt remain. */
+  campaignRemoved?: boolean;
 };
 
 export function initiateDonation(campaignId: number, amount: number) {
@@ -6458,14 +6460,14 @@ export type SaFrOverview = {
 export type SaFrCampaignRow = {
   id: number; title: string | null; doneeName: string | null; category: string | null; city: string | null; status: CampaignFlowStatus;
   raised: number | null; target: number | null; donors: number; endDate: string | null; hidden: boolean; featured: boolean;
-  acceptingDonations: boolean; payoutReady: boolean; applicationId: number | null; createdAt: string | null;
+  acceptingDonations: boolean; payoutReady: boolean; applicationId: number | null; createdAt: string | null; deleted: boolean;
 };
 export type SaFrCostLine = { expense: string; amount: number | null };
 export type SaFrCampaignDetail = {
   admin: FundraisingAdminCampaign; version: number; applicationId: number | null; doneeName: string | null; doneeEmail: string | null;
   hidden: boolean; featured: boolean; acceptingDonations: boolean; payoutReady: boolean;
   money: { gross: number; fees: number; net: number; donations: number; donors: number };
-  costItems: SaFrCostLine[]; activity: SaFrActivity[];
+  costItems: SaFrCostLine[]; activity: SaFrActivity[]; deletedAt: string | null; deletedBy: string | null;
 };
 export type SaFrCampaignEdit = {
   expectedVersion: number; title?: string; description?: string; category?: string; city?: string; state?: string;
@@ -6478,6 +6480,7 @@ export type SaFrFlags = {
 export type SaFrApplicationRow = {
   id: number; applicantName: string | null; applicantEmail: string | null; category: FundraisingCategory | null;
   requestedAmount: number | null; status: FundraisingStatus; submittedAt: string | null; createdAt: string | null; campaignId: number | null;
+  deleted: boolean;
 };
 export type SaFrDonationRow = {
   id: number; createdAt: string | null; donorName: string | null; donorEmail: string | null; donorMode: string | null; anonymous: boolean;
@@ -6512,7 +6515,16 @@ export const superAdminFundraising = {
     request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/flags`, { method: "POST", body: JSON.stringify(body) }),
   message: (id: number, message: string) =>
     request<void>(`${SA_FR}/campaigns/${id}/message`, { method: "POST", body: JSON.stringify({ message }) }),
-  applications: (f: { q?: string; status?: string } = {}) => request<SaFrApplicationRow[]>(`${SA_FR}/applications${qs(f)}`),
+  applications: (f: { q?: string; status?: string; deleted?: boolean } = {}) =>
+    request<SaFrApplicationRow[]>(`${SA_FR}/applications${qs({ ...f, deleted: f.deleted ? "true" : undefined })}`),
+  deleteCampaign: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreCampaign: (id: number, body: { reason: string; details?: string }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
+  deleteApplication: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreApplication: (id: number, body: { reason: string; details?: string }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
   overrideApplication: (id: number, body: { status: FundraisingStatus; reason: string; details?: string; notifyApplicant?: boolean }) =>
     request<void>(`${SA_FR}/applications/${id}/status`, { method: "POST", body: JSON.stringify(body) }),
   donations: (f: SaFrDonationFilter = {}) => request<SaFrDonationPage>(`${SA_FR}/donations${qs(f)}`),
