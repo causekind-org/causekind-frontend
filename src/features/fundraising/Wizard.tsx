@@ -169,11 +169,12 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
   const { user } = useAuth();
   // Read the account fresh each time the step opens: the signed-in user held by useAuth can be
   // a cached copy without the phone (its /users/me refresh gives up after 2 s on a cold database).
-  const [account, setAccount] = useState<{ city: string | null; fullName: string | null; phone: string | null } | null>(null);
-  useEffect(() => { getProfile().then((p) => setAccount({ city: p.city, fullName: p.fullName, phone: p.phone })).catch(() => {}); }, []);
+  const [account, setAccount] = useState<{ city: string | null; fullName: string | null; phone: string | null; email: string | null } | null>(null);
+  useEffect(() => { getProfile().then((p) => setAccount({ city: p.city, fullName: p.fullName, phone: p.phone, email: p.email })).catch(() => {}); }, []);
   const city = account?.city ?? null;
   const fullName = account?.fullName || user?.fullName || "";
   const phone = account?.phone || user?.phone || "";
+  const email = account?.email || user?.email || "";
   // Landmark is optional on the donee profile; the account city always exists.
   const address = profile?.details?.addressLandmark?.trim() || city || "";
   return (
@@ -188,7 +189,7 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
             ? <p className={s.hint}><UiText>Changing your address may mean we ask for a new residence proof.</UiText></p>
             : <p className={s.hint}><UiText>Not in your profile yet.</UiText> <Link href="/profile/need-details"><UiText>Add your address</UiText></Link> <UiText>— your application is saved.</UiText></p>}</div>
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="em"><UiText>Email</UiText> <FieldInfo localize k="em" /><span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Verified</UiText></span></label><input id="em" className={s.in} value={user?.email ?? ""} readOnly style={{ background: "#f7f3ee" }} /><p className={s.hint}><UiText>Verified with a code when you signed up.</UiText></p></div>
+          <div><label className={s.lbl} htmlFor="em"><UiText>Email</UiText> <FieldInfo localize k="em" /><span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Verified</UiText></span></label><input id="em" className={s.in} value={email} readOnly style={{ background: "#f7f3ee" }} /><p className={s.hint}><UiText>Verified with a code when you signed up.</UiText></p></div>
           <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText> <FieldInfo localize k="ph" /><span className={`${s.chip} ${s.cM}`}><Icon name="alert" /><UiText>Not verified</UiText></span></label><input id="ph" className={s.in} value={phone} placeholder={account ? ui("Not added yet") : ""} readOnly /><p className={s.hint}><UiText>We may ask you to verify this later.</UiText></p></div>
         </div>
         <div className={`${s.muted} ${s.small}`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
