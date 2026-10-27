@@ -4862,7 +4862,7 @@
     },
     "age": {
       "title": "Age",
-      "text": "Your age in years. It comes from your profile â update the profile if it's wrong."
+      "text": "Your age in years. It comes from your profile — update the profile if it's wrong."
     },
     "ad": {
       "title": "Current address",
@@ -4878,15 +4878,15 @@
     },
     "forWhom": {
       "title": "Who the fundraiser is for",
-      "text": "Choose âMeâ if the money is for you. Choose âSomeone elseâ if you're raising it for a family member or someone you help."
+      "text": "Choose “Me” if the money is for you. Choose “Someone else” if you're raising it for a family member or someone you help."
     },
     "bn": {
       "title": "Their full legal name",
-      "text": "The person's name exactly as on their ID. Only CauseKind reviewers see it â never donors."
+      "text": "The person's name exactly as on their ID. Only CauseKind reviewers see it — never donors."
     },
     "pn": {
       "title": "Name shown to donors",
-      "text": "What donors will see, e.g. âRameshâ or âRamesh K.â. A first name is fine if they want privacy."
+      "text": "What donors will see, e.g. “Ramesh” or “Ramesh K.”. A first name is fine if they want privacy."
     },
     "ag": {
       "title": "Their age",
@@ -4894,11 +4894,11 @@
     },
     "rl": {
       "title": "Your relationship",
-      "text": "How you know them â parent, spouse, guardian and so on."
+      "text": "How you know them — parent, spouse, guardian and so on."
     },
     "au": {
       "title": "Why you",
-      "text": "In a few lines, why you're the right person to raise money for them. For example: âI'm her son and I'm handling the hospital bills.â"
+      "text": "In a few lines, why you're the right person to raise money for them. For example: “I'm her son and I'm handling the hospital bills.”"
     },
     "cat": {
       "title": "What is the money for?",
@@ -4954,7 +4954,7 @@
     },
     "ev_MEDICAL_REPORT": {
       "title": "Medical report",
-      "text": "The doctor's report or note about this condition. Just this condition â not your whole medical history."
+      "text": "The doctor's report or note about this condition. Just this condition — not your whole medical history."
     },
     "ev_TREATMENT_ESTIMATE": {
       "title": "Treatment estimate",
@@ -4970,7 +4970,7 @@
     },
     "ev_EVENT_EVIDENCE": {
       "title": "What happened",
-      "text": "Photos, an FIR, a news report or official letter showing the event â e.g. flood or fire damage."
+      "text": "Photos, an FIR, a news report or official letter showing the event — e.g. flood or fire damage."
     },
     "ev_CONSENT": {
       "title": "Consent",
@@ -4982,7 +4982,7 @@
     },
     "t": {
       "title": "Campaign title",
-      "text": "A short, plain headline donors see first. Say who and what, e.g. âHelp Ramesh walk again after hip surgeryâ."
+      "text": "A short, plain headline donors see first. Say who and what, e.g. “Help Ramesh walk again after hip surgery”."
     },
     "cCat": {
       "title": "Category",
@@ -4998,11 +4998,11 @@
     },
     "alt": {
       "title": "Photo description",
-      "text": "Optional. One sentence describing the photo for people using screen readers, e.g. âRamesh smiling in a hospital bedâ."
+      "text": "Optional. One sentence describing the photo for people using screen readers, e.g. “Ramesh smiling in a hospital bed”."
     },
     "st": {
       "title": "Your story",
-      "text": "Tell donors who needs help, what happened, what the money covers and what difference it makes. Keep it honest â no phone numbers or addresses."
+      "text": "Tell donors who needs help, what happened, what the money covers and what difference it makes. Keep it honest — no phone numbers or addresses."
     },
     "ccb": {
       "title": "Cost breakdown",
@@ -5010,7 +5010,7 @@
     },
     "why": {
       "title": "Reason for the change",
-      "text": "Why the amount or costs differ from what was approved, e.g. âThe hospital revised its quoteâ."
+      "text": "Why the amount or costs differ from what was approved, e.g. “The hospital revised its quote”."
     },
     "tg": {
       "title": "Target",
@@ -5022,7 +5022,7 @@
     },
     "vis": {
       "title": "Names and place",
-      "text": "Choose how much donors see: full name, first name only, or hidden â and whether to show your city or state."
+      "text": "Choose how much donors see: full name, first name only, or hidden — and whether to show your city or state."
     },
     "pe": {
       "title": "Documents donors can see",
@@ -5030,15 +5030,15 @@
     },
     "pChanges": {
       "title": "What to change",
-      "text": "List exactly what the organiser must fix before you can publish, e.g. âRemove the hospital file number from the story.â They see this."
+      "text": "List exactly what the organiser must fix before you can publish, e.g. “Remove the hospital file number from the story.” They see this."
     },
     "pDecline": {
       "title": "Reason",
-      "text": "Why this page can't be published. The organiser sees it â be clear and kind."
+      "text": "Why this page can't be published. The organiser sees it — be clear and kind."
     },
     "pMessage": {
       "title": "Message to the organiser",
-      "text": "Optional. A short note they see with the approval, e.g. âLooks good â thank you.â"
+      "text": "Optional. A short note they see with the approval, e.g. “Looks good — thank you.”"
     },
     "ref": {
       "title": "Bill or receipt number",
