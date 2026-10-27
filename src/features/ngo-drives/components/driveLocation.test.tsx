@@ -157,6 +157,16 @@ describe("donor give form step 1: where are the items?", { timeout: 20000 }, () 
     expect(screen.queryByTestId("drive-outside-dialog")).not.toBeInTheDocument();
   });
 
+  it("instant radius check: outside shows the NGO's full drop-off address and Yes/No", async () => {
+    renderWizard({ drivePin: { lat: 19.076, lng: 72.8777 }, drivePickupRadiusKm: 10, driveDropOffAddress: "Hope Trust, 12 FC Road, Pune 411005" });
+    fireEvent.click(screen.getByRole("button", { name: "tap map" }));
+    const box = await screen.findByTestId("drive-radius-outside");
+    expect(screen.getByTestId("drive-radius-outside-address")).toHaveTextContent("Hope Trust, 12 FC Road, Pune 411005");
+    expect(box).toHaveTextContent("You'll need to drop the items at this address yourself.");
+    expect(screen.getByTestId("drive-radius-yes")).toBeInTheDocument();
+    expect(screen.getByTestId("drive-radius-no")).toBeInTheDocument();
+  });
+
   it("no location yet, or a drive without a pin: no radius message and no crash", () => {
     renderWizard({ drivePin: null, drivePickupRadiusKm: 10 });
     expect(screen.queryByTestId("drive-radius-inside")).not.toBeInTheDocument();

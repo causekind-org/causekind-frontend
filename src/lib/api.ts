@@ -5297,6 +5297,8 @@ export type CreateNgoDrivePayload = {
   whoFor?: string;
   whyNow?: string;
   whatChanges?: string;
+  /** Full drop-off address of the NGO (10-300 chars). */
+  dropOffAddress?: string;
   description?: string;
   locationArea: string;
   locationCity: string;
@@ -5369,6 +5371,9 @@ export type NgoDrive = {
   locationCountry?: string | null;
   locationState?: string | null;
   locationPincode?: string | null;
+  /** Full drop-off address; older drives omit it (use driveDropOffAddress). */
+  dropOffAddress?: string | null;
+  dropOffAddressDisplay?: string | null;
   locationLatitude?: number | null;
   locationLongitude?: number | null;
   /** Pickup available within this distance (km); null on older drives. */
@@ -5822,6 +5827,12 @@ export type NgoDriveOfferResponse = {
   /** True when the items are outside the NGO's pickup radius: drop-off only. */
   dropOffOnly?: boolean | null;
   driveLocationArea?: string | null;
+  /** The drive's full drop-off address (optional; older servers/drives omit it). */
+  driveDropOffAddress?: string | null;
+  dropOffAddress?: string | null;
+  dropOffAddressDisplay?: string | null;
+  driveLocationPincode?: string | null;
+  driveNeededBy?: string | null;
   driveLocationCity?: string | null;
   pickupRadiusKm?: number | null;
   rejectionReason?: string;
@@ -5860,6 +5871,8 @@ export type NgoDriveOfferResponse = {
   handoverDetails?: {
     organizationName: string;
     registeredOfficeAddress?: string | null;
+    dropOffAddress?: string | null;
+    dropOffAddressDisplay?: string | null;
     contactName?: string | null;
     contactPhone?: string | null;
     availableDays?: string | null;
@@ -6003,6 +6016,9 @@ export async function setNgoDriveOfferCallPermission(driveId: number, offerId: n
 
 export type NgoDriveOfferHandoverRecordResponse = {
   id: number;
+  /** The drive's drop-off address (stored, else locality + city + PIN). */
+  dropOffAddress?: string | null;
+  dropOffAddressDisplay?: string | null;
   offerId: number;
   method: string | null;
   scheduledDateTime: string | null;

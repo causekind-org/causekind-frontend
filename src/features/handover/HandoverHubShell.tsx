@@ -53,7 +53,9 @@ export function HandoverHubShell({
    * drive's own confirm panel (photos before the code, receipt + code + quantity)
    * and extra rail content. Absent for donor↔donee, which renders as before.
    */
-  drive?: { backHref: string; subtitle: string; confirmPanel: React.ReactNode; aside?: React.ReactNode };
+  drive?: { backHref: string; subtitle: string; confirmPanel: React.ReactNode; aside?: React.ReactNode;
+    /** Replaces the donor's "Schedule handover" button (drive drop-off outside the radius). */
+    schedulePanel?: React.ReactNode };
 }) {
   const router = useRouter();
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -139,6 +141,7 @@ export function HandoverHubShell({
               onChanged={onChanged}
               deliveryActions={actions.deliveryAddress}
               confirmPanel={drive?.confirmPanel}
+              schedulePanel={drive?.schedulePanel}
             />
 
             {/* Mobile keeps schedule directly under the action; desktop moves it

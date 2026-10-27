@@ -237,6 +237,19 @@ describe("NGO drive page /ngo/drives/[id]", () => {
     expect(screen.getAllByRole("button", { name: "Close drive" }).at(-1)).toBeDisabled();
   });
 
+  it("the details card shows the drop-off address, with the locality + city + PIN fallback for old drives", async () => {
+    api.getNgoDriveDetail.mockResolvedValue(ngoDrive({ dropOffAddressDisplay: "Hope Trust, 12 FC Road, Pune 411005" }));
+    api.getNgoDriveOffersForNgo.mockResolvedValue([]);
+    const P = await Page();
+    const { unmount } = render(<P />);
+    expect(await screen.findByText("Drop-off address")).toBeInTheDocument();
+    expect(screen.getByText("Hope Trust, 12 FC Road, Pune 411005")).toBeInTheDocument();
+    unmount();
+    api.getNgoDriveDetail.mockResolvedValue(ngoDrive({ locationArea: "Kothrud", locationCity: "Pune", locationPincode: "411038" }));
+    render(<P />);
+    expect((await screen.findByText("Drop-off address")).parentElement).toHaveTextContent("Kothrud, Pune, 411038");
+  });
+
   it("a failing offers call still shows the drive, with Retry for the offers", async () => {
     api.getNgoDriveDetail.mockResolvedValue(ngoDrive());
     api.getNgoDriveOffersForNgo.mockRejectedValue(await apiError(403, "You don't have access to this."));

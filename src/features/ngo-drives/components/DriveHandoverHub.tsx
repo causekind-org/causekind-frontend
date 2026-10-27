@@ -11,6 +11,7 @@ import {
 import { HandoverHubShell } from "@/features/handover/HandoverHubShell";
 import { adaptNgoOffer } from "@/features/handover/adapters";
 import { PhotoCaptureDialog } from "./PhotoCaptureDialog";
+import { DriveDropOffPlanner } from "./DriveDropOffPlanner";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import type { SchedulePayload } from "@/features/handover/HandoverScheduleDialog";
 
@@ -413,6 +414,12 @@ export function DriveHandoverHub({
         : <DriveNgoReceivePanel offer={offer} handover={handover} onChanged={onChanged} />)
     : null;
 
+  // Outside the pickup radius: no method choice and no "Schedule handover" popup. The donor
+  // sees the NGO's address and picks a drop-off time right on the page.
+  const schedulePanel = role === "DONOR" && offer.dropOffOnly === true && !handover?.scheduledDateTime
+    ? <DriveDropOffPlanner offer={offer} onDone={onChanged} />
+    : undefined;
+
   const codeConfirmed = handover?.confirmation?.otpVerified === true;
   const noop = async () => {};
 
@@ -446,6 +453,7 @@ export function DriveHandoverHub({
         backHref: role === "NGO" ? `/ngo/drives/${offer.driveId}` : "/dashboard",
         subtitle: `${offer.ngoName}${offer.quantity ? ` · ${offer.quantity} ${unitWords(offer.driveUnit)}` : ""}${offer.driveItemName ? ` of ${offer.driveItemName}` : ""}`,
         confirmPanel,
+        schedulePanel,
         aside: <DrivePhotoSets offer={offer} viewerRole={role} />,
       }}
     />

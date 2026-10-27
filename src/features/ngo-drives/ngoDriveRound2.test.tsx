@@ -40,7 +40,8 @@ describe("handover schedule: drop-off has no map", () => {
   it("drop-off shows the NGO address, contact and hours, and no map or pin picker", () => {
     render(<HandoverScheduleDialog vm={vmFor(acceptedOffer({ dropOffOnly: true }))} open onOpenChange={vi.fn()} onSubmit={vi.fn()} isReschedule={false} />);
     const box = screen.getByTestId("drive-dropoff-details");
-    expect(box).toHaveTextContent("Shivajinagar, Pune · 12 FC Road, Pune");
+    // Old drive (no full drop-off address): locality + city + PIN.
+    expect(box).toHaveTextContent("Shivajinagar, Pune");
     expect(box).toHaveTextContent("Prachi, 9999999999");
     expect(box).toHaveTextContent("on Mon, Wed between 10:00 and 17:00");
     expect(screen.queryByTestId("handover-map")).toBeNull();

@@ -1,4 +1,5 @@
 "use client";
+import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
@@ -187,6 +188,7 @@ export default function NgoDriveManagePage() {
     ["Urgency", humanize(drive.urgency)],
     ["People who will benefit", `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
     ["Location", [drive.locationArea, drive.locationCity, drive.locationState, drive.locationPincode].filter(Boolean).join(", ")],
+    ["Drop-off address", driveDropOffAddress(drive)],
     ["Pickup radius", drive.pickupRadiusKm ? `NGO picks up within ${drive.pickupRadiusKm} km; donors farther away drop off` : "Donors drop off at the drive address"],
     ["Needed by", drive.neededBy ? formatISTDate(drive.neededBy) : ""],
     ["Handover days & hours", hours],

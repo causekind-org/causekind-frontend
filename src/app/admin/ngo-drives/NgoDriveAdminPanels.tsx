@@ -1,4 +1,5 @@
 "use client";
+import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 
 import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
 import { serverDate } from "@/lib/serverTime";
@@ -184,6 +185,7 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               {Object.entries({
                 Location: [d.locationArea, d.locationCity, d.locationPincode].filter(Boolean).join(", "),
+                "Drop-off address": driveDropOffAddress(d),
                 "Pickup radius": d.pickupRadiusKm != null ? `${d.pickupRadiusKm} km` : "Not set (older drive)",
                 Category: d.category, Item: d.itemName, Quantity: `${d.quantityNeeded} ${label(d.unit)}`,
                 "Condition accepted": [

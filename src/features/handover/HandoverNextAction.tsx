@@ -20,7 +20,7 @@ import { HandoverConfirmationPanel, type DonorConfirmPayload, type DoneeConfirmP
  * transition so the change is noticed without being animated at.
  */
 export function HandoverNextAction({
-  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat, onChanged, deliveryActions, confirmPanel,
+  vm, otp, onSchedule, onGenerateOtp, onDonorConfirm, onDoneeConfirm, onVerifyOtp, proof, onOpenChat, onChanged, deliveryActions, confirmPanel, schedulePanel,
 }: {
   vm: HandoverViewModel;
   otp: string | null;
@@ -36,6 +36,8 @@ export function HandoverNextAction({
   deliveryActions?: DeliveryAddressActions;
   /** Replaces the confirmation panel (NGO drives only); absent elsewhere. */
   confirmPanel?: React.ReactNode;
+  /** Shown in place of the donor's "Schedule handover" button when set (NGO drives only). */
+  schedulePanel?: React.ReactNode;
 }) {
   const copy = nextStepCopy(vm);
   const donor = vm.role === "DONOR";
@@ -66,11 +68,11 @@ export function HandoverNextAction({
         {/* Deliberately not a switch over every state — several states have no
             action at all, and inventing a button for them would be noise. */}
         {vm.state === "awaiting_schedule" && (
-          donor ? (
+          donor ? (schedulePanel ?? (
             <Button onClick={onSchedule} className={`${handoverPrimary} w-full sm:w-auto`}>
               <CalendarPlus aria-hidden /> Schedule handover
             </Button>
-          ) : (
+          )) : (
             <WaitingRow onOpenChat={onOpenChat} label="Message the donor" />
           )
         )}

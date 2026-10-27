@@ -8,6 +8,7 @@ import {
   getNgoDrive, getMyNgoDriveOffers, getNgoDriveOffer, createNgoDriveOfferDraft,
   type PublicNgoDrive, type NgoDriveOfferResponse,
 } from "@/lib/api";
+import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 import { NgoDriveOfferWizard } from "@/features/ngo-drives/components/NgoDriveOfferWizard";
 import { offerSentKey, type DriveOfferSent } from "@/features/ngo-drives/components/DriveOfferSentModal";
 import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
@@ -136,6 +137,7 @@ export default function DriveGivePage() {
         driveUnit={drive.unit}
         drivePin={drivePin(drive)}
         drivePickupRadiusKm={drive.pickupRadiusKm ?? null}
+        driveDropOffAddress={driveDropOffAddress(drive as Parameters<typeof driveDropOffAddress>[0]) || null}
         onDeclineOutside={() => router.push("/")}
         driveCategory={drive.category}
         mustBeWorking={Boolean(drive.mustBeWorking)}

@@ -264,6 +264,8 @@ function NewNgoDriveForm() {
   // Step 1: where the drive is (shared location step) and how far the NGO picks up from.
   const [driveLoc, setDriveLoc] = useState<LocationFields>({ countryIso: "IN", stateIso: "", city: "", locality: "", pincode: "" });
   const driveLocRef = useRef<LocationFields>(driveLoc);
+  /** The NGO's full drop-off address (10-300 chars), shown to donors. */
+  const [dropOffAddress, setDropOffAddress] = useState("");
   const [radiusChoice, setRadiusChoice] = useState("10");
   const [customRadius, setCustomRadius] = useState("");
   const locationStepRef = useRef<LocationStepHandle>(null);
@@ -295,6 +297,7 @@ function NewNgoDriveForm() {
       latitude: typeof d.locationLatitude === "number" ? d.locationLatitude : undefined,
       longitude: typeof d.locationLongitude === "number" ? d.locationLongitude : undefined,
     });
+    setDropOffAddress(typeof d.dropOffAddress === "string" ? d.dropOffAddress : "");
     const r = typeof d.pickupRadiusKm === "number" ? d.pickupRadiusKm : null;
     if (r != null) {
       if ((RADIUS_PRESETS as readonly number[]).includes(r)) { setRadiusChoice(String(r)); setCustomRadius(""); }
@@ -592,7 +595,7 @@ const [altContact, setAltContact] = useState("");
         title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
         photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity,
         locationCountry: driveLoc.countryIso, locationState: driveLoc.stateIso, locationPincode: driveLoc.pincode,
-        locationLatitude: driveLoc.latitude, locationLongitude: driveLoc.longitude,
+        locationLatitude: driveLoc.latitude, locationLongitude: driveLoc.longitude, dropOffAddress,
         pickupRadiusKm: radiusKm(radiusChoice, customRadius),
         beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
         neededBy, availableDays, availableFrom, availableTo, handoverMode,
@@ -614,7 +617,7 @@ const [altContact, setAltContact] = useState("");
   }, [
     draftLoaded, title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
     sizes, fits, lengthCm, breadthCm, heightCm, weightKg, material, needsAssembly, changemakerPreviewUrl, IS_NGO_DEMO_MODE, editId,
-    photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity, driveLoc, radiusChoice, customRadius,
+    photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity, driveLoc, dropOffAddress, radiusChoice, customRadius,
     beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
     neededBy, availableDays, availableFrom, availableTo, handoverMode,
     changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
@@ -796,6 +799,7 @@ const [altContact, setAltContact] = useState("");
       if (!driveLoc.city.trim() || driveLoc.city.length > 100) e.city = "Enter the city";
       if (driveLoc.locality.length > 100) e.locality = "Locality cannot exceed 100 characters";
       if (!/^[1-9][0-9]{5}$/.test(driveLoc.pincode.trim())) e.pincode = "Enter a 6-digit PIN code";
+      { const a = dropOffAddress.trim(); if (a.length < 10 || a.length > 300) e.dropOffAddress = a ? "Enter the full address in 10 to 300 characters" : "Enter the full address of the NGO / drop-off point"; }
       if (driveLoc.latitude == null || driveLoc.longitude == null) e.latitude = "Drop the pin on the map";
       if (radiusKm(radiusChoice, customRadius) == null) e.pickupRadiusKm = "Choose a distance from 1 to 500 km";
     }
@@ -921,6 +925,7 @@ const [altContact, setAltContact] = useState("");
         locationPincode: driveLoc.pincode.trim(),
         locationLatitude: driveLoc.latitude,
         locationLongitude: driveLoc.longitude,
+        dropOffAddress: dropOffAddress.trim(),
         pickupRadiusKm: radiusKm(radiusChoice, customRadius),
         urgency,
         beneficiaryGroups,
@@ -1735,6 +1740,13 @@ const [altContact, setAltContact] = useState("");
             </span>
           </div>
 
+          <div className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-dropoff-address">
+            <span className="text-stone-500">Drop-off address</span>
+            <span className="font-medium text-right max-w-[200px] sm:max-w-md break-words text-stone-900 dark:text-stone-100">
+              {dropOffAddress.trim() || [driveLoc.locality, driveLoc.city, driveLoc.pincode].filter(Boolean).join(", ")}
+            </span>
+          </div>
+
           <div className="pb-2 border-b border-stone-100 dark:border-slate-800 space-y-1.5">
             <span className="text-stone-500 block">Drive story</span>
             <div className="text-xs space-y-1 pl-2 border-l-2 border-ngo-600/40 text-stone-700 dark:text-stone-300">
@@ -2012,6 +2024,27 @@ const [altContact, setAltContact] = useState("");
                       onRadiusChoice={setRadiusChoice} onCustomRadius={setCustomRadius}
                       registeredOfficeAddress={registeredOfficeAddress}
                     />
+                  )}
+                  {step === "drive-location" && (
+                    <div className="mt-5">
+                      <label htmlFor="dropOffAddress" className="mb-1.5 block text-sm font-semibold text-stone-800 dark:text-stone-200">
+                        Full address of the NGO / drop-off point <span className="text-red-600" aria-hidden>*</span>
+                      </label>
+                      <textarea
+                        id="dropOffAddress" name="dropOffAddress" required rows={3} maxLength={300}
+                        value={dropOffAddress}
+                        onChange={(ev) => { setDropOffAddress(ev.target.value); if (fieldErrors.dropOffAddress) setFieldErrors(p => ({ ...p, dropOffAddress: "" })); }}
+                        aria-invalid={!!fieldErrors.dropOffAddress}
+                        aria-describedby={fieldErrors.dropOffAddress ? "dropOffAddress-error" : "dropOffAddress-hint"}
+                        placeholder="Building, street, landmark, area, city, PIN"
+                        className={`min-h-11 w-full rounded-lg border bg-white px-3 py-2 text-sm text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:bg-slate-900 dark:text-stone-100 ${fieldErrors.dropOffAddress ? "border-red-500 dark:border-red-500" : "border-slate-200 dark:border-slate-700"}`}
+                      />
+                      {fieldErrors.dropOffAddress ? (
+                        <p id="dropOffAddress-error" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.dropOffAddress}</p>
+                      ) : (
+                        <p id="dropOffAddress-hint" className="mt-1 text-xs text-stone-500 dark:text-stone-400">Donors who drop off items come here. {dropOffAddress.trim().length}/300</p>
+                      )}
+                    </div>
                   )}
                   {step === "drive-details" && step1}
                   {step === "beneficiaries-handover" && step2}

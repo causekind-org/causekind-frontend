@@ -53,3 +53,17 @@ export function formatLegalStructure(structure?: string | null): string {
 export function getMapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
+
+/**
+ * The drive's full drop-off address. Older drives have none, so this falls back to
+ * locality + city + PIN. Returns "" when nothing is known.
+ */
+export function driveDropOffAddress(d: {
+  dropOffAddressDisplay?: string | null; dropOffAddress?: string | null;
+  locationArea?: string | null; locationCity?: string | null; locationPincode?: string | null;
+} | null | undefined): string {
+  if (!d) return "";
+  const full = (d.dropOffAddressDisplay || d.dropOffAddress || "").trim();
+  if (full) return full;
+  return [d.locationArea, d.locationCity, d.locationPincode].map(v => (v || "").trim()).filter(Boolean).join(", ");
+}

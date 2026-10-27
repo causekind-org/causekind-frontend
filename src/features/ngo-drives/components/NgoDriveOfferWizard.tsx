@@ -176,7 +176,7 @@ const STEP_INTROS: Record<OfferStep, string> = {
 export function NgoDriveOfferWizard({
   offerId, driveId: propDriveId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
   driveUnit, acceptedConditions, driveCategory: propDriveCategory, mustBeWorking: propMustBeWorking, requireClean: propRequireClean,
-  drivePin = null, drivePickupRadiusKm = null, onDeclineOutside = () => window.location.assign("/"),
+  drivePin = null, drivePickupRadiusKm = null, driveDropOffAddress = null, onDeclineOutside = () => window.location.assign("/"),
 }: {
   /** "No" to giving from outside the pickup radius: leaves for the home page. */
   onDeclineOutside?: () => void;
@@ -184,6 +184,8 @@ export function NgoDriveOfferWizard({
   /** The drive's pin and pickup radius, for the instant inside/outside message on step 1. */
   drivePin?: LatLng | null;
   drivePickupRadiusKm?: number | null;
+  /** The NGO's full drop-off address, shown when the donor is outside the radius. */
+  driveDropOffAddress?: string | null;
   /** Donor conditions the drive accepts; null/empty shows every condition. */
   acceptedConditions?: readonly string[] | null;
   driveId?: number;
@@ -829,6 +831,12 @@ export function NgoDriveOfferWizard({
                             <div data-testid="drive-radius-outside" role="status"
                               className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
                               <p className="font-semibold">{outsideRadiusText(radius)}</p>
+                              {driveDropOffAddress && (
+                                <p data-testid="drive-radius-outside-address" className="mt-2 break-words">
+                                  <span className="font-semibold">Drop-off address:</span> {driveDropOffAddress}
+                                </p>
+                              )}
+                              <p className="mt-2 font-semibold">You&apos;ll need to drop the items at this address yourself.</p>
                               <p className="mt-2 text-xs">Handover: <strong>Drop-off only</strong>. Pickup is not available for your location.</p>
                               {!outsideConfirmed ? (
                                 <div className="mt-3">
@@ -978,6 +986,10 @@ export function NgoDriveOfferWizard({
               {radius ? outsideRadiusText(radius)
                 : `You are ${locResult?.distanceKm != null ? formatKm(locResult.distanceKm) : "?"} km away, outside this NGO's pickup radius of ${offer?.pickupRadiusKm ?? "?"} km. You will need to drop the items off at the NGO's address yourself. The NGO will not pick them up.`}
             </p>
+            {driveDropOffAddress && (
+              <p className="mt-2 break-words text-sm text-stone-700 dark:text-stone-300"><span className="font-semibold">Drop-off address:</span> {driveDropOffAddress}</p>
+            )}
+            <p className="mt-2 text-sm font-semibold text-stone-700 dark:text-stone-300">You&apos;ll need to drop the items at this address yourself.</p>
             <p className="mt-3 text-sm font-bold text-stone-900 dark:text-stone-100">Do you still want to give to this drive?</p>
             <div className="mt-4 flex flex-col gap-2">
               <button type="button" autoFocus onClick={() => { setOutsideOpen(false); setOutsideConfirmed(true); goTo("photos", 1); }}

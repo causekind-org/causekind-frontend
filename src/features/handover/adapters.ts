@@ -10,7 +10,7 @@
 
 import { driveCertificateIssued } from "@/features/ngo-drives/driveCertificate";
 import { toZonedIso } from "@/lib/serverTime";
-import type { DonationOffer, HandoverRecord, ItemMatch } from "@/lib/api";
+import type { DonationOffer, HandoverRecord, ItemMatch, NgoDriveOfferResponse } from "@/lib/api";
 import {
   resolveHandoverState, resolveRole,
   type HandoverMethodOption, type HandoverRole, type HandoverViewModel,
@@ -308,7 +308,8 @@ export function adaptNgoOffer(
           method: handover.method === "PICKUP" ? "NGO_PICKUP" : "DONOR_DROP_OFF",
           methodLabel: methodLabel(handover.method === "PICKUP" ? "NGO_PICKUP" : "DONOR_DROP_OFF", NGO_OFFER_METHODS),
           scheduledAt: toZonedIso(handover.scheduledDateTime),
-          address: handover.locationAddress,
+          // A drop-off goes to the drive's address (the record keeps none).
+          address: handover.method === "PICKUP" ? handover.locationAddress : (handover.dropOffAddressDisplay || handover.dropOffAddress || handover.locationAddress || ngoOfferDropOffAddress(offer) || null),
           latitude: handover.locationLatitude,
           longitude: handover.locationLongitude,
           notes: null,
@@ -337,10 +338,7 @@ export function adaptNgoOffer(
     offeredQuantity: offer.quantity,
     delivery: null, // Delivery address flow is not used for NGO drives
     dropOff: {
-      address: [
-        [offer.driveLocationArea, offer.driveLocationCity].filter(Boolean).join(", "),
-        offer.handoverDetails?.registeredOfficeAddress,
-      ].filter((x, i, all) => x && all.indexOf(x) === i).join(" · ") || null,
+      address: ngoOfferDropOffAddress(offer) || null,
       contactName: offer.handoverDetails?.contactName ?? null,
       contactPhone: offer.handoverDetails?.contactPhone ?? null,
       days: (offer.driveAvailableDays?.length ? offer.driveAvailableDays
@@ -350,4 +348,17 @@ export function adaptNgoOffer(
       hoursText: offer.handoverDetails?.availableHours ?? null,
     },
   };
+}
+
+/**
+ * The drive's full drop-off address for an offer: the new field when the server sends it,
+ * else locality + city + PIN (older drives / servers).
+ */
+export function ngoOfferDropOffAddress(offer: NgoDriveOfferResponse): string {
+  const full = [offer.dropOffAddressDisplay, offer.driveDropOffAddress, offer.dropOffAddress,
+    offer.handoverDetails?.dropOffAddressDisplay, offer.handoverDetails?.dropOffAddress]
+    .map(v => (v || "").trim()).find(Boolean);
+  if (full) return full;
+  return [offer.driveLocationArea, offer.driveLocationCity, offer.driveLocationPincode]
+    .map(v => (v || "").trim()).filter(Boolean).join(", ");
 }
