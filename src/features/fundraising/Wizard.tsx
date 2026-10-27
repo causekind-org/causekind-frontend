@@ -76,7 +76,10 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
       // A cleared amount is null; name it in `clear`, or the server keeps the old value.
       const clear = CLEARABLE.filter((k) => k in body && body[k] == null);
       const next = await fundraising.save(app.id, clear.length ? { ...body, clear } : body);
-      setApp((cur) => ({ ...next, ...pendingOverlay(cur, pending.current) }));
+      setApp((cur) => {
+        const o = pendingOverlay(cur, pending.current);
+        return { ...next, ...o, payout: o.payout ? { ...o.payout, accountLast4: next.payout.accountLast4 } : next.payout };
+      });
       setSave("saved");
       return true;
     } catch {
@@ -89,7 +92,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
 
   /** Local edit + debounced autosave. */
   const set = useCallback((patch: FundraisingSave) => {
-    setApp((cur) => ({ ...cur, ...(patch as Partial<FundraisingApplication>) }));
+    setApp((cur) => withPayout({ ...cur, ...(patch as Partial<FundraisingApplication>) }, patch));
     pending.current = { ...pending.current, ...patch };
     setSave("saving");
     if (timer.current) clearTimeout(timer.current);
@@ -136,7 +139,8 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         {step === 2 && <TheNeed app={app} set={set} onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
         {step >= 4 && step <= 6 && <PageStep step={step as 4 | 5 | 6} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
-        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
+        {step === 7 && <BankDetails app={app} set={set} onBack={() => go(6)} onNext={() => go(8)} />}
+        {step === 8 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
       </main>
     </>
   );
@@ -145,7 +149,23 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
 function pendingOverlay(cur: FundraisingApplication, p: FundraisingSave): Partial<FundraisingApplication> {
   const out: Record<string, unknown> = {};
   for (const k of Object.keys(p)) out[k] = (cur as Record<string, unknown>)[k];
+  // Bank text fields still being typed live inside `payout`; keep the on-screen values.
+  if (PAYOUT_TEXT.some(([k]) => k in p)) {
+    out.payout = { ...cur.payout };
+    for (const k of Object.keys(out)) if (k.startsWith("payout") && k !== "payout") delete out[k];
+  }
   return out as Partial<FundraisingApplication>;
+}
+
+/** Save keys for the bank text fields, and where each shows in the masked `payout` view. */
+const PAYOUT_TEXT = [["payoutHolderName", "holderName"], ["payoutIfsc", "ifsc"], ["payoutBankBranch", "bankBranch"], ["payoutUpi", "upi"]] as const;
+
+/** Mirrors bank edits into `payout` so the inputs show what was typed before the server answers. */
+function withPayout(app: FundraisingApplication, patch: FundraisingSave): FundraisingApplication {
+  if (!PAYOUT_TEXT.some(([k]) => k in patch)) return app;
+  const payout = { ...app.payout };
+  for (const [k, v] of PAYOUT_TEXT) if (k in patch) payout[v] = patch[k] ?? null;
+  return { ...app, payout };
 }
 
 type SetFn = (patch: FundraisingSave) => void;
@@ -482,6 +502,53 @@ function Evidence({ app, setApp, profile, onBack, onNext }: {
 }
 
 // F07 — A5 Declarations and review
+/**
+ * Bank details for the payout (owner, 2026-10-27). The account number is write-only: the server keeps it
+ * encrypted and only ever sends back the last four digits, so this step shows "saved" instead of the number.
+ */
+function BankDetails({ app, set, onBack, onNext }: { app: FundraisingApplication; set: SetFn; onBack: () => void; onNext: () => void }) {
+  const ui = useUiText();
+  const [acct, setAcct] = useState("");
+  const [acct2, setAcct2] = useState("");
+  const [changing, setChanging] = useState(!app.payout.accountLast4);
+  const digits = (v: string) => v.replace(/\D/g, "").slice(0, 18);
+  const acctOk = /^\d{9,18}$/.test(acct);
+  const match = acct === acct2;
+  const ifsc = app.payout.ifsc ?? "";
+  const ifscOk = /^[A-Z]{4}0[A-Z0-9]{6}$/.test(ifsc);
+  function saveAccount() {
+    if (!acctOk || !match) return;
+    set({ payoutAccountNumber: acct });
+    setAcct(""); setAcct2(""); setChanging(false);
+  }
+  return (
+    <>
+      <Heading title={ui("Bank details")} sub={ui("Where the money raised will be sent. Only our team can see these details.")} />
+      <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20, maxWidth: 860 }}>
+        <div><label className={s.lbl} htmlFor="bh"><UiText>Name on the bank account</UiText></label><input id="bh" className={s.in} maxLength={120} autoComplete="name" value={app.payout.holderName ?? ""} onChange={(e) => set({ payoutHolderName: e.target.value })} /><p className={s.hint}><UiText>Write it exactly as the bank has it.</UiText></p></div>
+        {changing ? (
+          <div className={s.grid2}>
+            <div><label className={s.lbl} htmlFor="ba"><UiText>Account number</UiText></label><input id="ba" className={`${s.in} ${s.tabular}`} inputMode="numeric" autoComplete="off" value={acct} onChange={(e) => setAcct(digits(e.target.value))} />{acct && !acctOk && <p className={s.errText}><UiText>An account number has 9 to 18 digits.</UiText></p>}</div>
+            <div><label className={s.lbl} htmlFor="ba2"><UiText>Type the account number again</UiText></label><input id="ba2" className={`${s.in} ${s.tabular}`} inputMode="numeric" autoComplete="off" value={acct2} onChange={(e) => setAcct2(digits(e.target.value))} onPaste={(e) => e.preventDefault()} />{acct2 && !match && <p className={s.errText}><UiText>The two numbers don&apos;t match.</UiText></p>}</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button type="button" className={`${s.btn} ${s.bp}`} disabled={!acctOk || !match} onClick={saveAccount}><UiText>Save account number</UiText></button>
+              {app.payout.accountLast4 && <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => { setAcct(""); setAcct2(""); setChanging(false); }}><UiText>Cancel</UiText></button>}
+            </div>
+          </div>
+        ) : (
+          <div><span className={s.lbl}><UiText>Account number</UiText></span><p style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}><span className={s.tabular}>XXXX{app.payout.accountLast4}</span><span className={`${s.muted} ${s.small}`}><UiText>Saved</UiText></span><button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setChanging(true)}><UiText>Change</UiText></button></p></div>
+        )}
+        <div className={s.grid2}>
+          <div><label className={s.lbl} htmlFor="bi"><UiText>IFSC code</UiText></label><input id="bi" className={s.in} maxLength={11} autoComplete="off" style={{ textTransform: "uppercase" }} value={ifsc} onChange={(e) => set({ payoutIfsc: e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "") })} /><p className={s.hint}>{ifsc && !ifscOk ? ui("11 characters, like SBIN0001234. It's printed in your passbook or cheque book.") : ui("Printed in your passbook or cheque book.")}</p></div>
+          <div><label className={s.lbl} htmlFor="bb"><UiText>Bank and branch</UiText></label><input id="bb" className={s.in} maxLength={160} value={app.payout.bankBranch ?? ""} onChange={(e) => set({ payoutBankBranch: e.target.value })} /></div>
+        </div>
+        <div style={{ maxWidth: 420 }}><label className={s.lbl} htmlFor="bu"><UiText>UPI ID (if you have one)</UiText></label><input id="bu" className={s.in} maxLength={100} autoComplete="off" value={app.payout.upi ?? ""} onChange={(e) => set({ payoutUpi: e.target.value })} /></div>
+        <Nav onBack={onBack} onNext={onNext} />
+      </div>
+    </>
+  );
+}
+
 function Review({ app, set, flush, goTo, onSubmitted, page }: {
   app: FundraisingApplication; set: SetFn; flush: () => Promise<boolean>; goTo: (step: number) => void;
   onSubmitted: (a: FundraisingApplication) => void; page: FundraisingCampaign | null;
@@ -527,8 +594,13 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
         {sec(ui("Your page", "wizard step"), 4, <dl style={kv}>
           <dt className={s.muted}><UiText>Title</UiText></dt><dd>{page?.title || "—"}</dd>
           <dt className={s.muted}><UiText>Cover photo</UiText></dt><dd>{page?.coverUrl ? ui("Added") : "—"}</dd>
-          <dt className={s.muted}><UiText>Last day to collect money</UiText></dt><dd>{/^d{4}-d{2}-d{2}$/.test(app.urgency ?? "") ? fmt.date(app.urgency!) : "—"}</dd>
+          <dt className={s.muted}><UiText>Last day to collect money</UiText></dt><dd>{/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? fmt.date(app.urgency!) : "—"}</dd>
           <dt className={s.muted}><UiText>Shown name</UiText></dt><dd>{page?.beneficiaryDisplayName || "—"}</dd>
+        </dl>)}
+        {sec(ui("Bank details", "wizard step"), 7, <dl style={kv}>
+          <dt className={s.muted}><UiText>Account holder</UiText></dt><dd>{app.payout.holderName || "—"}</dd>
+          <dt className={s.muted}><UiText>Account number</UiText></dt><dd>{app.payout.accountLast4 ? `XXXX${app.payout.accountLast4}` : "—"}</dd>
+          <dt className={s.muted}><UiText>IFSC</UiText></dt><dd>{app.payout.ifsc || "—"}</dd>
         </dl>)}
         {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}
       </div>
@@ -547,7 +619,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
       )}
       {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
       <div style={{ maxWidth: 860, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(6)}><UiText>Back</UiText></button>
+        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(7)}><UiText>Back</UiText></button>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span className={`${s.muted} ${s.small}`}><UiText>Submitting doesn&apos;t make anything public.</UiText></span>
           <button type="button" className={`${s.btn} ${s.bp}`} onClick={submit} disabled={submitting || stillNeeded.length > 0}>{submitting ? ui("Submitting…") : ui("Submit for review")}</button>

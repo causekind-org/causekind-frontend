@@ -8,6 +8,7 @@ import { fundraising, fundraisingCampaigns, ApiError, type FundraisingAdminAppli
 import { CATEGORY_LABEL, StatusChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
+import { PayoutDetails } from "@/features/fundraising/PayoutDetails";
 
 type Decision = "approve" | "info" | "decline";
 const DECIDABLE = ["SUBMITTED", "IN_REVIEW", "RESUBMITTED"];
@@ -98,6 +99,7 @@ export default function AdminFundraisingReviewPage() {
             <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{app.whatHappened ?? "—"}</p>
             <p className={`${a.small} ${a.muted}`}>Needed by: {app.urgency && /^\d{4}-\d{2}-\d{2}$/.test(app.urgency) ? formatDate(app.urgency) : app.urgency ?? "—"}</p>
           </section>
+          <PayoutDetails applicationId={app.id} payout={app.payout} />
           {page && (
             <section className={`${a.card} ${a.pane}`} aria-labelledby="pg">
               <h2 id="pg" className={a.h}>Public fundraiser page</h2>

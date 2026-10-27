@@ -163,7 +163,7 @@ export function Basics({ c, set, setC, nav, inApplication = false, neededBy = nu
         </div>
         {inApplication && (
           // Same date as step 3's "By which date do you need the money?" — copied onto the page on submit.
-          <div><span className={s.lbl}><UiText>Last day to collect money</UiText> <FieldInfo localize k="ed" /></span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{neededBy && /^d{4}-d{2}-d{2}$/.test(neededBy) ? fmt.date(neededBy) : "—"}</span><span className={`${s.muted} ${s.small}`}>{ui("From step 3 — change it there")}</span></p><p className={s.hint}><UiText>After this day, people can no longer give.</UiText></p></div>
+          <div><span className={s.lbl}><UiText>Last day to collect money</UiText> <FieldInfo localize k="ed" /></span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{neededBy && /^\d{4}-\d{2}-\d{2}$/.test(neededBy) ? fmt.date(neededBy) : "—"}</span><span className={`${s.muted} ${s.small}`}>{ui("From step 3 — change it there")}</span></p><p className={s.hint}><UiText>After this day, people can no longer give.</UiText></p></div>
         )}
         <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="cv">
           <h2 id="cv" className={s.lbl} style={{ margin: 0 }}><UiText>Cover photo</UiText> <FieldInfo localize k="cv" /></h2>

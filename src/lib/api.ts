@@ -6062,11 +6062,15 @@ export type FundraisingApplication = {
   decisionScope: FundraisingScope | null; decisionConditions: string | null; decisionReason: string | null;
   resubmissionAllowed: boolean | null; decidedAt: string | null; submittedAt: string | null;
   createdAt: string; updatedAt: string; missing: string[];
+  /** Bank details for the payout; the account number comes back masked (last four only). */
+  payout: FundraisingPayout;
 };
+export type FundraisingPayout = { holderName: string | null; accountLast4: string | null; ifsc: string | null; bankBranch: string | null; upi: string | null };
 export type FundraisingSave = Partial<Omit<FundraisingApplication,
   "id" | "reference" | "version" | "status" | "totalCosts" | "outstandingGap" | "evidence" | "infoRequests" |
   "decisionScope" | "decisionConditions" | "decisionReason" | "resubmissionAllowed" | "decidedAt" | "submittedAt" |
-  "createdAt" | "updatedAt" | "missing">> & {
+  "createdAt" | "updatedAt" | "missing" | "payout">> & {
+  payoutHolderName?: string; payoutAccountNumber?: string; payoutIfsc?: string; payoutBankBranch?: string; payoutUpi?: string;
   /** Amount fields to empty (a null amount alone means "unchanged" on the server). */
   clear?: string[];
 };
@@ -6117,6 +6121,8 @@ export const fundraising = {
   admin: {
     queue: (status?: FundraisingStatus) => request<FundraisingQueueRow[]>(status ? `${FR_ADMIN}?status=${status}` : FR_ADMIN),
     get: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}`),
+    /** Full account number; every call is audited on the server. */
+    revealPayoutAccount: (id: number) => request<{ accountNumber: string }>(`${FR_ADMIN}/${id}/payout-account`),
     startReview: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/start-review`, { method: "POST" }),
     requestInformation: (id: number, body: { expectedVersion: number; questions: { section: string; question: string }[]; internalNote?: string }) =>
       request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/request-information`, { method: "POST", body: JSON.stringify(body) }),
@@ -6158,6 +6164,8 @@ export type FundraisingCampaignSave = {
 };
 export type FundraisingAdminCampaign = {
   campaign: FundraisingCampaign; applicantName: string; applicantEmail: string; internalNote: string | null; decidedBy: string | null;
+  /** The donee's bank details from the application (masked), or null when none were given. */
+  payout: FundraisingPayout | null; applicationId: number | null;
 };
 export type FundraisingCampaignQueueRow = {
   id: number; title: string | null; organiserName: string; category: FundraisingCategory | null;
