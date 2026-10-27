@@ -167,8 +167,13 @@ function Heading({ title, sub }: { title: string; sub: string }) {
 function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNext: () => void }) {
   const ui = useUiText();
   const { user } = useAuth();
-  const [city, setCity] = useState<string | null>(null);
-  useEffect(() => { getProfile().then((p) => setCity(p.city)).catch(() => {}); }, []);
+  // Read the account fresh each time the step opens: the signed-in user held by useAuth can be
+  // a cached copy without the phone (its /users/me refresh gives up after 2 s on a cold database).
+  const [account, setAccount] = useState<{ city: string | null; fullName: string | null; phone: string | null } | null>(null);
+  useEffect(() => { getProfile().then((p) => setAccount({ city: p.city, fullName: p.fullName, phone: p.phone })).catch(() => {}); }, []);
+  const city = account?.city ?? null;
+  const fullName = account?.fullName || user?.fullName || "";
+  const phone = account?.phone || user?.phone || "";
   // Landmark is optional on the donee profile; the account city always exists.
   const address = profile?.details?.addressLandmark?.trim() || city || "";
   return (
@@ -176,7 +181,7 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
       <Heading title={ui("About you")} sub={ui("These details come from your profile and can't be changed here. If anything is wrong, update it in your profile — the change shows here when you come back.")} />
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 22, maxWidth: 820 }}>
         <div className={s.grid2}>
-          <div><label className={s.lbl} htmlFor="nm"><UiText>Legal name</UiText> <FieldInfo localize k="nm" /><span className={`${s.chip} ${s.cM}`}><UiText>From your profile</UiText></span></label><input id="nm" className={s.in} value={user?.fullName ?? ""} readOnly /><p className={s.hint}><UiText>As it appears on your government ID.</UiText></p></div>
+          <div><label className={s.lbl} htmlFor="nm"><UiText>Legal name</UiText> <FieldInfo localize k="nm" /><span className={`${s.chip} ${s.cM}`}><UiText>From your profile</UiText></span></label><input id="nm" className={s.in} value={fullName} readOnly /><p className={s.hint}><UiText>As it appears on your government ID.</UiText></p></div>
           <div><label className={s.lbl} htmlFor="age"><UiText>Age</UiText> <FieldInfo localize k="age" /><span className={`${s.chip} ${s.cM}`}><UiText>From your profile</UiText></span></label><input id="age" className={s.in} value={profile?.details?.age ?? ""} readOnly /></div>
         </div>
         <div><label className={s.lbl} htmlFor="ad"><UiText>Current address</UiText> <FieldInfo localize k="ad" /><span className={`${s.chip} ${s.cM}`}><UiText>From your profile</UiText></span></label><input id="ad" className={s.in} value={address} placeholder={ui("Not in your profile yet")} readOnly />{address
@@ -184,7 +189,7 @@ function AboutYou({ profile, onNext }: { profile: DoneeNeedProfile | null; onNex
             : <p className={s.hint}><UiText>Not in your profile yet.</UiText> <Link href="/profile/need-details"><UiText>Add your address</UiText></Link> <UiText>— your application is saved.</UiText></p>}</div>
         <div className={s.grid2}>
           <div><label className={s.lbl} htmlFor="em"><UiText>Email</UiText> <FieldInfo localize k="em" /><span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Verified</UiText></span></label><input id="em" className={s.in} value={user?.email ?? ""} readOnly style={{ background: "#f7f3ee" }} /><p className={s.hint}><UiText>Verified with a code when you signed up.</UiText></p></div>
-          <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText> <FieldInfo localize k="ph" /><span className={`${s.chip} ${s.cM}`}><Icon name="alert" /><UiText>Not verified</UiText></span></label><input id="ph" className={s.in} value={user?.phone ?? ""} placeholder={ui("Not added yet")} readOnly /><p className={s.hint}><UiText>We may ask you to verify this later.</UiText></p></div>
+          <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText> <FieldInfo localize k="ph" /><span className={`${s.chip} ${s.cM}`}><Icon name="alert" /><UiText>Not verified</UiText></span></label><input id="ph" className={s.in} value={phone} placeholder={account ? ui("Not added yet") : ""} readOnly /><p className={s.hint}><UiText>We may ask you to verify this later.</UiText></p></div>
         </div>
         <div className={`${s.muted} ${s.small}`} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <p><UiText>Something wrong or missing? Change it in your profile, then come back — your application is saved.</UiText></p>
