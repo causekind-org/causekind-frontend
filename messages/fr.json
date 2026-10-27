@@ -3889,7 +3889,16 @@
     "your_fundraiser_is_approved_one_aec74f3c": "Votre collecte est approuvée. Il reste une étape : la mise en place du paiement par notre équipe.",
     "your_page_8fb688ea": "Votre page",
     "your_story_3c1922be": "Votre histoire",
-    "your_story_bcab922b": "votre histoire"
+    "your_story_bcab922b": "votre histoire",
+    "cancel_fundraiser_896d1f54": "Annuler la collecte",
+    "please_write_a_reason_to_8eb259cc": "Indiquez pourquoi vous voulez arrêter la collecte.",
+    "stop_fundraiser_736872fe": "Arrêter la collecte",
+    "stop_requested_waiting_for_review_49447d00": "Arrêt demandé · en attente de vérification",
+    "that_didn_t_work_check_3d4d1bac": "Cela n’a pas fonctionné. Vérifiez votre connexion et réessayez.",
+    "this_cancels_your_fundraiser_you_e443bd9e": "Votre collecte sera annulée. Cette action est définitive.",
+    "this_deletes_your_draft_you_fe6825bf": "Votre brouillon sera supprimé. Cette action est définitive.",
+    "this_withdraws_your_application_and_89a294c7": "Votre demande sera retirée et sa page de collecte annulée. Cette action est définitive.",
+    "why_do_you_want_to_fd4fade0": "Pourquoi voulez-vous arrêter cette collecte ? Des dons sont en jeu : notre équipe vérifiera avant la clôture."
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",

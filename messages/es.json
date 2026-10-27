@@ -3889,7 +3889,16 @@
     "your_fundraiser_is_approved_one_aec74f3c": "Tu recaudación está aprobada. Falta un paso: nuestro equipo configurará el pago.",
     "your_page_8fb688ea": "Tu página",
     "your_story_3c1922be": "Tu historia",
-    "your_story_bcab922b": "tu historia"
+    "your_story_bcab922b": "tu historia",
+    "cancel_fundraiser_896d1f54": "Cancelar la recaudación",
+    "please_write_a_reason_to_8eb259cc": "Escribe por qué quieres detener la recaudación.",
+    "stop_fundraiser_736872fe": "Detener la recaudación",
+    "stop_requested_waiting_for_review_49447d00": "Detención solicitada · pendiente de revisión",
+    "that_didn_t_work_check_3d4d1bac": "No funcionó. Revisa tu conexión e inténtalo de nuevo.",
+    "this_cancels_your_fundraiser_you_e443bd9e": "Esto cancela tu recaudación. No se puede deshacer.",
+    "this_deletes_your_draft_you_fe6825bf": "Esto borra tu borrador. No se puede deshacer.",
+    "this_withdraws_your_application_and_89a294c7": "Esto retira tu solicitud y cancela su página de recaudación. No se puede deshacer.",
+    "why_do_you_want_to_fd4fade0": "¿Por qué quieres detener esta recaudación? Hay donaciones de por medio, así que nuestro equipo lo revisará antes del cierre."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

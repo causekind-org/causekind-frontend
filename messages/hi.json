@@ -3889,7 +3889,16 @@
     "your_fundraiser_is_approved_one_aec74f3c": "आपका फ़ंडरेज़र स्वीकृत है। बस एक काम बाकी है: हमारी टीम भुगतान की व्यवस्था करेगी।",
     "your_page_8fb688ea": "आपका पेज",
     "your_story_3c1922be": "आपकी कहानी",
-    "your_story_bcab922b": "आपकी कहानी"
+    "your_story_bcab922b": "आपकी कहानी",
+    "cancel_fundraiser_896d1f54": "फ़ंडरेज़र रद्द करें",
+    "please_write_a_reason_to_8eb259cc": "फ़ंडरेज़र रोकने का कारण लिखें।",
+    "stop_fundraiser_736872fe": "फ़ंडरेज़र रोकें",
+    "stop_requested_waiting_for_review_49447d00": "रोकने का अनुरोध भेजा · समीक्षा बाकी",
+    "that_didn_t_work_check_3d4d1bac": "यह नहीं हो सका। अपना कनेक्शन जाँचें और फिर कोशिश करें।",
+    "this_cancels_your_fundraiser_you_e443bd9e": "इससे आपका फ़ंडरेज़र रद्द हो जाएगा। इसे वापस नहीं किया जा सकता।",
+    "this_deletes_your_draft_you_fe6825bf": "इससे आपका ड्राफ़्ट मिट जाएगा। इसे वापस नहीं किया जा सकता।",
+    "this_withdraws_your_application_and_89a294c7": "इससे आपका आवेदन वापस ले लिया जाएगा और उसका फ़ंडरेज़र पेज रद्द हो जाएगा। इसे वापस नहीं किया जा सकता।",
+    "why_do_you_want_to_fd4fade0": "आप यह फ़ंडरेज़र क्यों रोकना चाहते हैं? दान जुड़ा होने के कारण, बंद होने से पहले हमारी टीम इसकी समीक्षा करेगी।"
   },
   "fundraisersList": {
     "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",

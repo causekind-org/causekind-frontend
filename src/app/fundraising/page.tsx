@@ -3,7 +3,7 @@ import { useTranslations } from "next-intl";
 
 import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
-import { fundraising, fundraisingCampaigns, type FundraisingApplication, type FundraisingCampaign } from "@/lib/api";
+import { fundraising, fundraisingCampaigns, fundraisingManage, type FundraisingApplication, type FundraisingCampaign } from "@/lib/api";
 import { DoneeGate } from "@/features/fundraising/DoneeGate";
 import { useFundraisingLabels, StatusChip, Icon, CampaignChip } from "@/features/fundraising/ui";
 import s from "@/features/fundraising/fundraising.module.css";
@@ -39,6 +39,46 @@ function Dashboard() {
     fundraising.mine().then(setApps).catch(() => setFailed(true));
     fundraisingCampaigns.mine().then(setCampaigns).catch(() => setCampaigns([]));
   }, []);
+  // Live fundraisers with a stop request still waiting for an admin.
+  const [stopping, setStopping] = useState<Set<number>>(new Set());
+  useEffect(() => {
+    const live = (campaigns ?? []).filter((c) => LIVE.includes(c.status));
+    Promise.all(live.map((c) => fundraisingManage.closures(c.id).then((cl) => cl.some((x) => x.status === "SUBMITTED") ? c.id : null).catch(() => null)))
+      .then((ids) => setStopping(new Set(ids.filter((x): x is number => x != null))));
+  }, [campaigns]);
+  const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+
+  async function cancelCampaign(c: FundraisingCampaign) {
+    if (!window.confirm(c.status === "DRAFT" ? ui("This deletes your draft. You can't undo this.") : ui("This cancels your fundraiser. You can't undo this."))) return;
+    setBusy(true); setActionError(null);
+    try {
+      await fundraisingCampaigns.cancel(c.id);
+      setCampaigns((cs) => (cs ?? []).filter((x) => x.id !== c.id));
+    } catch { setActionError(ui("That didn't work. Check your connection and try again.")); }
+    finally { setBusy(false); }
+  }
+  async function stopCampaign(c: FundraisingCampaign) {
+    const reason = window.prompt(ui("Why do you want to stop this fundraiser? Our team will review this before it closes, because donations are involved."));
+    if (reason == null) return;
+    if (!reason.trim()) { setActionError(ui("Please write a reason to stop the fundraiser.")); return; }
+    setBusy(true); setActionError(null);
+    try {
+      await fundraisingManage.requestClosure(c.id, reason.trim());
+      setStopping((st) => new Set(st).add(c.id));
+    } catch { setActionError(ui("That didn't work. Check your connection and try again.")); }
+    finally { setBusy(false); }
+  }
+  async function withdrawApp(a: FundraisingApplication) {
+    if (!window.confirm(ui("This withdraws your application and cancels its fundraiser page. You can't undo this."))) return;
+    setBusy(true); setActionError(null);
+    try {
+      const updated = await fundraising.withdraw(a.id);
+      setApps((as) => (as ?? []).map((x) => (x.id === a.id ? updated : x)));
+      setCampaigns((cs) => (cs ?? []).filter((x) => x.applicationId !== a.id || !CANCELLABLE.includes(x.status)));
+    } catch { setActionError(ui("That didn't work. Check your connection and try again.")); }
+    finally { setBusy(false); }
+  }
 
   // Reusable-eligibility variant (handoff §3.2): the panel cites the approval
   // that granted access, never whichever application is newest.
@@ -103,24 +143,31 @@ function Dashboard() {
               <Link href={`/fundraising/applications/${grant.id}`} className={`${s.btn} ${s.bs}`}><UiText>View approval</UiText></Link>
             </div>
           )}
-          {others.map((a) => <ApplicationRow key={a.id} app={a} hasGrant={!!grant} />)}
+          {others.map((a) => <ApplicationRow key={a.id} app={a} hasGrant={!!grant} busy={busy} onWithdraw={() => withdrawApp(a)} />)}
         </section>
       )}
 
       <section aria-labelledby="camps" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 16, flexWrap: "wrap" }}><h2 id="camps" className={s.serif} style={{ fontSize: 22 }}><UiText>Campaigns</UiText></h2>{campaigns && campaigns.length > 0 && <span className={`${s.muted} ${s.small}`}><UiText>Needs your action first</UiText></span>}</div>
+        {actionError && <p role="alert" className={s.small} style={{ color: "#a4262c" }}>{actionError}</p>}
         {campaigns && campaigns.length > 0 ? (
           <div className={s.card} style={{ overflow: "hidden" }}>
-            {[...campaigns].sort((x, y) => rank(x.status) - rank(y.status)).map((c) => (
+            {campaigns.filter((c) => c.status !== "CANCELLED").sort((x, y) => rank(x.status) - rank(y.status)).map((c) => (
               <div key={c.id} className={s.row}>
                 <CampaignChip status={c.status} localize />
                 <div className={s.grow}>
                   <strong>{c.title || ui("Untitled campaign")}</strong>
-                  <div className={`${s.muted} ${s.small}`}>{campaignDetail(c.status)}{c.status === "DRAFT" && c.missing.length ? ` · ${t("thingsLeft", { count: c.missing.length })}` : ""}</div>
+                  <div className={`${s.muted} ${s.small}`}>{stopping.has(c.id) ? ui("Stop requested · waiting for review") : campaignDetail(c.status)}{c.status === "DRAFT" && c.missing.length ? ` · ${t("thingsLeft", { count: c.missing.length })}` : ""}</div>
                 </div>
                 <Link href={`/fundraising/campaigns/${c.id}`} className={`${s.btn} ${c.status === "DRAFT" || c.status === "CHANGES_REQUESTED" ? s.bp : s.bs}`}>
                   {c.status === "DRAFT" ? ui("Continue campaign") : c.status === "CHANGES_REQUESTED" ? ui("Make changes") : c.status === "APPROVED_SETUP_INCOMPLETE" ? ui("View setup requirements") : ui("View")}
                 </Link>
+                {CANCELLABLE.includes(c.status) && (
+                  <button type="button" className={`${s.btn} ${s.bs}`} disabled={busy} onClick={() => cancelCampaign(c)}>{c.status === "DRAFT" ? ui("Delete draft") : ui("Cancel fundraiser")}</button>
+                )}
+                {LIVE.includes(c.status) && !stopping.has(c.id) && (
+                  <button type="button" className={`${s.btn} ${s.bs}`} disabled={busy} onClick={() => stopCampaign(c)}>{ui("Stop fundraiser")}</button>
+                )}
               </div>
             ))}
           </div>
@@ -154,7 +201,12 @@ function Dashboard() {
   );
 }
 
-function ApplicationRow({ app, hasGrant }: { app: FundraisingApplication; hasGrant: boolean }) {
+/** Mirrors the backend: cancel needs no review before publication; live ones go through a closure request. */
+const CANCELLABLE = ["DRAFT", "CHANGES_REQUESTED", "APPROVED_SETUP_INCOMPLETE"];
+const LIVE = ["APPROVED", "PAUSED"];
+const WITHDRAWABLE = ["DRAFT", "SUBMITTED", "IN_REVIEW", "INFORMATION_REQUESTED", "RESUBMITTED"];
+
+function ApplicationRow({ app, hasGrant, busy, onWithdraw }: { app: FundraisingApplication; hasGrant: boolean; busy: boolean; onWithdraw: () => void }) {
   const ui = useUiText();
   const t = useTranslations("fundraiserFlow");
   const fmt = useFundraisingLabels();
@@ -182,6 +234,9 @@ function ApplicationRow({ app, hasGrant }: { app: FundraisingApplication; hasGra
         <div className={`${s.muted} ${s.small}`}>{detail}</div>
       </div>
       <Link href={a.href} className={`${s.btn} ${a.primary ? s.bp : s.bs}`}>{a.label}</Link>
+      {WITHDRAWABLE.includes(app.status) && (
+        <button type="button" className={`${s.btn} ${s.bs}`} disabled={busy} onClick={onWithdraw}>{ui("Withdraw")}</button>
+      )}
     </div>
   );
 }
