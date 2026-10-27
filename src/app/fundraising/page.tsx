@@ -77,7 +77,7 @@ function Dashboard() {
       setApps((as) => (as ?? []).map((x) => (x.id === a.id ? updated : x)));
       setCampaigns((cs) => (cs ?? []).filter((x) => x.applicationId !== a.id || LIVE.includes(x.status)));
     } catch (e) {
-      setActionError(e instanceof ApiError && e.status === 409 ? ui("Stop your live fundraiser first. Our team reviews that because donations are involved.") : ui("That didn't work. Check your connection and try again."));
+      setActionError(e instanceof ApiError && e.status === 409 && e.message ? e.message : ui("That didn't work. Check your connection and try again."));
     } finally { setBusy(false); }
   }
   async function withdrawApp(a: FundraisingApplication) {
