@@ -75,9 +75,12 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
     try {
       // A cleared amount is null; name it in `clear`, or the server keeps the old value.
       const clear = CLEARABLE.filter((k) => k in body && body[k] == null);
-      const next = await fundraising.save(app.id, clear.length ? { ...body, clear } : body);
+      const sent = body.costItems ? { ...body, costItems: body.costItems.filter(filledCost) } : body;
+      const next = await fundraising.save(app.id, clear.length ? { ...sent, clear } : sent);
       setApp((cur) => {
         const o = pendingOverlay(cur, pending.current);
+        // Keep blank rows the donee is still filling in; the server only knows the filled ones.
+        if (cur.costItems.some((c) => !filledCost(c))) o.costItems = cur.costItems;
         return { ...next, ...o, payout: o.payout ? { ...o.payout, accountLast4: next.payout.accountLast4 } : next.payout };
       });
       setSave("saved");
@@ -156,6 +159,9 @@ function pendingOverlay(cur: FundraisingApplication, p: FundraisingSave): Partia
   }
   return out as Partial<FundraisingApplication>;
 }
+
+/** A cost row worth saving: it has a name or an amount. */
+const filledCost = (c: FundraisingCostItem) => c.expense.trim() !== "" || c.amount != null;
 
 /** Save keys for the bank text fields, and where each shows in the masked `payout` view. */
 const PAYOUT_TEXT = [["payoutHolderName", "holderName"], ["payoutIfsc", "ifsc"], ["payoutBankBranch", "bankBranch"], ["payoutUpi", "upi"]] as const;
@@ -295,7 +301,8 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
   const [OPEN, setOpen] = useState<FundraisingCategory[]>([]);
   useEffect(() => { fundraising.categories().then(setOpen).catch(() => setOpen([])); }, []);
   const costs = app.costItems.length ? app.costItems : [{ expense: "", amount: null, reference: null }];
-  const setCosts = (next: FundraisingCostItem[]) => set({ costItems: next.filter((c) => c.expense.trim() !== "" || c.amount != null) });
+  // Rows stay on screen while blank (clearing the name must not delete the row); flush sends only filled ones.
+  const setCosts = (next: FundraisingCostItem[]) => set({ costItems: next });
   const edit = (i: number, patch: Partial<FundraisingCostItem>) => setCosts(costs.map((c, j) => (j === i ? { ...c, ...patch } : c)));
   const num = (v: string) => (v.trim() === "" ? null : Number(v.replace(/,/g, "")));
   const total = costs.reduce((t, c) => t + (c.amount ?? 0), 0);
@@ -357,7 +364,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
           </div>
           {costs.map((c, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, alignItems: "start" }}>
-              <input className={s.in} aria-label={`Expense ${i + 1}`} value={c.expense} onChange={(e) => edit(i, { expense: e.target.value })} maxLength={160} />
+              <input className={s.in} aria-label={`Expense ${i + 1}`} placeholder={ui("What is it for?")} value={c.expense} onChange={(e) => edit(i, { expense: e.target.value })} maxLength={160} />
               <div>
                 <input id={`amt${i}`} className={`${s.in} ${s.tabular}`} style={{ textAlign: "right" }} aria-label={`Amount ${i + 1}`} inputMode="decimal" value={c.amount ?? ""} aria-invalid={shownAmount[i] || undefined} aria-describedby={shownAmount[i] ? `e${i}` : undefined} onChange={(e) => edit(i, { amount: num(e.target.value) })} />
                 {shownAmount[i] && <p id={`e${i}`} className={s.errText}><Icon name="alert" /><UiText>Write the amount</UiText></p>}
@@ -369,7 +376,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
               <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: 0 }} aria-label={t("removeRow", { n: i + 1 })} onClick={() => setCosts(costs.filter((_, j) => j !== i))}>✕</button>
             </div>
           ))}
-          <div><button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setCosts([...costs, { expense: ui("New item"), amount: null, reference: null }])}><UiText>+ Add one more thing</UiText></button></div>
+          <div><button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setCosts([...costs, { expense: "", amount: null, reference: null }])}><UiText>+ Add one more thing</UiText></button></div>
         </section>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="oh">
