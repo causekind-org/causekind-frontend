@@ -5,8 +5,11 @@ import Script from "next/script";
 import { useEffect, useRef, Suspense } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { isInternalTraffic } from "@/lib/internalTraffic";
+import { META_PIXEL_ID } from "@/lib/metaEvents";
 
-const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID || "123456789";
+// The one site pixel, defined once in metaEvents.ts and shared with the
+// conversion events so the base PageView and conversions always match.
+const PIXEL_ID = META_PIXEL_ID;
 
 // One-time bypass for pixel setup verification (e.g. Meta's automated domain
 // checker, which can't click the cookie banner). Scoped to a single visit via
