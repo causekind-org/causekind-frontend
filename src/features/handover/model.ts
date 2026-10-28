@@ -68,6 +68,8 @@ export type HandoverSchedule = {
   rescheduleCount: number;
   maxReschedules: number;
   atRisk: boolean;
+  courierName?: string | null;
+  trackingNumber?: string | null;
 };
 
 export type HandoverConfirmationState = {
@@ -157,6 +159,8 @@ export type HandoverDelivery = {
   contactPhone: string | null;
   requestedAt: string | null;
   submittedAt: string | null;
+  courierName?: string | null;
+  trackingNumber?: string | null;
 };
 
 /**
@@ -188,21 +192,27 @@ export function deliveryAddressPending(vm: HandoverViewModel): boolean {
 function deliveryStepCopy(vm: HandoverViewModel): { title: string; body: string } {
   const s = deliveryAddressState(vm);
   if (vm.role === "DONOR") {
-    if (s === "awaiting") {
-      return { title: "Ask for the delivery address",
-               body: "You're sending this by courier. Ask the recipient where to deliver it and for a number the courier can call." };
+    if (s === "awaiting" || !vm.delivery?.address) {
+      return {
+        title: "Ask for the delivery address",
+        body: "You're sending this by courier. Request the recipient's delivery address so you know where to send it.",
+      };
     }
-    return { title: "Waiting for the delivery address",
-             body: s === "recheck"
-               ? "You've asked the recipient to check their address. You'll be notified when they send it again."
-               : "You've asked the recipient for it. You'll be notified the moment it arrives — then send the item and confirm here." };
+    if (s === "requested") {
+      return {
+        title: "Delivery address requested",
+        body: "Waiting for the recipient to provide their delivery address.",
+      };
+    }
+    return {
+      title: "Delivery address",
+      body: "Recipient's delivery address is ready. Dispatch by courier, enter the tracking details, and confirm here.",
+    };
   }
-  if (s === "recheck") {
-    return { title: "Please check your delivery address",
-             body: "The donor asked you to confirm where to deliver this. Correct anything that's wrong and send it again." };
-  }
-  return { title: s === "requested" ? "The donor needs your delivery address" : "Add your delivery address",
-           body: "This is coming by courier. Tell the donor where to deliver it and a number the courier can call." };
+  return {
+    title: s === "requested" ? "The donor needs your delivery address" : "Add your delivery address",
+    body: "The donor will send this by courier. Please provide your recipient name, contact phone, and delivery address.",
+  };
 }
 
 /** Window (in hours) after handover dual confirmation during which participants can report an issue. */

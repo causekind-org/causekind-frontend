@@ -11,10 +11,38 @@ const base: PurchaseView = {
   receivedQuantity: null, expectedDeliveryAt: null, trackingUrl: null, trackingReference: null,
   address: null, retailer: null, orderReference: null, evidence: [],
   extensionRequestedUntil: null, extensionDecidedAt: null, issueWindowExpiresAt: null, version: 0,
+  deliveryReportedAt: null, deliveryReminderSentAt: null, deliveryEscalatedAt: null,
+  receivedCondition: null, receiptRecordedBySupport: false, issues: [],
 };
 const v = (p: Partial<PurchaseView>): PurchaseView => ({ ...base, ...p });
 
 describe("purchaseStage", () => {
+  const ordered = { acceptedAt: "x", orderedAt: "2026-10-15T10:00:00", orderedQuantity: 2, status: "ORDER_PLACED" as const };
+  const proof = { id: 1, type: "DELIVERY_PROOF" as const, url: "u", uploadedAt: "x", screeningAvailable: null, prohibited: null, uploadedByRole: "DONOR" as const };
+
+  it("asks the recipient to confirm once delivery is reported, and acknowledges the donor's proof", () => {
+    const view = v({ ...ordered, status: "AWAITING_RECEIPT", deliveryReportedAt: "2026-10-16T10:00:00", evidence: [proof] });
+    expect(purchaseStage(view, "ADMIN_APPROVED")).toBe("DELIVERED");
+    expect(purchaseNextAction("DELIVERED", "DONOR", view)).toBe("Delivery proof submitted — awaiting recipient confirmation.");
+    expect(purchaseNextAction("DELIVERED", "DONEE", view)).toMatch(/confirm what you received/i);
+  });
+
+  it("a reported delivery of the remainder wins over the earlier partial receipt", () => {
+    const view = v({ ...ordered, status: "AWAITING_RECEIPT", receivedQuantity: 1, deliveryReportedAt: "x" });
+    expect(purchaseStage(view, "ADMIN_APPROVED")).toBe("DELIVERED");
+    expect(purchaseStage(v({ ...ordered, status: "PARTIALLY_RECEIVED", receivedQuantity: 1 }), "ADMIN_APPROVED")).toBe("PARTIALLY_RECEIVED");
+  });
+
+  it("tells both sides when support is reviewing an unanswered delivery", () => {
+    const view = v({ ...ordered, deliveryReportedAt: "x", deliveryEscalatedAt: "y", evidence: [proof] });
+    expect(purchaseNextAction("DELIVERED", "DONOR", view)).toMatch(/support team is reviewing/i);
+    expect(purchaseNextAction("DELIVERED", "DONEE", view)).toMatch(/support team/i);
+  });
+
+  it("a delivery report never counts as completion", () => {
+    expect(purchaseStage(v({ ...ordered, deliveryReportedAt: "x" }), "ADMIN_APPROVED")).not.toBe("COMPLETED");
+  });
+
   it("never tells a donor to buy before acceptance", () => {
     const stage = purchaseStage(base, "PENDING_DONEE_REVIEW");
     expect(stage).toBe("AWAITING_ACCEPTANCE");
@@ -37,9 +65,24 @@ describe("purchaseStage", () => {
   it("physical purchase needs an item photo, then review, then handover", () => {
     const bought = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "ORDER_PLACED" });
     expect(purchaseStage(bought, "ADMIN_APPROVED")).toBe("AWAITING_ITEM_PHOTO");
-    const photo = { ...bought, evidence: [{ id: 1, type: "ITEM_PHOTO" as const, url: "u", uploadedAt: "x", screeningAvailable: true, prohibited: false }] };
-    expect(purchaseStage(photo, "ADMIN_APPROVED")).toBe("AWAITING_PROOF_REVIEW");
+    const photo = { ...bought, evidence: [{ id: 1, type: "ITEM_PHOTO" as const, url: "u", uploadedAt: "x", screeningAvailable: true, prohibited: false, uploadedByRole: "DONOR" as const }] };
+    expect(purchaseStage({ ...photo, status: "PROOF_UPLOADED" }, "ADMIN_APPROVED")).toBe("AWAITING_PROOF_REVIEW");
     expect(purchaseStage({ ...photo, status: "READY_FOR_HANDOVER" }, "ADMIN_APPROVED")).toBe("READY_FOR_HANDOVER");
+  });
+
+  it("a rejected item photo asks the donor for a new one, with the reason", () => {
+    const rejected = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "ORDER_PLACED",
+      proofRejectionReason: "The photo is blurry.",
+      evidence: [{ id: 1, type: "ITEM_PHOTO", url: "u", uploadedAt: "x", screeningAvailable: true, prohibited: false, uploadedByRole: "DONOR" }] });
+    const stage = purchaseStage(rejected, "ADMIN_APPROVED");
+    expect(stage).toBe("AWAITING_ITEM_PHOTO");
+    expect(purchaseNextAction(stage, "DONOR", rejected)).toContain("The photo is blurry.");
+    expect(purchaseNextAction(stage, "DONEE", rejected)).not.toContain("blurry");
+  });
+
+  it("in person, the recipient closes the issue window on the handover page", () => {
+    const view = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "READY_FOR_HANDOVER" });
+    expect(purchaseNextAction(purchaseStage(view, "ISSUE_WINDOW_OPEN"), "DONEE", view)).toContain("handover page");
   });
 
   it("a retailer 'delivered' report is still in transit until the donee confirms", () => {

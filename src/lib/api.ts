@@ -1874,6 +1874,8 @@ export type ItemMatch = {
   doneeConditionNotes: string | null;
   /** Where a courier delivers; null from a backend that predates it. See DeliveryAddress. */
   delivery: DeliveryAddress | null;
+  courierName?: string | null;
+  trackingNumber?: string | null;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -1947,6 +1949,8 @@ export function saveMatchLogistics(id: number, data: {
   deliveryAddress?: string;
   allocatedQuantity?: number;
   notes?: string;
+  courierName?: string;
+  trackingNumber?: string;
 }) {
   return request<ItemMatch>(`/api/v1/matches/${id}/logistics`, {
     method: "POST",
@@ -2357,6 +2361,7 @@ export type PurchaseStatus =
  */
 export type PurchaseView = {
   offerId: number;
+  offerStatus?: string | null;
   method: PurchaseFulfilmentMethod | null;
   status: PurchaseStatus | null;
   readyToBuy: boolean;
@@ -2380,14 +2385,35 @@ export type PurchaseView = {
   evidence: {
     id: number; type: PurchaseProofType; url: string; uploadedAt: string;
     screeningAvailable: boolean | null; prohibited: boolean | null;
+    /** Who uploaded it; the recipient never receives order confirmations or receipts. */
+    uploadedByRole: "DONOR" | "DONEE";
   }[];
   extensionRequestedUntil: string | null;
   extensionDecidedAt: string | null;
   issueWindowExpiresAt: string | null;
   version: number | null;
+  /** Set while a reported delivery waits for the recipient; cleared once they respond. */
+  deliveryReportedAt: string | null;
+  deliveryReminderSentAt: string | null;
+  /** The recipient didn't respond in time and support is reviewing the delivery. */
+  deliveryEscalatedAt: string | null;
+  receivedCondition: string | null;
+  /** Support recorded receipt from the evidence (the recipient didn't respond). */
+  receiptRecordedBySupport: boolean;
+  issues: PurchaseIssueView[];
+  /** Why our team sent the item photo back; the donor (and admins) only. Cleared by a new upload. */
+  proofRejectionReason?: string | null;
 };
 
-export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT";
+export type PurchaseIssueView = {
+  id: number; type: string; description: string; affectedQuantity: number | null;
+  reportedByRole: "DONOR" | "DONEE"; createdAt: string;
+  response: string | null; respondedAt: string | null;
+  resolution: string | null; resolvedAt: string | null;
+};
+
+/** Donor uploads ITEM_PHOTO..DELIVERY_PROOF; the recipient uploads RECEIVED_PHOTO and ISSUE_EVIDENCE. */
+export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT" | "DELIVERY_PROOF" | "RECEIVED_PHOTO" | "ISSUE_EVIDENCE";
 export type PurchaseReceiptCondition = "GOOD" | "PARTIAL" | "DAMAGED" | "WRONG_ITEM";
 export type PurchaseIssueType = "ITEM_NOT_RECEIVED" | "ITEM_DAMAGED" | "WRONG_ITEM" | "QUANTITY_MISMATCH" | "OTHER";
 export const PURCHASE_CONSENT_VERSION = "purchase-delivery-v1";
@@ -2508,6 +2534,20 @@ export function submitMatchDeliveryAddress(matchId: number, data: DeliveryAddres
 
 export function getMatchDeliveryAddressSuggestion(matchId: number) {
   return request<DeliveryAddressSuggestion>(`/api/v1/matches/${matchId}/handover/delivery-address/suggestion`);
+}
+
+export function updateMatchCourier(matchId: number, data: { courierName: string; trackingNumber?: string }) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/courier`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateOfferCourier(offerId: number, data: { courierName: string; trackingNumber?: string }) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/courier`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
 export type Certificate = {
@@ -3021,7 +3061,7 @@ export function getPurchase(offerId: number) {
 }
 
 export function sharePurchaseAddress(offerId: number, address: {
-  address: string; contactName: string; contactPhone: string; latitude?: number; longitude?: number;
+  address: string; contactName?: string; contactPhone?: string; latitude?: number; longitude?: number;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/delivery-address`, {
     method: "POST",
@@ -3047,8 +3087,14 @@ export function updatePurchaseShipment(offerId: number, data: {
   return request<void>(`/api/v1/offers/${offerId}/purchase/shipment`, { method: "PATCH", body: JSON.stringify(data) });
 }
 
+/**
+ * `cumulativeQuantity` counts good units received so far. For DAMAGED/WRONG_ITEM it
+ * may stay at the earlier count (0 if nothing usable came) and `affectedQuantity`
+ * covers the problem. `note` is required when closing the remainder.
+ */
 export function confirmPurchaseReceipt(offerId: number, data: {
   cumulativeQuantity: number; condition: PurchaseReceiptCondition; closeRemainder: boolean;
+  affectedQuantity?: number; note?: string;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/receipt`, { method: "POST", body: JSON.stringify(data) });
 }
@@ -3057,8 +3103,28 @@ export function confirmPurchaseNoIssue(offerId: number) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/confirm-no-issue`, { method: "POST" });
 }
 
-export function reportPurchaseIssue(offerId: number, data: { type: PurchaseIssueType; description: string }) {
+export function reportPurchaseIssue(offerId: number, data: { type: PurchaseIssueType; description: string; affectedQuantity?: number }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/issues`, { method: "POST", body: JSON.stringify(data) });
+}
+
+/** The participant who didn't report the open issue gives their side (once). */
+export function respondToPurchaseIssue(offerId: number, message: string) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/issues/response`, { method: "POST", body: JSON.stringify({ message }) });
+}
+
+/** Recipient evidence: a photo of what arrived, or evidence for a reported problem. Stored privately. */
+export function uploadPurchaseRecipientEvidence(offerId: number, proofType: "RECEIVED_PHOTO" | "ISSUE_EVIDENCE", file: File, notes?: string) {
+  const formData = new FormData();
+  formData.append("proofType", proofType);
+  formData.append("file", file);
+  if (notes) formData.append("notes", notes);
+  return fetch(`${BASE_URL}/api/v1/offers/${offerId}/purchase/evidence`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b?.message ?? "Upload failed"); }
+  });
 }
 
 export function requestPurchaseExtension(offerId: number, data: { requestedUntil: string; reason: string }) {
@@ -3073,8 +3139,9 @@ export function adminGetPurchase(offerId: number) {
   return request<PurchaseView>(`/api/v1/admin/offers/${offerId}/purchase`);
 }
 
-export function adminListPurchases(page = 0) {
-  return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}`);
+/** `attention` lists only purchases waiting on an admin: problems, escalated deliveries, photos to review. */
+export function adminListPurchases(page = 0, attention = false) {
+  return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}${attention ? "&attention=true" : ""}`);
 }
 
 export function adminReviewPurchaseProof(offerId: number, data: { approve: boolean; reason: string }) {
@@ -3083,6 +3150,55 @@ export function adminReviewPurchaseProof(offerId: number, data: { approve: boole
 
 export function adminResolvePurchaseIssue(offerId: number, data: { action: "RETRY_DELIVERY" | "CANCEL_REMAINDER"; reason: string }) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
+}
+
+// ── Admin Issues section (read-only) ──────────────────────────────────────
+// Every problem report and support case in one list. Keys: pdi-<id> (offer or
+// purchase problem), doi-<id> (drive offer problem), case-<id> (match handover
+// problem, purchase follow-up, or support case).
+
+export type AdminIssueSource = "OFFER_HANDOVER" | "PURCHASE" | "PURCHASE_FOLLOW_UP" | "MATCH_HANDOVER" | "DRIVE_OFFER" | "SUPPORT";
+export type AdminIssuePerson = { userId: number | null; name: string | null; email: string | null; role: string | null };
+export type AdminIssueSummary = {
+  key: string; source: AdminIssueSource; title: string | null; issueType: string | null; description: string | null;
+  reportedBy: AdminIssuePerson | null; against: AdminIssuePerson | null; open: boolean;
+  caseNumber: string | null; caseStatus: string | null; casePriority: string | null;
+  entityType: string | null; entityId: number | null;
+  createdAt: string | null; resolvedAt: string | null; lastActivityAt: string | null;
+};
+export type AdminIssuePage = {
+  items: AdminIssueSummary[]; total: number; page: number; size: number;
+  openCount: number; openBySource: Partial<Record<AdminIssueSource, number>>;
+};
+export type AdminIssueDetail = {
+  summary: AdminIssueSummary;
+  affectedQuantity: number | null; response: string | null; respondedAt: string | null;
+  resolution: string | null; windowExpiresAt: string | null;
+  sections: { title: string; facts: { label: string; value: string }[] }[];
+  /** Private files come as 10-minute links; `url` is null when one couldn't be made. */
+  evidence: { label: string; url: string | null; uploadedBy: string | null; uploadedAt: string | null }[];
+  supportCase: {
+    id: number; caseNumber: string; subject: string | null; description: string | null; category: string | null;
+    status: string | null; priority: string | null; assignedTo: string | null; dueAt: string | null;
+    resolvedAt: string | null; resolutionSummary: string | null; linkedRecords: string[];
+  } | null;
+  timeline: { at: string | null; kind: "ISSUE" | "STATUS" | "CASE"; actor: string | null; text: string; internal: boolean }[];
+};
+
+export function adminListIssues(params: { status?: "open" | "resolved" | "all"; source?: AdminIssueSource | ""; q?: string; page?: number; size?: number } = {}) {
+  const qs = new URLSearchParams({ status: params.status ?? "open", page: String(params.page ?? 0), size: String(params.size ?? 25) });
+  if (params.source) qs.set("source", params.source);
+  if (params.q?.trim()) qs.set("q", params.q.trim());
+  return request<AdminIssuePage>(`/api/v1/admin/issues?${qs.toString()}`);
+}
+
+export function adminGetIssue(key: string) {
+  return request<AdminIssueDetail>(`/api/v1/admin/issues/${encodeURIComponent(key)}`);
+}
+
+/** Evidence-based fallback after escalation; the reason (≥20 chars) goes to the audit log. */
+export function adminPurchaseFallbackReceipt(offerId: number, data: { quantity: number; reason: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/fallback-receipt`, { method: "POST", body: JSON.stringify(data) });
 }
 
 export function adminProcessPurchaseDeadlines(offerId: number) {
@@ -3118,7 +3234,7 @@ export function scheduleHandover(offerId: number, data: {
   method: OfferHandoverMethod; scheduledDateTime: string; locationAddress?: string;
   locationLatitude?: number; locationLongitude?: number;
   transportArrangedBy?: string; transportCostBornBy?: string;
-  packagingResponsibility?: string; courierName?: string;
+  packagingResponsibility?: string; courierName?: string; trackingNumber?: string;
 }) {
   return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover`, {
     method: "POST",
@@ -3585,6 +3701,10 @@ export type PostDeliveryIssue = {
   adminResolution: string | null;
   resolvedAt: string | null;
   createdAt: string;
+  /** A purchase delivery problem: resolved with redelivery or closing the remainder, never a bare note. */
+  purchase: boolean;
+  affectedQuantity: number | null;
+  counterpartyResponse: string | null;
 };
 
 export function superAdminListDisputes(status: "open" | "resolved" | "all") {
