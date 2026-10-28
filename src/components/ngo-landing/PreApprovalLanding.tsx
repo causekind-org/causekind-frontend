@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { useScroll } from "framer-motion";
 import { ArrowRight, ShieldCheck } from "lucide-react";
 import type { NgoStatusData } from "./useNgoStatus";
 import { NgoHeroRedesign } from "./NgoHeroRedesign";
@@ -14,21 +14,11 @@ import {
 } from "./NgoSharedComponents";
 
 export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
-  const shouldReduceMotion = useReducedMotion();
-
   // ---------------------------------------------------------------------------
   // How CauseKind Works - Sticky Scroll-Telling Setup
   // ---------------------------------------------------------------------------
   const howItWorksRef = useRef<HTMLDivElement>(null);
-  const stepsContainerRef = useRef<HTMLDivElement>(null);
-  const circle1Ref = useRef<HTMLDivElement>(null);
-  const circle5Ref = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
-  const [lineCoords, setLineCoords] = useState<{
-    top: number;
-    height: number;
-    left: number;
-  } | null>(null);
 
   const howItWorksSteps = [
     {
@@ -68,13 +58,11 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
     },
   ];
 
-  // Scroll tracking for gold line drawing & active step detection
+  // Scroll tracking for active step detection
   const { scrollYProgress: worksScrollProgress } = useScroll({
     target: howItWorksRef,
     offset: ["start center", "end end"],
   });
-
-  const pathLength = useTransform(worksScrollProgress, [0, 1], [0, 1]);
 
   useEffect(() => {
     return worksScrollProgress.on("change", (latest) => {
@@ -85,40 +73,6 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
       setActiveStep(idx);
     });
   }, [worksScrollProgress, howItWorksSteps.length]);
-
-  // Measure exact vertical line endpoints from circle 1 centre to circle 5 centre
-  useEffect(() => {
-    const updateLine = () => {
-      if (!circle1Ref.current || !circle5Ref.current || !stepsContainerRef.current) return;
-      const containerRect = stepsContainerRef.current.getBoundingClientRect();
-      const c1Rect = circle1Ref.current.getBoundingClientRect();
-      const c5Rect = circle5Ref.current.getBoundingClientRect();
-
-      const top = c1Rect.top + c1Rect.height / 2 - containerRect.top;
-      const bottom = c5Rect.top + c5Rect.height / 2 - containerRect.top;
-      const left = c1Rect.left + c1Rect.width / 2 - containerRect.left;
-
-      setLineCoords({
-        top,
-        height: Math.max(0, bottom - top),
-        left,
-      });
-    };
-
-    updateLine();
-    window.addEventListener("resize", updateLine);
-    const ro = typeof ResizeObserver !== "undefined"
-      ? new ResizeObserver(updateLine)
-      : null;
-    if (stepsContainerRef.current && ro) {
-      ro.observe(stepsContainerRef.current);
-    }
-
-    return () => {
-      window.removeEventListener("resize", updateLine);
-      ro?.disconnect();
-    };
-  }, []);
 
   // CTA Links
   const registerHref = status.wizardHref || "/profile/ngo-details";
@@ -169,43 +123,9 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
           />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start relative">
-            {/* Steps Column with Drawing Gold SVG Path */}
+            {/* Steps Column */}
             <div className="lg:col-span-7 relative">
-              <div ref={stepsContainerRef} className="relative flex flex-col gap-4">
-                {/* Gold SVG Drawing Path: runs exactly through number circles, circle 1 center to circle 5 center */}
-                <div
-                  className="absolute pointer-events-none z-0"
-                  style={{
-                    top: lineCoords ? `${lineCoords.top}px` : "40px",
-                    height: lineCoords ? `${lineCoords.height}px` : "calc(100% - 80px)",
-                    left: lineCoords ? `${lineCoords.left}px` : "40px",
-                    width: "3px",
-                    transform: "translateX(-50%)",
-                  }}
-                >
-                  <svg className="w-full h-full" preserveAspectRatio="none">
-                    <line
-                      x1="1.5"
-                      y1="0"
-                      x2="1.5"
-                      y2="100%"
-                      stroke="rgba(255, 255, 255, 0.15)"
-                      strokeWidth="3"
-                    />
-                    <motion.line
-                      x1="1.5"
-                      y1="0"
-                      x2="1.5"
-                      y2="100%"
-                      stroke="#D9A441"
-                      strokeWidth="3"
-                      style={{
-                        pathLength: shouldReduceMotion ? 1 : pathLength,
-                      }}
-                    />
-                  </svg>
-                </div>
-
+              <div className="relative flex flex-col gap-4">
                 {/* 5 Steps equally spaced */}
                 {howItWorksSteps.map((step, i) => {
                   const isActive = activeStep >= i;
@@ -220,13 +140,6 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
                     >
                       {/* 48px green numbered bubble with 8px soft ring */}
                       <div
-                        ref={
-                          i === 0
-                            ? circle1Ref
-                            : i === howItWorksSteps.length - 1
-                            ? circle5Ref
-                            : undefined
-                        }
                         className="ngo-step-bubble relative z-10 transition-transform duration-300"
                         style={{
                           transform: isActive ? "scale(1.05)" : "scale(1)",
