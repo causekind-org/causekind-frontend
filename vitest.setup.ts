@@ -17,12 +17,12 @@ vi.mock("next-intl", async (importOriginal) => {
   const real = await importOriginal<typeof import("next-intl")>();
   const en = (await import("./messages/en.json")).default as Record<string, unknown>;
   // One translator per namespace: building one walks the whole catalogue, too slow to repeat per render.
-  const cache = new Map<string, ReturnType<typeof real.createTranslator>>();
+  const cache = new Map<string, unknown>();
   const fallback = (namespace?: string) => {
     const key = namespace ?? "";
     let t = cache.get(key);
     if (!t) cache.set(key, (t = real.createTranslator({ locale: "en", messages: en as never, namespace: namespace as never })));
-    return t;
+    return t as never;
   };
   return {
     ...real,
