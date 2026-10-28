@@ -70,6 +70,7 @@ function NgoDetailsEditor() {
   const appliedStepLink = useRef<string | null>(null);
   const startingStepChosen = useRef(false);
   const initialUrlStep = useRef<NGOStep | null>(readUrlStep(searchParams.get("step")));
+  const [clampPending, setClampPending] = useState(false);
 
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
@@ -246,6 +247,7 @@ function NgoDetailsEditor() {
           // After a per-item correction request, open on the first step with something to fix.
           const startStep = firstCorrectionStep(flaggedFields.current) ?? initialUrlStep.current ?? savedStep;
           if (startStep) setCurrentStep(startStep);
+          setClampPending(!firstCorrectionStep(flaggedFields.current));
         }
       } finally {
         if (active) setLoading(false);
@@ -352,9 +354,25 @@ function NgoDetailsEditor() {
     }
   }
 
+  /** Index of the first step not yet complete: the furthest the wizard may move forward. */
+  function firstOpenStepIndex(): number {
+    const done = calculateNgoProgress(data).completedSteps;
+    const i = NGO_STEPS.findIndex(s => !done.has(s));
+    return i < 0 ? NGO_STEPS.length - 1 : i;
+  }
+
   function goToStep(step: NGOStep) {
     if (data.applicationId && step !== "email-verification") return;
     if (currentStep === "submitted") return;
+    // Only the in-form Continue (enabled when the step is valid) moves forward: no skipping
+    // ahead from the step list, ?step= or anything else past an incomplete step.
+    const target = NGO_STEPS.indexOf(step);
+    // A correction round (flagged items) may move between the steps to fix them.
+    const correcting = flaggedFields.current.length > 0 || resubmitting;
+    if (!correcting && target > NGO_STEPS.indexOf(currentStep as NGOStep) && target > firstOpenStepIndex()) {
+      toast.error("Complete this step before moving on");
+      return;
+    }
     setCurrentStep(step);
     // Auto-save draft in the background so active uploads are never orphaned
     if (!IS_NGO_DEMO_MODE && !data.applicationId) {
@@ -503,6 +521,18 @@ function NgoDetailsEditor() {
     toast.success("Application submitted successfully! Redirecting to profile…");
     router.push("/profile");
   }
+
+
+  // A ?step= link or a saved draft can't open past the first incomplete step.
+  useEffect(() => {
+    if (loading || !clampPending) return;
+    setClampPending(false);
+    if (data.applicationId || flaggedFields.current.length > 0 || resubmitting) return;
+    const i = NGO_STEPS.indexOf(currentStep as NGOStep);
+    const open = firstOpenStepIndex();
+    if (i > open) setCurrentStep(NGO_STEPS[open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, after the draft loads
+  }, [loading, clampPending]);
 
   if (loading) {
     return (
@@ -889,17 +919,6 @@ function NgoDetailsEditor() {
                           className="min-h-[44px] rounded-xl border border-stone-300 dark:border-zinc-700 px-3.5 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                         >
                           Previous
-                        </button>
-                      )}
-                      {currentStep !== "review-submit" && (
-                        <button
-                          type="button"
-                          disabled={busy}
-                          onClick={handleNextSection}
-                          className="min-h-[44px] inline-flex items-center gap-1.5 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-4 py-2 text-xs font-bold text-white transition-colors shadow-sm disabled:opacity-50"
-                        >
-                          Save & Continue
-                          <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       )}
                     </div>

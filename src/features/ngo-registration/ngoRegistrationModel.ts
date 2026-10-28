@@ -424,6 +424,15 @@ export function isValidMobile(value: string): boolean {
   return INDIAN_MOBILE_WITH_PREFIX_REGEX.test(clean) || INDIAN_MOBILE_DIGITS_REGEX.test(clean);
 }
 
+/** Why a mobile number is invalid ("" when valid): a wrong first digit, else a wrong length. Same wording as the backend. */
+export function mobileError(value: string): string {
+  if (isValidMobile(value)) return "";
+  let digits = fieldText(value).replace(/[\s-]/g, "");
+  if (digits.startsWith("+91")) digits = digits.slice(3);
+  if (digits && !/^[6-9]/.test(digits)) return "Mobile numbers start with 6, 7, 8 or 9.";
+  return "Enter a 10-digit mobile number.";
+}
+
 /** Extracts the 10 digits of an Indian mobile number, or whatever digits exist without truncating saved data. */
 export function extractIndianMobileDigits(value: string): string {
   const clean = fieldText(value).replace(/[\s-]/g, "");
@@ -606,7 +615,11 @@ export function prefillNgoFormWithUser(
     skipped.has(key) || fieldText(form[key]) ? form[key] : fieldText(value);
   // Representative email starts empty so the representative types and verifies their own email.
   // The representative mobile number starts empty so the representative enters their own number.
-  const reps = form.representatives?.length ? [...form.representatives] : [{ ...EMPTY_REPRESENTATIVE }];
+  // An older draft may hold the account email on a representative (copied from the org email):
+  // clear it unless that representative verified it, so they enter their own.
+  const accountEmail = fieldText(user.email).toLowerCase();
+  const reps = (form.representatives?.length ? [...form.representatives] : [{ ...EMPTY_REPRESENTATIVE }])
+    .map(r => accountEmail && !r.emailVerified && fieldText(r.email).toLowerCase() === accountEmail ? { ...r, email: "" } : r);
   return {
     ...form,
     organizationName: fill("organizationName", user.fullName),

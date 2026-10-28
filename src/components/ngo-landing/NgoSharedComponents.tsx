@@ -143,7 +143,7 @@ export function NgoGlassStatusCard({ status, className = "" }: GlassStatusCardPr
         if (!isNaN(d.getTime())) {
           formattedDate = formatISTDate(d);
         }
-      } catch {}
+      } catch { }
     }
 
     return (
@@ -354,7 +354,7 @@ export interface NgoFinalCtaBandProps {
     disabled?: boolean;
     isLocked?: boolean;
   };
-  secondaryButton: {
+  secondaryButton?: {
     label: string;
     href: string;
   };
@@ -459,12 +459,14 @@ export function NgoFinalCtaBand({
                 </Link>
               )}
 
-              <Link
-                href={secondaryButton.href}
-                className="ngo-btn-pill ngo-btn-outline"
-              >
-                <span>{secondaryButton.label}</span>
-              </Link>
+              {secondaryButton && (
+                <Link
+                  href={secondaryButton.href}
+                  className="ngo-btn-pill ngo-btn-outline"
+                >
+                  <span>{secondaryButton.label}</span>
+                </Link>
+              )}
             </div>
 
             {/* Mobile Photo Row (Under 1000px: 2 cards, ~45% width, 180px tall) */}

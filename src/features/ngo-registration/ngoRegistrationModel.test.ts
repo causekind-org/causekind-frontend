@@ -150,3 +150,15 @@ describe("ngoRegistrationModel", () => {
     expect(legalStructureLabel("")).toBe("");
   });
 });
+
+describe("mobile number messages", () => {
+  it("says what is wrong: the first digit, else the length", async () => {
+    const { mobileError } = await import("./ngoRegistrationModel");
+    expect(mobileError("9876543210")).toBe("");
+    expect(mobileError("+91 98765 43210")).toBe("");
+    expect(mobileError("5876543210")).toBe("Mobile numbers start with 6, 7, 8 or 9.");
+    expect(mobileError("+915876543210")).toBe("Mobile numbers start with 6, 7, 8 or 9.");
+    expect(mobileError("98765")).toBe("Enter a 10-digit mobile number.");
+    expect(mobileError("")).toBe("Enter a 10-digit mobile number.");
+  });
+});

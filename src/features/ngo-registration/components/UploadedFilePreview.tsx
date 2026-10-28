@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Eye, RefreshCw, Trash2, Check, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UploadedFile } from "@/features/ngo-registration/ngoRegistrationModel";
-import { getNgoFileLink } from "@/lib/api";
+import { getNgoFilePreviewUrl } from "@/lib/api";
 
 export interface UploadedFilePreviewProps {
   file: UploadedFile;
@@ -18,7 +18,7 @@ export interface UploadedFilePreviewProps {
   className?: string;
 }
 
-// In-memory cache for presigned read links so repeated views don't re-fetch needlessly
+// In-memory cache of blob: previews (served by the API), so repeated views don't re-fetch.
 const fileLinkCache = new Map<string, { url: string; expiresAt: number }>();
 
 export async function getCachedFileLink(kind: "document" | "photo", id: number): Promise<string> {
@@ -27,13 +27,15 @@ export async function getCachedFileLink(kind: "document" | "photo", id: number):
   if (cached && Date.now() < cached.expiresAt) {
     return cached.url;
   }
-  const res = await getNgoFileLink(kind, id);
-  // Cache for 9 minutes (presigned link TTL is 10 minutes)
-  fileLinkCache.set(cacheKey, { url: res.url, expiresAt: Date.now() + 9 * 60 * 1000 });
-  return res.url;
+  const url = await getNgoFilePreviewUrl(kind, id);
+  if (cached) URL.revokeObjectURL(cached.url);
+  fileLinkCache.set(cacheKey, { url, expiresAt: Date.now() + 30 * 60 * 1000 });
+  return url;
 }
 
 export function invalidateFileLinkCache(kind: "document" | "photo", id: number) {
+  const cached = fileLinkCache.get(`${kind}:${id}`);
+  if (cached) URL.revokeObjectURL(cached.url);
   fileLinkCache.delete(`${kind}:${id}`);
 }
 
@@ -72,7 +74,9 @@ export function UploadedFilePreview({
   disabled = false,
   className,
 }: UploadedFilePreviewProps) {
-  const [thumbUrl, setThumbUrl] = useState<string | null>(localBlobUrl ?? file.s3Url ?? null);
+  // A stored file with an id is fetched through the API below; its plain stored URL (private bucket) would be a 403.
+  const storedId = kind === "photo" ? file.photoId : file.documentId;
+  const [thumbUrl, setThumbUrl] = useState<string | null>(localBlobUrl ?? (storedId == null ? file.s3Url ?? null : null));
   const [loadingThumb, setLoadingThumb] = useState(false);
   const [thumbError, setThumbError] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(false);
@@ -132,8 +136,9 @@ export function UploadedFilePreview({
             className="relative h-16 w-16 sm:h-14 sm:w-14 shrink-0 rounded-lg overflow-hidden border border-stone-200 dark:border-zinc-700 bg-stone-100 dark:bg-zinc-800 flex items-center justify-center cursor-pointer group"
             onClick={onPreview}
             title={`Preview ${label}`}
+            aria-label={`Preview ${label}`}
             role="button"
-            tabIndex={0}
+            tabIndex={disabled ? -1 : 0}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
@@ -224,16 +229,6 @@ export function UploadedFilePreview({
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={onPreview}
-                disabled={disabled}
-                className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800/80 px-2.5 py-1.5 text-2xs font-semibold text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-colors"
-                title={`Preview ${label}`}
-              >
-                <Eye className="h-3.5 w-3.5 text-stone-500" />
-                Preview
-              </button>
 
               <button
                 type="button"

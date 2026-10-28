@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import NgoDetailsPage from "./page";
+import { INITIAL_NGO_FORM, prefillNgoFormWithUser } from "@/features/ngo-registration/ngoRegistrationModel";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getMyNgoApplication,
@@ -63,9 +64,10 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     expect(screen.getByLabelText(/Organization Email Address/i)).toHaveValue("hope@ngo.test");
     // The signup phone is the organization's phone (10 digits with fixed +91 prefix); Representative 1 enters their own mobile.
     expect(screen.getByLabelText(/Organization Phone Number/i)).toHaveValue("9876543210");
-    await openStep(/Authorized Representative/i);
-    expect(await screen.findByLabelText(/^Mobile number/i)).toHaveValue("");
-    expect(screen.getByLabelText(/^Email/i)).toHaveValue("");
+    // Step 3 can't be opened before steps 1-2 are complete; Representative 1 starts empty.
+    const rep = prefillNgoFormWithUser(INITIAL_NGO_FORM, NGO).representatives[0];
+    expect(rep.mobileNumber).toBe("");
+    expect(rep.email).toBe("");
   }, 15000);
 
   it("fills them when a saved draft has them empty, and keeps what the NGO typed", async () => {
@@ -79,8 +81,9 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     expect(await screen.findByLabelText(/Organization Name/i)).toHaveValue("Typed Name Trust");
     expect(screen.getByLabelText(/Organization Email Address/i)).toHaveValue("hope@ngo.test");
     expect(screen.getByLabelText(/Organization Phone Number/i)).toHaveValue("9876543210");
-    await openStep(/Authorized Representative/i);
-    expect(screen.getByLabelText(/^Email/i)).toHaveValue("");
+    // An old draft holding the account email on Representative 1 doesn't refill it.
+    const old = { ...INITIAL_NGO_FORM, representatives: [{ ...INITIAL_NGO_FORM.representatives[0], email: "hope@ngo.test" }] };
+    expect(prefillNgoFormWithUser(old, NGO).representatives[0].email).toBe("");
   }, 15000);
 
   it("fills the phone when it arrives after login, without resetting what was typed", async () => {

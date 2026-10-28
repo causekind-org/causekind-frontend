@@ -13,6 +13,7 @@ import {
   isPersonalPan,
   isValidEmail,
   isValidMobile,
+  mobileError,
   isValidPan,
   normalizePan,
   type NGOFormState,
@@ -27,7 +28,7 @@ import { NgoOtpInput } from "@/features/ngo-registration/components/NgoOtpInput"
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 import { WizardSelect } from "@/features/ngo-registration/components/WizardSelect";
 import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
-import { getNgoFileLink } from "@/lib/api";
+import { getNgoFilePreviewUrl } from "@/lib/api";
 import { useMemo } from "react";
 
 interface AuthorizedRepresentativeProps {
@@ -91,7 +92,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
           mimeType: data.authorizationLetter.mimeType,
           resolve:
             data.authorizationLetter.documentId != null
-              ? async () => (await getNgoFileLink("document", data.authorizationLetter!.documentId!)).url
+              ? async () => await getNgoFilePreviewUrl("document", data.authorizationLetter!.documentId!)
               : undefined,
           url: data.authorizationLetter.documentId == null ? data.authorizationLetter.s3Url : undefined,
         },
@@ -106,7 +107,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
             mimeType: r.idProof.mimeType,
             resolve:
               r.idProof.documentId != null
-                ? async () => (await getNgoFileLink("document", r.idProof!.documentId!)).url
+                ? async () => await getNgoFilePreviewUrl("document", r.idProof!.documentId!)
                 : undefined,
             url: r.idProof.documentId == null ? r.idProof.s3Url : undefined,
           },
@@ -331,7 +332,7 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
             onChange={(formattedVal) => onChange({ mobileNumber: formattedVal })}
           />
           {fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber) && (
-            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">Enter a 10-digit mobile number.</p>
+            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">{mobileError(card.mobileNumber)}</p>
           )}
           {note("mobileNumber")}
         </div>

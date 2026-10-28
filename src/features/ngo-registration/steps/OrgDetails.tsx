@@ -8,6 +8,7 @@ import {
   STRUCTURE_INDEPENDENT_DOC_IDS,
   getRegistrationCertificateDoc,
   isValidMobile,
+  mobileError,
   isValidEmail,
   aboutUsMissing,
   ABOUT_US_MIN,
@@ -79,7 +80,7 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
     if (!fieldText(data.registrationNumber)) next.registrationNumber = "Registration number is required.";
     if (!fieldText(data.registeredOfficeAddress)) next.registeredOfficeAddress = "Registered office address is required.";
     if (!isValidEmail(data.officialEmail ?? "")) next.officialEmail = "Enter a valid email address.";
-    if (!isValidMobile(data.organizationPhone ?? "")) next.organizationPhone = "Enter a 10-digit mobile number.";
+    if (!isValidMobile(data.organizationPhone ?? "")) next.organizationPhone = mobileError(data.organizationPhone ?? "");
     if (aboutUsMissing(data)) next.aboutUs = `Write ${ABOUT_US_MIN} to ${ABOUT_US_MAX} characters about your NGO.`;
     setErrors(next);
     return Object.keys(next).length === 0;
@@ -348,7 +349,10 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
             aria-invalid={!!errors.organizationPhone}
             onChange={(formattedVal) => {
               onChange({ organizationPhone: formattedVal });
-              if (errors.organizationPhone) setErrors((p) => ({ ...p, organizationPhone: "" }));
+              // Shown as the number is typed: a wrong first digit at once, a short number once it has 10 digits' worth.
+              const digits = fieldText(formattedVal).replace(/\D/g, "").replace(/^91(?=\d{10})/, "");
+              const instant = digits && !/^[6-9]/.test(digits) ? mobileError(formattedVal) : digits.length >= 10 ? mobileError(formattedVal) : "";
+              setErrors((p) => ({ ...p, organizationPhone: instant }));
             }}
           />
           {field("organizationPhone")}

@@ -5493,6 +5493,21 @@ export function getNgoFileLink(kind: "document" | "photo", id: number) {
   return request<{ url: string }>(`/api/v1/ngo-registration/files/${kind}/${id}/link`);
 }
 
+/**
+ * A preview of one of the NGO's own uploads as a blob: URL. The file comes through the
+ * API instead of a presigned S3 link, so the preview does not depend on the bucket's
+ * region, CORS or the site's CSP for the bucket host. The caller may revoke it.
+ */
+export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: number): Promise<string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const response = await fetch(`${BASE_URL}/api/v1/ngo-registration/files/${kind}/${id}/content`, {
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) throw new ApiError(response.status, "This file can't be shown right now.", null);
+  return URL.createObjectURL(await response.blob());
+}
+
 export function getPublicNgo(slug: string) {
   return request<PublicNgoProfile>(`/api/v1/ngos/${encodeURIComponent(slug)}`);
 }

@@ -11,7 +11,7 @@ import {
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
-import { getNgoFileLink } from "@/lib/api";
+import { getNgoFilePreviewUrl } from "@/lib/api";
 
 interface LegalDocumentsProps {
   data: NGOFormState;
@@ -49,7 +49,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
           file: {
             name: `${d.label}: ${f.name}`,
             mimeType: f.mimeType,
-            resolve: f.documentId != null ? async () => (await getNgoFileLink("document", f.documentId!)).url : undefined,
+            resolve: f.documentId != null ? async () => await getNgoFilePreviewUrl("document", f.documentId!) : undefined,
             url: f.documentId == null ? f.s3Url : undefined,
           },
         });

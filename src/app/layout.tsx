@@ -1,4 +1,5 @@
 import { StartDriveChoice } from "@/components/ngo-landing/StartDriveChoice";
+import { StoredImageFallback } from "@/components/media/StoredImageFallback";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
@@ -161,6 +162,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+        <StoredImageFallback />
         {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
             banner coming back — see the TESTING_BYPASS note in each
             component. Remove this comment once the banner is restored. */}

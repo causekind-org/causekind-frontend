@@ -7,7 +7,7 @@ import {
   type NGOFormState,
   getNgoStillNeededItems,
 } from "@/features/ngo-registration/ngoRegistrationModel";
-import { NGO_PHOTO_RULE, uploadNgoPhoto, getNgoFileLink } from "@/lib/api";
+import { NGO_PHOTO_RULE, uploadNgoPhoto, getNgoFilePreviewUrl } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
 import { UploadedFilePreview } from "@/features/ngo-registration/components/UploadedFilePreview";
@@ -103,7 +103,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
           mimeType: data.logo.mimeType,
           resolve:
             data.logo.photoId != null
-              ? async () => (await getNgoFileLink("photo", data.logo!.photoId!)).url
+              ? async () => await getNgoFilePreviewUrl("photo", data.logo!.photoId!)
               : undefined,
           url: data.logo.photoId == null ? data.logo.s3Url : undefined,
         },
@@ -117,7 +117,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
           mimeType: data.officePhoto.mimeType,
           resolve:
             data.officePhoto.photoId != null
-              ? async () => (await getNgoFileLink("photo", data.officePhoto!.photoId!)).url
+              ? async () => await getNgoFilePreviewUrl("photo", data.officePhoto!.photoId!)
               : undefined,
           url: data.officePhoto.photoId == null ? data.officePhoto.s3Url : undefined,
         },
@@ -132,7 +132,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
             mimeType: f.mimeType,
             resolve:
               f.photoId != null
-                ? async () => (await getNgoFileLink("photo", f!.photoId!)).url
+                ? async () => await getNgoFilePreviewUrl("photo", f!.photoId!)
                 : undefined,
             url: f.photoId == null ? f.s3Url : undefined,
           },

@@ -8,7 +8,7 @@ import {
   type DocCategory,
   type UploadedFile,
 } from "@/features/ngo-registration/ngoRegistrationModel";
-import { NGO_DOCUMENT_RULE, uploadNgoDocument, getNgoFileLink } from "@/lib/api";
+import { NGO_DOCUMENT_RULE, uploadNgoDocument, getNgoFilePreviewUrl } from "@/lib/api";
 import { UploadedFilePreview, formatFileSize } from "@/features/ngo-registration/components/UploadedFilePreview";
 import { FilePreviewDialog } from "@/components/FilePreviewDialog";
 
@@ -192,7 +192,7 @@ export function DocUploadCard({
               mimeType: uploaded.mimeType,
               resolve:
                 uploaded.documentId != null
-                  ? async () => (await getNgoFileLink("document", uploaded.documentId!)).url
+                  ? async () => await getNgoFilePreviewUrl("document", uploaded.documentId!)
                   : undefined,
               url: uploaded.documentId == null ? uploaded.s3Url : undefined,
             },

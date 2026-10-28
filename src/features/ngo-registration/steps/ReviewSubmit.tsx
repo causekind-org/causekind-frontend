@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
-import { getNgoFileLink } from "@/lib/api";
+import { getNgoFilePreviewUrl } from "@/lib/api";
 import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
 import {
   PAN_DOC,
@@ -53,7 +53,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
       const id = kind === "photo" ? f.photoId : f.documentId;
       if (id == null && !f.s3Url) return;
       out.push({ key, file: { name: `${label}: ${f.name}`, mimeType: f.mimeType,
-        resolve: id != null ? async () => (await getNgoFileLink(kind, id)).url : undefined, url: id == null ? f.s3Url : undefined } });
+        resolve: id != null ? async () => await getNgoFilePreviewUrl(kind, id) : undefined, url: id == null ? f.s3Url : undefined } });
     };
     add("pan", PAN_DOC.label, data.documents[PAN_DOC.id], "document");
     for (const d of docs) if (d.id !== PAN_DOC.id) add(`doc-${d.id}`, d.label, data.documents[d.id], "document");
