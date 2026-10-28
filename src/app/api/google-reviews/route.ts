@@ -19,6 +19,11 @@ interface PlaceDetails {
 
 const headers = { 'Cache-Control': 'no-store' };
 
+// Reviews barely change, and every Place Details call that asks for `reviews` is
+// billed at the Enterprise + Atmosphere rate. Uncached, each homepage visit was
+// one call (about Rs 700 on 2026-10-19). Google is now asked at most once a day.
+const REVALIDATE_SECONDS = 86400;
+
 export async function GET() {
   const key = process.env.GOOGLE_PLACES_API_KEY?.trim();
   const placeId = process.env.GOOGLE_REVIEWS_PLACE_ID?.trim();
@@ -28,13 +33,13 @@ export async function GET() {
 
   try {
     // Fixed server-configured place; callers cannot supply arbitrary billable lookups.
-    // No review caching or persistence. Configure Cloud quotas to bound spend.
+    // Cached in the Next data cache for a day; only successful responses are kept.
     const response = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
       headers: {
         'X-Goog-Api-Key': key,
         'X-Goog-FieldMask': 'rating,userRatingCount,googleMapsUri,reviews,attributions',
       },
-      cache: 'no-store',
+      next: { revalidate: REVALIDATE_SECONDS },
       signal: AbortSignal.timeout(8000),
     });
     if (!response.ok) {
@@ -63,7 +68,9 @@ export async function GET() {
         date: review.relativePublishTimeDescription ?? '',
       })),
     };
-    return Response.json(data, { headers });
+    return Response.json(data, {
+      headers: { 'Cache-Control': `public, s-maxage=3600, stale-while-revalidate=${REVALIDATE_SECONDS}` },
+    });
   } catch {
     return Response.json({ error: 'Reviews are unavailable.' }, { status: 502, headers });
   }
