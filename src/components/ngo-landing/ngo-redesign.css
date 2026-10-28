@@ -595,54 +595,20 @@
   box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.55);
 }
 
-/* FAQ Details/Summary */
-.ngo-faq-details {
-  border-radius: 20px;
-  background-color: var(--ngo-card);
-  border: 1px solid var(--ngo-line);
-  margin-bottom: 16px;
-  overflow: hidden;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.ngo-band-dark .ngo-faq-details {
-  background-color: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-}
-
-.ngo-faq-summary {
-  list-style: none;
-  padding: 24px 28px;
-  font-family: var(--ngo-font-heading);
-  font-size: 19px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  color: inherit;
-}
-
-.ngo-faq-summary::-webkit-details-marker {
-  display: none;
-}
-
-.ngo-faq-content {
-  padding: 0 28px 24px 28px;
-  opacity: 0.82;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
 /* ==========================================================================
    11. Final CTA Band & Floating Photo Cards
    ========================================================================== */
+.ngo-cta-band-wrapper {
+  width: 100%;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
 .ngo-cta-band {
   position: relative;
   width: 100%;
-  overflow: clip;
-  padding: 56px 0;
+  overflow: visible;
+  padding: 96px 0;
   text-align: center;
   color: #ffffff;
   background: linear-gradient(135deg, #0B3D2E 0%, #1E6B4A 50%, #2F8F5B 100%);
@@ -650,24 +616,24 @@
 
 .ngo-cta-floater {
   position: absolute;
-  top: 40%;
+  top: 50%;
   transform: translateY(-50%);
   pointer-events: none;
   z-index: 10;
 }
 
 .ngo-cta-floater-left {
-  left: 0;
+  left: 16px;
 }
 
 .ngo-cta-floater-right {
-  right: 0;
+  right: 16px;
 }
 
 .ngo-cta-card {
   position: relative;
-  width: 240px;
-  height: 300px;
+  width: 230px;
+  height: 290px;
   border-radius: 28px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -713,32 +679,35 @@
 
 .ngo-cta-center-col {
   width: 100%;
-  max-width: 60%;
+  max-width: 58%;
   margin-left: auto;
   margin-right: auto;
   position: relative;
   z-index: 20;
 }
 
-/* Mobile Photo Row (Under 1000px) */
+/* Mobile Photo Row (Under 1000px: clean shrunk cards) */
 .ngo-cta-mobile-row {
   display: none;
   width: 100%;
-  max-width: 480px;
-  margin: 36px auto 0 auto;
+  max-width: 400px;
+  margin: 32px auto 0 auto;
   justify-content: center;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  padding: 0 12px;
+  box-sizing: border-box;
 }
 
 .ngo-cta-mobile-card {
   position: relative;
-  width: 45%;
-  height: 180px;
-  border-radius: 20px;
+  width: calc(50% - 6px);
+  max-width: 170px;
+  height: clamp(100px, 26vw, 140px);
+  border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 12px 30px -6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 24px -4px rgba(0, 0, 0, 0.4);
   background: #0B3D2E;
   flex-shrink: 0;
 }
@@ -746,15 +715,15 @@
 /* Responsive: 1000px to 1200px */
 @media (min-width: 1000px) and (max-width: 1199.98px) {
   .ngo-cta-card {
-    width: 190px;
-    height: 240px;
-    border-radius: 24px;
+    width: 180px;
+    height: 230px;
+    border-radius: 22px;
   }
   .ngo-cta-floater-left {
-    left: 12px;
+    left: 8px;
   }
   .ngo-cta-floater-right {
-    right: 12px;
+    right: 8px;
   }
   .ngo-cta-center-col {
     max-width: 56% !important;
@@ -763,6 +732,9 @@
 
 /* Responsive: Under 1000px */
 @media (max-width: 999.98px) {
+  .ngo-cta-band {
+    padding: 64px 0;
+  }
   .ngo-cta-floater {
     display: none !important;
   }
@@ -771,6 +743,17 @@
   }
   .ngo-cta-mobile-row {
     display: flex;
+  }
+}
+
+/* Small mobile under 480px */
+@media (max-width: 480px) {
+  .ngo-cta-band {
+    padding: 48px 0;
+  }
+  .ngo-cta-mobile-card {
+    height: 105px;
+    border-radius: 14px;
   }
 }
 

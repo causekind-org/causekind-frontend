@@ -90,5 +90,8 @@ describe("NGO landing with server-backed status", () => {
     // The handover-record and verification cards were removed from the landing page.
     expect(screen.queryByText("Keep a clear record of each handover")).not.toBeInTheDocument();
     expect(screen.queryByText(/Your organization.s verification/)).not.toBeInTheDocument();
+    // FAQ section removed from this landing
+    expect(screen.queryByText("Everything you need to know.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Frequently asked questions")).not.toBeInTheDocument();
   });
 });

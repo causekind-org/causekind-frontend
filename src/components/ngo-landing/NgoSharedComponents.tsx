@@ -384,118 +384,120 @@ export function NgoFinalCtaBand({
   );
 
   return (
-    <section
-      ref={bandRef}
-      className="ngo-cta-band relative w-full text-center text-white bg-gradient-to-br from-[#0B3D2E] via-[#1E6B4A] to-[#2F8F5B]"
-    >
-      <div className="ngo-container relative">
-        {/* Floating Photo Card Left (Desktop) */}
-        <div className="ngo-cta-floater ngo-cta-floater-left">
-          <motion.div
-            style={{ y: yLeft }}
-            className="ngo-cta-card ngo-cta-card-left"
-          >
-            <Image
-              src="/images/ngo-hero/col-a-1-blankets-pune.webp"
-              alt="Volunteer handing over care package"
-              fill
-              sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
-              className="object-cover"
-              style={{ objectPosition: "50% 30%" }}
-              loading="lazy"
-            />
-            <div className="ngo-cta-card-gradient" />
-          </motion.div>
-        </div>
-
-        {/* Floating Photo Card Right (Desktop) */}
-        <div className="ngo-cta-floater ngo-cta-floater-right">
-          <motion.div
-            style={{ y: yRight }}
-            className="ngo-cta-card ngo-cta-card-right"
-          >
-            <Image
-              src="/images/ngo-hero/col-a-3-ration-drive.webp"
-              alt="Children supported through community drives"
-              fill
-              sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
-              className="object-cover"
-              style={{ objectPosition: "50% 35%" }}
-              loading="lazy"
-            />
-            <div className="ngo-cta-card-gradient" />
-          </motion.div>
-        </div>
-
-        {/* Centre Column: Headline + Buttons + Mobile Photo Row */}
-        <div className="ngo-cta-center-col mx-auto flex flex-col items-center">
-          <h2 className="ngo-heading text-[clamp(36px,5.4vw,88px)] mb-8 leading-[1.05]">
-            {headline}
-          </h2>
-
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            {primaryButton.isLocked || primaryButton.disabled || !primaryButton.href ? (
-              <button
-                type="button"
-                onClick={primaryButton.onClick}
-                aria-disabled={primaryButton.disabled ? "true" : undefined}
-                className="ngo-btn-pill ngo-btn-gold ngo-btn-shine cursor-pointer"
-              >
-                <span>{primaryButton.label}</span>
-                {primaryButton.showArrow !== false && (
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                )}
-              </button>
-            ) : (
-              <Link
-                href={primaryButton.href}
-                className="ngo-btn-pill ngo-btn-gold ngo-btn-shine"
-              >
-                <span>{primaryButton.label}</span>
-                {primaryButton.showArrow !== false && (
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                )}
-              </Link>
-            )}
-
-            <Link
-              href={secondaryButton.href}
-              className="ngo-btn-pill ngo-btn-outline"
+    <div className="ngo-cta-band-wrapper w-full overflow-x-clip">
+      <section
+        ref={bandRef}
+        className="ngo-cta-band relative w-full text-center text-white bg-gradient-to-br from-[#0B3D2E] via-[#1E6B4A] to-[#2F8F5B]"
+      >
+        <div className="ngo-container relative">
+          {/* Floating Photo Card Left (Desktop) */}
+          <div className="ngo-cta-floater ngo-cta-floater-left">
+            <motion.div
+              style={{ y: yLeft }}
+              className="ngo-cta-card ngo-cta-card-left"
             >
-              <span>{secondaryButton.label}</span>
-            </Link>
-          </div>
-
-          {/* Mobile Photo Row (Under 1000px: 2 cards, ~45% width, 180px tall) */}
-          <div className="ngo-cta-mobile-row">
-            <div className="ngo-cta-mobile-card">
               <Image
                 src="/images/ngo-hero/col-a-1-blankets-pune.webp"
                 alt="Volunteer handing over care package"
                 fill
-                sizes="(max-width: 1000px) 45vw, 190px"
+                sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
                 className="object-cover"
                 style={{ objectPosition: "50% 30%" }}
                 loading="lazy"
               />
               <div className="ngo-cta-card-gradient" />
-            </div>
+            </motion.div>
+          </div>
 
-            <div className="ngo-cta-mobile-card">
+          {/* Floating Photo Card Right (Desktop) */}
+          <div className="ngo-cta-floater ngo-cta-floater-right">
+            <motion.div
+              style={{ y: yRight }}
+              className="ngo-cta-card ngo-cta-card-right"
+            >
               <Image
                 src="/images/ngo-hero/col-a-3-ration-drive.webp"
                 alt="Children supported through community drives"
                 fill
-                sizes="(max-width: 1000px) 45vw, 190px"
+                sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
                 className="object-cover"
                 style={{ objectPosition: "50% 35%" }}
                 loading="lazy"
               />
               <div className="ngo-cta-card-gradient" />
+            </motion.div>
+          </div>
+
+          {/* Centre Column: Headline + Buttons + Mobile Photo Row */}
+          <div className="ngo-cta-center-col mx-auto flex flex-col items-center">
+            <h2 className="ngo-heading text-[clamp(36px,5.4vw,88px)] mb-8 leading-[1.05]">
+              {headline}
+            </h2>
+
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {primaryButton.isLocked || primaryButton.disabled || !primaryButton.href ? (
+                <button
+                  type="button"
+                  onClick={primaryButton.onClick}
+                  aria-disabled={primaryButton.disabled ? "true" : undefined}
+                  className="ngo-btn-pill ngo-btn-gold ngo-btn-shine cursor-pointer"
+                >
+                  <span>{primaryButton.label}</span>
+                  {primaryButton.showArrow !== false && (
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  )}
+                </button>
+              ) : (
+                <Link
+                  href={primaryButton.href}
+                  className="ngo-btn-pill ngo-btn-gold ngo-btn-shine"
+                >
+                  <span>{primaryButton.label}</span>
+                  {primaryButton.showArrow !== false && (
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  )}
+                </Link>
+              )}
+
+              <Link
+                href={secondaryButton.href}
+                className="ngo-btn-pill ngo-btn-outline"
+              >
+                <span>{secondaryButton.label}</span>
+              </Link>
+            </div>
+
+            {/* Mobile Photo Row (Under 1000px: 2 cards, ~45% width, 180px tall) */}
+            <div className="ngo-cta-mobile-row">
+              <div className="ngo-cta-mobile-card">
+                <Image
+                  src="/images/ngo-hero/col-a-1-blankets-pune.webp"
+                  alt="Volunteer handing over care package"
+                  fill
+                  sizes="(max-width: 1000px) 45vw, 190px"
+                  className="object-cover"
+                  style={{ objectPosition: "50% 30%" }}
+                  loading="lazy"
+                />
+                <div className="ngo-cta-card-gradient" />
+              </div>
+
+              <div className="ngo-cta-mobile-card">
+                <Image
+                  src="/images/ngo-hero/col-a-3-ration-drive.webp"
+                  alt="Children supported through community drives"
+                  fill
+                  sizes="(max-width: 1000px) 45vw, 190px"
+                  className="object-cover"
+                  style={{ objectPosition: "50% 35%" }}
+                  loading="lazy"
+                />
+                <div className="ngo-cta-card-gradient" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }

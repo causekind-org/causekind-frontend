@@ -2,9 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import { ChevronDown, ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import type { NgoStatusData } from "./useNgoStatus";
 import { NgoHeroRedesign } from "./NgoHeroRedesign";
 import {
@@ -21,7 +20,15 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
   // How CauseKind Works - Sticky Scroll-Telling Setup
   // ---------------------------------------------------------------------------
   const howItWorksRef = useRef<HTMLDivElement>(null);
+  const stepsContainerRef = useRef<HTMLDivElement>(null);
+  const circle1Ref = useRef<HTMLDivElement>(null);
+  const circle5Ref = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
+  const [lineCoords, setLineCoords] = useState<{
+    top: number;
+    height: number;
+    left: number;
+  } | null>(null);
 
   const howItWorksSteps = [
     {
@@ -79,11 +86,45 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
     });
   }, [worksScrollProgress, howItWorksSteps.length]);
 
+  // Measure exact vertical line endpoints from circle 1 centre to circle 5 centre
+  useEffect(() => {
+    const updateLine = () => {
+      if (!circle1Ref.current || !circle5Ref.current || !stepsContainerRef.current) return;
+      const containerRect = stepsContainerRef.current.getBoundingClientRect();
+      const c1Rect = circle1Ref.current.getBoundingClientRect();
+      const c5Rect = circle5Ref.current.getBoundingClientRect();
+
+      const top = c1Rect.top + c1Rect.height / 2 - containerRect.top;
+      const bottom = c5Rect.top + c5Rect.height / 2 - containerRect.top;
+      const left = c1Rect.left + c1Rect.width / 2 - containerRect.left;
+
+      setLineCoords({
+        top,
+        height: Math.max(0, bottom - top),
+        left,
+      });
+    };
+
+    updateLine();
+    window.addEventListener("resize", updateLine);
+    const ro = typeof ResizeObserver !== "undefined"
+      ? new ResizeObserver(updateLine)
+      : null;
+    if (stepsContainerRef.current && ro) {
+      ro.observe(stepsContainerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("resize", updateLine);
+      ro?.disconnect();
+    };
+  }, []);
+
   // CTA Links
   const registerHref = status.wizardHref || "/profile/ngo-details";
 
   return (
-    <div className="w-full flex flex-col">
+    <div className="w-full flex flex-col overflow-x-clip">
       {/* 1. HERO */}
       <NgoHeroRedesign status={status} />
 
@@ -129,41 +170,49 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start relative">
             {/* Steps Column with Drawing Gold SVG Path */}
-            <div className="lg:col-span-7 relative pl-4 md:pl-8">
-              {/* Gold SVG Drawing Path */}
-              <div className="absolute left-[39px] md:left-[55px] top-6 bottom-10 w-1 pointer-events-none">
-                <svg className="w-full h-full" preserveAspectRatio="none">
-                  <line
-                    x1="2"
-                    y1="0"
-                    x2="2"
-                    y2="100%"
-                    stroke="rgba(255, 255, 255, 0.15)"
-                    strokeWidth="3"
-                  />
-                  <motion.line
-                    x1="2"
-                    y1="0"
-                    x2="2"
-                    y2="100%"
-                    stroke="#D9A441"
-                    strokeWidth="3"
-                    style={{
-                      pathLength: shouldReduceMotion ? 1 : pathLength,
-                    }}
-                  />
-                </svg>
-              </div>
+            <div className="lg:col-span-7 relative">
+              <div ref={stepsContainerRef} className="relative flex flex-col gap-4">
+                {/* Gold SVG Drawing Path: runs exactly through number circles, circle 1 center to circle 5 center */}
+                <div
+                  className="absolute pointer-events-none z-0"
+                  style={{
+                    top: lineCoords ? `${lineCoords.top}px` : "40px",
+                    height: lineCoords ? `${lineCoords.height}px` : "calc(100% - 80px)",
+                    left: lineCoords ? `${lineCoords.left}px` : "40px",
+                    width: "3px",
+                    transform: "translateX(-50%)",
+                  }}
+                >
+                  <svg className="w-full h-full" preserveAspectRatio="none">
+                    <line
+                      x1="1.5"
+                      y1="0"
+                      x2="1.5"
+                      y2="100%"
+                      stroke="rgba(255, 255, 255, 0.15)"
+                      strokeWidth="3"
+                    />
+                    <motion.line
+                      x1="1.5"
+                      y1="0"
+                      x2="1.5"
+                      y2="100%"
+                      stroke="#D9A441"
+                      strokeWidth="3"
+                      style={{
+                        pathLength: shouldReduceMotion ? 1 : pathLength,
+                      }}
+                    />
+                  </svg>
+                </div>
 
-              {/* 5 Steps staggered down a diagonal (margin-top i * 26px) */}
-              <div className="space-y-6">
+                {/* 5 Steps equally spaced */}
                 {howItWorksSteps.map((step, i) => {
                   const isActive = activeStep >= i;
                   return (
                     <div
                       key={step.num}
-                      style={{ marginTop: i > 0 ? `${i * 12}px` : 0 }}
-                      className={`relative z-10 flex items-start gap-6 p-4 rounded-2xl transition-all duration-300 ${
+                      className={`relative flex items-start gap-6 p-4 rounded-2xl transition-all duration-300 ${
                         isActive
                           ? "bg-white/[0.07] border border-white/20 shadow-lg"
                           : "bg-transparent opacity-65"
@@ -171,7 +220,14 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
                     >
                       {/* 48px green numbered bubble with 8px soft ring */}
                       <div
-                        className="ngo-step-bubble transition-transform duration-300"
+                        ref={
+                          i === 0
+                            ? circle1Ref
+                            : i === howItWorksSteps.length - 1
+                            ? circle5Ref
+                            : undefined
+                        }
+                        className="ngo-step-bubble relative z-10 transition-transform duration-300"
                         style={{
                           transform: isActive ? "scale(1.05)" : "scale(1)",
                         }}
@@ -385,60 +441,7 @@ export function PreApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
-      {/* 10. FAQ */}
-      <section className="ngo-section ngo-band-cream pt-0">
-        <div className="ngo-container max-w-[860px]">
-          <NgoSectionHeader
-            eyebrow="Frequently asked questions"
-            h2="Everything you need to know."
-            align="center"
-          />
-
-          <div className="space-y-4">
-            <details className="ngo-faq-details group">
-              <summary className="ngo-faq-summary">
-                <span>How long does the verification process take?</span>
-                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
-              </summary>
-              <div className="ngo-faq-content">
-                Our verification team reviews applications within 24 to 48 hours of submission. If any document requires clarification, we notify you promptly with actionable guidance.
-              </div>
-            </details>
-
-            <details className="ngo-faq-details group">
-              <summary className="ngo-faq-summary">
-                <span>Is CauseKind completely free for registered NGOs?</span>
-                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
-              </summary>
-              <div className="ngo-faq-content">
-                Yes. Registering your organisation, posting drives, and receiving item donations through CauseKind is 100% free with no hidden charges or commission.
-              </div>
-            </details>
-
-            <details className="ngo-faq-details group">
-              <summary className="ngo-faq-summary">
-                <span>Which NGO legal forms are eligible to apply?</span>
-                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
-              </summary>
-              <div className="ngo-faq-content">
-                We accept public charitable trusts, registered societies, Section 8 non-profit corporations, and recognised legal non-profit entities in India.
-              </div>
-            </details>
-
-            <details className="ngo-faq-details group">
-              <summary className="ngo-faq-summary">
-                <span>How do item handovers and deliveries work?</span>
-                <ChevronDown className="w-5 h-5 text-stone-500 group-open:rotate-180 transition-transform" />
-              </summary>
-              <div className="ngo-faq-content">
-                Donors drop off pledged items directly at your verified address or dispatch them via courier. Each delivery is verified using digital code confirmations and handover photo proofs.
-              </div>
-            </details>
-          </div>
-        </div>
-      </section>
-
-      {/* 11. FINAL CTA */}
+      {/* 10. FINAL CTA */}
       <NgoFinalCtaBand
         headline={
           <>
