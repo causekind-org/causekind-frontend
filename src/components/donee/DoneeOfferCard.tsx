@@ -294,8 +294,6 @@ function StatusRow({ statusLabel, statusClassName, compat, purchase, direct }: {
 /** Display text for the English stage labels and next-step sentences above. */
 function useDoneeStageText(): (text: string) => string {
   const ui = useUiText();
-  const dt = useTranslations("dashFlow");
-  const st = useDoneeStageText();
   const map = new Map<string, string>([
     ["You review", ui("You review")],
     ["Team approves", ui("Team approves")],
