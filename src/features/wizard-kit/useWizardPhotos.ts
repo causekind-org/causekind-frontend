@@ -1,7 +1,7 @@
-import { useTranslations } from "next-intl";
-import { useUiText } from "@/components/UiText";
 "use client";
 
+import { useTranslations } from "next-intl";
+import { useUiText } from "@/components/UiText";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MediaModerationStatus, WizardPhoto } from "./types";
 
