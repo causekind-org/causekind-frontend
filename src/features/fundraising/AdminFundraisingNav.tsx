@@ -32,7 +32,8 @@ function useCounts(enabled: boolean, refreshKey: string | null) {
     const n = (p: Promise<unknown[]>) => p.then((x) => x.length).catch(() => 0);
     Promise.all([
       n(fundraising.admin.queue()),
-      n(fundraisingCampaigns.admin.queue()),
+      // Publication review needs the team for both: pages waiting for review, and approved pages waiting on payment setup.
+      Promise.all([n(fundraisingCampaigns.admin.queue()), n(fundraisingCampaigns.admin.queue("APPROVED_SETUP_INCOMPLETE"))]).then(([w, s]) => w + s),
       n(fundraisingManage.admin.queue()),
       fundraisingReports.admin.cases(true).then((r) => r.filter((x) => x.openReports > 0).length).catch(() => 0),
     ]).then(([apps, pub, items, reports]) => setC({ apps, pub, items, reports }));

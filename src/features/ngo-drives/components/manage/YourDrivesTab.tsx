@@ -13,6 +13,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { humanize } from "./NgoOfferReviewCard";
 import type { DriveOffer } from "./useNgoOffers";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
 type DriveRow = "draft" | Exclude<DriveChip, "all">;
 const CHIPS: [DriveRow | "all", string][] = [["all", "All"], ["draft", "Draft"], ["review", "In review"], ["live", "Live"], ["completed", "Drive completed"]];
 const ROWS: [DriveRow, string][] = [["draft", "Draft"], ["review", "In review"], ["live", "Live"], ["completed", "Drive completed"]];
@@ -40,6 +43,9 @@ export function Chip({ active, onClick, children, testId }: { active: boolean; o
 export function YourDrivesTab({ drives, offers, loading, error, onRetry, startDrive }: {
   drives: NgoDrive[]; offers: DriveOffer[]; loading: boolean; error: boolean; onRetry: () => void; startDrive: ReactNode;
 }) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const dc = useDriveCopy();
   const { user } = useAuth();
   const [chip, setChip] = useState<DriveRow | "all">("all");
   const [draft, setDraft] = useState<DriveDraft | null>(null);
@@ -53,14 +59,14 @@ export function YourDrivesTab({ drives, offers, loading, error, onRetry, startDr
   if (loading) return <div className="py-12 text-center"><Loader2 className="mx-auto h-6 w-6 animate-spin text-stone-300" /></div>;
   if (error) return (
     <div className="py-12 text-center text-sm text-stone-500">
-      <p>We couldn&apos;t load your drives.</p>
-      <button onClick={onRetry} className="mt-1 font-bold text-ngo-700 hover:underline">Try again</button>
+      <p><UiText>We couldn&apos;t load your drives.</UiText></p>
+      <button onClick={onRetry} className="mt-1 font-bold text-ngo-700 hover:underline"><UiText>Try again</UiText></button>
     </div>
   );
   if (drives.length === 0 && !draft) return (
     <div className="space-y-3 py-8 text-center sm:py-14">
-      <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No drives yet</p>
-      <p className="mx-auto max-w-[240px] text-xs text-stone-400">Start a drive and tell givers exactly what you need.</p>
+      <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>No drives yet</UiText></p>
+      <p className="mx-auto max-w-[240px] text-xs text-stone-400"><UiText>Start a drive and tell givers exactly what you need.</UiText></p>
       {startDrive}
     </div>
   );
@@ -77,24 +83,24 @@ export function YourDrivesTab({ drives, offers, loading, error, onRetry, startDr
                   <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
                     <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">{drive.category}</span>
                     <Badge variant="secondary" data-testid="drive-status-label" className={drive.status === "REJECTED" ? "bg-red-100 text-red-700" : "bg-ngo-100 text-ngo-800 dark:bg-ngo-900/40 dark:text-ngo-100"}>
-                      {STATUS_LABEL[drive.status] ?? humanize(drive.status)}
+                      {STATUS_LABEL[drive.status] ? dc(STATUS_LABEL[drive.status]) : humanize(drive.status)}
                     </Badge>
                   </div>
                   <h3 className="mb-1 text-lg font-bold text-stone-900 dark:text-stone-100">{drive.title}</h3>
-                  <p className="mb-3 text-sm font-medium text-stone-600 dark:text-stone-400">{drive.quantityNeeded} {unit} of {drive.itemName}</p>
+                  <p className="mb-3 text-sm font-medium text-stone-600 dark:text-stone-400">{df("qtyUnitOfItem", { qty: drive.quantityNeeded, unit, item: drive.itemName ?? "" })}</p>
                   <div className="mb-4 flex flex-wrap gap-4 text-xs text-stone-500 dark:text-stone-400">
-                    <span className="flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" /> For {drive.beneficiaryCount} {drive.beneficiaryGroup}</span>
-                    {drive.neededBy && <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Needed by {formatIST(drive.neededBy)}</span>}
+                    <span className="flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" /> {df("forGroup", { count: drive.beneficiaryCount ?? 0, group: drive.beneficiaryGroup ?? "" })}</span>
+                    {drive.neededBy && <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {df("neededBy", { date: formatIST(drive.neededBy) })}</span>}
                   </div>
                   {(drive.status === "CHANGES_REQUESTED" || drive.status === "REJECTED") && drive.adminReason && (
-                    <p className="mb-3 text-sm text-stone-600 dark:text-stone-400"><strong>Reason:</strong> {drive.adminReason}</p>
+                    <p className="mb-3 text-sm text-stone-600 dark:text-stone-400"><strong><UiText>Reason:</UiText></strong> {drive.adminReason}</p>
                   )}
                   <div className="max-w-md">
                     <DriveQuantityBar compact needed={drive.quantityNeeded} received={drive.quantityReceived || 0} pledged={drive.quantityPledged || 0} unit={unit} />
                   </div>
                   {pending > 0 && (
                     <p data-testid="drive-card-pending" className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900 dark:bg-amber-900/30 dark:text-amber-200">
-                      {pending} {pending === 1 ? "offer" : "offers"} to review
+                      {df("offersToReview", { count: pending })}
                     </p>
                   )}
                 </Link>
@@ -104,32 +110,32 @@ export function YourDrivesTab({ drives, offers, loading, error, onRetry, startDr
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Filter drives">
+      <div className="flex gap-2 overflow-x-auto pb-1" role="group" aria-label={ui("Filter drives")}>
         {CHIPS.map(([key, label]) => (
           <Chip key={key} active={chip === key} onClick={() => setChip(key)} testId={`drive-chip-${key}`}>
-            {label} <span className="tabular-nums opacity-70">{count(key)}</span>
+            {dc(label)} <span className="tabular-nums opacity-70">{count(key)}</span>
           </Chip>
         ))}
       </div>
       {rows.map(([row, label]) => (
         <section key={row} data-testid={`drive-row-${row}`} aria-labelledby={`drive-row-${row}-h`} className="space-y-3">
           <h3 id={`drive-row-${row}-h`} className="flex items-center gap-2 border-b-2 border-ngo-700/50 pb-2 text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:border-ngo-400/40 dark:text-ngo-400">
-            {label} <span className="rounded-full bg-ngo-100 px-1.5 py-px tabular-nums text-ngo-800 dark:bg-ngo-900/40 dark:text-ngo-100">{count(row)}</span>
+            {dc(label)} <span className="rounded-full bg-ngo-100 px-1.5 py-px tabular-nums text-ngo-800 dark:bg-ngo-900/40 dark:text-ngo-100">{count(row)}</span>
           </h3>
-          {count(row) === 0 ? <p className="text-sm text-stone-500">Nothing here.</p> : (
+          {count(row) === 0 ? <p className="text-sm text-stone-500"><UiText>Nothing here.</UiText></p> : (
             <ul className="space-y-4">
               {row === "draft" && draft ? (
                 <li data-testid="ngo-draft-card" className="rounded-xl border border-dashed border-stone-300 bg-white p-4 shadow-sm dark:border-zinc-700 dark:bg-zinc-900 sm:p-5">
                   <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">{draft.category || "Not submitted"}</span>
-                    <Badge variant="secondary" data-testid="drive-status-label" className="bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-stone-200">Draft</Badge>
+                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">{draft.category || ui("Not submitted")}</span>
+                    <Badge variant="secondary" data-testid="drive-status-label" className="bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-stone-200"><UiText>Draft</UiText></Badge>
                   </div>
-                  <h3 className="mb-3 text-lg font-bold text-stone-900 dark:text-stone-100">{draft.title || "Untitled drive"}</h3>
+                  <h3 className="mb-3 text-lg font-bold text-stone-900 dark:text-stone-100">{draft.title || ui("Untitled drive")}</h3>
                   <div className="flex flex-wrap gap-2">
-                    <Link href="/ngo/drives/new" className="inline-flex min-h-9 items-center rounded-lg bg-ngo-700 px-4 text-sm font-bold text-white hover:bg-ngo-800">Continue editing</Link>
+                    <Link href="/ngo/drives/new" className="inline-flex min-h-9 items-center rounded-lg bg-ngo-700 px-4 text-sm font-bold text-white hover:bg-ngo-800"><UiText>Continue editing</UiText></Link>
                     <button type="button" onClick={() => { try { localStorage.removeItem(draftKey); } catch { /* private mode */ } setDraft(null); }}
                       className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-stone-200 px-3 text-sm font-semibold text-red-700 hover:bg-red-50 dark:border-zinc-700 dark:text-red-300">
-                      <Trash2 className="h-4 w-4" aria-hidden /> Delete draft
+                      <Trash2 className="h-4 w-4" aria-hidden /> <UiText>Delete draft</UiText>
                     </button>
                   </div>
                 </li>

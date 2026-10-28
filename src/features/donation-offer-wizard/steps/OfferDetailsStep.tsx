@@ -3,6 +3,8 @@
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
 import type { OfferModel } from "../offerModel";
 
+import { useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * What is being donated, and how much of it.
  *
@@ -32,17 +34,19 @@ export function OfferDetailsStep({
    */
   purchase?: boolean;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const ui = useUiText();
   const partlyMet = requestedQuantity != null && stillNeededQuantity != null
     && stillNeededQuantity < requestedQuantity;
   return (
     <div className="space-y-3">
       <WizardField
-        label="How many are you donating?"
+        label={ui("How many are you donating?")}
         required
         error={errors.quantity}
         hint={partlyMet
-          ? `${stillNeededQuantity} still needed (of the ${requestedQuantity} requested). You can offer up to ${stillNeededQuantity}.`
-          : requestedQuantity ? `The request asks for ${requestedQuantity}.` : undefined}
+          ? wt("partlyMetHint", { still: stillNeededQuantity ?? 0, requested: requestedQuantity ?? 0 })
+          : requestedQuantity ? wt("requestAsks", { requested: requestedQuantity }) : undefined}
       >
         {({ id, describedBy, invalid }) => (
           <input
@@ -62,14 +66,14 @@ export function OfferDetailsStep({
           then stored against the offer. Dropped for that flow, exactly as
           `condition` already is. */}
       {!purchase && (
-      <WizardField label="How old is the item?" required hint="Roughly how long you've had it or used it." error={errors.approximateAge}>
+      <WizardField label={ui("How old is the item?")} required hint={ui("Roughly how long you've had it or used it.")} error={errors.approximateAge}>
         {({ id, describedBy, invalid }) => (
           <input
             id={id} name="approximateAge" type="text" value={model.approximateAge}
             onChange={e => onChange("approximateAge", e.target.value)}
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
-            placeholder="e.g. 2 years"
+            placeholder={ui("e.g. 2 years")}
           />
         )}
       </WizardField>
@@ -78,10 +82,10 @@ export function OfferDetailsStep({
       {/* Same field, but the question is different depending on whether the
           donor is looking at the item or planning to buy it. */}
       <WizardField
-        label={purchase ? "What will it come with?" : "Accessories included"}
+        label={purchase ? ui("What will it come with?") : ui("Accessories included")}
         hint={purchase
-          ? "Optional — cables, parts or extras you intend to buy alongside it."
-          : "Optional — cables, remote, parts, original box."}
+          ? ui("Optional — cables, parts or extras you intend to buy alongside it.")
+          : ui("Optional — cables, remote, parts, original box.")}
         error={errors.accessoriesIncluded}
       >
         {({ id, describedBy, invalid }) => (
@@ -91,7 +95,7 @@ export function OfferDetailsStep({
             onChange={e => onChange("accessoriesIncluded", e.target.value)}
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
-            placeholder="Charger, carry case…"
+            placeholder={ui("Charger, carry case…")}
           />
         )}
       </WizardField>
@@ -100,8 +104,8 @@ export function OfferDetailsStep({
           requested item. ALREADY_OWN never sees this. */}
       {showSpecNotes && (
         <WizardField
-          label="How does yours differ?"
-          hint="Tell the recipient what is different from what they asked for."
+          label={ui("How does yours differ?")}
+          hint={ui("Tell the recipient what is different from what they asked for.")}
           error={errors.specNotes}
         >
           {({ id, describedBy, invalid }) => (

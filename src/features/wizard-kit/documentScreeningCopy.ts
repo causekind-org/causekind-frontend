@@ -1,3 +1,4 @@
+import { useUiText } from "@/components/UiText";
 /**
  * What a donee is told about an uploaded ID or residence document.
  *
@@ -52,6 +53,20 @@ const COPY: Record<DocumentCode, string> = {
  * client is always older than the server it talks to, so this path is reached in
  * normal operation rather than only in a bug.
  */
+/** Translated version of documentScreeningCopy for screens. */
+export function useDocumentScreeningCopy(): (code: string | null | undefined) => string {
+  const ui = useUiText();
+  const copy: Record<DocumentCode, string> = {
+    DOC_LOOKS_VALID: ui("This looks like the right document."),
+    DOC_WRONG_TYPE: ui("This looks like a different document than the one asked for. Please check you picked the right file."),
+    DOC_NOT_RECOGNISED: ui("We couldn't recognise this as the document asked for. Please re-upload a clear photo of the whole document."),
+    DOC_UNCLEAR: ui("We couldn't tell either way from this photo. An admin will review it."),
+    DOC_SCREENING_UNAVAILABLE: ui("We couldn't check this automatically right now. An admin will review it."),
+  };
+  const fallback = ui("An admin will review this document.");
+  return (code) => (code ? copy[code as DocumentCode] ?? fallback : fallback);
+}
+
 export function documentScreeningCopy(code: string | null | undefined): string {
   if (!code) return "An admin will review this document.";
   return COPY[code as DocumentCode] ?? "An admin will review this document.";

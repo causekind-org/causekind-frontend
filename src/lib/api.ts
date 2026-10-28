@@ -682,6 +682,8 @@ export type Donation = {
   status: string;
   createdAt: string;
   donorName?: string;
+  /** True when a super admin deleted the fundraiser; the donation and receipt remain. */
+  campaignRemoved?: boolean;
 };
 
 export function initiateDonation(campaignId: number, amount: number) {
@@ -2163,6 +2165,11 @@ export type CancellationOption = {
   late: boolean;
   warning: string | null;
   blockedReason: string | null;
+  /** Stable codes beside the English above (backend CancellationCopy); absent from older backends.
+   *  Render through useCancellationCopy(), never by matching the English. */
+  labelCode?: string | null;
+  warningCode?: string | null;
+  blockedReasonCode?: string | null;
 };
 
 export function getOfferCancellationOptions(offerId: number) {
@@ -6391,14 +6398,23 @@ export type FundraisingApplication = {
   decisionScope: FundraisingScope | null; decisionConditions: string | null; decisionReason: string | null;
   resubmissionAllowed: boolean | null; decidedAt: string | null; submittedAt: string | null;
   createdAt: string; updatedAt: string; missing: string[];
+  /** Bank details for the payout; the account number comes back masked (last four only). */
+  payout: FundraisingPayout;
 };
+export type FundraisingPayout = { holderName: string | null; accountLast4: string | null; ifsc: string | null; bankBranch: string | null; upi: string | null };
 export type FundraisingSave = Partial<Omit<FundraisingApplication,
   "id" | "reference" | "version" | "status" | "totalCosts" | "outstandingGap" | "evidence" | "infoRequests" |
   "decisionScope" | "decisionConditions" | "decisionReason" | "resubmissionAllowed" | "decidedAt" | "submittedAt" |
-  "createdAt" | "updatedAt" | "missing">>;
+  "createdAt" | "updatedAt" | "missing" | "payout">> & {
+  payoutHolderName?: string; payoutAccountNumber?: string; payoutIfsc?: string; payoutBankBranch?: string; payoutUpi?: string;
+  /** Amount fields to empty (a null amount alone means "unchanged" on the server). */
+  clear?: string[];
+};
 export type FundraisingAdminApplication = {
   application: FundraisingApplication; applicantId: number; applicantName: string; applicantEmail: string;
   internalNote: string | null; decidedBy: string | null;
+  /** The fundraiser page written inside this application (single form, 2026-10-27); approving approves it too. */
+  pageCampaignId: number | null;
 };
 export type FundraisingQueueRow = {
   id: number; reference: string; applicantName: string; forSelf: boolean; category: FundraisingCategory | null;
@@ -6441,6 +6457,8 @@ export const fundraising = {
   admin: {
     queue: (status?: FundraisingStatus) => request<FundraisingQueueRow[]>(status ? `${FR_ADMIN}?status=${status}` : FR_ADMIN),
     get: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}`),
+    /** Full account number; every call is audited on the server. */
+    revealPayoutAccount: (id: number) => request<{ accountNumber: string }>(`${FR_ADMIN}/${id}/payout-account`),
     startReview: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/start-review`, { method: "POST" }),
     requestInformation: (id: number, body: { expectedVersion: number; questions: { section: string; question: string }[]; internalNote?: string }) =>
       request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/request-information`, { method: "POST", body: JSON.stringify(body) }),
@@ -6482,6 +6500,8 @@ export type FundraisingCampaignSave = {
 };
 export type FundraisingAdminCampaign = {
   campaign: FundraisingCampaign; applicantName: string; applicantEmail: string; internalNote: string | null; decidedBy: string | null;
+  /** The donee's bank details from the application (masked), or null when none were given. */
+  payout: FundraisingPayout | null; applicationId: number | null;
 };
 export type FundraisingCampaignQueueRow = {
   id: number; title: string | null; organiserName: string; category: FundraisingCategory | null;
@@ -6766,4 +6786,96 @@ export const fundraisingOutcomes = {
     closeNow: (campaignId: number, reason: string) =>
       request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${campaignId}/close-now`, { method: "POST", body: JSON.stringify({ reason }) }),
   },
+};
+
+// ── Super-admin Fundraisers control centre (2026-10-26) ─────────────────────
+// Backend: SuperAdminFundraisingController. Review decisions stay on the admin
+// clients above (fundraising.admin, fundraisingCampaigns.admin, fundraisingReports.admin,
+// fundraisingManage.admin). Every write here needs a reason and is audit-logged.
+
+export type SaFrActivity = {
+  id: number; actorEmail: string | null; action: string; entityType: string | null; entityId: number | null;
+  detail: string | null; reason: string | null; at: string;
+};
+export type SaFrOverview = {
+  totalRaised: number; platformFees: number; feePercent: number; successfulDonations: number; uniqueDonors: number;
+  liveCampaigns: number; endingThisWeek: number; campaignsByStatus: Partial<Record<CampaignFlowStatus, number>>;
+  applicationsToReview: number; campaignsAwaitingPublication: number; pausedCampaigns: number; openReportCases: number;
+  recentActivity: SaFrActivity[];
+};
+export type SaFrCampaignRow = {
+  id: number; title: string | null; doneeName: string | null; category: string | null; city: string | null; status: CampaignFlowStatus;
+  raised: number | null; target: number | null; donors: number; endDate: string | null; hidden: boolean; featured: boolean;
+  acceptingDonations: boolean; payoutReady: boolean; applicationId: number | null; createdAt: string | null; deleted: boolean;
+};
+export type SaFrCostLine = { expense: string; amount: number | null };
+export type SaFrCampaignDetail = {
+  admin: FundraisingAdminCampaign; version: number; applicationId: number | null; doneeName: string | null; doneeEmail: string | null;
+  hidden: boolean; featured: boolean; acceptingDonations: boolean; payoutReady: boolean;
+  money: { gross: number; fees: number; net: number; donations: number; donors: number };
+  costItems: SaFrCostLine[]; activity: SaFrActivity[]; deletedAt: string | null; deletedBy: string | null;
+};
+export type SaFrCampaignEdit = {
+  expectedVersion: number; title?: string; description?: string; category?: string; city?: string; state?: string;
+  targetAmount?: number; endDate?: string; costItems?: SaFrCostLine[]; reason: string; details?: string; notifyDonee?: boolean;
+};
+export type SaFrFlags = {
+  expectedVersion: number; hidden?: boolean; featured?: boolean; acceptingDonations?: boolean;
+  reason: string; details?: string; notifyDonee?: boolean;
+};
+export type SaFrApplicationRow = {
+  id: number; applicantName: string | null; applicantEmail: string | null; category: FundraisingCategory | null;
+  requestedAmount: number | null; status: FundraisingStatus; submittedAt: string | null; createdAt: string | null; campaignId: number | null;
+  deleted: boolean;
+};
+export type SaFrDonationRow = {
+  id: number; createdAt: string | null; donorName: string | null; donorEmail: string | null; donorMode: string | null; anonymous: boolean;
+  campaignId: number; campaignTitle: string | null; amount: number | null; fee: number | null; net: number | null;
+  status: "INITIATED" | "COMPLETED" | "FAILED"; razorpayOrderId: string | null; razorpayPaymentId: string | null; receiptNumber: string | null;
+};
+export type SaFrDonationPage = {
+  rows: SaFrDonationRow[]; total: number;
+  totals: { successfulAmount: number; successfulCount: number; pendingAmount: number; pendingCount: number; failedCount: number; fees: number };
+};
+export type SaFrDonationFilter = {
+  q?: string; status?: string; campaignId?: number; donorMode?: string; from?: string; to?: string; page?: number; size?: number;
+};
+export type SaFrSetting = { key: string; value: string; updatedBy: string | null; updatedAt: string | null };
+
+const SA_FR = "/api/v1/super-admin/fundraising";
+const qs = (o: Record<string, string | number | undefined | null>) => {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== null && v !== "") p.set(k, String(v));
+  const s = p.toString();
+  return s ? `?${s}` : "";
+};
+
+export const superAdminFundraising = {
+  overview: () => request<SaFrOverview>(`${SA_FR}/overview`),
+  campaigns: (f: { q?: string; status?: string; category?: string; flag?: string; sort?: string } = {}) =>
+    request<SaFrCampaignRow[]>(`${SA_FR}/campaigns${qs(f)}`),
+  campaign: (id: number) => request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}`),
+  edit: (id: number, body: SaFrCampaignEdit) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  flags: (id: number, body: SaFrFlags) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/flags`, { method: "POST", body: JSON.stringify(body) }),
+  message: (id: number, message: string) =>
+    request<void>(`${SA_FR}/campaigns/${id}/message`, { method: "POST", body: JSON.stringify({ message }) }),
+  applications: (f: { q?: string; status?: string; deleted?: boolean } = {}) =>
+    request<SaFrApplicationRow[]>(`${SA_FR}/applications${qs({ ...f, deleted: f.deleted ? "true" : undefined })}`),
+  deleteCampaign: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreCampaign: (id: number, body: { reason: string; details?: string }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
+  deleteApplication: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreApplication: (id: number, body: { reason: string; details?: string }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
+  overrideApplication: (id: number, body: { status: FundraisingStatus; reason: string; details?: string; notifyApplicant?: boolean }) =>
+    request<void>(`${SA_FR}/applications/${id}/status`, { method: "POST", body: JSON.stringify(body) }),
+  donations: (f: SaFrDonationFilter = {}) => request<SaFrDonationPage>(`${SA_FR}/donations${qs(f)}`),
+  donationsCsvUrl: (f: SaFrDonationFilter = {}) => `${BASE_URL}${SA_FR}/donations.csv${qs({ ...f, page: undefined, size: undefined })}`,
+  settings: () => request<SaFrSetting[]>(`${SA_FR}/settings`),
+  saveSettings: (values: Record<string, string>, reason: string) =>
+    request<SaFrSetting[]>(`${SA_FR}/settings`, { method: "PUT", body: JSON.stringify({ values, reason }) }),
 };

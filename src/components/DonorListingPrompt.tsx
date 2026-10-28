@@ -1,5 +1,7 @@
 "use client";
 
+import { UiText, useUiText } from "@/components/UiText";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/AppLink";
 import { X, PackagePlus } from "lucide-react";
@@ -17,6 +19,7 @@ const RETRY_DELAY_MS  = 6_000; // lane busy — the other prompt is on screen
 const EXIT_MS         = 380;
 
 export function DonorListingPrompt() {
+  const ui = useUiText();
   const { user, isLoading } = useAuth();
   const isDesktop = useIsDesktop();
   const pathname = usePathname();
@@ -132,8 +135,8 @@ export function DonorListingPrompt() {
               past the screen. Truncating lets it absorb whatever space the
               fixed-size icon and CTA leave. */}
           <div className="flex flex-col gap-0 min-w-0 flex-1">
-            <span className="text-sm font-bold text-stone-900 truncate leading-tight">Got spare items?</span>
-            <span className="text-3xs sm:text-2xs text-stone-500 truncate leading-tight">Books, clothes, electronics — someone needs them</span>
+            <span className="text-sm font-bold text-stone-900 truncate leading-tight"><UiText>Got spare items?</UiText></span>
+            <span className="text-3xs sm:text-2xs text-stone-500 truncate leading-tight"><UiText>Books, clothes, electronics — someone needs them</UiText></span>
           </div>
 
           {/* Divider */}
@@ -149,13 +152,13 @@ export function DonorListingPrompt() {
             }}
             className="flex items-center gap-1.5 bg-[#b04a15] hover:bg-[#963c0d] active:scale-95 text-white text-2xs sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0"
           >
-            List an Item →
+            <UiText>List an Item →</UiText>
           </Link>
 
           {/* Dismiss */}
           <button
             onClick={dismiss}
-            aria-label="Dismiss"
+            aria-label={ui("Dismiss")}
             className="w-6 h-6 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-all shrink-0"
           >
             <X className="w-3 h-3" />

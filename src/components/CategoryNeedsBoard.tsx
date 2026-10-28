@@ -24,12 +24,19 @@ import { getItemRequests, getPublicItemRequests, type ItemRequest, type PublicIt
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon from "./AnimatedCategoryIcon";
+import { useTranslations } from "next-intl";
+import { UiText, useUiText } from "@/components/UiText";
+import { useCategoryLabel } from "@/lib/categoryLabel";
 
 /**
  * Live needs for one category, GPS-scoped, presented with interactive 3D cards
  * and a smooth horizontal sliding carousel track.
  */
 export default function CategoryNeedsBoard({ categoryName }: { categoryName: string }) {
+  // categoryName is the category ID (filters, icons, links); only `category` below is display text.
+  const ui = useUiText();
+  const t = useTranslations("categoryBoard");
+  const category = useCategoryLabel()(categoryName);
   const { user, isLoading: authLoading } = useAuth();
   const [requests, setRequests] = useState<ItemRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -90,16 +97,16 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
       <div className="flex items-center justify-between gap-3 mb-1">
         <h2 className="flex items-center text-lg sm:text-xl font-bold text-stone-800 dark:text-stone-100">
           <span className="ck-cat-live-dot" aria-hidden="true" />
-          Open {categoryName} needs{scopedToDistance ? " near you" : ""}
+          {scopedToDistance ? t("openNeedsNear", { category }) : t("openNeeds", { category })}
         </h2>
       </div>
       {isDonor && <div className="flex flex-wrap items-center gap-2 py-2">
         <button type="button" onClick={requestGps} disabled={gpsLoading}
           className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-stone-300 px-3 text-xs font-semibold disabled:opacity-50 dark:border-stone-700">
           <LocateFixed className="h-4 w-4" />
-          {gpsLoading ? "Finding location…" : "Use GPS to sort nearby"}
+          {gpsLoading ? ui("Finding location…") : ui("Use GPS to sort nearby")}
         </button>
-        {gpsBlocked && <p role="status" className="text-xs text-stone-500">Location unavailable. All needs remain available.</p>}
+        {gpsBlocked && <p role="status" className="text-xs text-stone-500"><UiText>Location unavailable. All needs remain available.</UiText></p>}
       </div>}
       {renderBody()}
     </>
@@ -108,7 +115,7 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
   // ── States ───────────────────────────────────────────────────────────────
 
   function renderBody() {
-    if (authLoading) return <BoardShell><Spinner label="Checking your session…" /></BoardShell>;
+    if (authLoading) return <BoardShell><Spinner label={ui("Checking your session…")} /></BoardShell>;
 
     if (!user) return <GuestCategoryNeeds categoryName={categoryName} />;
 
@@ -117,26 +124,26 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
         <BoardShell>
           <Empty
             icon={<Inbox className="w-5 h-5" />}
-            title="You're signed in as a donee"
-            body={`If you need something in ${categoryName}, post it as a request and nearby donors will see it.`}
-            action={<PrimaryNewRequestLink>Post a need</PrimaryNewRequestLink>}
+            title={ui("You're signed in as a donee")}
+            body={t("doneeBody", { category })}
+            action={<PrimaryNewRequestLink><UiText>Post a need</UiText></PrimaryNewRequestLink>}
           />
         </BoardShell>
       );
     }
 
-    if (loading) return <BoardShell><Spinner label="Loading needs…" /></BoardShell>;
+    if (loading) return <BoardShell><Spinner label={ui("Loading needs…")} /></BoardShell>;
 
     if (failed) {
       return (
         <BoardShell>
           <Empty
             icon={<AlertTriangle className="w-5 h-5" />}
-            title="Couldn't load needs"
-            body="Something went wrong reaching the server. Your connection may have dropped."
+            title={ui("Couldn't load needs")}
+            body={ui("Something went wrong reaching the server. Your connection may have dropped.")}
             action={
               <PrimaryButton onClick={load}>
-                <RefreshCw className="w-3.5 h-3.5" /> Try again
+                <RefreshCw className="w-3.5 h-3.5" /> <UiText>Try again</UiText>
               </PrimaryButton>
             }
           />
@@ -149,9 +156,9 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
         <BoardShell>
           <Empty
             icon={<AnimatedCategoryIcon category={categoryName} />}
-            title={`No open ${categoryName} needs right now`}
-            body="This changes often. You can list an item anyway — it stays visible and gets matched as soon as someone nearby asks."
-            action={<PrimaryLink href="/items/new">List an item</PrimaryLink>}
+            title={t("noneNow", { category })}
+            body={ui("This changes often. You can list an item anyway — it stays visible and gets matched as soon as someone nearby asks.")}
+            action={<PrimaryLink href="/items/new"><UiText>List an item</UiText></PrimaryLink>}
           />
         </BoardShell>
       );
@@ -184,6 +191,9 @@ export default function CategoryNeedsBoard({ categoryName }: { categoryName: str
  * The same category board for a logged-out visitor.
  */
 function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
+  const ui = useUiText();
+  const t = useTranslations("categoryBoard");
+  const category = useCategoryLabel()(categoryName);
   const [requests, setRequests] = useState<PublicItemRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -205,16 +215,16 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return <BoardShell><Spinner label="Loading open needs…" /></BoardShell>;
+  if (loading) return <BoardShell><Spinner label={ui("Loading open needs…")} /></BoardShell>;
 
   if (failed) {
     return (
       <BoardShell>
         <Empty
           icon={<AlertTriangle className="w-5 h-5" />}
-          title="Couldn't load needs"
-          body="Something went wrong reaching the server."
-          action={<PrimaryButton onClick={load}><RefreshCw className="w-3.5 h-3.5" /> Try again</PrimaryButton>}
+          title={ui("Couldn't load needs")}
+          body={ui("Something went wrong reaching the server.")}
+          action={<PrimaryButton onClick={load}><RefreshCw className="w-3.5 h-3.5" /> <UiText>Try again</UiText></PrimaryButton>}
         />
       </BoardShell>
     );
@@ -225,9 +235,9 @@ function GuestCategoryNeeds({ categoryName }: { categoryName: string }) {
       <BoardShell>
         <Empty
           icon={<AnimatedCategoryIcon category={categoryName} />}
-          title={`No open ${categoryName} needs right now`}
-          body="This changes often — it's worth checking back."
-          action={<PrimaryLink href={loginUrlFor("/requests")}>Log in to offer an item</PrimaryLink>}
+          title={t("noneNow", { category })}
+          body={ui("This changes often — it's worth checking back.")}
+          action={<PrimaryLink href={loginUrlFor("/requests")}><UiText>Log in to offer an item</UiText></PrimaryLink>}
         />
       </BoardShell>
     );
@@ -305,6 +315,9 @@ function NeedsModal({
   isDonor: boolean;
   onClose: () => void;
 }) {
+  const ui = useUiText();
+  const t = useTranslations("categoryBoard");
+  const category = useCategoryLabel()(categoryName);
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"default" | "urgent" | "low_qty" | "high_qty">("default");
 
@@ -355,7 +368,7 @@ function NeedsModal({
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-5 sm:p-8 border-b border-stone-200/50 dark:border-stone-700/50 bg-white/30 dark:bg-stone-800/30">
           <h2 className="text-xl sm:text-2xl font-bold text-stone-800 dark:text-stone-100 flex items-center gap-3">
              <AnimatedCategoryIcon category={categoryName} iconClassName="w-6 h-6 text-[var(--ck-role-accent)]" />
-             Open {categoryName} Needs
+             {t("modalTitle", { category })}
           </h2>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
             <select
@@ -363,16 +376,16 @@ function NeedsModal({
               onChange={(e) => setSortBy(e.target.value as any)}
               className="py-2.5 px-4 w-full sm:w-auto rounded-full border border-stone-300/50 dark:border-stone-600/50 bg-white/70 dark:bg-stone-950/50 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--ck-role-accent)] transition-all dark:text-stone-200 cursor-pointer"
             >
-              <option value="default">Sort: Default</option>
-              <option value="urgent">Most Urgent</option>
-              <option value="low_qty">Low Quantity</option>
-              <option value="high_qty">High Quantity</option>
+              <option value="default">{ui("Sort: Default")}</option>
+              <option value="urgent">{ui("Most Urgent")}</option>
+              <option value="low_qty">{ui("Low Quantity")}</option>
+              <option value="high_qty">{ui("High Quantity")}</option>
             </select>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-500" aria-hidden="true" />
               <input
                 type="text"
-                placeholder="Search needs by title or city..."
+                placeholder={ui("Search needs by title or city...")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoFocus
@@ -382,7 +395,7 @@ function NeedsModal({
             <button 
               onClick={onClose} 
               className="hidden md:flex p-2.5 rounded-full hover:bg-stone-200/50 dark:hover:bg-stone-800/50 transition-colors text-stone-600 dark:text-stone-300 bg-white/40 dark:bg-stone-800/40 border border-white/30 dark:border-stone-700/50 shrink-0"
-              aria-label="Close modal"
+              aria-label={ui("Close modal")}
             >
               <X className="w-5 h-5" />
             </button>
@@ -394,7 +407,7 @@ function NeedsModal({
           {sorted.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-stone-500 dark:text-stone-400">
                <Search className="w-10 h-10 mb-4 opacity-30" />
-               <p className="text-lg">No matches found for "{searchQuery}"</p>
+               <p className="text-lg">{t("noMatches", { query: searchQuery })}</p>
             </div>
           ) : (
             <div className="ck-needs-grid">
@@ -413,7 +426,7 @@ function NeedsModal({
                     quantity={r.quantity}
                     urgent={r.urgent}
                     href={isDonor ? `/requests/${r.id}/offer` : loginUrlFor(`/requests/${r.id}/offer`)}
-                    ctaText={isDonor ? "Offer Item" : "Log in to Offer"}
+                    ctaText={isDonor ? ui("Offer Item") : ui("Log in to Offer")}
                   />
                 </motion.div>
               ))}
@@ -432,6 +445,7 @@ function NeedsSlider({
   items: NeedItem[];
   isDonor: boolean;
 }) {
+  const ui = useUiText();
   const sliderRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -470,7 +484,7 @@ function NeedsSlider({
             type="button"
             onClick={() => slide("left")}
             className="ck-needs-nav-btn ck-needs-nav-btn--prev"
-            aria-label="Previous needs"
+            aria-label={ui("Previous needs")}
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -482,7 +496,7 @@ function NeedsSlider({
             type="button"
             onClick={() => slide("right")}
             className="ck-needs-nav-btn ck-needs-nav-btn--next"
-            aria-label="Next needs"
+            aria-label={ui("Next needs")}
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -514,7 +528,7 @@ function NeedsSlider({
                 quantity={r.quantity}
                 urgent={r.urgent}
                 href={isDonor ? `/requests/${r.id}/offer` : loginUrlFor(`/requests/${r.id}/offer`)}
-                ctaText={isDonor ? "Offer Item" : "Log in to Offer"}
+                ctaText={isDonor ? ui("Offer Item") : ui("Log in to Offer")}
               />
             </motion.div>
           ))}
@@ -542,6 +556,9 @@ function NeedCardCompact({
   href: string;
   ctaText: string;
 }) {
+  const ui = useUiText();
+  const t = useTranslations("categoryBoard");
+  const categoryLabel = useCategoryLabel()(category);
   const visual = CATEGORY_VISUALS[category];
 
   return (
@@ -554,24 +571,24 @@ function NeedCardCompact({
               <AnimatedCategoryIcon category={category} iconClassName="w-3.5 h-3.5" />
             </span>
             <span className={`text-[10px] font-bold uppercase tracking-widest ${visual?.text || "text-stone-400"}`}>
-              {category}
+              {categoryLabel}
             </span>
           </div>
 
           <div className="flex items-center gap-1 flex-wrap justify-end">
             {quantity <= 3 && (
               <span className="text-[9px] uppercase tracking-wider font-bold bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300 px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-500/30">
-                Low Qty
+                <UiText>Low Qty</UiText>
               </span>
             )}
             {quantity >= 10 && (
               <span className="text-[9px] uppercase tracking-wider font-bold bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-300 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-500/30">
-                High Qty
+                <UiText>High Qty</UiText>
               </span>
             )}
             {urgent && (
               <span className="ck-cat-urgent-pulse ck-need-card__urgent">
-                Urgent
+                <UiText>Urgent</UiText>
               </span>
             )}
           </div>
@@ -589,7 +606,7 @@ function NeedCardCompact({
             {city}
           </span>
           <span className="ck-need-card__chip">
-            Qty: <strong className="font-semibold text-stone-700 dark:text-stone-200">{quantity}</strong>
+            {t.rich("qty", { count: quantity, strong: (chunks) => <strong className="font-semibold text-stone-700 dark:text-stone-200">{chunks}</strong> })}
           </span>
         </div>
 
@@ -604,7 +621,7 @@ function NeedCardCompact({
             target="_blank"
             rel="noopener noreferrer"
             className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-green-500/10 text-green-600 hover:bg-green-500 hover:text-white transition-colors"
-            title="Share via WhatsApp"
+            title={ui("Share via WhatsApp")}
             onClick={(e) => e.stopPropagation()}
           >
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -613,7 +630,7 @@ function NeedCardCompact({
           </a>
         </div>
       </div>
-      <Link href={href} className="absolute inset-0 z-0" aria-label={`Offer for ${title}`} />
+      <Link href={href} className="absolute inset-0 z-0" aria-label={t("offerFor", { title })} />
     </div>
   );
 }
@@ -624,12 +641,13 @@ function BoardShell({ children, count, near = false, onToggleExpand }: {
   children: React.ReactNode; count?: number; near?: boolean;
   onToggleExpand?: () => void;
 }) {
+  const t = useTranslations("categoryBoard");
   return (
     <section aria-live="polite" className="mt-2">
       {count !== undefined && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <p className="text-xs text-stone-500 dark:text-stone-400 font-medium">
-            {count} open {count === 1 ? "need" : "needs"}{near ? " near you" : ""}
+            {near ? t("countNear", { count }) : t("count", { count })}
           </p>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {onToggleExpand && count > 0 && (
@@ -638,7 +656,7 @@ function BoardShell({ children, count, near = false, onToggleExpand }: {
                 onClick={onToggleExpand}
                 className="ck-needs-view-toggle whitespace-nowrap"
               >
-                <LayoutGrid className="w-3.5 h-3.5" /> View all
+                <LayoutGrid className="w-3.5 h-3.5" /> <UiText>View all</UiText>
               </button>
             )}
           </div>

@@ -2,6 +2,7 @@
 
 import { Pencil } from "lucide-react";
 
+import { UiText } from "@/components/UiText";
 /**
  * One reviewable group with an Edit affordance that returns to its step.
  *
@@ -31,7 +32,7 @@ export function ReviewSection({
           aria-label={`Edit ${title}`}
           className="flex min-h-[32px] items-center gap-1 rounded-lg px-2 text-2xs font-bold text-[var(--ck-role-accent)] transition-colors hover:bg-[var(--ck-role-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         >
-          <Pencil className="h-3 w-3" aria-hidden /> Edit
+          <Pencil className="h-3 w-3" aria-hidden /> <UiText>Edit</UiText>
         </button>}
       </div>
       <dl className="mt-2 space-y-1.5">{children}</dl>

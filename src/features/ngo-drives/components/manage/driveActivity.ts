@@ -66,11 +66,11 @@ export function activityHref(filter: ActivityFilter, driveId?: number) {
 
 /** The drive page's read-only line, e.g. "1 offer to review - 2 handovers - proof pending". */
 export function driveSummaryParts(drive: NgoDrive, offers: NgoDriveOfferResponse[]) {
-  const parts: { filter: ActivityFilter; label: string; href: string }[] = [];
+  const parts: { filter: ActivityFilter; label: string; href: string; count: number }[] = [];
   const toReview = offers.filter(isOfferToReview).length;
   const handovers = offers.filter(isHandover).length;
-  if (toReview) parts.push({ filter: "offers", label: `${toReview} ${toReview === 1 ? "offer" : "offers"} to review`, href: activityHref("offers", drive.id) });
-  if (handovers) parts.push({ filter: "handovers", label: `${handovers} ${handovers === 1 ? "handover" : "handovers"}`, href: activityHref("handovers", drive.id) });
-  if (isProofDue(drive)) parts.push({ filter: "proof", label: "proof pending", href: activityHref("proof", drive.id) });
+  if (toReview) parts.push({ filter: "offers", label: `${toReview} ${toReview === 1 ? "offer" : "offers"} to review`, href: activityHref("offers", drive.id), count: toReview });
+  if (handovers) parts.push({ filter: "handovers", label: `${handovers} ${handovers === 1 ? "handover" : "handovers"}`, href: activityHref("handovers", drive.id), count: handovers });
+  if (isProofDue(drive)) parts.push({ filter: "proof", label: "proof pending", href: activityHref("proof", drive.id), count: 1 });
   return parts;
 }

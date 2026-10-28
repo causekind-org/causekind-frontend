@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { ALL_REQUEST_CATEGORIES as CATEGORIES } from "@/lib/categoryVisuals";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const CAT_ICON: Record<string, React.ElementType> = {
@@ -53,6 +55,21 @@ const CAT_SHADOW: Record<string, string> = {
   "Electronics": "hover:shadow-orange-600/30",
   "Sports":      "hover:shadow-cyan-600/30",
 };
+
+/** Translated status badge (labels shown; status values unchanged). */
+function useStatusBadge() {
+  const ui = useUiText();
+  return (status: string) => {
+    const base = getStatusBadge(status);
+    const label = ({
+      PENDING_VERIFICATION: ui("Under Review", "request status"), VERIFIED_PRIVATE_MATCHING: ui("Finding a donor", "request status"),
+      POTENTIAL_MATCH_FOUND: ui("Finding a donor", "request status"), AWAITING_MATCH_APPROVAL: ui("Approval Pending", "request status"),
+      PUBLIC_REQUEST: ui("Visible to donors", "request status"), FULFILMENT_IN_PROGRESS: ui("In Progress", "request status"),
+      FULFILLED: ui("Received ✓", "request status"), REJECTED: ui("Rejected", "request status"), EXPIRED: ui("Expired", "request status"),
+    } as Record<string, string>)[status] ?? base.label;
+    return { ...base, label };
+  };
+}
 
 function getStatusBadge(status: string) {
   const map: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
@@ -92,8 +109,7 @@ const HERO_TINT: Record<string, { bg: string; ic: string }> = {
 const INACTIVE_STATUSES = ["FULFILLED", "REJECTED", "EXPIRED"];
 
 // Status pill styling for the hero's primary card (dark-surface variant of getStatusBadge)
-function heroStatusPill(status: string): { label: string; cls: string; dot: string; pulse: boolean } {
-  const label = getStatusBadge(status).label;
+function heroStatusPill(status: string, label: string): { label: string; cls: string; dot: string; pulse: boolean } {
   if (status === "FULFILLED")
     return { label, cls: "bg-emerald-500/15 border-emerald-400/25 text-emerald-400", dot: "bg-emerald-400", pulse: false };
   if (status === "REJECTED" || status === "EXPIRED")
@@ -108,6 +124,9 @@ function byNewest(a: ItemRequest, b: ItemRequest) {
 }
 
 function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; publicRequests: ItemRequest[] }) {
+  const rt = useTranslations("requestsArea");
+  const ui = useUiText();
+  const statusBadge = useStatusBadge();
   const [mouse, setMouse] = useState({ x: 50, y: 45 });
   const [active, setActive] = useState(false);
 
@@ -124,7 +143,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
 
   const primaryTint = primary ? (HERO_TINT[primary.category] ?? { bg: "bg-white/10", ic: "text-white/70" }) : null;
   const PrimaryIcon = primary ? (CAT_ICON[primary.category] ?? Package) : Package;
-  const primaryPill = primary ? heroStatusPill(primary.status) : null;
+  const primaryPill = primary ? heroStatusPill(primary.status, statusBadge(primary.status).label) : null;
   const secondaryTint = secondary ? (HERO_TINT[secondary.category] ?? { bg: "bg-white/10", ic: "text-white/70" }) : null;
   const SecondaryIcon = secondary ? (CAT_ICON[secondary.category] ?? Package) : BookOpen;
 
@@ -174,27 +193,27 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-highlight)] opacity-70" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--ck-role-highlight)]" />
               </span>
-              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest">Donee Portal</span>
+              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest"><UiText>Donee Portal</UiText></span>
             </div>
 
             {/* Headline */}
             <h1
               className="text-white text-2xl sm:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.04] tracking-tight anim-up anim-d2"
             >
-              Tell us what<br />
+              <UiText>Tell us what</UiText><br />
               <span style={{
                 background: "linear-gradient(90deg, var(--ck-role-highlight) 0%, var(--ck-role-secondary) 48%, var(--ck-role-highlight) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
               }}>
-                you need.
+                <UiText>you need.</UiText>
               </span>
             </h1>
 
             {/* Subtitle */}
             <p className="text-white/58 text-sm sm:text-base leading-relaxed max-w-lg anim-up anim-d3">
-              Post a request for any physical item — books, clothes, wheelchair, medical equipment. We match you with a verified local donor within 10 km. No fees, no delays.
+              <UiText>Post a request for any physical item — books, clothes, wheelchair, medical equipment. We match you with a verified local donor within 10 km. No fees, no delays.</UiText>
             </p>
 
             {/* CTA row */}
@@ -202,12 +221,12 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
               <NewRequestLink href="/requests/new">
                 <button className="flex items-center gap-2.5 bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] active:scale-[0.97] text-stone-950 font-extrabold px-4 sm:px-7 py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-sm transition-all shadow-xl shadow-[var(--ck-role-highlight)]/20 btn-shine">
                   <Plus className="w-4 h-4" />
-                  Post a Need
+                  <UiText>Post a Need</UiText>
                 </button>
               </NewRequestLink>
               {myRequestCount > 0 && (
                 <a href="#my-requests" className="flex items-center gap-2 text-white/55 hover:text-white text-sm sm:text-sm font-bold transition-colors">
-                  My {myRequestCount} request{myRequestCount !== 1 ? "s" : ""}
+                  {rt("myRequests", { count: myRequestCount })}
                   <ChevronDown className="w-4 h-4" />
                 </a>
               )}
@@ -216,9 +235,9 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
             {/* Trust pills */}
             <div className="flex flex-wrap gap-2.5 sm:gap-3 anim-up anim-d5">
               {[
-                { icon: ShieldCheck, text: "Admin verified", c: "text-emerald-400" },
-                { icon: MapPin,      text: "10 km radius",   c: "text-[var(--ck-role-highlight)]"  },
-                { icon: Heart,       text: "Zero fees",       c: "text-rose-400"   },
+                { icon: ShieldCheck, text: ui("Admin verified"), c: "text-emerald-400" },
+                { icon: MapPin,      text: ui("10 km radius"),   c: "text-[var(--ck-role-highlight)]"  },
+                { icon: Heart,       text: ui("Zero fees"),       c: "text-rose-400"   },
               ].map(({ icon: Icon, text, c }) => (
                 <div key={text} className="flex items-center gap-1.5 bg-white/6 border border-white/10 rounded-full px-2.5 sm:px-3 py-1.5 text-2xs font-bold text-white/65">
                   <Icon className={`w-3.5 h-3.5 ${c}`} />
@@ -241,7 +260,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                     </div>
                     <div className="min-w-0">
                       <p className={`${primaryTint.ic} text-3xs font-black uppercase tracking-wider truncate`}>{primary.category}</p>
-                      <p className="text-white/35 text-3xs truncate">{primary.city} · {primary.quantity} needed</p>
+                      <p className="text-white/35 text-3xs truncate">{rt("cityQtyNeeded", { city: primary.city ?? "", quantity: primary.quantity })}</p>
                     </div>
                   </div>
                   <p className="text-white font-extrabold text-sm sm:text-sm leading-snug mb-3 line-clamp-2">
@@ -269,19 +288,19 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                       <Stethoscope className="w-4.5 h-4.5 text-sky-400" />
                     </div>
                     <div>
-                      <p className="text-sky-400 text-3xs font-black uppercase tracking-wider">Medical Aid</p>
-                      <p className="text-white/35 text-3xs">Example request</p>
+                      <p className="text-sky-400 text-3xs font-black uppercase tracking-wider"><UiText>Medical Aid</UiText></p>
+                      <p className="text-white/35 text-3xs"><UiText>Example request</UiText></p>
                     </div>
                   </div>
                   <p className="text-white font-extrabold text-sm sm:text-sm leading-snug mb-3">
-                    Wheelchair for elderly mother
+                    <UiText>Wheelchair for elderly mother</UiText>
                   </p>
                   <div className="inline-flex items-center gap-2 bg-emerald-500/15 border border-emerald-400/25 rounded-full px-2.5 sm:px-3 py-1.5">
                     <span className="relative flex h-2 w-2 shrink-0">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70" />
                       <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                     </span>
-                    <span className="text-emerald-400 text-3xs font-black">Matching in progress…</span>
+                    <span className="text-emerald-400 text-3xs font-black"><UiText>Matching in progress…</UiText></span>
                   </div>
                 </div>
                 <div className="absolute -bottom-2.5 -right-2.5 w-full h-full bg-white/4 border border-white/8 rounded-2xl sm:rounded-3xl -z-10 rotate-2" />
@@ -300,7 +319,7 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
                   </div>
                   <div className="min-w-0">
                     <p className="text-white/80 text-xs font-extrabold leading-tight truncate">{secondary.title}</p>
-                    <p className="text-white/30 text-3xs truncate">{secondary.city} · {getStatusBadge(secondary.status).label}</p>
+                    <p className="text-white/30 text-3xs truncate">{secondary.city} · {statusBadge(secondary.status).label}</p>
                   </div>
                 </div>
               </div>
@@ -316,35 +335,36 @@ function DoneeHero({ myRequests, publicRequests }: { myRequests: ItemRequest[]; 
 // ── How It Works ─────────────────────────────────────────────────────────────
 
 function HowItWorksSection() {
+  const ui = useUiText();
   const steps = [
     {
       icon: Plus,
-      title: "Post your need",
-      desc: "Choose a category, describe what you need, add a photo. Takes under 2 minutes.",
+      title: ui("Post your need"),
+      desc: ui("Choose a category, describe what you need, add a photo. Takes under 2 minutes."),
       bg: "bg-[#1e3a60]/10 dark:bg-[#1e3a60]/20",
       ic: "text-[#4a7fba] dark:text-blue-400",
       dot: "bg-[#1e3a60]",
     },
     {
       icon: ShieldCheck,
-      title: "Admin verifies",
-      desc: "Our team reviews every request within 24–48 hours before it goes live.",
+      title: ui("Admin verifies"),
+      desc: ui("Our team reviews every request within 24–48 hours before it goes live."),
       bg: "bg-amber-50 dark:bg-amber-950/20",
       ic: "text-amber-600 dark:text-amber-400",
       dot: "bg-amber-500",
     },
     {
       icon: Handshake,
-      title: "We find a match",
-      desc: "Our system matches you with a verified donor within 10 km who has what you need.",
+      title: ui("We find a match"),
+      desc: ui("Our system matches you with a verified donor within 10 km who has what you need."),
       bg: "bg-violet-50 dark:bg-violet-950/20",
       ic: "text-violet-600 dark:text-violet-400",
       dot: "bg-violet-500",
     },
     {
       icon: Heart,
-      title: "Direct handover",
-      desc: "Receive the item directly — safe, verified, no middlemen, no shipping fees.",
+      title: ui("Direct handover"),
+      desc: ui("Receive the item directly — safe, verified, no middlemen, no shipping fees."),
       bg: "bg-emerald-50 dark:bg-emerald-950/20",
       ic: "text-emerald-600 dark:text-emerald-400",
       dot: "bg-emerald-500",
@@ -356,9 +376,9 @@ function HowItWorksSection() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14">
         <Reveal>
           <div className="text-center mb-12">
-            <span className="text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Simple Process</span>
+            <span className="text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block"><UiText>Simple Process</UiText></span>
             <h2 className="text-lg sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
-              How receiving works
+              <UiText>How receiving works</UiText>
             </h2>
           </div>
         </Reveal>
@@ -392,16 +412,17 @@ function HowItWorksSection() {
 // ── Category Starter Grid ─────────────────────────────────────────────────────
 
 function CategoryStarterSection({ catCounts }: { catCounts: Record<string, number> }) {
+  const rt = useTranslations("requestsArea");
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-14">
       <Reveal>
         <div className="mb-5 sm:mb-10">
-          <span className="text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block">Quick Start</span>
+          <span className="text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-2 block"><UiText>Quick Start</UiText></span>
           <h2 className="text-lg sm:text-3xl font-extrabold tracking-tight text-stone-900 dark:text-white">
-            What do you need?
+            <UiText>What do you need?</UiText>
           </h2>
           <p className="text-sm sm:text-sm text-stone-500 dark:text-stone-400 mt-2 font-medium max-w-md">
-            Pick a category and we&apos;ll pre-fill your request form — takes under 2 minutes.
+            <UiText>Pick a category and we&apos;ll pre-fill your request form — takes under 2 minutes.</UiText>
           </p>
         </div>
       </Reveal>
@@ -434,7 +455,7 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
                   <div className="relative z-10 self-end">
                     {count > 0 && (
                       <span className="bg-white/15 backdrop-blur text-white text-4xs sm:text-3xs font-black px-1.5 py-0 sm:px-2.5 sm:py-1 rounded-full border border-white/20">
-                        {count} active
+                        {rt("activeCount", { count })}
                       </span>
                     )}
                   </div>
@@ -447,7 +468,7 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
                     <div>
                       <p className="text-white font-extrabold text-sm sm:text-sm leading-tight">{cat}</p>
                       <div className="flex items-center gap-1 mt-0.5 sm:mt-1 text-white/55 text-4xs sm:text-3xs font-bold group-hover:text-white/90 transition-colors">
-                        Request this <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
+                        <UiText>Request this</UiText> <ArrowRight className="w-2.5 h-2.5 sm:w-3 sm:h-3 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
                   </div>
@@ -464,6 +485,8 @@ function CategoryStarterSection({ catCounts }: { catCounts: Record<string, numbe
 // ── My Requests ───────────────────────────────────────────────────────────────
 
 function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
+  const rt = useTranslations("requestsArea");
+  const statusBadge = useStatusBadge();
   if (requests.length === 0) return null;
 
   return (
@@ -472,15 +495,15 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
         <Reveal>
           <div className="flex items-center justify-between mb-4 sm:mb-8">
             <div>
-              <span className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-0.5 sm:mb-1 block">Tracking</span>
+              <span className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-0.5 sm:mb-1 block"><UiText>Tracking</UiText></span>
               <h2 className="text-base sm:text-2xl font-extrabold text-stone-900 dark:text-white">
-                Your Requests
+                <UiText>Your Requests</UiText>
                 <span className="ml-2 sm:ml-3 text-sm sm:text-base font-semibold text-stone-400">({requests.length})</span>
               </h2>
             </div>
             <NewRequestLink href="/requests/new">
               <button className="flex items-center gap-1.5 sm:gap-2 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-bold px-2.5 py-2 sm:px-5 sm:py-2.5 rounded-lg sm:rounded-xl text-2xs sm:text-xs transition-all shadow-sm">
-                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> New Need
+                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> <UiText>New Need</UiText>
               </button>
             </NewRequestLink>
           </div>
@@ -488,7 +511,7 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
 
         <div className="space-y-2 sm:space-y-3">
           {requests.map((r, i) => {
-            const sb   = getStatusBadge(r.status);
+            const sb   = statusBadge(r.status);
             const Icon = CAT_ICON[r.category] ?? Package;
             const grad = CAT_GRADIENT[r.category] ?? CAT_GRADIENT["Medical aid"];
 
@@ -505,7 +528,7 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
                     <div className="flex items-center gap-1.5 sm:gap-2 text-3xs sm:text-2xs text-stone-400 mt-0.5 flex-wrap">
                       <span>{r.category}</span>
                       <span>·</span>
-                      <span>Qty: {r.quantity}</span>
+                      <span>{rt("qty", { quantity: r.quantity })}</span>
                       <span>·</span>
                       <span className="flex items-center gap-1">
                         <MapPin className="w-3 h-3 shrink-0" />
@@ -529,6 +552,8 @@ function MyRequestsSection({ requests }: { requests: ItemRequest[] }) {
 // ── Community Board ───────────────────────────────────────────────────────────
 
 function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
+  const rt = useTranslations("requestsArea");
+  const ui = useUiText();
   const preview = requests.slice(0, 6);
   if (preview.length === 0) return null;
 
@@ -536,12 +561,12 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
     <div className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-14">
       <Reveal>
         <div className="mb-5 sm:mb-10">
-          <span className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-1 sm:mb-2 block">Community</span>
+          <span className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-[#1e3a60] dark:text-blue-400 mb-1 sm:mb-2 block"><UiText>Community</UiText></span>
           <h2 className="text-base sm:text-3xl font-extrabold text-stone-900 dark:text-white">
-            Others are requesting too
+            <UiText>Others are requesting too</UiText>
           </h2>
           <p className="text-sm sm:text-sm text-stone-500 dark:text-stone-400 mt-1 sm:mt-2 font-medium leading-snug">
-            Browse what your community needs — and add yours.
+            <UiText>Browse what your community needs — and add yours.</UiText>
           </p>
         </div>
       </Reveal>
@@ -562,7 +587,7 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
                     <TranslatedText text={r.title} />
                   </p>
                   <div className="flex flex-wrap items-center gap-2 text-3xs text-stone-400">
-                    <span className="font-bold">{r.quantity} needed</span>
+                    <span className="font-bold">{rt("qtyNeeded", { quantity: r.quantity })}</span>
                     <span>·</span>
                     <span className="flex items-center gap-1"><MapPin className="w-2.5 h-2.5" /><TranslatedText text={r.city} /></span>
                     {(r.urgency === "CRITICAL" || r.urgency === "HIGH") && (
@@ -570,7 +595,7 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
                         <span>·</span>
                         <span className={`font-bold flex items-center gap-0.5 ${r.urgency === "CRITICAL" ? "text-red-500" : "text-amber-500"}`}>
                           <AlertTriangle className="w-2.5 h-2.5" />
-                          {r.urgency === "CRITICAL" ? "Urgent" : "High"}
+                          {r.urgency === "CRITICAL" ? ui("Urgent") : ui("High")}
                         </span>
                       </>
                     )}
@@ -584,11 +609,11 @@ function CommunityBoardSection({ requests }: { requests: ItemRequest[] }) {
 
       <Reveal delay={420}>
         <div className="mt-7 sm:mt-12 text-center">
-          <p className="text-stone-500 dark:text-stone-400 text-sm sm:text-sm mb-3 sm:mb-5">Don&apos;t see what you need? Post your own.</p>
+          <p className="text-stone-500 dark:text-stone-400 text-sm sm:text-sm mb-3 sm:mb-5"><UiText>Don&apos;t see what you need? Post your own.</UiText></p>
           <NewRequestLink href="/requests/new">
             <button className="inline-flex items-center gap-2 sm:gap-2.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white font-extrabold px-4 py-2.5 sm:px-8 sm:py-3.5 rounded-xl sm:rounded-2xl text-sm sm:text-sm transition-all shadow-lg shadow-blue-900/20 btn-shine">
               <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-              Post What You Need
+              <UiText>Post What You Need</UiText>
               <ArrowRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             </button>
           </NewRequestLink>

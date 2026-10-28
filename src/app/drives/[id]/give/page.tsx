@@ -18,6 +18,9 @@ import { drivePin } from "@/features/ngo-drives/drivePickupRadius";
 import { PageSkeleton } from "@/components/skeletons";
 import { driveAcceptedConditions } from "@/features/ngo-drives/driveConditions";
 
+import { useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
 type View =
   | { kind: "loading" }
   | { kind: "not-found" }
@@ -27,6 +30,9 @@ type View =
 
 
 export default function DriveGivePage() {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const dc = useDriveCopy();
   const params = useParams();
   const id = Number(params.id);
   const router = useRouter();
@@ -41,7 +47,7 @@ export default function DriveGivePage() {
     try {
       drive = await getNgoDrive(id);
     } catch (e) {
-      setView(isNotFound(e) ? { kind: "not-found" } : { kind: "error", message: errorMessage(e, "Please check your connection and try again.") });
+      setView(isNotFound(e) ? { kind: "not-found" } : { kind: "error", message: errorMessage(e, ui("Please check your connection and try again.")) });
       return;
     }
     try {
@@ -64,10 +70,10 @@ export default function DriveGivePage() {
             : "give";
       switch (kind) {
         case "wrong-role":
-          setView({ kind: "blocked", title: "You can't give to this drive", body: state.kind === "wrong-role" ? state.reason : "", link: { href: `/drives/${drive.id}`, label: "Back to the drive" } });
+          setView({ kind: "blocked", title: ui("You can't give to this drive"), body: state.kind === "wrong-role" ? dc(state.reason) : "", link: { href: `/drives/${drive.id}`, label: ui("Back to the drive") } });
           return;
         case "closed":
-          setView({ kind: "blocked", title: "This drive isn't taking offers", body: fullOrClosed ?? "", link: { href: `/drives/${drive.id}`, label: "Back to the drive" } });
+          setView({ kind: "blocked", title: ui("This drive isn't taking offers"), body: fullOrClosed ? dc(fullOrClosed) : "", link: { href: `/drives/${drive.id}`, label: ui("Back to the drive") } });
           return;
         case "continue":
           if (state.kind === "continue") { setView({ kind: "wizard", drive, offer: state.offer }); return; }
@@ -93,7 +99,7 @@ export default function DriveGivePage() {
         }
       }
     } catch (e) {
-      setView({ kind: "error", message: errorMessage(e, "We couldn't start your offer. Please try again.") });
+      setView({ kind: "error", message: errorMessage(e, ui("We couldn't start your offer. Please try again.")) });
     }
   }, [id, user]);
 
@@ -107,7 +113,7 @@ export default function DriveGivePage() {
   }, [authLoading, user, id, router, load]);
 
   if (authLoading || !user || view.kind === "loading") return <PageSkeleton><div className="h-96" /></PageSkeleton>;
-  if (view.kind === "not-found") return <DriveNotFound backHref="/requests" backLabel="Back to browse" />;
+  if (view.kind === "not-found") return <DriveNotFound backHref="/requests" backLabel={ui("Back to browse")} />;
   if (view.kind === "error") return <DriveLoadError message={view.message} onRetry={() => void load()} />;
   if (view.kind === "blocked") {
     return (
@@ -133,7 +139,7 @@ export default function DriveGivePage() {
         offerId={offer.id}
         offer={offer}
         driveId={drive.id}
-        ngoName={drive.ngoOrganizationName || "Verified NGO"}
+        ngoName={drive.ngoOrganizationName || ui("Verified NGO")}
         driveUnit={drive.unit}
         drivePin={drivePin(drive)}
         drivePickupRadiusKm={drive.pickupRadiusKm ?? null}

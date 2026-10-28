@@ -17,11 +17,15 @@ import { getRequestFulfilment } from "@/lib/requestFulfilment";
 import { deliveriesForRequest, totalReceived, type Delivery } from "@/features/fulfilment-history/deliveries";
 import { DeliveryDetailsDialog } from "@/features/fulfilment-history/DeliveryDetailsDialog";
 
+import { useTranslations } from "next-intl";
+import { UiText, useUiText } from "@/components/UiText";
 const CLOSED_LABEL: Record<string, string> = { CANCELLED: "Withdrawn", EXPIRED: "Expired", REJECTED: "Rejected" };
 
 const shortDate = (ms: number) => new Date(ms).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 export default function DashboardHistoryPage() {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
   const { user, isLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
@@ -67,23 +71,23 @@ export default function DashboardHistoryPage() {
       .finally(() => setLoading(false));
   }, [user, isLoading]);
 
-  if (isLoading || loading) return <div className="p-8 text-center text-stone-500">Loading history...</div>;
-  if (!user) return <div className="p-8 text-center">Please sign in to view your history.</div>;
+  if (isLoading || loading) return <div className="p-8 text-center text-stone-500"><UiText>Loading history...</UiText></div>;
+  if (!user) return <div className="p-8 text-center"><UiText>Please sign in to view your history.</UiText></div>;
 
   return (
     <div className="min-h-screen bg-[#eef3f9] dark:bg-zinc-950 px-4 py-6 sm:py-10">
       <div className="mx-auto max-w-3xl space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <Link href="/dashboard#requests" aria-label="Back to your requests" className="h-9 w-9 rounded-lg border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors">
+          <Link href="/dashboard#requests" aria-label={ui("Back to your requests")} className="h-9 w-9 rounded-lg border border-stone-200 dark:border-zinc-700 flex items-center justify-center text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2 text-stone-900 dark:text-stone-100">
               <History className="w-5 h-5 text-[var(--ck-role-accent)]" />
-              Fulfillment History
+              <UiText>Fulfillment History</UiText>
             </h1>
-            <p className="text-xs text-stone-400 mt-0.5">Every delivery you received, request by request. Open one for its full record.</p>
+            <p className="text-xs text-stone-400 mt-0.5"><UiText>Every delivery you received, request by request. Open one for its full record.</UiText></p>
           </div>
         </div>
 
@@ -94,15 +98,15 @@ export default function DashboardHistoryPage() {
           <CardHeader className="border-b border-stone-100 dark:border-zinc-800 pb-3 sm:pb-4">
             <CardTitle className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-300 flex items-center gap-2">
               <CheckCircle className="w-4 h-4 text-[var(--ck-role-accent)]" />
-              Fulfillment Records
+              <UiText>Fulfillment Records</UiText>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {requests.length === 0 ? (
               <div className="p-10 text-center space-y-2">
                 <Package className="w-10 h-10 text-stone-200 dark:text-zinc-700 mx-auto" />
-                <p className="text-sm text-stone-500">No fulfillment records yet.</p>
-                <p className="text-xs text-stone-400">When donors successfully deliver items to you, they will appear here.</p>
+                <p className="text-sm text-stone-500"><UiText>No fulfillment records yet.</UiText></p>
+                <p className="text-xs text-stone-400"><UiText>When donors successfully deliver items to you, they will appear here.</UiText></p>
               </div>
             ) : (
               <div className="divide-y divide-stone-100 dark:divide-zinc-800">
@@ -124,7 +128,7 @@ export default function DashboardHistoryPage() {
                             <Package className={`w-5 h-5 ${isFully ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`} />
                           </div>
                           <div className="min-w-0">
-                            <p className="text-3xs font-bold uppercase tracking-wider text-stone-400">Original Request</p>
+                            <p className="text-3xs font-bold uppercase tracking-wider text-stone-400"><UiText>Original Request</UiText></p>
                             <p className="font-semibold text-stone-900 dark:text-stone-100 truncate text-base sm:text-lg">
                               <TranslatedText text={r.title} />
                             </p>
@@ -135,19 +139,19 @@ export default function DashboardHistoryPage() {
                               <span>•</span>
                               <span><TranslatedText text={r.category} /></span>
                               <span>•</span>
-                              <span>Requested {shortDate(serverDate(r.createdAt).getTime())}</span>
+                              <span>{dt("requestedOn", { date: shortDate(serverDate(r.createdAt).getTime()) })}</span>
                             </div>
                           </div>
                         </div>
                         <Badge variant="default" className={`text-xs shrink-0 ${isFully ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
-                          {isFully ? "Fully Fulfilled" : "Partially Fulfilled"}
+                          {isFully ? ui("Fully Fulfilled") : ui("Partially Fulfilled")}
                         </Badge>
                       </div>
 
                       {deliveries.length > 0 && (
                         <div className="sm:ml-14 mt-4 space-y-2 border-l-2 border-emerald-100 dark:border-emerald-900/50 pl-4 py-1">
                           <p className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">
-                            Deliveries ({deliveries.length})
+                            {dt("deliveriesCount", { count: deliveries.length })}
                           </p>
                           {deliveries.map((d, idx) => (
                             <div key={d.key} className="bg-stone-50 dark:bg-zinc-800/50 rounded-lg p-3 border border-stone-100 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -159,34 +163,34 @@ export default function DashboardHistoryPage() {
                                   <p className="font-medium text-sm text-stone-700 dark:text-stone-300 truncate">{d.donorName}</p>
                                   <p className="text-xs text-stone-500">
                                     {shortDate(d.deliveredAt)}
-                                    {d.kind === "match" && " · item match"}
+                                    {d.kind === "match" && ` · ${ui("item match")}`}
                                     {/* Offered and received differ only when the donee confirmed a different count. */}
-                                    {d.received != null && d.offered != null && d.received !== d.offered && ` · ${d.offered} offered`}
+                                    {d.received != null && d.offered != null && d.received !== d.offered && ` · ${dt("offeredCount", { count: d.offered })}`}
                                   </p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 shrink-0 ml-auto">
                                 <span className={`text-sm font-bold px-2 py-0.5 rounded tabular-nums ${tone}`}>
-                                  {d.received != null ? `+${d.received}` : "Delivered"}
+                                  {d.received != null ? `+${d.received}` : ui("Delivered")}
                                 </span>
                                 <button
                                   type="button"
                                   onClick={() => { setSelected({ delivery: d, request: r }); setDetailsOpen(true); }}
                                   className="inline-flex items-center gap-0.5 rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-xs font-bold text-stone-600 transition-colors hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]/50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300 dark:hover:bg-zinc-800"
                                 >
-                                  View details <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+                                  <UiText>View details</UiText> <ChevronRight className="h-3.5 w-3.5" aria-hidden />
                                 </button>
                               </div>
                             </div>
                           ))}
 
                           <div className="flex flex-wrap justify-between items-center gap-x-4 gap-y-1 mt-3 pt-3 border-t border-stone-100 dark:border-zinc-800">
-                            <span className="text-sm font-bold text-stone-600 dark:text-stone-400">Total Fulfilled:</span>
+                            <span className="text-sm font-bold text-stone-600 dark:text-stone-400"><UiText>Total Fulfilled:</UiText></span>
                             <div className="flex gap-4">
                               <span className={`text-sm font-bold ${isFully ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>{fulfilled} / {requested}</span>
                               {!isFully && (
                                 <span className="text-sm font-bold text-stone-500">
-                                  {stillOpen ? `Remaining: ${remaining}` : `${CLOSED_LABEL[r.status] ?? "Closed"} · ${remaining} not received`}
+                                  {stillOpen ? dt("remaining", { count: remaining }) : dt("notReceived", { label: r.status === "CANCELLED" ? ui("Withdrawn") : r.status === "EXPIRED" ? ui("Expired") : r.status === "REJECTED" ? ui("Rejected") : ui("Closed"), count: remaining })}
                                 </span>
                               )}
                             </div>
@@ -196,7 +200,7 @@ export default function DashboardHistoryPage() {
                               than show rows that silently don't add up. */}
                           {recordedTotal !== fulfilled && (
                             <p className="text-xs text-stone-400">
-                              The deliveries on record add up to {recordedTotal}. The request&apos;s count of {fulfilled} includes deliveries recorded before itemised tracking.
+                              {dt("legacyDeliveries", { recorded: recordedTotal, total: fulfilled })}
                             </p>
                           )}
                         </div>
@@ -214,7 +218,7 @@ export default function DashboardHistoryPage() {
         delivery={selected?.delivery ?? null}
         open={detailsOpen}
         requestTitle={selected?.request.title ?? ""}
-        doneeName={selected?.request.doneeName ?? "You"}
+        doneeName={selected?.request.doneeName ?? ui("You")}
         onOpenChange={setDetailsOpen}
       />
     </div>

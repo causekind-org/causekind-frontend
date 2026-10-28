@@ -197,7 +197,7 @@ export function applicationSteps(app: Pick<NgoApplicationStatusResponse, "status
 }
 
 export function NgoProfileView() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, updateUser } = useAuth();
   const router = useRouter();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -510,6 +510,8 @@ export function NgoProfileView() {
       });
 
       setProfile(updated);
+      // Keep the signed-in user in step so every useAuth reader shows the new name and phone.
+      updateUser?.({ fullName: updated.fullName ?? undefined, phone: updated.phone ?? undefined });
       setOrgDetails((prev) => ({
         ...prev,
         name: updated.organizationName || updated.fullName || editOrgName.trim(),

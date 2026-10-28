@@ -28,7 +28,7 @@ export function useNgoOffers(drives: NgoDrive[], enabled: boolean) {
       const lists = await Promise.all(withOffers.map(async (d) => (await getNgoDriveOffersForNgo(d.id)).map((o) => ({ ...o, drive: d }))));
       setOffers(lists.flat());
     } catch {
-      setError("We couldn't load your offers.");
+      setError("LOAD_FAILED"); // code; ActivityTab shows the translated message
     } finally {
       setLoading(false);
     }

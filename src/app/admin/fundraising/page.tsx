@@ -6,6 +6,7 @@ import { FEATURES } from "@/lib/features";
 import { fundraising, ApiError, type FundraisingQueueRow, type FundraisingStatus } from "@/lib/api";
 import { CATEGORY_LABEL, StatusChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import a from "@/features/fundraising/admin.module.css";
+import { TabCount, useTabCounts } from "@/features/fundraising/TabCount";
 
 const FILTERS: { label: string; status?: FundraisingStatus }[] = [
   { label: "Open" },
@@ -32,6 +33,7 @@ export default function AdminFundraisingQueuePage() {
       .catch((e) => { setServerOff(e instanceof ApiError && e.status === 404); setFailed(true); });
   }, [filter]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
+  const counts = useTabCounts(FILTERS.map((f) => f.status), fundraising.admin.queue, rows);
 
   if (!FEATURES.fundraising) {
     return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off (NEXT_PUBLIC_FUNDRAISING_ENABLED).</p></main></div>;
@@ -48,7 +50,7 @@ export default function AdminFundraisingQueuePage() {
         <div><h1 className={a.serif} style={{ fontSize: 28 }}>Fundraising applications</h1><p className={a.muted}>Decide whether a donee can proceed with fundraising.</p></div>
         <nav className={a.tabs} aria-label="Filter by state">
           {FILTERS.map((f, i) => (
-            <button key={f.label} type="button" className={`${a.tab} ${i === filter ? a.tabOn : ""}`} aria-pressed={i === filter} onClick={() => setFilter(i)}>{f.label}</button>
+            <button key={f.label} type="button" className={`${a.tab} ${i === filter ? a.tabOn : ""}`} aria-pressed={i === filter} onClick={() => setFilter(i)}>{f.label}<TabCount n={counts[i]} /></button>
           ))}
         </nav>
         <label style={{ display: "flex" }}>

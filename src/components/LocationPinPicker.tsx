@@ -8,6 +8,7 @@ import {
 import { LocateFixed, Loader2, MapPin, Search, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 
+import { useUiText, UiText } from "@/components/UiText";
 declare global {
   interface Window {
     /**
@@ -95,6 +96,7 @@ function PlaceSearchBox({ near, onPlace, onBusy }: {
   /** True while a chosen result is being fetched (before onPlace). */
   onBusy?: (busy: boolean) => void;
 }) {
+  const ui = useUiText();
   const places = useMapsLibrary("places");
   const listId = useId();
   const [query, setQuery] = useState("");
@@ -134,7 +136,7 @@ function PlaceSearchBox({ near, onPlace, onBusy }: {
       } catch (e) {
         // The usual cause is the Maps key: Places API (New) not enabled on its project.
         console.warn("Place search failed:", e);
-        if (mine === seq.current) { setItems([]); setError("Search isn't available right now — tap the map or fill in the address instead."); }
+        if (mine === seq.current) { setItems([]); setError(ui("Search isn't available right now — tap the map or fill in the address instead.")); }
       }
     }, 250);
     return () => clearTimeout(t);
@@ -151,10 +153,10 @@ function PlaceSearchBox({ near, onPlace, onBusy }: {
       token.current = null; // the session ends with the fetch
       const loc = place.location;
       if (loc) onPlace(loc.lat(), loc.lng(), label);
-      else setError("We couldn't place that result — try another, or tap the map.");
+      else setError(ui("We couldn't place that result — try another, or tap the map."));
     } catch (e) {
       console.warn("Place details failed:", e);
-      setError("We couldn't place that result — try another, or tap the map.");
+      setError(ui("We couldn't place that result — try another, or tap the map."));
     } finally {
       setBusy(false);
     }
@@ -178,12 +180,12 @@ function PlaceSearchBox({ near, onPlace, onBusy }: {
       <input
         type="text"
         role="combobox"
-        aria-label="Search for a place"
+        aria-label={ui("Search for a place")}
         aria-expanded={showList}
         aria-controls={listId}
         aria-autocomplete="list"
         aria-activedescendant={showList && active >= 0 ? `${listId}-${active}` : undefined}
-        placeholder="Search area, landmark or address"
+        placeholder={ui("Search area, landmark or address")}
         autoComplete="off"
         value={query}
         onChange={(e) => { setQuery(e.target.value); setOpen(true); setError(null); }}
@@ -196,7 +198,7 @@ function PlaceSearchBox({ near, onPlace, onBusy }: {
         <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-stone-400" aria-hidden />
       ) : query && (
         <button
-          type="button" aria-label="Clear search"
+          type="button" aria-label={ui("Clear search")}
           onClick={() => { setQuery(""); setItems([]); setError(null); }}
           className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-800"
         >
@@ -232,7 +234,7 @@ export function MapUnavailableNote({ children }: { children?: React.ReactNode })
   return (
     <p role="status" className="flex items-start gap-1.5 rounded-xl border border-amber-300 bg-amber-50 p-2.5 text-2xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
       <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-      {children ?? <>The map couldn&apos;t load. Fill in the address below — we&apos;ll place the location from it.</>}
+      {children ?? <UiText>The map couldn&apos;t load. Fill in the address below — we&apos;ll place the location from it.</UiText>}
     </p>
   );
 }
@@ -354,6 +356,7 @@ export function LocationPinPicker({
   pin, onPick, fallbackCenter = null, fallbackZoom = PIN_ZOOM, tone = "neutral", onUnavailable,
   showLocateButton = false, showSearch = false, onBusyChange, pinAtStart = false, hint, height = 260, unavailableNote,
 }: LocationPinPickerProps) {
+  const ui = useUiText();
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [failed, setFailed] = useState(!apiKey);
   const [locating, setLocating] = useState(false);
@@ -382,7 +385,7 @@ export function LocationPinPicker({
 
   function useMyLocation() {
     if (!("geolocation" in navigator)) {
-      toast.error("Location isn't available on this device.");
+      toast.error(ui("Location isn't available on this device."));
       return;
     }
     setLocating(true);
@@ -395,8 +398,8 @@ export function LocationPinPicker({
         setLocating(false);
         toast.error(
           err.code === err.PERMISSION_DENIED
-            ? "Location permission denied — allow it or drag the pin instead."
-            : "Couldn't get your location — drag the pin instead."
+            ? ui("Location permission denied — allow it or drag the pin instead.")
+            : ui("Couldn't get your location — drag the pin instead.")
         );
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
@@ -409,7 +412,7 @@ export function LocationPinPicker({
   const shownPin = pin ?? (pinAtStart ? start : null);
   const mapUsable = !!apiKey && !failed;
   const hintText = hint === undefined
-    ? (mapUsable ? "Search, use your current location, or tap the map — then drag the pin to the exact spot." : null)
+    ? (mapUsable ? ui("Search, use your current location, or tap the map — then drag the pin to the exact spot.") : null)
     : hint;
   // With a search box the locate button sits beside it, above the map; the
   // handover form keeps it on the hint line below.
@@ -423,8 +426,8 @@ export function LocationPinPicker({
       className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors disabled:opacity-70 ${t.button}`}
     >
       {locating
-        ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Locating…</>
-        : <><LocateFixed className="h-3.5 w-3.5" /> Use my current location</>}
+        ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> <UiText>Locating…</UiText></>
+        : <><LocateFixed className="h-3.5 w-3.5" /> <UiText>Use my current location</UiText></>}
     </button>
   );
 
@@ -478,7 +481,7 @@ export function LocationPinPicker({
                 <AdvancedMarker
                   position={shownPin}
                   draggable
-                  title="Location pin"
+                  title={ui("Location pin")}
                   onDragEnd={(e) => {
                     const lat = e.latLng?.lat();
                     const lng = e.latLng?.lng();

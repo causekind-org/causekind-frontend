@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+import { useUiText } from "@/components/UiText";
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -58,13 +60,14 @@ export function acceptAttr(limits: WizardPhotoLimits): string {
   return limits.acceptedTypes.join(",");
 }
 
-export function describeRejectionFor(limits: WizardPhotoLimits) {
+/** `t` (wizardFlow translator) is optional: without it the English is returned. */
+export function describeRejectionFor(limits: WizardPhotoLimits, t?: (key: string, values: Record<string, string | number>) => string) {
   return (file: File): string | null => {
     if (!limits.acceptedTypes.includes(file.type.toLowerCase())) {
-      return `${file.name}: only ${limits.typeLabel} images are accepted`;
+      return t ? t("onlyTypeAccepted", { file: file.name, types: limits.typeLabel }) : `${file.name}: only ${limits.typeLabel} images are accepted`;
     }
     if (file.size > limits.maxBytes) {
-      return `${file.name}: images must be under ${limits.sizeLabel}`;
+      return t ? t("imageTooLarge", { file: file.name, size: limits.sizeLabel }) : `${file.name}: images must be under ${limits.sizeLabel}`;
     }
     return null;
   };
@@ -85,7 +88,9 @@ export function useWizardPhotos(options: {
   onRejected?: (message: string) => void;
 }) {
   const { photos, setPhotos, limits, upload, removeRemote, onUrlsChanged, onRejected } = options;
-  const describeRejection = describeRejectionFor(limits);
+  const wt = useTranslations("wizardFlow");
+  const ui = useUiText();
+  const describeRejection = describeRejectionFor(limits, wt);
 
   /** Every object URL this hook has created, so unmount can revoke all of them. */
   const objectUrlsRef = useRef<Set<string>>(new Set());
@@ -180,7 +185,7 @@ export function useWizardPhotos(options: {
       // there is no server row to clean up and nothing should be restored.
       if (removedDuringUploadRef.current.delete(id)) return;
       
-      const errorMessage = e?.message || "Upload failed";
+      const errorMessage = e?.message || ui("Upload failed");
       
       // Keep the local preview and the File so Retry needs no re-pick.
       setPhotos(prev => prev.map(p =>
@@ -193,7 +198,7 @@ export function useWizardPhotos(options: {
   const addFiles = useCallback((files: File[]) => {
     const room = limits.maxPhotos - photos.length;
     if (room <= 0) {
-      onRejected?.(`You can add up to ${limits.maxPhotos} photos`);
+      onRejected?.(wt("maxPhotos", { max: limits.maxPhotos }));
       return;
     }
 
@@ -205,7 +210,7 @@ export function useWizardPhotos(options: {
       objectUrlsRef.current.add(url);
       accepted.push({ id: nextId(), file, url });
     }
-    if (files.length > room) onRejected?.(`Only ${room} more photo${room === 1 ? "" : "s"} could be added`);
+    if (files.length > room) onRejected?.(wt("onlyMoreAdded", { count: room }));
     if (!accepted.length) return;
 
     setPhotos(prev => [

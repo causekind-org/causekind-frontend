@@ -3,6 +3,7 @@
 import { Loader2 } from "lucide-react";
 import { PhotoThumbs } from "@/components/PhotoThumbs";
 
+import { UiText, useUiText } from "@/components/UiText";
 const TONE = {
   donor: {
     band: "bg-[#fbf1e8] border-[#f0dcc8] dark:bg-[var(--ck-role-accent)]/10 dark:border-[var(--ck-role-accent)]/30",
@@ -40,15 +41,16 @@ export function MatchReviewBanner({ tone, photos, title, time, facts, details, n
   onAccept: () => void;
   onDecline: () => void;
 }) {
+  const ui = useUiText();
   const t = TONE[tone];
   const detailLine = details.filter(Boolean).join(" · ");
   return (
     <div className={`flex flex-col gap-3 border-b px-4 py-2.5 sm:flex-row sm:items-center ${t.band}`}>
       <div className="flex min-w-0 flex-1 gap-3">
-        <PhotoThumbs photos={photos} alt={typeof title === "string" ? title : "Matched item"} size={48} />
+        <PhotoThumbs photos={photos} alt={typeof title === "string" ? title : ui("Matched item")} size={48} />
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`border bg-white px-2 py-0.5 text-3xs font-bold dark:bg-zinc-900 ${t.badge}`}>Waiting for you</span>
+            <span className={`border bg-white px-2 py-0.5 text-3xs font-bold dark:bg-zinc-900 ${t.badge}`}><UiText>Waiting for you</UiText></span>
             <span className="text-2xs text-stone-500 dark:text-stone-400">{time}</span>
           </div>
           <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{title}</p>

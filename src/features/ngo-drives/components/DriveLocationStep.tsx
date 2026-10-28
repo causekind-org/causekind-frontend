@@ -5,6 +5,8 @@ import type { LocationFields } from "@/hooks/useLocationPinHandlers";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 export const RADIUS_PRESETS = [10, 20, 30, 50, 100] as const;
 export const MIN_RADIUS_KM = 1;
 export const MAX_RADIUS_KM = 500;
@@ -35,14 +37,16 @@ export function DriveLocationStep({
   onCustomRadius: (value: string) => void;
   registeredOfficeAddress?: string;
 }) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
   const options = [...RADIUS_PRESETS.map(String), "custom"];
   return (
     <div className="space-y-6">
       <section aria-labelledby="drive-where-heading" className="space-y-2">
-        <h3 id="drive-where-heading" className="text-base font-bold text-stone-900 dark:text-stone-100">Where is this drive?</h3>
-        <p className="text-sm text-stone-600 dark:text-stone-400">Donors near this place will see that you can pick up their items.</p>
+        <h3 id="drive-where-heading" className="text-base font-bold text-stone-900 dark:text-stone-100"><UiText>Where is this drive?</UiText></h3>
+        <p className="text-sm text-stone-600 dark:text-stone-400"><UiText>Donors near this place will see that you can pick up their items.</UiText></p>
         {registeredOfficeAddress && (
-          <p className="text-xs text-stone-500 dark:text-stone-400">Your registered address: {registeredOfficeAddress}</p>
+          <p className="text-xs text-stone-500 dark:text-stone-400">{df("registeredAddress", { address: registeredOfficeAddress })}</p>
         )}
         <LocationStep
           model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
@@ -52,7 +56,7 @@ export function DriveLocationStep({
       </section>
 
       <section aria-labelledby="drive-radius-heading" className="space-y-2" data-field="pickupRadiusKm" tabIndex={-1}>
-        <h3 id="drive-radius-heading" className="text-base font-bold text-stone-900 dark:text-stone-100">How far can you collect items from?</h3>
+        <h3 id="drive-radius-heading" className="text-base font-bold text-stone-900 dark:text-stone-100"><UiText>How far can you collect items from?</UiText></h3>
         <div role="radiogroup" aria-labelledby="drive-radius-heading" className="flex flex-wrap gap-2">
           {options.map(o => (
             <button
@@ -65,25 +69,25 @@ export function DriveLocationStep({
                   : "border-stone-300 text-stone-700 hover:border-ngo-600 dark:border-zinc-700 dark:text-stone-200",
               )}
             >
-              {o === "custom" ? "Custom" : `${o} km`}
+              {o === "custom" ? ui("Custom") : `${o} km`}
             </button>
           ))}
         </div>
         {radiusChoice === "custom" && (
           <label className="flex items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
-            <span>Distance</span>
+            <span><UiText>Distance</UiText></span>
             <input
               type="number" inputMode="numeric" min={MIN_RADIUS_KM} max={MAX_RADIUS_KM} step={1}
-              aria-label="Custom pickup distance in km" value={customRadius}
+              aria-label={ui("Custom pickup distance in km")} value={customRadius}
               onChange={e => onCustomRadius(e.target.value)}
               className={cn(controlClass, "w-28")}
             />
-            <span>km (1 to 500)</span>
+            <span><UiText>km (1 to 500)</UiText></span>
           </label>
         )}
         {errors.pickupRadiusKm && <p role="alert" className="text-xs font-semibold text-red-600">{errors.pickupRadiusKm}</p>}
         <p className="text-xs text-stone-500 dark:text-stone-400">
-          You will pick up items from donors within this distance. Donors farther away will drop the items off at your location.
+          <UiText>You will pick up items from donors within this distance. Donors farther away will drop the items off at your location.</UiText>
         </p>
       </section>
     </div>

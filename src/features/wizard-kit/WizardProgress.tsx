@@ -5,6 +5,7 @@ import { Check } from "lucide-react";
 
 import { completedNodeAnimation } from "@/features/wizard-kit/wizardMotion";
 
+import { useTranslations } from "next-intl";
 /**
  * Progress, in exactly one representation per viewport.
  *
@@ -43,16 +44,17 @@ type Props<S extends string> = {
 };
 
 export function WizardProgressBar<S extends string>({
-  current, steps, labels, availability, onJump, navLabel = "Progress",
+  current, steps, labels, availability, onJump, navLabel,
 }: Props<S>) {
+  const wt = useTranslations("wizardFlow");
   const reduced = !!useReducedMotion();
   const idx = steps.indexOf(current);
 
   return (
-    <nav aria-label={navLabel} className="lg:hidden">
+    <nav aria-label={navLabel ?? wt("progressLabel")} className="lg:hidden">
       <div className="flex items-center justify-between gap-2 px-4 pt-2">
         <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
-          Step {idx + 1} of {steps.length}
+          {wt("stepOf", { n: idx + 1, total: steps.length })}
         </p>
         <p className="truncate text-xs font-bold text-[var(--ck-role-accent)]">{labels[current]}</p>
       </div>
@@ -70,7 +72,7 @@ export function WizardProgressBar<S extends string>({
                 onClick={() => state.canNavigate && onJump(step)}
                 disabled={!state.canNavigate}
                 aria-current={isCurrent ? "step" : undefined}
-                aria-label={`${labels[step]}${done ? ", completed" : isCurrent ? ", current step" : ", not yet available"}`}
+                aria-label={wt(done ? "stepStatusCompleted" : isCurrent ? "stepStatusCurrent" : "stepStatusUnavailable", { label: labels[step] })}
                 className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 transition-colors
                   ${done ? "border-green-500 bg-green-500 text-white"
                     : isCurrent ? "border-[var(--ck-role-accent)] bg-[var(--ck-role-soft)] text-[var(--ck-role-accent)]"
@@ -103,13 +105,14 @@ export function WizardProgressBar<S extends string>({
 
 /** Desktop rail. Lives inside the existing dark sidebar, so it styles for dark. */
 export function WizardProgressRail<S extends string>({
-  current, steps, labels, availability, onJump, navLabel = "Progress",
+  current, steps, labels, availability, onJump, navLabel,
 }: Props<S>) {
+  const wt = useTranslations("wizardFlow");
   const reduced = !!useReducedMotion();
   const idx = steps.indexOf(current);
 
   return (
-    <nav aria-label={navLabel} className="hidden lg:block">
+    <nav aria-label={navLabel ?? wt("progressLabel")} className="hidden lg:block">
       <ol className="space-y-1">
         {steps.map((step, i) => {
           const state = availability[step];
@@ -125,7 +128,7 @@ export function WizardProgressRail<S extends string>({
                   onClick={() => state.canNavigate && onJump(step)}
                   disabled={!state.canNavigate}
                   aria-current={isCurrent ? "step" : undefined}
-                  aria-label={`${labels[step]}${done ? ", completed" : isCurrent ? ", current step" : ", not yet available"}`}
+                  aria-label={wt(done ? "stepStatusCompleted" : isCurrent ? "stepStatusCurrent" : "stepStatusUnavailable", { label: labels[step] })}
                   className={`grid h-7 w-7 shrink-0 place-items-center rounded-full border-2 text-2xs font-black transition-colors
                     ${done ? "border-green-400 bg-green-400 text-stone-900"
                       : isCurrent ? "border-[var(--ck-role-highlight)] bg-[var(--ck-role-highlight)]/15 text-[var(--ck-role-highlight)]"

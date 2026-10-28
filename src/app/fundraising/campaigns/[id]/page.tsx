@@ -10,6 +10,7 @@ import { CampaignStatusView } from "@/features/fundraising/CampaignStatusView";
 import { ManageWorkspace } from "@/features/fundraising/ManageWorkspace";
 import s from "@/features/fundraising/fundraising.module.css";
 
+import { UiText } from "@/components/UiText";
 /** A draft or changes-requested campaign opens the wizard (F13–F17); anything else shows its status (F18). */
 export default function FundraisingCampaignPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,8 +29,8 @@ function CampaignScreen({ id }: { id: number }) {
   if (missing) {
     return (
       <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
-        <h1 className={s.serif} style={{ fontSize: 28 }}>Campaign not found</h1>
-        <p className={s.muted} style={{ marginTop: 8 }}><Link href="/fundraising">Back to your fundraisers</Link></p>
+        <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Campaign not found</UiText></h1>
+        <p className={s.muted} style={{ marginTop: 8 }}><Link href="/fundraising"><UiText>Back to your fundraisers</UiText></Link></p>
       </main>
     );
   }

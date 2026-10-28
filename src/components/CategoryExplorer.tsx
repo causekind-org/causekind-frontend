@@ -6,6 +6,7 @@ import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon, { ICON_MOTION_PARENT_PROPS } from "./AnimatedCategoryIcon";
 
+import { useUiText } from "@/components/UiText";
 /**
  * The nine categories as a browsable grid, used as cross-navigation at the foot
  * of each category page — where `exclude` drops the page you are already on.
@@ -18,13 +19,17 @@ import AnimatedCategoryIcon, { ICON_MOTION_PARENT_PROPS } from "./AnimatedCatego
  */
 export default function CategoryExplorer({
   exclude,
-  heading = "Browse by category",
-  blurb = "What each category means, what actually helps, and how to prepare an item before you hand it over.",
+  heading: headingProp,
+  blurb: blurbProp,
 }: {
   exclude?: string;
   heading?: string;
   blurb?: string;
 }) {
+  const ui = useUiText();
+  // Callers pass already-translated text; the defaults translate here.
+  const heading = headingProp ?? ui("Browse by category");
+  const blurb = blurbProp ?? ui("What each category means, what actually helps, and how to prepare an item before you hand it over.");
   const cats = exclude ? IN_KIND_CATEGORIES.filter((c) => c.name !== exclude) : IN_KIND_CATEGORIES;
 
   return (

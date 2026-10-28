@@ -11,6 +11,7 @@ import { YourDrivesTab } from "./YourDrivesTab";
 import { ActivityTab } from "./ActivityTab";
 import { HistoryTab, isDeclinedOffer } from "./HistoryTab";
 
+import { UiText, useUiText } from "@/components/UiText";
 export type NgoSection = "drives" | "activity" | "history";
 const SECTIONS: readonly string[] = ["drives", "activity", "history"];
 const ISSUE_STATUSES = new Set<string>(HANDOVER_GROUPS.issues);
@@ -31,7 +32,7 @@ function NgoSectionTab({ value, icon: Icon, label, count, attention }: {
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ngo-400 opacity-75 motion-reduce:hidden" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-ngo-500" />
           </span>
-          <span className="sr-only">(needs your attention)</span>
+          <span className="sr-only"><UiText>(needs your attention)</UiText></span>
         </>
       )}
     </TabsTrigger>
@@ -44,6 +45,7 @@ export function NgoDashboardSections({ drives, verified, loading, error, onRetry
   /** The existing Start a Drive control (enabled or locked), shown when there are no drives. */
   startDrive: ReactNode;
 }) {
+  const ui = useUiText();
   const router = useRouter();
   const params = useSearchParams();
   const tabParam = params.get("tab");
@@ -71,19 +73,19 @@ export function NgoDashboardSections({ drives, verified, loading, error, onRetry
     return (
       <div className="space-y-3 py-10 text-center">
         <Lock className="mx-auto h-6 w-6 text-ngo-700 dark:text-ngo-400" aria-hidden />
-        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Drives unlock after verification</p>
-        <p className="mx-auto max-w-[260px] text-xs text-stone-400">Once our team approves your NGO, you can start drives for givers near you.</p>
+        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>Drives unlock after verification</UiText></p>
+        <p className="mx-auto max-w-[260px] text-xs text-stone-400"><UiText>Once our team approves your NGO, you can start drives for givers near you.</UiText></p>
       </div>
     );
   }
 
   return (
     <Tabs value={section} onValueChange={select} className="space-y-4 sm:space-y-6">
-      <TabsList aria-label="Dashboard sections"
+      <TabsList aria-label={ui("Dashboard sections")}
         className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70">
-        <NgoSectionTab value="drives" icon={LayoutGrid} label="Your Drives" count={activeDrives.length} attention={false} />
-        <NgoSectionTab value="activity" icon={ClipboardList} label="Activity" count={toReview.length + handovers.length + proofDue.length} attention={activityNeedsYou} />
-        <NgoSectionTab value="history" icon={History} label="History" count={historyDrives.length + historyOffers.length} attention={false} />
+        <NgoSectionTab value="drives" icon={LayoutGrid} label={ui("Your Drives")} count={activeDrives.length} attention={false} />
+        <NgoSectionTab value="activity" icon={ClipboardList} label={ui("Activity")} count={toReview.length + handovers.length + proofDue.length} attention={activityNeedsYou} />
+        <NgoSectionTab value="history" icon={History} label={ui("History")} count={historyDrives.length + historyOffers.length} attention={false} />
       </TabsList>
       <TabsContent value="drives" className="mt-0">
         <YourDrivesTab drives={activeDrives} offers={offers} loading={loading} error={error} onRetry={onRetry} startDrive={startDrive} />

@@ -6,6 +6,8 @@ import MatchChatWindow, { type ChatEndpoints } from "@/components/MatchChatWindo
 import { driveOfferChat } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /** The chat opens when the NGO accepts and is writable until the handover window closes. */
 export const DRIVE_CHAT_WRITABLE = new Set([
   "NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK",
@@ -27,6 +29,8 @@ export const DRIVE_CHAT_ENDPOINTS: ChatEndpoints = {
  * The shared chat window does the work; only the endpoints differ.
  */
 export function DriveOfferChatPanel({ offerId, status, role }: { offerId: number; status: string; role: "DONOR" | "NGO" }) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
   const { user } = useAuth();
   const writable = DRIVE_CHAT_WRITABLE.has(status);
   const visible = writable || DRIVE_CHAT_READ_ONLY.has(status);
@@ -45,12 +49,12 @@ export function DriveOfferChatPanel({ offerId, status, role }: { offerId: number
   if (!visible) {
     return (
       <p className="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400" data-testid="drive-chat-locked">
-        <Lock className="h-4 w-4" aria-hidden /> Chat opens once the NGO accepts the offer.
+        <Lock className="h-4 w-4" aria-hidden /> <UiText>Chat opens once the NGO accepts the offer.</UiText>
       </p>
     );
   }
 
-  const title = role === "DONOR" ? "Chat with NGO" : "Chat with donor";
+  const title = role === "DONOR" ? ui("Chat with NGO") : ui("Chat with donor");
   return (
     <div className="space-y-2" data-testid="drive-chat">
       {!open ? (
@@ -61,16 +65,16 @@ export function DriveOfferChatPanel({ offerId, status, role }: { offerId: number
           </span>
           <span className="flex-1 text-sm font-semibold text-stone-800 dark:text-stone-200">{title}</span>
           {unread > 0 && (
-            <span data-testid="drive-chat-unread" className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white" aria-label={`${unread} unread`}>
+            <span data-testid="drive-chat-unread" className="rounded-full bg-red-600 px-2 py-0.5 text-xs font-bold text-white" aria-label={df("unreadCount", { count: unread })}>
               {unread}
             </span>
           )}
         </button>
       ) : (
         <MatchChatWindow matchId={offerId} currentUserEmail={user?.email ?? ""} endpoints={DRIVE_CHAT_ENDPOINTS} locked={!writable}
-          emptyText={role === "DONOR" ? "Say hello to the NGO." : "No messages from the donor yet."} />
+          emptyText={role === "DONOR" ? ui("Say hello to the NGO.") : ui("No messages from the donor yet.")} />
       )}
-      {!writable && <p className="text-xs text-stone-500 dark:text-stone-400">This chat is closed. You can still read it.</p>}
+      {!writable && <p className="text-xs text-stone-500 dark:text-stone-400"><UiText>This chat is closed. You can still read it.</UiText></p>}
     </div>
   );
 }

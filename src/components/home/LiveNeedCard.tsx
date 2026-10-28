@@ -9,6 +9,7 @@ import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 
+import { UiText } from "@/components/UiText";
 /** What one Live Board card shows. */
 export type LiveNeedCardData = {
   category: string;
@@ -76,14 +77,14 @@ export function LiveNeedCard({
 
           {need.isDrive && (
             <span className="inline-flex items-center rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-emerald-700 dark:text-emerald-300"><LandingText>
-              NGO drive
+              <UiText>NGO drive</UiText>
             </LandingText></span>
           )}
 
           {need.urgent && (
             <span className="inline-flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/25 px-2 py-0.5 text-3xs font-black uppercase tracking-wider text-red-600 dark:text-red-400">
               <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" /><LandingText>
-              Urgent
+              <UiText>Urgent</UiText>
             </LandingText></span>
           )}
         </div>
@@ -115,7 +116,7 @@ export function LiveNeedCard({
 
           <div className="flex items-center gap-2 shrink-0 font-medium">
             <span><LandingText>
-              Qty:</LandingText>{" "}
+              <UiText>Qty:</UiText></LandingText>{" "}
               <strong className="text-stone-800 dark:text-stone-200 font-bold">
                 <LandingText>{need.quantity}</LandingText>
               </strong>
@@ -124,7 +125,7 @@ export function LiveNeedCard({
               <>
                 <span className="text-stone-300 dark:text-stone-700">·</span>
                 <span className="truncate text-stone-400 dark:text-stone-500 text-3xs"><LandingText>
-                  By </LandingText>{need.byName}
+                  <UiText>By</UiText> </LandingText>{need.byName}
                 </span>
               </>
             )}
