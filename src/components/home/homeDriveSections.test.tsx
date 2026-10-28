@@ -22,7 +22,7 @@ describe("home drive sections", () => {
   it("the drives section is donor terracotta, with the verified dot kept green", () => {
     expect(drives).toContain("ck-drives-donor-tone");
     expect(css).toMatch(/\.ck-drives-donor-tone \{[^}]*--color-emerald-700: var\(--color-brand-500\)/);
-    expect(card).toMatch(/rounded-full bg-ngo-400" aria-hidden="true" \/>\s*Verified by CauseKind/);
+    expect(card).toMatch(/rounded-full bg-ngo-400" aria-hidden="true" \/>\s*(<UiText>)?Verified by CauseKind/);
   });
 
   it("is a static check only (no render needed)", () => { expect(vi).toBeDefined(); });

@@ -575,7 +575,9 @@ export function NgoDriveOfferWizard({
       return;
     }
     if (step === "details") {
-      if (overNeedMessage) stepErrors.quantity = overNeedMessage;
+      // Stored as the shared rule's code, so the stale message clears once the quantity is fixed;
+      // the red text shown is overNeedMessage (see shownErrors).
+      if (overNeedMessage) stepErrors.quantity = offerErrorCode("quantityMax", { max: stillNeededQuantity ?? 0 });
       if (model.sizeSpec && model.sizeSpec.length > 100) {
         stepErrors.sizeSpec = offerErrorCode("sizeSpecMax", { max: 100 });
       }

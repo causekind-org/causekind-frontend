@@ -21,14 +21,7 @@ const api = vi.hoisted(() => ({
 }));
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>()), ...api }));
 vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), info: vi.fn() }) }));
-vi.mock("next-intl", async () => {
-  const en = (await import("../../../messages/en.json")).default as Record<string, Record<string, unknown>>;
-  const t = (ns?: string) => {
-    const fn = (k: string) => { const v = ns ? en[ns]?.[k] : undefined; return typeof v === "string" ? v : k; };
-    return Object.assign(fn, { rich: fn, has: () => true });
-  };
-  return { useLocale: () => "en", useTranslations: t };
-});
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { email: "donor@test", role: "DONOR" }, isLoading: false }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));
 
@@ -367,7 +360,7 @@ describe("8. Tick all declarations", () => {
   it("comes after the last declaration and before the submit hint", () => {
     const src = readFileSync(resolve(__dirname, "../../app/ngo/drives/new/page.tsx"), "utf8");
     const list = src.indexOf("{DECLARATIONS.map(d => (");
-    const tickAll = src.indexOf(">Tick all declarations</span>");
+    const tickAll = src.search(/>(<UiText>)?Tick all declarations(<\/UiText>)?<\/span>/);
     const hint = src.indexOf("Tick all declarations to submit.");
     expect(list).toBeGreaterThan(0);
     expect(tickAll).toBeGreaterThan(list);

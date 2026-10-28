@@ -4,7 +4,7 @@ import { OfferPhotosStep } from "@/features/donation-offer-wizard/steps/OfferPho
 import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferReviewStep";
 import { emptyOfferModel } from "@/features/donation-offer-wizard/offerModel";
 
-vi.mock("next-intl", () => ({ useTranslations: () => (k: string) => k }));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 
 /**
  * The drive give form added optional props to these shared steps. Without them, the
