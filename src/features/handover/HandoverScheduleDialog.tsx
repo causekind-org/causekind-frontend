@@ -12,7 +12,6 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { HandoverLocationField } from "./HandoverLocationField";
-import { methodNeedsCourierFields } from "./adapters";
 import { formatISTDate } from "@/lib/formatIST";
 import { handoverScope, type HandoverViewModel } from "./model";
 import {
@@ -28,6 +27,7 @@ export type SchedulePayload = {
   longitude?: number;
   notes?: string;
   courierName?: string;
+  trackingNumber?: string;
   reason?: string;
 };
 
@@ -103,7 +103,8 @@ export function HandoverScheduleDialog({
   const [lat, setLat] = useState<number | null>(vm.schedule?.latitude ?? null);
   const [lng, setLng] = useState<number | null>(vm.schedule?.longitude ?? null);
   const [notes, setNotes] = useState(vm.schedule?.notes ?? "");
-  const [courierName, setCourierName] = useState("");
+  const [courierName, setCourierName] = useState(vm.schedule?.courierName ?? "");
+  const [trackingNumber, setTrackingNumber] = useState(vm.schedule?.trackingNumber ?? "");
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   /** The map or the address box is still working out the location. */
@@ -131,10 +132,11 @@ export function HandoverScheduleDialog({
     setLat(vm.schedule?.latitude ?? null);
     setLng(vm.schedule?.longitude ?? null);
     setNotes(vm.schedule?.notes ?? "");
+    setCourierName(vm.schedule?.courierName ?? "");
+    setTrackingNumber(vm.schedule?.trackingNumber ?? "");
     setError(null);
   }, [open, vm.schedule, vm.methodOptions]);
 
-  const needsCourier = methodNeedsCourierFields(method);
   // NGO drive drop-off: the donor goes to the NGO's address, so there is no map or pin to pick.
   const driveDropOff = vm.flow === "NGO_OFFER" && method === "DONOR_DROP_OFF";
   const dropOff = vm.dropOff ?? null;
@@ -142,11 +144,13 @@ export function HandoverScheduleDialog({
     ? { availableDays: dropOff.days, availableFrom: dropOff.from, availableTo: dropOff.to } : null);
   // A reschedule costs the other person a trip, so it has to say why.
   const reasonRequired = isReschedule;
+  const isCourier = method === "COURIER" || method === "THIRD_PARTY";
   const hasPin = lat != null && lng != null;
-  // The donee is sent both the written address and a map link, so both are
-  // required, and Save waits for any lookup still filling one from the other.
-  let canSubmit = !busy && !locationBusy && when.trim() !== ""
-    && (driveDropOff || (address.trim() !== "" && hasPin))
+  // In-person handovers send the donee both the written address and a map link, so both
+  // are required and Save waits for any lookup still filling one from the other. Courier
+  // deliveries get the recipient's address in the hub; NGO drop-offs use the NGO's address.
+  const locationValid = isCourier || driveDropOff || (!locationBusy && address.trim() !== "" && hasPin);
+  let canSubmit = !busy && when.trim() !== "" && locationValid
     && (!reasonRequired || reason.trim().length >= 3);
 
   // NGO drive offers: the NGO's handover days and hours (the same rule the server checks).
@@ -163,10 +167,11 @@ export function HandoverScheduleDialog({
         // Drive handovers: the local (IST) time as picked — toISOString() turned 18:30 IST into
         // 13:00, which the server read as outside the NGO's hours. Other flows unchanged.
         scheduledDateTime: vm.flow === "NGO_OFFER" ? `${when.slice(0, 16)}:00` : new Date(when).toISOString(),
-        address: driveDropOff ? (dropOff?.address ?? undefined) : address.trim() || undefined,
-        ...(!driveDropOff && lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
+        address: driveDropOff ? (dropOff?.address ?? undefined) : isCourier ? undefined : (address.trim() || undefined),
+        ...(!driveDropOff && !isCourier && lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
         notes: notes.trim() || undefined,
-        courierName: needsCourier && courierName.trim() ? courierName.trim() : undefined,
+        courierName: courierName.trim() || undefined,
+        trackingNumber: trackingNumber.trim() || undefined,
         reason: reasonRequired ? reason.trim() : undefined,
       });
       onOpenChange(false);
@@ -186,12 +191,14 @@ export function HandoverScheduleDialog({
       <DialogContent className={scope}>
         <DialogHeader>
           <DialogTitle>
-            {isReschedule ? "Change the handover time" : "Schedule the handover"}
+            {isReschedule
+              ? "Change the handover time"
+              : (isCourier ? "Schedule courier dispatch" : "Schedule the handover")}
           </DialogTitle>
           <DialogDescription>
             {isReschedule
               ? "They're planning around the current time, so tell them why it's moving."
-              : "Pick a time and place that works for both of you."}
+              : (isCourier ? "Pick when you plan to dispatch the item." : "Pick a time and place that works for both of you.")}
           </DialogDescription>
         </DialogHeader>
 
@@ -233,7 +240,7 @@ export function HandoverScheduleDialog({
             </div>
           )}
 
-          <Field label="When?" htmlFor="ho-when" required>
+          <Field label={isCourier ? "When will you dispatch?" : "When?"} htmlFor="ho-when" required>
             <Input
               id="ho-when"
               type="datetime-local"
@@ -245,36 +252,67 @@ export function HandoverScheduleDialog({
               max={vm.flow === "NGO_OFFER" && drive?.neededBy ? `${String(drive.neededBy).slice(0, 10)}T23:59` : undefined}
             />
             {slotProblem && <p role="alert" data-testid="drive-slot-problem" className="mt-1 text-sm font-medium text-destructive">{slotProblem}</p>}
-          </Field>
-
-          {!driveDropOff && (
-          <Field label="Where?" required>
-            <HandoverLocationField
-              address={address}
-              lat={lat}
-              lng={lng}
-              disabled={busy}
-              onAddressChange={setAddress}
-              onPinChange={(a, b) => { setLat(a); setLng(b); }}
-              onBusyChange={setLocationBusy}
-            />
-            {!hasPin && address.trim() !== "" && !locationBusy && (
-              <Hint>Place the pin too (search, use your current location, or tap the map) so the donee gets a map link.</Hint>
+            {isCourier && (
+              <Hint>Estimated date and time you plan to hand over or dispatch the parcel.</Hint>
             )}
           </Field>
+
+          {isCourier ? (
+            <div className="rounded-lg border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+              <p className="font-semibold text-stone-900 dark:text-stone-100 text-sm mb-1">
+                Recipient delivery address
+              </p>
+              <p className="text-stone-600 dark:text-stone-400">
+                You won't need to specify a meeting location for courier delivery. Once scheduled, you will request the recipient's delivery address directly in the handover hub.
+              </p>
+            </div>
+          ) : !driveDropOff && (
+            <Field label="Where?" required>
+              <HandoverLocationField
+                address={address}
+                lat={lat}
+                lng={lng}
+                disabled={busy}
+                onAddressChange={setAddress}
+                onPinChange={(a, b) => { setLat(a); setLng(b); }}
+                onBusyChange={setLocationBusy}
+              />
+              {!hasPin && address.trim() !== "" && !locationBusy && (
+                <Hint>Place the pin too (search, use your current location, or tap the map) so the donee gets a map link.</Hint>
+              )}
+            </Field>
           )}
 
-          {needsCourier && (
-            <Field label="Courier or service name (optional)" htmlFor="ho-courier">
-              <Input
-                id="ho-courier"
-                type="text"
-                value={courierName}
-                onChange={(e) => setCourierName(e.target.value)}
-                disabled={busy}
-                className={handoverInput}
-              />
-            </Field>
+
+          {(method === "COURIER" || method === "THIRD_PARTY") && (
+            <div className="space-y-3 rounded-lg border border-stone-200 bg-stone-50/70 p-3 dark:border-zinc-800 dark:bg-zinc-900/60">
+              <p className="text-2xs font-bold uppercase tracking-wider text-stone-500">
+                Courier details (optional)
+              </p>
+              <Field label="Courier service name" htmlFor="ho-sched-courier">
+                <Input
+                  id="ho-sched-courier"
+                  type="text"
+                  value={courierName}
+                  onChange={(e) => setCourierName(e.target.value)}
+                  placeholder="e.g. Delhivery, BlueDart, DTDC, India Post, Porter"
+                  disabled={busy}
+                  className={handoverInput}
+                />
+              </Field>
+              <Field label="Courier / Tracking number" htmlFor="ho-sched-tracking">
+                <Input
+                  id="ho-sched-tracking"
+                  type="text"
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="e.g. TRK987654321, AWB123456"
+                  disabled={busy}
+                  className={handoverInput}
+                />
+              </Field>
+              <Hint>You can enter tracking details now or add them later in the hub once booked.</Hint>
+            </div>
           )}
 
           {vm.flow === "MATCH" && (
@@ -331,7 +369,7 @@ export function HandoverScheduleDialog({
           <Button disabled={!canSubmit} onClick={submit} className={handoverPrimary}>
             {busy
               ? <><Loader2 className="animate-spin" aria-hidden /> Saving</>
-              : locationBusy
+              : (!isCourier && locationBusy)
                 ? <><Loader2 className="animate-spin" aria-hidden /> Checking location…</>
                 : "Save"}
           </Button>

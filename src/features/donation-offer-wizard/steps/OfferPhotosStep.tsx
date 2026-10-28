@@ -13,6 +13,7 @@ import { OFFER_ACCEPT_ATTR } from "../useOfferPhotos";
 import type { OfferVideoState } from "../useOfferVideo";
 import { OfferVideoField } from "./OfferVideoField";
 
+import { UiText } from "@/components/UiText";
 export type ScreeningState =
   | { kind: "idle" }
   | { kind: "running" }
@@ -60,6 +61,7 @@ export function OfferPhotosStep({
    */
   onTakePhoto?: (openNativeCamera: () => void) => void;
 }) {
+  const wt = useTranslations("wizardFlow");
   const t = useTranslations();
   const reduced = !!useReducedMotion();
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -79,8 +81,8 @@ export function OfferPhotosStep({
   return (
     <div className="space-y-3" data-field="photos" tabIndex={-1}>
       <p className="text-xs text-stone-600 dark:text-stone-300">
-        Add {MIN_OFFER_PHOTOS}–{MAX_OFFER_PHOTOS} clear photos of the item you are donating.
-        We only check them for things we cannot accept — everything else you tell us yourself.
+        {wt("addPhotosRange", { min: MIN_OFFER_PHOTOS, max: MAX_OFFER_PHOTOS })}
+        {" "}<UiText>We only check them for things we cannot accept — everything else you tell us yourself.</UiText>
       </p>
 
       <div className="grid grid-cols-2 gap-2">
@@ -89,14 +91,14 @@ export function OfferPhotosStep({
           onClick={() => onTakePhoto ? onTakePhoto(() => cameraRef.current?.click()) : cameraRef.current?.click()}
           className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-soft)] px-3 py-2.5 text-sm font-bold text-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         >
-          <Camera className="h-4 w-4" aria-hidden /> Take photo
+          <Camera className="h-4 w-4" aria-hidden /> <UiText>Take photo</UiText>
         </motion.button>
         <motion.button
           type="button" {...pressProps(reduced)}
           onClick={() => galleryRef.current?.click()}
           className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-bold text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200"
         >
-          <ImagePlus className="h-4 w-4" aria-hidden /> Choose photo
+          <ImagePlus className="h-4 w-4" aria-hidden /> <UiText>Choose photo</UiText>
         </motion.button>
       </div>
 
@@ -128,14 +130,14 @@ export function OfferPhotosStep({
 
                 {i === 0 && p.status === "uploaded" && (
                   <span className="absolute left-1.5 top-1.5 rounded-full bg-[var(--ck-role-accent)] px-2 py-0.5 text-4xs font-black uppercase tracking-wide text-white">
-                    Main
+                    <UiText>Main</UiText>
                   </span>
                 )}
 
                 {p.status === "uploading" && (
                   <span className="absolute inset-0 grid place-items-center bg-white/60 dark:bg-zinc-950/60">
                     <Loader2 className="h-5 w-5 animate-spin text-stone-600" aria-hidden />
-                    <span className="sr-only">Uploading</span>
+                    <span className="sr-only"><UiText>Uploading</UiText></span>
                   </span>
                 )}
 
@@ -143,7 +145,7 @@ export function OfferPhotosStep({
                   <button type="button" onClick={() => onRetryPhoto(p.id)}
                     className="absolute inset-0 grid place-items-center gap-1 bg-red-50/90 text-2xs font-bold text-red-700 dark:bg-red-950/80 dark:text-red-300">
                     <RefreshCw className="h-4 w-4" aria-hidden />
-                    Retry upload
+                    <UiText>Retry upload</UiText>
                   </button>
                 )}
 
@@ -151,7 +153,7 @@ export function OfferPhotosStep({
                 <button
                   type="button"
                   onClick={() => onRemovePhoto(p.id)}
-                  aria-label={`Remove photo ${i + 1} of ${photos.length}`}
+                  aria-label={wt("removePhotoOf", { n: i + 1, total: photos.length })}
                   className="absolute bottom-1 right-1 grid h-11 w-11 place-items-center rounded-full bg-white/90 text-stone-700 shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:bg-zinc-900/90 dark:text-stone-200"
                 >
                   <X className="h-4 w-4" aria-hidden />
@@ -171,7 +173,7 @@ export function OfferPhotosStep({
             <motion.p key="running" variants={revealVariants(reduced)} initial="hidden" animate="shown" exit="hidden"
               className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-2xs text-stone-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-stone-300">
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
-              Checking your photos. You can keep filling the form while this runs.
+              <UiText>Checking your photos. You can keep filling the form while this runs.</UiText>
             </motion.p>
           )}
 
@@ -179,7 +181,7 @@ export function OfferPhotosStep({
             <motion.p key="safe" variants={revealVariants(reduced)} initial="hidden" animate="shown" exit="hidden"
               className="flex items-center gap-2 rounded-xl border border-green-200 bg-green-50 p-2.5 text-2xs font-semibold text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300">
               <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              Photos look fine — nothing we cannot accept.
+              <UiText>Photos look fine — nothing we cannot accept.</UiText>
             </motion.p>
           )}
 
@@ -191,7 +193,7 @@ export function OfferPhotosStep({
               <p className="text-2xs text-stone-600 dark:text-stone-300">{screening.note}</p>
               <button type="button" onClick={onRescreen}
                 className="mt-1.5 inline-flex min-h-[44px] items-center gap-1.5 text-2xs font-bold text-[var(--ck-role-accent)] underline underline-offset-2">
-                <RefreshCw className="h-3 w-3" aria-hidden /> Check again
+                <RefreshCw className="h-3 w-3" aria-hidden /> <UiText>Check again</UiText>
               </button>
             </motion.div>
           )}
@@ -201,7 +203,7 @@ export function OfferPhotosStep({
               className="rounded-xl border border-red-300 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
               <p className="flex items-center gap-2 text-2xs font-black uppercase tracking-wide text-red-700 dark:text-red-300">
                 <ShieldAlert className="h-3.5 w-3.5" aria-hidden />
-                We cannot accept this
+                <UiText>We cannot accept this</UiText>
               </p>
               <p className="mt-1 text-2xs text-red-800 dark:text-red-300">
                 {/* The raw category used to be appended in brackets — "(WEAPONS)" —
@@ -212,7 +214,7 @@ export function OfferPhotosStep({
                   : PHOTO_COPY.genericReason)}
               </p>
               <p className="mt-1 text-2xs text-red-700/80 dark:text-red-400/80">
-                Remove or replace that photo to continue.
+                <UiText>Remove or replace that photo to continue.</UiText>
               </p>
               {/* A screening verdict is a judgement, and judgements are sometimes
                   wrong. Without this the only escape from a false positive was to
@@ -221,7 +223,7 @@ export function OfferPhotosStep({
                   provider outage, not better. */}
               <button type="button" onClick={onRescreen}
                 className="mt-1.5 inline-flex min-h-[44px] items-center gap-1.5 text-2xs font-bold text-red-800 underline underline-offset-2 dark:text-red-300">
-                <RefreshCw className="h-3 w-3" aria-hidden /> Check again
+                <RefreshCw className="h-3 w-3" aria-hidden /> <UiText>Check again</UiText>
               </button>
             </motion.div>
           )}
@@ -230,13 +232,13 @@ export function OfferPhotosStep({
 
       <details className="rounded-xl border border-stone-200 bg-white p-2.5 dark:border-zinc-800 dark:bg-zinc-900">
         <summary className="cursor-pointer text-2xs font-bold text-stone-700 dark:text-stone-200">
-          What makes a good photo?
+          <UiText>What makes a good photo?</UiText>
         </summary>
         <ul className="mt-2 list-disc space-y-1 pl-4 text-2xs text-stone-500 dark:text-stone-400">
-          <li>Daylight, or a well-lit room — no flash glare.</li>
-          <li>The whole item in frame, then a close-up of any wear or damage.</li>
-          <li>A plain background, so the item is what stands out.</li>
-          <li>Show what is included — cables, parts, the box if you still have it.</li>
+          <li><UiText>Daylight, or a well-lit room — no flash glare.</UiText></li>
+          <li><UiText>The whole item in frame, then a close-up of any wear or damage.</UiText></li>
+          <li><UiText>A plain background, so the item is what stands out.</UiText></li>
+          <li><UiText>Show what is included — cables, parts, the box if you still have it.</UiText></li>
         </ul>
       </details>
     </div>

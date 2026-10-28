@@ -6,11 +6,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the next/navigation hooks
 // The drive page FAQ reads the shared "faq" keys: real English strings.
-vi.mock("next-intl", async () => {
-  const en = (await import("../../../../messages/en.json")).default as Record<string, Record<string, unknown>>;
-  const t = (ns?: string) => (k: string) => { const v = ns ? en[ns]?.[k] : undefined; return typeof v === "string" ? v : k; };
-  return { useLocale: () => "en", useTranslations: t };
-});
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("next/navigation", () => ({
   useParams: () => ({ id: "1" }),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),

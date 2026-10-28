@@ -1,6 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { offerErrorCode, useOfferErrorText } from "@/features/donation-offer-wizard/offerErrorText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
 import Link from "next/link";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -60,6 +63,7 @@ import {
 } from "../driveOfferSerializer";
 import { mapLegacyAgeToAgeRange } from "../driveOfferAge";
 
+import { UiText, useUiText } from "@/components/UiText";
 /**
  * The drive give form has five steps; the first asks where the items are. Pickup & delivery is not asked here: the donor
  * chooses drop-off or NGO pickup, and gives the pickup address, on the handover page
@@ -77,17 +81,17 @@ function validateDriveOfferAll(
 ): Record<string, string> {
   const errors = Object.assign({}, ...DRIVE_OFFER_STEPS.filter(s => s !== "location").map(s => validateOfferStep(s, model, null, maxQuantity)));
   if (model.sizeSpec && model.sizeSpec.length > 100) {
-    errors.sizeSpec = "Size / specification cannot exceed 100 characters.";
+    errors.sizeSpec = offerErrorCode("sizeSpecMax", { max: 100 });
   }
   const effectiveAge = model.ageRange || mapLegacyAgeToAgeRange(model.approximateAge, model.condition);
   if (!effectiveAge) {
-    errors.ageRange = "Choose how old the item is.";
+    errors.ageRange = offerErrorCode("ageRangeRequired");
   }
   if (options?.mustBeWorking && !model.confirmedWorking) {
-    errors.confirmedWorking = "Please confirm that the item is tested and works.";
+    errors.confirmedWorking = offerErrorCode("confirmWorking");
   }
   if (options?.requireClean && !model.confirmedClean) {
-    errors.confirmedClean = "Please confirm that the item is washed and clean.";
+    errors.confirmedClean = offerErrorCode("confirmClean");
   }
   return errors;
 }
@@ -102,11 +106,11 @@ function firstIncompleteDriveStep(model: OfferModel, hasLocation: boolean): Driv
 /** Errors for the "Where are the items?" step. Country/state are checked only when edited. */
 export function driveLocationErrors(loc: LocationFields, edited: boolean): Record<string, string> {
   const e: Record<string, string> = {};
-  if (edited && !loc.countryIso) e.countryIso = "Choose the country";
-  if (edited && !loc.stateIso) e.stateIso = "Choose the state";
-  if (!loc.city.trim()) e.city = "Enter the city";
-  if (!/^[1-9][0-9]{5}$/.test(loc.pincode.trim())) e.pincode = "Enter a 6-digit PIN code";
-  if (loc.latitude == null || loc.longitude == null) e.latitude = "Drop the pin on the map";
+  if (edited && !loc.countryIso) e.countryIso = offerErrorCode("countryRequired");
+  if (edited && !loc.stateIso) e.stateIso = offerErrorCode("stateRequired");
+  if (!loc.city.trim()) e.city = offerErrorCode("cityEnter");
+  if (!/^[1-9][0-9]{5}$/.test(loc.pincode.trim())) e.pincode = offerErrorCode("pincodeInvalid");
+  if (loc.latitude == null || loc.longitude == null) e.latitude = offerErrorCode("pinRequired");
   return e;
 }
 
@@ -119,8 +123,8 @@ function locationFrom(offer: NgoDriveOfferResponse | null): LocationFields {
 }
 
 /** "PIECES" → "pieces", for "This drive needs only N more pieces." */
-function unitWords(unit: string | null | undefined): string {
-  return unit ? unit.replaceAll("_", " ").toLowerCase() : "items";
+function unitWords(unit: string | null | undefined, fallback: string): string {
+  return unit ? unit.replaceAll("_", " ").toLowerCase() : fallback;
 }
 
 /** The drive offer's video as the shared video hook expects it, read from the saved offer. */
@@ -142,25 +146,29 @@ const DRIVE_VIDEO_ENDPOINTS: Omit<VideoEndpoints, "current"> = {
   remove: deleteNgoDriveOfferVideo,
 };
 
-const STEP_LABELS: Record<OfferStep, string> = {
-  location: "Where are the items?",
-  photos: "Show the item",
-  details: "Tell us about the item",
-  purchasePlan: "What you'll buy",
-  condition: "Condition & fit",
-  pickup: "Pickup & delivery",
-  review: "Review your offer",
-};
-
-const STEP_INTROS: Record<OfferStep, string> = {
-  location: "We'll check if the NGO can pick them up from you.",
-  photos: "A few good photos do most of the work.",
-  details: "What are you giving, and how much of it?",
-  purchasePlan: "Tell the recipient what you plan to buy, and how soon.",
-  condition: "How is it doing, and what should the NGO know?",
-  pickup: "Where would this be collected from?",
-  review: "One last look before it goes to the NGO.",
-};
+function useStepCopy(): { labels: Record<OfferStep, string>; intros: Record<OfferStep, string> } {
+  const ui = useUiText();
+  return {
+    labels: {
+      location: ui("Where are the items?"),
+      photos: ui("Show the item"),
+      details: ui("Tell us about the item"),
+      purchasePlan: ui("What you'll buy"),
+      condition: ui("Condition & fit"),
+      pickup: ui("Pickup & delivery"),
+      review: ui("Review your offer"),
+    },
+    intros: {
+      location: ui("We'll check if the NGO can pick them up from you."),
+      photos: ui("A few good photos do most of the work."),
+      details: ui("What are you giving, and how much of it?"),
+      purchasePlan: ui("Tell the recipient what you plan to buy, and how soon."),
+      condition: ui("How is it doing, and what should the NGO know?"),
+      pickup: ui("Where would this be collected from?"),
+      review: ui("One last look before it goes to the NGO."),
+    },
+  };
+}
 
 /**
  * The five-step drive give form (location, photos, details, condition, review).
@@ -210,6 +218,11 @@ export function NgoDriveOfferWizard({
   /** Returns from the editor to the request/offer-type prelude. */
   onExit: () => void;
 }) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const wt = useTranslations("wizardFlow");
+  const dc = useDriveCopy();
+  const { labels: STEP_LABELS, intros: STEP_INTROS } = useStepCopy();
   const reduced = !!useReducedMotion();
   const locale = useLocale();
   const isRtl = locale === "ar" || locale === "ur";
@@ -256,7 +269,13 @@ export function NgoDriveOfferWizard({
     commitLoc({ ...locRef.current, [key]: value });
   }, [commitLoc]);
   const [direction, setDirection] = useState(1);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [rawErrors, setErrors] = useState<Record<string, string>>({});
+  const offerErrorText = useOfferErrorText();
+  // Validation codes from offerSchema → text in the reader's language, at render.
+  const errors = useMemo(
+    () => Object.fromEntries(Object.entries(rawErrors).map(([k, v]) => [k, offerErrorText(v) ?? v])) as Record<string, string>,
+    [rawErrors, offerErrorText],
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
@@ -366,7 +385,7 @@ export function NgoDriveOfferWizard({
       const res = { aiAvailable: true, prohibited: false, prohibitedCode: null, prohibitedCategory: null } as any;
       if (token !== screenTokenRef.current) return; // superseded
       if (!res.aiAvailable) {
-        setScreening({ kind: "unavailable", note: res.note ?? "We couldn't check your photos just now — you can continue." });
+        setScreening({ kind: "unavailable", note: res.note ?? ui("We couldn't check your photos just now — you can continue.") });
       } else if (res.prohibited) {
         setScreening({ kind: "prohibited", code: res.prohibitedCode, category: res.prohibitedCategory });
       } else {
@@ -374,7 +393,7 @@ export function NgoDriveOfferWizard({
       }
     } catch {
       if (token !== screenTokenRef.current) return;
-      setScreening({ kind: "unavailable", note: "We couldn't check your photos just now — you can continue." });
+      setScreening({ kind: "unavailable", note: ui("We couldn't check your photos just now — you can continue.") });
     }
   }, [model.photos, offerId]);
 
@@ -496,19 +515,21 @@ export function NgoDriveOfferWizard({
 
   // Quantity over what the drive still needs: shown in red under the field as the
   // donor types, and Continue stays blocked (the shared rule refuses it too).
+  const itemsWord = ui("items");
   const overNeedMessage = useMemo(() => {
     const qty = Number(model.quantity);
     if (stillNeededQuantity == null || stillNeededQuantity <= 0 || !Number.isInteger(qty)) return null;
     return qty > stillNeededQuantity
-      ? `This drive needs only ${stillNeededQuantity} more ${unitWords(driveUnit)}.`
+      ? df("needsOnlyMore", { count: stillNeededQuantity, unit: unitWords(driveUnit, itemsWord) })
       : null;
-  }, [model.quantity, stillNeededQuantity, driveUnit]);
+  }, [model.quantity, stillNeededQuantity, driveUnit, df, itemsWord]);
   const shownErrors = useMemo(() => {
     const out = { ...errors };
     if (overNeedMessage) out.quantity = overNeedMessage;
-    else if (out.quantity?.startsWith("This drive needs only") || out.quantity?.startsWith("This request needs only")) delete out.quantity;
+    // The shared rule's over-need error, recognised by its code (the shown text is translated).
+    else if (rawErrors.quantity?.startsWith(offerErrorCode("quantityMax"))) delete out.quantity;
     return out;
-  }, [errors, overNeedMessage]);
+  }, [errors, rawErrors, overNeedMessage]);
 
   const handleContinue = useCallback(async () => {
     if (step === "location") {
@@ -534,7 +555,7 @@ export function NgoDriveOfferWizard({
           setLocSaved(true);
           locEditedRef.current = false;
         } catch (e) {
-          const { fields, message } = driveOfferErrors(e, "We couldn't save your location. Try again.");
+          const { fields, message } = driveOfferErrors(e, ui("We couldn't save your location. Try again."));
           setErrors(fields);
           toast.error(message);
           return;
@@ -544,29 +565,31 @@ export function NgoDriveOfferWizard({
       }
       const outside = radius ? !radius.inside : result.dropOffOnly === true;
       if (outside && !outsideConfirmed) { setOutsideOpen(true); return; }
-      if (!radius && result.dropOffOnly === false) toast.success("You're within the NGO's pickup area. You can choose pickup or drop-off later.");
+      if (!radius && result.dropOffOnly === false) toast.success(ui("You're within the NGO's pickup area. You can choose pickup or drop-off later."));
       goTo("photos", 1);
       return;
     }
     const stepErrors = validateOfferStep(step, model, null, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
-      setErrors({ photos: "Remove the photo we cannot accept before continuing." });
+      setErrors({ photos: ui("Remove the photo we cannot accept before continuing.") });
       return;
     }
     if (step === "details") {
-      if (overNeedMessage) stepErrors.quantity = overNeedMessage;
+      // Stored as the shared rule's code, so the stale message clears once the quantity is fixed;
+      // the red text shown is overNeedMessage (see shownErrors).
+      if (overNeedMessage) stepErrors.quantity = offerErrorCode("quantityMax", { max: stillNeededQuantity ?? 0 });
       if (model.sizeSpec && model.sizeSpec.length > 100) {
-        stepErrors.sizeSpec = "Size / specification cannot exceed 100 characters.";
+        stepErrors.sizeSpec = offerErrorCode("sizeSpecMax", { max: 100 });
       }
       const effectiveAge = model.ageRange || mapLegacyAgeToAgeRange(model.approximateAge, model.condition);
       if (!effectiveAge) {
-        stepErrors.ageRange = "Choose how old the item is.";
+        stepErrors.ageRange = offerErrorCode("ageRangeRequired");
       }
       if (mustBeWorking && !model.confirmedWorking) {
-        stepErrors.confirmedWorking = "Please confirm that the item is tested and works.";
+        stepErrors.confirmedWorking = offerErrorCode("confirmWorking");
       }
       if (requireClean && !model.confirmedClean) {
-        stepErrors.confirmedClean = "Please confirm that the item is washed and clean.";
+        stepErrors.confirmedClean = offerErrorCode("confirmClean");
       }
     }
     if (Object.keys(stepErrors).length > 0) {
@@ -583,7 +606,7 @@ export function NgoDriveOfferWizard({
         // never reason about data the server has not accepted.
         const saved = await flush(model);
         if (!saved) {
-          showSaveFailure("We couldn't save your changes. Check your connection and try again.");
+          showSaveFailure(ui("We couldn't save your changes. Check your connection and try again."));
           return;
         }
         goTo(DRIVE_OFFER_STEPS[idx + 1], 1);
@@ -626,7 +649,7 @@ export function NgoDriveOfferWizard({
     }
     if (photosBlocked) {
       submitLockRef.current = false;
-      setSubmitError("One of your photos shows something we cannot accept. Replace it to submit.");
+      setSubmitError(ui("One of your photos shows something we cannot accept. Replace it to submit."));
       return;
     }
 
@@ -634,7 +657,7 @@ export function NgoDriveOfferWizard({
     try {
       const saved = await flush(model);
       if (!saved) {
-        setSubmitError(showSaveFailure("Your latest changes could not be saved."));
+        setSubmitError(showSaveFailure(ui("Your latest changes could not be saved.")));
         submitLockRef.current = false;
         return;
       }
@@ -645,7 +668,7 @@ export function NgoDriveOfferWizard({
       // Stay on Review. A failed submit that navigated away would strand the
       // donor on a status screen for an offer that was never sent. The server names
       // each missing field; show them next to their fields and in the summary.
-      const { fields, message } = driveOfferErrors(e, "We couldn't send your offer. Please try again.");
+      const { fields, message } = driveOfferErrors(e, ui("We couldn't send your offer. Please try again."));
       if (Object.keys(fields).length > 0) setErrors(fields);
       setSubmitError(message);
       submitLockRef.current = false;
@@ -661,13 +684,13 @@ export function NgoDriveOfferWizard({
       const saved = await flush(model);
       if (!saved) {
         toast.dismiss(toastId);
-        showSaveFailure("We couldn't save your changes. Please try again.");
+        showSaveFailure(ui("We couldn't save your changes. Please try again."));
         return;
       }
-      toast.success("Draft saved", { id: toastId });
+      toast.success(ui("Draft saved"), { id: toastId });
       (onSaveExit ?? onExit)();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "We couldn't save your changes — please try again.", { id: toastId });
+      toast.error(e instanceof Error ? e.message : ui("We couldn't save your changes — please try again."), { id: toastId });
     } finally {
       setSavingExit(false);
     }
@@ -703,27 +726,27 @@ export function NgoDriveOfferWizard({
               onClick={onExit}
               className="mb-8 flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-highlight)]"
             >
-              <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> <UiText>Back</UiText>
             </button>
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-              Give to this drive
+              <UiText>Give to this drive</UiText>
             </h2>
-            <p className="mb-3 text-sm text-white/50">Five short steps. We save as you go.</p>
+            <p className="mb-3 text-sm text-white/50"><UiText>Five short steps. We save as you go.</UiText></p>
             {driveId && (
               <div className="mb-8">
                 <Link
                   href={`/drives/${driveId}`}
                   className="inline-flex items-center text-xs text-white/70 underline underline-offset-2 transition-colors hover:text-white"
                 >
-                  View full drive details
+                  <UiText>View full drive details</UiText>
                 </Link>
               </div>
             )}
             <WizardProgressRail
-              current={step} steps={DRIVE_OFFER_STEPS} navLabel="Donation offer progress"
+              current={step} steps={DRIVE_OFFER_STEPS} navLabel={ui("Donation offer progress")}
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
-          <p className="text-2xs text-white/35">Your name and address stay private until the NGO accepts your offer.</p>
+          <p className="text-2xs text-white/35"><UiText>Your name and address stay private until the NGO accepts your offer.</UiText></p>
         </aside>
 
         <form
@@ -744,20 +767,20 @@ export function NgoDriveOfferWizard({
                 onClick={onExit}
                 className="flex min-h-[44px] items-center gap-1 text-sm font-medium text-stone-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
               >
-                <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
+                <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> <UiText>Back</UiText>
               </button>
               {driveId && (
                 <Link
                   href={`/drives/${driveId}`}
                   className="text-xs font-semibold text-emerald-700 underline underline-offset-2 dark:text-emerald-400"
                 >
-                  View full drive details
+                  <UiText>View full drive details</UiText>
                 </Link>
               )}
               <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
             </div>
             <WizardProgressBar
-              current={step} steps={DRIVE_OFFER_STEPS} navLabel="Donation offer progress"
+              current={step} steps={DRIVE_OFFER_STEPS} navLabel={ui("Donation offer progress")}
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
 
@@ -768,7 +791,7 @@ export function NgoDriveOfferWizard({
             <div className="mx-auto w-full max-w-[680px]">
               <div className="mb-4 hidden items-center justify-between lg:flex">
                 <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
-                  Step {driveStepIndex(step) + 1} of {DRIVE_OFFER_STEPS.length}
+                  {wt("stepOf", { n: driveStepIndex(step) + 1, total: DRIVE_OFFER_STEPS.length })}
                 </p>
                 <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
               </div>
@@ -776,7 +799,7 @@ export function NgoDriveOfferWizard({
               {adminNote && (
                 <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
                   <p className="flex items-center gap-1.5 text-2xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                    <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> Our team asked for more information
+                    <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> <UiText>Our team asked for more information</UiText>
                   </p>
                   <p className="mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
                 </div>
@@ -860,7 +883,7 @@ export function NgoDriveOfferWizard({
                           {!radius && locResult?.dropOffOnly === false && (
                             <p data-testid="drive-pickup-inside" role="status"
                               className="rounded-xl border border-ngo-200 bg-ngo-50 p-3 text-xs font-semibold text-ngo-800 dark:border-ngo-900 dark:bg-ngo-950/30 dark:text-ngo-200">
-                              You&apos;re within the NGO&apos;s pickup area. You can choose pickup or drop-off later.
+                              <UiText>You&apos;re within the NGO&apos;s pickup area. You can choose pickup or drop-off later.</UiText>
                             </p>
                           )}
                         </div>
@@ -891,7 +914,7 @@ export function NgoDriveOfferWizard({
                       {step === "condition" && (
                         <OfferConditionStep model={model} errors={errors} onChange={setField} compat={compatState}
                           conditions={acceptedConditions?.length ? acceptedConditions : undefined}
-                          conditionHint={acceptedConditions?.length ? `This drive accepts: ${acceptedConditions.join(", ")}` : undefined} />
+                          conditionHint={acceptedConditions?.length ? df("driveAccepts", { list: acceptedConditions.map(dc).join(", ") }) : undefined} />
                       )}
                       {step === "review" && (
                         <>
@@ -899,15 +922,15 @@ export function NgoDriveOfferWizard({
                             model={model} errors={errors} requestTitle={requestTitle} compat={compat}
                             declarationsInvalidated={declarationsInvalidated}
                             onChange={setField} onEdit={s => goTo(s, -1)}
-                            declarationGroups={DRIVE_OFFER_DECLARATION_GROUPS}
+                            declarationGroups={DRIVE_OFFER_DECLARATION_GROUPS.map(g => ({ ...g, items: g.items.map(dc) }))}
                             hidePickup
                             driveDetails
                             photoGallery={photos => (
-                              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label="Your photos">
+                              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" aria-label={ui("Your photos")}>
                                 {photos.map((p, i) => (
                                   <li key={p.id}>
                                     <button type="button" onClick={() => setEnlarged(p.url)}
-                                      aria-label={`Enlarge photo ${i + 1}`}
+                                      aria-label={df("enlargePhotoN", { n: i + 1 })}
                                       className="block aspect-[4/3] w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-800 dark:bg-zinc-950">
                                       {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
                                       <img src={p.url} alt={`Photo ${i + 1}`} className="h-full w-full object-contain" />
@@ -919,12 +942,12 @@ export function NgoDriveOfferWizard({
                             video={videoApi.video ? (
                               <div className="mt-2" data-testid="review-video">
                                 {videoApi.playbackUrl || videoApi.video.playbackUrl ? (
-                                  <video controls preload="metadata" aria-label="Your item video"
+                                  <video controls preload="metadata" aria-label={ui("Your item video")}
                                     src={(videoApi.playbackUrl || videoApi.video.playbackUrl) as string}
                                     className="aspect-video w-full rounded-xl border border-stone-200 bg-black object-contain dark:border-zinc-800" />
                                 ) : (
                                   <p className="text-2xs text-stone-500 dark:text-stone-400">
-                                    Video added · {videoApi.video.status === "REJECTED" ? "not accepted" : "being checked"}
+                                    <UiText>Video added</UiText> · {videoApi.video.status === "REJECTED" ? ui("not accepted") : ui("being checked")}
                                   </p>
                                 )}
                               </div>
@@ -949,7 +972,7 @@ export function NgoDriveOfferWizard({
             onBack={() => goTo(DRIVE_OFFER_STEPS[driveStepIndex(step) - 1], -1)}
             onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
             onSaveExit={() => void handleSaveExit()}
-            continueLabel={isLast ? "Send offer to the NGO" : "Continue"}
+            continueLabel={isLast ? ui("Send offer to the NGO") : ui("Continue")}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}
@@ -965,11 +988,11 @@ export function NgoDriveOfferWizard({
         onCaptured={file => { setCameraOpen(false); photoApi.addFiles([file]); }}
       />
       {enlarged && (
-        <div role="dialog" aria-modal="true" aria-label="Photo"
+        <div role="dialog" aria-modal="true" aria-label={ui("Photo")}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4" onClick={() => setEnlarged(null)}>
           {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
-          <img src={enlarged} alt="Enlarged photo" className="max-h-[88vh] max-w-full rounded-lg object-contain" onClick={e => e.stopPropagation()} />
-          <button type="button" onClick={() => setEnlarged(null)} aria-label="Close photo"
+          <img src={enlarged} alt={ui("Enlarged photo")} className="max-h-[88vh] max-w-full rounded-lg object-contain" onClick={e => e.stopPropagation()} />
+          <button type="button" onClick={() => setEnlarged(null)} aria-label={ui("Close photo")}
             className="absolute right-4 top-4 grid h-11 w-11 place-items-center rounded-full bg-white/90 text-stone-900">
             <X className="h-5 w-5" aria-hidden />
           </button>

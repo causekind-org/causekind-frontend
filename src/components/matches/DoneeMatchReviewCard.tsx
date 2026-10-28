@@ -4,6 +4,9 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import type { ItemMatch } from "@/lib/api";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useDashCopy, useTimeAgo } from "@/lib/dashboardCopy";
+import { useTranslations } from "next-intl";
 /**
  * A match waiting on the donee (AWAITING_DONEE_CONFIRMATION: the donor confirmed
  * they still have the item and an admin approved). The donee's counterpart of
@@ -22,29 +25,33 @@ export function DoneeMatchReviewCard({
   onAccept: () => void;
   onDecline: () => void;
 }) {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
+  const timeAgo = useTimeAgo();
   const photos = (match.listingPhotoUrls?.length ? match.listingPhotoUrls : match.donorImages) ?? [];
   const [shown, setShown] = useState(0);
   const photo = photos[shown] ?? photos[0];
-  const item = match.listingTitle || "A donated item";
-  const need = match.requestTitle || "your request";
+  const item = match.listingTitle || ui("A donated item");
+  const need = match.requestTitle || ui("your request");
   const description = match.listingDescription || match.donorItemDescription;
   const covered = match.allocatedQuantity ?? null;
   const needed = match.requestQuantity ?? null;
   const km = match.scoreDistanceKm;
 
   const details: [string, string | null | undefined][] = [
-    ["Condition", match.listingCondition],
-    ["Working", match.listingWorkingStatus ? match.listingWorkingStatus.replace(/_/g, " ").toLowerCase() : null],
-    ["Item age", match.listingApproximateAge],
-    ["Brand", match.listingBrand],
-    ["Known defects", match.listingKnownDefects],
-    ["Includes", match.listingAccessoriesIncluded],
+    [ui("Condition"), match.listingCondition ? dc(match.listingCondition) : null],
+    [ui("Working"), match.listingWorkingStatus ? dc(match.listingWorkingStatus.replace(/_/g, " ").toLowerCase()) : null],
+    [ui("Item age"), match.listingApproximateAge],
+    [ui("Brand"), match.listingBrand],
+    [ui("Known defects"), match.listingKnownDefects],
+    [ui("Includes"), match.listingAccessoriesIncluded],
   ];
   const shownDetails = details.filter(([, v]) => v && String(v).trim() !== "");
 
   return (
     <article
-      aria-label={`An item matches your request: ${need}`}
+      aria-label={dt("itemMatchesYourRequest", { need })}
       className="flex flex-col gap-4 rounded-3xl border border-stone-200 bg-white p-4 shadow-[0_24px_50px_-32px_rgba(20,30,60,0.35)] sm:flex-row sm:gap-6 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900"
     >
       <div className="flex w-full shrink-0 flex-col gap-2 sm:w-56">
@@ -52,7 +59,7 @@ export function DoneeMatchReviewCard({
           {photo ? (
             <img src={photo} alt={item} className="h-full w-full object-cover" />
           ) : (
-            <div className="flex h-full w-full items-center justify-center text-xs font-bold text-stone-400">No photo</div>
+            <div className="flex h-full w-full items-center justify-center text-xs font-bold text-stone-400"><UiText>No photo</UiText></div>
           )}
         </div>
         {photos.length > 1 && (
@@ -62,7 +69,7 @@ export function DoneeMatchReviewCard({
                 key={p}
                 type="button"
                 onClick={() => setShown(i)}
-                aria-label={`Show photo ${i + 1}`}
+                aria-label={dt("showPhotoN", { n: i + 1 })}
                 className={`h-11 w-11 shrink-0 overflow-hidden rounded-lg border-2 ${i === shown ? "border-[var(--ck-role-accent)]" : "border-transparent"}`}
               >
                 <img src={p} alt="" className="h-full w-full object-cover" />
@@ -75,13 +82,13 @@ export function DoneeMatchReviewCard({
       <div className="flex min-w-0 flex-1 flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-[var(--ck-role-accent)]/10 px-3 py-1 text-2xs font-black text-[var(--ck-role-accent)]">
-            Waiting for you
+            <UiText>Waiting for you</UiText>
           </span>
-          <span className="text-xs text-stone-500">The donor confirmed and our team approved it</span>
+          <span className="text-xs text-stone-500"><UiText>The donor confirmed and our team approved it</UiText></span>
         </div>
 
         <h3 className="text-lg font-black leading-snug text-stone-900 sm:text-xl dark:text-stone-100">
-          {item} <span className="font-semibold text-stone-500">for your &ldquo;{need}&rdquo;</span>
+          {item} <span className="font-semibold text-stone-500">{dt("forYourNeed", { need })}</span>
         </h3>
 
         {description && (
@@ -89,9 +96,9 @@ export function DoneeMatchReviewCard({
         )}
 
         <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <Fact label="Covers" value={covered != null && needed != null ? `${covered} of ${needed} you need` : covered != null ? `${covered}` : "—"} />
-          <Fact label="Distance" value={km != null ? `About ${km < 1 ? "<1" : Math.round(km)} km` : "Same city"} />
-          <Fact label="Donor" value={`Verified${match.donorCity ? `, ${match.donorCity.split(",")[0]}` : ""}`} />
+          <Fact label={ui("Covers")} value={covered != null && needed != null ? dt("coversOfYouNeed", { covered, needed }) : covered != null ? `${covered}` : "—"} />
+          <Fact label={ui("Distance")} value={km != null ? dt("aboutKm", { km: km < 1 ? "<1" : Math.round(km) }) : ui("Same city")} />
+          <Fact label={ui("Donor")} value={match.donorCity ? dt("verifiedIn", { city: match.donorCity.split(",")[0] }) : ui("Verified")} />
         </dl>
 
         {shownDetails.length > 0 && (
@@ -110,7 +117,7 @@ export function DoneeMatchReviewCard({
             className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--ck-role-accent)] px-6 text-sm font-black text-white transition-colors hover:bg-[var(--ck-role-hover,#2d5a96)] disabled:opacity-60"
           >
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
-            Yes, I want this item
+            <UiText>Yes, I want this item</UiText>
           </button>
           <button
             type="button"
@@ -118,7 +125,7 @@ export function DoneeMatchReviewCard({
             onClick={onDecline}
             className="inline-flex h-12 items-center justify-center rounded-full border-[1.5px] border-stone-300 bg-white px-5 text-sm font-extrabold text-stone-700 transition-colors hover:bg-stone-50 disabled:opacity-60 dark:border-zinc-700 dark:bg-transparent dark:text-stone-200"
           >
-            This won&apos;t work for me
+            <UiText>This won&apos;t work for me</UiText>
           </button>
         </div>
       </div>

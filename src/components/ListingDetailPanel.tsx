@@ -12,76 +12,94 @@ import {
 import type { ItemListing, ItemMatch } from "@/lib/api";
 import { displayReason, missingInfoLines } from "@/lib/rejectionReason";
 import { canWithdrawListing, canDeleteListing } from "@/lib/listingActions";
+import { useTranslations } from "next-intl";
+import { UiText, useUiText } from "@/components/UiText";
+
+// Translation boundary (handoffs/Translation Coverage Plan.md): this panel's static
+// interface copy is translated; everything the donor typed (title, description,
+// brand, defects, locality…) and admin-written reasons are shown as written.
 
 // ── Journey phases ────────────────────────────────────────────────────────────
-
+// Stage keys only; the copy is built inside the component (ui() needs literals at
+// the call site), see usePhaseCopy().
 const PHASES = [
-  {
-    key: "DRAFT",
-    label: "Draft Created",
-    done: "You started your listing.",
-    current: "Your listing is saved as a draft. Complete all steps and submit.",
-    upcoming: "Create a listing by clicking List an Item.",
-  },
-  {
-    key: "SUBMITTED",
-    label: "Submitted for Review",
-    done: "Your listing was submitted to CauseKind.",
-    current: "Your listing is queued for screening.",
-    upcoming: "After you submit, it enters our review pipeline.",
-  },
-  {
-    key: "AI_SCREENING",
-    label: "AI Safety Check",
-    done: "Automated check passed — images and description look good.",
-    current: "Our automated system is checking your images and description now.",
-    upcoming: "An automated check verifies the item, images and description match.",
-    problem: "The automated check flagged an issue with your listing.",
-    review: "Passed to our team for manual review (usually 24–48 hours).",
-  },
-  {
-    key: "ELIGIBLE_FOR_MATCHING",
-    label: "Live — Matching",
-    done: "Your item entered the matching pool.",
-    current: "Your item is live. The system is scanning for compatible requests.",
-    upcoming: "Once approved, your item is matched with verified recipient requests.",
-  },
-  {
-    key: "SOFT_RESERVED",
-    label: "Match Found — Confirming",
-    done: "A match was found and you confirmed availability.",
-    current: "A potential recipient was identified. We need you to confirm the item is still available.",
-    upcoming: "When a request matches your item, we ask you to reconfirm availability before the recipient sees it.",
-  },
-  {
-    key: "MATCHED",
-    label: "Approved by CauseKind",
-    done: "CauseKind admin verified and approved the match.",
-    current: "Both parties have agreed. Our team is doing a final review.",
-    upcoming: "After mutual consent, a CauseKind admin does a final check before enabling contact.",
-  },
-  {
-    key: "HANDOVER",
-    label: "Handover Hub",
-    done: "Delivery was coordinated through the Handover Hub.",
-    current: "You can now coordinate delivery through the Handover Hub. Use the OTP for verified handover.",
-    upcoming: "After admin approval, the Handover Hub opens for scheduling, masked communication and OTP-verified delivery.",
-  },
-  {
-    key: "DONATED",
-    label: "Donated 🎉",
-    done: "Item successfully donated. Your Donation Certificate has been issued.",
-    current: "Donation verified. Your certificate is being generated.",
-    upcoming: "After verified handover, your Donation Certificate is issued.",
-  },
-];
+  { key: "DRAFT" },
+  { key: "SUBMITTED" },
+  { key: "AI_SCREENING" },
+  { key: "ELIGIBLE_FOR_MATCHING" },
+  { key: "SOFT_RESERVED" },
+  { key: "MATCHED" },
+  { key: "HANDOVER" },
+  { key: "DONATED" },
+] as const;
+type PhaseKey = (typeof PHASES)[number]["key"];
+type PhaseCopy = { label: string; done: string; current: string; upcoming: string; problem?: string; review?: string };
+
+function usePhaseCopy(): Record<PhaseKey, PhaseCopy> {
+  const ui = useUiText();
+  return {
+    DRAFT: {
+      label: ui("Draft Created"),
+      done: ui("You started your listing."),
+      current: ui("Your listing is saved as a draft. Complete all steps and submit."),
+      upcoming: ui("Create a listing by clicking List an Item."),
+    },
+    SUBMITTED: {
+      label: ui("Submitted for Review"),
+      done: ui("Your listing was submitted to CauseKind."),
+      current: ui("Your listing is queued for screening."),
+      upcoming: ui("After you submit, it enters our review pipeline."),
+    },
+    AI_SCREENING: {
+      label: ui("AI Safety Check"),
+      done: ui("Automated check passed — images and description look good."),
+      current: ui("Our automated system is checking your images and description now."),
+      upcoming: ui("An automated check verifies the item, images and description match."),
+      problem: ui("The automated check flagged an issue with your listing."),
+      review: ui("Passed to our team for manual review (usually 24–48 hours)."),
+    },
+    ELIGIBLE_FOR_MATCHING: {
+      label: ui("Live — Matching"),
+      done: ui("Your item entered the matching pool."),
+      current: ui("Your item is live. The system is scanning for compatible requests."),
+      upcoming: ui("Once approved, your item is matched with verified recipient requests."),
+    },
+    SOFT_RESERVED: {
+      label: ui("Match Found — Confirming"),
+      done: ui("A match was found and you confirmed availability."),
+      current: ui("A potential recipient was identified. We need you to confirm the item is still available."),
+      upcoming: ui("When a request matches your item, we ask you to reconfirm availability before the recipient sees it."),
+    },
+    MATCHED: {
+      label: ui("Approved by CauseKind"),
+      done: ui("CauseKind admin verified and approved the match."),
+      current: ui("Both parties have agreed. Our team is doing a final review."),
+      upcoming: ui("After mutual consent, a CauseKind admin does a final check before enabling contact."),
+    },
+    HANDOVER: {
+      label: ui("Handover Hub"),
+      done: ui("Delivery was coordinated through the Handover Hub."),
+      current: ui("You can now coordinate delivery through the Handover Hub. Use the OTP for verified handover."),
+      upcoming: ui("After admin approval, the Handover Hub opens for scheduling, masked communication and OTP-verified delivery."),
+    },
+    DONATED: {
+      label: ui("Donated 🎉"),
+      done: ui("Item successfully donated. Your Donation Certificate has been issued."),
+      current: ui("Donation verified. Your certificate is being generated."),
+      upcoming: ui("After verified handover, your Donation Certificate is issued."),
+    },
+  };
+}
 
 // Map listing status → phase index + variant
 type PhaseVariant = "done" | "current" | "problem" | "review" | "upcoming";
 
+/** Codes for the context notes; their copy is translated in the component. */
+type ContextCode = "matchFailed" | "needsInfo" | "manualReview" | "paused";
+
 interface PhaseResult {
   state: PhaseVariant;
-  contextMessage?: string;
+  contextMessage?: ContextCode;
 }
 
 // Once a match exists, its own status is the more reliable signal for phases 5–7
@@ -119,7 +137,7 @@ function getPhaseResults(status: string, match?: ItemMatch | null): PhaseResult[
   if (match && MATCH_PROBLEM_STATUSES.has(match.status)) {
     return PHASES.map((_, i) => {
       if (i < 5) return { state: "done" };
-      if (i === 5) return { state: "problem", contextMessage: "This match did not go through. Check your matches for details." };
+      if (i === 5) return { state: "problem", contextMessage: "matchFailed" };
       return { state: "upcoming" };
     });
   }
@@ -133,7 +151,7 @@ function getListingOnlyPhaseResults(status: string): PhaseResult[] {
       if (i < 2) return { state: "done" };
       if (i === 2) return {
         state: "problem",
-        contextMessage: "Action needed: your listing was flagged for missing or unclear information. Update your listing and resubmit.",
+        contextMessage: "needsInfo",
       };
       return { state: "upcoming" };
     });
@@ -144,7 +162,7 @@ function getListingOnlyPhaseResults(status: string): PhaseResult[] {
       if (i < 2) return { state: "done" };
       if (i === 2) return {
         state: "review",
-        contextMessage: "Your listing is being reviewed by our team manually. This usually takes 24–48 hours.",
+        contextMessage: "manualReview",
       };
       return { state: "upcoming" };
     });
@@ -155,7 +173,7 @@ function getListingOnlyPhaseResults(status: string): PhaseResult[] {
       if (i < 3) return { state: "done" };
       if (i === 3) return {
         state: "current",
-        contextMessage: "Your listing is paused and not visible to the matching engine. Resume it when you're ready.",
+        contextMessage: "paused",
       };
       return { state: "upcoming" };
     });
@@ -230,6 +248,16 @@ interface Props {
 }
 
 export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdrawPrompt, onDelete, actionLoading }: Props) {
+  const ui = useUiText();
+  const t = useTranslations("listingPanel");
+  const phaseCopy = usePhaseCopy();
+  const contextCopy: Record<ContextCode, string> = {
+    matchFailed: ui("This match did not go through. Check your matches for details."),
+    needsInfo: ui("Action needed: your listing was flagged for missing or unclear information. Update your listing and resubmit."),
+    manualReview: ui("Your listing is being reviewed by our team manually. This usually takes 24–48 hours."),
+    paused: ui("Your listing is paused and not visible to the matching engine. Resume it when you're ready."),
+  };
+
   // Lock body scroll while open
   useEffect(() => {
     if (listing) {
@@ -256,22 +284,22 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
 
   const phaseResults = getPhaseResults(listing.status, match);
   const statusMeta: Record<string, { label: string; color: string }> = {
-    DRAFT:                 { label: "Draft",            color: "text-stone-500 bg-stone-100 border-stone-300" },
-    SUBMITTED:             { label: "Under Review",     color: "text-blue-700 bg-blue-50 border-blue-200" },
-    AI_SCREENING:          { label: "AI Screening",     color: "text-blue-700 bg-blue-50 border-blue-200" },
-    NEEDS_INFORMATION:     { label: "More Info Needed", color: "text-amber-700 bg-amber-50 border-amber-300" },
-    MANUAL_REVIEW:         { label: "Manual Review",    color: "text-amber-700 bg-amber-50 border-amber-300" },
-    ELIGIBLE_FOR_MATCHING: { label: "Live — Matching",  color: "text-green-700 bg-green-50 border-green-300" },
-    AVAILABLE:             { label: "Live — Matching",  color: "text-green-700 bg-green-50 border-green-300" },
-    SOFT_RESERVED:         { label: "Match Found",      color: "text-teal-700 bg-teal-50 border-teal-300" },
-    MATCHED:               { label: "Matched",          color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
-    PAUSED:                { label: "Paused",           color: "text-stone-600 bg-stone-100 border-stone-300" },
-    PARTIALLY_DONATED:     { label: "Partially Donated",color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
-    DONATED:               { label: "Donated",          color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
-    FULFILLED:             { label: "Fulfilled",        color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
-    EXPIRED:               { label: "Expired",          color: "text-red-600 bg-red-50 border-red-300" },
-    WITHDRAWN:             { label: "Withdrawn",        color: "text-red-600 bg-red-50 border-red-300" },
-    REJECTED:              { label: "Rejected",         color: "text-red-600 bg-red-50 border-red-300" },
+    DRAFT:                 { label: ui("Draft"),            color: "text-stone-500 bg-stone-100 border-stone-300" },
+    SUBMITTED:             { label: ui("Under Review"),     color: "text-blue-700 bg-blue-50 border-blue-200" },
+    AI_SCREENING:          { label: ui("AI Screening"),     color: "text-blue-700 bg-blue-50 border-blue-200" },
+    NEEDS_INFORMATION:     { label: ui("More Info Needed"), color: "text-amber-700 bg-amber-50 border-amber-300" },
+    MANUAL_REVIEW:         { label: ui("Manual Review"),    color: "text-amber-700 bg-amber-50 border-amber-300" },
+    ELIGIBLE_FOR_MATCHING: { label: ui("Live — Matching"),  color: "text-green-700 bg-green-50 border-green-300" },
+    AVAILABLE:             { label: ui("Live — Matching"),  color: "text-green-700 bg-green-50 border-green-300" },
+    SOFT_RESERVED:         { label: ui("Match Found"),      color: "text-teal-700 bg-teal-50 border-teal-300" },
+    MATCHED:               { label: ui("Matched"),          color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
+    PAUSED:                { label: ui("Paused"),           color: "text-stone-600 bg-stone-100 border-stone-300" },
+    PARTIALLY_DONATED:     { label: ui("Partially Donated"),color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
+    DONATED:               { label: ui("Donated"),          color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
+    FULFILLED:             { label: ui("Fulfilled"),        color: "text-emerald-700 bg-emerald-50 border-emerald-300" },
+    EXPIRED:               { label: ui("Expired"),          color: "text-red-600 bg-red-50 border-red-300" },
+    WITHDRAWN:             { label: ui("Withdrawn"),        color: "text-red-600 bg-red-50 border-red-300" },
+    REJECTED:              { label: ui("Rejected"),         color: "text-red-600 bg-red-50 border-red-300" },
   };
   const meta = statusMeta[listing.status] ?? { label: listing.status, color: "text-stone-500 bg-stone-100 border-stone-200" };
 
@@ -309,13 +337,13 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
               <span className={`text-3xs font-bold px-2 py-0.5 rounded-full border ${meta.color}`}>{meta.label}</span>
               {listing.category && <span className="text-3xs text-stone-400">{listing.category}{listing.subcategory ? ` · ${listing.subcategory}` : ""}</span>}
-              <span className="text-3xs text-stone-400">Qty: {listing.quantity}</span>
+              <span className="text-3xs text-stone-400">{t("qty", { count: listing.quantity })}</span>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close listing details"
+            aria-label={ui("Close listing details")}
             className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors mt-0.5"
           >
             <X className="w-4 h-4 text-stone-500" aria-hidden="true" />
@@ -341,8 +369,8 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
             <div className="flex gap-2 px-5 py-3 overflow-x-auto scrollbar-none border-b border-stone-100 dark:border-zinc-800">
               {photos.map((src, i) => (
                 <div key={i} className="relative w-24 h-24 shrink-0 rounded-xl overflow-hidden bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700">
-                  <Image src={src} alt={`Photo ${i + 1}`} fill className="object-cover" unoptimized />
-                  {i === 0 && <span className="absolute bottom-1 left-1 text-4xs bg-[#1e3a60] text-white rounded px-1 py-0.5 font-bold">MAIN</span>}
+                  <Image src={src} alt={t("photoAlt", { n: i + 1 })} fill className="object-cover" unoptimized />
+                  {i === 0 && <span className="absolute bottom-1 left-1 text-4xs bg-[#1e3a60] text-white rounded px-1 py-0.5 font-bold"><UiText>MAIN</UiText></span>}
                 </div>
               ))}
             </div>
@@ -350,7 +378,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
 
           {/* ── Journey Timeline ─────────────────────────────────────────── */}
           <div className="px-5 py-4 border-b border-stone-100 dark:border-zinc-800">
-            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-4">Donation Journey</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-4"><UiText>Donation Journey</UiText></p>
 
             <div className="space-y-0">
               {PHASES.map((phase, i) => {
@@ -363,11 +391,12 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                 const isUpcoming = state === "upcoming";
                 const isLast = i === PHASES.length - 1;
 
-                let bodyText = phase.upcoming;
-                if (isDone)    bodyText = phase.done;
-                if (isCurrent) bodyText = phase.current;
-                if (isProblem) bodyText = phase.problem ?? phase.current;
-                if (isReview) bodyText = phase.review ?? phase.current;
+                const copy = phaseCopy[phase.key];
+                let bodyText = copy.upcoming;
+                if (isDone)    bodyText = copy.done;
+                if (isCurrent) bodyText = copy.current;
+                if (isProblem) bodyText = copy.problem ?? copy.current;
+                if (isReview) bodyText = copy.review ?? copy.current;
 
                 return (
                   <div key={phase.key} className="flex gap-3">
@@ -388,14 +417,14 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                         isProblem ? "text-amber-700 dark:text-amber-400" :
                         "text-stone-400 dark:text-zinc-500"
                       }`}>
-                        {phase.label}
+                        {copy.label}
                         {(isCurrent || isProblem) && (
                           <span className={`ml-2 text-4xs font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full ${
                             isProblem ? "bg-amber-100 text-amber-700 border border-amber-300" :
                             isReview ? "bg-amber-50 text-amber-600 border border-amber-200" :
                             "bg-[#1e3a60]/10 text-[#1e3a60] border border-[#1e3a60]/20"
                           }`}>
-                            {isProblem ? "Action Needed" : isReview ? "In Review" : "Now"}
+                            {isProblem ? ui("Action Needed") : isReview ? ui("In Review") : ui("Now")}
                           </span>
                         )}
                       </p>
@@ -411,7 +440,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                           href={`/matches/${match.id}/handover`}
                           className="mt-2 inline-flex items-center gap-1 rounded-lg bg-[#1e3a60] px-3 py-1.5 text-xs font-bold text-white hover:bg-[#162d4a] transition-colors"
                         >
-                          Go to Handover Hub <ChevronRight className="w-3.5 h-3.5" />
+                          <UiText>Go to Handover Hub</UiText> <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                       )}
 
@@ -422,7 +451,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                           "bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-800"
                         }`}>
                           <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                          {result.contextMessage}
+                          {contextCopy[result.contextMessage]}
                         </div>
                       )}
 
@@ -435,11 +464,11 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                           {(() => {
                             const lines = missingInfoLines(listing.rejectionReason);
                             if (lines.length <= 1) {
-                              return <>Still needed: {lines[0] ?? displayReason(listing.rejectionReason)}</>;
+                              return <>{t("stillNeeded", { reason: lines[0] ?? displayReason(listing.rejectionReason) })}</>;
                             }
                             return (
                               <>
-                                <p>Still needed:</p>
+                                <p><UiText>Still needed:</UiText></p>
                                 <ul className="mt-1 list-disc space-y-0.5 ps-4 font-normal">
                                   {lines.map(line => <li key={line}>{line}</li>)}
                                 </ul>
@@ -457,33 +486,33 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
 
           {/* ── Item Details ─────────────────────────────────────────────── */}
           <div className="px-5 py-4 border-b border-stone-100 dark:border-zinc-800">
-            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Item Details</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3"><UiText>Item Details</UiText></p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <Detail icon={Tag}      label="Condition"      value={listing.condition} />
-              <Detail icon={Layers}   label="Item age"       value={listing.approximateAge} />
-              <Detail icon={Wrench}   label="Working Status" value={listing.workingStatus?.replace(/_/g, " ")} />
-              <Detail icon={Package}  label="Quantity"       value={String(listing.quantity)} />
-              {listing.brand && <Detail icon={Tag}   label="Brand"  value={listing.brand} />}
-              {listing.model && <Detail icon={Tag}   label="Model"  value={listing.model} />}
-              {listing.dimensions && <Detail icon={Box}  label="Dimensions"  value={listing.dimensions} />}
-              {listing.approximateWeight && <Detail icon={Box} label="Weight" value={listing.approximateWeight} />}
+              <Detail icon={Tag}      label={ui("Condition")}      value={listing.condition} />
+              <Detail icon={Layers}   label={ui("Item age")}       value={listing.approximateAge} />
+              <Detail icon={Wrench}   label={ui("Working Status")} value={listing.workingStatus?.replace(/_/g, " ")} />
+              <Detail icon={Package}  label={ui("Quantity")}       value={String(listing.quantity)} />
+              {listing.brand && <Detail icon={Tag}   label={ui("Brand")}  value={listing.brand} />}
+              {listing.model && <Detail icon={Tag}   label={ui("Model")}  value={listing.model} />}
+              {listing.dimensions && <Detail icon={Box}  label={ui("Dimensions")}  value={listing.dimensions} />}
+              {listing.approximateWeight && <Detail icon={Box} label={ui("Weight")} value={listing.approximateWeight} />}
             </div>
 
             {listing.knownDefects && listing.knownDefects !== "NONE" && (
               <div className="mt-3 text-xs text-stone-600 dark:text-stone-400">
-                <span className="font-bold text-stone-700 dark:text-stone-300">Known defects: </span>
+                <span className="font-bold text-stone-700 dark:text-stone-300">{t("labelPrefix", { label: ui("Known defects") })}</span>
                 {listing.knownDefects}
               </div>
             )}
             {listing.accessoriesIncluded && (
               <div className="mt-1.5 text-xs text-stone-600 dark:text-stone-400">
-                <span className="font-bold text-stone-700 dark:text-stone-300">Accessories: </span>
+                <span className="font-bold text-stone-700 dark:text-stone-300">{t("labelPrefix", { label: ui("Accessories") })}</span>
                 {listing.accessoriesIncluded}
               </div>
             )}
             {listing.description && (
               <div className="mt-3">
-                <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-1">Description</p>
+                <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-1"><UiText>Description</UiText></p>
                 <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{listing.description}</p>
               </div>
             )}
@@ -491,21 +520,21 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
 
           {/* ── Location & Delivery ──────────────────────────────────────── */}
           <div className="px-5 py-4 border-b border-stone-100 dark:border-zinc-800">
-            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3">Location & Delivery</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-stone-400 mb-3"><UiText>Location &amp; Delivery</UiText></p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-              <Detail icon={MapPin}      label="City"      value={listing.city?.split(",")[0]} />
-              <Detail icon={MapPin}      label="PIN Code"  value={listing.pincode ?? undefined} />
-              {listing.locality && <Detail icon={MapPin} label="Locality" value={listing.locality} />}
+              <Detail icon={MapPin}      label={ui("City")}      value={listing.city?.split(",")[0]} />
+              <Detail icon={MapPin}      label={ui("PIN Code")}  value={listing.pincode ?? undefined} />
+              {listing.locality && <Detail icon={MapPin} label={ui("Locality")} value={listing.locality} />}
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
               {listing.pickupDays && (
                 <span className="text-3xs bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-stone-400 rounded-full px-2 py-0.5 font-semibold">
-                  Pickup: {listing.pickupDays.split(",").slice(0, 3).join(", ")}{listing.pickupDays.split(",").length > 3 ? "…" : ""}
+                  {t("pickup", { days: listing.pickupDays.split(",").slice(0, 3).join(", ") + (listing.pickupDays.split(",").length > 3 ? "…" : "") })}
                 </span>
               )}
               {listing.donorDropOffAvailable && (
                 <span className="text-3xs bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400 rounded-full px-2 py-0.5 font-semibold flex items-center gap-1">
-                  <Truck className="w-3 h-3" /> Drop-off available {listing.maxTravelDistance ? `(${listing.maxTravelDistance}km)` : ""}
+                  <Truck className="w-3 h-3" /> {listing.maxTravelDistance ? t("dropOffWithin", { km: listing.maxTravelDistance }) : ui("Drop-off available")}
                 </span>
               )}
               {listing.packagingAvailable === "YES" && (
@@ -522,7 +551,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
             {listing.preferredHandoverDate && (
               <div className="mt-2 flex items-center gap-1.5 text-xs text-stone-500 dark:text-stone-400">
                 <CalendarDays className="w-3.5 h-3.5" />
-                Earliest handover: <span className="font-semibold">{listing.preferredHandoverDate}</span>
+                {t("labelPrefix", { label: ui("Earliest handover") })}<span className="font-semibold">{listing.preferredHandoverDate}</span>
               </div>
             )}
           </div>
@@ -531,7 +560,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
           {listing.submittedAt && (
             <div className="px-5 py-3 border-b border-stone-100 dark:border-zinc-800">
               <p className="text-3xs text-stone-400">
-                Submitted on {serverDate(listing.submittedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}
+                {t("submittedOn", { date: serverDate(listing.submittedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) })}
               </p>
             </div>
           )}
@@ -550,14 +579,14 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
             {listing.status === "DRAFT" && (
               <Link href={`/items/new?draft=${listing.id}`} className="flex-1">
                 <button className="w-full bg-[var(--ck-role-accent)] hover:brightness-110 text-white text-sm font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-all">
-                  Continue Listing <ChevronRight className="w-4 h-4" />
+                  <UiText>Continue Listing</UiText> <ChevronRight className="w-4 h-4" />
                 </button>
               </Link>
             )}
             {isNeedsInfo && (
               <Link href={`/items/${listing.id}/edit`} className="flex-1">
                 <button className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 transition-colors">
-                  Edit &amp; Resubmit <ChevronRight className="w-4 h-4" />
+                  <UiText>Edit &amp; Resubmit</UiText> <ChevronRight className="w-4 h-4" />
                 </button>
               </Link>
             )}
@@ -567,7 +596,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                 disabled={actionLoading === listing.id}
                 className="flex-1 text-sm font-semibold py-2.5 px-4 rounded-xl border border-stone-300 dark:border-zinc-600 text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
-                {actionLoading === listing.id ? "Pausing…" : "Pause"}
+                {actionLoading === listing.id ? ui("Pausing…") : ui("Pause")}
               </button>
             )}
             {isPaused && (
@@ -576,7 +605,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                 disabled={actionLoading === listing.id}
                 className="flex-1 text-sm font-semibold py-2.5 px-4 rounded-xl border border-green-400 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/20 transition-colors disabled:opacity-50"
               >
-                {actionLoading === listing.id ? "Resuming…" : "Resume Listing"}
+                {actionLoading === listing.id ? ui("Resuming…") : ui("Resume Listing")}
               </button>
             )}
             {canWithdrawListing(listing.status) && (
@@ -584,14 +613,14 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                 onClick={() => {
                   if (onWithdrawPrompt) {
                     onWithdrawPrompt(listing.id);
-                  } else if (confirm("Withdraw this listing? This cannot be undone.")) {
+                  } else if (confirm(ui("Withdraw this listing? This cannot be undone."))) {
                     onAction(listing.id, "withdraw");
                   }
                 }}
                 disabled={actionLoading === listing.id}
                 className="text-sm font-semibold py-2.5 px-4 rounded-xl border border-red-300 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
               >
-                Withdraw
+                <UiText>Withdraw</UiText>
               </button>
             )}
             {canDeleteListing(listing.status) && onDelete && (
@@ -600,7 +629,7 @@ export function ListingDetailPanel({ listing, match, onClose, onAction, onWithdr
                 disabled={actionLoading === listing.id}
                 className="text-sm font-semibold py-2.5 px-4 rounded-xl border border-red-300 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors disabled:opacity-50"
               >
-                {listing.status === "DRAFT" ? "Discard Draft" : "Delete Listing"}
+                {listing.status === "DRAFT" ? ui("Discard Draft") : ui("Delete Listing")}
               </button>
             )}
           </div>

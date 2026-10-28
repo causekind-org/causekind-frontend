@@ -5,6 +5,7 @@ import { Bricolage_Grotesque, Source_Sans_3 } from "next/font/google";
 import { ArrowRight, Check, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AUDIENCE_OPTIONS, type RequestAudience } from "@/lib/requestAudience";
+import { UiText, useUiText } from "@/components/UiText";
 
 /**
  * Door copy (owner picked the "Three doors" design, 2026-10-08,
@@ -16,11 +17,17 @@ import { AUDIENCE_OPTIONS, type RequestAudience } from "@/lib/requestAudience";
 const doorDisplay = Bricolage_Grotesque({ subsets: ["latin"], weight: ["600", "800"], display: "swap" });
 const doorBody = Source_Sans_3({ subsets: ["latin"], weight: ["400", "600", "700"], display: "swap" });
 
-const DOOR_COPY: Record<RequestAudience, { title: string; kicker: string; body: string; cta: string; deep: string }> = {
-  everyone: { title: "Everyone", kicker: "Most people start here", body: "See every verified need near you, from people and NGOs.", cta: "Show me everything", deep: "#6e2a0a" },
-  donee: { title: "A person", kicker: "One family at a time", body: "Help one person or family with something they need.", cta: "Show people", deep: "#0f2138" },
-  ngo: { title: "An NGO", kicker: "Reach a whole community", body: "Help an organisation support the people it serves.", cta: "Show NGOs", deep: "#0f3a25" },
-};
+/** Gradient end colour per door (data). The copy is in useDoorCopy() — ui() needs literals. */
+const DOOR_DEEP: Record<RequestAudience, string> = { everyone: "#6e2a0a", donee: "#0f2138", ngo: "#0f3a25" };
+
+function useDoorCopy(): Record<RequestAudience, { title: string; kicker: string; body: string; cta: string }> {
+  const ui = useUiText();
+  return {
+    everyone: { title: ui("Everyone"), kicker: ui("Most people start here"), body: ui("See every verified need near you, from people and NGOs."), cta: ui("Show me everything") },
+    donee: { title: ui("A person"), kicker: ui("One family at a time"), body: ui("Help one person or family with something they need."), cta: ui("Show people") },
+    ngo: { title: ui("An NGO"), kicker: ui("Reach a whole community"), body: ui("Help an organisation support the people it serves."), cta: ui("Show NGOs") },
+  };
+}
 
 /**
  * "Who would you like to help?" prompt for the /requests directory.
@@ -45,6 +52,8 @@ export default function AudienceDialog({
   onChoose: (audience: RequestAudience) => void;
   onDismiss: () => void;
 }) {
+  const ui = useUiText();
+  const doorCopy = useDoorCopy();
   const closingRef = useRef(false);
   const chosenRef = useRef<RequestAudience | null>(null);
 
@@ -88,26 +97,26 @@ export default function AudienceDialog({
       >
         <div className="flex shrink-0 items-start justify-between gap-4 px-5 pb-4 pt-6 sm:px-10 sm:pb-6 sm:pt-9 sm:[@media(max-height:760px)]:pb-3 sm:[@media(max-height:760px)]:pt-5">
           <div className="flex min-w-0 flex-col gap-1.5 sm:gap-2.5 sm:[@media(max-height:760px)]:gap-1.5">
-            <p className="hidden text-xs font-bold uppercase tracking-[0.22em] text-[#e8a77c] sm:block">Step into a door</p>
+            <p className="hidden text-xs font-bold uppercase tracking-[0.22em] text-[#e8a77c] sm:block"><UiText>Step into a door</UiText></p>
             <DialogTitle className={`${doorDisplay.className} text-[1.9rem] font-extrabold leading-none tracking-tight text-white sm:text-[3.4rem] sm:[@media(max-height:760px)]:text-[2.6rem]`}>
-              Who would you like to help?
+              <UiText>Who would you like to help?</UiText>
             </DialogTitle>
             <DialogDescription className="text-sm text-[#cbb8aa] sm:text-base">
-              Pick what you see first. You can switch anytime from the buttons above the requests.
+              <UiText>Pick what you see first. You can switch anytime from the buttons above the requests.</UiText>
             </DialogDescription>
           </div>
           <DialogClose
             className="flex size-11 shrink-0 items-center justify-center rounded-full border border-white/25 bg-white/5 text-white transition-colors hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
           >
             <X className="size-4" aria-hidden />
-            <span className="sr-only">Close</span>
+            <span className="sr-only"><UiText>Close</UiText></span>
           </DialogClose>
         </div>
 
-        <div role="group" aria-label="Whose requests to show" className="flex min-h-0 flex-1 flex-col gap-2.5 px-4 sm:flex-row sm:gap-3.5 sm:px-10 sm:[@media(max-height:560px)]:flex-none">
+        <div role="group" aria-label={ui("Whose requests to show")} className="flex min-h-0 flex-1 flex-col gap-2.5 px-4 sm:flex-row sm:gap-3.5 sm:px-10 sm:[@media(max-height:560px)]:flex-none">
           {AUDIENCE_OPTIONS.map(o => {
             const selected = o.value === current;
-            const door = DOOR_COPY[o.value];
+            const door = { ...doorCopy[o.value], deep: DOOR_DEEP[o.value] };
             return (
               <button
                 key={o.value}
@@ -141,14 +150,14 @@ export default function AudienceDialog({
                 </span>
 
                 <span className="sm:hidden"><Tick on={selected} accent={o.light.accent} /></span>
-                {selected && <span className="sr-only">(current)</span>}
+                {selected && <span className="sr-only"><UiText>(current)</UiText></span>}
               </button>
             );
           })}
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 text-xs text-[#a8968a] sm:px-10 sm:pb-7 sm:text-sm sm:[@media(max-height:760px)]:pb-4 sm:[@media(max-height:760px)]:pt-3">
-          <span>Every request is verified before it shows. Nothing is shared until you choose to give.</span>
+          <span><UiText>Every request is verified before it shows. Nothing is shared until you choose to give.</UiText></span>
         </div>
       </DialogContent>
     </Dialog>

@@ -187,7 +187,7 @@ export default function OffersClient() {
                   {offer.flowType === "WILL_PURCHASE" && offer.purchaseCommitment?.acceptedAt && offer.status !== "COMPLETED" && (
                     <Link href={`/offers/${offer.id}/purchase`}
                       className="rounded-lg bg-[#b04a15] px-3 py-1.5 text-xs font-semibold text-white text-center">
-                      Purchase
+                      {offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? "Confirm in purchase hub" : "Purchase"}
                     </Link>
                   )}
                   {offer.flowType !== "WILL_PURCHASE" && (offer.status === "ADMIN_APPROVED" || offer.status === "HANDOVER_IN_PROGRESS" || offer.status === "HANDOVER_AT_RISK") && (
@@ -208,7 +208,8 @@ export default function OffersClient() {
                       Report a problem
                     </Link>
                   )}
-                  {offer.status === "DONOR_RECONFIRMATION_REQUIRED" && (
+                  {/* Purchase offers confirm "I'll buy it" in the purchase hub instead. */}
+                  {offer.status === "DONOR_RECONFIRMATION_REQUIRED" && offer.flowType !== "WILL_PURCHASE" && (
                     <button
                       onClick={() => handleReconfirm(offer.id)}
                       disabled={reconfirmingId === offer.id}

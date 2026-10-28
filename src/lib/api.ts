@@ -682,6 +682,8 @@ export type Donation = {
   status: string;
   createdAt: string;
   donorName?: string;
+  /** True when a super admin deleted the fundraiser; the donation and receipt remain. */
+  campaignRemoved?: boolean;
 };
 
 export function initiateDonation(campaignId: number, amount: number) {
@@ -1874,6 +1876,8 @@ export type ItemMatch = {
   doneeConditionNotes: string | null;
   /** Where a courier delivers; null from a backend that predates it. See DeliveryAddress. */
   delivery: DeliveryAddress | null;
+  courierName?: string | null;
+  trackingNumber?: string | null;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -1947,6 +1951,8 @@ export function saveMatchLogistics(id: number, data: {
   deliveryAddress?: string;
   allocatedQuantity?: number;
   notes?: string;
+  courierName?: string;
+  trackingNumber?: string;
 }) {
   return request<ItemMatch>(`/api/v1/matches/${id}/logistics`, {
     method: "POST",
@@ -2159,6 +2165,11 @@ export type CancellationOption = {
   late: boolean;
   warning: string | null;
   blockedReason: string | null;
+  /** Stable codes beside the English above (backend CancellationCopy); absent from older backends.
+   *  Render through useCancellationCopy(), never by matching the English. */
+  labelCode?: string | null;
+  warningCode?: string | null;
+  blockedReasonCode?: string | null;
 };
 
 export function getOfferCancellationOptions(offerId: number) {
@@ -2357,6 +2368,7 @@ export type PurchaseStatus =
  */
 export type PurchaseView = {
   offerId: number;
+  offerStatus?: string | null;
   method: PurchaseFulfilmentMethod | null;
   status: PurchaseStatus | null;
   readyToBuy: boolean;
@@ -2380,14 +2392,35 @@ export type PurchaseView = {
   evidence: {
     id: number; type: PurchaseProofType; url: string; uploadedAt: string;
     screeningAvailable: boolean | null; prohibited: boolean | null;
+    /** Who uploaded it; the recipient never receives order confirmations or receipts. */
+    uploadedByRole: "DONOR" | "DONEE";
   }[];
   extensionRequestedUntil: string | null;
   extensionDecidedAt: string | null;
   issueWindowExpiresAt: string | null;
   version: number | null;
+  /** Set while a reported delivery waits for the recipient; cleared once they respond. */
+  deliveryReportedAt: string | null;
+  deliveryReminderSentAt: string | null;
+  /** The recipient didn't respond in time and support is reviewing the delivery. */
+  deliveryEscalatedAt: string | null;
+  receivedCondition: string | null;
+  /** Support recorded receipt from the evidence (the recipient didn't respond). */
+  receiptRecordedBySupport: boolean;
+  issues: PurchaseIssueView[];
+  /** Why our team sent the item photo back; the donor (and admins) only. Cleared by a new upload. */
+  proofRejectionReason?: string | null;
 };
 
-export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT";
+export type PurchaseIssueView = {
+  id: number; type: string; description: string; affectedQuantity: number | null;
+  reportedByRole: "DONOR" | "DONEE"; createdAt: string;
+  response: string | null; respondedAt: string | null;
+  resolution: string | null; resolvedAt: string | null;
+};
+
+/** Donor uploads ITEM_PHOTO..DELIVERY_PROOF; the recipient uploads RECEIVED_PHOTO and ISSUE_EVIDENCE. */
+export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT" | "DELIVERY_PROOF" | "RECEIVED_PHOTO" | "ISSUE_EVIDENCE";
 export type PurchaseReceiptCondition = "GOOD" | "PARTIAL" | "DAMAGED" | "WRONG_ITEM";
 export type PurchaseIssueType = "ITEM_NOT_RECEIVED" | "ITEM_DAMAGED" | "WRONG_ITEM" | "QUANTITY_MISMATCH" | "OTHER";
 export const PURCHASE_CONSENT_VERSION = "purchase-delivery-v1";
@@ -2508,6 +2541,20 @@ export function submitMatchDeliveryAddress(matchId: number, data: DeliveryAddres
 
 export function getMatchDeliveryAddressSuggestion(matchId: number) {
   return request<DeliveryAddressSuggestion>(`/api/v1/matches/${matchId}/handover/delivery-address/suggestion`);
+}
+
+export function updateMatchCourier(matchId: number, data: { courierName: string; trackingNumber?: string }) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/courier`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateOfferCourier(offerId: number, data: { courierName: string; trackingNumber?: string }) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/courier`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
 }
 
 export type Certificate = {
@@ -3021,7 +3068,7 @@ export function getPurchase(offerId: number) {
 }
 
 export function sharePurchaseAddress(offerId: number, address: {
-  address: string; contactName: string; contactPhone: string; latitude?: number; longitude?: number;
+  address: string; contactName?: string; contactPhone?: string; latitude?: number; longitude?: number;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/delivery-address`, {
     method: "POST",
@@ -3047,8 +3094,14 @@ export function updatePurchaseShipment(offerId: number, data: {
   return request<void>(`/api/v1/offers/${offerId}/purchase/shipment`, { method: "PATCH", body: JSON.stringify(data) });
 }
 
+/**
+ * `cumulativeQuantity` counts good units received so far. For DAMAGED/WRONG_ITEM it
+ * may stay at the earlier count (0 if nothing usable came) and `affectedQuantity`
+ * covers the problem. `note` is required when closing the remainder.
+ */
 export function confirmPurchaseReceipt(offerId: number, data: {
   cumulativeQuantity: number; condition: PurchaseReceiptCondition; closeRemainder: boolean;
+  affectedQuantity?: number; note?: string;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/receipt`, { method: "POST", body: JSON.stringify(data) });
 }
@@ -3057,8 +3110,28 @@ export function confirmPurchaseNoIssue(offerId: number) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/confirm-no-issue`, { method: "POST" });
 }
 
-export function reportPurchaseIssue(offerId: number, data: { type: PurchaseIssueType; description: string }) {
+export function reportPurchaseIssue(offerId: number, data: { type: PurchaseIssueType; description: string; affectedQuantity?: number }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/issues`, { method: "POST", body: JSON.stringify(data) });
+}
+
+/** The participant who didn't report the open issue gives their side (once). */
+export function respondToPurchaseIssue(offerId: number, message: string) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/issues/response`, { method: "POST", body: JSON.stringify({ message }) });
+}
+
+/** Recipient evidence: a photo of what arrived, or evidence for a reported problem. Stored privately. */
+export function uploadPurchaseRecipientEvidence(offerId: number, proofType: "RECEIVED_PHOTO" | "ISSUE_EVIDENCE", file: File, notes?: string) {
+  const formData = new FormData();
+  formData.append("proofType", proofType);
+  formData.append("file", file);
+  if (notes) formData.append("notes", notes);
+  return fetch(`${BASE_URL}/api/v1/offers/${offerId}/purchase/evidence`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b?.message ?? "Upload failed"); }
+  });
 }
 
 export function requestPurchaseExtension(offerId: number, data: { requestedUntil: string; reason: string }) {
@@ -3073,8 +3146,9 @@ export function adminGetPurchase(offerId: number) {
   return request<PurchaseView>(`/api/v1/admin/offers/${offerId}/purchase`);
 }
 
-export function adminListPurchases(page = 0) {
-  return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}`);
+/** `attention` lists only purchases waiting on an admin: problems, escalated deliveries, photos to review. */
+export function adminListPurchases(page = 0, attention = false) {
+  return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}${attention ? "&attention=true" : ""}`);
 }
 
 export function adminReviewPurchaseProof(offerId: number, data: { approve: boolean; reason: string }) {
@@ -3083,6 +3157,55 @@ export function adminReviewPurchaseProof(offerId: number, data: { approve: boole
 
 export function adminResolvePurchaseIssue(offerId: number, data: { action: "RETRY_DELIVERY" | "CANCEL_REMAINDER"; reason: string }) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
+}
+
+// ── Admin Issues section (read-only) ──────────────────────────────────────
+// Every problem report and support case in one list. Keys: pdi-<id> (offer or
+// purchase problem), doi-<id> (drive offer problem), case-<id> (match handover
+// problem, purchase follow-up, or support case).
+
+export type AdminIssueSource = "OFFER_HANDOVER" | "PURCHASE" | "PURCHASE_FOLLOW_UP" | "MATCH_HANDOVER" | "DRIVE_OFFER" | "SUPPORT";
+export type AdminIssuePerson = { userId: number | null; name: string | null; email: string | null; role: string | null };
+export type AdminIssueSummary = {
+  key: string; source: AdminIssueSource; title: string | null; issueType: string | null; description: string | null;
+  reportedBy: AdminIssuePerson | null; against: AdminIssuePerson | null; open: boolean;
+  caseNumber: string | null; caseStatus: string | null; casePriority: string | null;
+  entityType: string | null; entityId: number | null;
+  createdAt: string | null; resolvedAt: string | null; lastActivityAt: string | null;
+};
+export type AdminIssuePage = {
+  items: AdminIssueSummary[]; total: number; page: number; size: number;
+  openCount: number; openBySource: Partial<Record<AdminIssueSource, number>>;
+};
+export type AdminIssueDetail = {
+  summary: AdminIssueSummary;
+  affectedQuantity: number | null; response: string | null; respondedAt: string | null;
+  resolution: string | null; windowExpiresAt: string | null;
+  sections: { title: string; facts: { label: string; value: string }[] }[];
+  /** Private files come as 10-minute links; `url` is null when one couldn't be made. */
+  evidence: { label: string; url: string | null; uploadedBy: string | null; uploadedAt: string | null }[];
+  supportCase: {
+    id: number; caseNumber: string; subject: string | null; description: string | null; category: string | null;
+    status: string | null; priority: string | null; assignedTo: string | null; dueAt: string | null;
+    resolvedAt: string | null; resolutionSummary: string | null; linkedRecords: string[];
+  } | null;
+  timeline: { at: string | null; kind: "ISSUE" | "STATUS" | "CASE"; actor: string | null; text: string; internal: boolean }[];
+};
+
+export function adminListIssues(params: { status?: "open" | "resolved" | "all"; source?: AdminIssueSource | ""; q?: string; page?: number; size?: number } = {}) {
+  const qs = new URLSearchParams({ status: params.status ?? "open", page: String(params.page ?? 0), size: String(params.size ?? 25) });
+  if (params.source) qs.set("source", params.source);
+  if (params.q?.trim()) qs.set("q", params.q.trim());
+  return request<AdminIssuePage>(`/api/v1/admin/issues?${qs.toString()}`);
+}
+
+export function adminGetIssue(key: string) {
+  return request<AdminIssueDetail>(`/api/v1/admin/issues/${encodeURIComponent(key)}`);
+}
+
+/** Evidence-based fallback after escalation; the reason (≥20 chars) goes to the audit log. */
+export function adminPurchaseFallbackReceipt(offerId: number, data: { quantity: number; reason: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/fallback-receipt`, { method: "POST", body: JSON.stringify(data) });
 }
 
 export function adminProcessPurchaseDeadlines(offerId: number) {
@@ -3118,7 +3241,7 @@ export function scheduleHandover(offerId: number, data: {
   method: OfferHandoverMethod; scheduledDateTime: string; locationAddress?: string;
   locationLatitude?: number; locationLongitude?: number;
   transportArrangedBy?: string; transportCostBornBy?: string;
-  packagingResponsibility?: string; courierName?: string;
+  packagingResponsibility?: string; courierName?: string; trackingNumber?: string;
 }) {
   return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover`, {
     method: "POST",
@@ -3585,6 +3708,10 @@ export type PostDeliveryIssue = {
   adminResolution: string | null;
   resolvedAt: string | null;
   createdAt: string;
+  /** A purchase delivery problem: resolved with redelivery or closing the remainder, never a bare note. */
+  purchase: boolean;
+  affectedQuantity: number | null;
+  counterpartyResponse: string | null;
 };
 
 export function superAdminListDisputes(status: "open" | "resolved" | "all") {
@@ -6271,14 +6398,23 @@ export type FundraisingApplication = {
   decisionScope: FundraisingScope | null; decisionConditions: string | null; decisionReason: string | null;
   resubmissionAllowed: boolean | null; decidedAt: string | null; submittedAt: string | null;
   createdAt: string; updatedAt: string; missing: string[];
+  /** Bank details for the payout; the account number comes back masked (last four only). */
+  payout: FundraisingPayout;
 };
+export type FundraisingPayout = { holderName: string | null; accountLast4: string | null; ifsc: string | null; bankBranch: string | null; upi: string | null };
 export type FundraisingSave = Partial<Omit<FundraisingApplication,
   "id" | "reference" | "version" | "status" | "totalCosts" | "outstandingGap" | "evidence" | "infoRequests" |
   "decisionScope" | "decisionConditions" | "decisionReason" | "resubmissionAllowed" | "decidedAt" | "submittedAt" |
-  "createdAt" | "updatedAt" | "missing">>;
+  "createdAt" | "updatedAt" | "missing" | "payout">> & {
+  payoutHolderName?: string; payoutAccountNumber?: string; payoutIfsc?: string; payoutBankBranch?: string; payoutUpi?: string;
+  /** Amount fields to empty (a null amount alone means "unchanged" on the server). */
+  clear?: string[];
+};
 export type FundraisingAdminApplication = {
   application: FundraisingApplication; applicantId: number; applicantName: string; applicantEmail: string;
   internalNote: string | null; decidedBy: string | null;
+  /** The fundraiser page written inside this application (single form, 2026-10-27); approving approves it too. */
+  pageCampaignId: number | null;
 };
 export type FundraisingQueueRow = {
   id: number; reference: string; applicantName: string; forSelf: boolean; category: FundraisingCategory | null;
@@ -6321,6 +6457,8 @@ export const fundraising = {
   admin: {
     queue: (status?: FundraisingStatus) => request<FundraisingQueueRow[]>(status ? `${FR_ADMIN}?status=${status}` : FR_ADMIN),
     get: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}`),
+    /** Full account number; every call is audited on the server. */
+    revealPayoutAccount: (id: number) => request<{ accountNumber: string }>(`${FR_ADMIN}/${id}/payout-account`),
     startReview: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/start-review`, { method: "POST" }),
     requestInformation: (id: number, body: { expectedVersion: number; questions: { section: string; question: string }[]; internalNote?: string }) =>
       request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/request-information`, { method: "POST", body: JSON.stringify(body) }),
@@ -6362,6 +6500,8 @@ export type FundraisingCampaignSave = {
 };
 export type FundraisingAdminCampaign = {
   campaign: FundraisingCampaign; applicantName: string; applicantEmail: string; internalNote: string | null; decidedBy: string | null;
+  /** The donee's bank details from the application (masked), or null when none were given. */
+  payout: FundraisingPayout | null; applicationId: number | null;
 };
 export type FundraisingCampaignQueueRow = {
   id: number; title: string | null; organiserName: string; category: FundraisingCategory | null;
@@ -6646,4 +6786,96 @@ export const fundraisingOutcomes = {
     closeNow: (campaignId: number, reason: string) =>
       request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${campaignId}/close-now`, { method: "POST", body: JSON.stringify({ reason }) }),
   },
+};
+
+// ── Super-admin Fundraisers control centre (2026-10-26) ─────────────────────
+// Backend: SuperAdminFundraisingController. Review decisions stay on the admin
+// clients above (fundraising.admin, fundraisingCampaigns.admin, fundraisingReports.admin,
+// fundraisingManage.admin). Every write here needs a reason and is audit-logged.
+
+export type SaFrActivity = {
+  id: number; actorEmail: string | null; action: string; entityType: string | null; entityId: number | null;
+  detail: string | null; reason: string | null; at: string;
+};
+export type SaFrOverview = {
+  totalRaised: number; platformFees: number; feePercent: number; successfulDonations: number; uniqueDonors: number;
+  liveCampaigns: number; endingThisWeek: number; campaignsByStatus: Partial<Record<CampaignFlowStatus, number>>;
+  applicationsToReview: number; campaignsAwaitingPublication: number; pausedCampaigns: number; openReportCases: number;
+  recentActivity: SaFrActivity[];
+};
+export type SaFrCampaignRow = {
+  id: number; title: string | null; doneeName: string | null; category: string | null; city: string | null; status: CampaignFlowStatus;
+  raised: number | null; target: number | null; donors: number; endDate: string | null; hidden: boolean; featured: boolean;
+  acceptingDonations: boolean; payoutReady: boolean; applicationId: number | null; createdAt: string | null; deleted: boolean;
+};
+export type SaFrCostLine = { expense: string; amount: number | null };
+export type SaFrCampaignDetail = {
+  admin: FundraisingAdminCampaign; version: number; applicationId: number | null; doneeName: string | null; doneeEmail: string | null;
+  hidden: boolean; featured: boolean; acceptingDonations: boolean; payoutReady: boolean;
+  money: { gross: number; fees: number; net: number; donations: number; donors: number };
+  costItems: SaFrCostLine[]; activity: SaFrActivity[]; deletedAt: string | null; deletedBy: string | null;
+};
+export type SaFrCampaignEdit = {
+  expectedVersion: number; title?: string; description?: string; category?: string; city?: string; state?: string;
+  targetAmount?: number; endDate?: string; costItems?: SaFrCostLine[]; reason: string; details?: string; notifyDonee?: boolean;
+};
+export type SaFrFlags = {
+  expectedVersion: number; hidden?: boolean; featured?: boolean; acceptingDonations?: boolean;
+  reason: string; details?: string; notifyDonee?: boolean;
+};
+export type SaFrApplicationRow = {
+  id: number; applicantName: string | null; applicantEmail: string | null; category: FundraisingCategory | null;
+  requestedAmount: number | null; status: FundraisingStatus; submittedAt: string | null; createdAt: string | null; campaignId: number | null;
+  deleted: boolean;
+};
+export type SaFrDonationRow = {
+  id: number; createdAt: string | null; donorName: string | null; donorEmail: string | null; donorMode: string | null; anonymous: boolean;
+  campaignId: number; campaignTitle: string | null; amount: number | null; fee: number | null; net: number | null;
+  status: "INITIATED" | "COMPLETED" | "FAILED"; razorpayOrderId: string | null; razorpayPaymentId: string | null; receiptNumber: string | null;
+};
+export type SaFrDonationPage = {
+  rows: SaFrDonationRow[]; total: number;
+  totals: { successfulAmount: number; successfulCount: number; pendingAmount: number; pendingCount: number; failedCount: number; fees: number };
+};
+export type SaFrDonationFilter = {
+  q?: string; status?: string; campaignId?: number; donorMode?: string; from?: string; to?: string; page?: number; size?: number;
+};
+export type SaFrSetting = { key: string; value: string; updatedBy: string | null; updatedAt: string | null };
+
+const SA_FR = "/api/v1/super-admin/fundraising";
+const qs = (o: Record<string, string | number | undefined | null>) => {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== null && v !== "") p.set(k, String(v));
+  const s = p.toString();
+  return s ? `?${s}` : "";
+};
+
+export const superAdminFundraising = {
+  overview: () => request<SaFrOverview>(`${SA_FR}/overview`),
+  campaigns: (f: { q?: string; status?: string; category?: string; flag?: string; sort?: string } = {}) =>
+    request<SaFrCampaignRow[]>(`${SA_FR}/campaigns${qs(f)}`),
+  campaign: (id: number) => request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}`),
+  edit: (id: number, body: SaFrCampaignEdit) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  flags: (id: number, body: SaFrFlags) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/flags`, { method: "POST", body: JSON.stringify(body) }),
+  message: (id: number, message: string) =>
+    request<void>(`${SA_FR}/campaigns/${id}/message`, { method: "POST", body: JSON.stringify({ message }) }),
+  applications: (f: { q?: string; status?: string; deleted?: boolean } = {}) =>
+    request<SaFrApplicationRow[]>(`${SA_FR}/applications${qs({ ...f, deleted: f.deleted ? "true" : undefined })}`),
+  deleteCampaign: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreCampaign: (id: number, body: { reason: string; details?: string }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
+  deleteApplication: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreApplication: (id: number, body: { reason: string; details?: string }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
+  overrideApplication: (id: number, body: { status: FundraisingStatus; reason: string; details?: string; notifyApplicant?: boolean }) =>
+    request<void>(`${SA_FR}/applications/${id}/status`, { method: "POST", body: JSON.stringify(body) }),
+  donations: (f: SaFrDonationFilter = {}) => request<SaFrDonationPage>(`${SA_FR}/donations${qs(f)}`),
+  donationsCsvUrl: (f: SaFrDonationFilter = {}) => `${BASE_URL}${SA_FR}/donations.csv${qs({ ...f, page: undefined, size: undefined })}`,
+  settings: () => request<SaFrSetting[]>(`${SA_FR}/settings`),
+  saveSettings: (values: Record<string, string>, reason: string) =>
+    request<SaFrSetting[]>(`${SA_FR}/settings`, { method: "PUT", body: JSON.stringify({ values, reason }) }),
 };

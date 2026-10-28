@@ -25,21 +25,25 @@ import { formatDaysLeft } from "@/features/ngo-drives/ngoDriveFilters";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import { formatISTDate } from "@/lib/formatIST";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
 const humanize = (v?: string | null) => (v ? v.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : "");
 
 /** Status banner for every drive state the NGO can be in. */
 function StatusBanner({ drive }: { drive: NgoDrive }) {
+  const ui = useUiText();
   const banners: Record<string, { tone: string; title: string; body: React.ReactNode }> = {
-    PENDING_REVIEW: { tone: "amber", title: "Under review", body: "Our team is checking this drive. We'll notify you when it goes live." },
-    CHANGES_REQUESTED: { tone: "amber", title: "Changes requested", body: <><strong>Reason:</strong> {drive.adminReason || "No reason was given."}</> },
-    REJECTED: { tone: "red", title: "This drive was rejected", body: <><strong>Reason:</strong> {drive.adminReason || "No reason was given."}</> },
-    LIVE: { tone: "green", title: "Live", body: "Donors near you can see this drive and offer items. Review their offers in your dashboard's Activity." },
-    FULLY_PLEDGED: { tone: "green", title: "Fully pledged", body: "Every item has been offered. Complete the handovers to collect them." },
-    COLLECTION_COMPLETE: { tone: "amber", title: "Collection complete", body: "Distribute what you received, then upload your distribution proof." },
-    PROOF_SUBMITTED: { tone: "blue", title: "Proof submitted", body: "Our team is reviewing your distribution proof." },
-    FULFILLED: { tone: "green", title: "Fulfilled", body: "Your proof was approved and donors can see it. You can start a new drive." },
-    CLOSED: { tone: "stone", title: "Closed", body: drive.quantityReceived > 0 ? "This drive closed. Upload your distribution proof for what you received." : "This drive closed with nothing received. You can start a new drive." },
-    CANCELLED: { tone: "stone", title: "Cancelled", body: "This drive was cancelled." },
+    PENDING_REVIEW: { tone: "amber", title: ui("Under review"), body: ui("Our team is checking this drive. We'll notify you when it goes live.") },
+    CHANGES_REQUESTED: { tone: "amber", title: ui("Changes requested"), body: <><strong><UiText>Reason:</UiText></strong> {drive.adminReason || ui("No reason was given.")}</> },
+    REJECTED: { tone: "red", title: ui("This drive was rejected"), body: <><strong><UiText>Reason:</UiText></strong> {drive.adminReason || ui("No reason was given.")}</> },
+    LIVE: { tone: "green", title: ui("Live"), body: ui("Donors near you can see this drive and offer items. Review their offers in your dashboard's Activity.") },
+    FULLY_PLEDGED: { tone: "green", title: ui("Fully pledged"), body: ui("Every item has been offered. Complete the handovers to collect them.") },
+    COLLECTION_COMPLETE: { tone: "amber", title: ui("Collection complete"), body: ui("Distribute what you received, then upload your distribution proof.") },
+    PROOF_SUBMITTED: { tone: "blue", title: ui("Proof submitted"), body: ui("Our team is reviewing your distribution proof.") },
+    FULFILLED: { tone: "green", title: ui("Fulfilled"), body: ui("Your proof was approved and donors can see it. You can start a new drive.") },
+    CLOSED: { tone: "stone", title: ui("Closed"), body: drive.quantityReceived > 0 ? ui("This drive closed. Upload your distribution proof for what you received.") : ui("This drive closed with nothing received. You can start a new drive.") },
+    CANCELLED: { tone: "stone", title: ui("Cancelled"), body: ui("This drive was cancelled.") },
   };
   const b = banners[drive.status];
   if (!b) return null;
@@ -56,7 +60,7 @@ function StatusBanner({ drive }: { drive: NgoDrive }) {
       <p className="mt-1 text-sm">{b.body}</p>
       {drive.status === "CHANGES_REQUESTED" && (
         <Link href={`/ngo/drives/new?edit=${drive.id}`} className="mt-4 inline-flex min-h-[44px] items-center rounded-full bg-ngo-700 px-5 text-sm font-bold text-white hover:bg-ngo-600">
-          Edit &amp; resubmit
+          <UiText>Edit &amp; resubmit</UiText>
         </Link>
       )}
     </div>
@@ -103,6 +107,9 @@ const pillGhost = `${pill} border border-stone-300 bg-white text-stone-800 hover
 const linkCls = "inline-flex min-h-[44px] items-center text-sm font-bold text-ngo-800 hover:underline dark:text-ngo-300";
 
 export default function NgoDriveManagePage() {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const dc = useDriveCopy();
   const params = useParams();
   const id = Number(params.id);
   const router = useRouter();
@@ -126,12 +133,12 @@ export default function NgoDriveManagePage() {
     try {
       setDrive(await getNgoDriveDetail(id));
     } catch (e) {
-      setLoadError({ notFound: isNotFound(e), message: errorMessage(e, "Please check your connection and try again.") });
+      setLoadError({ notFound: isNotFound(e), message: errorMessage(e, ui("Please check your connection and try again.")) });
       setLoading(false);
       return;
     }
     try { setOffers(await getNgoDriveOffersForNgo(id)); }
-    catch (e) { setOffersError(errorMessage(e, "We couldn't load the offers.")); }
+    catch (e) { setOffersError(errorMessage(e, ui("We couldn't load the offers."))); }
     finally { setLoading(false); }
   }, [id]);
 
@@ -154,8 +161,8 @@ export default function NgoDriveManagePage() {
   };
 
   if (authLoading || loading) return <PageSkeleton><div className="h-96" /></PageSkeleton>;
-  if (loadError?.notFound) return <DriveNotFound backHref="/dashboard/ngo" backLabel="Back to dashboard" />;
-  if (loadError || !drive) return <DriveLoadError message={loadError?.message ?? "Something went wrong."} onRetry={() => { setLoading(true); void load(); }} />;
+  if (loadError?.notFound) return <DriveNotFound backHref="/dashboard/ngo" backLabel={ui("Back to dashboard")} />;
+  if (loadError || !drive) return <DriveLoadError message={loadError?.message ?? ui("Something went wrong.")} onRetry={() => { setLoading(true); void load(); }} />;
 
   const pending = offers.filter((o) => o.status === "PENDING_NGO_REVIEW");
   const toReview = offers.filter(isOfferToReview);
@@ -180,18 +187,18 @@ export default function NgoDriveManagePage() {
   const isPublic = ["LIVE", "FULLY_PLEDGED", "COLLECTION_COMPLETE", "PROOF_SUBMITTED", "FULFILLED"].includes(drive.status);
 
   const details: [string, React.ReactNode][] = [
-    ["Category", drive.category],
-    ["Item", drive.itemName],
-    ["Quantity", `${drive.quantityNeeded} ${humanize(drive.unit)}`],
-    ["Condition accepted", [driveConditionLabel(drive.itemCondition), driveConditionRule(drive.itemCondition)].filter(Boolean).join(" · ")],
+    [ui("Category"), drive.category],
+    [ui("Item"), drive.itemName],
+    [ui("Quantity"), `${drive.quantityNeeded} ${humanize(drive.unit)}`],
+    [ui("Condition accepted"), [driveConditionLabel(drive.itemCondition), driveConditionRule(drive.itemCondition)].filter(Boolean).join(" · ")],
     ...categoryDetailRows(drive.category, drive.categoryDetails).map((r) => [r.label, r.value] as [string, React.ReactNode]),
-    ["Urgency", humanize(drive.urgency)],
-    ["People who will benefit", `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
-    ["Location", [drive.locationArea, drive.locationCity, drive.locationState, drive.locationPincode].filter(Boolean).join(", ")],
+    [ui("Urgency"), humanize(drive.urgency)],
+    [ui("People who will benefit"), `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
+    [ui("Location"), [drive.locationArea, drive.locationCity, drive.locationState, drive.locationPincode].filter(Boolean).join(", ")],
     ["Drop-off address", driveDropOffAddress(drive)],
-    ["Pickup radius", drive.pickupRadiusKm ? `NGO picks up within ${drive.pickupRadiusKm} km; donors farther away drop off` : "Donors drop off at the drive address"],
-    ["Needed by", drive.neededBy ? formatISTDate(drive.neededBy) : ""],
-    ["Handover days & hours", hours],
+    [ui("Pickup radius"), drive.pickupRadiusKm ? `NGO picks up within ${drive.pickupRadiusKm} km; donors farther away drop off` : ui("Donors drop off at the drive address")],
+    [ui("Needed by"), drive.neededBy ? formatISTDate(drive.neededBy) : ""],
+    [ui("Handover days & hours"), hours],
     ["Handover contact", `${drive.contactName ?? ""}${drive.contactPhone ? ` · ${drive.contactPhone}` : ""}`],
   ];
 
@@ -329,7 +336,7 @@ export default function NgoDriveManagePage() {
                   </div>
                 ))}
               </dl>
-              {drive.details && <p className="mt-4 break-words text-sm text-stone-700 dark:text-stone-300"><strong>Details:</strong> {drive.details}</p>}
+              {drive.details && <p className="mt-4 break-words text-sm text-stone-700 dark:text-stone-300"><strong><UiText>Details:</UiText></strong> {drive.details}</p>}
               {drive.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm text-stone-700 dark:text-stone-300">{drive.description}</p>}
             </Panel>
 
@@ -399,27 +406,27 @@ export default function NgoDriveManagePage() {
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Close this drive?</DialogTitle>
+            <DialogTitle><UiText>Close this drive?</UiText></DialogTitle>
             <DialogDescription>Donors can&apos;t offer new items. Handovers already planned continue.</DialogDescription>
           </DialogHeader>
           {pending.length > 0 && (
             <p role="alert" data-testid="close-blocked" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-              {pending.length === 1 ? "1 offer is" : `${pending.length} offers are`} waiting for your review. Accept or decline {pending.length === 1 ? "it" : "them"} first.{" "}
-              <Link href={`/dashboard/ngo?tab=activity&filter=offers&drive=${drive.id}`} className="font-bold underline">Review offers</Link>
+              {df("offersWaitingReview", { count: pending.length })}{" "}
+              <Link href={`/dashboard/ngo?tab=activity&filter=offers&drive=${drive.id}`} className="font-bold underline"><UiText>Review offers</UiText></Link>
             </p>
           )}
-          <label className="block text-sm font-bold">Reason for closing
-            <input value={closeReason} onChange={(e) => setCloseReason(e.target.value)} placeholder="e.g. We have enough"
+          <label className="block text-sm font-bold"><UiText>Reason for closing</UiText>
+            <input value={closeReason} onChange={(e) => setCloseReason(e.target.value)} placeholder={ui("e.g. We have enough")}
               className="mt-1 block w-full rounded-lg border border-stone-300 p-2 font-normal dark:border-zinc-700 dark:bg-zinc-950" />
           </label>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCloseOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCloseOpen(false)}><UiText>Cancel</UiText></Button>
             <Button variant="destructive" disabled={!closeReason.trim() || saving || pending.length > 0} onClick={async () => {
               setSaving(true);
-              try { await closeNgoDrive(drive.id, { reason: closeReason.trim() }); toast.success("Drive closed."); setCloseOpen(false); await load(); }
-              catch (e) { toast.error(errorMessage(e, "We couldn't close the drive.")); }
+              try { await closeNgoDrive(drive.id, { reason: closeReason.trim() }); toast.success(ui("Drive closed.")); setCloseOpen(false); await load(); }
+              catch (e) { toast.error(errorMessage(e, ui("We couldn't close the drive."))); }
               finally { setSaving(false); }
-            }}>Close drive</Button>
+            }}><UiText>Close drive</UiText></Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

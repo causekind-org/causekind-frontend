@@ -39,6 +39,7 @@ import {
   type UnifiedNeedItem,
 } from "@/features/ngo-drives/ngoDriveFilters";
 
+import { UiText, useUiText } from "@/components/UiText";
 export { readUrlAudience };
 
 /*
@@ -145,25 +146,25 @@ function RequestsHero() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-highlight)] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--ck-role-highlight)]" />
               </span>
-              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest">Live Community Needs</span>
+              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest"><UiText>Live Community Needs</UiText></span>
             </div>
 
             {/* Headline */}
             <div className="anim-up anim-d2">
               <h1 className="text-white text-2xl sm:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.04] tracking-tight">
-                Give items.{" "}
-                <span className="text-gradient-terra">Change lives.</span>
+                <UiText>Give items.</UiText>{" "}
+                <span className="text-gradient-terra"><UiText>Change lives.</UiText></span>
               </h1>
             </div>
 
             {/* Subtitle */}
             <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-md anim-up anim-d3">
-              Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.
+              <UiText>Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.</UiText>
             </p>
 
             {/* Scroll cue */}
             <div className="flex items-center gap-2 pt-1 anim-up anim-d4">
-              <span className="text-white/25 text-3xs font-bold uppercase tracking-widest">Browse needs below</span>
+              <span className="text-white/25 text-3xs font-bold uppercase tracking-widest"><UiText>Browse needs below</UiText></span>
               <ChevronDown className="h-4 w-4 text-white/25 animate-bounce-slow" />
             </div>
           </div>
@@ -187,6 +188,8 @@ export default function RequestsClient({
    */
   initialPublicRequests?: PublicItemRequest[] | null;
 }) {
+  const rt = useTranslations("requestsArea");
+  const ui = useUiText();
   const t        = useTranslations("requests");
   const { user, isLoading: authLoading, isRestoring } = useAuth();
   const router   = useRouter();
@@ -277,7 +280,7 @@ export default function RequestsClient({
 
   const requestGps = () => {
     if (!navigator.geolocation) {
-      toast.error("Your browser doesn't support GPS location");
+      toast.error(ui("Your browser doesn't support GPS location"));
       setGpsBlocked(true);
       setGpsLoading(false);
       return;
@@ -307,10 +310,10 @@ export default function RequestsClient({
         setGpsBlocked(true);
         setGpsLoading(false);
         const msg =
-          err.code === 1 ? "Location access denied. Please allow GPS in browser settings." :
-          err.code === 2 ? "Location unavailable. Check your device GPS." :
-          err.code === 3 ? "Location request timed out. Please retry." :
-          "Location access denied. You must allow GPS access to view nearby requests.";
+          err.code === 1 ? ui("Location access denied. Please allow GPS in browser settings.") :
+          err.code === 2 ? ui("Location unavailable. Check your device GPS.") :
+          err.code === 3 ? ui("Location request timed out. Please retry.") :
+          ui("Location access denied. You must allow GPS access to view nearby requests.");
         toast.error(msg);
       },
       { enableHighAccuracy: true, timeout: 10000 }
@@ -622,7 +625,7 @@ export default function RequestsClient({
       const { description: aiDesc } = await analyzeItemImage(file);
       if (aiDesc) { setDescription(aiDesc); setAiGenerated(true); }
     } catch {
-      toast.error("AI analysis failed — please describe the item manually.");
+      toast.error(ui("AI analysis failed — please describe the item manually."));
     } finally {
       setAnalyzing(false);
     }
@@ -630,7 +633,7 @@ export default function RequestsClient({
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
-    if (images.length + files.length > 3) { toast.error("Maximum 3 images allowed"); return; }
+    if (images.length + files.length > 3) { toast.error(ui("Maximum 3 images allowed")); return; }
     const next = [...images, ...files];
     setImages(next);
     imagePreviews.forEach(url => URL.revokeObjectURL(url));
@@ -647,15 +650,15 @@ export default function RequestsClient({
 
   async function handleSubmitDonate() {
     if (!donateTarget) return;
-    if (images.length === 0) { toast.error("Please upload at least one photo of the item"); return; }
-    if (description.trim().length < 20) { toast.error("Please describe your item in at least 20 characters"); return; }
+    if (images.length === 0) { toast.error(ui("Please upload at least one photo of the item")); return; }
+    if (description.trim().length < 20) { toast.error(ui("Please describe your item in at least 20 characters")); return; }
     setSubmitting(true);
     try {
       await donateToRequest(donateTarget.id, images, description.trim());
-      toast.success("Donation request sent! Admin will review and share contact details if approved.");
+      toast.success(ui("Donation request sent! Admin will review and share contact details if approved."));
       closeDonateModal();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to submit donation");
+      toast.error(err instanceof Error ? err.message : ui("Failed to submit donation"));
     } finally {
       setSubmitting(false);
     }
@@ -694,7 +697,7 @@ export default function RequestsClient({
           <Skeleton className="h-4 w-full max-w-xl" />
         </div>
         <div className="mt-7">
-          <CardGridSkeleton count={6} label="Loading in-kind requests" />
+          <CardGridSkeleton count={6} label={ui("Loading in-kind requests")} />
         </div>
       </PageSkeleton>
     );
@@ -787,24 +790,24 @@ export default function RequestsClient({
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/30 pointer-events-none" />
               <div className="relative z-10 space-y-3 sm:space-y-4">
                 <span className="inline-flex items-center gap-1.5 text-3xs font-extrabold text-[var(--ck-role-highlight)] bg-white/10 backdrop-blur-md border border-white/20 py-1.5 px-3.5 rounded-full uppercase tracking-wider">
-                  <Heart className="w-3 h-3 fill-[var(--ck-role-highlight)]" /> Give Back
+                  <Heart className="w-3 h-3 fill-[var(--ck-role-highlight)]" /> <UiText>Give Back</UiText>
                 </span>
                 <h2 className="text-lg sm:text-2xl font-extrabold leading-snug tracking-tight">
-                  You&apos;re giving<br />
+                  <UiText>You&apos;re giving</UiText><br />
                   <span className="text-[var(--ck-role-highlight)]">{modalTitle ?? donateTarget.title}</span>
                 </h2>
                 <p className="text-white/70 text-xs leading-relaxed max-w-[220px]">
-                  Upload photos of your item and a short description. Our admin will verify and connect you with the recipient.
+                  <UiText>Upload photos of your item and a short description. Our admin will verify and connect you with the recipient.</UiText>
                 </p>
               </div>
               <div className="relative z-10 bg-white/10 backdrop-blur-md border border-white/15 rounded-xl sm:rounded-2xl p-3 sm:p-4 mt-8 space-y-2">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-2xs text-white/80 font-semibold">Admin-verified before contact is shared</span>
+                  <span className="text-2xs text-white/80 font-semibold"><UiText>Admin-verified before contact is shared</UiText></span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[var(--ck-role-highlight)] shrink-0" />
-                  <span className="text-2xs text-white/80 font-semibold">Local 10 km radius matching</span>
+                  <span className="text-2xs text-white/80 font-semibold"><UiText>Local 10 km radius matching</UiText></span>
                 </div>
               </div>
             </div>
@@ -815,11 +818,11 @@ export default function RequestsClient({
               </button>
               <div className="mx-auto flex min-h-full w-full max-w-[380px] flex-col justify-center space-y-4 sm:space-y-5 py-2">
                 <div>
-                  <h3 id="give-item-title" className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white">Give your item</h3>
-                  <p className="text-xs text-stone-400 mt-1">Show us what you&apos;re giving so we can find it a perfect home.</p>
+                  <h3 id="give-item-title" className="text-lg sm:text-2xl font-extrabold text-stone-900 dark:text-white"><UiText>Give your item</UiText></h3>
+                  <p className="text-xs text-stone-400 mt-1"><UiText>Show us what you&apos;re giving so we can find it a perfect home.</UiText></p>
                 </div>
                 <div>
-                  <Label className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 block">Photos of item</Label>
+                  <Label className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mb-2 block"><UiText>Photos of item</UiText></Label>
                   <div onClick={() => fileInputRef.current?.click()} className="border-2 border-dashed border-orange-200 dark:border-zinc-700 hover:border-[var(--ck-role-accent)] rounded-xl sm:rounded-2xl p-3.5 sm:p-5 flex flex-col items-center justify-center cursor-pointer transition-all bg-orange-50/20 dark:bg-zinc-800/20 hover:bg-orange-50/40">
                     {imagePreviews.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2 w-full mb-1" onClick={e => e.stopPropagation()}>
@@ -830,7 +833,7 @@ export default function RequestsClient({
                             <button onClick={() => removeImage(i)} className="absolute right-1 top-1 rounded-full bg-black/70 p-0.5 text-white hover:bg-black transition">
                               <X className="h-2.5 w-2.5" />
                             </button>
-                            {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-5xs text-white">AI scans</span>}
+                            {i === 0 && <span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 py-0.5 text-5xs text-white"><UiText>AI scans</UiText></span>}
                           </div>
                         ))}
                       </div>
@@ -839,8 +842,8 @@ export default function RequestsClient({
                         <ImagePlus className="h-5 w-5" />
                       </div>
                     )}
-                    <p className="text-xs font-extrabold text-stone-800 dark:text-stone-200">Click to upload photos</p>
-                    <p className="text-3xs text-stone-400 mt-0.5">JPG, PNG — up to 10 MB each</p>
+                    <p className="text-xs font-extrabold text-stone-800 dark:text-stone-200"><UiText>Click to upload photos</UiText></p>
+                    <p className="text-3xs text-stone-400 mt-0.5"><UiText>JPG, PNG — up to 10 MB each</UiText></p>
                   </div>
                   <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
                 </div>
@@ -850,37 +853,37 @@ export default function RequestsClient({
                       <Sparkles className="h-4 w-4" />
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-stone-800 dark:text-stone-200">AI auto-describe</p>
-                      <p className="text-3xs text-stone-400">We&apos;ll generate a description from your photo</p>
+                      <p className="text-xs font-bold text-stone-800 dark:text-stone-200"><UiText>AI auto-describe</UiText></p>
+                      <p className="text-3xs text-stone-400"><UiText>We&apos;ll generate a description from your photo</UiText></p>
                     </div>
                   </div>
                   <Switch checked={aiGenerated || analyzing} onCheckedChange={val => { if (val && images.length > 0) runAnalysis(images[0]); else if (!val) setAiGenerated(false); }} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="desc" className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider block">Item description</Label>
+                  <Label htmlFor="desc" className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider block"><UiText>Item description</UiText></Label>
                   <div className="relative">
                     {analyzing && (
                       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1.5 rounded-xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xs">
                         <Loader2 className="h-4 w-4 text-[var(--ck-role-accent)] animate-spin" />
-                        <p className="text-2xs font-bold text-stone-700 dark:text-stone-300">Analysing your photo…</p>
+                        <p className="text-2xs font-bold text-stone-700 dark:text-stone-300"><UiText>Analysing your photo…</UiText></p>
                       </div>
                     )}
-                    <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder="Describe the item, its condition, and any notes…" className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 text-sm resize-none" disabled={analyzing} />
+                    <Textarea id="desc" rows={3} value={description} onChange={e => { setDescription(e.target.value); setAiGenerated(false); }} placeholder={ui("Describe the item, its condition, and any notes…")} className="rounded-xl border-stone-200 dark:border-zinc-700 focus-visible:ring-[var(--ck-role-accent)]/20 text-sm resize-none" disabled={analyzing} />
                   </div>
                   <div className="flex justify-between text-3xs text-stone-400 font-semibold">
-                    <span>{description.length >= 20 ? "✓ Minimum met" : `${description.length}/20 min`}</span>
+                    <span>{description.length >= 20 ? ui("✓ Minimum met") : rt("charsMin", { count: description.length })}</span>
                     <span>{description.length}/1000</span>
                   </div>
                 </div>
                 <button onClick={handleSubmitDonate} disabled={submitting || analyzing || images.length === 0 || description.trim().length < 20} className="w-full bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] disabled:bg-stone-200 dark:disabled:bg-zinc-800 disabled:text-stone-400 disabled:cursor-not-allowed text-white py-3.5 font-bold text-sm rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm shadow-orange-900/15 btn-shine">
-                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</> : <><Heart className="h-4 w-4" /> Complete Donation <ArrowRight className="h-4 w-4" /></>}
+                  {submitting ? <><Loader2 className="h-4 w-4 animate-spin" /> <UiText>Submitting…</UiText></> : <><Heart className="h-4 w-4" /> <UiText>Complete Donation</UiText> <ArrowRight className="h-4 w-4" /></>}
                 </button>
                 <div className="flex justify-between text-3xs text-stone-400 font-bold border-t border-stone-100 dark:border-zinc-800 pt-4">
                   <div className="flex gap-3">
-                    <Link href="/faq" className="hover:text-[var(--ck-role-accent)] transition-colors">Help</Link>
-                    <Link href="/privacy" className="hover:text-[var(--ck-role-accent)] transition-colors">Privacy</Link>
+                    <Link href="/faq" className="hover:text-[var(--ck-role-accent)] transition-colors"><UiText>Help</UiText></Link>
+                    <Link href="/privacy" className="hover:text-[var(--ck-role-accent)] transition-colors"><UiText>Privacy</UiText></Link>
                   </div>
-                  <span>© 2026 CauseKind</span>
+                  <span><UiText>© 2026 CauseKind</UiText></span>
                 </div>
               </div>
             </div>

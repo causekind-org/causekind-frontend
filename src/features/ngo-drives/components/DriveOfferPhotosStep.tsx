@@ -14,15 +14,20 @@ import type { OfferVideoState } from "@/features/donation-offer-wizard/useOfferV
 import { OfferVideoField } from "@/features/donation-offer-wizard/steps/OfferVideoField";
 import type { ScreeningState } from "@/features/donation-offer-wizard/steps/OfferPhotosStep";
 
+import { UiText, useUiText } from "@/components/UiText";
 /** Main photo, a required second angle, and up to 3 more. */
 export const DRIVE_MAX_PHOTOS = 5;
 
-const TIPS = [
-  "Daylight, or a well-lit room. No flash glare.",
-  "The whole item in frame, then a close-up of any wear.",
-  "A plain background, so the item stands out.",
-  "No people, faces or personal documents in frame.",
+/** Display copy for TIPS, translated (was a module constant). */
+function useTipsCopy() {
+  const ui = useUiText();
+  return [
+  ui("Daylight, or a well-lit room. No flash glare."),
+  ui("The whole item in frame, then a close-up of any wear."),
+  ui("A plain background, so the item stands out."),
+  ui("No people, faces or personal documents in frame."),
 ];
+}
 
 /**
  * The drive give form's photo step, laid out like the listing wizard's: a large
@@ -48,6 +53,10 @@ export function DriveOfferPhotosStep({
   onPickVideo?: (file: File) => void;
   onRemoveVideo?: () => void;
 }) {
+  const TIPS = useTipsCopy();
+  const df = useTranslations("driveFlow");
+  const wt = useTranslations("wizardFlow");
+  const ui = useUiText();
   const t = useTranslations();
   const reduced = !!useReducedMotion();
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -74,21 +83,21 @@ export function DriveOfferPhotosStep({
     <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-6" data-field="photos" tabIndex={-1}>
       <div className="min-w-0 space-y-3">
         <p className="text-xs text-stone-600 dark:text-stone-300">
-          Add a main photo and a second angle. You can add up to 3 more. We only check them for things we cannot accept.
+          <UiText>Add a main photo and a second angle. You can add up to 3 more. We only check them for things we cannot accept.</UiText>
         </p>
         <p aria-live="polite" data-testid="drive-photos-progress"
           className="inline-block rounded-full bg-[var(--ck-role-soft)] px-2.5 py-1 text-2xs font-black uppercase tracking-wide text-[var(--ck-role-accent)] lg:hidden">
-          {Math.min(approved, MIN_OFFER_PHOTOS)} of {MIN_OFFER_PHOTOS} required photos approved
+          {df("requiredPhotosApproved", { n: Math.min(approved, MIN_OFFER_PHOTOS), total: MIN_OFFER_PHOTOS })}
         </p>
 
         <div className="grid grid-cols-2 gap-2">
           <motion.button type="button" {...pressProps(reduced)} onClick={takePhoto} disabled={atLimit}
             className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-soft)] px-3 py-2.5 text-sm font-bold text-[var(--ck-role-accent)] disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]">
-            <Camera className="h-4 w-4" aria-hidden /> Take photo
+            <Camera className="h-4 w-4" aria-hidden /> <UiText>Take photo</UiText>
           </motion.button>
           <motion.button type="button" {...pressProps(reduced)} onClick={choosePhoto} disabled={atLimit}
             className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-bold text-stone-700 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200">
-            <ImagePlus className="h-4 w-4" aria-hidden /> Choose photo
+            <ImagePlus className="h-4 w-4" aria-hidden /> <UiText>Choose photo</UiText>
           </motion.button>
         </div>
 
@@ -108,21 +117,21 @@ export function DriveOfferPhotosStep({
                     className={`object-cover ${p.status === "uploaded" ? "" : "opacity-60"}`} />
                 )}
                 {i === 0 && p.status === "uploaded" && (
-                  <span className="absolute left-1.5 top-1.5 rounded-full bg-[var(--ck-role-accent)] px-2 py-0.5 text-4xs font-black uppercase tracking-wide text-white">Main</span>
+                  <span className="absolute left-1.5 top-1.5 rounded-full bg-[var(--ck-role-accent)] px-2 py-0.5 text-4xs font-black uppercase tracking-wide text-white"><UiText>Main</UiText></span>
                 )}
                 {p.status === "uploading" && (
                   <span className="absolute inset-0 grid place-items-center bg-white/60 dark:bg-zinc-950/60">
                     <Loader2 className="h-5 w-5 animate-spin text-stone-600" aria-hidden />
-                    <span className="sr-only">Uploading</span>
+                    <span className="sr-only"><UiText>Uploading</UiText></span>
                   </span>
                 )}
                 {p.status === "failed" && (
                   <button type="button" onClick={() => onRetryPhoto(p.id)}
                     className="absolute inset-0 grid place-items-center gap-1 bg-red-50/90 text-2xs font-bold text-red-700 dark:bg-red-950/80 dark:text-red-300">
-                    <RefreshCw className="h-4 w-4" aria-hidden /> Retry upload
+                    <RefreshCw className="h-4 w-4" aria-hidden /> <UiText>Retry upload</UiText>
                   </button>
                 )}
-                <button type="button" onClick={() => onRemovePhoto(p.id)} aria-label={`Remove photo ${i + 1} of ${photos.length}`}
+                <button type="button" onClick={() => onRemovePhoto(p.id)} aria-label={wt("removePhotoOf", { n: i + 1, total: photos.length })}
                   className="absolute bottom-1 right-1 grid h-11 w-11 place-items-center rounded-full bg-white/90 text-stone-700 shadow focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:bg-zinc-900/90 dark:text-stone-200">
                   <X className="h-4 w-4" aria-hidden />
                 </button>
@@ -139,12 +148,12 @@ export function DriveOfferPhotosStep({
                 className={`flex aspect-square flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-stone-300 bg-stone-50/60 p-2 text-center dark:border-zinc-700 dark:bg-zinc-900/40 lg:aspect-auto ${main ? "lg:col-span-2 lg:row-span-2 lg:border-2 lg:border-[var(--ck-role-accent)]/35 lg:bg-[var(--ck-role-soft)]/50" : ""}`}>
                 {main && <Camera className="hidden h-8 w-8 text-[var(--ck-role-accent)] lg:block" strokeWidth={1.5} aria-hidden />}
                 <span className="text-3xs font-black uppercase tracking-wide text-stone-500 dark:text-stone-400">
-                  {main ? "Main photo" : "Second angle"}
+                  {main ? ui("Main photo") : ui("Second angle")}
                 </span>
                 <span className="text-4xs leading-snug text-stone-400 dark:text-stone-500">
-                  {main ? "The whole item, front on" : "Another side, a label, or any wear"}
+                  {main ? ui("The whole item, front on") : ui("Another side, a label, or any wear")}
                 </span>
-                <span className="mt-0.5 rounded-full bg-stone-200 px-1.5 py-0.5 text-5xs font-black uppercase text-stone-600 dark:bg-zinc-800 dark:text-stone-400">Required</span>
+                <span className="mt-0.5 rounded-full bg-stone-200 px-1.5 py-0.5 text-5xs font-black uppercase text-stone-600 dark:bg-zinc-800 dark:text-stone-400"><UiText>Required</UiText></span>
               </li>
             );
           })}
@@ -154,7 +163,7 @@ export function DriveOfferPhotosStep({
               <button type="button" onClick={choosePhoto}
                 className="flex h-full w-full flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-stone-200 bg-stone-50/40 p-2 text-sm font-bold text-stone-500 hover:border-[var(--ck-role-accent)]/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-800 dark:bg-zinc-900/30">
                 <Plus className="h-5 w-5" aria-hidden />
-                {photos.length < MIN_OFFER_PHOTOS ? "Up to 3 more (optional)" : `Add more (${DRIVE_MAX_PHOTOS - photos.length} left)`}
+                {photos.length < MIN_OFFER_PHOTOS ? ui("Up to 3 more (optional)") : df("addMoreLeft", { count: DRIVE_MAX_PHOTOS - photos.length })}
               </button>
             </li>
           )}
@@ -167,7 +176,7 @@ export function DriveOfferPhotosStep({
             {screening.kind === "running" && (
               <motion.p key="running" variants={revealVariants(reduced)} initial="hidden" animate="shown" exit="hidden"
                 className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-2xs text-stone-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-stone-300">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Checking your photos. You can keep filling the form while this runs.
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> <UiText>Checking your photos. You can keep filling the form while this runs.</UiText>
               </motion.p>
             )}
             {screening.kind === "unavailable" && (
@@ -176,7 +185,7 @@ export function DriveOfferPhotosStep({
                 <p className="text-2xs text-stone-600 dark:text-stone-300">{screening.note}</p>
                 <button type="button" onClick={onRescreen}
                   className="mt-1.5 inline-flex min-h-[44px] items-center gap-1.5 text-2xs font-bold text-[var(--ck-role-accent)] underline underline-offset-2">
-                  <RefreshCw className="h-3 w-3" aria-hidden /> Check again
+                  <RefreshCw className="h-3 w-3" aria-hidden /> <UiText>Check again</UiText>
                 </button>
               </motion.div>
             )}
@@ -184,15 +193,15 @@ export function DriveOfferPhotosStep({
               <motion.div key="prohibited" role="alert" variants={revealVariants(reduced)} initial="hidden" animate="shown" exit="hidden"
                 className="rounded-xl border border-red-300 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/30">
                 <p className="flex items-center gap-2 text-2xs font-black uppercase tracking-wide text-red-700 dark:text-red-300">
-                  <ShieldAlert className="h-3.5 w-3.5" aria-hidden /> We cannot accept this
+                  <ShieldAlert className="h-3.5 w-3.5" aria-hidden /> <UiText>We cannot accept this</UiText>
                 </p>
                 <p className="mt-1 text-2xs text-red-800 dark:text-red-300">
                   {t(screening.code ? (PHOTO_COPY.reasons[screening.code] ?? PHOTO_COPY.genericReason) : PHOTO_COPY.genericReason)}
                 </p>
-                <p className="mt-1 text-2xs text-red-700/80 dark:text-red-400/80">Remove or replace that photo to continue.</p>
+                <p className="mt-1 text-2xs text-red-700/80 dark:text-red-400/80"><UiText>Remove or replace that photo to continue.</UiText></p>
                 <button type="button" onClick={onRescreen}
                   className="mt-1.5 inline-flex min-h-[44px] items-center gap-1.5 text-2xs font-bold text-red-800 underline underline-offset-2 dark:text-red-300">
-                  <RefreshCw className="h-3 w-3" aria-hidden /> Check again
+                  <RefreshCw className="h-3 w-3" aria-hidden /> <UiText>Check again</UiText>
                 </button>
               </motion.div>
             )}
@@ -205,11 +214,11 @@ export function DriveOfferPhotosStep({
         )}
         {/* The server answered that video is off (e.g. no ffmpeg to check clips): say so. */}
         {video?.capability && !video.capability.available && (
-          <p data-testid="drive-video-unavailable" className="text-sm text-stone-500 dark:text-stone-400">Video upload isn&apos;t available right now.</p>
+          <p data-testid="drive-video-unavailable" className="text-sm text-stone-500 dark:text-stone-400"><UiText>Video upload isn&apos;t available right now.</UiText></p>
         )}
 
         <details className="rounded-xl border border-stone-200 bg-white p-2.5 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
-          <summary className="cursor-pointer text-2xs font-bold text-stone-700 dark:text-stone-200">What makes a good photo?</summary>
+          <summary className="cursor-pointer text-2xs font-bold text-stone-700 dark:text-stone-200"><UiText>What makes a good photo?</UiText></summary>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-2xs text-stone-500 dark:text-stone-400">
             {TIPS.map(tip => <li key={tip}>{tip}</li>)}
           </ul>
@@ -225,15 +234,15 @@ export function DriveOfferPhotosStep({
             </span>
           </div>
           <div>
-            <p className="text-base font-black text-stone-800 dark:text-stone-100">Photos approved</p>
+            <p className="text-base font-black text-stone-800 dark:text-stone-100"><UiText>Photos approved</UiText></p>
             <p className="text-xs text-stone-500 dark:text-stone-400">
-              {approved >= MIN_OFFER_PHOTOS ? "Ready. You can continue." : `${MIN_OFFER_PHOTOS} needed to continue`}
+              {approved >= MIN_OFFER_PHOTOS ? ui("Ready. You can continue.") : df("neededToContinue", { count: MIN_OFFER_PHOTOS })}
             </p>
           </div>
         </div>
         <div className="h-px bg-stone-200 dark:bg-zinc-800" />
         <div className="space-y-3">
-          <p className="text-2xs font-black uppercase tracking-[0.12em] text-[var(--ck-role-accent)]">What makes a good photo</p>
+          <p className="text-2xs font-black uppercase tracking-[0.12em] text-[var(--ck-role-accent)]"><UiText>What makes a good photo</UiText></p>
           {TIPS.map(tip => (
             <p key={tip} className="flex items-start gap-2 text-sm leading-snug text-stone-700 dark:text-stone-300">
               <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ck-role-accent)]" aria-hidden />

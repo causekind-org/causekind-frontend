@@ -1,4 +1,5 @@
-export default function Loading() {
+
+import { UiText } from "@/components/UiText";export default function Loading() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6" aria-busy="true">
       {/* Back link skeleton */}
@@ -33,7 +34,7 @@ export default function Loading() {
         ))}
       </div>
 
-      <span className="sr-only">Loading category guidance…</span>
+      <span className="sr-only"><UiText>Loading category guidance…</UiText></span>
     </main>
   );
 }

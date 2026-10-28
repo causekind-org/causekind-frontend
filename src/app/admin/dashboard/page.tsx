@@ -1,7 +1,7 @@
 "use client";
 
 import { serverDate } from "@/lib/serverTime";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import {
@@ -16,12 +16,15 @@ import {
   adminGetNgoDrives,
   adminGetPendingNgoDriveOffers,
   adminGetNgoDriveProofs,
+  adminListIssues,
 } from "@/lib/api";
 import { displayReason } from "@/lib/rejectionReason";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { OffersQueuePanel } from "../offers/OffersQueuePanel";
 import { HandoverPhotoLog } from "../HandoverPhotoLog";
+import { IssueLinkWatcher, IssuesPanel } from "../issues/IssuesPanel";
+import { NotificationBell } from "@/components/NotificationBell";
 import { NgoReviewPanel } from "../ngos/NgoReviewPanel";
 import { NgoActivityModerationPanel } from "../ngos/NgoActivityModerationPanel";
 import { getPendingNgoActivities } from "@/lib/api";
@@ -35,7 +38,7 @@ import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav";
 import { AdminFundraisingPanel } from "@/features/fundraising/AdminFundraisingPanel";
 import {
-  Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
+  AlertTriangle, Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
@@ -43,7 +46,7 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "listings" | "matches" | "offers" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -61,6 +64,8 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   listings: "LISTING_REVIEW",
   matches: "MATCH_INTERVENE",
   offers: "OFFER_REVIEW",
+  // Same capability AdminCapabilityFilter maps for /admin/issues.
+  issues: "SUPPORT_CASE_MANAGE",
   "match-history": "MATCH_INTERVENE",
   "handover-photos": "MATCH_INTERVENE",
   "ai-logs": "LISTING_REVIEW",
@@ -277,6 +282,20 @@ export default function AdminDashboardPage() {
     getPendingNgoActivities().then(r => setActivitiesPending(r.length)).catch(() => setActivitiesPending(0));
   }, []);
   useEffect(() => { loadDriveCounts(); }, [loadDriveCounts]);
+
+  // Issues: open count for the sidebar badge, and the issue a deep link asked for.
+  // A 403 (SUPPORT_CASE_MANAGE revoked) only zeroes the badge.
+  const [openIssues, setOpenIssues] = useState(0);
+  const [issueDeepLink, setIssueDeepLink] = useState<string | null>(null);
+  useEffect(() => {
+    adminListIssues({ status: "open", size: 1 }).then(r => setOpenIssues(r.openCount)).catch(() => setOpenIssues(0));
+  }, []);
+  // ?tab=issues[&issue=<key>] — also when a notification link is clicked while
+  // this page is already open, which does not remount it.
+  const openIssueLink = useCallback((key: string | null) => {
+    setTab("issues");
+    setIssueDeepLink(key);
+  }, []);
 
   // Deep link: /admin/dashboard?tab=ngo-applications[&application=<id>]
   const [ngoDeepLink, setNgoDeepLink] = useState<string | null>(null);
@@ -568,7 +587,8 @@ export default function AdminDashboardPage() {
   // wrong side of the mobile nav split below.
   const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
   const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
-    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising";
+    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising" || tab === "issues";
+  const showIssues = canSeeTab("issues");
 
   const TABS = [
     { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
@@ -601,7 +621,8 @@ export default function AdminDashboardPage() {
     { key: "whatsapp"      as TabKey, label: "WhatsApp",          icon: MessageCircle, color: "text-green-400"  },
   ].filter(t => canSeeTab(t.key));
 
-  const headerTitle = tab === "ngo-applications" ? "NGO Applications"
+  const headerTitle = tab === "issues" ? "Issues"
+    : tab === "ngo-applications" ? "NGO Applications"
     : tab === "ngo-drives" ? "NGO Drives"
     : tab === "drive-offers" ? "Drive Offers"
     : tab === "drive-proofs" ? "Distribution Proofs"
@@ -615,7 +636,9 @@ export default function AdminDashboardPage() {
     : tab === "fundraising" ? "Fundraising"
     : "Approval Queue";
 
-  const headerSubtitle = tab === "ngo-applications"
+  const headerSubtitle = tab === "issues"
+    ? `${openIssues} open · every problem report and support case, with its full story`
+    : tab === "ngo-applications"
     ? `${ngoAwaiting} application${ngoAwaiting !== 1 ? "s" : ""} awaiting review · approval unlocks requests and drives`
     : tab === "ngo-drives"
     ? `${drivesPending} drive${drivesPending !== 1 ? "s" : ""} awaiting review · approval makes a drive live for donors`
@@ -746,6 +769,28 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
+          {showIssues && (
+            <div className="pt-2">
+              <button
+                onClick={() => { setTab("issues"); setIssueDeepLink(null); }}
+                aria-current={tab === "issues" ? "page" : undefined}
+                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
+                  tab === "issues" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
+                }`}
+                style={{ background: tab === "issues" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
+              >
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: tab === "issues" ? "#b04a15" : "#f59e0b" }} aria-hidden />
+                  <span className={`text-sm font-semibold ${tab === "issues" ? "text-white" : "text-stone-400"}`}>Issues</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {openIssues > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
+                  <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: openIssues > 0 ? "#f59e0b" : "#3d3d52" }}>{openIssues}</span>
+                </div>
+              </button>
+            </div>
+          )}
+
           <AdminFundraisingNav variant="sidebar" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
         </div>
 
@@ -800,12 +845,16 @@ export default function AdminDashboardPage() {
               <p className="text-4xs text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">CauseKind</p>
             </div>
           </div>
-          <button
-            onClick={() => { logout(); router.push("/login"); }}
-            className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-red-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-red-500/10"
-          >
-            <LogOut className="w-3.5 h-3.5" /> Sign Out
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* The site navbar (and its bell) is hidden on this page, so admins get the bell here. */}
+            <NotificationBell />
+            <button
+              onClick={() => { logout(); router.push("/login"); }}
+              className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-red-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-red-500/10"
+            >
+              <LogOut className="w-3.5 h-3.5" /> Sign Out
+            </button>
+          </div>
         </div>
 
         {/* Sticky content header — gains an elevated shadow once content scrolls under it */}
@@ -816,6 +865,9 @@ export default function AdminDashboardPage() {
             <div>
               <h1 className="text-xl font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
               <p className="text-sm text-stone-500 mt-1.5">{headerSubtitle}</p>
+            </div>
+            <div className="hidden lg:block sm:order-last">
+              <NotificationBell />
             </div>
 
             {/* AI logs refresh button */}
@@ -862,6 +914,21 @@ export default function AdminDashboardPage() {
                 {count > 0 && <span className="opacity-80">{count}</span>}
               </button>
             ))}
+
+            {showIssues && (
+              <button
+                data-active={tab === "issues" || undefined}
+                onClick={() => { setTab("issues"); setIssueDeepLink(null); }}
+                aria-current={tab === "issues" ? "page" : undefined}
+                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  tab === "issues" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden />
+                Issues
+                {openIssues > 0 && <span className="opacity-80">{openIssues}</span>}
+              </button>
+            )}
 
             {NGO_TABS.length > 0 && (
               <>
@@ -920,7 +987,14 @@ export default function AdminDashboardPage() {
         </div>
 
         {/* ── Cards feed ── */}
-        <div className={`flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 ${tab === "ngo-applications" || tab === "ngo-drives" ? "max-w-6xl" : "max-w-4xl"} space-y-3 sm:space-y-4`}>
+        <div className={`flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 ${tab === "ngo-applications" || tab === "ngo-drives" || tab === "issues" ? "max-w-6xl" : "max-w-4xl"} space-y-3 sm:space-y-4`}>
+
+          {showIssues && (
+            <Suspense fallback={null}><IssueLinkWatcher onOpen={openIssueLink} /></Suspense>
+          )}
+
+          {/* ── ISSUES — every problem report and support case, read-only ── */}
+          {tab === "issues" && <IssuesPanel issueKey={issueDeepLink} onOpenCount={setOpenIssues} />}
 
           {/* ── DONATION OFFERS TAB — reuses the same panel as the standalone /admin/offers page ── */}
           {tab === "offers" && <OffersQueuePanel />}

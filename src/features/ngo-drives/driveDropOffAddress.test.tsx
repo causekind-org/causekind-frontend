@@ -21,7 +21,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), back: vi.
 vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), info: vi.fn(), warning: vi.fn(), loading: vi.fn(), dismiss: vi.fn() }) }));
 vi.mock("@/components/ngo-landing/useNgoStatus", () => ({ useNgoStatus: () => ({ isVerified: true, isPhotosDue: false, canStartDrive: true, isLoading: false, error: null, refresh: vi.fn(), lockReason: null, driveLockReason: null, photosDueRequestName: null }) }));
 vi.mock("@/features/ngo-drives/components/DriveLocationStep", () => ({ DriveLocationStep: () => <div data-testid="gps-fields">gps</div>, RADIUS_PRESETS: [10, 20, 30, 50, 100], radiusKm: () => 10 }));
-vi.mock("next-intl", () => ({ useLocale: () => "en", useTranslations: () => (k: string) => k }));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { email: "donor@test", role: "DONOR" }, isLoading: false }) }));
 vi.mock("@/features/handover/HandoverLocationField", () => ({
   HandoverLocationField: () => <div data-testid="handover-map">map</div>,

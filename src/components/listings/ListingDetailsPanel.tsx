@@ -6,6 +6,9 @@ import { PhotoThumbs } from "@/components/PhotoThumbs";
 import Link from "@/components/AppLink";
 import { getListingActivity, type ItemListing, type ListingActivityEntry } from "@/lib/api";
 
+import { UiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDashCopy } from "@/lib/dashboardCopy";
 const STATIONS = ["Listed", "Verified", "Matching", "Matched", "Donated"];
 
 // The statuses that first mark each station as reached, for its date.
@@ -35,6 +38,8 @@ export function ListingDetailsPanel({ listing: l, stage: baseStage, state: baseS
   review?: ReactNode;
 }) {
   const [activity, setActivity] = useState<ListingActivityEntry[] | null>(null);
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
 
   useEffect(() => {
     let live = true;
@@ -49,22 +54,22 @@ export function ListingDetailsPanel({ listing: l, stage: baseStage, state: baseS
   const dates = [
     fmt(l.submittedAt ?? l.createdAt),
     fmt(verifiedAt),
-    review ? "Need found" : verifiedAt ? `Since ${fmt(verifiedAt)}` : null,
+    review ? dc("Need found") : verifiedAt ? dt("since", { date: fmt(verifiedAt) ?? "" }) : null,
     fmt(firstAt(entries, MATCHED)),
     fmt(firstAt(entries, DONATED)),
   ];
   const photos = (l.photoUrls ?? []).slice(0, 3);
   const facts = [
-    l.brand && `Brand: ${l.brand}`,
-    l.approximateAge && `Age: ${l.approximateAge}`,
-    l.workingStatus && `Working: ${label(l.workingStatus)}`,
+    l.brand && dt("brandIs", { brand: l.brand }),
+    l.approximateAge && dt("ageIs", { age: l.approximateAge }),
+    l.workingStatus && dt("workingIs", { status: dc(label(l.workingStatus)) }),
   ].filter(Boolean);
   const pickup = [
-    (l.locality || l.pincode) && `Locality: ${[l.locality, l.pincode].filter(Boolean).join(", ")}`,
-    (l.pickupDays || l.pickupTimeSlots) && `Days: ${[l.pickupDays, l.pickupTimeSlots].filter(Boolean).join(" · ")}`,
-    l.maximumDeliveryRadius != null && `Will deliver within ${l.maximumDeliveryRadius} km`,
-    l.transportPayerPreference && `Transport paid by: ${label(l.transportPayerPreference)}`,
-    l.availabilityExpiry && `Available until ${fmt(l.availabilityExpiry)}`,
+    (l.locality || l.pincode) && dt("localityIs", { place: [l.locality, l.pincode].filter(Boolean).join(", ") }),
+    (l.pickupDays || l.pickupTimeSlots) && dt("daysIs", { days: [l.pickupDays, l.pickupTimeSlots].filter(Boolean).join(" · ") }),
+    l.maximumDeliveryRadius != null && dt("willDeliverWithin", { km: l.maximumDeliveryRadius }),
+    l.transportPayerPreference && dt("transportPaidBy", { payer: dc(label(l.transportPayerPreference)) }),
+    l.availabilityExpiry && dt("availableUntil", { date: fmt(l.availabilityExpiry) ?? "" }),
   ].filter(Boolean) as string[];
   const heading = "text-3xs font-bold uppercase tracking-[0.14em] text-stone-500 dark:text-stone-400";
 
@@ -74,34 +79,34 @@ export function ListingDetailsPanel({ listing: l, stage: baseStage, state: baseS
       {review}
       <div className="grid gap-5 p-4 sm:grid-cols-3 sm:p-5">
       <div className="flex min-w-0 flex-col gap-2.5">
-        <h3 className={heading}>Item</h3>
+        <h3 className={heading}><UiText>Item</UiText></h3>
         <PhotoThumbs photos={photos} alt={l.title} size={72} />
         {l.description && <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300">{l.description}</p>}
         {facts.length > 0 && <p className="text-2xs text-stone-500 dark:text-stone-400">{facts.join(" · ")}</p>}
       </div>
 
       <div className="flex min-w-0 flex-col gap-2">
-        <h3 className={heading}>Pickup</h3>
+        <h3 className={heading}><UiText>Pickup</UiText></h3>
         {pickup.length > 0
           ? pickup.map(line => <p key={line} className="text-xs text-stone-700 dark:text-stone-300">{line}</p>)
-          : <p className="text-xs text-stone-500">No pickup details yet.</p>}
+          : <p className="text-xs text-stone-500"><UiText>No pickup details yet.</UiText></p>}
         {state !== "broken" && !DONATED.includes(l.status) && (
           <Link href={`/items/${l.id}/edit`}
             className="mt-auto inline-flex min-h-[44px] w-fit items-center bg-[var(--ck-role-accent)] px-4 text-xs font-bold text-white hover:opacity-90">
-            Edit listing
+            <UiText>Edit listing</UiText>
           </Link>
         )}
       </div>
 
       <div className="flex min-w-0 flex-col">
-        <h3 className={`${heading} mb-3`}>Progress</h3>
+        <h3 className={`${heading} mb-3`}><UiText>Progress</UiText></h3>
         <ol>
           {STATIONS.map((name, i) => {
             const reached = i < stage || (i === stage && state === "done");
             const current = i === stage && state !== "done";
             const broken = current && state === "broken";
             const isLast = i === STATIONS.length - 1;
-            const date = broken ? "Stopped here" : current && !dates[i] ? "Now" : reached || current ? dates[i] : "Upcoming";
+            const date = broken ? dc("Stopped here") : current && !dates[i] ? dc("Now") : reached || current ? dates[i] : dc("Upcoming");
             return (
               <li key={name} className="flex gap-3">
                 <div className="flex flex-col items-center">
@@ -113,12 +118,12 @@ export function ListingDetailsPanel({ listing: l, stage: baseStage, state: baseS
                 </div>
                 <div className={`min-w-0 flex-1 ${isLast ? "" : "pb-3"}`}>
                   <p className={`text-xs font-semibold ${broken ? "text-red-600" : reached || current ? "text-stone-800 dark:text-stone-200" : "text-stone-500"}`}>
-                    {name}
+                    {dc(name)}
                     {review && i === 3 && (
-                      <span className="ms-2 bg-[var(--ck-role-accent)]/10 px-2 py-0.5 text-3xs font-black text-[var(--ck-role-accent)]">Waiting for you</span>
+                      <span className="ms-2 bg-[var(--ck-role-accent)]/10 px-2 py-0.5 text-3xs font-black text-[var(--ck-role-accent)]"><UiText>Waiting for you</UiText></span>
                     )}
                   </p>
-                  {review && i === 3 ? <p className="mt-0.5 text-2xs font-semibold text-[var(--ck-role-accent)]">Waiting for your reply</p> : date && <p className="mt-0.5 text-2xs text-stone-500 dark:text-stone-400">{date}</p>}
+                  {review && i === 3 ? <p className="mt-0.5 text-2xs font-semibold text-[var(--ck-role-accent)]"><UiText>Waiting for your reply</UiText></p> : date && <p className="mt-0.5 text-2xs text-stone-500 dark:text-stone-400">{date}</p>}
                 </div>
               </li>
             );

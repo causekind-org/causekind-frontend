@@ -6,6 +6,7 @@ import { FEATURES } from "@/lib/features";
 import { fundraisingCampaigns, type CampaignFlowStatus, type FundraisingCampaignQueueRow } from "@/lib/api";
 import { CATEGORY_LABEL, CampaignChip, formatDate, formatINR } from "@/features/fundraising/ui";
 import a from "@/features/fundraising/admin.module.css";
+import { TabCount, useTabCounts } from "@/features/fundraising/TabCount";
 
 const FILTERS: { label: string; status?: CampaignFlowStatus }[] = [
   { label: "Waiting for review" },
@@ -28,6 +29,7 @@ export default function AdminCampaignQueuePage() {
     fundraisingCampaigns.admin.queue(FILTERS[filter].status).then(setRows).catch(() => setFailed(true));
   }, [filter]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
+  const counts = useTabCounts(FILTERS.map((f) => f.status), fundraisingCampaigns.admin.queue, rows);
 
   if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
 
@@ -37,7 +39,7 @@ export default function AdminCampaignQueuePage() {
         <nav className={a.switch} aria-label="Fundraising review"><Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link><span className={`${a.switchBtn} ${a.switchOn}`} aria-current="page">Publication review</span><Link href="/admin/fundraising/review" className={a.switchBtn}>Updates &amp; changes</Link><Link href="/admin/fundraising/reports" className={a.switchBtn}>Reports</Link></nav>
         <div><h1 className={a.serif} style={{ fontSize: 28 }}>Publication review</h1><p className={a.muted}>Check each fundraiser page against its approved application before it can go public.</p></div>
         <nav className={a.tabs} aria-label="Filter by state">
-          {FILTERS.map((f, i) => <button key={f.label} type="button" className={`${a.tab} ${i === filter ? a.tabOn : ""}`} aria-pressed={i === filter} onClick={() => setFilter(i)}>{f.label}</button>)}
+          {FILTERS.map((f, i) => <button key={f.label} type="button" className={`${a.tab} ${i === filter ? a.tabOn : ""}`} aria-pressed={i === filter} onClick={() => setFilter(i)}>{f.label}<TabCount n={counts[i]} /></button>)}
         </nav>
         {failed ? (
           <div className={a.card} role="alert" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start", borderColor: "#e9b8b3" }}>

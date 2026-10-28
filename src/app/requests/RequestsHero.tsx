@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { HandCoins, Plus, X, ChevronDown } from "lucide-react";
 
+import { UiText, useUiText } from "@/components/UiText";
 export function RequestsHero({ total, critical }: { total: number; critical: number }) {
+  const ui = useUiText();
   const [mouse, setMouse] = useState({ x: 50, y: 40 });
   const [active, setActive] = useState(false);
 
@@ -66,41 +68,41 @@ export function RequestsHero({ total, critical }: { total: number; critical: num
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--ck-role-highlight)] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--ck-role-highlight)]" />
               </span>
-              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest">Live Community Needs</span>
+              <span className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest"><UiText>Live Community Needs</UiText></span>
             </div>
 
             {/* Headline */}
             <div className="anim-up anim-d2">
               <h1 className="text-white text-2xl sm:text-5xl lg:text-[3.6rem] font-extrabold leading-[1.04] tracking-tight">
-                Give items.{" "}
-                <span className="text-gradient-terra">Change lives.</span>
+                <UiText>Give items.</UiText>{" "}
+                <span className="text-gradient-terra"><UiText>Change lives.</UiText></span>
               </h1>
             </div>
 
             {/* Subtitle */}
             <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-md anim-up anim-d3">
-              Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.
+              <UiText>Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.</UiText>
             </p>
 
             {/* Live stats */}
             <div className="flex flex-wrap items-center gap-5 sm:gap-8 anim-up anim-d4">
               <div>
                 <p className="text-xl sm:text-3xl font-black text-white tabular-nums">{total}</p>
-                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Active Needs</p>
+                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5"><UiText>Active Needs</UiText></p>
               </div>
               {critical > 0 && (
                 <>
                   <div className="w-px h-10 bg-white/10" />
                   <div>
                     <p className="text-xl sm:text-3xl font-black text-red-400 tabular-nums">{critical}</p>
-                    <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Urgent</p>
+                    <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5"><UiText>Urgent</UiText></p>
                   </div>
                 </>
               )}
               <div className="hidden sm:block w-px h-10 bg-white/10" />
               <div className="hidden sm:block">
                 <p className="text-xl sm:text-3xl font-black text-[var(--ck-role-highlight)]">0%</p>
-                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5">Platform Fees</p>
+                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5"><UiText>Platform Fees</UiText></p>
               </div>
             </div>
 
@@ -129,7 +131,7 @@ export function RequestsHero({ total, critical }: { total: number; critical: num
                 style={{ background: "linear-gradient(135deg, var(--ck-role-accent) 0%, var(--ck-role-secondary) 100%)" }}
               >
                 <Plus className="w-4 h-4" strokeWidth={3} />
-                List an Item
+                <UiText>List an Item</UiText>
               </Link>
 
               {/* Sticky hint — pops in beside the button after 10s, dismissible */}
@@ -151,14 +153,14 @@ export function RequestsHero({ total, critical }: { total: number; critical: num
                     <span className="absolute -bottom-1 left-8 h-2.5 w-2.5 rotate-45 border-b border-r border-[var(--ck-role-highlight)]/40 bg-[#1c0905] sm:bottom-auto sm:top-1/2 sm:-left-1.5 sm:-mt-1.5 sm:border-r-0 sm:border-l" />
                     <button
                       onClick={() => setShowHint(false)}
-                      aria-label="Dismiss hint"
+                      aria-label={ui("Dismiss hint")}
                       className="absolute top-2 right-2 text-white/30 hover:text-white/70 transition-colors"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
-                    <p className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest mb-1">Got spare items?</p>
+                    <p className="text-[var(--ck-role-highlight)] text-3xs font-black uppercase tracking-widest mb-1"><UiText>Got spare items?</UiText></p>
                     <p className="text-white/80 text-xs leading-relaxed pr-3">
-                      List your item from here — books, clothes, electronics. Someone nearby needs it.
+                      <UiText>List your item from here — books, clothes, electronics. Someone nearby needs it.</UiText>
                     </p>
                   </div>
                 </div>
@@ -167,7 +169,7 @@ export function RequestsHero({ total, critical }: { total: number; critical: num
 
             {/* Scroll cue */}
             <div className="flex items-center gap-2 anim-up anim-d6">
-              <span className="text-white/25 text-3xs font-bold uppercase tracking-widest">Browse needs below</span>
+              <span className="text-white/25 text-3xs font-bold uppercase tracking-widest"><UiText>Browse needs below</UiText></span>
               <ChevronDown className="h-4 w-4 text-white/25 animate-bounce-slow" />
             </div>
           </div>

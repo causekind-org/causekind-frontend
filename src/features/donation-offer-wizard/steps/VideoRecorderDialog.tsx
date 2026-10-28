@@ -10,6 +10,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * MIME types to offer {@link MediaRecorder}, best first.
  *
@@ -90,6 +92,9 @@ export function VideoRecorderDialog({
   onCancel: () => void;
   onRecorded: (file: File) => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const describeCameraError = useDescribeCameraError();
+  const ui = useUiText();
   const [phase, setPhase] = useState<Phase>("starting");
   const [error, setError] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -159,14 +164,14 @@ export function VideoRecorderDialog({
       if (!navigator.mediaDevices?.getUserMedia) {
         if (!cancelled) {
           setPhase("error");
-          setError("This browser can't record video. Choose a video file instead.");
+          setError(ui("This browser can't record video. Choose a video file instead."));
         }
         return;
       }
       if (!pickMimeType()) {
         if (!cancelled) {
           setPhase("error");
-          setError("This browser can't record video. Choose a video file instead.");
+          setError(ui("This browser can't record video. Choose a video file instead."));
         }
         return;
       }
@@ -223,7 +228,7 @@ export function VideoRecorderDialog({
       });
     } catch {
       setPhase("error");
-      setError("This browser can't record video. Choose a video file instead.");
+      setError(ui("This browser can't record video. Choose a video file instead."));
       return;
     }
 
@@ -248,7 +253,7 @@ export function VideoRecorderDialog({
       chunksRef.current = [];
       if (blob.size === 0) {
         setPhase("error");
-        setError("That recording came out empty. Please try again.");
+        setError(ui("That recording came out empty. Please try again."));
         return;
       }
 
@@ -265,7 +270,7 @@ export function VideoRecorderDialog({
     };
     recorder.onerror = () => {
       setPhase("error");
-      setError("The recording stopped unexpectedly. Please try again.");
+      setError(ui("The recording stopped unexpectedly. Please try again."));
     };
 
     recorderRef.current = recorder;
@@ -289,9 +294,9 @@ export function VideoRecorderDialog({
     <Dialog open={open} onOpenChange={next => { if (!next) onCancel(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Record a video</DialogTitle>
+          <DialogTitle><UiText>Record a video</UiText></DialogTitle>
           <DialogDescription>
-            Up to {maxSeconds} seconds. No sound is recorded.
+            {wt("recordLimit", { seconds: maxSeconds })}
           </DialogDescription>
         </DialogHeader>
 
@@ -310,7 +315,7 @@ export function VideoRecorderDialog({
           {phase === "starting" && (
             <p className="absolute inset-0 flex items-center justify-center gap-2 text-sm font-bold text-white">
               <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-              Starting camera…
+              <UiText>Starting camera…</UiText>
             </p>
           )}
 
@@ -321,7 +326,7 @@ export function VideoRecorderDialog({
               className="absolute left-3 top-3 flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-3xs font-bold text-white"
             >
               <span className="h-2 w-2 rounded-full bg-red-500" aria-hidden />
-              {formatElapsed(elapsed)} · {remaining}s left
+              {wt("secondsLeft", { elapsed: formatElapsed(elapsed), remaining })}
             </p>
           )}
         </div>
@@ -336,7 +341,7 @@ export function VideoRecorderDialog({
             onClick={onCancel}
             className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-bold text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200"
           >
-            <X className="h-4 w-4" aria-hidden /> Cancel
+            <X className="h-4 w-4" aria-hidden /> <UiText>Cancel</UiText>
           </button>
 
           {phase === "recording" ? (
@@ -345,7 +350,7 @@ export function VideoRecorderDialog({
               onClick={stop}
               className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-red-600 px-3 py-2.5 text-sm font-bold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600"
             >
-              <Square className="h-4 w-4" aria-hidden /> Stop
+              <Square className="h-4 w-4" aria-hidden /> <UiText>Stop</UiText>
             </button>
           ) : (
             <button
@@ -354,7 +359,7 @@ export function VideoRecorderDialog({
               disabled={phase !== "ready"}
               className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-soft)] px-3 py-2.5 text-sm font-bold text-[var(--ck-role-accent)] disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
             >
-              <Video className="h-4 w-4" aria-hidden /> Start recording
+              <Video className="h-4 w-4" aria-hidden /> <UiText>Start recording</UiText>
             </button>
           )}
         </div>
@@ -371,18 +376,21 @@ export function VideoRecorderDialog({
  * misleading to someone who pressed Block. Both end with the file picker as the
  * way forward, because it always is.
  */
-function describeCameraError(e: unknown): string {
-  const name = e instanceof Error ? e.name : "";
-  switch (name) {
-    case "NotAllowedError":
-    case "SecurityError":
-      return "Camera access was blocked. Allow it in your browser, or choose a video file instead.";
-    case "NotFoundError":
-    case "OverconstrainedError":
-      return "No camera was found. Choose a video file instead.";
-    case "NotReadableError":
-      return "Your camera is in use by another app. Close it and try again, or choose a video file.";
-    default:
-      return "We couldn't start the camera. Choose a video file instead.";
-  }
+function useDescribeCameraError() {
+  const ui = useUiText();
+  return (e: unknown): string => {
+    const name = e instanceof Error ? e.name : "";
+    switch (name) {
+      case "NotAllowedError":
+      case "SecurityError":
+        return ui("Camera access was blocked. Allow it in your browser, or choose a video file instead.");
+      case "NotFoundError":
+      case "OverconstrainedError":
+        return ui("No camera was found. Choose a video file instead.");
+      case "NotReadableError":
+        return ui("Your camera is in use by another app. Close it and try again, or choose a video file.");
+      default:
+        return ui("We couldn't start the camera. Choose a video file instead.");
+    }
+  };
 }

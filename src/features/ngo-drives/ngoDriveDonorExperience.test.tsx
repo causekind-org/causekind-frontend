@@ -12,10 +12,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
 }));
 
-vi.mock("next-intl", () => ({
-  useLocale: () => "en",
-  useTranslations: () => (k: string) => k,
-}));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 
 vi.mock("@/lib/toast", () => ({
   toast: Object.assign(vi.fn(), {

@@ -5,13 +5,17 @@ import type { OfferModel } from "@/features/donation-offer-wizard/offerModel";
 import { DRIVE_OFFER_AGE_RANGES, mapLegacyAgeToAgeRange, formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-function getSizeSpecPlaceholder(category?: string | null): string {
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
+function useSizeSpecPlaceholder(category: string | null | undefined): string {
+  const ui = useUiText();
   const cat = (category ?? "").trim().toLowerCase();
-  if (cat === "clothing") return "e.g. Age 6-8 years, size M";
-  if (cat === "electronics") return "e.g. Model / brand and specs";
-  if (cat === "furniture") return "e.g. 4 ft x 2 ft x 3 ft";
-  if (cat === "education") return "e.g. Class 5 notebooks, 200 pages";
-  return "Size, model or any specification";
+  if (cat === "clothing") return ui("e.g. Age 6-8 years, size M");
+  if (cat === "electronics") return ui("e.g. Model / brand and specs");
+  if (cat === "furniture") return ui("e.g. 4 ft x 2 ft x 3 ft");
+  if (cat === "education") return ui("e.g. Class 5 notebooks, 200 pages");
+  return ui("Size, model or any specification");
 }
 
 /**
@@ -39,18 +43,22 @@ export function DriveOfferDetailsStep({
   mustBeWorking?: boolean;
   requireClean?: boolean;
 }) {
+  const ui = useUiText();
+  const wt = useTranslations("wizardFlow");
+  const dc = useDriveCopy();
+  const sizeSpecPlaceholder = useSizeSpecPlaceholder(driveCategory);
   const partlyMet = requestedQuantity != null && stillNeededQuantity != null
     && stillNeededQuantity < requestedQuantity;
 
   return (
     <div className="space-y-3">
       <WizardField
-        label="How many are you donating?"
+        label={ui("How many are you donating?")}
         required
         error={errors.quantity}
         hint={partlyMet
-          ? `${stillNeededQuantity} still needed (of the ${requestedQuantity} requested). You can offer up to ${stillNeededQuantity}.`
-          : requestedQuantity ? `The request asks for ${requestedQuantity}.` : undefined}
+          ? wt("partlyMetHint", { still: stillNeededQuantity, requested: requestedQuantity })
+          : requestedQuantity ? wt("requestAsks", { requested: requestedQuantity }) : undefined}
       >
         {({ id, describedBy, invalid }) => (
           <input
@@ -66,8 +74,8 @@ export function DriveOfferDetailsStep({
 
       {/* NEW Size / specification field under quantity */}
       <WizardField
-        label="Size / specification"
-        hint="Optional (up to 100 characters)"
+        label={ui("Size / specification")}
+        hint={ui("Optional (up to 100 characters)")}
         error={errors.sizeSpec}
       >
         {({ id, describedBy, invalid }) => (
@@ -81,16 +89,16 @@ export function DriveOfferDetailsStep({
             aria-describedby={describedBy}
             aria-invalid={invalid}
             className={controlClass}
-            placeholder={getSizeSpecPlaceholder(driveCategory)}
+            placeholder={sizeSpecPlaceholder}
           />
         )}
       </WizardField>
 
       {!purchase && (
         <WizardField
-          label="How old is the item?"
+          label={ui("How old is the item?")}
           required
-          hint="Roughly how long you've had it or used it."
+          hint={ui("Roughly how long you've had it or used it.")}
           error={errors.ageRange || errors.approximateAge}
         >
           {({ id, describedBy, invalid }) => {
@@ -112,12 +120,12 @@ export function DriveOfferDetailsStep({
                     aria-invalid={invalid}
                     className={`w-full box-border h-11 ${controlClass} ${invalid ? "border-red-500" : ""}`}
                   >
-                    <SelectValue placeholder="Select item age" />
+                    <SelectValue placeholder={ui("Select item age")} />
                   </SelectTrigger>
                   <SelectContent>
                     {DRIVE_OFFER_AGE_RANGES.map(opt => (
                       <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
+                        {dc(opt.label)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -156,10 +164,10 @@ export function DriveOfferDetailsStep({
       {/* Same field, but the question is different depending on whether the
           donor is looking at the item or planning to buy it. */}
       <WizardField
-        label={purchase ? "What will it come with?" : "Accessories included"}
+        label={purchase ? ui("What will it come with?") : ui("Accessories included")}
         hint={purchase
-          ? "Optional — cables, parts or extras you intend to buy alongside it."
-          : "Optional — cables, remote, parts, original box."}
+          ? ui("Optional — cables, parts or extras you intend to buy alongside it.")
+          : ui("Optional — cables, remote, parts, original box.")}
         error={errors.accessoriesIncluded}
       >
         {({ id, describedBy, invalid }) => (
@@ -169,7 +177,7 @@ export function DriveOfferDetailsStep({
             onChange={e => onChange("accessoriesIncluded", e.target.value)}
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
-            placeholder="Charger, carry case…"
+            placeholder={ui("Charger, carry case…")}
           />
         )}
       </WizardField>
@@ -178,8 +186,8 @@ export function DriveOfferDetailsStep({
           requested item. ALREADY_OWN never sees this. */}
       {showSpecNotes && (
         <WizardField
-          label="How does yours differ?"
-          hint="Tell the recipient what is different from what they asked for."
+          label={ui("How does yours differ?")}
+          hint={ui("Tell the recipient what is different from what they asked for.")}
           error={errors.specNotes}
         >
           {({ id, describedBy, invalid }) => (
@@ -206,7 +214,7 @@ export function DriveOfferDetailsStep({
               className="mt-0.5 h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500 dark:border-zinc-700"
             />
             <span className="text-sm font-medium text-stone-800 dark:text-stone-200">
-              I&apos;ve tested it and it works
+              <UiText>I&apos;ve tested it and it works</UiText>
             </span>
           </label>
           {errors.confirmedWorking && (
@@ -228,7 +236,7 @@ export function DriveOfferDetailsStep({
               className="mt-0.5 h-4 w-4 rounded border-stone-300 text-emerald-600 focus:ring-emerald-500 dark:border-zinc-700"
             />
             <span className="text-sm font-medium text-stone-800 dark:text-stone-200">
-              Washed and clean
+              <UiText>Washed and clean</UiText>
             </span>
           </label>
           {errors.confirmedClean && (

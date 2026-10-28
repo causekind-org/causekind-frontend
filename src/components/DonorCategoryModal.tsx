@@ -1,4 +1,8 @@
 "use client";
+
+import { useTranslations } from "next-intl";
+import { useCategoryLabel } from "@/lib/categoryLabel";
+import { UiText, useUiText } from "@/components/UiText";
 import { isDriveGiveFlowPath } from "@/lib/driveFlowPaths";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -92,6 +96,20 @@ const BACKDROP_EMBERS = [
 ========================================================= */
 
 export function DonorCategoryModal() {
+  const ui = useUiText();
+  const t = useTranslations("globalPrompts");
+  const categoryLabel = useCategoryLabel();
+  const blurbs: Record<string, string> = {
+    "Medical aid": t("blurb.medical"),
+    "Education": t("blurb.education"),
+    "Livelihood": t("blurb.livelihood"),
+    "Relief": t("blurb.relief"),
+    "Household": t("blurb.household"),
+    "Furniture": t("blurb.furniture"),
+    "Clothing": t("blurb.clothing"),
+    "Electronics": t("blurb.electronics"),
+    "Sports": t("blurb.sports"),
+  };
   const { user, isLoading } = useAuth();
   const [show, setShow] = useState(false);
   // Paused on the drive page / give form so the give flow and its success popup stay on top.
@@ -1169,7 +1187,7 @@ useEffect(() => {
             <button
               type="button"
               onClick={closePicker}
-              aria-label="Close"
+              aria-label={ui("Close")}
               className="
                 absolute
                 right-0
@@ -1234,7 +1252,7 @@ useEffect(() => {
                 sm:text-[9px]
               "
             >
-              Where will you make an impact?
+              <UiText>Where will you make an impact?</UiText>
             </p>
 
             {/* =================================================
@@ -1255,7 +1273,7 @@ useEffect(() => {
                 lg:text-[30px]
               "
             >
-              Choose your focus areas
+              <UiText>Choose your focus areas</UiText>
             </h1>
 
             {/* =================================================
@@ -1274,7 +1292,7 @@ useEffect(() => {
                 sm:text-[11px]
               "
             >
-              We'll show you the most urgent local needs in your area.
+              <UiText>We'll show you the most urgent local needs in your area.</UiText>
             </p>
 
           </header>
@@ -1388,11 +1406,11 @@ useEffect(() => {
                           <Icon className={`h-3.5 w-3.5 ${col}`} />
                         </span>
                         <span className={`truncate text-[15px] font-bold sm:text-[17px] ${isSelected ? col : "text-white"}`}>
-                          {name}
+                          {categoryLabel(name)}
                         </span>
                       </span>
                       <span className="line-clamp-2 text-[12.5px] leading-snug text-stone-300 sm:line-clamp-1 sm:text-[13px]">
-                        {blurb}
+                        {blurbs[name] ?? blurb}
                       </span>
                     </span>
 
@@ -1685,7 +1703,7 @@ useEffect(() => {
                             ${col}
                           `}
                         >
-                          {blurb}
+                          {blurbs[name] ?? blurb}
                         </p>
 
                       </div>
@@ -1759,7 +1777,7 @@ useEffect(() => {
                             }
                           `}
                         >
-                          {name}
+                          {categoryLabel(name)}
                         </span>
 
                       </div>
@@ -1805,13 +1823,7 @@ useEffect(() => {
                 sm:text-[10px]
               "
             >
-              {tempSelected.length > 0
-                ? `${tempSelected.length} ${
-                    tempSelected.length === 1
-                      ? "focus area"
-                      : "focus areas"
-                  } selected`
-                : "No focus areas selected"}
+              {t("selected", { count: tempSelected.length })}
             </p>
 
             {/* =================================================
@@ -1849,7 +1861,7 @@ useEffect(() => {
                   sm:text-[10px]
                 "
               >
-                Show all needs
+                <UiText>Show all needs</UiText>
               </button>
 
               {/* Continue / Apply */}
@@ -1889,8 +1901,8 @@ useEffect(() => {
 
                 <span>
                   {tempSelected.length > 0
-                    ? `Apply (${tempSelected.length})`
-                    : "Continue"}
+                    ? t("apply", { count: tempSelected.length })
+                    : ui("Continue")}
                 </span>
 
                 <ArrowRight className="h-3 w-3" />

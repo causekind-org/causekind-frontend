@@ -1,5 +1,5 @@
 "use client";
-import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+import { UiText, useUiText } from "@/components/UiText";
 
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -28,8 +28,8 @@ import { openDonateItemsChoice } from "@/components/donate/DonateItemsChoiceModa
  * the link's own href, the money form, exactly as before. Code that is not a
  * link (the mobile menu) calls {@link openDonateChoice}.
  *
- * <p>Copy is English-only on purpose: the site will be translated by Google
- * Translate, so these strings are not in messages/*.json.
+ * <p>Copy is translated through the catalogue (UiText / ui("…"), 2026-10-21);
+ * routes and the money/items choice itself are not affected.
  */
 
 const OPEN_EVENT = "ck:open-donate-choice";
@@ -52,6 +52,7 @@ export function useIsPhone() {
 }
 
 export function DonateChoice() {
+  const ui = useUiText();
   const [open, setOpen] = useState(false);
   const isPhone = useIsPhone();
   const router = useRouter();
@@ -106,26 +107,26 @@ export function DonateChoice() {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent onCloseAutoFocus={runAfterClose} className="rounded-t-[26px] bg-white px-4 pb-7 pt-1 dark:bg-zinc-900">
           <div className="mt-3 flex flex-col gap-1">
-            <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50"><LandingText>
+            <DrawerTitle className="text-[23px] font-extrabold text-stone-900 dark:text-stone-50"><UiText>
               How would you like to give?
-            </LandingText></DrawerTitle>
-            <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400"><LandingText>
+            </UiText></DrawerTitle>
+            <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400"><UiText>
               Both reach verified people and NGOs.
-            </LandingText></DrawerDescription>
+            </UiText></DrawerDescription>
           </div>
           <div className="mt-4 flex flex-col gap-3">
-            <LandingAttributes><PhoneOption
+            <PhoneOption
               tone="items"
-              title="Donate items"
-              text="Clothes, books, furniture to a verified need. OTP handover + certificate."
+              title={ui("Donate items")}
+              text={ui("Clothes, books, furniture to a verified need. OTP handover + certificate.")}
               onSelect={goItems}
-            /></LandingAttributes>
-            <LandingAttributes><PhoneOption
+            />
+            <PhoneOption
               tone="money"
-              title="Donate money"
-              text="Secure online payment to a cause. Receipt by email."
+              title={ui("Donate money")}
+              text={ui("Secure online payment to a cause. Receipt by email.")}
               onSelect={() => go(DONATE_HREF)}
-            /></LandingAttributes>
+            />
           </div>
         </DrawerContent>
       </Drawer>
@@ -136,30 +137,30 @@ export function DonateChoice() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent onCloseAutoFocus={runAfterClose} className={POPUP.content}>
         <div className={POPUP.header}>
-          <span className={POPUP.eyebrow}><LandingText>Donate</LandingText></span>
-          <DialogTitle className={POPUP.title}><LandingText>How would you like to give?</LandingText></DialogTitle>
-          <DialogDescription className={POPUP.subtitle}><LandingText>
+          <span className={POPUP.eyebrow}><UiText>Donate</UiText></span>
+          <DialogTitle className={POPUP.title}><UiText>How would you like to give?</UiText></DialogTitle>
+          <DialogDescription className={POPUP.subtitle}><UiText>
             Both go to verified people and NGOs. Pick the way that suits you.
-          </LandingText></DialogDescription>
+          </UiText></DialogDescription>
         </div>
 
         <div className={POPUP.grid}>
-          <LandingAttributes><DesktopOption
+          <DesktopOption
             tone="items"
-            title="Donate items"
-            kicker="In-Kind donation"
-            text="Give clothes, books, furniture or appliances directly to someone who has asked for them."
-            points={["Matched to a verified need", "OTP-confirmed handover", "Certificate for every gift"]}
+            title={ui("Donate items")}
+            kicker={ui("In-Kind donation")}
+            text={ui("Give clothes, books, furniture or appliances directly to someone who has asked for them.")}
+            points={[ui("Matched to a verified need"), ui("OTP-confirmed handover"), ui("Certificate for every gift")]}
             onSelect={goItems}
-          /></LandingAttributes>
-          <LandingAttributes><DesktopOption
+          />
+          <DesktopOption
             tone="money"
-            title="Donate money"
-            kicker="Monetary donation"
-            text="Make a secure online contribution to a cause or campaign you care about."
-            points={["Secure payment via Razorpay", "Any amount, one time", "Receipt sent to your email"]}
+            title={ui("Donate money")}
+            kicker={ui("Monetary donation")}
+            text={ui("Make a secure online contribution to a cause or campaign you care about.")}
+            points={[ui("Secure payment via Razorpay"), ui("Any amount, one time"), ui("Receipt sent to your email")]}
             onSelect={() => go(DONATE_HREF)}
-          /></LandingAttributes>
+          />
         </div>
       </DialogContent>
     </Dialog>
@@ -214,7 +215,7 @@ export function DesktopOption({
   tone: keyof typeof TONES; title: string; kicker: string; text: string; points: string[]; onSelect: () => void;
   /** Overrides the tone's icon. */
   icon?: LucideIcon;
-  /** The button's label; defaults to the title. */
+  /** The button's label; defaults to the title. Callers pass already-translated text. */
   cta?: string;
 }) {
   const t = TONES[tone];
@@ -229,20 +230,20 @@ export function DesktopOption({
         <Icon className="size-[25px]" strokeWidth={1.8} aria-hidden />
       </span>
       <span className="flex flex-col gap-1">
-        <span className="text-[19px] font-extrabold text-stone-900 dark:text-stone-50"><LandingText>{title}</LandingText></span>
-        <span className={`text-xs font-bold uppercase tracking-[0.06em] ${t.ink}`}><LandingText>{kicker}</LandingText></span>
-        <span className="text-sm leading-relaxed text-stone-500 dark:text-stone-400"><LandingText>{text}</LandingText></span>
+        <span className="text-[19px] font-extrabold text-stone-900 dark:text-stone-50">{title}</span>
+        <span className={`text-xs font-bold uppercase tracking-[0.06em] ${t.ink}`}>{kicker}</span>
+        <span className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">{text}</span>
       </span>
       <span className="flex flex-col gap-1.5 text-sm text-stone-700 dark:text-stone-300 [@media(max-height:720px)]:gap-1">
         {points.map((p) => (
           <span key={p} className="flex items-center gap-2">
             <Check className={`size-4 shrink-0 ${t.ink}`} strokeWidth={2.4} aria-hidden />
-            <LandingText>{p}</LandingText>
+            {p}
           </span>
         ))}
       </span>
       <span className={`mt-auto flex h-11 shrink-0 items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white transition-colors ${t.button}`}>
-        <LandingText>{cta}</LandingText>
+        {cta}
         <ArrowRight className="size-[17px]" aria-hidden />
       </span>
     </button>
@@ -268,8 +269,8 @@ export function PhoneOption({
         <Icon className="size-[26px]" strokeWidth={1.8} aria-hidden />
       </span>
       <span className="flex flex-1 flex-col gap-0.5">
-        <span className="text-[17px] font-extrabold text-stone-900 dark:text-stone-50"><LandingText>{title}</LandingText></span>
-        <span className="text-[13px] leading-snug text-stone-500 dark:text-stone-400"><LandingText>{text}</LandingText></span>
+        <span className="text-[17px] font-extrabold text-stone-900 dark:text-stone-50">{title}</span>
+        <span className="text-[13px] leading-snug text-stone-500 dark:text-stone-400">{text}</span>
       </span>
       <ChevronRight className={`size-5 shrink-0 ${t.ink}`} aria-hidden />
     </button>

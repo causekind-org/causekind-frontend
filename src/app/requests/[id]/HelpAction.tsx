@@ -5,6 +5,7 @@ import { ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { loginUrlFor } from "@/lib/safeRedirect";
 
+import { UiText } from "@/components/UiText";
 /**
  * "I can help", resolved against who is looking.
  *
@@ -32,10 +33,10 @@ export default function HelpAction({ requestId }: { requestId: number }) {
     return (
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
         <Link href={loginUrlFor(offerPath)} className={primary}>
-          I can help <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          <UiText>I can help</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         <p className="text-xs text-stone-500 dark:text-stone-400">
-          You&apos;ll sign in or create a donor account, then come straight back to this request.
+          <UiText>You&apos;ll sign in or create a donor account, then come straight back to this request.</UiText>
         </p>
       </div>
     );
@@ -44,15 +45,15 @@ export default function HelpAction({ requestId }: { requestId: number }) {
   if (user.role === "DONOR") {
     return (
       <Link href={offerPath} className={primary}>
-        I can help <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        <UiText>I can help</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     );
   }
 
   return (
     <p role="note" className="rounded-lg border border-stone-200 bg-stone-50 p-3 text-sm text-stone-700 dark:border-white/10 dark:bg-white/[0.03] dark:text-stone-300">
-      Offering an item needs a donor account. You&apos;re signed in with a different account type,
-      so you can read this request but not make an offer from here.
+      <UiText>Offering an item needs a donor account. You&apos;re signed in with a different account type,
+      so you can read this request but not make an offer from here.</UiText>
     </p>
   );
 }

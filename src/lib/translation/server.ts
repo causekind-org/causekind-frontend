@@ -30,13 +30,35 @@ let pausedUntil = 0;
 let budgetDay = "";
 let usedCharacters = 0;
 
+/**
+ * Why a translation did not happen, as a fixed code. Diagnostics log only
+ * these codes, counts and limits — never the API key, source text,
+ * translations or provider response bodies.
+ */
+export type TranslationFailureReason =
+  | "budget_exhausted" | "http_error" | "timeout" | "network" | "invalid_response"
+  | "circuit_open" | "queue_deadline" | "icu_invalid" | "unknown";
+
+export class TranslationFailure extends Error {
+  constructor(readonly reason: TranslationFailureReason) { super(`Translation failed: ${reason}`); }
+}
+
+/** Google's enumerated error codes only (e.g. RESOURCE_EXHAUSTED, rateLimitExceeded). */
+function safeCode(value: unknown): string | undefined {
+  return typeof value === "string" && /^[A-Za-z_]{1,64}$/.test(value) ? value : undefined;
+}
+
+function budgetLimit() {
+  const configured = Number(process.env.GOOGLE_TRANSLATE_MAX_CHARACTERS_PER_DAY ?? 100_000);
+  return Number.isSafeInteger(configured) && configured > 0 ? configured : 100_000;
+}
+
 // Per-process backstop only. Configure Google project-wide quotas as well.
 function reserveBudget(characters: number) {
   const day = new Date().toISOString().slice(0, 10);
   if (day !== budgetDay) { budgetDay = day; usedCharacters = 0; }
-  const configured = Number(process.env.GOOGLE_TRANSLATE_MAX_CHARACTERS_PER_DAY ?? 100_000);
-  const limit = Number.isSafeInteger(configured) && configured > 0 ? configured : 100_000;
-  if (usedCharacters + characters > limit) throw new Error("Translation budget exhausted");
+  const limit = budgetLimit();
+  if (usedCharacters + characters > limit) throw new TranslationFailure("budget_exhausted");
   usedCharacters += characters;
 }
 
@@ -52,6 +74,13 @@ export function decodeEntities(text: string): string {
 }
 
 async function sendBatch(batch: PendingText[], target: string, source: string) {
+  const chars = batch.reduce((total, item) => total + item.text.length, 0);
+  let httpStatus: number | undefined;
+  let googleStatus: string | undefined;
+  let googleReason: string | undefined;
+  // Kept in scope so a failure while reading the body can be told apart:
+  // aborted by this timeout → timeout; otherwise an unreadable body.
+  const signal = AbortSignal.timeout(10_000);
   try {
     reserveBudget(batch.reduce((total, item) => total + item.text.length, 0));
     const response = await fetch("https://translation.googleapis.com/language/translate/v2", {
@@ -63,33 +92,75 @@ async function sendBatch(batch: PendingText[], target: string, source: string) {
       body: JSON.stringify({ q: batch.map(({ text }) => text), target, format: "text",
         ...(source === "auto" ? {} : { source }) }),
       cache: "no-store",
-      signal: AbortSignal.timeout(10_000),
+      signal,
     });
-    if (!response.ok) throw new Error("Translation provider unavailable");
-    const data = await response.json();
+    if (!response.ok) {
+      httpStatus = response.status;
+      // Read only Google's enumerated codes from the error envelope; the body
+      // itself is never logged.
+      const body = await response.json().catch(() => null);
+      googleStatus = safeCode(body?.error?.status);
+      googleReason = safeCode(body?.error?.errors?.[0]?.reason ?? body?.error?.details?.[0]?.reason);
+      throw new TranslationFailure("http_error");
+    }
+    let data: { data?: { translations?: unknown } } | null;
+    try {
+      data = await response.json();
+    } catch (readError) {
+      if (signal.aborted) throw readError; // classified as timeout below
+      throw new TranslationFailure("invalid_response");
+    }
     const translations: unknown = data?.data?.translations;
     if (!Array.isArray(translations) || translations.length !== batch.length ||
         translations.some((item) => typeof item?.translatedText !== "string" || !item.translatedText.trim())) {
-      throw new Error("Invalid translation response");
+      throw new TranslationFailure("invalid_response");
     }
     batch.forEach((item, index) => item.resolve(decodeEntities(translations[index].translatedText)));
-  } catch {
+  } catch (error) {
     // No provider body, source text or secret is logged. A short circuit breaker
     // prevents thousands of catalogue misses retrying an unavailable provider.
+    const reason: TranslationFailureReason = error instanceof TranslationFailure ? error.reason
+      : signal.aborted || (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) ? "timeout"
+      : error instanceof TypeError ? "network" : "unknown";
     pausedUntil = Date.now() + 30_000;
-    batch.forEach((item) => item.reject(new Error("Google translation unavailable")));
-    console.warn("[translation] Google request failed; using original content.");
+    batch.forEach((item) => item.reject(new TranslationFailure(reason)));
+    const fields = [`reason=${reason}`, `target=${target}`, `items=${batch.length}`, `chars=${chars}`,
+      `budgetUsed=${usedCharacters}`, `budgetLimit=${budgetLimit()}`, `budgetDay=${budgetDay}`];
+    if (httpStatus) fields.push(`http=${httpStatus}`);
+    if (googleStatus) fields.push(`googleStatus=${googleStatus}`);
+    if (googleReason) fields.push(`googleReason=${googleReason}`);
+    console.warn(`[translation] Google request failed; using original content. ${fields.join(" ")}`);
   }
+}
+
+// Strings rejected while the breaker is open, summed over one pause window and
+// logged once when it ends (pump runs every few ms during a catalogue miss, so
+// logging per call would flood the log). A failure that extends the pause
+// extends the same window.
+let pauseSkipped = 0;
+let pauseSummaryTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushPauseSummary() {
+  if (Date.now() < pausedUntil) {
+    pauseSummaryTimer = setTimeout(flushPauseSummary, pausedUntil - Date.now());
+    return;
+  }
+  pauseSummaryTimer = null;
+  if (pauseSkipped) console.warn(`[translation] Circuit was open; skipped=${pauseSkipped} during the pause.`);
+  pauseSkipped = 0;
 }
 
 function pump() {
   if (Date.now() < pausedUntil) {
     for (const queue of queues.values()) {
-      queue.items.forEach((item) => item.reject(new Error("Translation temporarily unavailable")));
+      pauseSkipped += queue.items.length;
+      queue.items.forEach((item) => item.reject(new TranslationFailure("circuit_open")));
     }
     queues.clear();
+    if (pauseSkipped && !pauseSummaryTimer) pauseSummaryTimer = setTimeout(flushPauseSummary, pausedUntil - Date.now());
     return;
   }
+  let expired = 0;
   while (activeBatches < 4 && queues.size) {
     const [key, queue] = queues.entries().next().value!;
     queues.delete(key);
@@ -98,7 +169,8 @@ function pump() {
     while (queue.items.length && batch.length < MAX_TRANSLATION_BATCH_SIZE) {
       const item = queue.items[0];
       if (item.expires < Date.now()) {
-        queue.items.shift()!.reject(new Error("Translation queue deadline exceeded"));
+        queue.items.shift()!.reject(new TranslationFailure("queue_deadline"));
+        expired++;
         continue;
       }
       if (batch.length && size + item.text.length > 4_500) break;
@@ -110,6 +182,7 @@ function pump() {
     activeBatches++;
     void sendBatch(batch, queue.target, queue.source).finally(() => { activeBatches--; pump(); });
   }
+  if (expired) console.warn(`[translation] Queue deadline exceeded; expired=${expired}`);
 }
 
 function enqueue(text: string, target: string, source: string): Promise<string> {

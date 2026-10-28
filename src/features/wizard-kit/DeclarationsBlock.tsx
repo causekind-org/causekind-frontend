@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { Check } from "lucide-react";
 
+import { UiText, useUiText } from "@/components/UiText";
 export type DeclarationGroup = {
   key: string;
   items: readonly string[];
@@ -28,7 +29,7 @@ export function DeclarationsBlock({
   onConfirmedChange,
   error,
   invalidatedNotice,
-  confirmLabel = "I have read and agree to all declarations above.",
+  confirmLabel,
 }: {
   groups: readonly DeclarationGroup[];
   /** Optional friendly heading per group key; falls back to the key itself. */
@@ -40,6 +41,8 @@ export function DeclarationsBlock({
   invalidatedNotice?: string;
   confirmLabel?: string;
 }) {
+  const ui = useUiText();
+  confirmLabel = confirmLabel ?? ui("I have read and agree to all declarations above.");
   // Generated, not hardcoded. These were the literals "declarations-heading" and
   // "declarations-error"; two of these blocks on one page produced duplicate ids,
   // which silently breaks the aria-labelledby/aria-describedby association for
@@ -51,7 +54,7 @@ export function DeclarationsBlock({
   return (
     <section aria-labelledby={headingId} className="space-y-3">
       <h3 id={headingId} className="text-2xs font-black uppercase tracking-wider text-stone-400">
-        Declarations
+        <UiText>Declarations</UiText>
       </h3>
 
       {groups.map(group => (

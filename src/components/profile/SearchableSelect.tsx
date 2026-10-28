@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback, KeyboardEvent } from "react";
 import { ChevronDown, Search } from "lucide-react";
 
+import { UiText } from "@/components/UiText";
 export interface SelectOption {
   value: string;
   label: string;
@@ -185,7 +186,7 @@ export function SearchableSelect({
             className="max-h-64 overflow-y-auto py-1"
           >
             {filtered.length === 0 ? (
-              <li className="px-3 py-2 text-sm text-stone-400 text-center">No results</li>
+              <li className="px-3 py-2 text-sm text-stone-400 text-center"><UiText>No results</UiText></li>
             ) : (
               filtered.map((opt, i) => (
                 <li

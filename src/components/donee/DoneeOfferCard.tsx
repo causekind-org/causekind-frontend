@@ -8,6 +8,8 @@ import { OfferJourneyDrawer } from "@/components/OfferJourney";
 import type { DonationOffer } from "@/lib/api";
 import { purchaseTimelineLabel } from "@/features/donation-offer-wizard/offerModel";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * One donation offer on the donee dashboard (redesign approved 2026-10-15,
  * canvas "Donation Offers Card").
@@ -67,16 +69,16 @@ function nextSentence(offer: DonationOffer, idx: number): string {
   }
 }
 
-function timeAgo(iso: string | null | undefined): string | null {
+type OfferedT = (key: "offeredJustNow" | "offeredMinutesAgo" | "offeredHoursAgo" | "offeredDaysAgo", values?: { count: number }) => string;
+function timeAgo(iso: string | null | undefined, t: OfferedT): string | null {
   if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  const mins = Math.max(0, Math.round((Date.now() - t) / 60000));
-  if (mins < 60) return mins <= 1 ? "Offered just now" : `Offered ${mins} minutes ago`;
+  const ms = new Date(iso).getTime();
+  if (Number.isNaN(ms)) return null;
+  const mins = Math.max(0, Math.round((Date.now() - ms) / 60000));
+  if (mins < 60) return mins <= 1 ? t("offeredJustNow") : t("offeredMinutesAgo", { count: mins });
   const hours = Math.round(mins / 60);
-  if (hours < 24) return `Offered ${hours} hour${hours === 1 ? "" : "s"} ago`;
-  const days = Math.round(hours / 24);
-  return `Offered ${days} day${days === 1 ? "" : "s"} ago`;
+  if (hours < 24) return t("offeredHoursAgo", { count: hours });
+  return t("offeredDaysAgo", { count: Math.round(hours / 24) });
 }
 
 function Fact({ label, value, wide = false }: { label: string; value: ReactNode; wide?: boolean }) {
@@ -101,6 +103,9 @@ export function DoneeOfferCard({
   /** State-specific actions below the main one: issue window, report, cancel. */
   actions?: ReactNode;
 }) {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
+  const st = useDoneeStageText();
   const purchase = offer.flowType === "WILL_PURCHASE";
   const commitment = offer.purchaseCommitment;
   const direct = commitment?.fulfilmentMethod === "DIRECT_DELIVERY";
@@ -111,20 +116,20 @@ export function DoneeOfferCard({
   const photos = offer.media?.filter(m => m.mediaType === "IMAGE") ?? [];
   const qty = offer.itemDetails?.quantity;
   const quantity = offer.receivedQuantity != null && qty != null
-    ? `Received ${offer.receivedQuantity} of ${qty}`
-    : qty != null ? `${qty} of the ${offer.requestQuantity} you need` : null;
+    ? dt("receivedXOfY", { x: offer.receivedQuantity, y: qty })
+    : qty != null ? dt("qtyOfYouNeed", { qty, needed: offer.requestQuantity ?? "" }) : null;
   const compat =
-    offer.compatibilityIndicator === "STRONG_MATCH" ? "Strong match" :
-    offer.compatibilityIndicator === "POSSIBLE_MATCH" ? "Possible match" : null;
+    offer.compatibilityIndicator === "STRONG_MATCH" ? ui("Strong match") :
+    offer.compatibilityIndicator === "POSSIBLE_MATCH" ? ui("Possible match") : null;
   const defects = offer.itemDetails?.knownDefects;
   const hasDefects = !!defects && defects.trim() !== "" && defects.trim().toLowerCase() !== "none";
-  const offered = timeAgo(offer.submittedAt ?? offer.createdAt);
+  const offered = timeAgo(offer.submittedAt ?? offer.createdAt, (k, v) => dt(k, v));
 
   const primary =
     purchase && commitment?.acceptedAt && !pending
-      ? { href: `/offers/${offer.id}/purchase`, label: "Open purchase" }
+      ? { href: `/offers/${offer.id}/purchase`, label: ui("Open purchase") }
       : !purchase && ["ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"].includes(offer.status)
-        ? { href: `/offers/${offer.id}/handover`, label: "Open handover" }
+        ? { href: `/offers/${offer.id}/handover`, label: ui("Open handover") }
         : null;
 
   return (
@@ -134,10 +139,10 @@ export function DoneeOfferCard({
         {purchase ? (
           <div aria-hidden className="flex size-22 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--ck-role-accent)]/40 bg-[var(--ck-role-soft)] text-[var(--ck-role-accent)] lg:size-33 lg:rounded-2xl">
             <ShoppingBag className="size-7 lg:size-10" strokeWidth={1.6} />
-            <span className="text-3xs font-bold">Not bought yet</span>
+            <span className="text-3xs font-bold"><UiText>Not bought yet</UiText></span>
           </div>
         ) : photos[0] ? (
-          <Link href={`/donee/offers?offerId=${offer.id}`} aria-label={`See the donor's ${photos.length} photo${photos.length === 1 ? "" : "s"}`}
+          <Link href={`/donee/offers?offerId=${offer.id}`} aria-label={dt("seeDonorPhotos", { count: photos.length })}
             className="relative block size-22 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800 lg:size-33 lg:rounded-2xl">
             <Image src={photos[0].mediaUrl} alt="" fill sizes="132px" className="object-cover" />
           </Link>
@@ -145,7 +150,7 @@ export function DoneeOfferCard({
           <div aria-hidden className="size-22 shrink-0 rounded-xl bg-stone-100 dark:bg-zinc-800 lg:size-33 lg:rounded-2xl" />
         )}
         {!purchase && photos.length > 1 && (
-          <span className="hidden text-xs text-stone-500 dark:text-stone-400 lg:block">{photos.length} photos</span>
+          <span className="hidden text-xs text-stone-500 dark:text-stone-400 lg:block">{dt("photosCount", { count: photos.length })}</span>
         )}
 
         {/* On a phone the title sits beside the photo */}
@@ -168,9 +173,9 @@ export function DoneeOfferCard({
             <p className="text-sm text-stone-600 dark:text-stone-300">
               {purchase
                 ? direct
-                  ? "A donor will buy a new one for you and have it shipped straight to your address."
-                  : "A donor will buy a new one for you and hand it over in person."
-                : "A donor has an item they already own and is ready to give it to you."}
+                  ? ui("A donor will buy a new one for you and have it shipped straight to your address.")
+                  : ui("A donor will buy a new one for you and hand it over in person.")
+                : ui("A donor has an item they already own and is ready to give it to you.")}
             </p>
           </div>
         </div>
@@ -178,51 +183,51 @@ export function DoneeOfferCard({
         <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {purchase ? (
             <>
-              <Fact label="They plan to buy" value={[commitment?.proposedBrand, commitment?.proposedModel].filter(Boolean).join(" ") || "Brand not decided"} wide />
-              {quantity && <Fact label="Quantity" value={quantity} />}
-              <Fact label={direct ? "Ordered within" : "Bought within"}
+              <Fact label={ui("They plan to buy")} value={[commitment?.proposedBrand, commitment?.proposedModel].filter(Boolean).join(" ") || "Brand not decided"} wide />
+              {quantity && <Fact label={ui("Quantity")} value={quantity} />}
+              <Fact label={direct ? ui("Ordered within") : ui("Bought within")}
                 value={commitment ? `${purchaseTimelineLabel(commitment.purchaseTimeline).replace(/^Within /, "")} of your yes` : "—"} />
             </>
           ) : (
             <>
-              {quantity && <Fact label="Quantity" value={quantity} />}
-              <Fact label="Condition" value={offer.itemDetails?.condition ?? "Not given"} />
-              {offer.itemDetails?.pickupCity && <Fact label="Donor is in" value={offer.itemDetails.pickupCity} wide />}
+              {quantity && <Fact label={ui("Quantity")} value={quantity} />}
+              <Fact label={ui("Condition")} value={offer.itemDetails?.condition ?? "Not given"} />
+              {offer.itemDetails?.pickupCity && <Fact label={ui("Donor is in")} value={offer.itemDetails.pickupCity} wide />}
             </>
           )}
         </dl>
 
         {!purchase && pending && (hasDefects || offer.itemDetails?.accessoriesIncluded) && (
           <div className="space-y-1 text-xs text-stone-600 dark:text-stone-300">
-            {hasDefects && <p className="font-semibold text-amber-800 dark:text-amber-300">Disclosed defects: {defects}</p>}
-            {offer.itemDetails?.accessoriesIncluded && <p>Comes with: {offer.itemDetails.accessoriesIncluded}</p>}
+            {hasDefects && <p className="font-semibold text-amber-800 dark:text-amber-300"><UiText>Disclosed defects:</UiText> {defects}</p>}
+            {offer.itemDetails?.accessoriesIncluded && <p><UiText>Comes with:</UiText> {offer.itemDetails.accessoriesIncluded}</p>}
           </div>
         )}
 
         {purchase && commitment?.productUrl && /^https?:\/\//i.test(commitment.productUrl) && (
           <a href={commitment.productUrl} target="_blank" rel="noopener noreferrer nofollow"
             className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
-            <ExternalLink className="size-4" aria-hidden /> View the product they chose
+            <ExternalLink className="size-4" aria-hidden /> <UiText>View the product they chose</UiText>
           </a>
         )}
 
         {/* Four plain stages; the full seven-step journey opens from the link */}
-        <nav aria-label="Where this offer is" className="space-y-2">
+        <nav aria-label={ui("Where this offer is")} className="space-y-2">
           <ol className="grid grid-cols-4 gap-1.5 sm:gap-2">
             {stages.map((s, i) => (
               <li key={s.label} aria-current={i === idx ? "step" : undefined} className="flex min-w-0 flex-col gap-2">
                 <span aria-hidden className={`h-1.5 rounded-full ${i <= idx ? "bg-[var(--ck-role-accent)]" : "bg-stone-200 dark:bg-zinc-700"}`} />
                 <span className={`hidden text-xs sm:block ${i === idx ? "font-extrabold text-[var(--ck-role-accent)]" : i < idx ? "font-semibold text-stone-700 dark:text-stone-300" : "font-semibold text-stone-500 dark:text-stone-400"}`}>
-                  {i + 1} · {s.label}
+                  {i + 1} · {st(s.label)}
                 </span>
               </li>
             ))}
           </ol>
           <div className="flex flex-wrap items-center justify-between gap-x-3">
-            <p className="text-xs font-extrabold text-[var(--ck-role-accent)] sm:hidden">Step {idx + 1} of 4 · {stages[idx].label}</p>
+            <p className="text-xs font-extrabold text-[var(--ck-role-accent)] sm:hidden">{dt("stepOfFour", { n: idx + 1 })} · {st(stages[idx].label)}</p>
             <OfferJourneyDrawer status={offer.status} role="donee">
               <button type="button" className="inline-flex min-h-11 items-center text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
-                See every step
+                <UiText>See every step</UiText>
               </button>
             </OfferJourneyDrawer>
           </div>
@@ -230,23 +235,23 @@ export function DoneeOfferCard({
       </div>
 
       {/* Decision panel */}
-      <aside aria-label={pending ? "Your decision" : "What's next"}
+      <aside aria-label={pending ? ui("Your decision") : ui("What's next")}
         className="flex flex-col gap-3 rounded-2xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/60 sm:p-5">
-        <p className="text-sm font-extrabold text-stone-900 dark:text-stone-100">{pending ? "Does this suit you?" : "What's next"}</p>
-        <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">{nextSentence(offer, idx)}</p>
+        <p className="text-sm font-extrabold text-stone-900 dark:text-stone-100">{pending ? ui("Does this suit you?") : ui("What's next")}</p>
+        <p className="text-xs leading-relaxed text-stone-600 dark:text-stone-300">{st(nextSentence(offer, idx))}</p>
         {pending && (
           <>
-            {purchase && <p className="text-xs font-semibold text-amber-800 dark:text-amber-300">Please respond within 3 days.</p>}
+            {purchase && <p className="text-xs font-semibold text-amber-800 dark:text-amber-300"><UiText>Please respond within 3 days.</UiText></p>}
             <button type="button" onClick={onAccept} disabled={busy}
               className="min-h-12 rounded-xl bg-[var(--ck-role-accent)] text-base font-extrabold text-white transition-colors hover:bg-[var(--ck-role-hover)] disabled:opacity-60">
-              {busy ? "Saving…" : "Accept offer"}
+              {busy ? ui("Saving…") : ui("Accept offer")}
             </button>
             <button type="button" onClick={onDecline} disabled={busy}
               className="min-h-12 rounded-xl border border-stone-300 bg-white text-sm font-bold text-stone-800 transition-colors hover:bg-stone-100 disabled:opacity-60 dark:border-zinc-600 dark:bg-transparent dark:text-stone-200 dark:hover:bg-zinc-700">
-              Decline
+              <UiText>Decline</UiText>
             </button>
             <Link href={`/donee/offers?offerId=${offer.id}`} className="inline-flex min-h-11 items-center justify-center text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
-              View full offer details
+              <UiText>View full offer details</UiText>
             </Link>
           </>
         )}
@@ -265,13 +270,16 @@ export function DoneeOfferCard({
 function StatusRow({ statusLabel, statusClassName, compat, purchase, direct }: {
   statusLabel: string; statusClassName: string; compat: string | null; purchase: boolean; direct: boolean;
 }) {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
+  const st = useDoneeStageText();
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${statusClassName}`}>{statusLabel}</span>
       {purchase ? (
         <span className="inline-flex items-center gap-1 rounded-full bg-[var(--ck-role-soft)] px-2.5 py-0.5 text-xs font-bold text-[var(--ck-role-accent)]">
           {direct ? <Truck className="size-3.5" aria-hidden /> : <ShoppingBag className="size-3.5" aria-hidden />}
-          Promise to buy · {direct ? "Delivered to you" : "Handed over in person"}
+          <UiText>Promise to buy</UiText> · {direct ? ui("Delivered to you") : ui("Handed over in person")}
         </span>
       ) : compat && (
         <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-bold text-green-800 dark:bg-green-950/40 dark:text-green-300">
@@ -280,4 +288,33 @@ function StatusRow({ statusLabel, statusClassName, compat, purchase, direct }: {
       )}
     </div>
   );
+}
+
+
+/** Display text for the English stage labels and next-step sentences above. */
+function useDoneeStageText(): (text: string) => string {
+  const ui = useUiText();
+  const map = new Map<string, string>([
+    ["You review", ui("You review")],
+    ["Team approves", ui("Team approves")],
+    ["Plan handover", ui("Plan handover")],
+    ["You receive it", ui("You receive it")],
+    ["Share address", ui("Share address")],
+    ["Donor orders", ui("Donor orders")],
+    ["You confirm it arrived", ui("You confirm it arrived")],
+    ["Donor buys it", ui("Donor buys it")],
+    ["The donor is adding details our team asked for.", ui("The donor is adding details our team asked for.")],
+    ["Our team is reviewing the problem you reported.", ui("Our team is reviewing the problem you reported.")],
+    ["If you accept, you'll be asked for a delivery address to share with this donor only. It's prepaid — you pay nothing on delivery.", ui("If you accept, you'll be asked for a delivery address to share with this donor only. It's prepaid — you pay nothing on delivery.")],
+    ["If you accept, our team checks the offer. Then the donor buys it and you plan the handover.", ui("If you accept, our team checks the offer. Then the donor buys it and you plan the handover.")],
+    ["If you accept, our team checks the offer. Then you and the donor plan the handover.", ui("If you accept, our team checks the offer. Then you and the donor plan the handover.")],
+    ["Share your delivery address on the purchase page so the donor can order.", ui("Share your delivery address on the purchase page so the donor can order.")],
+    ["Our team is checking the offer. You'll hear from us when it's approved.", ui("Our team is checking the offer. You'll hear from us when it's approved.")],
+    ["The donor is ordering. Track it on the purchase page.", ui("The donor is ordering. Track it on the purchase page.")],
+    ["The donor is buying the item. You'll plan the handover once it's ready.", ui("The donor is buying the item. You'll plan the handover once it's ready.")],
+    ["Plan the handover with the donor.", ui("Plan the handover with the donor.")],
+    ["Confirm what arrived, or report a problem.", ui("Confirm what arrived, or report a problem.")],
+    ["Check the item. Tell us if anything is wrong.", ui("Check the item. Tell us if anything is wrong.")],
+  ]);
+  return (text) => map.get(text) ?? text;
 }
