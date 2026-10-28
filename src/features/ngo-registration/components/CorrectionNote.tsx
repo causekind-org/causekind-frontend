@@ -19,8 +19,9 @@ export function CorrectionNote({ note, field }: { note?: string; field?: string 
     <p
       role="note"
       data-testid="correction-note"
+      data-correction-field={field}
       data-updated={updated ? "true" : undefined}
-      className={`mt-1.5 flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${updated
+      className={`mt-1.5 flex items-start gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold data-[pulse=true]:animate-pulse data-[pulse=true]:ring-2 data-[pulse=true]:ring-amber-400 ${updated
         ? "border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-700/50 dark:bg-emerald-950/40 dark:text-emerald-200"
         : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-200"}`}
     >

@@ -3,14 +3,15 @@ import { render, screen } from "@testing-library/react";
 import { ChangesRequestedCard } from "./ChangesRequestedCard";
 
 describe("ChangesRequestedCard (/profile)", () => {
-  it("shows the note and flagged items, and links to the first step with a flagged field", () => {
+  it("shows the note and flagged items, and links to the first flagged item", () => {
     render(<ChangesRequestedCard application={{
       status: "NEEDS_INFORMATION", overallNote: "Please fix these", needsInformationDetails: null,
       correctionItems: [{ field: "officePhoto", note: "Show the nameboard" }, { field: "documents.trust-deed", note: "Cut off" }],
     }} />);
     expect(screen.getByText("Please fix these")).toBeInTheDocument();
     expect(screen.getByText(/Show the nameboard/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Fix and resubmit/i })).toHaveAttribute("href", "/profile/ngo-details?step=legal-documents");
+    // The first flagged item in wizard order (the deed, step 2), opened on that item.
+    expect(screen.getByRole("link", { name: /Fix and resubmit/i })).toHaveAttribute("href", "/profile/ngo-details?step=legal-documents&fix=documents.trust-deed");
   });
 
   it("renders nothing for other statuses", () => {

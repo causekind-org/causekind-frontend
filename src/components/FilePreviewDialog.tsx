@@ -62,7 +62,8 @@ export function FilePreviewDialog({ files, index, onIndexChange, onClose }: {
               host = window.location.host;
             }
             console.error("FilePreviewDialog link request failed:", { status, host, error: err });
-            setError("This file can't be shown right now.");
+            // A small code tells support which failure it was (e.g. 403, 404, or NET for a network error).
+            setError(`This file can't be shown right now. (Error ${status ?? "NET"})`);
             setLoading(false);
           }
         });

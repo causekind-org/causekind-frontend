@@ -31,7 +31,7 @@ import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { EmailVerification } from "@/features/ngo-registration/steps/EmailVerification";
 import { ApplicationSubmitted } from "@/features/ngo-registration/steps/ApplicationSubmitted";
 import { CorrectionStatusContext, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
-import { changedFlaggedFields, correctionDisplayValue, fillFlaggedFileSlots, originalFlaggedValues } from "@/features/ngo-registration/ngoCorrectionFields";
+import { changedFlaggedFields, correctionDisplayValue, fillFlaggedFileSlots, focusCorrectionField, orderedCorrectionFields, originalFlaggedValues } from "@/features/ngo-registration/ngoCorrectionFields";
 import {
   submitNgoApplication,
   getNgoDraft,
@@ -70,6 +70,9 @@ function NgoDetailsEditor() {
   const appliedStepLink = useRef<string | null>(null);
   const startingStepChosen = useRef(false);
   const initialUrlStep = useRef<NGOStep | null>(readUrlStep(searchParams.get("step")));
+  // ?fix=<field>: open in correction mode on that item (the profile card, notification and email link here).
+  const initialFix = useRef<string | null>(searchParams.get("fix"));
+  const [activeFix, setActiveFix] = useState<{ field: string; tick: number } | null>(null);
   const [clampPending, setClampPending] = useState(false);
 
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
@@ -96,6 +99,7 @@ function NgoDetailsEditor() {
     if (correctionItems.length > 0) setData((d) => (d.aboutUsOptional ? d : { ...d, aboutUsOptional: true }));
   }, [correctionItems.length]);
   const flaggedSteps = new Set(correctionItems.map((i) => correctionFieldStep(i.field)));
+  const orderedFixes = orderedCorrectionFields(correctionItems.map((i) => i.field));
   const resubmitting = correctionItems.length > 0;
   const changedFields = resubmitting ? changedFlaggedFields(data, originalFlagged.current) : new Set<string>();
   const unfixed = correctionItems.filter((i) => !changedFields.has(i.field));
@@ -245,7 +249,10 @@ function NgoDetailsEditor() {
               ? (draft.currentStep as NGOStep)
               : null;
           // After a per-item correction request, open on the first step with something to fix.
-          const startStep = firstCorrectionStep(flaggedFields.current) ?? initialUrlStep.current ?? savedStep;
+          const fix = initialFix.current && flaggedFields.current.includes(initialFix.current) ? initialFix.current : null;
+          if (fix) setActiveFix({ field: fix, tick: 0 });
+          const startStep = (fix ? correctionFieldStep(fix) : null)
+            ?? firstCorrectionStep(flaggedFields.current) ?? initialUrlStep.current ?? savedStep;
           if (startStep) setCurrentStep(startStep);
           setClampPending(!firstCorrectionStep(flaggedFields.current));
         }
@@ -523,6 +530,27 @@ function NgoDetailsEditor() {
   }
 
 
+  // Correction mode: once the item's step is on screen, scroll to it, focus it and pulse its note.
+  useEffect(() => {
+    if (loading || !activeFix || correctionFieldStep(activeFix.field) !== currentStep) return;
+    const t = window.setTimeout(() => { focusCorrectionField(activeFix.field); }, 60);
+    return () => window.clearTimeout(t);
+  }, [activeFix, currentStep, loading]);
+
+  /** Goes to one flagged item (its step, then the field). */
+  function openFix(field: string) {
+    setActiveFix((prev) => ({ field, tick: (prev?.tick ?? 0) + 1 }));
+    const step = correctionFieldStep(field);
+    if (step !== currentStep) goToStep(step);
+  }
+
+  /** The flagged item after the current one (wizard order), preferring ones not fixed yet. */
+  function nextFixAfter(field: string | undefined): string | null {
+    const i = field ? orderedFixes.indexOf(field) : -1;
+    const rest = [...orderedFixes.slice(i + 1), ...orderedFixes.slice(0, i + 1)];
+    return rest.find((f) => !changedFields.has(f)) ?? rest[0] ?? null;
+  }
+
   // A ?step= link or a saved draft can't open past the first incomplete step.
   useEffect(() => {
     if (loading || !clampPending) return;
@@ -767,7 +795,7 @@ function NgoDetailsEditor() {
                           <button
                             type="button"
                             className="font-semibold underline underline-offset-2"
-                            onClick={() => goToStep(correctionFieldStep(item.field))}
+                            onClick={() => openFix(item.field)}
                           >
                             {correctionFieldLabel(item.field)}
                           </button>
@@ -777,6 +805,12 @@ function NgoDetailsEditor() {
                       ))}
                     </ul>
                     <p className="mt-2 text-xs">Everything else is filled in from your last application. Fix these items, then submit again.</p>
+                    {orderedFixes.length > 1 && (
+                      <button type="button" onClick={() => { const n = nextFixAfter(activeFix?.field); if (n) openFix(n); }}
+                        className="mt-3 inline-flex min-h-[40px] items-center rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-700">
+                        Next fix
+                      </button>
+                    )}
                   </div>
                 )}
                 {submitError && (

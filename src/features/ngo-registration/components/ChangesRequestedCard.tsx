@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { AlertCircle, ArrowRight } from "lucide-react";
 import type { NgoApplicationStatusResponse } from "@/lib/api";
-import { correctionFieldInfo, firstCorrectionStep } from "@/features/ngo-registration/ngoCorrectionFields";
+import { correctionFieldInfo, correctionFixHref, orderedCorrectionFields } from "@/features/ngo-registration/ngoCorrectionFields";
 
 /** /profile: what the reviewer asked to change, with one way in ("Fix and resubmit"). */
 export function ChangesRequestedCard({ application }: {
@@ -10,8 +10,9 @@ export function ChangesRequestedCard({ application }: {
   if (application.status !== "NEEDS_INFORMATION") return null;
   const items = application.correctionItems ?? [];
   const note = application.overallNote || application.needsInformationDetails || "";
-  const step = firstCorrectionStep(items.map((i) => i.field));
-  const href = step ? `/profile/ngo-details?step=${step}` : "/profile/ngo-details";
+  // "Fix and resubmit" opens the first flagged item (wizard order); each row opens its own.
+  const first = orderedCorrectionFields(items.map((i) => i.field))[0];
+  const href = first ? correctionFixHref(first) : "/profile/ngo-details";
   return (
     <section aria-label="Changes requested" data-testid="changes-requested-card"
       className="rounded-2xl border border-amber-300 bg-amber-50 p-4 sm:p-5 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100">
@@ -23,7 +24,13 @@ export function ChangesRequestedCard({ application }: {
       {items.length > 0 && (
         <ul className="mt-3 space-y-1.5">
           {items.map((i) => (
-            <li key={i.field}><span className="font-semibold">{correctionFieldInfo(i.field).label}:</span> {i.note}</li>
+            <li key={i.field} data-testid="changes-requested-row" className="flex flex-wrap items-center justify-between gap-2">
+              <span><span className="font-semibold">{correctionFieldInfo(i.field).label}:</span> {i.note}</span>
+              <Link href={correctionFixHref(i.field)} aria-label={`Fix this: ${correctionFieldInfo(i.field).label}`}
+                className="inline-flex min-h-[36px] items-center rounded-lg border border-amber-400 bg-white px-3 py-1 text-xs font-bold text-amber-900 hover:bg-amber-100 dark:bg-transparent dark:text-amber-100">
+                Fix this
+              </Link>
+            </li>
           ))}
         </ul>
       )}

@@ -1,5 +1,6 @@
 "use client";
 
+import { SLOW_REQUEST_MESSAGE, isSlowRequestError } from "@/lib/api";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -159,6 +160,9 @@ export interface NgoStatusData {
   isError: boolean;
 }
 
+/** A focus refresh within this long of the last load is skipped (no refetch storm when switching tabs). */
+export const FOCUS_REFRESH_MIN_MS = 30_000;
+
 export function useNgoStatus(): NgoStatusData {
   const { user, isLoading: authLoading } = useAuth();
   const userIdentifier = String(user?.id ?? user?.userId ?? user?.email ?? "anonymous");
@@ -178,6 +182,7 @@ export function useNgoStatus(): NgoStatusData {
   const loadedFor = useRef<string | null>(null);
   // Depend on who the user is, not on the object: a new user object with the same
   // identity (each re-render, e.g. the hero gallery's slideshow) must not restart the load.
+  const lastLoad = useRef(0);
   const userRef = useRef(user);
   userRef.current = user;
   const userKey = user ? `${user.id}|${user.role}|${user.fullName ?? ""}` : "";
@@ -215,9 +220,13 @@ export function useNgoStatus(): NgoStatusData {
       loadedFor.current = id;
     } catch (e) {
       if (request === sequence.current) {
-        setError(e instanceof Error ? e.message : "We could not load your NGO activity. Please retry.");
-        setOverview(null);
-        setStatus("incomplete"); // Cached approval is never a permission fallback.
+        setError(isSlowRequestError(e) ? SLOW_REQUEST_MESSAGE
+          : e instanceof Error && e.message ? e.message : "We could not load your NGO activity. Please retry.");
+        // A failed background refresh keeps what is on screen; only a first load has nothing to keep.
+        if (loadedFor.current !== id) {
+          setOverview(null);
+          setStatus("incomplete"); // Cached approval is never a permission fallback.
+        }
       }
     } finally { if (request === sequence.current) setLoading(false); }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- userKey stands for user
@@ -225,16 +234,19 @@ export function useNgoStatus(): NgoStatusData {
 
   useEffect(() => {
     void refresh();
-    const reload = () => { void refresh(); };
+    lastLoad.current = Date.now();
+    const reload = () => { lastLoad.current = Date.now(); void refresh(); };
+    // Tabbing back in refreshes at most every 30 s, not on every focus.
+    const onFocus = () => { if (Date.now() - lastLoad.current >= FOCUS_REFRESH_MIN_MS) reload(); };
     let timer: ReturnType<typeof setTimeout> | undefined;
     const activity = () => { clearTimeout(timer); timer = setTimeout(reload, 400); };
-    window.addEventListener("focus", reload);
+    window.addEventListener("focus", onFocus);
     window.addEventListener("ngo-application-submitted", reload);
     window.addEventListener("ngo-activity-updated", reload);
     window.addEventListener("ck-entity-update", activity);
     return () => {
       ++sequence.current; clearTimeout(timer);
-      window.removeEventListener("focus", reload);
+      window.removeEventListener("focus", onFocus);
       window.removeEventListener("ngo-application-submitted", reload);
       window.removeEventListener("ngo-activity-updated", reload);
       window.removeEventListener("ck-entity-update", activity);
@@ -250,7 +262,9 @@ export function useNgoStatus(): NgoStatusData {
     setHasShownWelcome(true);
   }, [userIdentifier]);
 
-  const isVerified = !isLoading && !error && status === "verified";
+  // A failed first load sets the status to "incomplete" itself; a failed background refresh keeps
+  // the verified status (and the data) on screen next to the error, instead of locking every page.
+  const isVerified = !isLoading && status === "verified";
   const isPhotosDue = (overview?.photosDue ?? 0) > 0;
   const canStartDrive = overview?.canStartDrive !== false;
   const blockingDriveTitle = overview?.blockingDriveTitle ?? "";

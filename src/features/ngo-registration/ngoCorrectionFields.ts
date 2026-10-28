@@ -110,6 +110,49 @@ export function correctionDisplayValue(data: NGOFormState, key: string): string 
 /** First wizard step that holds a flagged item, in wizard order. */
 export { firstCorrectionStep } from "./ngoRegistrationModel";
 
+const STEP_ORDER: NGOStep[] = ["org-details", "legal-documents", "authorized-rep", "org-photos"];
+
+/** Flagged keys in the order the wizard shows them (step order, then as listed). */
+export function orderedCorrectionFields(fields: string[]): string[] {
+  return fields.map((f, i) => ({ f, i, s: STEP_ORDER.indexOf(correctionFieldStep(f)) }))
+    .sort((a, b) => a.s - b.s || a.i - b.i).map((x) => x.f);
+}
+
+/** Deep link to one flagged item: the wizard opens on its step and focuses it. */
+export function correctionFixHref(field: string): string {
+  return `/profile/ngo-details?step=${correctionFieldStep(field)}&fix=${encodeURIComponent(field)}`;
+}
+
+/**
+ * Scrolls to a flagged item, focuses it (the input for text, the Replace/upload button for a
+ * file) and pulses its admin note. Found through the note's data-correction-field. Returns
+ * whether the item was on the page.
+ */
+export function focusCorrectionField(field: string, smooth = true): boolean {
+  if (typeof document === "undefined") return false;
+  const note = document.querySelector<HTMLElement>(`[data-correction-field="${CSS.escape(field)}"]`);
+  const { fieldId, isFile } = correctionFieldInfo(field);
+  const input = fieldId ? document.getElementById(fieldId) : null;
+  // The note sits next to its field or upload card: the nearest ancestor (up to 4 levels) holding a control.
+  const selector = isFile
+    ? 'button[title^="Replace"], button[aria-label^="Replace"], [role="button"][tabindex="0"], button:not([disabled]), input[type="file"]'
+    : "input, textarea, select, button";
+  let scope: HTMLElement | null = note?.parentElement ?? null;
+  let control: HTMLElement | null = null;
+  for (let depth = 0; scope && depth < 4 && !control; depth++, scope = scope.parentElement) {
+    control = scope.querySelector<HTMLElement>(selector);
+  }
+  const target = input ?? control ?? note;
+  if (!target && !note) return false;
+  (note ?? target)?.scrollIntoView?.({ behavior: smooth ? "smooth" : "auto", block: "center" });
+  target?.focus?.({ preventScroll: true });
+  if (note) {
+    note.setAttribute("data-pulse", "true");
+    window.setTimeout(() => note.removeAttribute("data-pulse"), 2400);
+  }
+  return true;
+}
+
 /** Normalizes a server-reported original value to the form used by correctionFieldValue. */
 function normalizeOriginal(key: string, raw: unknown): string {
   if (raw == null) return "";

@@ -112,6 +112,24 @@ const canUseRequestCache = () => typeof window !== "undefined";
 const IS_SERVER = typeof window === "undefined";
 const REQUEST_TIMEOUT_MS = IS_SERVER ? 8000 : 20000;
 
+/** The message shown instead of a raw "signal timed out" / "Failed to fetch". */
+export const SLOW_REQUEST_MESSAGE = "This is taking longer than usual. Please try again.";
+
+/** Our timeout fired, or the network dropped (fetch rejects with a TypeError). */
+export function isTimeoutOrNetworkError(err: unknown): boolean {
+  const name = (err as { name?: string } | null)?.name;
+  return name === "TimeoutError" || name === "AbortError" || err instanceof TypeError;
+}
+
+function slowRequestError(): ApiError {
+  return new ApiError(0, SLOW_REQUEST_MESSAGE, { code: "SLOW_REQUEST" });
+}
+
+/** Whether an error is the friendly "taking longer than usual" one (keep showing the old data + Try again). */
+export function isSlowRequestError(err: unknown): boolean {
+  return err instanceof ApiError && (err.data as { code?: string } | undefined)?.code === "SLOW_REQUEST";
+}
+
 /**
  * Reads a successful response's body, tolerating the several legitimate ways a
  * backend says "nothing to return".
@@ -176,7 +194,7 @@ async function request<T>(
 
     // Caller-supplied signals win: a component aborting on unmount must not be
     // overridden by the backstop.
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const send = () => fetch(`${BASE_URL}${path}`, {
       // Without this, GET requests are subject to normal HTTP caching — a
       // browser (or an intermediary) serving a stale cached response for an
       // admin console is worse than a slower request, since it silently
@@ -187,6 +205,22 @@ async function request<T>(
       credentials: "include",
       signal: fetchOptions.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
+    let res: Response;
+    try {
+      res = await send();
+    } catch (err) {
+      // A caller's own abort (unmount) is not a failure to retry or report.
+      if (fetchOptions.signal?.aborted) throw err;
+      if (!isTimeoutOrNetworkError(err)) throw err;
+      // A GET is safe to repeat: one retry covers a cold start or a dropped connection.
+      if (!isGet) throw slowRequestError();
+      try {
+        res = await send();
+      } catch (retryErr) {
+        if (fetchOptions.signal?.aborted || !isTimeoutOrNetworkError(retryErr)) throw retryErr;
+        throw slowRequestError();
+      }
+    }
 
     if (!res.ok) {
       if (res.status === 401) {

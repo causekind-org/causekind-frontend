@@ -128,9 +128,19 @@ function NotifItem({ n }: { n: AppNotification }) {
           {when}
         </div>
         <p className="text-2xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+        {isNgoFixLink(n.link) && (
+          <span data-testid="notification-fix-now" className="inline-flex items-center gap-1 mt-1.5 text-2xs font-bold text-amber-900 bg-amber-100 dark:text-amber-100 dark:bg-amber-900/50 rounded-full px-2.5 py-1">
+            Fix now <ArrowRight className="w-3 h-3" />
+          </span>
+        )}
       </div>
     </NotifWrapper>
   );
+}
+
+/** "Your NGO application has an update" after a correction request: its link opens the first flagged item. */
+export function isNgoFixLink(link?: string | null): boolean {
+  return !!link && link.startsWith("/profile/ngo-details?") && link.includes("fix=");
 }
 
 export function NotificationBell() {
