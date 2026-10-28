@@ -90,6 +90,10 @@ export default function AdminCampaignReviewPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <section className={`${a.card} ${a.pane}`} aria-labelledby="pre">
             <h2 id="pre" className={a.h}>Launch prerequisites</h2>
+            {/* The one action here, first in the panel (owner, 2026-10-28). */}
+            {c.status !== "APPROVED" && c.status !== "CANCELLED" && c.status !== "PUBLICATION_DECLINED" && (
+              <PayoutToggle id={c.id} version={c.version} ready={c.paymentSetupComplete} hasDetails={!!data.payout} onDone={setData} onError={setError} />
+            )}
             <p className={a.small}><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Application approved</p>
             <p className={a.small}>{data.payout
               ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Donee has given bank details</>
@@ -98,9 +102,6 @@ export default function AdminCampaignReviewPage() {
               ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Bank details checked</>
               : <><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Bank details checked</>}</p>
             {data.applicationId != null && <PayoutDetails applicationId={data.applicationId} payout={data.payout} />}
-            {c.status !== "APPROVED" && c.status !== "CANCELLED" && c.status !== "PUBLICATION_DECLINED" && (
-              <PayoutToggle id={c.id} version={c.version} ready={c.paymentSetupComplete} hasDetails={!!data.payout} onDone={setData} onError={setError} />
-            )}
             <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>
               {c.status === "APPROVED" ? <>This campaign is <strong>Live</strong> and taking donations.</>
                 : c.paymentSetupComplete ? <>Approving now makes it <strong>Live</strong>.</>
