@@ -8,7 +8,24 @@ import a from "@/features/fundraising/admin.module.css";
  * Admin view of the donee's bank details (owner, 2026-10-27). The account number is masked; "Show full number"
  * fetches it from the server, which records the reveal in the audit log.
  */
-export function PayoutDetails({ applicationId, payout }: { applicationId: number; payout: FundraisingPayout | null }) {
+/** Trimmed, lower-case, single spaces; null when nothing is left. */
+const normalName = (n?: string | null) => (n ?? "").trim().toLowerCase().replace(/\s+/g, " ") || null;
+
+/**
+ * Account holder vs the people on the application. Warns only when the holder matches neither the
+ * organiser nor the beneficiary; "Unable to compare" when the holder, or both other names, are missing.
+ */
+function nameCheck(holder?: string | null, organiser?: string | null, beneficiary?: string | null): "match" | "mismatch" | "unknown" {
+  const h = normalName(holder), o = normalName(organiser), b = normalName(beneficiary);
+  if (!h || (!o && !b)) return "unknown";
+  return h === o || h === b ? "match" : "mismatch";
+}
+
+export function PayoutDetails({ applicationId, payout, organiserName, beneficiaryName }: {
+  applicationId: number; payout: FundraisingPayout | null;
+  /** For the account-holder name check; the beneficiary only when raising for someone else. */
+  organiserName?: string | null; beneficiaryName?: string | null;
+}) {
   const [full, setFull] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -25,6 +42,14 @@ export function PayoutDetails({ applicationId, payout }: { applicationId: number
       {!payout || (!has && !payout.holderName && !payout.ifsc) ? <p className={`${a.small} ${a.muted}`}>The donee hasn&apos;t given bank details yet.</p> : (
         <>
           <p className={a.small}><span className={a.muted}>Account holder:</span> {payout.holderName || "—"}</p>
+          {(() => {
+            const check = nameCheck(payout.holderName, organiserName, beneficiaryName);
+            return check === "mismatch"
+              ? <p className={a.small} role="status" style={{ padding: "8px 10px", borderRadius: 8, background: "#fdf3e1", color: "#4a3000" }}>The account holder&apos;s name matches neither the organiser nor the beneficiary. Check before confirming bank details.</p>
+              : check === "unknown"
+              ? <p className={`${a.small} ${a.muted}`}>Name check: Unable to compare.</p>
+              : <p className={`${a.small} ${a.muted}`}>Name check: matches the {normalName(payout.holderName) === normalName(organiserName) ? "organiser" : "beneficiary"}.</p>;
+          })()}
           <p className={a.small} style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
             <span><span className={a.muted}>Account number:</span> <span style={{ fontVariantNumeric: "tabular-nums" }}>{full ?? (has ? `XXXX${payout.accountLast4}` : "—")}</span></span>
             {has && (full

@@ -9,6 +9,7 @@ import { CATEGORY_LABEL, StatusChip, formatDate, formatINR } from "@/features/fu
 import { FieldInfo } from "@/features/fundraising/FieldInfo";
 import a from "@/features/fundraising/admin.module.css";
 import { PayoutDetails } from "@/features/fundraising/PayoutDetails";
+import type { FundraisingAdminApplication as AdminApp, FundraisingEvidenceRequirement } from "@/lib/api";
 
 type Decision = "approve" | "info" | "decline";
 const DECIDABLE = ["SUBMITTED", "IN_REVIEW", "RESUBMITTED"];
@@ -99,7 +100,7 @@ export default function AdminFundraisingReviewPage() {
             <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{app.whatHappened ?? "—"}</p>
             <p className={`${a.small} ${a.muted}`}>Needed by: {app.urgency && /^\d{4}-\d{2}-\d{2}$/.test(app.urgency) ? formatDate(app.urgency) : app.urgency ?? "—"}</p>
           </section>
-          <PayoutDetails applicationId={app.id} payout={app.payout} />
+          <PayoutDetails applicationId={app.id} payout={app.payout} organiserName={data.applicantName} beneficiaryName={app.forSelf ? null : app.beneficiaryLegalName} />
           {page && (
             <section className={`${a.card} ${a.pane}`} aria-labelledby="pg">
               <h2 id="pg" className={a.h}>Public fundraiser page</h2>
@@ -122,16 +123,7 @@ export default function AdminFundraisingReviewPage() {
         <section className={a.card} style={{ display: "flex", flexDirection: "column", minHeight: 720 }} aria-labelledby="ev">
           <div className={a.pane} style={{ borderBottom: "1px solid #e4ddd5" }}>
             <h2 id="ev" className={a.h}>Evidence · private</h2>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {app.evidence.length === 0 && <span className={a.muted}>No evidence uploaded.</span>}
-              {app.evidence.map((e) => (
-                <button key={e.id} type="button" onClick={() => setDoc(e)} aria-current={doc?.id === e.id}
-                  style={{ display: "flex", gap: 6, alignItems: "center", padding: doc?.id === e.id ? "7px 9px" : "8px 10px", borderRadius: 8, cursor: "pointer", font: "inherit",
-                    border: doc?.id === e.id ? "2px solid #b04a15" : "1px solid #e4ddd5", background: "#fff", opacity: e.superseded ? 0.6 : 1 }}>
-                  <span className={a.small}>{e.type.replace(/_/g, " ").toLowerCase()}{e.superseded ? " · earlier version" : ""}{e.fromProfile ? " · from profile" : ""}</span>
-                </button>
-              ))}
-            </div>
+            <EvidenceByRequirement app={app} doc={doc} onPick={setDoc} />
           </div>
           <div style={{ flex: 1, padding: 20, background: "#3a3330", display: "flex", flexDirection: "column", gap: 10 }}>
             {doc?.viewUrl ? (
@@ -269,6 +261,67 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
           </button>
         </div>
       </section>
+    </div>
+  );
+}
+
+/** Admin names for the server's requirement groups (FundraisingEvidenceRules). Admin copy stays English. */
+const REQUIREMENT_LABEL: Record<string, string> = {
+  identity: "Organiser ID", consent: "Beneficiary's consent", relationship: "Proof of relationship",
+  medicalReport: "Medical report", treatmentEstimate: "Treatment estimate",
+  enrolment: "Admission or enrolment letter", fees: "Fee demand",
+  event: "Proof of what happened", cost: "Cost proof", supporting: "Supporting document",
+};
+const typeWords = (t: string) => t.replace(/_/g, " ").toLowerCase();
+
+/**
+ * Evidence grouped by the server's requirement groups, each met by any of its types. Closed applications
+ * get one historical notice and no fault markers; open ones show Missing, or "Required from the next
+ * submission" when they were last sent under the earlier rule.
+ */
+function EvidenceByRequirement({ app, doc, onPick }: {
+  app: AdminApp["application"]; doc: FundraisingEvidence | null; onPick: (e: FundraisingEvidence) => void;
+}) {
+  const groups: FundraisingEvidenceRequirement[] = app.requiredEvidence ?? [];
+  const historical = groups.some((g) => g.state === "HISTORICAL")
+    || ["APPROVED", "NOT_APPROVED", "WITHDRAWN", "EXPIRED"].includes(app.status);
+  const grouped = new Set(groups.flatMap((g) => g.anyOf));
+  const rest = app.evidence.filter((e) => !grouped.has(e.type));
+  const chip = (e: FundraisingEvidence) => (
+    <button key={e.id} type="button" onClick={() => onPick(e)} aria-current={doc?.id === e.id}
+      style={{ display: "flex", gap: 6, alignItems: "center", padding: doc?.id === e.id ? "7px 9px" : "8px 10px", borderRadius: 8, cursor: "pointer", font: "inherit",
+        border: doc?.id === e.id ? "2px solid #b04a15" : "1px solid #e4ddd5", background: "#fff", opacity: e.superseded ? 0.6 : 1 }}>
+      <span className={a.small}>{e.fileName ?? typeWords(e.type)}{e.superseded ? " · earlier version" : ""}{e.fromProfile ? " · from profile" : ""}</span>
+    </button>
+  );
+  const badge = (g: FundraisingEvidenceRequirement) =>
+    g.state === "MET" ? <span className={a.small} style={{ color: "#1d5b3a", fontWeight: 700 }}>Provided</span>
+      : g.state === "MISSING" ? <span className={a.small} style={{ color: "#8f1d1d", fontWeight: 700 }}>Missing</span>
+      : g.state === "NEXT_SUBMISSION" ? <span className={a.small} style={{ color: "#8a5a00", fontWeight: 700 }}>Required from the next submission</span>
+      : null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {historical && <p className={a.small} style={{ padding: "8px 10px", borderRadius: 8, background: "#efebe6" }}>Historical application — current requirements shown for reference.</p>}
+      {groups.map((g) => {
+        const files = app.evidence.filter((e) => g.anyOf.includes(e.type));
+        return (
+          <div key={g.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 8, flexWrap: "wrap", alignItems: "baseline" }}>
+              <span className={a.small}><strong>{REQUIREMENT_LABEL[g.key] ?? g.key}</strong>{g.anyOf.length > 1 && <span className={a.muted}> · accepts {g.anyOf.map(typeWords).join(" or ")}</span>}</span>
+              {!historical && badge(g)}
+            </div>
+            {g.key === "medicalReport" && <p className={`${a.small} ${a.muted}`}>Check the date on the report itself: it should be within 6 months of submission. The upload date doesn&apos;t show this.</p>}
+            {files.length > 0 && <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{files.map(chip)}</div>}
+          </div>
+        );
+      })}
+      {rest.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span className={a.small}><strong>Other documents</strong></span>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{rest.map(chip)}</div>
+        </div>
+      )}
+      {app.evidence.length === 0 && <span className={a.muted}>No evidence uploaded.</span>}
     </div>
   );
 }

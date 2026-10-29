@@ -101,7 +101,7 @@ export default function AdminCampaignReviewPage() {
             <p className={a.small}>{c.paymentSetupComplete
               ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Bank details checked</>
               : <><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Bank details checked</>}</p>
-            {data.applicationId != null && <PayoutDetails applicationId={data.applicationId} payout={data.payout} />}
+            {data.applicationId != null && <PayoutDetails applicationId={data.applicationId} payout={data.payout} organiserName={data.applicantName} />}
             <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>
               {c.status === "APPROVED" ? <>This campaign is <strong>Live</strong> and taking donations.</>
                 : c.paymentSetupComplete ? <>Approving now makes it <strong>Live</strong>.</>
