@@ -364,6 +364,8 @@ function NewNgoDriveForm() {
   // Step 2: Contact person
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
+  // More handover contacts after the primary (contactName/contactPhone): up to 5 people in all.
+  const [extraContacts, setExtraContacts] = useState<{ name: string; phone: string; role: string }[]>([]);
   // Country code for the contact phone; India by default. Never prefilled from the account.
 const [altContact, setAltContact] = useState("");
   const [pastWorkUrl, setPastWorkUrl] = useState("");
@@ -489,6 +491,8 @@ const [altContact, setAltContact] = useState("");
       // Contact
       setContactName(d.contactName || "");
       setContactPhone(fromStoredPhone(d.contactPhone).digits);
+      // Older drives have only their single contact.
+      setExtraContacts((d.handoverContacts ?? []).slice(1).map((c) => ({ name: c.name ?? "", phone: fromStoredPhone(c.phone ?? "").digits, role: c.role ?? "" })));
       setAltContact(d.altContact || "");
       setPastWorkUrl(d.pastWorkUrl || "");
 
@@ -569,6 +573,7 @@ const [altContact, setAltContact] = useState("");
         // Contact
         setContactName(p.contactName || "");
         setContactPhone(fromStoredPhone(p.contactPhone).digits);
+        setExtraContacts(Array.isArray(p.extraContacts) ? p.extraContacts.slice(0, 4) : []);
         setAltContact(p.altContact || "");
         setPastWorkUrl(p.pastWorkUrl || "");
 
@@ -636,7 +641,7 @@ const [altContact, setAltContact] = useState("");
         beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
         neededBy, availableDays, availableFrom, availableTo, handoverMode,
         changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-        contactName, contactPhone: contactPhone.trim() ? `+91${contactPhone.trim()}` : "", altContact, pastWorkUrl,
+        contactName, contactPhone: contactPhone.trim() ? `+91${contactPhone.trim()}` : "", extraContacts, altContact, pastWorkUrl,
         declarations: { accurate: declAccurate, usedOnlyForBeneficiaries: declUsedOnly, proofWithin48h: declProof, facesWithConsent: declFaces, notDuplicate: declNotDuplicate, falseInfoConsequences: declFalseInfo, contactConsent: declContact }
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(saveObj));
@@ -657,7 +662,7 @@ const [altContact, setAltContact] = useState("");
     beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
     neededBy, availableDays, availableFrom, availableTo, handoverMode,
     changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-    contactName, contactPhone, altContact, pastWorkUrl,
+    contactName, contactPhone, extraContacts, altContact, pastWorkUrl,
     declAccurate, declUsedOnly, declProof, declFaces, declNotDuplicate, declFalseInfo, declContact, DRAFT_KEY
   ]);
 
@@ -903,7 +908,12 @@ const [altContact, setAltContact] = useState("");
       if (!changemakerPhotoUrl) e.changemakerPhoto = ui("Photo of the person leading this drive is required");
       if (!changemakerWhy.trim() || changemakerWhy.length < 30 || changemakerWhy.length > 300) e.changemakerWhy = ui("Why you do this work must be 30-300 characters (2 to 3 lines)");
       if (!contactName.trim()) e.contactName = "Handover contact name is required";
-      if (!/^\d{10}$/.test(contactPhone.trim())) e.contactPhone = "Enter a 10-digit mobile number";
+      if (!/^[6-9]\d{9}$/.test(contactPhone.trim())) e.contactPhone = "Enter a 10-digit mobile number starting with 6, 7, 8 or 9";
+      extraContacts.forEach((c, i) => {
+        if (c.name.trim().length < 2) e[`extraContacts.${i}.name`] = "Enter this person's name";
+        if (!/^[6-9]\d{9}$/.test(c.phone.trim())) e[`extraContacts.${i}.phone`] = "Enter a 10-digit mobile number starting with 6, 7, 8 or 9";
+        if (c.role.trim() && otherTextError(c.role)) e[`extraContacts.${i}.role`] = "Role: 2–60 letters (spaces and . , - & allowed)";
+      });
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
@@ -1003,6 +1013,11 @@ const [altContact, setAltContact] = useState("");
         contactName: contactName.trim(),
         // The handover page's Call button dials this number (handoverDetails.contactPhone).
         contactPhone: `+91${contactPhone.trim()}`,
+        // Every handover contact, first = primary (the one the Call button uses).
+        handoverContacts: [
+          { name: contactName.trim(), phone: `+91${contactPhone.trim()}`, role: null },
+          ...extraContacts.map((c) => ({ name: c.name.trim(), phone: `+91${c.phone.trim()}`, role: c.role.trim() || null })),
+        ],
         altContact: altContact.trim() || undefined,
         pastWorkUrl: pastWorkUrl.trim() || undefined,
         declarationsVersion: "v2",
@@ -1727,6 +1742,33 @@ const [altContact, setAltContact] = useState("");
             )}
           </WizardField>
 
+          {/* More people who handle pickup and drop-off; the first contact above is the primary. */}
+          {extraContacts.map((c, i) => (
+            <div key={i} data-testid="extra-contact" className="space-y-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-stone-700 dark:text-stone-200">{ui("Contact")} {i + 2}</p>
+                <button type="button" onClick={() => setExtraContacts((prev) => prev.filter((_, j) => j !== i))} aria-label={`Remove contact ${i + 2}`}
+                  className="text-xs font-semibold text-red-600 hover:underline">{ui("Remove")}</button>
+              </div>
+              <Input aria-label={`Contact ${i + 2} name`} name={`extraContacts.${i}.name`} placeholder={ui("Name")} value={c.name}
+                onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} className="h-11" />
+              {fieldErrors[`extraContacts.${i}.name`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.name`]}</p>}
+              <div className="flex gap-2">
+                <span className="flex h-11 shrink-0 items-center rounded-md border border-input bg-slate-50 px-3 text-sm text-slate-600 dark:bg-slate-800 dark:text-slate-300" aria-hidden>+91</span>
+                <Input aria-label={`Contact ${i + 2} phone`} name={`extraContacts.${i}.phone`} type="tel" inputMode="numeric" maxLength={10} placeholder={ui("Mobile number")} value={c.phone}
+                  onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, phone: e.target.value.replace(/\D/g, "") } : x)))} className="h-11" />
+              </div>
+              {fieldErrors[`extraContacts.${i}.phone`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.phone`]}</p>}
+              <Input aria-label={`Contact ${i + 2} role`} name={`extraContacts.${i}.role`} placeholder={ui("Role (optional)")} maxLength={60} value={c.role}
+                onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, role: e.target.value.replace(/[^A-Za-z .,&-]/g, "") } : x)))} className="h-11" />
+              {fieldErrors[`extraContacts.${i}.role`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.role`]}</p>}
+            </div>
+          ))}
+          {extraContacts.length < 4 && (
+            <button type="button" onClick={() => setExtraContacts((prev) => [...prev, { name: "", phone: "", role: "" }])}
+              className="text-xs font-bold text-ngo-700 hover:underline dark:text-ngo-300">+ {ui("Add another person")}</button>
+          )}
+
           <WizardField label={ui("Alternate contact (phone or email)")} error={fieldErrors.altContact} hint={ui("Optional: phone or email")}>
             {({ id, describedBy, invalid }) => (
               <Input id={id} name="altContact" placeholder={ui("e.g. alternate@ngo.org or 9876543210")} value={altContact} onChange={e => setAltContact(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
@@ -1884,6 +1926,9 @@ const [altContact, setAltContact] = useState("");
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
               {contactName}<br />
               <span className="text-stone-400 text-xs">+91 {contactPhone}</span>
+              {extraContacts.map((c, i) => (
+                <span key={i} className="block text-stone-500 text-xs">{c.name}{c.role ? ` (${c.role})` : ""} · +91 {c.phone}</span>
+              ))}
               {altContact && <span className="block text-stone-400 text-xs">Alt: {altContact}</span>}
             </span>
           </div>

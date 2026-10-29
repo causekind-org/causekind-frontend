@@ -1,5 +1,7 @@
 "use client";
 
+import { ChangeStatusNote, OwnerEditButton, OwnerEditDialog, useNgoPageOwner, type OwnerEditKind } from "./NgoProfileOwnerEdit";
+import type { NgoProfileManage } from "@/lib/api";
 import { PastWorkSection } from "@/features/ngo-drives/components/PastWorkSection";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -41,10 +43,13 @@ function SafeImg({ src, alt, className, fallback }: { src?: string | null; alt: 
   return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />;
 }
 
-function Card({ title, children, className = "" }: { title: string; children: React.ReactNode; className?: string }) {
+function Card({ title, children, className = "", action }: { title: string; children: React.ReactNode; className?: string; action?: React.ReactNode }) {
   return (
     <section className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6 ${className}`}>
-      <h2 className="mb-4 text-lg font-bold text-stone-900 dark:text-stone-100">{title}</h2>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">{title}</h2>
+        {action}
+      </div>
       {children}
     </section>
   );
@@ -149,18 +154,31 @@ export function NgoPublicPage({ slug }: { slug: string }) {
     return () => { live = false; };
   }, [slug]);
 
+  // The NGO's own page: Edit buttons on every card (never for donors; the server decides ownership).
+  const { manage, setManage } = useNgoPageOwner(slug);
+  const [editing, setEditing] = useState<OwnerEditKind | null>(null);
+  const onOwnerSaved = (m: NgoProfileManage, publicChanged: boolean) => {
+    setManage(m);
+    // Cosmetic changes show at once: reload what donors see. A verified-field request changes nothing public yet.
+    if (publicChanged) getPublicNgo(slug).then(setNgo).catch(() => {});
+  };
+  const edit = (kind: OwnerEditKind, label: string) => (manage ? <OwnerEditButton label={label} onClick={() => setEditing(kind)} /> : null);
+
   if (state === "loading") return <PageSkeleton><div className="h-96" /></PageSkeleton>;
   if (state === "not-found") return <NgoNotFound />;
   if (state === "error" || !ngo) return <p role="alert" className="p-8 text-center text-red-600">{message || "We couldn't load this page."}</p>;
 
   const place = [ngo.city, ngo.state].filter(Boolean).join(", ");
   const tr = ngo.trackRecord;
-  const website = ngo.website ? (ngo.website.startsWith("http") ? ngo.website : `https://${ngo.website}`) : null;
+  // Up to 3 links (older pages: the website as the single link).
+  const links = (ngo.links?.length ? ngo.links : ngo.website ? [ngo.website] : [])
+    .map((l) => (l.startsWith("http") ? l : `https://${l}`));
 
   return (
     <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
       <FilePreviewDialog files={(ngo.documents ?? []).map(d => ({ name: d.label, url: d.url }))} index={previewIndex}
         onIndexChange={setPreviewIndex} onClose={() => setPreviewIndex(null)} />
+      {manage && <OwnerEditDialog kind={editing} manage={manage} onSaved={onOwnerSaved} onClose={() => setEditing(null)} />}
 
       {/* ── Hero ── */}
       <section className="bg-gradient-to-br from-emerald-900 to-emerald-800 text-white">
@@ -180,6 +198,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
               } />
             <div className="min-w-0 flex-1">
               <h1 className="text-3xl font-black leading-tight sm:text-4xl">{ngo.organizationName}</h1>
+              {manage && <div className="mt-2">{edit("photos", "cover, logo and photos")}</div>}
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-600 bg-emerald-950/40 px-3 py-1 text-xs font-bold tracking-wide">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" aria-hidden />
                 Verified by CauseKind{ngo.verifiedAt ? ` on ${formatDdMmYyyy(ngo.verifiedAt)}` : ""}
@@ -207,9 +226,23 @@ export function NgoPublicPage({ slug }: { slug: string }) {
 
       <div className="mx-auto mt-6 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
-          {ngo.aboutUs && (
-            <Card title="About us">
-              <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">{ngo.aboutUs}</p>
+          {(ngo.aboutUs || manage) && (
+            <Card title="About us" action={edit("about", "about us")}>
+              {ngo.aboutUs
+                ? <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">{ngo.aboutUs}</p>
+                : <p className="text-sm text-stone-500">Tell donors what your NGO does.</p>}
+            </Card>
+          )}
+
+          {((ngo.photoUrls?.length ?? 0) > 0 || manage) && (
+            <Card title="Organisation photos" action={edit("photos", "organisation photos")}>
+              {(ngo.photoUrls?.length ?? 0) > 0 ? (
+                <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3" data-testid="ngo-photos">
+                  {ngo.photoUrls!.map((u, i) => (
+                    <li key={u + i}><SafeImg src={u} alt={`${ngo.organizationName} photo ${i + 1}`} className="aspect-[4/3] w-full rounded-xl object-cover" fallback={<div className="aspect-[4/3] w-full rounded-xl bg-stone-100 dark:bg-zinc-800" />} /></li>
+                  ))}
+                </ul>
+              ) : <p className="text-sm text-stone-500">No photos yet.</p>}
             </Card>
           )}
 
@@ -229,10 +262,11 @@ export function NgoPublicPage({ slug }: { slug: string }) {
               <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Opens a secure preview. Links expire after a few minutes.</p>
             </Card>
           )}
-          {(ngo.representatives?.length ?? 0) > 0 && (
-            <Card title="Authorized representatives">
+          {((ngo.representatives?.length ?? 0) > 0 || manage) && (
+            <Card title="Authorized representatives" action={edit("representatives", "representatives")}>
+              <ChangeStatusNote manage={manage} fields={["representatives"]} />
               <ul className="grid gap-2 sm:grid-cols-2">
-                {ngo.representatives!.map((r, i) => (
+                {(ngo.representatives ?? []).map((r, i) => (
                   <li key={`${r.fullName}-${i}`} className="flex items-center gap-3 rounded-xl border border-stone-200 p-3 dark:border-zinc-800">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
                       <UserRound className="h-4 w-4" aria-hidden />
@@ -258,14 +292,25 @@ export function NgoPublicPage({ slug }: { slug: string }) {
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start" data-testid="ngo-summary">
-          <Card title="Organization details">
+          <Card title="Organization details" action={manage ? (
+            <div className="flex flex-col items-end gap-1.5">
+              <OwnerEditButton label="legal details" onClick={() => setEditing("identity")} />
+              <button type="button" onClick={() => setEditing("contact")} className="text-xs font-bold text-emerald-800 underline">Edit phone / address</button>
+              <button type="button" onClick={() => setEditing("links")} className="text-xs font-bold text-emerald-800 underline">Edit links</button>
+            </div>
+          ) : null}>
+            <ChangeStatusNote manage={manage} fields={["organizationName", "panNumber", "registrationNumber", "officialEmail"]} />
             <dl className="grid gap-4">
               <Detail icon={Scale} label="Legal structure">{ngo.legalStructure ? formatLegalStructure(ngo.legalStructure) : null}</Detail>
               <Detail icon={Hash} label="Registration number">{ngo.registrationNumber}</Detail>
               <Detail icon={Calendar} label="Year established">{ngo.yearOfEstablishment}</Detail>
               <Detail icon={Building2} label="Registered office">{ngo.registeredOfficeAddress}</Detail>
-              <Detail icon={Globe} label="Website">{website && (
-                <a href={website} target="_blank" rel="noopener noreferrer" className="text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.website}</a>
+              <Detail icon={Globe} label={links.length > 1 ? "Links" : "Website"}>{links.length > 0 && (
+                <span className="flex flex-col gap-1" data-testid="ngo-links">
+                  {links.map((l) => (
+                    <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="break-all text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{l.replace(/^https?:\/\//, "")}</a>
+                  ))}
+                </span>
               )}</Detail>
               <Detail icon={Phone} label="Organization phone">{ngo.organizationPhone && (
                 <a href={`tel:${ngo.organizationPhone.replace(/[^\d+]/g, "")}`} className="text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{ngo.organizationPhone}</a>

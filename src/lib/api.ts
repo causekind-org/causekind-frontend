@@ -5488,6 +5488,8 @@ export type CreateNgoDrivePayload = {
   changemakerWhy: string;
   contactName: string;
   contactPhone: string;
+  /** Handover contacts, first = primary (up to 5); contactName/contactPhone carry the primary too. */
+  handoverContacts?: DriveHandoverContact[];
   altContact?: string;
   pastWorkUrl?: string;
   declarations: {
@@ -5572,6 +5574,8 @@ export type NgoDrive = {
   changemakerWhy?: string | null;
   contactName: string;
   contactPhone: string;
+  /** Handover contacts, first = primary; older drives: their single contact. */
+  handoverContacts?: DriveHandoverContact[] | null;
   altContact?: string | null;
   pastWorkUrl?: string | null;
   status: string;
@@ -5644,6 +5648,8 @@ export type PublicNgoProfile = {
   registrationNumber?: string | null;
   registeredOfficeAddress?: string | null;
   website?: string | null;
+  /** Up to 3 https links (the old website as the single link when none were added). */
+  links?: string[] | null;
   organizationPhone?: string | null;
   officialEmail?: string | null;
   representatives?: { fullName: string; designation?: string | null }[];
@@ -5673,6 +5679,73 @@ export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: numbe
   });
   if (!response.ok) throw new ApiError(response.status, "This file can't be shown right now.", null);
   return URL.createObjectURL(await response.blob());
+}
+
+/** One handover contact of a drive (phone +91XXXXXXXXXX). */
+export type DriveHandoverContact = { name: string; phone: string | null; role?: string | null };
+
+// ── The NGO editing its own public page ───────────────────────────────────────
+
+/** Verified fields: a change waits for an admin. Cosmetic fields save at once. */
+export type NgoProfileVerifiedField = "organizationName" | "panNumber" | "registrationNumber" | "officialEmail" | "registeredOfficeAddress" | "representatives";
+/** A representative in a change request: added/replaced people carry every wizard detail; name/role edits only those two. */
+export type NgoProfileRepresentative = {
+  fullName: string; designation?: string | null; mobileNumber?: string | null; email?: string | null;
+  panNumber?: string | null; idProofDocumentId?: number | null;
+};
+export type NgoProfileChangeRequest = {
+  id: number; field: NgoProfileVerifiedField; oldValue?: string | null; newValue: string; reason?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED"; adminReason?: string | null; createdAt: string; decidedAt?: string | null;
+};
+export type NgoProfileManage = {
+  slug: string; organizationName: string; panNumber?: string | null; registrationNumber?: string | null; officialEmail?: string | null;
+  aboutUs?: string | null; organizationPhone?: string | null; registeredOfficeAddress?: string | null; links: string[];
+  representatives: NgoProfileRepresentative[];
+  photos: { id: number; type: "LOGO" | "COVER" | "OFFICE_PHOTO" | "ACTIVITY_PHOTO"; url: string }[];
+  requests: NgoProfileChangeRequest[];
+};
+export function getMyNgoProfileManage() {
+  return request<NgoProfileManage>("/api/v1/ngo/profile/manage");
+}
+export function updateNgoProfileCosmetic(body: { aboutUs?: string; organizationPhone?: string; registeredOfficeAddress?: string; links?: string[] }) {
+  return request<NgoProfileManage>("/api/v1/ngo/profile/cosmetic", { method: "PUT", body: JSON.stringify(body) });
+}
+export async function uploadNgoProfilePhoto(type: "cover" | "logo" | "office_photo", file: File): Promise<NgoProfileManage> {
+  const body = new FormData(); body.append("file", file);
+  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const res = await fetch(`${BASE_URL}/api/v1/ngo/profile/photos?type=${type}`, {
+    method: "POST", body, credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!res.ok) {
+    const r = await res.json().catch(() => null);
+    throw new ApiError(res.status, r?.fieldErrors?.[0]?.message || r?.detail || "We couldn't upload the photo. Please try again.", r);
+  }
+  return (await res.json()) as NgoProfileManage;
+}
+export function removeNgoProfilePhoto(id: number) {
+  return request<NgoProfileManage>(`/api/v1/ngo/profile/photos/${id}`, { method: "DELETE" });
+}
+export function requestNgoProfileChange(field: NgoProfileVerifiedField, newValue: string, reason?: string) {
+  return request<NgoProfileChangeRequest>("/api/v1/ngo/profile/change-requests", { method: "POST", body: JSON.stringify({ field, newValue, reason }) });
+}
+export type AdminNgoProfileChange = {
+  request: NgoProfileChangeRequest; ngoUserId: number; organizationName: string; slug?: string | null;
+  /** Signed previews of the ID proofs in the old and new representatives (document id → link). */
+  idProofUrls?: Record<string, string> | null;
+};
+/** How many profile changes wait for review (the admin sidebar badge). */
+export function adminGetNgoProfileChangesCount() {
+  return request<{ pending: number }>("/api/v1/admin/ngo-profile-changes/count");
+}
+export function adminGetNgoProfileChanges(status = "PENDING", q = "") {
+  const qs = new URLSearchParams({ status, ...(q.trim() ? { q: q.trim() } : {}) });
+  return request<AdminNgoProfileChange[]>(`/api/v1/admin/ngo-profile-changes?${qs}`);
+}
+export function adminApproveNgoProfileChange(id: number) {
+  return request<NgoProfileChangeRequest>(`/api/v1/admin/ngo-profile-changes/${id}/approve`, { method: "POST" });
+}
+export function adminRejectNgoProfileChange(id: number, reason: string) {
+  return request<NgoProfileChangeRequest>(`/api/v1/admin/ngo-profile-changes/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) });
 }
 
 export function getPublicNgo(slug: string) {
@@ -6056,6 +6129,8 @@ export type NgoDriveOfferResponse = {
     dropOffAddressDisplay?: string | null;
     contactName?: string | null;
     contactPhone?: string | null;
+    /** Every handover contact, first = primary; phones are null until the NGO allows calls. */
+    contacts?: DriveHandoverContact[] | null;
     availableDays?: string | null;
     availableHours?: string | null;
   };

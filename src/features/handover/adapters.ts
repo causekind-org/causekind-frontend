@@ -315,7 +315,7 @@ export function adaptNgoOffer(
     imageUrl: offer.media?.[0]?.mediaUrl ?? null,
     transactionCode: `CK-ND${String(offer.id).padStart(5, "0")}`,
     counterpart: role === "DONOR"
-      ? { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null }
+      ? { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null, contacts: offer.handoverDetails?.contacts ?? undefined }
       : { name: offer.donorDisplayName, phone: null },
     donorAllowsDoneeCall: offer.ngoAllowsDonorCall === true,
     schedule: handover

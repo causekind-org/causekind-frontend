@@ -1,7 +1,7 @@
 "use client";
 
 import { directionsHref } from "@/features/handover/adapters";
-import { CallAction } from "@/features/handover/HandoverContactPanel";
+import { CallAction, HandoverContactsCall } from "@/features/handover/HandoverContactPanel";
 import { DriveOfferChatPanel } from "./DriveOfferChatPanel";
 import { useState } from "react";
 import Link from "next/link";
@@ -620,7 +620,8 @@ export function DriveHandover({
                     {offer.handoverDetails?.contactName && (
                       <p className="flex items-center gap-1.5 font-medium text-stone-800 dark:text-stone-200">
                         <Phone className="h-4 w-4 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
-                        <span>NGO contact: {offer.handoverDetails.contactName}{offer.handoverDetails.contactPhone ? ` · ${offer.handoverDetails.contactPhone}` : ""}</span>
+                        <span>NGO contact: {offer.handoverDetails.contactName}{offer.handoverDetails.contactPhone ? ` · ${offer.handoverDetails.contactPhone}` : ""}
+                          {(offer.handoverDetails.contacts?.length ?? 0) > 1 && ` (+${offer.handoverDetails.contacts!.length - 1} more)`}</span>
                       </p>
                     )}
                     {offer.handoverDetails?.registeredOfficeAddress && !handover && (
@@ -633,7 +634,7 @@ export function DriveHandover({
                       <p className="text-stone-500 dark:text-stone-400">NGO details will appear once accepted.</p>
                     )}
                     {!isEnded && (
-                      <CallAction phone={offer.handoverDetails?.contactPhone?.replace(/[^\d+]/g, "") || null}
+                      <HandoverContactsCall contacts={offer.handoverDetails?.contacts} phone={offer.handoverDetails?.contactPhone ?? null}
                         label="Call NGO" lockedMessage="The NGO's number isn't available yet. Use the chat for now." />
                     )}
                   </div>

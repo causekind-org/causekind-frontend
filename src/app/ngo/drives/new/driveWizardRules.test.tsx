@@ -136,6 +136,41 @@ describe("drive wizard", () => {
     expect(payload.contactPhone).toBe("+919876543210");
   });
 
+  it("handover contacts: an edited drive keeps its extra people (primary first); an old drive saves just its single contact", async () => {
+    mockSearch = "edit=42&step=review";
+    api.getNgoDriveDetail.mockResolvedValue(drive({ handoverContacts: [
+      { name: "Rahul", phone: "+919876543210", role: null }, { name: "Asha", phone: "+918123456789", role: "Volunteer lead" }] }));
+    const { unmount } = render(<NgoDrivePage />);
+    expect(await screen.findByText(/Asha \(Volunteer lead\) · \+91 8123456789/)).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Tick all declarations"));
+    fireEvent.click(screen.getByRole("button", { name: "Submit for verification" }));
+    await waitFor(() => expect(api.updateNgoDrive).toHaveBeenCalled());
+    expect(api.updateNgoDrive.mock.calls[0][1].handoverContacts).toEqual([
+      { name: "Rahul", phone: "+919876543210", role: null }, { name: "Asha", phone: "+918123456789", role: "Volunteer lead" }]);
+    unmount();
+
+    api.updateNgoDrive.mockClear();
+    api.getNgoDriveDetail.mockResolvedValue(drive());
+    render(<NgoDrivePage />);
+    fireEvent.click(await screen.findByText("Tick all declarations"));
+    fireEvent.click(screen.getByRole("button", { name: "Submit for verification" }));
+    await waitFor(() => expect(api.updateNgoDrive).toHaveBeenCalled());
+    expect(api.updateNgoDrive.mock.calls[0][1].handoverContacts).toEqual([{ name: "Rahul", phone: "+919876543210", role: null }]);
+  });
+
+  it("adds, validates and removes another handover person", async () => {
+    mockSearch = "edit=42&step=beneficiaries";
+    api.getNgoDriveDetail.mockResolvedValue(drive());
+    render(<NgoDrivePage />);
+    fireEvent.click(await screen.findByRole("button", { name: /Add another person/ }));
+    fireEvent.change(screen.getByLabelText("Contact 2 name"), { target: { value: "Asha" } });
+    fireEvent.change(screen.getByLabelText("Contact 2 phone"), { target: { value: "5123456789" } });
+    fireEvent.click(screen.getByRole("button", { name: /Save & Continue/ }));
+    expect((await screen.findAllByText(/starting with 6, 7, 8 or 9/)).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByRole("button", { name: "Remove contact 2" }));
+    expect(screen.queryByTestId("extra-contact")).toBeNull();
+  });
+
   it("hides Clothing sizing and Furniture dimensions for other categories", async () => {
     mockSearch = "edit=42&step=details";
     api.getNgoDriveDetail.mockResolvedValue(drive({ category: "Electronics", categoryDetails: null, requireClean: false }));

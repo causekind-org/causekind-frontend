@@ -91,6 +91,8 @@ export type HandoverParticipant = {
   name: string | null;
   /** Present only when the counterpart has permitted contact. Never rendered as text. */
   phone: string | null;
+  /** NGO drives: every handover contact, first = primary (phones null until calls are allowed). */
+  contacts?: { name: string; phone: string | null; role?: string | null }[];
 };
 
 export type HandoverViewModel = {
