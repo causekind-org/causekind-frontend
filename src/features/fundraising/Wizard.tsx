@@ -137,9 +137,9 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         {step === 1 && <WhoNeedsHelp app={app} set={set} onBack={() => go(0)} onNext={() => go(2)} />}
         {step === 2 && <TheNeed app={app} set={set} onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
-        {step >= 4 && step <= 6 && <PageStep step={step as 4 | 5 | 6} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
-        {step === 7 && <BankDetails app={app} set={set} onBack={() => go(6)} onNext={() => go(8)} />}
-        {step === 8 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
+        {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
+        {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
+        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
       </main>
     </>
   );
@@ -598,7 +598,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
           <dt className={s.muted}><UiText>Last day to collect money</UiText></dt><dd>{/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? fmt.date(app.urgency!) : "—"}</dd>
           <dt className={s.muted}><UiText>Shown name</UiText></dt><dd>{page?.beneficiaryDisplayName || "—"}</dd>
         </dl>)}
-        {sec(ui("Bank details", "wizard step"), 7, <dl style={kv}>
+        {sec(ui("Bank details", "wizard step"), 6, <dl style={kv}>
           <dt className={s.muted}><UiText>Account holder</UiText></dt><dd>{app.payout.holderName || "—"}</dd>
           <dt className={s.muted}><UiText>Account number</UiText></dt><dd>{app.payout.accountLast4 ? `XXXX${app.payout.accountLast4}` : "—"}</dd>
           <dt className={s.muted}><UiText>IFSC</UiText></dt><dd>{app.payout.ifsc || "—"}</dd>
@@ -620,7 +620,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
       )}
       {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
       <div style={{ maxWidth: 860, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(7)}><UiText>Back</UiText></button>
+        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(6)}><UiText>Back</UiText></button>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span className={`${s.muted} ${s.small}`}><UiText>Submitting doesn&apos;t make anything public.</UiText></span>
           <button type="button" className={`${s.btn} ${s.bp}`} onClick={submit} disabled={submitting || stillNeeded.length > 0}>{submitting ? ui("Submitting…") : ui("Submit for review")}</button>

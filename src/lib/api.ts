@@ -6227,6 +6227,8 @@ export type FundraiserDetail = {
   acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
   status: CampaignFlowStatus; updates: FundraiserUpdate[]; pauseNotice: string | null;
   outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
+  /** Every current document except identity and family ones; links are signed and expire after ~10 minutes. */
+  documents: { type: FundraisingEvidenceType; fileName: string | null; url: string }[];
 };
 
 export const fundraisers = {

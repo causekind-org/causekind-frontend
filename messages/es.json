@@ -3940,7 +3940,10 @@
     "resubmitting_checks_your_documents_again_6ce82680": "Al reenviar, tus documentos se revisan con la lista actual para este tipo de recaudación. Añade lo marcado como necesario antes de enviar.",
     "supporting_document_f462e609": "Documento de respaldo",
     "the_doctor_s_or_hospital_e6d068bf": "El informe del médico o del hospital sobre esta condición, con menos de 6 meses. No todo el historial médico.",
-    "their_consent_863d08dd": "Su consentimiento"
+    "their_consent_863d08dd": "Su consentimiento",
+    "donors_see_this_name_their_222e8c07": "Los donantes ven este nombre. Su nombre legal sigue siendo privado.",
+    "if_a_document_doesn_t_773614ac": "Si un documento no se abre, recarga esta página.",
+    "the_documents_behind_this_need_909735c1": "Los documentos que respaldan esta necesidad, tal como se enviaron a nuestro equipo. Los documentos de identidad y familiares siguen siendo privados."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   fundraisingCampaigns, ApiError,
   type FundraisingCampaign, type FundraisingCampaignSave, type FundraisingCostItem,
-  type LocationVisibility, type NameVisibility,
 } from "@/lib/api";
 import { useFundraisingLabels, Icon, type SaveState, SaveIndicator, formatINR, CampaignStepper } from "./ui";
 import { FieldInfo } from "./FieldInfo";
@@ -107,9 +106,8 @@ export function CampaignWizard({ initial, onSubmitted }: { initial: FundraisingC
         )}
         {step === 0 && <Basics c={c} set={set} setC={setC} nav={nav(null, 1)} />}
         {step === 1 && <Story c={c} set={set} nav={nav(0, 2)} />}
-        {step === 2 && <Target c={c} set={set} nav={nav(1, 3)} />}
-        {step === 3 && <Privacy c={c} set={set} nav={nav(2, 4, ui("Continue to preview"))} />}
-        {step === 4 && <Preview c={c} flush={flush} back={() => go(3)} onCancel={() => setConfirmCancel(true)} onSubmitted={onSubmitted} />}
+        {step === 2 && <Target c={c} set={set} nav={nav(1, 3, ui("Continue to preview"))} />}
+        {step === 3 && <Preview c={c} flush={flush} back={() => go(2)} onCancel={() => setConfirmCancel(true)} onSubmitted={onSubmitted} />}
       </main>
       {confirmCancel && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(31,20,12,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 60 }}>
@@ -159,7 +157,7 @@ export function Basics({ c, set, setC, nav, inApplication = false, neededBy = nu
         <div><label className={s.lbl} htmlFor="t"><UiText>Campaign title</UiText> <FieldInfo localize k="t" /></label><input id="t" className={s.in} maxLength={120} value={c.title ?? ""} onChange={(e) => set({ title: e.target.value })} /><p className={s.hint}>{t("titleHint", { count: (c.title ?? "").length })}</p></div>
         <div className={s.grid2}>
           <div><span className={s.lbl}><UiText>Category</UiText> <FieldInfo localize k="cCat" /></span><p style={{ minHeight: 44, display: "flex", alignItems: "center", gap: 8 }}><span className={`${s.chip} ${s.cM}`}><Icon name="lock" />{c.category ? fmt.category(c.category) : "—"}</span><span className={`${s.muted} ${s.small}`}>{inApplication ? ui("From step 3 — change it there") : <UiText>Approved — can&apos;t change here</UiText>}</span></p></div>
-          <div><label className={s.lbl} htmlFor="dn"><UiText>Beneficiary name shown to donors</UiText> <FieldInfo localize k="dn" /><span className={`${s.chip} ${s.cN}`}><UiText>From application</UiText></span></label><input id="dn" className={s.in} maxLength={80} value={c.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} /><p className={s.hint}>{inApplication ? ui("Their legal name stays private. Choose what donors see in the Privacy step.") : <UiText>Their legal name stays private. Change visibility in step 4.</UiText>}</p></div>
+          <div><label className={s.lbl} htmlFor="dn"><UiText>Beneficiary name shown to donors</UiText> <FieldInfo localize k="dn" /><span className={`${s.chip} ${s.cN}`}><UiText>From application</UiText></span></label><input id="dn" className={s.in} maxLength={80} value={c.beneficiaryDisplayName ?? ""} onChange={(e) => set({ beneficiaryDisplayName: e.target.value })} /><p className={s.hint}>{inApplication ? ui("Donors see this name. Their legal name stays private.") : <UiText>Donors see this name. Their legal name stays private.</UiText>}</p></div>
         </div>
         {inApplication && (
           // Same date as step 3's "By which date do you need the money?" — copied onto the page on submit.
@@ -261,63 +259,6 @@ function Target({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: Reac
 }
 
 // F16 — C4 Public evidence and privacy
-export function Privacy({ c, set, nav }: { c: FundraisingCampaign; set: SetFn; nav: React.ReactNode }) {
-  const t = useTranslations("fundraiserFlow");
-  const ui = useUiText();
-  const seg = <T extends string>(label: string, value: T | null, options: [T, string][], onPick: (v: T) => void) => (
-    <div className={s.small} role="radiogroup" aria-label={label} style={{ display: "flex", border: "1px solid #cfc3b6", borderRadius: 10, overflow: "hidden" }}>
-      {options.map(([v, l], i) => (
-        <button key={v} type="button" role="radio" aria-checked={value === v} onClick={() => onPick(v)}
-          style={{ flex: 1, minHeight: 40, border: 0, borderLeft: i ? "1px solid #cfc3b6" : 0, fontWeight: 600, cursor: "pointer", font: "inherit", fontSize: 13,
-            background: value === v ? "#1e3a60" : "#fff", color: value === v ? "#fff" : "#5c4f45" }}>{l}</button>
-      ))}
-    </div>
-  );
-  const toggle = (id: number, on: boolean) =>
-    set({ publicEvidenceIds: on ? [...c.publicEvidenceIds, id] : c.publicEvidenceIds.filter((x) => x !== id) });
-  const row = { display: "grid", gridTemplateColumns: "minmax(0,1fr) 260px", gap: 16, alignItems: "center", padding: "14px 0", borderTop: "1px solid #efe7de" } as const;
-  const name: [NameVisibility, string][] = [["FULL", ui("Full", "visibility")], ["FIRST_NAME", ui("First name", "visibility")], ["HIDDEN", ui("Hidden", "visibility")]];
-  const loc: [LocationVisibility, string][] = [["CITY", ui("City", "visibility")], ["STATE", ui("State", "visibility")], ["HIDDEN", ui("Hidden", "visibility")]];
-  return (
-    <>
-      <Heading title={ui("What donors can see")} sub={ui("Choose each item. Your application documents stay private unless you pick one below for review.")} />
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 28, alignItems: "start", maxWidth: 1120 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <section className={s.card} style={{ padding: "8px 24px 16px" }} aria-labelledby="vis">
-            <h2 id="vis" style={{ fontSize: 16, fontWeight: 700, paddingTop: 14 }}><UiText>Names and place</UiText> <FieldInfo localize k="vis" /></h2>
-            <div style={row}><div><strong><UiText>Beneficiary name</UiText></strong><p className={`${s.small} ${s.muted}`}>{t("shownAs", { name: c.beneficiaryDisplayName ?? "—" })}</p></div>{seg(ui("Beneficiary name"), c.beneficiaryNameVisibility, name, (v) => set({ beneficiaryNameVisibility: v }))}</div>
-            <div style={row}><div><strong><UiText>Organiser name</UiText></strong><p className={`${s.small} ${s.muted}`}>{c.organiserName}</p></div>{seg(ui("Organiser name"), c.organiserNameVisibility, name.slice(0, 2), (v) => set({ organiserNameVisibility: v }))}</div>
-            <div style={row}><div><strong><UiText>Location</UiText></strong><p className={`${s.small} ${s.muted}`}><UiText>Your address is never shown</UiText></p></div>{seg(ui("Location"), c.locationVisibility, loc, (v) => set({ locationVisibility: v }))}</div>
-          </section>
-          <section className={s.card} style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="pe">
-            <h2 id="pe" style={{ fontSize: 16, fontWeight: 700 }}><UiText>Supporting documents donors can see</UiText> <FieldInfo localize k="pe" /><span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></h2>
-            <p className={`${s.small} ${s.muted}`}><UiText>Picked documents are reviewed and may be redacted before anyone sees them. ID and consent documents can&apos;t be picked.</UiText></p>
-            {c.selectableEvidence.length === 0 && <p className={`${s.small} ${s.muted}`}><UiText>No documents from your application can be shown.</UiText></p>}
-            {c.selectableEvidence.map((e) => {
-              const on = c.publicEvidenceIds.includes(e.evidenceId);
-              return (
-                <label key={e.evidenceId} style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 14px", border: "1px solid #e7ddd2", borderRadius: 10, flexWrap: "wrap" }}>
-                  <input type="checkbox" checked={on} onChange={(ev) => toggle(e.evidenceId, ev.target.checked)} style={{ width: 20, height: 20, accentColor: "#1e3a60" }} />
-                  <span style={{ flex: 1 }}><strong>{e.type.replace(/_/g, " ").toLowerCase()}</strong><br /><span className={`${s.small} ${s.muted}`}>{e.fileName ?? ui("Document")}</span></span>
-                  {on ? <span className={`${s.chip} ${s.cW}`}><UiText>Needs review</UiText></span> : <span className={`${s.chip} ${s.cM}`}><UiText>Private</UiText></span>}
-                </label>
-              );
-            })}
-          </section>
-          {nav}
-        </div>
-        <aside className={s.card} style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="sum">
-          <h2 id="sum" style={{ fontSize: 15, fontWeight: 700 }}><UiText>Visibility summary</UiText></h2>
-          <p className={s.small}><span className={`${s.chip} ${s.cN}`}><UiText>Public</UiText></span> {c.beneficiaryNameVisibility === "HIDDEN" ? ui("Beneficiary hidden") : `"${c.beneficiaryDisplayName ?? "—"}"`}, {c.organiserNameVisibility === "FIRST_NAME" ? c.organiserName.split(" ")[0] : c.organiserName}{c.locationVisibility === "HIDDEN" ? "" : `, ${c.locationVisibility === "STATE" ? c.state ?? "state" : c.city ?? "city"}`}</p>
-          <p className={s.small}><span className={`${s.chip} ${s.cN}`}><UiText>Public</UiText></span> <UiText>Cover photo</UiText></p>
-          {c.publicEvidenceIds.length > 0 && <p className={s.small}><span className={`${s.chip} ${s.cW}`}><UiText>After review</UiText></span> {t("documentsCount", { count: c.publicEvidenceIds.length })}</p>}
-          <p className={s.small}><span className={`${s.chip} ${s.cM}`}><UiText>Private</UiText></span> <UiText>Legal name, address, ID, consent, other documents</UiText></p>
-        </aside>
-      </div>
-    </>
-  );
-}
-
 // F17 — C5 Preview and submit
 function Preview({ c, flush, back, onCancel, onSubmitted }: {
   c: FundraisingCampaign; flush: () => Promise<boolean>; back: () => void; onCancel: () => void; onSubmitted: (c: FundraisingCampaign) => void;

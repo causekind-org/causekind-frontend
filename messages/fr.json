@@ -3940,7 +3940,10 @@
     "resubmitting_checks_your_documents_again_6ce82680": "Au renvoi, vos documents sont vérifiés selon la liste actuelle pour ce type de collecte. Ajoutez ce qui est demandé avant d’envoyer.",
     "supporting_document_f462e609": "Document justificatif",
     "the_doctor_s_or_hospital_e6d068bf": "Le rapport du médecin ou de l’hôpital pour cette maladie, daté de moins de 6 mois. Pas tout le dossier médical.",
-    "their_consent_863d08dd": "Son accord"
+    "their_consent_863d08dd": "Son accord",
+    "donors_see_this_name_their_222e8c07": "Les donateurs voient ce nom. Son nom légal reste privé.",
+    "if_a_document_doesn_t_773614ac": "Si un document ne s’ouvre pas, rechargez cette page.",
+    "the_documents_behind_this_need_909735c1": "Les documents à l’appui de ce besoin, tels qu’envoyés à notre équipe. Les documents d’identité et familiaux restent privés."
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",
