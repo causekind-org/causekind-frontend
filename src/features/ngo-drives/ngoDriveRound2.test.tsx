@@ -91,7 +91,9 @@ describe("the giving-safely checklist is gone", () => {
 
 describe("Past work by the NGO", () => {
   const acts = [
-    { id: 1, title: "Old meal drive", activityDate: "2025-01-01", status: "APPROVED", summary: "Fed 100 people", media: [{ mediaType: "IMAGE", url: "https://x.test/a.png" }, { mediaType: "IMAGE", url: "https://x.test/b.png" }] },
+    { id: 1, title: "Old meal drive", activityDate: "2025-01-01", status: "APPROVED", description: "Fed 100 people", media: [
+      { mediaType: "IMAGE", url: "https://x.test/a.png" }, { mediaType: "IMAGE", url: "https://x.test/b.png" },
+      { mediaType: "IMAGE", url: "https://x.test/c.png" }, { mediaType: "IMAGE", url: "https://x.test/d.png" }] },
     { id: 2, title: "Pending draft", activityDate: "2026-09-01", status: "PENDING" },
     { id: 3, title: "Rejected one", activityDate: "2026-08-01", status: "REJECTED" },
     { id: 4, title: "Newest blanket drive", activityDate: "2026-10-01", status: "APPROVED", description: "x".repeat(300) },
@@ -111,9 +113,12 @@ describe("Past work by the NGO", () => {
     expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
   });
 
-  it("photo gallery shows +N and opens a lightbox", () => {
+  it("photo gallery: 1 large + 2 small, +N for the rest, labelled date, opens a lightbox", () => {
     render(<PastWorkSection ngoName="Hope Trust" activities={[acts[0]]} />);
     expect(screen.getByText("+1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View photo 2 of Old meal drive" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "View photo 3 of Old meal drive" })).toBeInTheDocument();
+    expect(screen.getByText(/Activity date: 1 Jan 2025/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "View photos of Old meal drive" }));
     expect(screen.getByTestId("past-work-lightbox")).toBeInTheDocument();
   });

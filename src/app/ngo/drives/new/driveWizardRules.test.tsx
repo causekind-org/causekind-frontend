@@ -217,7 +217,9 @@ describe("drive wizard", () => {
     api.getNgoDriveDetail.mockResolvedValue(drive({ coverPhotoUrl: "https://bucket/ngo-drives/7/photos/cover.jpg?X-Amz-Signature=x" }));
     render(<NgoDrivePage />);
     const cover = await screen.findByTestId("drive-cover-field");
-    fireEvent.click(within(cover).getByRole("button", { name: "Remove cover photo" }));
+    // The shared file card (as in the registration wizard): Remove, then confirm.
+    fireEvent.click(within(cover).getByRole("button", { name: "Remove Drive cover" }));
+    fireEvent.click(within(cover).getByRole("button", { name: /Yes, remove/ }));
     expect(api.deleteUnusedNgoDrivePhoto).toHaveBeenCalledWith("https://bucket/ngo-drives/7/photos/cover.jpg?X-Amz-Signature=x");
   });
 });

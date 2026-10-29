@@ -1,9 +1,11 @@
 "use client";
 
+import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherSpecifyField";
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   DESIGNATIONS,
+  isOtherChoice,
   EMPTY_REPRESENTATIVE,
   IS_NGO_DEMO_MODE,
   MAX_REPRESENTATIVES,
@@ -314,11 +316,16 @@ function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove
           <label htmlFor={`${prefix}-designation`} className={labelClass}>Designation / role {required}</label>
           <WizardSelect
             id={`${prefix}-designation`}
-            value={card.designation}
+            value={isOtherChoice(card.designation, DESIGNATIONS) ? "Other" : card.designation}
             onChange={(val) => onChange({ designation: val })}
             options={DESIGNATIONS}
             aria-label="Designation / role"
           />
+          {/* "Other": the typed role is what is saved and shown everywhere. */}
+          {isOtherChoice(card.designation, DESIGNATIONS) && (
+            <OtherSpecifyField id={`${prefix}-designation-other`} value={card.designation}
+              onChange={(text) => onChange({ designation: text || "Other" })} />
+          )}
           {note("designation")}
         </div>
         <div className="space-y-1">

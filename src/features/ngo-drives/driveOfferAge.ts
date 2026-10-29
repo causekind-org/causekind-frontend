@@ -1,4 +1,5 @@
 export const DRIVE_OFFER_AGE_RANGES = [
+  { value: "BRAND_NEW", label: "Brand new" },
   { value: "LT_1", label: "Less than 1 year" },
   { value: "Y1_2", label: "1-2 years" },
   { value: "Y2_3", label: "2-3 years" },

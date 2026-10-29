@@ -6,7 +6,7 @@ import { getProfile, getMyNgoApplication, getNgoDraft } from "@/lib/api";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }), redirect: vi.fn() }));
 // The approved NGO's About / past-activity sections have their own tests.
-vi.mock("@/features/ngo-profile/NgoActivitiesManager", () => ({ NgoActivitiesManager: () => null }));
+vi.mock("@/features/ngo-profile/PastActivity", () => ({ PastActivitySection: () => null }));
 vi.mock("@/features/ngo-profile/NgoAboutSection", () => ({ NgoAboutSection: () => null }));
 vi.mock("@/lib/api", () => ({
   getProfile: vi.fn(), updateProfile: vi.fn(), updateLocation: vi.fn(), getMyNgoApplication: vi.fn(),

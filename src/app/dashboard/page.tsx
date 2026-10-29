@@ -1817,6 +1817,8 @@ const isLiveDonorOffer = (o: DonationOffer) =>
 
 /** Offers to NGO drives travel in the same list, tagged _type "DRIVE_OFFER" (loadAllDonationOffers). */
 const isDriveOffer = (o: object) => (o as { _type?: string })._type === "DRIVE_OFFER";
+/** A drive offer the NGO has not accepted yet: shown in Your Inventory; once accepted it moves to Matches > NGO. */
+const DRIVE_OFFER_PENDING_STATUSES = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "NEEDS_INFORMATION", "PENDING_NGO_REVIEW"];
 /** A drive offer that ended without a handover (History). */
 const DRIVE_TERMINAL_STATUSES = ["NGO_DECLINED", "ENDED", "WITHDRAWN", "CANCELLED", "ADMIN_REJECTED"];
 
@@ -3024,6 +3026,8 @@ export default function DashboardPage() {
   );
   // Donee segment: offers to donee requests only. NGO segment: offers to NGO drives only.
   const liveDonorOffers = donationOffers.filter(o => !isDriveOffer(o) && isLiveDonorOffer(o));
+  // Submitted to a drive, not accepted yet: Your Inventory (accepted ones are in Matches > NGO).
+  const pendingDriveOffers = donationOffers.filter(o => isDriveOffer(o) && DRIVE_OFFER_PENDING_STATUSES.includes(o.status));
   // Matches tab, NGO segment: drive offers from "Offer sent" until the NGO received them.
   const acceptedNgoOffers = acceptedDriveOffers(donationOffers as { _type?: string; status: string }[]) as unknown as AcceptedDriveOffer[];
   const liveNgoOfferIds = new Set(acceptedNgoOffers.map(o => o.id));
@@ -3229,6 +3233,14 @@ export default function DashboardPage() {
                     decline reason form opens in place of the card. */}
                 {orphanReviews.map((m) => renderDonorReview(m, false))}
                   </div>
+                  )}
+                  {pendingDriveOffers.length > 0 && (
+                    <section className="mb-6 space-y-3" data-testid="inventory-pending-drive-offers" aria-label={ui("Offers to NGO drives, waiting for the NGO")}>
+                      <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]"><UiText>Offered to NGO drives · waiting for the NGO</UiText></p>
+                      {pendingDriveOffers.map((o) => (
+                        <OfferStageCard key={`drive-${o.id}`} offer={o} onReconfirm={handleOfferReconfirm} onWithdraw={handleOfferWithdraw} onCancelled={handleOfferCancelled} />
+                      ))}
+                    </section>
                   )}
                   <section>
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/70 pb-3">

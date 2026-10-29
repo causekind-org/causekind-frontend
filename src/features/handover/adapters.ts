@@ -326,8 +326,12 @@ export function adaptNgoOffer(
           scheduledAt: toZonedIso(handover.scheduledDateTime),
           // A drop-off goes to the drive's address (the record keeps none).
           address: handover.method === "PICKUP" ? handover.locationAddress : (handover.dropOffAddressDisplay || handover.dropOffAddress || handover.locationAddress || ngoOfferDropOffAddress(offer) || null),
-          latitude: handover.locationLatitude,
-          longitude: handover.locationLongitude,
+          // Directions (same helper as donor↔donee): the handover's own pin, else the drive's pin for a
+          // drop-off or the donor's pin for a pickup (the donor's pin reaches only people allowed to see it).
+          latitude: handover.locationLatitude
+            ?? (handover.method === "PICKUP" ? offer.donorLatitude : offer.driveLocationLatitude) ?? null,
+          longitude: handover.locationLongitude
+            ?? (handover.method === "PICKUP" ? offer.donorLongitude : offer.driveLocationLongitude) ?? null,
           notes: null,
           rescheduleCount: handover.rescheduleCount,
           maxReschedules: 2, // MAX_RESCHEDULES

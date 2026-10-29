@@ -85,7 +85,8 @@ export default function NgoDashboardPage() {
     errorRequests,
     refetchRequests,
     documents,
-    myProfile
+    myProfile,
+    error: statusError,
   } = useNgoDashboardData();
 
   useEffect(() => {
@@ -165,7 +166,7 @@ export default function NgoDashboardPage() {
                 <Button disabled className="bg-transparent text-ngo-100/70 border border-ngo-300/50 font-extrabold rounded-xl sm:rounded-2xl px-3.5 sm:px-6 py-2 sm:py-3 h-auto text-sm sm:text-sm flex items-center gap-2 shrink-0 w-full justify-center opacity-100 cursor-not-allowed">
                   <Lock className="w-4 h-4 opacity-70" /> Start a Drive
                 </Button>
-                <p className="text-xs text-ngo-100/70 w-full text-center sm:text-right">{lockReason || "Available once CauseKind verifies your NGO."}</p>
+                <p className="text-xs text-ngo-100/70 w-full text-center sm:text-right">{statusError ? "We couldn't check your NGO status just now. Please refresh." : lockReason || "Available once CauseKind verifies your NGO."}</p>
               </div>
             )}
           </div>
@@ -203,7 +204,6 @@ export default function NgoDashboardPage() {
               <p className="hidden md:flex items-center gap-1"><MapPin className="w-3 h-3 text-ngo-700 dark:text-ngo-400" />{myProfile.city}</p>
             </>
           )}
-          <Link href="/profile" className="ml-auto shrink-0 font-bold text-ngo-700 dark:text-ngo-400 hover:underline">Edit profile</Link>
         </div>
 
         {/* Target of every "/dashboard/ngo#live-drives" link. */}

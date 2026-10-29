@@ -294,6 +294,8 @@ export interface NGOFormState {
   logo: UploadedFile | null;
   officePhoto: UploadedFile | null;
   activityPhotos: (UploadedFile | null)[];
+  /** Past activities (with a photo) the NGO has saved; loaded from the server, never part of the draft. */
+  pastActivitiesWithPhoto?: number;
 
   // Step 5 — Confirmation
   confirmationChecked: boolean;
@@ -344,6 +346,22 @@ export const DESIGNATIONS = [
   "Programme Manager",
   "Other",
 ];
+
+/** "Other" + "Please specify": 2–60 letters, spaces and . , - & (same rule as the backend's NgoOtherText). */
+export const OTHER_TEXT_PATTERN = /^[A-Za-z][A-Za-z .,&-]{1,59}$/;
+
+/** "" when the typed "Other" value is fine, else the message to show. */
+export function otherTextError(text: string): string {
+  const t = (text ?? "").trim();
+  if (!t || t.toLowerCase() === "other") return "Please specify";
+  return OTHER_TEXT_PATTERN.test(t) ? "" : "Use 2–60 letters (spaces and . , - & allowed)";
+}
+
+/** A stored value that is not one of the list's options is the NGO's own "Other" text ("Other" alone = not typed yet). */
+export function isOtherChoice(value: string | null | undefined, options: readonly string[]): boolean {
+  const v = (value ?? "").trim();
+  return !!v && (v === "Other" || !options.includes(v));
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -481,6 +499,7 @@ export function getRepresentativeIssues(card: RepresentativeCard, index: number)
   const issues: string[] = [];
   if (!fieldText(card.fullName)) issues.push(`${who}: full name`);
   if (!fieldText(card.designation)) issues.push(`${who}: designation / role`);
+  else if (isOtherChoice(card.designation, DESIGNATIONS) && otherTextError(card.designation)) issues.push(`${who}: designation / role (please specify)`);
   if (!isValidMobile(card.mobileNumber)) issues.push(`${who}: valid mobile number`);
   if (!isValidEmail(card.email)) issues.push(`${who}: valid email`);
   else if (!card.emailVerified) issues.push(`${who}: verify email with the code`);
@@ -549,6 +568,8 @@ export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): strin
     case "org-photos":
       if (!data.logo) missing.push("Official organization logo");
       if (!data.officePhoto) missing.push("Office premises photo");
+      // Unknown until the list loads (undefined): only a loaded count of 0 blocks the step.
+      if (data.pastActivitiesWithPhoto === 0) missing.push("At least one past activity with a photo");
       break;
     case "review-submit":
       if (!data.confirmationChecked) missing.push("Declaration & legal verification confirmation");

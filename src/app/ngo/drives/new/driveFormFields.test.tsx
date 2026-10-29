@@ -159,9 +159,9 @@ describe("drive form fields", { timeout: 20000 }, () => {
     });
 
     // 1. Photos loaded into uploader (cover first, in sort order)
-    const img1 = screen.getByAltText("Drive photo 1");
-    const img2 = screen.getByAltText("Drive photo 2");
-    const img3 = screen.getByAltText("Drive photo 3");
+    const img1 = screen.getByAltText("Preview of Reference photo 1");
+    const img2 = screen.getByAltText("Preview of Reference photo 2");
+    const img3 = screen.getByAltText("Preview of Reference photo 3");
     expect(img1).toHaveAttribute("src", "https://example.test/photo1.jpg");
     expect(img2).toHaveAttribute("src", "https://example.test/photo2.jpg");
     expect(img3).toHaveAttribute("src", "https://example.test/photo3.jpg");
@@ -224,7 +224,7 @@ describe("drive form fields", { timeout: 20000 }, () => {
     });
 
     // Loaded as photo 1 with Cover badge
-    const img1 = screen.getByAltText("Drive photo 1");
+    const img1 = screen.getByAltText("Preview of Reference photo 1");
     expect(img1).toHaveAttribute("src", "https://example.test/legacy-photo.jpg");
     expect(screen.getByText("Cover")).toBeInTheDocument();
     expect(screen.getByText(/1\/5\)/)).toBeInTheDocument();

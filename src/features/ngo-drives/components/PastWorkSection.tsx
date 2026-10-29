@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ImageIcon, X } from "lucide-react";
 import type { PublicNgoActivity } from "@/lib/api";
-import { formatDdMmYyyy } from "@/features/ngo-drives/driveFormatters";
+import { formatActivityDate } from "@/features/ngo-profile/PastActivity";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 
 /** Only approved activities with a title; newest first. Activities without a status are treated as approved (public endpoints only send approved ones). */
@@ -58,25 +58,47 @@ function Lightbox({ photos, start, title, onClose }: { photos: string[]; start: 
   );
 }
 
+/** Text longer than this (or with several paragraphs) is clamped to 4 lines with "Read more". */
+const CLAMP_CHARS = 220;
+
+/**
+ * One past activity: gallery (1 large + up to 2 small, "+N" for more; click opens the lightbox),
+ * the title, "Activity date: …" (IST) and the text clamped to 4 lines ("Read more" opens it in place).
+ * Equal height in the grid. The same card on the NGO page and the drive page.
+ */
 function ActivityCard({ a }: { a: PublicNgoActivity }) {
   const [open, setOpen] = useState(false);
   const [lightbox, setLightbox] = useState<number | null>(null);
   const photos = photosOf(a);
   const video = (a.media ?? []).find((m) => m?.url && (m.mediaType ?? "").toUpperCase() === "VIDEO")?.url ?? null;
-  const text = a.summary || a.description || "";
-  const long = text.length > 160 || (!!a.summary && !!a.description && a.description !== a.summary);
-  const shown = open ? (a.description || a.summary || "") : text.length > 160 ? `${text.slice(0, 160).trimEnd()}…` : text;
+  const text = a.description ?? "";
+  const long = text.length > CLAMP_CHARS || text.split("\n").length > 4;
+  const small = photos.slice(1, 3);
+  const more = photos.length - 3;
   return (
-    <li data-testid="past-work-item" className="min-w-0 overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <li data-testid="past-work-item" className="flex h-full min-w-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       {photos.length > 0 ? (
-        <button type="button" onClick={() => setLightbox(0)} aria-label={`View photos of ${a.title}`}
-          className="relative block aspect-[16/10] w-full overflow-hidden bg-stone-100 dark:bg-zinc-800">
-          {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
-          <img src={photos[0]} alt="" className="h-full w-full object-cover" loading="lazy" />
-          {photos.length > 1 && (
-            <span className="absolute bottom-2 right-2 rounded-full bg-black/65 px-2.5 py-1 text-xs font-bold text-white">+{photos.length - 1}</span>
+        <div className="grid gap-1">
+          <button type="button" onClick={() => setLightbox(0)} aria-label={`View photos of ${a.title}`}
+            className="relative block aspect-[16/10] w-full overflow-hidden bg-stone-100 dark:bg-zinc-800">
+            {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
+            <img src={photos[0]} alt="" className="h-full w-full object-cover" loading="lazy" />
+          </button>
+          {small.length > 0 && (
+            <div className="grid grid-cols-2 gap-1">
+              {small.map((src, i) => (
+                <button key={src} type="button" onClick={() => setLightbox(i + 1)} aria-label={`View photo ${i + 2} of ${a.title}`}
+                  className="relative block aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-zinc-800">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
+                  <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                  {i === small.length - 1 && more > 0 && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-bold text-white">+{more}</span>
+                  )}
+                </button>
+              ))}
+            </div>
           )}
-        </button>
+        </div>
       ) : video ? (
         <video src={video} controls preload="metadata" className="aspect-[16/10] w-full bg-black object-contain" aria-label={a.title} />
       ) : (
@@ -84,17 +106,19 @@ function ActivityCard({ a }: { a: PublicNgoActivity }) {
           <ImageIcon className="size-7" aria-hidden="true" />
         </div>
       )}
-      <div className="p-4">
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="break-words font-serif text-lg font-semibold leading-snug text-stone-900 dark:text-stone-100">{a.title}</h3>
         {a.activityDate && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-bold text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
-            <CalendarDays className="size-3" aria-hidden="true" /> {formatDdMmYyyy(a.activityDate)}
-          </span>
+          <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+            <CalendarDays className="size-3.5" aria-hidden="true" /> Activity date: {formatActivityDate(a.activityDate)}
+          </p>
         )}
-        <h3 className="mt-2 break-words font-serif text-lg font-semibold leading-snug text-stone-900 dark:text-stone-100">{a.title}</h3>
-        {shown && <p className="mt-1 whitespace-pre-line break-words text-sm text-stone-700 dark:text-stone-300">{shown}</p>}
+        {text && (
+          <p data-testid="past-work-text" className={`mt-2 whitespace-pre-line break-words text-sm text-stone-700 dark:text-stone-300 ${open ? "" : "line-clamp-4"}`}>{text}</p>
+        )}
         {long && (
           <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
-            className="mt-1 min-h-11 text-sm font-bold text-emerald-700 hover:underline dark:text-emerald-400">
+            className="mt-auto self-start pt-1 min-h-11 text-sm font-bold text-emerald-700 hover:underline dark:text-emerald-400">
             {open ? "Show less" : "Read more"}
           </button>
         )}
@@ -132,7 +156,8 @@ export function PastWorkSection({
           </Link>
         )}
       </div>
-      <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* The full main-column width: 2 equal-height columns on desktop, 1 on mobile. */}
+      <ul className="grid auto-rows-fr gap-4 md:grid-cols-2">
         {shown.map((a) => <ActivityCard key={a.id} a={a} />)}
       </ul>
     </section>

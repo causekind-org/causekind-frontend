@@ -1,5 +1,6 @@
 "use client";
 
+import { PastActivityCard } from "@/features/ngo-profile/PastActivity";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { X, ArrowLeft } from "lucide-react";
@@ -373,6 +374,16 @@ export function NgoReviewPanel({
               <p className="mt-3 text-xs text-stone-500">Submitted with the earlier application form (one representative, no PAN number).</p>
             )}
             <NgoPanCheckBox panCheck={detail.panCheck} showSources={false} />
+            <section aria-label="Past activity" data-testid="admin-review-past-activity" className="mt-6">
+              <h3 className="font-bold">Past activity</h3>
+              {(detail.pastActivities ?? []).length === 0 ? (
+                <p className="mt-1 text-xs text-stone-500">No past activity added.</p>
+              ) : (
+                <div className="mt-2 grid gap-3 sm:grid-cols-2">
+                  {detail.pastActivities!.map((a) => <PastActivityCard key={a.id} activity={a} />)}
+                </div>
+              )}
+            </section>
             {detail.wizardV2 && (detail.representatives?.length ?? 0) > 0 && (
               <section aria-label="Authorized representatives" className="mt-6">
                 <h3 className="font-bold">Authorized representatives</h3>

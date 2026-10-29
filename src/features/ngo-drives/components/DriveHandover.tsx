@@ -1,5 +1,6 @@
 "use client";
 
+import { directionsHref } from "@/features/handover/adapters";
 import { CallAction } from "@/features/handover/HandoverContactPanel";
 import { DriveOfferChatPanel } from "./DriveOfferChatPanel";
 import { useState } from "react";
@@ -168,6 +169,19 @@ function PlanSummary({ offer, handover, role }: { offer: NgoDriveOfferResponse; 
           <span>{where}</span>
         </p>
       )}
+      {/* Same Google Maps directions link as the donor↔donee handover: the drive's pin for a
+          drop-off, the donor's pin (or the handover's own) for a pickup. */}
+      {(() => {
+        const lat = handover.locationLatitude ?? (dropOff ? offer.driveLocationLatitude : offer.donorLatitude);
+        const lng = handover.locationLongitude ?? (dropOff ? offer.driveLocationLongitude : offer.donorLongitude);
+        return lat != null && lng != null ? (
+          <a href={directionsHref(lat, lng)} target="_blank" rel="noopener noreferrer" data-testid="drive-handover-directions"
+            className="mt-2 inline-flex min-h-[40px] items-center gap-1.5 rounded-md border border-emerald-700/30 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800 hover:border-emerald-700/60 dark:bg-emerald-950/30 dark:text-emerald-300">
+            <MapPin className="size-4 shrink-0" aria-hidden /> Directions
+            <span className="sr-only">(opens Google Maps in a new tab)</span>
+          </a>
+        ) : null;
+      })()}
       {handover.atRisk && (
         <p className="mt-2 font-semibold text-amber-700 dark:text-amber-400">
           This handover has been moved twice. Our team may step in.

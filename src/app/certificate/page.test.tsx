@@ -29,7 +29,15 @@ import CertificatePage from "./page";
 const row = (label: string) => screen.queryByRole("cell", { name: label });
 
 describe("certificate page", () => {
-  beforeEach(() => { getDrive.mockReset(); getOffer.mockReset(); });
+  beforeEach(() => {
+    getDrive.mockReset(); getOffer.mockReset();
+    // jsdom never loads images; the page waits for the logo before showing the card, so load it here.
+    vi.stubGlobal("Image", class {
+      onload: (() => void) | null = null;
+      onerror: (() => void) | null = null;
+      set src(_v: string) { queueMicrotask(() => this.onload?.()); }
+    });
+  });
   afterEach(() => vi.unstubAllGlobals());
 
   it("drive certificate: NGO and Drive rows right after the donor, no Condition", async () => {

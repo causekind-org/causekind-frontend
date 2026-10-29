@@ -59,13 +59,14 @@ export function NgoAboutSection({
       <div>
         {/* Card Header: Section label & Ghost edit button */}
         <div className="flex items-center justify-between gap-3 border-b border-[#EADBCE]/80 dark:border-emerald-950/60 pb-3">
-          <p
+          <h2
             id="about-ngo-heading"
-            className="text-3xs font-black uppercase tracking-[0.24em] text-ngo-700 dark:text-ngo-300"
+            className="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight"
           >
             About the NGO
-          </p>
-          {!editing && (
+          </h2>
+          {/* Once saved, About us is not edited here (no "Edit About us"); an NGO without one can still add it. */}
+          {!editing && !saved && (
             <button
               type="button"
               onClick={() => {
@@ -75,7 +76,7 @@ export function NgoAboutSection({
               className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold text-stone-600 hover:text-stone-900 bg-[#F5EFE6]/80 hover:bg-[#efe5d8] border border-[#d9c7b6] dark:text-stone-300 dark:hover:text-stone-100 dark:bg-[#1a251e] dark:hover:bg-[#202e25] dark:border-zinc-700 transition-colors"
             >
               <Pencil className="w-3 h-3" />
-              {saved ? "Edit About us" : "Add About us"}
+              Add About us
             </button>
           )}
         </div>
@@ -136,8 +137,13 @@ export function NgoAboutSection({
             </div>
           </div>
         ) : (
-          /* View Mode */
-          <div className="pt-4 min-w-0 space-y-4">
+          /* View Mode: identity on the left, About us on the right (desktop); stacked on mobile. */
+          <div data-testid="about-ngo-layout" className="pt-4 min-w-0 grid gap-5 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:items-start">
+          <div className="min-w-0 space-y-4">
+            {ngo.logoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element -- signed logo link
+              <img src={ngo.logoUrl} alt={`${ngo.organizationName} logo`} className="h-16 w-16 rounded-xl border border-[#EADBCE] object-contain bg-white dark:border-zinc-700" />
+            )}
             {/* Header: NGO Name large with Verified badge */}
             <div className="flex flex-wrap items-center gap-2.5 min-w-0">
               {ngo.slug ? (
@@ -165,6 +171,10 @@ export function NgoAboutSection({
               )}
             </div>
 
+            {ngo.legalStructure && (
+              <p className="text-sm text-stone-700 dark:text-stone-300"><span className="font-semibold">Legal structure:</span> {ngo.legalStructure}</p>
+            )}
+
             {/* Fact Tiles: 2-column grid */}
             {(ngo.founderName || ngo.yearOfEstablishment) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 min-w-0">
@@ -190,6 +200,8 @@ export function NgoAboutSection({
                 )}
               </div>
             )}
+
+          </div>
 
             {/* About us text: readable paragraph, clamped to ~4 lines with Read more toggle */}
             <div className="min-w-0">

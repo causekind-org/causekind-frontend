@@ -187,10 +187,10 @@ export default function HandoverCelebration({ contextType, contextId, open, onCl
   const [tipLoading, setTipLoading] = useState(false);
   const [tipDone, setTipDone] = useState(false);
 
-  // Tip step is suppressed for NGO accounts and for drive handovers (which are direct NGO drives)
+  // thank-you → rating → tip, as donor↔donee. Drive handovers (NGO_DRIVE_OFFER) get the tip too, for the
+  // donor; NGO accounts never see it.
   const isNgo = role === "NGO" || user?.role === "NGO_PARTNER";
-  const isDriveHandover = contextType === "NGO_DRIVE_OFFER";
-  const canShowTip = !isNgo && !isDriveHandover;
+  const canShowTip = !isNgo;
 
   const effectiveTipAmount = useMemo(() => {
     if (customTip.trim()) {

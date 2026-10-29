@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 // The approved NGO's About / past-activity sections have their own tests.
-vi.mock("@/features/ngo-profile/NgoActivitiesManager", () => ({ NgoActivitiesManager: () => null }));
+vi.mock("@/features/ngo-profile/PastActivity", () => ({ PastActivitySection: () => null }));
 vi.mock("@/features/ngo-profile/NgoAboutSection", () => ({ NgoAboutSection: () => null }));
 vi.mock("@/lib/api", () => ({
   getProfile: vi.fn(),

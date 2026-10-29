@@ -1,5 +1,6 @@
 "use client";
 
+import { PastActivitySection } from "@/features/ngo-profile/PastActivity";
 import { useMemo, useRef, useState, useEffect } from "react";
 import { ArrowLeft, ArrowRight, Camera, ImagePlus, Upload, Loader2, AlertCircle, RefreshCw } from "lucide-react";
 import {
@@ -634,7 +635,17 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
           )}
         </div>
 
-        {/* 3. Community / Activity Photos Grid (Optional, up to 3) */}
+        {/* 3. Past activity (required): at least one activity with a photo, the same form as /profile.
+            Reviewed with the application; approval makes it live. */}
+        <PastActivitySection required onCountChange={(n) => onChange({ pastActivitiesWithPhoto: n })} />
+        {data.pastActivitiesWithPhoto === 0 && (
+          <p role="alert" data-testid="past-activity-required" className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+            Add at least one past activity with a photo to continue.
+          </p>
+        )}
+
+        {/* Older applications only: an activity photo the reviewer flagged is still fixed here. */}
+        {Object.keys(corrections ?? {}).some((k) => k.startsWith("activityPhotos.")) && (
         <div className="space-y-2">
           <div>
             <div className="flex items-center justify-between">
@@ -784,6 +795,7 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
             })}
           </div>
         </div>
+        )}
       </div>
 
       {/* Navigation */}

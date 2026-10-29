@@ -1,12 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { configure, render, screen, waitFor } from "@testing-library/react";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import { NgoLandingView } from "./NgoLandingView";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview } from "@/lib/api";
 
-// The hero renders a slideshow and motion; on a busy machine a test can pass 5 s.
-vi.setConfig({ testTimeout: 30000 });
-// The landing chunks load lazily; under full-suite load findBy* needs more than 1 s.
-configure({ asyncUtilTimeout: 8000 });
+// What made the approved-NGO tests slow under load, removed at the source:
+// - the stat counters animate with a 60 fps setInterval unless reduced motion is on (each tick a React update);
+// - both landing variants are lazy chunks, imported during the first test that renders them.
+vi.mock("framer-motion", async (orig) => ({ ...(await orig<typeof import("framer-motion")>()), useReducedMotion: () => true }));
+beforeAll(async () => {
+  await Promise.all([import("./PostApprovalLanding"), import("./PreApprovalLanding")]);
+});
 
 const auth = vi.hoisted(() => ({ user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" } as Record<string, unknown> | null }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: auth.user, isLoading: false }) }));
@@ -45,13 +48,13 @@ describe("NGO landing with server-backed status", () => {
   it("unlocks drive creation only after server approval", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
-    await waitFor(() => expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new"), { timeout: 5000 });
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new"));
   });
   it("keeps an approved NGO approved when the activity counters fail, showing them as —", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     vi.mocked(getNgoOverview).mockRejectedValue(new Error("Activity unavailable"));
     render(<NgoLandingView />);
-    await waitFor(() => expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new"), { timeout: 5000 });
+    await waitFor(() => expect(screen.getAllByRole("link", { name: /Start a Drive/i })[0]).toHaveAttribute("href", "/ngo/drives/new"));
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });

@@ -81,16 +81,13 @@ export function NgoHeroBanner({
   coverImageUrl?: string | null;
   orgName: string;
 }) {
-  const [coverFailed, setCoverFailed] = useState(false);
-  const [coverRejected, setCoverRejected] = useState(false);
+  // Which cover URL failed to load or was refused (not a banner shape). Kept per URL, so a new
+  // cover gets a fresh chance without a reset effect: that effect also ran on mount and, when
+  // React flushed it late, wiped out an error that had already fired.
+  const [failedCover, setFailedCover] = useState<string | null>(null);
   const [defaultFailed, setDefaultFailed] = useState(false);
 
-  useEffect(() => {
-    setCoverFailed(false);
-    setCoverRejected(false);
-  }, [coverImageUrl]);
-
-  const showCover = Boolean(coverImageUrl && !coverFailed && !coverRejected);
+  const showCover = Boolean(coverImageUrl && failedCover !== coverImageUrl);
 
   return (
     <div
@@ -106,10 +103,10 @@ export function NgoHeroBanner({
           onLoad={(e) => {
             const { naturalWidth, naturalHeight } = e.currentTarget;
             if (naturalWidth > 0 && naturalHeight > 0 && !isBannerDimensions(naturalWidth, naturalHeight)) {
-              setCoverRejected(true);
+              setFailedCover(coverImageUrl ?? null);
             }
           }}
-          onError={() => setCoverFailed(true)}
+          onError={() => setFailedCover(coverImageUrl ?? null)}
           data-testid="ngo-cover-image"
         />
       ) : !defaultFailed ? (

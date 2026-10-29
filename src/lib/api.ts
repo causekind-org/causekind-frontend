@@ -5228,6 +5228,10 @@ export async function resendNgoOtp(applicationId: string) {
 export type NgoApplicationStatusResponse = {
   applicationId: string;
   organizationName: string;
+  /** "Trust", "Society" or "Section 8 Company". */
+  legalStructure?: string | null;
+  /** Signed link to the logo, for /profile's About card. */
+  logoUrl?: string | null;
   organizationPhone?: string | null;
   /** About us; null on applications from before it existed. */
   aboutUs?: string | null;
@@ -5365,6 +5369,8 @@ export type NgoReviewDetail = {
   correctionHistory?: NgoCorrectionRound[] | null;
   resubmitted?: boolean | null; correctionRound?: number | null;
   previouslyFlaggedItems?: (NgoCorrectionItem & { label?: string })[] | null; previousOverallNote?: string | null;
+  /** The NGO's past activity, reviewed with the application (approval makes it live). */
+  pastActivities?: NgoActivity[] | null;
 };
 /** {@code q}: optional search (org name, reference, email, phone, PAN, registration no., representative). */
 export function adminGetNgoApplications(status: string, page = 0, q = "") {
@@ -5685,10 +5691,10 @@ export function updateNgoAboutUs(aboutUs: string) {
 export type NgoActivityStatus = "PENDING" | "APPROVED" | "REJECTED";
 export type NgoActivityMedia = { id: number; mediaType: "IMAGE" | "VIDEO"; url: string | null; status: string };
 export type NgoActivity = {
-  id: number; title: string; activityDate: string; summary?: string | null; description?: string | null; consentGiven?: boolean;
+  id: number; title: string; activityDate: string; description?: string | null; consentGiven?: boolean;
   status: NgoActivityStatus; rejectionReason?: string | null; sortOrder: number; media: NgoActivityMedia[];
 };
-export type NgoActivityInput = { title: string; activityDate: string; summary?: string | null; description?: string; consentGiven?: boolean };
+export type NgoActivityInput = { title: string; activityDate: string; description?: string; consentGiven?: boolean };
 
 export function getMyNgoActivities() {
   return request<NgoActivity[]>("/api/v1/ngo/activities");
@@ -5819,7 +5825,6 @@ export type PublicNgoActivity = {
   id: number;
   title: string;
   activityDate?: string | null;
-  summary?: string | null;
   description?: string | null;
   status?: string | null;
   coverPhotoUrl?: string | null;

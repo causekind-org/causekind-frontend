@@ -10,6 +10,9 @@ export type AboutNgo = {
   verified?: boolean;
   aboutUs?: string | null;
   slug?: string | null;
+  /** Shown on /profile's About card when known. */
+  logoUrl?: string | null;
+  legalStructure?: string | null;
 };
 
 /**

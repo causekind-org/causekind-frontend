@@ -1,5 +1,10 @@
 "use client";
 
+import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherSpecifyField";
+import { otherTextError } from "@/features/ngo-registration/ngoRegistrationModel";
+import { UploadedFilePreview } from "@/features/ngo-registration/components/UploadedFilePreview";
+import { FilePreviewDialog } from "@/components/FilePreviewDialog";
+import type { UploadedFile } from "@/features/ngo-registration/ngoRegistrationModel";
 import { fromStoredPhone } from "@/features/ngo-drives/phoneCountries";
 import React, { useEffect, useRef, useState, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -199,6 +204,11 @@ function splitGroups(value: unknown): string[] {
   return typeof value === "string" ? value.split(",").map(g => g.trim()).filter(Boolean) : [];
 }
 
+/** A drive photo in the shape the registration wizard's file card takes (shown from its preview link). */
+function drivePhotoFile(photo: { url: string; previewUrl?: string }, name: string): UploadedFile {
+  return { name, s3Url: photo.previewUrl || photo.url, mimeType: "image/jpeg" };
+}
+
 function NewNgoDriveForm() {
   const ui = useUiText();
   const df = useTranslations("driveFlow");
@@ -257,6 +267,8 @@ function NewNgoDriveForm() {
   // The drive cover (a real photo of the NGO's work), separate from the reference photos.
   const [coverPhoto, setCoverPhoto] = useState<DrivePhotoItem | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
+  // One preview popup for the drive's photos (cover, reference photos, changemaker), as in the registration wizard.
+  const [drivePreviewIndex, setDrivePreviewIndex] = useState<number | null>(null);
 
   // Step 1: Urgency & item requirements
   const [urgency, setUrgency] = useState<"NORMAL" | "HIGH" | "CRITICAL">("NORMAL");
@@ -329,6 +341,8 @@ function NewNgoDriveForm() {
 
   // Step 2: Beneficiaries
   const [beneficiaryGroups, setBeneficiaryGroups] = useState<string[]>([]);
+  // The NGO's own group when "Other" is picked: stored as typed ("Other" until something is typed).
+  const otherGroup = beneficiaryGroups.find((g) => g === "Other" || !BENEFICIARY_GROUPS.includes(g)) ?? null;
   const [beneficiaryCount, setBeneficiaryCount] = useState<number | "">("");
   const [beneficiaryDescription, setBeneficiaryDescription] = useState("");
 
@@ -779,6 +793,27 @@ const [altContact, setAltContact] = useState("");
     setChangemakerPhotoUrl(""); setChangemakerPhotoKey(""); setChangemakerPreviewUrl("");
   }
 
+  /** Replace one reference photo in place (the old file is deleted if nothing uses it). */
+  const replaceIndex = useRef<number | null>(null);
+  async function handleReplacePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    const idx = replaceIndex.current;
+    replaceIndex.current = null;
+    if (!file || idx == null) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} is larger than 5 MB.`); return; }
+    setPhotoUploading(true);
+    try {
+      const { url, previewUrl } = await uploadNgoDriveReferencePhoto(await compressImageIfNeeded(file));
+      discardPhoto(photos[idx]?.url);
+      setPhotos((prev) => prev.map((p, i) => (i === idx ? { url, previewUrl } : p)));
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to attach photo");
+    } finally {
+      setPhotoUploading(false);
+    }
+  }
+
   function handleMakeCover(index: number) {
     if (index <= 0 || index >= photos.length) return;
     setPhotos(prev => {
@@ -854,6 +889,7 @@ const [altContact, setAltContact] = useState("");
     }
     if (s === "beneficiaries-handover") {
       if (beneficiaryGroups.length === 0) e.beneficiaryGroups = "Choose at least one beneficiary group";
+      else if (otherGroup != null && otherTextError(otherGroup)) e.beneficiaryGroups = "Please specify the beneficiary group (2–60 letters)";
       if (beneficiaryCount === "" || beneficiaryCount < 1) e.beneficiaryCount = ui("Enter how many people will benefit (at least 1)");
       if (!beneficiaryDescription.trim() || beneficiaryDescription.length > 120) e.beneficiaryDescription = ui("About the beneficiaries must be 1-120 characters");
       { const err = neededByError(neededBy); if (err) e.neededBy = err; }
@@ -1161,6 +1197,12 @@ const [altContact, setAltContact] = useState("");
     el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "center" });
   }
 
+  const drivePreviewFiles = [
+    ...(coverPhoto ? [{ key: "cover", name: ui("Drive cover"), url: coverPhoto.previewUrl || coverPhoto.url, mimeType: "image/jpeg" }] : []),
+    ...photos.map((p, i) => ({ key: `ref-${i}`, name: `${ui("Reference photo")} ${i + 1}`, url: p.previewUrl || p.url, mimeType: "image/jpeg" })),
+    ...(changemakerPhotoUrl ? [{ key: "changemaker", name: ui("Changemaker"), url: changemakerPreviewUrl || changemakerPhotoUrl, mimeType: "image/jpeg" }] : []),
+  ];
+
   const minDateStr = istDatePlus(3);
   const maxDateStr = istDatePlus(90);
 
@@ -1400,12 +1442,15 @@ const [altContact, setAltContact] = useState("");
             <p className="text-xs font-semibold text-stone-700 dark:text-stone-200"><UiText>Drive cover photo</UiText> <span className="text-stone-400 font-normal"><UiText>(optional)</UiText></span></p>
             <p className="text-2xs text-stone-500 dark:text-stone-400"><UiText>A real photo of your work, such as volunteers with collected items or a past distribution. Landscape, no identifiable faces of children.</UiText></p>
             {coverPhoto ? (
-              <div className="relative aspect-[16/9] w-full max-w-xs overflow-hidden rounded-lg border border-slate-200 dark:border-zinc-700">
-                {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
-                <img src={coverPhoto.previewUrl || coverPhoto.url} alt={ui("Drive cover")} className="h-full w-full object-cover" />
-                <button type="button" onClick={handleRemoveCover} aria-label={ui("Remove cover photo")}
-                  className="absolute top-1 right-1 rounded-full bg-red-600 p-1 text-white shadow hover:bg-red-700"><X className="w-3 h-3" /></button>
-              </div>
+              <UploadedFilePreview
+                file={drivePhotoFile(coverPhoto, ui("Drive cover"))}
+                kind="photo"
+                label={ui("Drive cover")}
+                onPreview={() => setDrivePreviewIndex(0)}
+                onReplace={() => document.getElementById("cover-upload")?.click()}
+                onRemove={handleRemoveCover}
+                disabled={coverUploading}
+              />
             ) : (
               <button type="button" onClick={() => document.getElementById("cover-upload")?.click()} disabled={coverUploading}
                 className="flex aspect-[16/9] w-full max-w-xs flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 text-xs font-semibold text-slate-600 hover:border-ngo-600 dark:border-zinc-700 dark:text-slate-300">
@@ -1422,33 +1467,29 @@ const [altContact, setAltContact] = useState("");
             <p className="text-xs text-stone-500"><UiText>Show the need, not identifiable faces of children without consent.</UiText></p>
             {fieldErrors.photos && <p className="text-xs text-red-500">{fieldErrors.photos}</p>}
             
-            <div className="flex flex-wrap items-center gap-3 pt-1">
+            <div className="space-y-2 pt-1">
               {photos.map((photo, idx) => (
-                <div key={photo.url + idx} className="relative w-20 h-20 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0 group">
-                  <img src={photo.previewUrl || photo.url} alt={`Drive photo ${idx + 1}`} className="w-full h-full object-cover" />
+                <div key={photo.url + idx} className="space-y-1">
+                  <UploadedFilePreview
+                    file={drivePhotoFile(photo, `${ui("Reference photo")} ${idx + 1}`)}
+                    kind="photo"
+                    label={`${ui("Reference photo")} ${idx + 1}`}
+                    onPreview={() => setDrivePreviewIndex(drivePreviewFiles.findIndex((f) => f.key === `ref-${idx}`))}
+                    onReplace={() => { replaceIndex.current = idx; document.getElementById("photo-replace-upload")?.click(); }}
+                    onRemove={() => handleRemovePhoto(idx)}
+                    disabled={photoUploading}
+                  />
                   {idx === 0 ? (
-                    <span className="absolute top-1 left-1 bg-ngo-700 text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow">
-                      <UiText>Cover</UiText>
-                    </span>
+                    <span className="inline-block bg-ngo-700 text-white text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"><UiText>Cover</UiText></span>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => handleMakeCover(idx)}
-                      className="absolute bottom-1 left-1 right-1 bg-black/75 hover:bg-black text-white text-[9px] font-bold py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity text-center"
-                    >
+                    <button type="button" onClick={() => handleMakeCover(idx)} className="text-2xs font-bold text-ngo-700 hover:underline dark:text-ngo-300">
                       <UiText>Make cover</UiText>
                     </button>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto(idx)}
-                    aria-label={df("removePhotoN", { n: idx + 1 })}
-                    className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full shadow"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
                 </div>
               ))}
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
 
               {photos.length < 5 && (
                 <button
@@ -1469,6 +1510,7 @@ const [altContact, setAltContact] = useState("");
                 className="hidden"
                 onChange={handlePhotoUpload}
               />
+              <input id="photo-replace-upload" type="file" accept="image/jpeg, image/png, image/webp" className="hidden" onChange={handleReplacePhoto} />
             </div>
             <p className="text-2xs text-stone-400"><UiText>Show donors the kind of items you want, e.g. a sample blanket. Up to 5 images, 5 MB each.</UiText></p>
           </div>
@@ -1489,15 +1531,22 @@ const [altContact, setAltContact] = useState("");
             {({ id, describedBy }) => (
               <div id={id} data-field="beneficiaryGroups" aria-describedby={describedBy} className="flex flex-wrap gap-2">
                 {BENEFICIARY_GROUPS.map(g => {
-                  const active = beneficiaryGroups.includes(g);
+                  // "Other" is on while the list holds the NGO's own group (or "Other" before it is typed).
+                  const active = g === "Other" ? otherGroup != null : beneficiaryGroups.includes(g);
                   return (
                     <button key={g} type="button" aria-pressed={active} className={chipClass(active)}
-                      onClick={() => setBeneficiaryGroups(prev => active ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
+                      onClick={() => setBeneficiaryGroups(prev => g === "Other"
+                        ? (active ? prev.filter(x => x !== otherGroup) : [...prev, "Other"])
+                        : active ? prev.filter(x => x !== g) : [...prev, g])}>{g}</button>
                   );
                 })}
               </div>
             )}
           </WizardField>
+          {otherGroup != null && (
+            <OtherSpecifyField id="beneficiaryGroupOther" label={ui("Please specify the group")} value={otherGroup}
+              onChange={(text) => setBeneficiaryGroups(prev => prev.map(x => (x === otherGroup ? text.replace(/,/g, "") || "Other" : x)))} />
+          )}
   
           <WizardField label={ui("How many people will benefit?")} required error={fieldErrors.beneficiaryCount} hint={ui("People or families helped, not the number of items.")}>
             {({ id, describedBy, invalid }) => (
@@ -1550,7 +1599,7 @@ const [altContact, setAltContact] = useState("");
             </label>
             {fieldErrors.changemakerPhoto && <p className="text-xs text-red-500 mb-1">{fieldErrors.changemakerPhoto}</p>}
             <div className="flex items-center gap-4">
-              <button
+              {!changemakerPhotoUrl && <button
                 type="button"
                 onClick={() => document.getElementById("changemaker-photo-upload")?.click()}
                 disabled={changemakerUploading}
@@ -1558,7 +1607,7 @@ const [altContact, setAltContact] = useState("");
               >
                 <UploadCloud className="w-4 h-4" />
                 {changemakerUploading ? ui("Uploading…") : ui("Upload Photo")}
-              </button>
+              </button>}
               <input
                 id="changemaker-photo-upload"
                 type="file"
@@ -1567,17 +1616,16 @@ const [altContact, setAltContact] = useState("");
                 onChange={handleChangemakerPhotoUpload}
               />
               {changemakerPhotoUrl && (
-                <div className="relative w-12 h-12 rounded-lg border border-slate-200 dark:border-zinc-700 overflow-hidden shrink-0">
-                  <img src={changemakerPreviewUrl || changemakerPhotoUrl} alt={ui("Changemaker")} className="w-full h-full object-cover" />
-                  <button
-                    type="button"
-                    aria-label="Remove photo"
-                    onClick={handleRemoveChangemakerPhoto}
-                    className="absolute top-0 right-0 bg-red-500 text-white p-0.5 rounded-bl-lg"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
+                <UploadedFilePreview
+                  className="flex-1 min-w-0"
+                  file={drivePhotoFile({ url: changemakerPhotoUrl, previewUrl: changemakerPreviewUrl }, ui("Changemaker"))}
+                  kind="photo"
+                  label={ui("Changemaker")}
+                  onPreview={() => setDrivePreviewIndex(drivePreviewFiles.findIndex((f) => f.key === "changemaker"))}
+                  onReplace={() => document.getElementById("changemaker-photo-upload")?.click()}
+                  onRemove={handleRemoveChangemakerPhoto}
+                  disabled={changemakerUploading}
+                />
               )}
             </div>
             <p className="text-2xs text-stone-500 mt-1.5"><UiText>Max 5 MB. JPG, PNG, WEBP.</UiText></p>
@@ -1937,6 +1985,8 @@ const [altContact, setAltContact] = useState("");
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-[#faf8f5] dark:bg-zinc-950" style={{ "--ck-role-accent": "var(--color-ngo-600)", "--ck-role-hover": "var(--color-ngo-700)", "--ck-role-secondary": "var(--color-ngo-300)", "--ck-role-highlight": "white" } as React.CSSProperties}>
       {submittedPopup}
+      <FilePreviewDialog files={drivePreviewFiles} index={drivePreviewIndex != null && drivePreviewIndex >= 0 ? drivePreviewIndex : null}
+        onIndexChange={setDrivePreviewIndex} onClose={() => setDrivePreviewIndex(null)} />
       
       {/* ── LEFT SIDEBAR ── */}
       <aside className="hidden lg:flex lg:w-[280px] xl:w-[300px] shrink-0 flex-col relative overflow-hidden bg-ngo-950"

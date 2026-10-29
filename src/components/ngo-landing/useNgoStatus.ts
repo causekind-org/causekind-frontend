@@ -205,7 +205,10 @@ export function useNgoStatus(): NgoStatusData {
         (totals) => ({ totals, failed: false }),
         () => ({ totals: null as NgoOverview | null, failed: true }),
       );
-      const [application, draft, { totals, failed }] = await Promise.all([getMyNgoApplication(), getNgoDraft(), totalsRequest]);
+      // Only the application decides the status: a failed draft (progress display) or overview
+      // (counters) must not turn the dashboard into "Something went wrong".
+      const draftRequest = getNgoDraft().catch(() => null);
+      const [application, draft, { totals, failed }] = await Promise.all([getMyNgoApplication(), draftRequest, totalsRequest]);
       if (request !== sequence.current) return;
       setStatus(toNgoStatus(application?.status));
       setVerifiedAt(application?.verifiedAt ?? null);

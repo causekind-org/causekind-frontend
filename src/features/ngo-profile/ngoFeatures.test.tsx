@@ -10,6 +10,8 @@ const api = vi.hoisted(() => ({
   getPublicNgo: vi.fn(),
   getMyNgoActivities: vi.fn(),
   createNgoActivity: vi.fn(),
+  uploadNgoActivityPhoto: vi.fn(),
+  deleteNgoActivity: vi.fn(),
   getPendingNgoActivities: vi.fn(),
   rejectNgoActivity: vi.fn(),
   approveNgoActivity: vi.fn(),
@@ -31,7 +33,7 @@ import { aboutUsMissing, getNgoStillNeededItems, INITIAL_NGO_FORM } from "@/feat
 import { NgoAboutSection } from "./NgoAboutSection";
 import { AboutNgoContent } from "@/features/ngo-drives/components/AboutNgoCard";
 import { isBannerDimensions, NgoHeroBanner, NgoPublicPage } from "./NgoPublicPage";
-import { NgoActivitiesManager } from "./NgoActivitiesManager";
+import { PastActivityCard, PastActivityForm } from "./PastActivity";
 import { NgoActivityModerationPanel } from "@/app/admin/ngos/NgoActivityModerationPanel";
 import { MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers } from "@/components/matches/NgoAcceptedOffers";
 import MatchChatWindow from "@/components/MatchChatWindow";
@@ -239,35 +241,49 @@ describe("3. About the NGO card and public page", () => {
 });
 
 describe("4. past activity", () => {
-  it("validates required fields and saves without a consent checkbox", async () => {
-    api.getMyNgoActivities.mockResolvedValue([]);
-    render(<NgoActivitiesManager />);
-    fireEvent.click(await screen.findByRole("button", { name: /Add activity|Add first activity/ }));
-    fireEvent.change(screen.getByLabelText(/Activity name/i), { target: { value: "Meal drive" } });
-    fireEvent.change(screen.getByLabelText(/When did this happen/i), { target: { value: "2026-09-01" } });
-    // Description is required
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("Please describe what work you did.")).toBeInTheDocument();
+  it("the add form: required fields and a photo, no short summary or consent; saves then uploads the photo", async () => {
+    render(<PastActivityForm onSaved={() => {}} />);
+    expect(screen.queryByLabelText(/summary/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Short summary/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/Activity name/i), { target: { value: "Meal drive" } });
+    fireEvent.change(screen.getByLabelText(/Activity date/i), { target: { value: "2026-09-01" } });
+    fireEvent.change(screen.getByLabelText(/What work did you do/i), { target: { value: "Distributed 300 meals." } });
+    // A photo is required.
+    fireEvent.click(screen.getByRole("button", { name: "Save activity" }));
+    expect(await screen.findByText("Add at least one photo.")).toBeInTheDocument();
     expect(api.createNgoActivity).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText(/What work did you do/i), { target: { value: "Distributed 300 meals." } });
-    api.createNgoActivity.mockResolvedValue({
-      id: 5,
-      title: "Meal drive",
-      activityDate: "2026-09-01",
-      summary: null,
-      description: "Distributed 300 meals.",
-      status: "PENDING",
-      sortOrder: 0,
-      media: [],
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    await waitFor(() =>
-      expect(api.createNgoActivity).toHaveBeenCalledWith(
-        expect.objectContaining({ title: "Meal drive", activityDate: "2026-09-01", description: "Distributed 300 meals." })
-      )
-    );
+    const photo = new File(["x"], "meal.png", { type: "image/png" });
+    URL.createObjectURL = vi.fn(() => "blob:meal");
+    URL.revokeObjectURL = vi.fn();
+    fireEvent.change(screen.getByTestId("activity-photo-input"), { target: { files: [photo] } });
+    // The wizard's file card: thumbnail with Replace / Remove, no separate Preview button.
+    expect(await screen.findByRole("button", { name: /Replace/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^Preview$/ })).not.toBeInTheDocument();
+    const saved = { id: 5, title: "Meal drive", activityDate: "2026-09-01", description: "Distributed 300 meals.", status: "PENDING", sortOrder: 0, media: [] };
+    api.createNgoActivity.mockResolvedValue(saved);
+    api.uploadNgoActivityPhoto.mockResolvedValue({ ...saved, media: [{ id: 1, mediaType: "IMAGE", url: "https://s/1.webp", status: "APPROVED" }] });
+    fireEvent.click(screen.getByRole("button", { name: "Save activity" }));
+    await waitFor(() => expect(api.uploadNgoActivityPhoto).toHaveBeenCalledWith(5, expect.anything()));
+    expect(api.createNgoActivity).toHaveBeenCalledWith({ title: "Meal drive", activityDate: "2026-09-01", description: "Distributed 300 meals." });
+  });
+
+  it("a saved activity: labelled date, Under review while pending, no edit pen, photo opens the preview, delete asks first", async () => {
+    const onDelete = vi.fn();
+    render(<PastActivityCard onDelete={onDelete} activity={{ id: 5, title: "Meal drive", activityDate: "2026-08-27", description: "300 meals",
+      status: "PENDING", sortOrder: 0, media: [{ id: 1, mediaType: "IMAGE", url: "https://s/1.webp", status: "APPROVED" }] } as never} />);
+    expect(screen.getByText("Activity date: 27 Aug 2026")).toBeInTheDocument();
+    expect(screen.getByText("Under review")).toBeInTheDocument();
+    expect(screen.queryByText("Live")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /edit/i })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Delete Meal drive" }));
+    expect(onDelete).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Yes, delete" }));
+    expect(onDelete).toHaveBeenCalled();
+    // The photo opens the shared preview.
+    fireEvent.click(screen.getByRole("button", { name: /Open photo 1/ }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
   });
 
   it("the admin must give a reason to send an entry back", async () => {
