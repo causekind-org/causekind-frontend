@@ -6038,7 +6038,15 @@ export type FundraisingStatus =
 export type FundraisingCategory = "MEDICAL" | "EDUCATION" | "EMERGENCY_HOUSEHOLD" | "OTHER";
 export type FundraisingEvidenceType =
   | "ORGANISER_ID" | "ADDRESS_PROOF" | "MEDICAL_REPORT" | "TREATMENT_ESTIMATE" | "ENROLMENT_PROOF"
-  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "OTHER";
+  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "RELATIONSHIP_PROOF" | "COST_PROOF" | "OTHER";
+/**
+ * One document requirement from the server (FundraisingEvidenceRules): met by any one of anyOf.
+ * MISSING: needed now. NEXT_SUBMISSION: needed before resubmitting (sent under the old rule).
+ * HISTORICAL: closed application, shown for reference.
+ */
+export type FundraisingEvidenceRequirement = {
+  key: string; anyOf: FundraisingEvidenceType[]; state: "MET" | "MISSING" | "NEXT_SUBMISSION" | "HISTORICAL";
+};
 export type FundraisingScope = "THIS_NEED" | "ACCOUNT";
 
 export type FundraisingCostItem = { expense: string; amount: number | null; reference: string | null };
@@ -6064,12 +6072,14 @@ export type FundraisingApplication = {
   createdAt: string; updatedAt: string; missing: string[];
   /** Bank details for the payout; the account number comes back masked (last four only). */
   payout: FundraisingPayout;
+  /** Document requirements for this category and "for someone else" answer, in order. */
+  requiredEvidence: FundraisingEvidenceRequirement[];
 };
 export type FundraisingPayout = { holderName: string | null; accountLast4: string | null; ifsc: string | null; bankBranch: string | null; upi: string | null };
 export type FundraisingSave = Partial<Omit<FundraisingApplication,
   "id" | "reference" | "version" | "status" | "totalCosts" | "outstandingGap" | "evidence" | "infoRequests" |
   "decisionScope" | "decisionConditions" | "decisionReason" | "resubmissionAllowed" | "decidedAt" | "submittedAt" |
-  "createdAt" | "updatedAt" | "missing" | "payout">> & {
+  "createdAt" | "updatedAt" | "missing" | "payout" | "requiredEvidence">> & {
   payoutHolderName?: string; payoutAccountNumber?: string; payoutIfsc?: string; payoutBankBranch?: string; payoutUpi?: string;
   /** Amount fields to empty (a null amount alone means "unchanged" on the server). */
   clear?: string[];
