@@ -3919,7 +3919,8 @@
     "type_the_account_number_again_11c1fac6": "खाता नंबर दोबारा लिखें",
     "upi_id_if_you_have_0b25d1b9": "UPI ID (अगर है)",
     "where_the_money_raised_will_052ce249": "जुटाया गया पैसा यहाँ भेजा जाएगा। ये विवरण केवल हमारी टीम देख सकती है।",
-    "write_it_exactly_as_the_8622554b": "ठीक वैसे ही लिखें जैसा बैंक में है।"
+    "write_it_exactly_as_the_8622554b": "ठीक वैसे ही लिखें जैसा बैंक में है।",
+    "how_much_money_you_want_d62e4219": "इस फ़ंडरेज़र से आपको कितना पैसा चाहिए (₹)"
   },
   "fundraisersList": {
     "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",

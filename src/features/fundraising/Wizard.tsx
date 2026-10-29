@@ -354,7 +354,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
               onChange={(e) => set({ urgency: e.target.value })} />
             <p className={s.hint}><UiText>For example, the day of the operation, or the last day to pay the fees.</UiText></p></div>
           {/* The amount comes first (owner, 2026-10-26); the breakdown below explains it. */}
-          <div><label className={s.lbl} htmlFor="ask"><UiText>How much money do you need? (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
+          <div><label className={s.lbl} htmlFor="ask"><UiText>How much money you want from this fundraising (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
         </div>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">

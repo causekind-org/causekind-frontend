@@ -3919,7 +3919,8 @@
     "type_the_account_number_again_11c1fac6": "Escribe de nuevo el número de cuenta",
     "upi_id_if_you_have_0b25d1b9": "ID de UPI (si tienes uno)",
     "where_the_money_raised_will_052ce249": "Aquí se enviará el dinero recaudado. Solo nuestro equipo puede ver estos datos.",
-    "write_it_exactly_as_the_8622554b": "Escríbelo exactamente como lo tiene el banco."
+    "write_it_exactly_as_the_8622554b": "Escríbelo exactamente como lo tiene el banco.",
+    "how_much_money_you_want_d62e4219": "Cuánto dinero quieres conseguir con esta recaudación (₹)"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
