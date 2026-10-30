@@ -71,8 +71,10 @@ export function pageGaps(page: FundraisingCampaign | null, labels: { title: stri
   return gaps;
 }
 
-export function PageStep({ step, draft, nav, neededBy = null }: {
+export function PageStep({ step, draft, nav, neededBy = null, showConsentError = false }: {
   step: 4 | 5;
+  /** Continue was pressed with a cover photo but no permission ticked. */
+  showConsentError?: boolean;
   draft: ReturnType<typeof usePageDraft>;
   /** Step 3's "by which date" — shown read-only as the page's last day. */
   neededBy?: string | null;
@@ -97,7 +99,7 @@ export function PageStep({ step, draft, nav, neededBy = null }: {
           <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void flush()}><UiText>Try again</UiText></button>
         </div>
       )}
-      {step === 4 && <Basics c={page} set={set} setC={setPage} nav={nav} inApplication neededBy={neededBy} />}
+      {step === 4 && <Basics c={page} set={set} setC={setPage} nav={nav} inApplication neededBy={neededBy} showConsentError={showConsentError} />}
       {step === 5 && <Story c={page} set={set} nav={nav} />}
     </>
   );

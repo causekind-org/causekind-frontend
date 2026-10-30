@@ -15,7 +15,7 @@ import { FieldInfo } from "./FieldInfo";
 import { PageStep, pageGaps, usePageDraft } from "./PageSteps";
 import { DisclosureNotice, DocumentConsent } from "./DocumentConsent";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { SetFn as CampaignSetFn } from "./CampaignWizard";
+import { coverConsentMissing, type SetFn as CampaignSetFn } from "./CampaignWizard";
 import type { FundraisingCampaign } from "@/lib/api";
 import s from "./fundraising.module.css";
 
@@ -62,6 +62,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
   const router = useRouter();
   const [app, setApp] = useState(initial);
   const [step, setStep] = useState(0);
+  const [consentTried, setConsentTried] = useState(false);
   const [save, setSave] = useState<SaveState>("saved");
   const pending = useRef<FundraisingSave>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,7 +145,12 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         {step === 1 && <WhoNeedsHelp app={app} set={set} onBack={() => go(0)} onNext={() => go(2)} />}
         {step === 2 && <TheNeed app={app} set={set} onEvidence={(next) => setApp((cur) => ({ ...cur, evidence: next.evidence, requiredEvidence: next.requiredEvidence }))}onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
-        {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
+        {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} showConsentError={consentTried}
+          nav={<Nav onBack={() => go(step - 1)} onNext={() => {
+            // The cover photo's permission box must be ticked before leaving "Your page" (owner, 2026-10-30).
+            if (step === 4 && coverConsentMissing(draft.page)) { setConsentTried(true); document.getElementById("coverConsent")?.focus(); return; }
+            void go(step + 1);
+          }} />} />}
         {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
         {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} setPage={draft.set} reloadPage={draft.reload} />}
       </main>

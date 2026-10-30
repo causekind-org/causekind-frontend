@@ -3964,7 +3964,8 @@
     "employee_e_g_domestic_worker_ecac5fde": "Empleado/a (p. ej., trabajador/a doméstico/a, chófer)",
     "friend_3df32aad": "Amigo/a",
     "neighbour_2973d788": "Vecino/a",
-    "proof_you_know_them_8e1746c9": "Prueba de que la conoces"
+    "proof_you_know_them_8e1746c9": "Prueba de que la conoces",
+    "tick_this_box_to_continue_c50e0b27": "Marca esta casilla para continuar."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
