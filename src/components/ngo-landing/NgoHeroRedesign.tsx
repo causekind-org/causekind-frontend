@@ -427,12 +427,12 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                   y: shouldReduceMotion ? 0 : card1ParallaxY,
                   x: shouldReduceMotion ? 0 : mouseTilt.x * 0.9,
                 }}
-                className="absolute top-[30px] left-0 z-10 w-[265px] h-[380px]"
+                className="absolute top-[40px] left-0 z-10 w-[272px] h-[340px]"
               >
                 <div className="ngo-cluster-float-1 -rotate-[4deg] w-full h-full rounded-[28px] border border-white/25 shadow-[0_24px_50px_-10px_rgba(0,0,0,0.65)] overflow-hidden relative group">
                   <Image
-                    src="/images/ngo-hero/col-b-1-school-supplies.webp"
-                    alt="Indian students in classroom receiving notebooks and learning kits"
+                    src="/images/ngo-landing/ngo-school-supplies-girl-portrait.webp"
+                    alt="A volunteer handing notebooks and a pencil box to a smiling schoolgirl outside a village school"
                     fill
                     sizes="(max-width: 860px) 100vw, 270px"
                     priority
@@ -441,7 +441,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                   <div className="absolute bottom-3.5 left-3.5 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[12px] font-medium shadow-md pointer-events-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
-                    <span>Classroom supplies</span>
+                    <span>School kit handover</span>
                   </div>
                 </div>
               </motion.div>
@@ -455,12 +455,12 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                   y: shouldReduceMotion ? 0 : card2ParallaxY,
                   x: shouldReduceMotion ? 0 : mouseTilt.x * -0.8,
                 }}
-                className="absolute top-[18px] right-0 z-20 w-[245px] h-[190px]"
+                className="absolute top-[18px] right-0 z-20 w-[246px] h-[164px]"
               >
                 <div className="ngo-cluster-float-2 rotate-[4deg] w-full h-full rounded-[24px] border border-white/25 shadow-[0_20px_45px_-8px_rgba(0,0,0,0.55)] overflow-hidden relative group">
                   <Image
-                    src="/images/ngo-hero/col-a-1-blankets-pune.webp"
-                    alt="Distribution of warm winter blankets and clothing to beneficiaries"
+                    src="/images/ngo-landing/ngo-winter-blankets-elderly-landscape.webp"
+                    alt="Volunteers giving warm blankets to elderly villagers seated on charpais"
                     fill
                     sizes="(max-width: 860px) 50vw, 250px"
                     loading="lazy"
@@ -469,7 +469,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                   <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[12px] font-medium shadow-md pointer-events-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D9A441]" />
-                    <span>Winter clothing</span>
+                    <span>Blankets for elders</span>
                   </div>
                 </div>
               </motion.div>
@@ -483,12 +483,12 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                   y: shouldReduceMotion ? 0 : card3ParallaxY,
                   x: shouldReduceMotion ? 0 : mouseTilt.x * 0.7,
                 }}
-                className="absolute top-[222px] right-[10px] z-20 w-[225px] h-[200px]"
+                className="absolute top-[212px] right-[10px] z-20 w-[234px] h-[156px]"
               >
                 <div className="ngo-cluster-float-3 -rotate-[2deg] w-full h-full rounded-[24px] border border-white/25 shadow-[0_20px_40px_-8px_rgba(0,0,0,0.55)] overflow-hidden relative group">
                   <Image
-                    src="/images/ngo-hero/col-a-3-ration-drive.webp"
-                    alt="Essential food and ration kits packed for distribution"
+                    src="/images/ngo-landing/ngo-ration-distribution-landscape.webp"
+                    alt="Volunteers handing a grain sack and ration box to villagers waiting in line"
                     fill
                     sizes="(max-width: 860px) 50vw, 230px"
                     loading="lazy"
@@ -497,7 +497,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
                   <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium shadow-md pointer-events-none">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
-                    <span>Food and ration kits</span>
+                    <span>Ration distribution</span>
                   </div>
                 </div>
               </motion.div>
@@ -518,57 +518,21 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             {/* MOBILE PHOTO GRID (< 860px / lg)                               */}
             {/* ------------------------------------------------------------- */}
             <div className="block lg:hidden w-full max-w-[480px] mx-auto mt-8">
-              <div className="grid grid-cols-2 gap-3 h-[340px] w-full overflow-hidden relative z-10 ngo-cluster-mobile-float">
-                {/* Large card spanning 2 columns */}
-                <div className="col-span-2 h-[195px] relative rounded-[24px] overflow-hidden border border-white/25 shadow-lg group">
-                  <Image
-                    src="/images/ngo-hero/col-b-1-school-supplies.webp"
-                    alt="Indian students in classroom receiving notebooks and learning kits"
-                    fill
-                    sizes="(max-width: 860px) 100vw, 480px"
-                    priority
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[12px] font-medium shadow-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
-                    <span>Classroom supplies</span>
+              <div className="grid grid-cols-2 gap-3 w-full relative z-10 ngo-cluster-mobile-float">
+                {[
+                  { src: "ngo-school-supplies-girl-portrait.webp", alt: "A volunteer handing notebooks and a pencil box to a smiling schoolgirl", caption: "School kit handover", ratio: "aspect-[4/5]" },
+                  { src: "ngo-children-school-bags-portrait.webp", alt: "Village children smiling with their new school bags", caption: "New school bags", ratio: "aspect-[4/5]" },
+                  { src: "ngo-ration-distribution-landscape.webp", alt: "Volunteers handing a grain sack and ration box to villagers", caption: "Ration distribution", ratio: "col-span-2 aspect-[3/2]" },
+                ].map((p, i) => (
+                  <div key={p.src} className={`${p.ratio} relative rounded-[20px] overflow-hidden border border-white/25 shadow-lg`}>
+                    <Image src={`/images/ngo-landing/${p.src}`} alt={p.alt} fill sizes="(max-width: 860px) 50vw, 240px" priority={i === 0} loading={i === 0 ? undefined : "lazy"} className="object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium shadow-md">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
+                      <span>{p.caption}</span>
+                    </div>
                   </div>
-                </div>
-
-                {/* Small Card 1 (Winter clothing) */}
-                <div className="col-span-1 h-[130px] relative rounded-[20px] overflow-hidden border border-white/25 shadow-lg group">
-                  <Image
-                    src="/images/ngo-hero/col-a-1-blankets-pune.webp"
-                    alt="Distribution of warm winter blankets and clothing"
-                    fill
-                    sizes="(max-width: 860px) 50vw, 240px"
-                    loading="lazy"
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium shadow-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#D9A441]" />
-                    <span>Winter clothing</span>
-                  </div>
-                </div>
-
-                {/* Small Card 2 (Food and ration kits) */}
-                <div className="col-span-1 h-[130px] relative rounded-[20px] overflow-hidden border border-white/25 shadow-lg group">
-                  <Image
-                    src="/images/ngo-hero/col-a-3-ration-drive.webp"
-                    alt="Essential food and ration kits packed for distribution"
-                    fill
-                    sizes="(max-width: 860px) 50vw, 240px"
-                    loading="lazy"
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium shadow-md">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
-                    <span>Food and ration kits</span>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 

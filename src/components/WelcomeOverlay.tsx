@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePathname, useRouter } from "next/navigation";
 import { getMyProfile } from "@/lib/api";
 import { isNgoRole } from "@/lib/isNgoRole";
+import { NgoWelcomeView } from "@/components/ngo-landing/NgoWelcomeView";
 
 type OverlayConfig = {
   icon: React.ReactNode;
@@ -382,7 +383,7 @@ export function WelcomeOverlay() {
     setExiting(false);
     setShow(true);
     // DONOR and DONEE get the full-screen welcome with a button — no auto-dismiss.
-    if (user.role !== "DONOR" && user.role !== "DONEE") {
+    if (user.role !== "DONOR" && user.role !== "DONEE" && user.role !== "NGO_PARTNER") {
       const delay = user.role === "SUPER_ADMIN" ? 4200 : 3500;
       const t = setTimeout(() => dismiss(), delay);
       return () => clearTimeout(t);
@@ -403,6 +404,7 @@ export function WelcomeOverlay() {
 
   if (user?.role === "DONOR") return <DonorWelcomeView exiting={exiting} dismiss={dismiss} />;
   if (user?.role === "DONEE") return <DonorWelcomeView exiting={exiting} dismiss={dismiss} variant="donee" />;
+  if (user?.role === "NGO_PARTNER") return <NgoWelcomeView exiting={exiting} dismiss={dismiss} />;
   if (user?.role === "SUPER_ADMIN") return <SuperAdminWelcomeView exiting={exiting} dismiss={dismiss} />;
   if (user?.role === "ADMIN") return null;
 

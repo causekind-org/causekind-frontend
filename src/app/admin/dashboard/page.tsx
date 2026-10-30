@@ -14,6 +14,7 @@ import {
   adminGetMyPermissions,
   adminGetNgoApplications,
   adminGetNgoDrives,
+  adminGetNgoProfileChangesCount,
   adminGetPendingNgoDriveOffers,
   adminGetNgoDriveProofs,
   adminListIssues,
@@ -279,12 +280,16 @@ export default function AdminDashboardPage() {
   const [driveOffersPending, setDriveOffersPending] = useState(0);
   const [driveProofsPending, setDriveProofsPending] = useState(0);
   const [activitiesPending, setActivitiesPending] = useState(0);
+  const [profileChangesPending, setProfileChangesPending] = useState(0);
   const loadDriveCounts = useCallback(() => {
     adminGetNgoDrives("PENDING_REVIEW").then(r => setDrivesPending(r.length)).catch(() => setDrivesPending(0));
     adminGetPendingNgoDriveOffers().then(r => setDriveOffersPending(r.length)).catch(() => setDriveOffersPending(0));
     adminGetNgoDriveProofs().then(r => setDriveProofsPending(r.length)).catch(() => setDriveProofsPending(0));
     getPendingNgoActivities().then(r => setActivitiesPending(r.length)).catch(() => setActivitiesPending(0));
+    adminGetNgoProfileChangesCount().then(r => setProfileChangesPending(r.pending)).catch(() => setProfileChangesPending(0));
   }, []);
+  // A new profile change request or a decision updates the badge live.
+  useEntityUpdates(["NGO_PROFILE_CHANGE"], () => { loadDriveCounts(); });
   useEffect(() => { loadDriveCounts(); }, [loadDriveCounts]);
 
   // Issues: open count for the sidebar badge, and the issue a deep link asked for.
@@ -609,7 +614,7 @@ export default function AdminDashboardPage() {
     { key: "drive-offers" as TabKey, label: "Drive Offers", count: driveOffersPending, icon: Gift, color: "#e05f9b" },
     { key: "drive-proofs" as TabKey, label: "Distribution Proofs", count: driveProofsPending, icon: Package, color: "#c98a1b" },
     { key: "ngo-activities" as TabKey, label: "Past activity", count: activitiesPending, icon: Camera, color: "#1e6b4f" },
-    { key: "ngo-profile-changes" as TabKey, label: "Profile changes", count: 0, icon: Building2, color: "#2f6f8f" },
+    { key: "ngo-profile-changes" as TabKey, label: "Profile changes", count: profileChangesPending, icon: Building2, color: "#2f6f8f" },
   ].filter(t => canSeeTab(t.key));
   const ngoTotal = NGO_TABS.reduce((sum, t) => sum + t.count, 0);
   const ngoGroupOpen = ngoExpanded || NGO_TAB_KEYS.includes(tab);
@@ -651,7 +656,7 @@ export default function AdminDashboardPage() {
     : tab === "drive-offers"
     ? `${driveOffersPending} donor offer${driveOffersPending !== 1 ? "s" : ""} to drives in handover · monitor only, the NGO accepts offers`
     : tab === "ngo-profile-changes"
-    ? "NGO requests to change verified details · approving updates the public page"
+    ? `${profileChangesPending} profile change${profileChangesPending !== 1 ? "s" : ""} awaiting review · approving updates the public page`
     : tab === "ngo-activities"
     ? `${activitiesPending} past-activit${activitiesPending !== 1 ? "ies" : "y"} awaiting review · approval shows it on the NGO's public page`
     : tab === "drive-proofs"
@@ -1011,7 +1016,7 @@ export default function AdminDashboardPage() {
                  creates the NGO profile, which unlocks requests and drives. ── */}
           {tab === "ngo-applications" && <NgoReviewPanel initialApplicationId={ngoDeepLink} onDecision={loadNgoCount} />}
           {tab === "ngo-activities" && <NgoActivityModerationPanel onChange={loadDriveCounts} />}
-          {tab === "ngo-profile-changes" && <NgoProfileChangesPanel />}
+          {tab === "ngo-profile-changes" && <NgoProfileChangesPanel onChange={loadDriveCounts} />}
 
           {/* ── NGO DRIVE QUEUES ── */}
           {tab === "ngo-drives" && <NgoDriveReviewPanel onChange={loadDriveCounts} />}

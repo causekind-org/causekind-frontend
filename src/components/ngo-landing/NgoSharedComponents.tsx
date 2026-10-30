@@ -358,12 +358,21 @@ export interface NgoFinalCtaBandProps {
     label: string;
     href: string;
   };
+  /** Two portrait (4:5) photos; the cards use the same ratio so nothing is cropped. */
+  photos?: [CtaPhoto, CtaPhoto];
 }
+
+export type CtaPhoto = { src: string; alt: string };
+const DEFAULT_CTA_PHOTOS: [CtaPhoto, CtaPhoto] = [
+  { src: "/images/ngo-landing/ngo-children-school-bags-portrait.webp", alt: "Village children smiling with their new school bags" },
+  { src: "/images/ngo-landing/ngo-clothes-toys-doorstep-portrait.webp", alt: "A volunteer handing a box of folded clothes and a teddy bear to a woman at her door" },
+];
 
 export function NgoFinalCtaBand({
   headline,
   primaryButton,
   secondaryButton,
+  photos = DEFAULT_CTA_PHOTOS,
 }: NgoFinalCtaBandProps) {
   const bandRef = useRef<HTMLElement>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -397,12 +406,11 @@ export function NgoFinalCtaBand({
               className="ngo-cta-card ngo-cta-card-left"
             >
               <Image
-                src="/images/ngo-hero/col-a-1-blankets-pune.webp"
-                alt="Volunteer handing over care package"
+                src={photos[0].src}
+                alt={photos[0].alt}
                 fill
                 sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
                 className="object-cover"
-                style={{ objectPosition: "50% 30%" }}
                 loading="lazy"
               />
               <div className="ngo-cta-card-gradient" />
@@ -416,12 +424,11 @@ export function NgoFinalCtaBand({
               className="ngo-cta-card ngo-cta-card-right"
             >
               <Image
-                src="/images/ngo-hero/col-a-3-ration-drive.webp"
-                alt="Children supported through community drives"
+                src={photos[1].src}
+                alt={photos[1].alt}
                 fill
                 sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
                 className="object-cover"
-                style={{ objectPosition: "50% 35%" }}
                 loading="lazy"
               />
               <div className="ngo-cta-card-gradient" />
@@ -473,12 +480,11 @@ export function NgoFinalCtaBand({
             <div className="ngo-cta-mobile-row">
               <div className="ngo-cta-mobile-card">
                 <Image
-                  src="/images/ngo-hero/col-a-1-blankets-pune.webp"
-                  alt="Volunteer handing over care package"
+                  src={photos[0].src}
+                  alt={photos[0].alt}
                   fill
                   sizes="(max-width: 1000px) 45vw, 190px"
                   className="object-cover"
-                  style={{ objectPosition: "50% 30%" }}
                   loading="lazy"
                 />
                 <div className="ngo-cta-card-gradient" />
@@ -486,12 +492,11 @@ export function NgoFinalCtaBand({
 
               <div className="ngo-cta-mobile-card">
                 <Image
-                  src="/images/ngo-hero/col-a-3-ration-drive.webp"
-                  alt="Children supported through community drives"
+                  src={photos[1].src}
+                  alt={photos[1].alt}
                   fill
                   sizes="(max-width: 1000px) 45vw, 190px"
                   className="object-cover"
-                  style={{ objectPosition: "50% 35%" }}
                   loading="lazy"
                 />
                 <div className="ngo-cta-card-gradient" />

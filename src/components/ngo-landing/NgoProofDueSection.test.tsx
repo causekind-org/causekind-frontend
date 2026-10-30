@@ -23,9 +23,13 @@ describe("NGO landing: Proof due (from useNgoStatus overview)", () => {
     expect(screen.getByRole("link", { name: /See all/ })).toHaveAttribute("href", "/dashboard/ngo?tab=activity&filter=proof");
   });
 
-  it("hides when nothing is due or on error", () => {
-    expect(render(<NgoProofDueSection status={st()} />).container).toBeEmptyDOMElement();
-    expect(render(<NgoProofDueSection status={st({ error: "x", overview: null })} />).container).toBeEmptyDOMElement();
-    expect(render(<NgoProofDueSection status={st({ statsUnavailable: true })} />).container).toBeEmptyDOMElement();
+  it("is always shown: All caught up when nothing is due, a note on error", () => {
+    const { unmount } = render(<NgoProofDueSection status={st({ overview: { proofDueDrives: [d(1, { quantityReceived: 0 })] } })} />);
+    expect(screen.getByTestId("ngo-proof-due-empty")).toHaveTextContent("All caught up: no proof due");
+    expect(screen.queryByTestId("ngo-proof-due-card")).toBeNull();
+    unmount();
+    render(<NgoProofDueSection status={st({ error: "x", overview: null })} />);
+    expect(screen.getByTestId("ngo-proof-due")).toBeInTheDocument();
+    expect(screen.getByTestId("ngo-proof-due-unavailable")).toBeInTheDocument();
   });
 });

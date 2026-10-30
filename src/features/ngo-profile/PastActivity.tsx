@@ -4,11 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Plus, Trash2, UploadCloud } from "lucide-react";
 import {
   createNgoActivity, deleteNgoActivity, getMyNgoActivities, uploadNgoActivityPhoto,
-  type NgoActivity,
+  type NgoActivity, type PublicNgoActivity,
 } from "@/lib/api";
+import { ActivityDetailDialog } from "@/features/ngo-drives/components/PastWorkSection";
 import { UploadedFilePreview } from "@/features/ngo-registration/components/UploadedFilePreview";
 import { FilePreviewDialog } from "@/components/FilePreviewDialog";
 import { compressImageIfNeeded } from "@/lib/imageCompression";
+import { ActivityCarousel } from "./ActivityCarousel";
 
 /** Up to 3 photos per activity (the backend's NgoActivityService.MAX_PHOTOS). */
 export const MAX_ACTIVITY_PHOTOS = 3;
@@ -128,6 +130,7 @@ export function PastActivityForm({ onSaved, onCancel }: { onSaved: (a: NgoActivi
 export function PastActivityCard({ activity, onDelete }: { activity: NgoActivity; onDelete?: (a: NgoActivity) => void }) {
   const [preview, setPreview] = useState<number | null>(null);
   const [confirm, setConfirm] = useState(false);
+  const [detail, setDetail] = useState(false);
   const photos = activity.media.filter((m) => m.mediaType === "IMAGE" && m.url);
   return (
     <article data-testid="past-activity-card" className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
@@ -149,7 +152,13 @@ export function PastActivityCard({ activity, onDelete }: { activity: NgoActivity
         )}
       </div>
       <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">Activity date: {formatActivityDate(activity.activityDate)}</p>
-      {activity.description && <p className="mt-2 whitespace-pre-wrap text-sm text-stone-700 dark:text-stone-300">{activity.description}</p>}
+      {activity.description && <p className="mt-2 line-clamp-4 whitespace-pre-wrap break-words text-sm text-stone-700 dark:text-stone-300">{activity.description}</p>}
+      {activity.description && (activity.description.length > 220 || activity.description.split("\n").length > 4) && (
+        <button type="button" onClick={() => setDetail(true)} aria-haspopup="dialog" aria-label={`Read more about ${activity.title}`}
+          className="mt-1 min-h-11 text-sm font-bold text-emerald-700 hover:underline dark:text-emerald-400">Read more</button>
+      )}
+      {detail && <ActivityDetailDialog a={activity as unknown as PublicNgoActivity} photos={photos.map((m) => m.url!)}
+        onClose={() => setDetail(false)} onPhoto={(i) => { setDetail(false); setPreview(i); }} />}
       {activity.status === "REJECTED" && activity.rejectionReason && (
         <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">Not approved: {activity.rejectionReason}</p>
       )}
@@ -180,8 +189,10 @@ export function PastActivityCard({ activity, onDelete }: { activity: NgoActivity
  * registration wizard (where at least one activity with a photo is required) and on /profile.
  * {@code onCountChange} reports how many activities have a photo.
  */
-export function PastActivitySection({ onCountChange, required = false, headingClassName }: {
+export function PastActivitySection({ onCountChange, required = false, headingClassName, carousel = false }: {
   onCountChange?: (withPhoto: number) => void; required?: boolean; headingClassName?: string;
+  /** /profile: the same carousel as the public NGO page (the wizard keeps the grid). */
+  carousel?: boolean;
 }) {
   const [items, setItems] = useState<NgoActivity[] | null>(null);
   const [adding, setAdding] = useState(false);
@@ -227,6 +238,10 @@ export function PastActivitySection({ onCountChange, required = false, headingCl
         <Loader2 className="h-5 w-5 animate-spin text-stone-400" aria-label="Loading" />
       ) : items.length === 0 && !adding ? (
         <p className="text-xs text-stone-500">No past activity added yet.</p>
+      ) : carousel ? (
+        <ActivityCarousel label="Past activity">
+          {items.map((a) => <PastActivityCard key={a.id} activity={a} onDelete={remove} />)}
+        </ActivityCarousel>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {items.map((a) => <PastActivityCard key={a.id} activity={a} onDelete={remove} />)}

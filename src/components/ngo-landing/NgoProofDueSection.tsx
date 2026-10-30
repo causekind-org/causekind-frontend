@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Camera } from "lucide-react";
+import { ArrowRight, Camera, CheckCircle2 } from "lucide-react";
 import type { NgoOverview } from "@/lib/api";
 import { proofDeadline } from "@/features/ngo-drives/components/manage/ProofDuePanel";
 import { activityHref } from "@/features/ngo-drives/components/manage/driveActivity";
@@ -13,13 +13,13 @@ const LIMIT = 3;
 /**
  * Approved-state landing section: drives waiting for distribution proof. Same data source as
  * the navbar locks (useNgoStatus -> /ngo/overview.proofDueDrives; the backend applies
- * COLLECTION_COMPLETE/CLOSED, received > 0, no proof). Skeleton while loading; hidden on
- * error or when nothing is due.
+ * COLLECTION_COMPLETE/CLOSED, received > 0, no proof). Always shown: skeleton while loading,
+ * an "All caught up" card when nothing is due, a short note when the counts could not load.
  */
 export function NgoProofDueSection({ status }: { status: Pick<NgoStatusData, "isLoading" | "error" | "overview" | "statsUnavailable"> }) {
   const loading = status.isLoading;
   const drives: ProofDueDrive[] | null = loading ? null : (status.overview?.proofDueDrives ?? []).filter((d) => (d.quantityReceived ?? 0) > 0);
-  if (!loading && (status.error || status.statsUnavailable || !status.overview || !drives || drives.length === 0)) return null;
+  const failed = !loading && (!!status.error || status.statsUnavailable || !status.overview);
 
   return (
     <section className="ngo-section ngo-band-cream pt-0" aria-labelledby="ngo-proof-due-heading" data-testid="ngo-proof-due">
@@ -35,7 +35,17 @@ export function NgoProofDueSection({ status }: { status: Pick<NgoStatusData, "is
             </Link>
           )}
         </div>
-        {!drives ? (
+        {failed ? (
+          <p className="ngo-card text-sm text-stone-600 dark:text-stone-300" data-testid="ngo-proof-due-unavailable">We couldn&apos;t check proof due right now. Please refresh in a moment.</p>
+        ) : drives && drives.length === 0 ? (
+          <div className="ngo-card flex flex-row items-center gap-4" data-testid="ngo-proof-due-empty">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#2F8F5B]/15 text-[#2F8F5B]"><CheckCircle2 className="h-6 w-6" aria-hidden /></span>
+            <div>
+              <h3 className="ngo-heading text-xl text-stone-900 dark:text-stone-100">All caught up: no proof due</h3>
+              <p className="text-sm text-stone-600 dark:text-stone-300">When a drive receives items, it shows here until you share distribution proof.</p>
+            </div>
+          </div>
+        ) : !drives ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3" data-testid="ngo-proof-due-skeleton" aria-busy="true">
             {[0, 1, 2].map((i) => <div key={i} className="ngo-card h-40 animate-pulse bg-stone-100 dark:bg-white/5" />)}
           </div>

@@ -2,6 +2,7 @@
 
 import { NgoAboutSection } from "@/features/ngo-profile/NgoAboutSection";
 import { PastActivitySection } from "@/features/ngo-profile/PastActivity";
+import { NgoDocumentsSection } from "@/features/ngo-profile/NgoDocumentsSection";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
@@ -938,8 +939,9 @@ export function NgoProfileView() {
               logoUrl: application.logoUrl,
               legalStructure: application.legalStructure,
             }} />
+            <NgoDocumentsSection />
             <div className="rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0">
-              <PastActivitySection headingClassName="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight" />
+              <PastActivitySection carousel headingClassName="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight" />
             </div>
           </div>
         )}

@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import { triggerNgoLockedToast, type NgoStatusData } from "./useNgoStatus";
 import { NgoHeroRedesign } from "./NgoHeroRedesign";
 import { NgoProofDueSection } from "./NgoProofDueSection";
+import { NgoSuccessStories } from "./NgoSuccessStories";
 import {
   NgoCard,
   NgoSectionHeader,
@@ -255,7 +256,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
-      {/* PROOF DUE (hidden when nothing is due or on error) */}
+      {/* PROOF DUE (always shown: due drives, or "All caught up") */}
       <NgoProofDueSection status={status} />
 
       {/* 3. CREATE YOUR FIRST DRIVE */}
@@ -521,104 +522,8 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
-      {/* 6. SUCCESS STORIES */}
-      <section className="ngo-section ngo-band-cream">
-        <div className="ngo-container">
-          <NgoSectionHeader
-            eyebrow="Success stories"
-            h2="Stories of help, delivered."
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Story 1 */}
-            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
-              <div className="relative h-56 w-full overflow-hidden">
-                <Image
-                  src="/images/journey/item-proof-blankets.webp"
-                  alt="Blankets distribution story"
-                  fill
-                  sizes="(max-width: 860px) 100vw, 400px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute top-4 left-4 z-10">
-                  <span className="ngo-card-tag !bg-white/90 dark:!bg-[#0F2A20]/90 !backdrop-blur-sm">
-                    Completed
-                  </span>
-                </div>
-              </div>
-              <div className="p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="ngo-heading text-xl text-[#0B3D2E] dark:text-[#EFEADB] mb-2 leading-snug">
-                    Winter Relief Blanket Drive
-                  </h3>
-                  <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
-                    250 warm blankets distributed to elderly residents and shelter homes across Pune district.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Story 2 */}
-            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
-              <div className="relative h-56 w-full overflow-hidden">
-                <Image
-                  src="/images/journey/money-proof-ration.webp"
-                  alt="Ration kit distribution story"
-                  fill
-                  sizes="(max-width: 860px) 100vw, 400px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute top-4 left-4 z-10">
-                  <span className="ngo-card-tag !bg-white/90 dark:!bg-[#0F2A20]/90 !backdrop-blur-sm">
-                    Completed
-                  </span>
-                </div>
-              </div>
-              <div className="p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="ngo-heading text-xl text-[#0B3D2E] dark:text-[#EFEADB] mb-2 leading-snug">
-                    Community Food Kits
-                  </h3>
-                  <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
-                    Essential grains, oil, and nutrition kits delivered to 120 low-income family households.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Story 3 */}
-            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
-              <div className="relative h-56 w-full overflow-hidden">
-                <Image
-                  src="/images/ngo-hero/col-a-5-elderly-warmth.webp"
-                  alt="Elderly care supplies story"
-                  fill
-                  sizes="(max-width: 860px) 100vw, 400px"
-                  className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <div className="absolute top-4 left-4 z-10">
-                  <span className="ngo-card-tag !bg-white/90 dark:!bg-[#0F2A20]/90 !backdrop-blur-sm">
-                    Completed
-                  </span>
-                </div>
-              </div>
-              <div className="p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  <h3 className="ngo-heading text-xl text-[#0B3D2E] dark:text-[#EFEADB] mb-2 leading-snug">
-                    Elderly Care Carepack
-                  </h3>
-                  <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
-                    Medical aids and winter sweaters delivered to community assisted living care homes.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 6. SUCCESS STORIES (this NGO's drives with admin-approved proof; hidden when none) */}
+      <NgoSuccessStories stories={overview?.successStories} />
 
       {/* 7. TIPS FOR BETTER DRIVES */}
       <section className="ngo-section ngo-band-cream">

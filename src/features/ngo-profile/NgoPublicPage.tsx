@@ -280,7 +280,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
               </ul>
             </Card>
           )}
-          <PastWorkSection ngoName={ngo.organizationName} activities={ngo.activities ?? ngo.pastActivities} />
+          <PastWorkSection title="Past activity" ngoName={ngo.organizationName} activities={ngo.activities ?? ngo.pastActivities} />
 
           {(ngo.liveDrives?.length ?? 0) > 0 && (
             <Card title="Live drives">
@@ -299,7 +299,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
               <button type="button" onClick={() => setEditing("links")} className="text-xs font-bold text-emerald-800 underline">Edit links</button>
             </div>
           ) : null}>
-            <ChangeStatusNote manage={manage} fields={["organizationName", "panNumber", "registrationNumber", "officialEmail"]} />
+            <ChangeStatusNote manage={manage} fields={["organizationName", "panNumber", "registrationNumber", "officialEmail", "registeredOfficeAddress"]} />
             <dl className="grid gap-4">
               <Detail icon={Scale} label="Legal structure">{ngo.legalStructure ? formatLegalStructure(ngo.legalStructure) : null}</Detail>
               <Detail icon={Hash} label="Registration number">{ngo.registrationNumber}</Detail>

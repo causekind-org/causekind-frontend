@@ -109,8 +109,8 @@ describe("Past work by the NGO", () => {
     expect(screen.queryByText("Pending draft")).toBeNull();
     expect(screen.queryByText("Rejected one")).toBeNull();
     expect(screen.getByRole("link", { name: /See all/ })).toHaveAttribute("href", "/ngos/hope-trust");
-    fireEvent.click(screen.getAllByRole("button", { name: "Read more" })[0]);
-    expect(screen.getByRole("button", { name: "Show less" })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /^Read more/ })[0]);
+    expect(screen.getByTestId("past-work-detail")).toBeInTheDocument();
   });
 
   it("photo gallery: 1 large + 2 small, +N for the rest, labelled date, opens a lightbox", () => {

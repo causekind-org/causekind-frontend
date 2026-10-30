@@ -5,7 +5,7 @@ import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  getMyNgoProfileManage, removeNgoProfilePhoto, requestNgoProfileChange, updateNgoProfileCosmetic, uploadNgoProfilePhoto,
+  getMyNgoProfileManage, removeNgoProfilePhoto, uploadNgoDocument, requestNgoProfileChange, updateNgoProfileCosmetic, uploadNgoProfilePhoto,
   type NgoProfileManage, type NgoProfileVerifiedField,
 } from "@/lib/api";
 import { UploadedFilePreview } from "@/features/ngo-registration/components/UploadedFilePreview";
@@ -61,7 +61,7 @@ export function ChangeStatusNote({ manage, fields }: { manage: NgoProfileManage 
 
 export type OwnerEditKind = "photos" | "about" | "contact" | "links" | "identity" | "representatives";
 
-const VERIFIED_LABELS: Record<Exclude<NgoProfileVerifiedField, "representatives">, string> = {
+const VERIFIED_LABELS: Record<Exclude<NgoProfileVerifiedField, "representatives" | "registeredOfficeAddress">, string> = {
   organizationName: "Legal name", panNumber: "PAN", registrationNumber: "Registration number", officialEmail: "Official email",
 };
 const input = "w-full min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
@@ -86,7 +86,13 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
     organizationName: manage.organizationName ?? "", panNumber: manage.panNumber ?? "",
     registrationNumber: manage.registrationNumber ?? "", officialEmail: manage.officialEmail ?? "",
   });
-  const [reps, setReps] = useState(manage.representatives.length ? manage.representatives.map((r) => ({ fullName: r.fullName, designation: r.designation ?? "" })) : [{ fullName: "", designation: "" }]);
+  // existing: a person already on the page (name/role edits only, unless "replace"); new or replaced people need every detail.
+  type RepRow = { fullName: string; designation: string; existing: boolean; replace: boolean; mobileNumber: string; email: string; panNumber: string; idProof: { documentId: number; name: string } | null };
+  const blankRep = (existing: boolean): Omit<RepRow, "fullName" | "designation"> => ({ existing, replace: false, mobileNumber: "", email: "", panNumber: "", idProof: null });
+  const [reps, setReps] = useState<RepRow[]>(manage.representatives.length
+    ? manage.representatives.map((r) => ({ fullName: r.fullName, designation: r.designation ?? "", ...blankRep(true) }))
+    : [{ fullName: "", designation: "", ...blankRep(false) }]);
+  const [uploadingRep, setUploadingRep] = useState<number | null>(null);
   const [reason, setReason] = useState("");
   const [preview, setPreview] = useState<number | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -116,8 +122,7 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
     if (kind === "contact") {
       const err = mobileError(phone);
       if (err) return setError(err);
-      if (address.trim().length < 10) return setError("Enter the full address (10 to 300 characters).");
-      return run(() => updateNgoProfileCosmetic({ organizationPhone: phone.trim(), registeredOfficeAddress: address.trim() }), "Saved. It now shows on your page.");
+      return run(() => updateNgoProfileCosmetic({ organizationPhone: phone.trim() }), "Saved. It now shows on your page.");
     }
     if (kind === "links") {
       const list = links.map((l) => l.trim()).filter(Boolean);
@@ -127,21 +132,47 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
   }
 
   async function sendIdentity(field: Exclude<NgoProfileVerifiedField, "representatives">) {
+    const value = field === "registeredOfficeAddress" ? address.trim() : identity[field];
+    if (field === "registeredOfficeAddress" && (value.length < 10 || value.length > 300)) return setError("Enter the full address (10 to 300 characters).");
     await run(async () => {
-      await requestNgoProfileChange(field, identity[field], reason.trim() || undefined);
+      await requestNgoProfileChange(field, value, reason.trim() || undefined);
       return getMyNgoProfileManage();
     }, "Sent for review. Your page keeps the current value until it's approved.", false);
   }
 
+  const needsDetails = (r: RepRow) => !r.existing || r.replace;
+
   async function sendRepresentatives() {
-    for (const r of reps) {
-      if (r.fullName.trim().length < 2) return setError("Each representative needs a full name.");
-      if (isOtherChoice(r.designation, DESIGNATIONS) && otherTextError(r.designation)) return setError("Please specify each role (2–60 letters).");
+    for (const [i, r] of reps.entries()) {
+      const who = `Representative ${i + 1}`;
+      if (r.fullName.trim().length < 2) return setError(`${who}: enter the full name.`);
+      if (!r.designation.trim() || (isOtherChoice(r.designation, DESIGNATIONS) && otherTextError(r.designation))) return setError(`${who}: choose or specify the role (2–60 letters).`);
+      if (!needsDetails(r)) continue;
+      const m = mobileError(r.mobileNumber); if (m) return setError(`${who}: ${m}`);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.email.trim())) return setError(`${who}: enter a valid email address.`);
+      if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(r.panNumber.trim().toUpperCase())) return setError(`${who}: enter the 10-character PAN.`);
+      if (!r.idProof) return setError(`${who}: upload the ID proof.`);
     }
     await run(async () => {
-      await requestNgoProfileChange("representatives", JSON.stringify(reps.map((r) => ({ fullName: r.fullName.trim(), designation: r.designation.trim() }))), reason.trim() || undefined);
+      await requestNgoProfileChange("representatives", JSON.stringify(reps.map((r) => needsDetails(r)
+        ? { fullName: r.fullName.trim(), designation: r.designation.trim(), mobileNumber: r.mobileNumber.trim(), email: r.email.trim(),
+            panNumber: r.panNumber.trim().toUpperCase(), idProofDocumentId: r.idProof!.documentId }
+        : { fullName: r.fullName.trim(), designation: r.designation.trim() })), reason.trim() || undefined);
       return getMyNgoProfileManage();
     }, "Sent for review. Your page keeps the current list until it's approved.", false);
+  }
+
+  async function uploadIdProof(i: number, file: File | undefined) {
+    if (!file) return;
+    setUploadingRep(i); setError("");
+    try {
+      const res = await uploadNgoDocument(file, "rep-id-proof", "must-have");
+      setReps((p) => p.map((x, j) => (j === i ? { ...x, idProof: { documentId: res.documentId!, name: file.name } } : x)));
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "We couldn't upload the ID proof.");
+    } finally {
+      setUploadingRep(null);
+    }
   }
 
   async function upload(file: File | undefined) {
@@ -213,8 +244,13 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
                 <input id="owner-phone" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={input} />
               </div>
               <div className="space-y-1">
-                <label htmlFor="owner-address" className="text-xs font-bold">Address</label>
-                <textarea id="owner-address" rows={3} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} className={`${input} py-2`} />
+                <label htmlFor="owner-address" className="text-xs font-bold">Registered office address <span className="font-normal text-stone-400">(changes after review)</span></label>
+                <textarea id="owner-address" rows={3} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} className={`${input} py-2`}
+                  disabled={manage.requests.some((r) => r.field === "registeredOfficeAddress" && r.status === "PENDING")} />
+                <ChangeStatusNote manage={manage} fields={["registeredOfficeAddress"]} />
+                <button type="button" disabled={busy || manage.requests.some((r) => r.field === "registeredOfficeAddress" && r.status === "PENDING")}
+                  onClick={() => void sendIdentity("registeredOfficeAddress")}
+                  className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Send address for review</button>
               </div>
             </>
           )}
@@ -269,13 +305,41 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
                     <OtherSpecifyField id={`owner-rep-${i}-other`} value={r.designation}
                       onChange={(t) => setReps((p) => p.map((x, j) => (j === i ? { ...x, designation: t || "Other" } : x)))} />
                   )}
+                  {r.existing && (
+                    <label className="flex items-center gap-2 text-xs">
+                      <input type="checkbox" checked={r.replace} onChange={(e) => setReps((p) => p.map((x, j) => (j === i ? { ...x, replace: e.target.checked } : x)))} />
+                      Replace this person (enter the new person&apos;s details)
+                    </label>
+                  )}
+                  {needsDetails(r) && (
+                    <div data-testid="rep-details" className="space-y-2">
+                      <input aria-label={`Representative ${i + 1} mobile`} placeholder="Mobile (+91)" inputMode="tel" value={r.mobileNumber}
+                        onChange={(e) => setReps((p) => p.map((x, j) => (j === i ? { ...x, mobileNumber: e.target.value } : x)))} className={input} />
+                      <input aria-label={`Representative ${i + 1} email`} placeholder="Email" type="email" value={r.email}
+                        onChange={(e) => setReps((p) => p.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)))} className={input} />
+                      <input aria-label={`Representative ${i + 1} PAN`} placeholder="PAN" maxLength={10} value={r.panNumber}
+                        onChange={(e) => setReps((p) => p.map((x, j) => (j === i ? { ...x, panNumber: e.target.value.toUpperCase() } : x)))} className={input} />
+                      {r.idProof ? (
+                        <UploadedFilePreview file={{ name: r.idProof.name, documentId: r.idProof.documentId }} kind="document" label={`Representative ${i + 1} ID proof`}
+                          onPreview={() => {}} onReplace={() => document.getElementById(`owner-rep-${i}-idproof`)?.click()}
+                          onRemove={() => setReps((p) => p.map((x, j) => (j === i ? { ...x, idProof: null } : x)))} disabled={uploadingRep === i} />
+                      ) : (
+                        <button type="button" onClick={() => document.getElementById(`owner-rep-${i}-idproof`)?.click()} disabled={uploadingRep === i}
+                          className="flex min-h-[40px] w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-300 text-xs font-semibold">
+                          {uploadingRep === i ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />} Upload ID proof
+                        </button>
+                      )}
+                      <input id={`owner-rep-${i}-idproof`} data-testid={`rep-${i}-idproof-input`} type="file" accept="application/pdf, image/jpeg, image/png" className="hidden"
+                        onChange={(e) => { void uploadIdProof(i, e.target.files?.[0]); e.target.value = ""; }} />
+                    </div>
+                  )}
                   {reps.length > 1 && (
                     <button type="button" onClick={() => setReps((p) => p.filter((_, j) => j !== i))} className="text-xs font-semibold text-red-600">Remove</button>
                   )}
                 </div>
               ))}
               {reps.length < 5 && (
-                <button type="button" onClick={() => setReps((p) => [...p, { fullName: "", designation: "" }])} className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800">
+                <button type="button" onClick={() => setReps((p) => [...p, { fullName: "", designation: "", ...blankRep(false) }])} className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800">
                   <Plus className="h-3.5 w-3.5" aria-hidden /> Add person
                 </button>
               )}

@@ -632,7 +632,7 @@
 
 .ngo-cta-card {
   position: relative;
-  width: 230px;
+  width: 232px;
   height: 290px;
   border-radius: 28px;
   overflow: hidden;
@@ -703,7 +703,7 @@
   position: relative;
   width: calc(50% - 6px);
   max-width: 170px;
-  height: clamp(100px, 26vw, 140px);
+  aspect-ratio: 4 / 5;
   border-radius: 16px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -715,7 +715,7 @@
 /* Responsive: 1000px to 1200px */
 @media (min-width: 1000px) and (max-width: 1199.98px) {
   .ngo-cta-card {
-    width: 180px;
+    width: 184px;
     height: 230px;
     border-radius: 22px;
   }
@@ -752,7 +752,6 @@
     padding: 48px 0;
   }
   .ngo-cta-mobile-card {
-    height: 105px;
     border-radius: 14px;
   }
 }

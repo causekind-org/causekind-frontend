@@ -8,6 +8,7 @@ const api = vi.hoisted(() => ({
   requestNgoProfileChange: vi.fn(),
   uploadNgoProfilePhoto: vi.fn(),
   removeNgoProfilePhoto: vi.fn(),
+  uploadNgoDocument: vi.fn(),
   adminGetNgoProfileChanges: vi.fn(),
   adminApproveNgoProfileChange: vi.fn(),
   adminRejectNgoProfileChange: vi.fn(),
@@ -98,7 +99,65 @@ describe("the NGO editing its own public page", () => {
   });
 });
 
+describe("verified details need the wizard's fields", () => {
+  beforeEach(() => { auth.user = { id: 1, email: "info@hope.test", role: "NGO_PARTNER" }; });
+
+  it("adding a representative asks for mobile, email, PAN and an ID proof before sending", async () => {
+    api.requestNgoProfileChange.mockResolvedValue({ id: 5, field: "representatives", status: "PENDING" });
+    api.uploadNgoDocument.mockResolvedValue({ documentId: 77 });
+    render(<NgoPublicPage slug="hope" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit representatives" }));
+    fireEvent.click(screen.getByRole("button", { name: /Add person/ }));
+    fireEvent.change(screen.getByLabelText("Representative 2 name"), { target: { value: "Ravi Rao" } });
+    fireEvent.change(screen.getByLabelText("Representative 2 role"), { target: { value: "Director" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send for review" }));
+    expect(await screen.findByText(/Representative 2: Enter a 10-digit mobile number/)).toBeInTheDocument();
+    expect(api.requestNgoProfileChange).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Representative 2 mobile"), { target: { value: "9812345678" } });
+    fireEvent.change(screen.getByLabelText("Representative 2 email"), { target: { value: "ravi@hope.test" } });
+    fireEvent.change(screen.getByLabelText("Representative 2 PAN"), { target: { value: "abcpr1234k" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send for review" }));
+    expect(await screen.findByText(/Representative 2: upload the ID proof/)).toBeInTheDocument();
+    fireEvent.change(screen.getByTestId("rep-1-idproof-input"), { target: { files: [new File(["x"], "id.pdf", { type: "application/pdf" })] } });
+    await waitFor(() => expect(api.uploadNgoDocument).toHaveBeenCalledWith(expect.any(File), "rep-id-proof", "must-have"));
+    fireEvent.click(await screen.findByRole("button", { name: "Send for review" }));
+    await waitFor(() => expect(api.requestNgoProfileChange).toHaveBeenCalled());
+    const sent = JSON.parse(api.requestNgoProfileChange.mock.calls[0][1]);
+    // The existing person: name/role only. The new person: every detail.
+    expect(sent[0]).toEqual({ fullName: "Asha Rao", designation: "Secretary" });
+    expect(sent[1]).toEqual({ fullName: "Ravi Rao", designation: "Director", mobileNumber: "9812345678", email: "ravi@hope.test", panNumber: "ABCPR1234K", idProofDocumentId: 77 });
+  });
+
+  it("the phone saves at once; the registered address goes for review", async () => {
+    api.updateNgoProfileCosmetic.mockResolvedValue(manage);
+    api.requestNgoProfileChange.mockResolvedValue({ id: 6, field: "registeredOfficeAddress", status: "PENDING" });
+    render(<NgoPublicPage slug="hope" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit phone / address" }));
+    fireEvent.change(screen.getByLabelText(/Contact phone/), { target: { value: "+919811112222" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(api.updateNgoProfileCosmetic).toHaveBeenCalledWith({ organizationPhone: "+919811112222" }));
+    fireEvent.change(screen.getByLabelText(/Registered office address/), { target: { value: "99 New Road, Pune 411002" } });
+    fireEvent.click(screen.getByRole("button", { name: "Send address for review" }));
+    await waitFor(() => expect(api.requestNgoProfileChange).toHaveBeenCalledWith("registeredOfficeAddress", "99 New Road, Pune 411002", undefined));
+  });
+});
+
 describe("admin: Profile changes tab", () => {
+  it("shows every representative detail old vs new, with the ID proof link", async () => {
+    api.adminGetNgoProfileChanges.mockResolvedValue([{ ngoUserId: 1, organizationName: "Hope Trust", slug: "hope", idProofUrls: { "77": "https://signed/id.pdf" },
+      request: { id: 10, field: "representatives", status: "PENDING", createdAt: "2026-10-29T10:00:00",
+        oldValue: JSON.stringify([{ fullName: "Asha Rao", designation: "Secretary", mobileNumber: "+919800000000" }]),
+        newValue: JSON.stringify([{ fullName: "Asha Rao", designation: "Secretary" }, { fullName: "Ravi Rao", designation: "Director",
+          mobileNumber: "+919812345678", email: "ravi@hope.test", panNumber: "ABCPR1234K", idProofDocumentId: 77 }]) } }]);
+    render(<NgoProfileChangesPanel />);
+    const item = await screen.findByTestId("admin-profile-change");
+    expect(item).toHaveTextContent("ravi@hope.test");
+    expect(item).toHaveTextContent("PAN ABCPR1234K");
+    expect(within(item).getByRole("link", { name: "ID proof" })).toHaveAttribute("href", "https://signed/id.pdf");
+  });
+
+
   it("shows old vs new, approves, and needs a reason to reject", async () => {
     api.adminGetNgoProfileChanges.mockResolvedValue([{ ngoUserId: 1, organizationName: "Hope Trust", slug: "hope",
       request: { id: 9, field: "organizationName", oldValue: "Hope Trust", newValue: "Hope Foundation", status: "PENDING", createdAt: "2026-10-29T10:00:00" } }]);

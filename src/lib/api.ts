@@ -5407,6 +5407,12 @@ export type NgoOverview = {
   canStartDrive?: boolean; blockingDriveTitle?: string; blockingDriveStatus?: string;
   /** Drives waiting for distribution proof. proofDueAt is UTC without a zone. */
   proofDueDrives?: { id: number; title: string; quantityReceived: number; proofDueAt?: string | null }[];
+  /** This NGO's own drives whose distribution proof an admin approved; photoUrls are signed for reading. */
+  successStories?: NgoSuccessStory[];
+};
+export type NgoSuccessStory = {
+  id: number; title: string; photoUrls: string[]; peopleReached?: number | null; quantityDistributed?: number | null;
+  distributedOn?: string | null; location?: string | null; note?: string | null;
 };
 export function getNgoOverview() {
   // Activity events must not reuse totals cached before the handover changed.
@@ -5725,7 +5731,15 @@ export async function uploadNgoProfilePhoto(type: "cover" | "logo" | "office_pho
 export function removeNgoProfilePhoto(id: number) {
   return request<NgoProfileManage>(`/api/v1/ngo/profile/photos/${id}`, { method: "DELETE" });
 }
-export function requestNgoProfileChange(field: NgoProfileVerifiedField, newValue: string, reason?: string) {
+/** A live document on /profile; a replacement waits for review (pendingRequestId). expiresAt is set only when known. */
+export type NgoProfileDocument = {
+  id: number; type: string; category?: string | null; fileName?: string | null; mimeType?: string | null; uploadedAt?: string | null;
+  url?: string | null; expiresAt?: string | null; pendingRequestId?: number | null; pendingFileName?: string | null;
+};
+export function getMyNgoProfileDocuments() {
+  return request<NgoProfileDocument[]>("/api/v1/ngo/profile/documents");
+}
+export function requestNgoProfileChange(field: NgoProfileVerifiedField | `documents.${string}`, newValue: string, reason?: string) {
   return request<NgoProfileChangeRequest>("/api/v1/ngo/profile/change-requests", { method: "POST", body: JSON.stringify({ field, newValue, reason }) });
 }
 export type AdminNgoProfileChange = {
