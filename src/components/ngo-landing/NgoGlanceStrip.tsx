@@ -37,8 +37,11 @@ export function NgoGlanceStrip() {
   const isEmptyState = activeRequests === 0 && photosDue === 0;
 
   return (
-    <div className="w-full relative z-20 -mt-2 mb-8 sm:mb-12">
+    <section aria-labelledby="ngo-glance-heading" className="w-full relative z-20 mt-12 sm:mt-16 mb-8 sm:mb-12">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <h2 id="ngo-glance-heading" className="mb-4 sm:mb-6 text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-100">
+          Your drives at a glance
+        </h2>
         {/* Amber Photos-Due Banner Alert */}
         {isPhotosWarning ? (
           <motion.div
@@ -197,7 +200,7 @@ export function NgoGlanceStrip() {
           )}
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 

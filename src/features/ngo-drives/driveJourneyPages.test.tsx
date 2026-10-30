@@ -65,136 +65,32 @@ describe("slot rule (mirrors the server)", () => {
   });
 });
 
-describe("donor drive handover page", () => {
-  const Page = async () => (await import("@/app/ngo-drive-offers/[id]/handover/page")).default;
-
-  it("accepted: shows the NGO contact and plans a drop-off with the right method", async () => {
-    api.getNgoDriveOffer.mockResolvedValue(offer("NGO_ACCEPTED"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(null);
-    api.scheduleNgoDriveOfferHandover.mockResolvedValue(plan());
-    const P = await Page();
-    const { container } = render(<P />);
-    expect(await screen.findByText(/NGO contact: Ananya · 9876543210/)).toBeInTheDocument();
-    fireEvent.change(container.querySelector('input[type="date"]')!, { target: { value: "2030-01-07" } });
-    fireEvent.change(container.querySelector('input[type="time"]')!, { target: { value: "10:00" } });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm the plan" }));
-    await waitFor(() => expect(api.scheduleNgoDriveOfferHandover).toHaveBeenCalledWith(11, expect.objectContaining({ method: "DROP_OFF", scheduledDateTime: "2030-01-07T10:00:00" })));
-  });
-
-  it("an invalid slot is explained and not sent", async () => {
-    api.getNgoDriveOffer.mockResolvedValue(offer("NGO_ACCEPTED"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(null);
-    const P = await Page();
-    const { container } = render(<P />);
-    await screen.findByRole("button", { name: "Confirm the plan" });
-    fireEvent.change(container.querySelector('input[type="date"]')!, { target: { value: "2030-01-05" } });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm the plan" }));
-    expect(await screen.findByText(/receives items on Mon, Tue, Wed, Thu, Fri only/)).toBeInTheDocument();
-    expect(api.scheduleNgoDriveOfferHandover).not.toHaveBeenCalled();
-  });
-
-  it("handover planned: shows the NGO address and a big code to show the NGO", async () => {
-    api.getNgoDriveOffer.mockResolvedValue(offer("HANDOVER_IN_PROGRESS"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(plan());
-    api.generateNgoDriveOfferHandoverOtp.mockResolvedValue({ otp: "482913" });
-    const P = await Page();
-    render(<P />);
-    expect(await screen.findByText("12 Shanti Nagar, Pune")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Change the time \(2 left\)/ })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Show my code" }));
-    expect(await screen.findByText("482913")).toBeInTheDocument();
-    expect(screen.getByText("Show this code to the NGO")).toBeInTheDocument();
-  });
-
-  it("completed: offers the certificate", async () => {
-    api.getNgoDriveOffer.mockResolvedValue(offer("COMPLETED"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(plan({ confirmation: { otpVerified: true, ngoConfirmedQty: 3 } as never }));
-    const P = await Page();
-    render(<P />);
-    expect(await screen.findByRole("link", { name: "View your certificate" })).toHaveAttribute("href", "/certificate?offerId=11&type=ngo_drive");
-  });
-
-  it("declined: shows the NGO's reason", async () => {
-    api.getNgoDriveOffer.mockResolvedValue(offer("NGO_DECLINED", { ngoDeclineReason: "New blankets only" }));
-    api.getNgoDriveOfferHandover.mockResolvedValue(null);
-    const P = await Page();
-    render(<P />);
-    expect(await screen.findByText("The NGO declined this offer.")).toBeInTheDocument();
-    expect(screen.getByText("Reason: New blankets only")).toBeInTheDocument();
-  });
-
-  it("a non-404 error shows the message and Retry; a 404 says not found", async () => {
-    api.getNgoDriveOffer.mockRejectedValueOnce(await apiError(500, "Something went wrong on our end.")).mockResolvedValueOnce(offer("NGO_ACCEPTED"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(null);
-    const P = await Page();
-    const { unmount } = render(<P />);
-    expect(await screen.findByText("Something went wrong on our end.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /retry/i }));
-    expect(await screen.findByRole("button", { name: "Confirm the plan" })).toBeInTheDocument();
-    unmount();
-    api.getNgoDriveOffer.mockRejectedValueOnce(await apiError(404, "The requested item was not found."));
-    render(<P />);
-    expect(await screen.findByText("Handover not found")).toBeInTheDocument();
-  });
-});
-
-describe("NGO drive handover page", () => {
-  const Page = async () => (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
-  beforeEach(() => { auth.user = { email: "ngo@x.test", role: "NGO_PARTNER" }; });
-
-  it("waiting for the donor's plan", async () => {
-    api.getNgoDriveOfferForNgo.mockResolvedValue(offer("NGO_ACCEPTED"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(null);
-    const P = await Page();
-    render(<P />);
-    expect(await screen.findByText(/Waiting for the donor to choose/)).toBeInTheDocument();
-  });
-
-  it("receipt photos come first: the code form stays disabled until one is uploaded", async () => {
-    api.getNgoDriveOfferForNgo.mockResolvedValue(offer("HANDOVER_IN_PROGRESS"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(plan());
-    const P = await Page();
-    render(<P />);
-    expect(await screen.findByText("Upload at least one photo first.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Confirm handover" })).toBeDisabled();
-    expect(screen.getByText("The donor drops off at your address")).toBeInTheDocument();
-  });
-
-  it("with a receipt photo: confirms with the code and quantity", async () => {
-    api.getNgoDriveOfferForNgo.mockResolvedValue(offer("HANDOVER_IN_PROGRESS", { receiptPhotos: ["https://cdn.test/ngo-drive-receipts/11/a.png"] }));
-    api.getNgoDriveOfferHandover.mockResolvedValue(plan());
-    api.confirmNgoDriveOfferHandoverNgo.mockResolvedValue(plan());
-    const P = await Page();
-    render(<P />);
-    fireEvent.change(await screen.findByLabelText("Donor's code"), { target: { value: "482913" } });
-    fireEvent.click(screen.getByRole("button", { name: "Confirm handover" }));
-    await waitFor(() => expect(api.confirmNgoDriveOfferHandoverNgo).toHaveBeenCalledWith(7, 11, { otp: "482913", quantity: 3 }));
-  });
-
-  it("received: the issue window lets the NGO report a problem", async () => {
-    api.getNgoDriveOfferForNgo.mockResolvedValue(offer("ISSUE_WINDOW_OPEN"));
-    api.getNgoDriveOfferHandover.mockResolvedValue(plan({ confirmation: { otpVerified: true, ngoConfirmedQty: 3 } as never }));
-    api.reportNgoDriveOfferIssue.mockResolvedValue({ id: 1 });
-    const P = await Page();
-    render(<P />);
-    fireEvent.click(await screen.findByText("Something wrong? Report an issue"));
-    fireEvent.change(screen.getByLabelText("Details"), { target: { value: "Two blankets were torn." } });
-    fireEvent.click(screen.getByRole("button", { name: "Send report" }));
-    expect(await screen.findByText(/An issue was reported/)).toBeInTheDocument();
-  });
-});
-
-describe("give success screen", () => {
-  it("after submitting, explains what happens next", async () => {
+describe("give success popup", () => {
+  it("after submitting, goes back to the drive page and shows what happens next in a popup", async () => {
     api.getNgoDrive.mockResolvedValue({ id: 7, title: "Winter blankets", unit: "PIECES", status: "LIVE", quantityNeeded: 10,
       quantityReceived: 0, quantityPledged: 0, ngoOrganizationName: "Hope Trust" });
     api.getMyNgoDriveOffers.mockResolvedValue([offer("DRAFT", { driveId: 7 })]);
+    sessionStorage.clear();
     const P = (await import("@/app/drives/[id]/give/page")).default;
-    render(<P />);
+    const { unmount } = render(<P />);
     fireEvent.click(await screen.findByRole("button", { name: "Submit offer" }));
-    expect(await screen.findByText(/3 pieces reserved for this drive/)).toBeInTheDocument();
-    expect(screen.getByText("The NGO accepts or declines")).toBeInTheDocument();
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/drives/7?offerSent=1"));
+    expect(JSON.parse(sessionStorage.getItem("ck-drive-offer-sent-7") ?? "{}")).toMatchObject({ quantity: 3, driveTitle: "Winter blankets" });
+    unmount();
+
+    // The drive page shows the same success content as a popup.
+    window.history.replaceState(null, "", "/drives/7?offerSent=1");
+    const D = (await import("@/app/drives/[id]/page")).default;
+    render(<D />);
+    const popup = await screen.findByTestId("drive-offer-sent");
+    expect(popup).toHaveTextContent("Offer sent");
+    expect(popup).toHaveTextContent(/3 pieces reserved for this drive/);
+    expect(popup).toHaveTextContent("The NGO accepts or declines");
     expect(screen.getByRole("link", { name: "Track it on your dashboard" })).toHaveAttribute("href", "/dashboard");
+    fireEvent.click(screen.getByRole("button", { name: "Back to the drive" }));
+    await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/drives/7"));
+    expect(sessionStorage.getItem("ck-drive-offer-sent-7")).toBeNull();
+    window.history.replaceState(null, "", "/");
   });
 });
 

@@ -37,6 +37,20 @@ beforeEach(() => {
   api.adminRejectNgoDrive.mockResolvedValue({});
 });
 
+describe("admin drive review: drop-off address", () => {
+  it("shows the server's display address", async () => {
+    api.adminGetNgoDrive.mockResolvedValue({ ...drive, dropOffAddressDisplay: "Hope Trust, 12 FC Road, Pune 411005" });
+    await openDrive();
+    expect(screen.getByText("Drop-off address")).toBeInTheDocument();
+    expect(screen.getByText("Hope Trust, 12 FC Road, Pune 411005")).toBeInTheDocument();
+  });
+  it("falls back to locality + city + PIN when the field is absent", async () => {
+    api.adminGetNgoDrive.mockResolvedValue({ ...drive, locationArea: "Kothrud", locationCity: "Pune", locationPincode: "411038" });
+    await openDrive();
+    expect(screen.getByText("Drop-off address").parentElement).toHaveTextContent("Kothrud, Pune, 411038");
+  });
+});
+
 describe("admin drive decision", () => {
   it("shows the condition rule and the renamed beneficiaries field", async () => {
     await openDrive();

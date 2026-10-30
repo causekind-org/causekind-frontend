@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { errorVariants, revealVariants } from "@/features/wizard-kit/wizardMotion";
 
+import { UiText, useUiText } from "@/components/UiText";
 /**
  * Label + control + hint/error, wired for accessibility.
  *
@@ -31,6 +32,7 @@ export function WizardField({
   uncertain?: boolean;
   children: (ids: { id: string; describedBy: string | undefined; invalid: boolean }) => React.ReactNode;
 }) {
+  const ui = useUiText();
   const reduced = !!useReducedMotion();
   const base = useId();
   const id = `${base}-control`;
@@ -45,12 +47,12 @@ export function WizardField({
         <label htmlFor={id} className="text-xs font-bold text-stone-700 dark:text-stone-200">
           {label}
           {required && <span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span>}
-          {required && <span className="sr-only"> (required)</span>}
+          {required && <span className="sr-only"> <UiText>(required)</UiText></span>}
         </label>
         {aiFilled && (
           <span className="inline-flex items-center gap-1 rounded-full bg-[var(--ck-role-soft)] px-1.5 py-0.5 text-4xs font-black uppercase tracking-wide text-[var(--ck-role-accent)]">
             <Sparkles className="h-2.5 w-2.5" aria-hidden />
-            {uncertain ? "AI · check this" : "AI"}
+            {uncertain ? ui("AI · check this") : ui("AI")}
           </span>
         )}
       </div>

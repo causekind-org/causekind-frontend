@@ -408,7 +408,9 @@ export function HowItWorksDesktop() {
       ref={sectionRef}
       id="how-it-works"
       aria-labelledby="how-it-works-heading"
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-6 sm:py-8 lg:py-6 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
+      // Content-sized (2026-10-13): the full-viewport min-height centred a
+      // shorter block and left a large empty band before the Live Board.
+      className="relative w-full flex flex-col justify-center py-12 lg:py-14 bg-[#FAF8F5] dark:bg-[#140E0B] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-500"
       style={
         {
           "--role-color": currentTabConfig.roleColor,
@@ -419,13 +421,9 @@ export function HowItWorksDesktop() {
         } as React.CSSProperties
       }
     >
-      {/* Morphing ambient background glow */}
-      <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[450px] rounded-full blur-3xl transition-colors duration-700"
-          style={{ backgroundColor: currentTabConfig.roleGlow }}
-        />
-      </div>
+      {/* The role-coloured ambient glow is gone (2026-10-13): on the cream it
+          read as a grey patch, and once the section became content-sized it
+          was cut off at the section edge as a hard band. */}
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full">
         {/* Eyebrow / Letter-by-letter typing label */}

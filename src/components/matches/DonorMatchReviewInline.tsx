@@ -1,15 +1,11 @@
 "use client";
 
-import { serverDate } from "@/lib/serverTime";
 import type { ItemMatch } from "@/lib/api";
 import { MatchReviewBanner } from "@/components/matches/MatchReviewBanner";
 
-function timeAgo(iso: string) {
-  const mins = Math.max(0, Math.round((Date.now() - serverDate(iso).getTime()) / 60000));
-  if (mins < 60) return `${mins} min ago`;
-  const hours = Math.round(mins / 60);
-  return hours < 24 ? `${hours} h ago` : `${Math.round(hours / 24)} d ago`;
-}
+import { useUiText } from "@/components/UiText";
+import { useDashCopy, useTimeAgo } from "@/lib/dashboardCopy";
+import { useTranslations } from "next-intl";
 
 /**
  * A match waiting on the donor (DONOR_REVIEW), as the banner across the top of
@@ -22,7 +18,11 @@ export function DonorMatchReviewInline({ match, busy, onAccept, onDecline }: {
   onAccept: () => void;
   onDecline: () => void;
 }) {
-  const need = match.requestTitle || "a nearby need";
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
+  const timeAgo = useTimeAgo();
+  const need = match.requestTitle || ui("a nearby need");
   const covered = match.allocatedQuantity ?? null;
   const needed = match.requestQuantity ?? null;
   const km = match.scoreDistanceKm;
@@ -30,17 +30,17 @@ export function DonorMatchReviewInline({ match, busy, onAccept, onDecline }: {
     <MatchReviewBanner
       tone="donor"
       photos={match.requestImageUrl ? [match.requestImageUrl] : []}
-      title={<>This item matches a need for &ldquo;{need}&rdquo;</>}
-      time={`Matched ${timeAgo(match.createdAt)}`}
+      title={dt("thisItemMatchesNeed", { need })}
+      time={dt("matchedAgo", { ago: timeAgo(match.createdAt) })}
       facts={[
-        { label: "Covers", value: covered != null && needed != null ? `${covered} of ${needed} needed` : covered != null ? `${covered}` : "—" },
-        { label: "Distance", value: km != null ? `About ${km < 1 ? "<1" : Math.round(km)} km` : "Same city" },
-        { label: "Recipient", value: `Verified${match.doneeCity ? `, ${match.doneeCity.split(",")[0]}` : ""}` },
+        { label: ui("Covers"), value: covered != null && needed != null ? dt("coversOfNeeded", { covered, needed }) : covered != null ? `${covered}` : "—" },
+        { label: ui("Distance"), value: km != null ? dt("aboutKm", { km: km < 1 ? "<1" : Math.round(km) }) : ui("Same city") },
+        { label: ui("Recipient"), value: match.doneeCity ? dt("verifiedIn", { city: match.doneeCity.split(",")[0] }) : ui("Verified") },
       ]}
-      details={[match.requestUrgency && `${match.requestUrgency.charAt(0)}${match.requestUrgency.slice(1).toLowerCase()} urgency`]}
-      note="The recipient's details stay private until you confirm and an admin approves."
-      acceptLabel="Yes, I still have it"
-      declineLabel="Not available any more"
+      details={[match.requestUrgency && dt("urgencyLevel", { level: dc(`${match.requestUrgency.charAt(0)}${match.requestUrgency.slice(1).toLowerCase()}`) })]}
+      note={ui("The recipient's details stay private until you confirm and an admin approves.")}
+      acceptLabel={ui("Yes, I still have it")}
+      declineLabel={ui("Not available any more")}
       busy={busy}
       onAccept={onAccept}
       onDecline={onDecline}

@@ -6,12 +6,14 @@
  * The old key (`ck_celebrated_OFFER_12`) was shared, so whichever side saw it
  * first silently used up the other side's turn.
  */
-export type CelebrationContext = "OFFER" | "MATCH";
+export type CelebrationContext = "OFFER" | "MATCH" | "NGO_DRIVE_OFFER";
 
 /** Offer statuses meaning the item has been handed over and received. */
 export const OFFER_DONE = new Set(["ISSUE_WINDOW_OPEN", "COMPLETED"]);
 /** Match statuses meaning the same. */
 export const MATCH_DONE = new Set(["COMPLETED", "FULFILLED"]);
+/** NGO drive offer statuses meaning items were handed over and received. */
+export const NGO_DRIVE_OFFER_DONE = new Set(["ISSUE_WINDOW_OPEN", "COMPLETED"]);
 
 function key(type: CelebrationContext, id: number, email: string) {
   return `ck_celebrated_${type}_${id}_${email.toLowerCase()}`;

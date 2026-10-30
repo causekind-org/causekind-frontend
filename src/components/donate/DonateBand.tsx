@@ -1,5 +1,6 @@
 import { DonateNowButton } from "@/components/donate/DonateNowButton";
 import { ShieldCheck, ReceiptText } from "lucide-react";
+import { UiText } from "@/components/UiText";
 
 /**
  * The landing page's dedicated money-donation band.
@@ -34,28 +35,30 @@ export function DonateBand() {
       <div className="relative flex flex-col items-center gap-6 text-center lg:flex-row lg:items-center lg:justify-between lg:gap-10 lg:text-left">
         <div className="max-w-xl">
           <p className="text-[0.7rem] font-black uppercase tracking-[0.16em] text-amber-700 dark:text-amber-400">
-            Give money
+            <UiText>Give money</UiText>
           </p>
           <h2
             id="ck-donate-band-title"
             className="mt-2 text-[clamp(1.5rem,1.1rem+1.6vw,2.15rem)] font-extrabold leading-tight tracking-tight text-stone-900 dark:text-stone-50"
           >
-            Not everything can be handed over.
+            <UiText>Not everything can be handed over.</UiText>
           </h2>
           <p className="mt-3 text-[0.95rem] leading-relaxed text-stone-600 dark:text-stone-300">
-            Medicines, school fees, a bus fare to a hospital — some needs only
-            money can meet. Every rupee goes to Sahas Charitable Trust, and your
-            80G receipt and certificate reach your inbox within minutes.
+            <UiText>
+              Medicines, school fees, a bus fare to a hospital — some needs only
+              money can meet. Every rupee goes to Sahas Charitable Trust, and your
+              80G receipt and certificate reach your inbox within minutes.
+            </UiText>
           </p>
 
           <ul className="mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 lg:justify-start">
             <li className="flex items-center gap-1.5 text-[0.8rem] font-bold text-stone-600 dark:text-stone-300">
               <ShieldCheck className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
-              80G tax deductible
+              <UiText>80G tax deductible</UiText>
             </li>
             <li className="flex items-center gap-1.5 text-[0.8rem] font-bold text-stone-600 dark:text-stone-300">
               <ReceiptText className="size-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
-              Receipt emailed instantly
+              <UiText>Receipt emailed instantly</UiText>
             </li>
           </ul>
         </div>
@@ -63,7 +66,7 @@ export function DonateBand() {
         <div className="flex shrink-0 flex-col items-center gap-2.5">
           <DonateNowButton size="lg" />
           <p className="text-[0.72rem] font-semibold text-stone-500 dark:text-stone-400">
-            Give any amount · no account needed
+            <UiText>Give any amount · no account needed</UiText>
           </p>
         </div>
       </div>

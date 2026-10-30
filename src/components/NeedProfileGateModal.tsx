@@ -177,7 +177,7 @@ export function NeedProfileGateModal({
                 <h2 id={titleId} className="mt-5 text-center text-xl font-extrabold tracking-tight text-stone-900 dark:text-white">
                   {t("errorTitle")}
                 </h2>
-                <p className="mt-2 text-center text-sm text-stone-500 dark:text-stone-400">{state.message}</p>
+                <p className="mt-2 text-center text-sm text-stone-500 dark:text-stone-400">{state.message ?? t("unreachable")}</p>
                 <div className="mt-6 flex flex-col gap-2">
                   <button
                     onClick={() => void onRetry(state.destination)}

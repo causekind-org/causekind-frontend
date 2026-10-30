@@ -36,6 +36,7 @@ vi.mock("@/lib/api", () => ({
   resendNgoOtp: vi.fn(),
   uploadNgoDocument: vi.fn(),
   uploadNgoPhoto: vi.fn(),
+  checkNgoPanLetters: vi.fn().mockResolvedValue({ warnings: [] }),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -98,7 +99,7 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     expect(screen.getAllByText(/Registered Office Address/i).length).toBeGreaterThanOrEqual(1);
   }, 15000);
 
-  it("navigates to step when step item in sidebar is clicked", async () => {
+  it("does not skip ahead from the step list while step 1 is incomplete", async () => {
     vi.mocked(useAuth).mockReturnValue({
       user: { id: 101, email: "contact@smilefoundation.org", role: "NGO_PARTNER" },
       isLoading: false,
@@ -120,13 +121,14 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
       { timeout: 8000 }
     );
 
-    // Click on Legal Documents in sidebar
+    // Only the in-form Continue (enabled once the step is valid) moves forward.
     fireEvent.click(screen.getAllByRole("button", { name: /Legal Documents/i })[0]);
-
-    // Should now render Legal Documents step form
-    await waitFor(() => {
-      expect(screen.getAllByText(/Step 2 of 6/i).length).toBeGreaterThanOrEqual(1);
-    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getAllByText(/Step 1 of 6/i).length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText(/Step 2 of 6/i)).not.toBeInTheDocument();
+    // The sticky bar keeps Save draft but has no Save & Continue.
+    expect(screen.getByRole("button", { name: /Save draft/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Save & Continue/i })).not.toBeInTheDocument();
   }, 15000);
 
   it("shows already submitted state if application is UNDER_REVIEW and has button returning to /profile", async () => {
@@ -235,7 +237,7 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     });
   }
 
-  it("applies ?step= once on load, then navigation is not pulled back to it", async () => {
+  it("a ?step= past an incomplete step opens the first incomplete step instead", async () => {
     signInAsNgo();
     window.scrollTo = vi.fn();
     mockStepParam = "legal-documents";
@@ -243,21 +245,13 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     vi.mocked(getNgoDraft).mockResolvedValue(null);
 
     render(<NgoDetailsPage />);
-    await stepHeading(2);
-    expect(window.location.search).toBe("?step=legal-documents");
+    // The URL is synced in an effect after the step renders.
+    await waitFor(() => expect(window.location.search).toBe("?step=org-details"));
+    expect(screen.getAllByText(/Step 1 of 6/).length).toBeGreaterThanOrEqual(1);
 
-    // The page still reports ?step=legal-documents through useSearchParams, exactly the
-    // situation in which the old effect snapped the wizard back to Step 2.
     fireEvent.click(screen.getAllByRole("button", { name: /Authorized Representative/i })[0]);
-    await stepHeading(3);
-    fireEvent.click(screen.getAllByRole("button", { name: /^Previous$/i })[0]);
-    await stepHeading(2);
-    fireEvent.click(screen.getAllByRole("button", { name: /Organization Photos/i })[0]);
-    await stepHeading(4);
-
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(screen.getAllByText(/Step 4 of 6/).length).toBeGreaterThanOrEqual(1);
-    expect(window.location.search).toBe("?step=org-photos");
+    expect(screen.queryByText(/Step 3 of 6/)).not.toBeInTheDocument();
   }, 20000);
 
   it("prefers the URL step over the draft's saved step, and otherwise resumes the draft and writes it to the URL", async () => {
@@ -275,7 +269,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     window.history.replaceState(null, "", "/profile/ngo-details");
     render(<NgoDetailsPage />);
     await stepHeading(4);
-    expect(window.location.search).toBe("?step=org-photos");
+    // The URL is synced in an effect after the step renders.
+    await waitFor(() => expect(window.location.search).toBe("?step=org-photos"));
   }, 20000);
 
   it("ignores a ?step= that names no step or the email step", async () => {
@@ -287,7 +282,8 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     mockStepParam = "email-verification";
     render(<NgoDetailsPage />);
     await stepHeading(1);
-    expect(window.location.search).toBe("?step=org-details");
+    // The URL is synced in an effect after the step renders.
+    await waitFor(() => expect(window.location.search).toBe("?step=org-details"));
   }, 15000);
 
   it("offers Resend immediately on the restored OTP step and verifies against the restored application", async () => {

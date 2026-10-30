@@ -12,7 +12,7 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mockUseAuth() }));
 vi.mock("@/hooks/useNgoDashboardData", () => ({
   useNgoDashboardData: () => ({ status: "loading", isVerified: false, requests: [], documents: [] }),
 }));
-vi.mock("@/lib/api", () => ({ getMyMatches: vi.fn().mockResolvedValue([]) }));
+vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>()), getMyMatches: vi.fn().mockResolvedValue([]), getNgoDriveOffersForNgo: vi.fn().mockResolvedValue([]) }));
 
 // /dashboard/ngo is the NGO's own dashboard (links point to #live-drives); it no longer
 // redirects to "/". It only sends visitors who may not see it elsewhere.

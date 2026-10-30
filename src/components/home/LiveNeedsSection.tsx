@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { loginUrlFor } from "@/lib/safeRedirect";
-import { getNgoDrives, type PlatformStats, type PublicItemRequest, type PublicNgoDrive } from "@/lib/api";
+import { type PlatformStats, type PublicItemRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
 import LetterSwap from "@/components/LetterSwap";
@@ -33,33 +33,8 @@ import { LiveNeedCard } from "@/components/home/LiveNeedCard";
  */
 const NEEDS_SHOWN = 6;
 
-/** A live NGO drive shaped like an item request, so one grid renders both. */
+/** A card in this grid; ngoDriveId / ngoName are never set now that drives have their own section. */
 type NeedCard = PublicItemRequest & { ngoDriveId?: number; ngoName?: string | null };
-
-function driveAsNeed(d: PublicNgoDrive): NeedCard {
-  return {
-    id: d.id,
-    title: d.title,
-    category: d.category,
-    description: d.description ?? "",
-    urgency: d.urgency,
-    emergency: false,
-    city: d.ngoCity ?? "",
-    quantity: d.stillNeeded ?? d.quantityNeeded,
-    ngoDriveId: d.id,
-    ngoName: d.ngoOrganizationName,
-  } as unknown as NeedCard;
-}
-
-/** Requests and drives alternate, so drives are not all pushed to later pages. */
-function interleave(requests: NeedCard[], drives: NeedCard[]): NeedCard[] {
-  const out: NeedCard[] = [];
-  for (let i = 0; i < Math.max(requests.length, drives.length); i++) {
-    if (i < requests.length) out.push(requests[i]);
-    if (i < drives.length) out.push(drives[i]);
-  }
-  return out;
-}
 
 export function LiveNeedsSection({
   initialRequests = [],
@@ -114,16 +89,9 @@ export function LiveNeedsSection({
 
   // Purely backend-driven now — whatever the API returns (including an empty
   // array) is what renders. No local fallback/dummy data masking a real empty state.
-  // LIVE NGO drives (public endpoint, no location filter yet) mixed into the grid.
-  const [drives, setDrives] = useState<NeedCard[]>([]);
-  useEffect(() => {
-    let active = true;
-    getNgoDrives()
-      .then((rows) => { if (active) setDrives((rows ?? []).map(driveAsNeed)); })
-      .catch(() => { /* drives are optional here; requests still render */ });
-    return () => { active = false; };
-  }, []);
-  const allNeeds = useMemo(() => interleave(initialRequests ?? [], drives), [initialRequests, drives]);
+  // Donee requests only. NGO drives have their own section ("Real organisations.
+  // Real impact."), so they are not mixed into this grid or its category counts.
+  const allNeeds: NeedCard[] = useMemo(() => initialRequests ?? [], [initialRequests]);
 
   /*
    * The filtered list and the six we show are derived separately, on purpose.
@@ -252,7 +220,10 @@ export function LiveNeedsSection({
 
         {/* ── Category Filter Pills Row ── */}
         <div className="relative ck-live-needs-filters">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none snap-x">
+          {/* Phones swipe one row; from md up the pills wrap, because a
+              hidden-scrollbar row clipped the last pill (Sports) with no cue
+              that more existed — worse once counts and translations widen it. */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none snap-x md:flex-wrap md:overflow-visible">
             <button
               type="button"
               onClick={() => setSelectedCategory("All")}

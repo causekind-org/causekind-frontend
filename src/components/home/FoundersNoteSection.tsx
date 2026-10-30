@@ -112,7 +112,7 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
       id="founders-note"
       aria-label="Why We Built CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-b border-stone-200/80 dark:border-stone-800/80 "}px-5${isDonee ? ` ${fm.donee}` : ""}`}
+      className={`${galleryFonts} ck-m-section relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : ""}px-5${isDonee ? ` ${fm.donee}` : ""}`}
     >
       {isDonee ? (
         <FoundersDoneeHeading />
@@ -435,7 +435,7 @@ function FoundersNoteFull({
       id="founders-note"
       aria-label="Why We Built CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className={`relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] ${seamless ? "" : "border-t border-b border-stone-200/80 dark:border-stone-800/80 "}min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-10 sm:py-14 lg:py-16 overflow-hidden transition-colors`}
+      className={`relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] flex flex-col justify-center py-10 sm:py-12 lg:py-14 overflow-hidden transition-colors`}
     >
       {/* Ambient background glow */}
       {isDonee ? (

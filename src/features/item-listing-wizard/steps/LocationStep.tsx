@@ -5,7 +5,8 @@ import { Loader2, TriangleAlert } from "lucide-react";
 import { useLocations } from "@/hooks/useLocations";
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
 import { LocationPinPicker } from "@/components/LocationPinPicker";
-import type { WizardModel } from "../wizardModel";
+import type { LocationFields } from "@/hooks/useLocationPinHandlers";
+import type { PinTone } from "@/components/LocationPinPicker";
 
 type LatLng = { lat: number; lng: number };
 
@@ -36,13 +37,13 @@ export type LocationStepHandle = { flush: () => Promise<boolean> };
 const TYPED_NOT_PLACED = "We couldn't place this address. Drop the pin on the map to continue.";
 
 export function LocationStep({
-  model, errors, lookup, profileCenter, onChange, onPin, onGeocodeTyped, controlRef, onBusyChange,
+  model, errors, lookup, profileCenter, onChange, onPin, onGeocodeTyped, controlRef, onBusyChange, tone = "donor",
 }: {
-  model: WizardModel;
+  model: LocationFields;
   errors: Record<string, string>;
   lookup: { running: boolean; error: string | null; whenIdle?: () => Promise<void> };
   profileCenter: LatLng | null;
-  onChange: <K extends keyof WizardModel>(key: K, value: WizardModel[K]) => void;
+  onChange: <K extends keyof LocationFields>(key: K, value: LocationFields[K]) => void;
   onPin: (lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => void;
   /** Resolves true when the typed address was placed. */
   onGeocodeTyped: (q: { postalcode: string; city: string; state: string; countryCode: string }, useProfileFallback: boolean) => Promise<boolean> | void;
@@ -53,6 +54,8 @@ export function LocationStep({
    * address) until its fields are filled. The wizard holds Continue meanwhile.
    */
   onBusyChange?: (busy: boolean) => void;
+  /** Pin and button colour; the listing wizard keeps the default donor orange. */
+  tone?: PinTone;
 }) {
   const { countries, states, cities } = useLocations(model.countryIso, model.stateIso);
   const [mapDown, setMapDown] = useState(false);
@@ -77,7 +80,7 @@ export function LocationStep({
   const [typed, setTyped] = useState(0);
   /** A typed address is waiting for its debounce or its lookup. */
   const [typedBusy, setTypedBusy] = useState(false);
-  const edit = useCallback(<K extends keyof WizardModel>(key: K, value: WizardModel[K]) => {
+  const edit = useCallback(<K extends keyof LocationFields>(key: K, value: LocationFields[K]) => {
     onChange(key, value);
     setTyped(n => n + 1);
     setTypedBusy(true);
@@ -149,7 +152,7 @@ export function LocationStep({
   return (
     <div className="space-y-2">
       <LocationPinPicker
-        tone="donor" pin={pin} fallbackCenter={profileCenter}
+        tone={tone} pin={pin} fallbackCenter={profileCenter}
         onPick={pickClearing} onUnavailable={onUnavailable} onBusyChange={setPickerBusy}
         showSearch showLocateButton
         hint={lookup.running ? null : undefined}

@@ -1,5 +1,8 @@
 "use client";
 
+import { useCategoryLabel } from "@/lib/categoryLabel";
+import { UiText, useUiText } from "@/components/UiText";
+
 import { useEffect, useRef, useState } from "react";
 import Link from "@/components/AppLink";
 import Image from "next/image";
@@ -24,6 +27,8 @@ const RETRY_DELAY_MS  = 6_000; // lane busy — the other prompt is on screen
 const EXIT_MS         = 380;
 
 export function DoneeRequestPrompt() {
+  const ui = useUiText();
+  const categoryLabel = useCategoryLabel();
   const { user, isLoading } = useAuth();
   const isDesktop = useIsDesktop();
   const pathname = usePathname();
@@ -160,7 +165,7 @@ export function DoneeRequestPrompt() {
           {/* Text */}
           <div className="flex flex-col gap-0 min-w-0 flex-1">
             <span className={`text-3xs font-black uppercase tracking-wide ${visual.text}`}>
-              {request.category}
+              {categoryLabel(request.category)}
             </span>
             <span className="text-sm font-bold text-stone-900 leading-tight truncate">
               {request.title}
@@ -180,13 +185,13 @@ export function DoneeRequestPrompt() {
             }}
             className="flex items-center gap-1 bg-[#1e3a60] hover:bg-[#16304d] active:scale-95 text-white text-2xs font-black uppercase tracking-wide px-3 py-1.5 rounded-full transition-all whitespace-nowrap shrink-0"
           >
-            Help →
+            <UiText>Help →</UiText>
           </Link>
 
           {/* Dismiss */}
           <button
             onClick={dismiss}
-            aria-label="Dismiss"
+            aria-label={ui("Dismiss")}
             className="w-6 h-6 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 transition-all shrink-0"
           >
             <X className="w-3 h-3" />

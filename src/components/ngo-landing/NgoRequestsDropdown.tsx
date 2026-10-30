@@ -1,6 +1,4 @@
 "use client";
-import { LandingText } from "@/components/LandingTranslation";
-
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -51,36 +49,36 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
   // Status badge on top
   let statusBadge = (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-3xs font-bold uppercase tracking-wider bg-ngo-100/80 dark:bg-ngo-900/50 text-ngo-800 dark:text-ngo-200 border border-ngo-200 dark:border-ngo-800">
-      <Clock className="w-3 h-3 text-ngo-700 dark:text-ngo-300" /><LandingText>
+      <Clock className="w-3 h-3 text-ngo-700 dark:text-ngo-300" />
       Profile Incomplete
-    </LandingText></span>
+    </span>
   );
 
   if (isVerified) {
     statusBadge = (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-3xs font-bold uppercase tracking-wider bg-emerald-500/10 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
-        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /><LandingText>
+        <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
         Verified NGO Partner
-      </LandingText></span>
+      </span>
     );
   } else if (status === "under_review") {
     statusBadge = (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-3xs font-bold uppercase tracking-wider bg-amber-500/10 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-        <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" /><LandingText>
+        <Clock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
         Under Review
-      </LandingText></span>
+      </span>
     );
   } else if (status === "changes_requested") {
     statusBadge = (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-3xs font-bold uppercase tracking-wider bg-red-500/10 dark:bg-red-950/50 text-red-700 dark:text-red-300 border border-red-500/20">
-        <AlertCircle className="w-3 h-3 text-red-600 dark:text-red-400" /><LandingText>
+        <AlertCircle className="w-3 h-3 text-red-600 dark:text-red-400" />
         Changes Requested
-      </LandingText></span>
+      </span>
     );
   }
 
-  if (isLoading) return <p role="status" className="p-4"><LandingText>Loading your organization’s activity…</LandingText></p>;
-  if (error) return <div role="alert" className="p-4"><p><LandingText>{error}</LandingText></p><button className="mt-2 underline" onClick={() => void refresh()}><LandingText>Retry</LandingText></button></div>;
+  if (isLoading) return <p role="status" className="p-4">Loading your organization’s activity…</p>;
+  if (error) return <div role="alert" className="p-4"><p>{error}</p><button className="mt-2 underline" onClick={() => void refresh()}>Retry</button></div>;
   return (
     <div className="w-full">
       {/* ── Top Header Row ────────────────────────────────────────── */}
@@ -91,14 +89,14 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
           </div>
           <div>
             <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-              {ngoName || <LandingText>NGO Management</LandingText>}
+              {ngoName || "NGO Management"}
             </h3>
-            <p className="text-2xs text-stone-500 dark:text-stone-400"><LandingText>
+            <p className="text-2xs text-stone-500 dark:text-stone-400">
               Manage your drives &amp; drop-offs
-            </LandingText></p>
+            </p>
           </div>
         </div>
-        <div><LandingText>{statusBadge}</LandingText></div>
+        <div>{statusBadge}</div>
       </div>
 
       {/* ── Main 3 Action Cards Grid ──────────────────────────────── */}
@@ -116,19 +114,19 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                   <div className="w-10 h-10 rounded-xl bg-ngo-500/10 dark:bg-ngo-500/20 flex items-center justify-center text-ngo-700 dark:text-ngo-300 group-hover:scale-110 transition-transform duration-200">
                     <Plus className="w-5 h-5 stroke-[2.5]" />
                   </div>
-                  <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20"><LandingText>
+                  <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20">
                     Create New
-                  </LandingText></span>
+                  </span>
                 </div>
-                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5"><LandingText>
+                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5">
                   Start a Drive
-                </LandingText></h4>
-                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>
+                </h4>
+                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
                   Collect physical supplies, equipment, or emergency relief from givers within 10 km.
-                </LandingText></p>
+                </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-bold text-ngo-700 dark:text-ngo-300 group-hover:translate-x-0.5 transition-transform">
-                <span><LandingText>Start a drive</LandingText></span>
+                <span>Start a drive</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </div>
             </Link>
@@ -145,22 +143,22 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                     <Lock className="w-4 h-4" />
                   </div>
                   <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                    <Lock className="w-2.5 h-2.5" /><LandingText>
+                    <Lock className="w-2.5 h-2.5" />
                     Locked
-                  </LandingText></span>
+                  </span>
                 </div>
-                <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5"><LandingText>
+                <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">
                   Start a Drive
-                </LandingText></h4>
+                </h4>
                 <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
-                  <LandingText>{isPhotosDue
+                  {isPhotosDue
                     ? `Upload photos for "${photosDueRequestName}" to unlock new posts.`
                     : isVerified && !canStartDrive ? driveLockReason
-                    : "Unlocks once CauseKind verifies your NGO legal documents."}</LandingText>
+                    : "Unlocks once CauseKind verifies your NGO legal documents."}
                 </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-medium text-amber-700 dark:text-amber-400">
-                <span><LandingText>{isPhotosDue ? "Photos due" : isVerified && !canStartDrive ? "One drive at a time" : "Verification required"}</LandingText></span>
+                <span>{isPhotosDue ? "Photos due" : isVerified && !canStartDrive ? "One drive at a time" : "Verification required"}</span>
               </div>
             </button>
           )}
@@ -180,18 +178,18 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                     <ClipboardList className="w-5 h-5" />
                   </div>
                   <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-ngo-100 text-ngo-800 dark:bg-ngo-900/60 dark:text-ngo-200 border border-ngo-200 dark:border-ngo-800">
-                    <LandingText>{activeRequests > 0 ? `${activeRequests} Active` : "Dashboard"}</LandingText>
+                    {activeRequests > 0 ? `${activeRequests} Active` : "Dashboard"}
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5"><LandingText>
+                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5">
                   Live Drives
-                </LandingText></h4>
-                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>
+                </h4>
+                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
                   Monitor live drives, givers&apos; in-kind pledges, and current fulfillment status.
-                </LandingText></p>
+                </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-bold text-ngo-700 dark:text-ngo-300 group-hover:translate-x-0.5 transition-transform">
-                <span><LandingText>View live drives</LandingText></span>
+                <span>View live drives</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </div>
             </Link>
@@ -208,19 +206,19 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                     <Lock className="w-4 h-4" />
                   </div>
                   <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-stone-200/80 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 border border-stone-300/60 dark:border-zinc-700 flex items-center gap-1">
-                    <Lock className="w-2.5 h-2.5" /><LandingText>
+                    <Lock className="w-2.5 h-2.5" />
                     Locked
-                  </LandingText></span>
+                  </span>
                 </div>
-                <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5"><LandingText>
+                <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">
                   Live Drives
-                </LandingText></h4>
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed"><LandingText>
+                </h4>
+                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                   Your organization&apos;s drive hub unlocks upon verification.
-                </LandingText></p>
+                </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-medium text-stone-500 dark:text-stone-400">
-                <span><LandingText>Verification required</LandingText></span>
+                <span>Verification required</span>
               </div>
             </button>
           )}
@@ -240,18 +238,18 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                     <Camera className="w-5 h-5" />
                   </div>
                   <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-ngo-100 text-ngo-800 dark:bg-ngo-900/60 dark:text-ngo-200 border border-ngo-200 dark:border-ngo-800">
-                    <LandingText>{dropoffsToConfirm > 0 ? `${dropoffsToConfirm} Drop-offs` : "Track"}</LandingText>
+                    {dropoffsToConfirm > 0 ? `${dropoffsToConfirm} Drop-offs` : "Track"}
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5"><LandingText>
+                <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-ngo-700 dark:group-hover:text-ngo-300 transition-colors mb-1.5 flex items-center gap-1.5">
                   Handovers &amp; Photos
-                </LandingText></h4>
-                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><LandingText>
+                </h4>
+                <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
                   Confirm drop-offs, verify handover OTPs, and upload delivery photo proof.
-                </LandingText></p>
+                </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-bold text-ngo-700 dark:text-ngo-300 group-hover:translate-x-0.5 transition-transform">
-                <span><LandingText>Manage handovers</LandingText></span>
+                <span>Manage handovers</span>
                 <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </div>
             </Link>
@@ -268,19 +266,19 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
                     <Lock className="w-4 h-4" />
                   </div>
                   <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-stone-200/80 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 border border-stone-300/60 dark:border-zinc-700 flex items-center gap-1">
-                    <Lock className="w-2.5 h-2.5" /><LandingText>
+                    <Lock className="w-2.5 h-2.5" />
                     Locked
-                  </LandingText></span>
+                  </span>
                 </div>
-                <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5"><LandingText>
+                <h4 className="text-sm font-bold text-stone-700 dark:text-stone-300 mb-1.5 flex items-center gap-1.5">
                   Handovers &amp; Photos
-                </LandingText></h4>
-                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed"><LandingText>
+                </h4>
+                <p className="text-xs text-stone-500 dark:text-stone-400 leading-relaxed">
                   Drop-off tracking and photo uploads unlock upon verification.
-                </LandingText></p>
+                </p>
               </div>
               <div className="mt-4 flex items-center text-xs font-medium text-stone-500 dark:text-stone-400">
-                <span><LandingText>Verification required</LandingText></span>
+                <span>Verification required</span>
               </div>
             </button>
           )}
@@ -291,16 +289,16 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
       <div className="mt-6 pt-4 border-t border-stone-200/70 dark:border-zinc-800 flex items-center justify-between text-xs text-stone-500 dark:text-stone-400">
         <div className="flex items-center gap-6 flex-wrap">
           <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="font-medium"><LandingText>Legally Verified NGOs</LandingText></span>
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />
+            <span className="font-medium">Legally Verified NGOs</span>
           </div>
           <div className="flex items-center gap-2">
             <PackageCheck className="w-4 h-4 text-ngo-700 dark:text-ngo-300" />
-            <span className="font-medium"><LandingText>100% Direct In-Kind Giving</LandingText></span>
+            <span className="font-medium">100% Direct In-Kind Giving</span>
           </div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-500" />
-            <span className="font-medium"><LandingText>Photo-Proof Delivery Records</LandingText></span>
+            <span className="font-medium">Photo-Proof Delivery Records</span>
           </div>
         </div>
         <Link
@@ -308,7 +306,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
           onClick={onNavigate}
           className="flex items-center gap-1 font-semibold text-ngo-700 dark:text-ngo-300 hover:underline"
         >
-          <span><LandingText>{isVerified ? "View NGO Profile" : "Complete Verification"}</LandingText></span>
+          <span>{isVerified ? "View NGO Profile" : "Complete Verification"}</span>
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>

@@ -9,6 +9,7 @@ import { mediaStatusCopy, VIDEO_COPY } from "@/features/wizard-kit/mediaStatusCo
 import type { OfferVideoState } from "../useOfferVideo";
 import { VideoRecorderDialog } from "./VideoRecorderDialog";
 
+import { UiText, useUiText } from "@/components/UiText";
 /**
  * Containers the server accepts, as an `accept` attribute.
  *
@@ -59,6 +60,8 @@ export function OfferVideoField({
   onPick: (file: File) => void;
   onRemove: () => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const ui = useUiText();
   const reduced = !!useReducedMotion();
   const [recording, setRecording] = useState(false);
   const chooseInputRef = useRef<HTMLInputElement>(null);
@@ -90,10 +93,10 @@ export function OfferVideoField({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold text-stone-700 dark:text-stone-200">
-            Add a short video <span className="font-medium text-stone-500">(optional)</span>
+            <UiText>Add a short video</UiText> <span className="font-medium text-stone-500"><UiText>(optional)</UiText></span>
           </p>
           <p className="mt-0.5 text-3xs text-stone-500 dark:text-stone-400">
-            Up to {capability.maxSeconds}s, {maxMb}MB. We check it before anyone sees it.
+            {wt("videoLimits", { seconds: capability.maxSeconds, mb: maxMb })}
           </p>
         </div>
 
@@ -103,7 +106,7 @@ export function OfferVideoField({
             onClick={onRemove}
             className="flex min-h-[44px] items-center gap-1 px-2 text-3xs font-bold text-stone-500 hover:text-red-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
           >
-            <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
+            <Trash2 className="h-3.5 w-3.5" aria-hidden /> <UiText>Remove</UiText>
           </button>
         )}
       </div>
@@ -119,7 +122,7 @@ export function OfferVideoField({
           className="mt-2.5 flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm font-bold text-stone-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-stone-300"
         >
           <Loader2 className="h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden />
-          {phase === "uploading" ? "Uploading…" : "Checking…"}
+          {phase === "uploading" ? ui("Uploading…") : ui("Checking…")}
         </p>
       )}
 
@@ -130,14 +133,14 @@ export function OfferVideoField({
             onClick={() => setRecording(true)}
             className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-soft)] px-3 py-2.5 text-sm font-bold text-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
           >
-            <Video className="h-4 w-4" aria-hidden /> Record video
+            <Video className="h-4 w-4" aria-hidden /> <UiText>Record video</UiText>
           </motion.button>
           <motion.button
             type="button" {...pressProps(reduced)}
             onClick={() => chooseInputRef.current?.click()}
             className="flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm font-bold text-stone-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200"
           >
-            <FileVideo className="h-4 w-4" aria-hidden /> Choose video
+            <FileVideo className="h-4 w-4" aria-hidden /> <UiText>Choose video</UiText>
           </motion.button>
         </div>
       )}

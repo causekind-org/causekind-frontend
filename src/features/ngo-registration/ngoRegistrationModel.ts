@@ -5,6 +5,8 @@
  * server and client components without "use client" hoisting.
  */
 
+import { formatIST } from "@/lib/formatIST";
+
 // ── Steps ──────────────────────────────────────────────────────────────────────
 
 export const NGO_STEPS = [
@@ -74,43 +76,150 @@ export interface DocDefinition {
   id: string;
   label: string;
   category: DocCategory;
+  /** Short help shown under the label. */
+  hint?: string;
+}
+
+/** Step 1: the organization's PAN card (same key for every structure). */
+export const PAN_DOC: DocDefinition = {
+  id: "pan",
+  label: "PAN card",
+  category: "must-have",
+  hint: "The organization's PAN card or e-PAN",
+};
+
+/** Step 1: the registration certificate, named by legal structure. */
+export function getRegistrationCertificateDoc(structure: LegalStructure): DocDefinition | null {
+  switch (structure) {
+    case "trust":
+      return { id: "trust-reg-cert", label: "Trust Registration Certificate", category: "must-have" };
+    case "society":
+      return { id: "society-reg-cert", label: "Society Registration Certificate", category: "must-have" };
+    case "section8":
+      return { id: "coi", label: "Certificate of Incorporation (MCA)", category: "must-have" };
+    default:
+      return null;
+  }
 }
 
 const TRUST_DOCS: DocDefinition[] = [
-  { id: "trust-reg-cert", label: "Trust Registration Certificate", category: "must-have" },
   { id: "trust-deed", label: "Registered Trust Deed", category: "must-have" },
-  { id: "trust-pan", label: "Trust PAN Card", category: "must-have" },
-  { id: "trustee-info", label: "Current Trustee / Office-Bearer Info", category: "must-have" },
 ];
 
 const SOCIETY_DOCS: DocDefinition[] = [
-  { id: "society-reg-cert", label: "Society Registration Certificate", category: "must-have" },
-  { id: "society-moa", label: "Memorandum of Association (MOA)", category: "must-have" },
+  { id: "society-moa", label: "Memorandum of Association (MoA)", category: "must-have" },
   { id: "society-bye-laws", label: "Rules & Bye-laws", category: "must-have" },
-  { id: "society-pan", label: "Society PAN Card", category: "must-have" },
-  { id: "governing-body", label: "Current Governing Body Info", category: "must-have" },
 ];
 
 const SECTION8_DOCS: DocDefinition[] = [
-  { id: "coi", label: "Certificate of Incorporation", category: "must-have" },
-  { id: "cin", label: "CIN (Corporate Identity Number)", category: "must-have" },
-  { id: "s8-moa", label: "Memorandum of Association (MOA)", category: "must-have" },
-  { id: "s8-aoa", label: "Articles of Association (AOA)", category: "must-have" },
-  { id: "company-pan", label: "Company PAN Card", category: "must-have" },
-  { id: "director-info", label: "Current Director Info", category: "must-have" },
+  { id: "s8-moa", label: "MoA and AoA", category: "must-have", hint: "Memorandum and Articles of Association" },
+  { id: "s8-licence", label: "Section 8 Licence (Form INC-12)", category: "must-have" },
 ];
 
+/** Asked of every structure in step 2 (after the structure's own documents). */
+export const COMMON_DOCS: DocDefinition[] = [
+  {
+    id: "bank-proof",
+    label: "Bank account proof",
+    category: "must-have",
+    hint: "Cancelled cheque or passbook first page in the organization's own name",
+  },
+  { id: "cert-12a", label: "12A certificate", category: "must-have" },
+  { id: "cert-80g", label: "80G certificate", category: "supporting" },
+  { id: "darpan", label: "NGO Darpan registration", category: "supporting" },
+  { id: "financials", label: "Latest audited financial statements or ITR", category: "supporting" },
+];
+
+/** Step 2 documents for a structure: its own documents, then the common ones. */
 export function getDocsForStructure(structure: LegalStructure): DocDefinition[] {
   switch (structure) {
     case "trust":
-      return TRUST_DOCS;
+      return [...TRUST_DOCS, ...COMMON_DOCS];
     case "society":
-      return SOCIETY_DOCS;
+      return [...SOCIETY_DOCS, ...COMMON_DOCS];
     case "section8":
-      return SECTION8_DOCS;
+      return [...SECTION8_DOCS, ...COMMON_DOCS];
     default:
       return [];
   }
+}
+
+/** Every document key the wizard sends for a structure (steps 1 and 2). */
+export function allDocumentIdsForStructure(structure: LegalStructure): string[] {
+  const cert = getRegistrationCertificateDoc(structure);
+  return [PAN_DOC.id, ...(cert ? [cert.id] : []), ...getDocsForStructure(structure).map((d) => d.id)];
+}
+
+/** Documents kept when the legal structure changes: the PAN card and the common step 2 documents. */
+export const STRUCTURE_INDEPENDENT_DOC_IDS = [PAN_DOC.id, ...COMMON_DOCS.map((d) => d.id)];
+
+/** Documents of applications submitted before the current wizard (shown by name only). */
+const OLDER_DOC_LABELS: Record<string, string> = {
+  "trust-pan": "Trust PAN Card",
+  "society-pan": "Society PAN Card",
+  "company-pan": "Company PAN Card",
+  "trustee-info": "Current Trustee / Office-Bearer Info",
+  "governing-body": "Current Governing Body Info",
+  cin: "CIN (Corporate Identity Number)",
+  "s8-aoa": "Articles of Association (AOA)",
+};
+
+/** Readable name of any document key, current or older. */
+export function documentLabel(id: string): string {
+  if (id === PAN_DOC.id) return PAN_DOC.label;
+  for (const s of ["trust", "society", "section8"] as const) {
+    const cert = getRegistrationCertificateDoc(s);
+    if (cert?.id === id) return cert.label;
+    const doc = getDocsForStructure(s).find((d) => d.id === id);
+    if (doc) return doc.label;
+  }
+  return OLDER_DOC_LABELS[id] ?? id;
+}
+
+/** Drafts saved before the current wizard keep the PAN card under a per-structure key. */
+export function normalizeDraftDocuments<T>(docs: Record<string, T | null>): Record<string, T | null> {
+  const out: Record<string, T | null> = { ...docs };
+  for (const legacy of ["trust-pan", "society-pan", "company-pan"]) {
+    if (legacy in out) {
+      const file = out[legacy];
+      delete out[legacy];
+      if (file && !out[PAN_DOC.id]) out[PAN_DOC.id] = file;
+    }
+  }
+  return out;
+}
+
+/** Step 3: what the authorization document must be, by structure. */
+export function authorizationDocumentLabel(structure: LegalStructure): string {
+  switch (structure) {
+    case "trust":
+      return "Trustee resolution or authorization letter signed by the trustees";
+    case "society":
+      return "Managing committee resolution signed by the President or Secretary";
+    case "section8":
+      return "Board resolution (certified true copy) signed by a director or company secretary";
+    default:
+      return "Authorization document";
+  }
+}
+
+// ── PAN ───────────────────────────────────────────────────────────────────────
+
+export const PAN_PATTERN = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+
+/** Upper case, no spaces. */
+export function normalizePan(value: string): string {
+  return fieldText(value).replace(/\s+/g, "").toUpperCase();
+}
+
+export function isValidPan(value: string): boolean {
+  return PAN_PATTERN.test(normalizePan(value));
+}
+
+/** A person's PAN has P as its 4th letter (representatives should use their own). */
+export function isPersonalPan(value: string): boolean {
+  const pan = normalizePan(value);
+  return PAN_PATTERN.test(pan) && pan[3] === "P";
 }
 
 // ── Form state ─────────────────────────────────────────────────────────────────
@@ -129,18 +238,52 @@ export interface UploadedFile {
   rejectedReason?: string;
 }
 
+/** One authorized representative card (step 3). */
+export interface RepresentativeCard {
+  fullName: string;
+  designation: string;
+  mobileNumber: string;
+  email: string;
+  panNumber: string;
+  idProof: UploadedFile | null;
+  /** Confirmed by the server for this exact email; never trusted from the browser. */
+  emailVerified: boolean;
+}
+
+export const MAX_REPRESENTATIVES = 5;
+
+export const EMPTY_REPRESENTATIVE: RepresentativeCard = {
+  fullName: "",
+  designation: "",
+  mobileNumber: "",
+  email: "",
+  panNumber: "",
+  idProof: null,
+  emailVerified: false,
+};
+
 export interface NGOFormState {
-  // Step 1 — Organization Details
+  // Step 1 — Organization Details (the PAN card and registration certificate are in `documents`)
   organizationName: string;
   legalStructure: LegalStructure;
+  panNumber: string;
   registrationNumber: string;
   registeredOfficeAddress: string;
+  organizationPhone: string;
+  /** About us: what the NGO does, how, and its causes (100-2000 characters). */
+  aboutUs: string;
+  /**
+   * A corrections resubmission: About us is optional there (as on the server), so
+   * an application from before it existed can still be fixed and resubmitted.
+   */
+  aboutUsOptional?: boolean;
   yearOfEstablishment: string;
 
-  // Step 2 — Legal Documents (keyed by DocDefinition.id)
+  // Steps 1–2 — documents keyed by DocDefinition.id
   documents: Record<string, UploadedFile | null>;
 
-  // Step 3 — Authorized Representative
+  // Step 3 — Authorized Representatives (card 1 also fills the four fields below)
+  representatives: RepresentativeCard[];
   representativeName: string;
   designation: string;
   mobileNumber: string;
@@ -151,6 +294,8 @@ export interface NGOFormState {
   logo: UploadedFile | null;
   officePhoto: UploadedFile | null;
   activityPhotos: (UploadedFile | null)[];
+  /** Past activities (with a photo) the NGO has saved; loaded from the server, never part of the draft. */
+  pastActivitiesWithPhoto?: number;
 
   // Step 5 — Confirmation
   confirmationChecked: boolean;
@@ -166,10 +311,14 @@ export interface NGOFormState {
 export const INITIAL_NGO_FORM: NGOFormState = {
   organizationName: "",
   legalStructure: "",
+  panNumber: "",
   registrationNumber: "",
   registeredOfficeAddress: "",
+  organizationPhone: "",
+  aboutUs: "",
   yearOfEstablishment: "",
   documents: {},
+  representatives: [EMPTY_REPRESENTATIVE],
   representativeName: "",
   designation: "",
   mobileNumber: "",
@@ -198,6 +347,22 @@ export const DESIGNATIONS = [
   "Other",
 ];
 
+/** "Other" + "Please specify": 2–60 letters, spaces and . , - & (same rule as the backend's NgoOtherText). */
+export const OTHER_TEXT_PATTERN = /^[A-Za-z][A-Za-z .,&-]{1,59}$/;
+
+/** "" when the typed "Other" value is fine, else the message to show. */
+export function otherTextError(text: string): string {
+  const t = (text ?? "").trim();
+  if (!t || t.toLowerCase() === "other") return "Please specify";
+  return OTHER_TEXT_PATTERN.test(t) ? "" : "Use 2–60 letters (spaces and . , - & allowed)";
+}
+
+/** A stored value that is not one of the list's options is the NGO's own "Other" text ("Other" alone = not typed yet). */
+export function isOtherChoice(value: string | null | undefined, options: readonly string[]): boolean {
+  const v = (value ?? "").trim();
+  return !!v && (v === "Other" || !options.includes(v));
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 /**
@@ -216,14 +381,7 @@ export function generateApplicationId(): string {
 }
 
 export function formatSubmissionTime(date: Date): string {
-  return date.toLocaleString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  });
+  return formatIST(date);
 }
 
 /** Human-readable label for the legal structure value. */
@@ -275,16 +433,116 @@ export function fieldText(value: unknown): string {
  * Returns an array of human-readable missing item descriptions for a given step.
  * Returns an empty array if the step is fully completed.
  */
+export const INDIAN_MOBILE_WITH_PREFIX_REGEX = /^\+91[6-9]\d{9}$/;
+export const INDIAN_MOBILE_DIGITS_REGEX = /^[6-9]\d{9}$/;
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidMobile(value: string): boolean {
+  const clean = fieldText(value).replace(/[\s-]/g, "");
+  return INDIAN_MOBILE_WITH_PREFIX_REGEX.test(clean) || INDIAN_MOBILE_DIGITS_REGEX.test(clean);
+}
+
+/** Why a mobile number is invalid ("" when valid): a wrong first digit, else a wrong length. Same wording as the backend. */
+export function mobileError(value: string): string {
+  if (isValidMobile(value)) return "";
+  let digits = fieldText(value).replace(/[\s-]/g, "");
+  if (digits.startsWith("+91")) digits = digits.slice(3);
+  if (digits && !/^[6-9]/.test(digits)) return "Mobile numbers start with 6, 7, 8 or 9.";
+  return "Enter a 10-digit mobile number.";
+}
+
+/** Extracts the 10 digits of an Indian mobile number, or whatever digits exist without truncating saved data. */
+export function extractIndianMobileDigits(value: string): string {
+  const clean = fieldText(value).replace(/[\s-]/g, "");
+  if (clean.startsWith("+91")) return clean.slice(3);
+  if (clean.startsWith("91") && clean.length > 10) return clean.slice(2);
+  if (clean.startsWith("0") && clean.length > 10) return clean.replace(/^0+/, "");
+  return clean;
+}
+
+/** Formats a mobile number for storage and backend submit: "+91XXXXXXXXXX" */
+export function formatIndianMobileForStorage(value: string): string {
+  const digits = extractIndianMobileDigits(value);
+  return digits ? `+91${digits}` : "";
+}
+
+/** Sanitizes input on typing or paste: strips non-digits, leading "+91", "91" or "0", max 10 chars */
+export function cleanIndianMobileInput(raw: string): string {
+  let cleaned = raw.trim();
+  if (cleaned.startsWith("+91")) {
+    cleaned = cleaned.slice(3);
+  } else if (cleaned.startsWith("+")) {
+    cleaned = cleaned.slice(1);
+  }
+  cleaned = cleaned.replace(/\D/g, "");
+  if (cleaned.startsWith("91") && cleaned.length > 10) {
+    cleaned = cleaned.slice(2);
+  } else if (cleaned.startsWith("0")) {
+    cleaned = cleaned.replace(/^0+/, "");
+  }
+  return cleaned.slice(0, 10);
+}
+
+export function isValidEmail(value: string): boolean {
+  return EMAIL_PATTERN.test(fieldText(value));
+}
+
+/** True when nothing on the card has been filled in. */
+export function isRepresentativeEmpty(card: RepresentativeCard | undefined): boolean {
+  return !card || (!fieldText(card.fullName) && !fieldText(card.designation) && !fieldText(card.mobileNumber)
+    && !fieldText(card.email) && !fieldText(card.panNumber) && !card.idProof);
+}
+
+/** What a representative card still needs (empty when complete). */
+export function getRepresentativeIssues(card: RepresentativeCard, index: number): string[] {
+  const who = `Representative ${index + 1}`;
+  const issues: string[] = [];
+  if (!fieldText(card.fullName)) issues.push(`${who}: full name`);
+  if (!fieldText(card.designation)) issues.push(`${who}: designation / role`);
+  else if (isOtherChoice(card.designation, DESIGNATIONS) && otherTextError(card.designation)) issues.push(`${who}: designation / role (please specify)`);
+  if (!isValidMobile(card.mobileNumber)) issues.push(`${who}: valid mobile number`);
+  if (!isValidEmail(card.email)) issues.push(`${who}: valid email`);
+  else if (!card.emailVerified) issues.push(`${who}: verify email with the code`);
+  if (!fieldText(card.panNumber)) issues.push(`${who}: PAN number`);
+  else if (!isValidPan(card.panNumber)) issues.push(`${who}: valid PAN number`);
+  if (!card.idProof) issues.push(`${who}: ID proof`);
+  return issues;
+}
+
+export const ABOUT_US_MIN = 100;
+export const ABOUT_US_MAX = 2000;
+
+/** About us is 100 to 2000 characters once trimmed. */
+export function isValidAboutUs(text: string): boolean {
+  const n = (text ?? "").trim().length;
+  return n >= ABOUT_US_MIN && n <= ABOUT_US_MAX;
+}
+
+/** Required on a new application; on a corrections resubmission only checked when filled in. */
+export function aboutUsMissing(data: Pick<NGOFormState, "aboutUs" | "aboutUsOptional">): boolean {
+  const text = (data.aboutUs ?? "").trim();
+  if (!text && data.aboutUsOptional) return false;
+  return !isValidAboutUs(text);
+}
+
 export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): string[] {
   const missing: string[] = [];
   switch (step) {
-    case "org-details":
+    case "org-details": {
       if (!fieldText(data.organizationName)) missing.push("Organization name");
       if (!data.legalStructure) missing.push("Legal structure (Trust, Society, or Section 8)");
+      if (!data.documents?.[PAN_DOC.id]) missing.push("PAN card upload");
+      if (!isValidPan(data.panNumber ?? "")) missing.push("Organization PAN number (10 characters)");
+      const cert = getRegistrationCertificateDoc(data.legalStructure);
+      if (cert && !data.documents?.[cert.id]) missing.push(cert.label);
       if (!fieldText(data.registrationNumber)) missing.push("Registration number");
-      if (!fieldText(data.registeredOfficeAddress)) missing.push("Registered office address");
+      if (!isValidEmail(data.officialEmail ?? "")) missing.push("Organization email");
+      if (!isValidMobile(data.organizationPhone ?? "")) missing.push("Organization phone number (10 digits)");
+      if (aboutUsMissing(data)) missing.push(`About us (${ABOUT_US_MIN} to ${ABOUT_US_MAX} characters)`);
       if (!fieldText(data.yearOfEstablishment) || !/^(18|19|20)\d{2}$/.test(fieldText(data.yearOfEstablishment))) missing.push("Valid year of establishment (4 digits)");
+      if (!fieldText(data.registeredOfficeAddress)) missing.push("Registered office address");
       break;
+    }
     case "legal-documents":
       if (!data.legalStructure) {
         missing.push("Select legal structure in Step 1 first");
@@ -297,16 +555,21 @@ export function getNgoStillNeededItems(step: NGOStep, data: NGOFormState): strin
         }
       }
       break;
-    case "authorized-rep":
-      if (!fieldText(data.representativeName)) missing.push("Representative full name");
-      if (!data.designation) missing.push("Designation");
-      if (!fieldText(data.mobileNumber) || !/^\d{10}$/.test(fieldText(data.mobileNumber).replace(/\D/g, "").slice(-10))) missing.push("10-digit mobile number");
-      if (!fieldText(data.officialEmail) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fieldText(data.officialEmail))) missing.push("Valid official email address");
-      if (!data.authorizationLetter) missing.push("Authorization letter");
+    case "authorized-rep": {
+      if (!data.authorizationLetter) missing.push("Authorization document");
+      const reps = data.representatives?.length ? data.representatives : [EMPTY_REPRESENTATIVE];
+      reps.forEach((card, i) => {
+        // Representative 1 is required; other cards count only once something is filled in.
+        if (i === 0 || !isRepresentativeEmpty(card)) missing.push(...getRepresentativeIssues(card, i));
+      });
+      if (reps.length > MAX_REPRESENTATIVES) missing.push(`At most ${MAX_REPRESENTATIVES} representatives`);
       break;
+    }
     case "org-photos":
       if (!data.logo) missing.push("Official organization logo");
       if (!data.officePhoto) missing.push("Office premises photo");
+      // Unknown until the list loads (undefined): only a loaded count of 0 blocks the step.
+      if (data.pastActivitiesWithPhoto === 0) missing.push("At least one past activity with a photo");
       break;
     case "review-submit":
       if (!data.confirmationChecked) missing.push("Declaration & legal verification confirmation");
@@ -369,13 +632,22 @@ export function prefillNgoFormWithUser(
 ): NGOFormState {
   if (!user) return form;
   const skipped = new Set(skip);
-  const fill = (key: "organizationName" | "mobileNumber" | "officialEmail", value: string | null | undefined) =>
+  const fill = (key: "organizationName" | "organizationPhone" | "mobileNumber" | "officialEmail", value: string | null | undefined) =>
     skipped.has(key) || fieldText(form[key]) ? form[key] : fieldText(value);
+  // Representative email starts empty so the representative types and verifies their own email.
+  // The representative mobile number starts empty so the representative enters their own number.
+  // An older draft may hold the account email on a representative (copied from the org email):
+  // clear it unless that representative verified it, so they enter their own.
+  const accountEmail = fieldText(user.email).toLowerCase();
+  const reps = (form.representatives?.length ? [...form.representatives] : [{ ...EMPTY_REPRESENTATIVE }])
+    .map(r => accountEmail && !r.emailVerified && fieldText(r.email).toLowerCase() === accountEmail ? { ...r, email: "" } : r);
   return {
     ...form,
     organizationName: fill("organizationName", user.fullName),
+    organizationPhone: fill("organizationPhone", user.phone),
     mobileNumber: fill("mobileNumber", user.phone),
     officialEmail: fill("officialEmail", user.email),
+    representatives: reps,
   };
 }
 
@@ -386,12 +658,15 @@ const CORRECTION_FIELD_LABELS: Record<string, string> = {
   legalStructure: "Legal structure",
   registrationNumber: "Registration number",
   registeredOfficeAddress: "Registered office address",
+  organizationPhone: "Organization phone number",
+  aboutUs: "About us",
   yearOfEstablishment: "Year of establishment",
   representativeName: "Representative name",
   designation: "Designation",
   mobileNumber: "Mobile number",
   officialEmail: "Official email",
-  authorizationLetter: "Authorization letter",
+  panNumber: "PAN number",
+  authorizationLetter: "Authorization document",
   logo: "Organization logo",
   officePhoto: "Office photo",
 };
@@ -400,19 +675,35 @@ const CORRECTION_FIELD_LABELS: Record<string, string> = {
 export function correctionFieldLabel(field: string): string {
   if (CORRECTION_FIELD_LABELS[field]) return CORRECTION_FIELD_LABELS[field];
   if (field.startsWith("activityPhotos.")) return `Activity photo ${Number(field.slice(15)) + 1}`;
-  if (field.startsWith("documents.")) {
-    const id = field.slice(10);
-    return [...TRUST_DOCS, ...SOCIETY_DOCS, ...SECTION8_DOCS].find((d) => d.id === id)?.label ?? id;
+  if (field.startsWith("documents.")) return documentLabel(field.slice(10));
+  const rep = /^representatives\.(\d)\.(\w+)$/.exec(field);
+  if (rep) {
+    const parts: Record<string, string> = {
+      fullName: "full name",
+      designation: "designation",
+      mobileNumber: "mobile number",
+      email: "email",
+      panNumber: "PAN",
+      idProof: "ID proof",
+    };
+    return `Representative ${Number(rep[1]) + 1} ${parts[rep[2]] ?? rep[2]}`;
   }
   return field;
 }
 
+/** Step 1 fields, including the PAN card and the registration certificate. */
+const ORG_DETAILS_FIELDS = [
+  "organizationName", "legalStructure", "panNumber", "registrationNumber", "registeredOfficeAddress", "officialEmail", "organizationPhone", "aboutUs", "yearOfEstablishment",
+  "documents.pan", "documents.trust-pan", "documents.society-pan", "documents.company-pan",
+  "documents.trust-reg-cert", "documents.society-reg-cert", "documents.coi",
+];
+
 /** The wizard step that holds a correction item. */
 export function correctionFieldStep(field: string): NGOStep {
-  if (["organizationName", "legalStructure", "registrationNumber", "registeredOfficeAddress", "yearOfEstablishment"].includes(field))
-    return "org-details";
+  if (ORG_DETAILS_FIELDS.includes(field)) return "org-details";
   if (field.startsWith("documents.")) return "legal-documents";
-  if (["representativeName", "designation", "mobileNumber", "officialEmail", "authorizationLetter"].includes(field))
+  if (field.startsWith("representatives.")
+    || ["representativeName", "designation", "mobileNumber", "authorizationLetter"].includes(field))
     return "authorized-rep";
   return "org-photos";
 }

@@ -8,6 +8,8 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { doneeAcceptMatch, donorAcceptMatch, getMyMatches, type ItemMatch } from "@/lib/api";
 import { toast } from "@/lib/toast";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * A pinned dock, on any page, telling a donor that one of their items has been
  * matched (design D of https://claude.ai/artifact/DRtcEBQ6VcDHQ4cjJw7fsR, chosen
@@ -32,6 +34,8 @@ function saveDismissed(ids: Set<number>) {
 }
 
 export function MatchActionDock() {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
   const { user, isLoading } = useAuth();
   const [waiting, setWaiting] = useState<ItemMatch | null>(null);
   const [busy, setBusy] = useState(false);
@@ -64,29 +68,29 @@ export function MatchActionDock() {
     try {
       if (user?.role === "DONEE") {
         await doneeAcceptMatch(waiting.id);
-        toast.success("Accepted! The handover will be arranged next.");
+        toast.success(ui("Accepted! The handover will be arranged next."));
       } else {
         await donorAcceptMatch(waiting.id);
-        toast.success("Thanks! An admin will approve the match next.");
+        toast.success(ui("Thanks! An admin will approve the match next."));
       }
       dismiss(waiting.id);
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Could not confirm the match");
+      toast.error(e instanceof Error ? e.message : ui("Could not confirm the match"));
     } finally {
       setBusy(false);
     }
   }, [waiting, dismiss, user?.role]);
 
   if (!waiting) return null;
-  const item = waiting.listingTitle || waiting.donorItemDescription || "your item";
-  const need = waiting.requestTitle || "a nearby need";
+  const item = waiting.listingTitle || waiting.donorItemDescription || ui("your item");
+  const need = waiting.requestTitle || ui("a nearby need");
   const km = waiting.scoreDistanceKm;
   const isDonee = user?.role === "DONEE";
   const headline = isDonee
-    ? `A donor near you has “${item}” for your need`
-    : `A need near you matches “${item}”`;
-  const subline = isDonee ? `For “${need}”` : `“${need}”`;
-  const acceptLabel = isDonee ? "Yes, I want it" : "I still have it";
+    ? dt("donorNearHasItem", { item })
+    : dt("needNearMatches", { item });
+  const subline = isDonee ? dt("forQuoted", { need }) : `“${need}”`;
+  const acceptLabel = isDonee ? ui("Yes, I want it") : ui("I still have it");
 
   return (
     <div
@@ -99,7 +103,7 @@ export function MatchActionDock() {
         <div className="min-w-0">
           <p className="truncate text-sm font-black">{headline}</p>
           <p className="truncate text-xs text-stone-300">
-            {subline}{km != null ? ` · about ${km < 1 ? "<1" : Math.round(km)} km` : ""}
+            {subline}{km != null ? ` · ${dt("aboutKmLower", { km: km < 1 ? "<1" : Math.round(km) })}` : ""}
           </p>
         </div>
       </div>
@@ -109,7 +113,7 @@ export function MatchActionDock() {
           onClick={() => dismiss(waiting.id)}
           className="inline-flex h-11 items-center rounded-full border border-white/30 px-4 text-sm font-extrabold text-white hover:bg-white/10"
         >
-          View details
+          <UiText>View details</UiText>
         </Link>
         <button
           type="button"
@@ -122,7 +126,7 @@ export function MatchActionDock() {
         </button>
         <button
           type="button"
-          aria-label="Close and don't show this match again"
+          aria-label={ui("Close and don't show this match again")}
           onClick={() => dismiss(waiting.id)}
           className="flex h-11 w-11 items-center justify-center rounded-full text-stone-300 hover:bg-white/10 hover:text-white"
         >

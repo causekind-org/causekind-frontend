@@ -5,6 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { getProfile, getMyNgoApplication, getNgoDraft } from "@/lib/api";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }), redirect: vi.fn() }));
+// The approved NGO's About / past-activity sections have their own tests.
+vi.mock("@/features/ngo-profile/PastActivity", () => ({ PastActivitySection: () => null }));
+vi.mock("@/features/ngo-profile/NgoAboutSection", () => ({ NgoAboutSection: () => null }));
 vi.mock("@/lib/api", () => ({
   getProfile: vi.fn(), updateProfile: vi.fn(), updateLocation: vi.fn(), getMyNgoApplication: vi.fn(),
   getNgoDraft: vi.fn(), submitNgoApplication: vi.fn(), saveNgoDraft: vi.fn(),
@@ -58,7 +61,11 @@ describe("/profile NGO application card", { timeout: 20000 }, () => {
     expect(steps).not.toHaveTextContent(/Representative Verification Call/);
     expect(screen.queryByText(/Representative Verification Call/)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Application submitted" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "View / Edit Submission Details" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "View / Edit Submission Details" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Download Application Summary \(PDF\)/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Return to Home" })).toBeInTheDocument();
+    // 2026-09-09T10:00:00 in IST (treated as UTC -> +5:30 -> 3:30 pm IST)
+    expect(screen.getAllByText(/9 Sep 2026, 3:30 pm IST/).length).toBeGreaterThan(0);
   });
 
   it("NEEDS_INFORMATION: step 2 says Action needed and links to fix the items", async () => {
@@ -79,24 +86,21 @@ describe("/profile NGO application card", { timeout: 20000 }, () => {
     expect(screen.getAllByText("Registration could not be verified")).toHaveLength(1);
   });
 
-  it("APPROVED: all three done, approved heading, and no View / Edit button", async () => {
-    const { items, states } = await renderCard("APPROVED");
-    expect(states).toEqual(["done", "done", "done"]);
-    expect(items[2]).toHaveTextContent("3. Verified NGO Partner Badge & Active Platform Access");
-    expect(screen.getByRole("heading", { name: "Application approved" })).toBeInTheDocument();
-    expect(screen.getByText("Your NGO is verified. You can start drives.")).toBeInTheDocument();
-    expect(screen.queryByText(/currently being processed/)).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "View / Edit Submission Details" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Download Application Summary \(PDF\)/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Return to Home/ })).toHaveAttribute("href", "/");
+  it("APPROVED: the whole application status card is hidden", async () => {
+    vi.mocked(getMyNgoApplication).mockResolvedValue(app("APPROVED") as never);
+    render(<NgoProfileView />);
+    await waitFor(() => expect(getMyNgoApplication).toHaveBeenCalled());
+    await new Promise((r) => setTimeout(r, 300));
+    expect(screen.queryByRole("heading", { name: "Application approved" })).not.toBeInTheDocument();
+    expect(screen.queryByText("CK-NGO-2026-TESTAPP")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Download Application Summary \(PDF\)/ })).not.toBeInTheDocument();
   });
 
-  it("re-reads the status from the server: an approval shows on focus without a reload", async () => {
+  it("re-reads the status from the server: on approval the card goes away without a reload", async () => {
     await renderCard("UNDER_REVIEW");
     vi.mocked(getMyNgoApplication).mockResolvedValue(app("APPROVED") as never);
     act(() => { window.dispatchEvent(new Event("focus")); });
-    await waitFor(() => expect(screen.getByRole("heading", { name: "Application approved" })).toBeInTheDocument());
-    expect(screen.queryByRole("link", { name: "View / Edit Submission Details" })).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText("CK-NGO-2026-TESTAPP")).not.toBeInTheDocument());
   });
 });
 

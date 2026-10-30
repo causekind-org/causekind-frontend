@@ -22,6 +22,7 @@ import {
   type UploadedFile,
   fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
+import { applyDraft, buildDraftPayload, buildSubmitPayload } from "@/features/ngo-registration/ngoWizardPayload";
 import { OrgDetails } from "@/features/ngo-registration/steps/OrgDetails";
 import { LegalDocuments } from "@/features/ngo-registration/steps/LegalDocuments";
 import { AuthorizedRepresentative } from "@/features/ngo-registration/steps/AuthorizedRepresentative";
@@ -29,49 +30,18 @@ import { OrgPhotos } from "@/features/ngo-registration/steps/OrgPhotos";
 import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { EmailVerification } from "@/features/ngo-registration/steps/EmailVerification";
 import { ApplicationSubmitted } from "@/features/ngo-registration/steps/ApplicationSubmitted";
-import type { NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { CorrectionStatusContext, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { changedFlaggedFields, correctionDisplayValue, fillFlaggedFileSlots, focusCorrectionField, orderedCorrectionFields, originalFlaggedValues } from "@/features/ngo-registration/ngoCorrectionFields";
 import {
   submitNgoApplication,
   getNgoDraft,
   saveNgoDraft,
   getMyNgoApplication,
   ApiError,
-  type UploadedFileDto,
   type NgoCorrectionItem,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { isNgoRole } from "@/lib/isNgoRole";
-
-function toDto(file: UploadedFile | null): UploadedFileDto | null {
-  if (!file) return null;
-  return {
-    documentId: file.documentId ?? null,
-    photoId: file.photoId ?? null,
-    name: file.name,
-    key: file.s3Key ?? null,
-    url: file.s3Url ?? null,
-    size: file.size ?? null,
-    mimeType: file.mimeType ?? null,
-    demo: file.demo ?? false,
-  };
-}
-
-function fromDto(dto: UploadedFileDto | null | undefined): UploadedFile | null {
-  if (!dto) return null;
-  // A saved reference with no upload id is not a file the backend will attach, so
-  // showing it as uploaded would only hide that it has to be uploaded again.
-  if (!IS_NGO_DEMO_MODE && dto.documentId == null && dto.photoId == null) return null;
-  return {
-    name: dto.name || "Uploaded document",
-    documentId: dto.documentId ?? undefined,
-    photoId: dto.photoId ?? undefined,
-    s3Key: dto.key ?? undefined,
-    s3Url: dto.url ?? undefined,
-    size: dto.size ?? undefined,
-    mimeType: dto.mimeType ?? undefined,
-    demo: dto.demo ?? false,
-  };
-}
 
 // Reads a ?step=... deep link. email-verification is never a valid entry point.
 function readUrlStep(param: string | null): NGOStep | null {
@@ -100,6 +70,10 @@ function NgoDetailsEditor() {
   const appliedStepLink = useRef<string | null>(null);
   const startingStepChosen = useRef(false);
   const initialUrlStep = useRef<NGOStep | null>(readUrlStep(searchParams.get("step")));
+  // ?fix=<field>: open in correction mode on that item (the profile card, notification and email link here).
+  const initialFix = useRef<string | null>(searchParams.get("fix"));
+  const [activeFix, setActiveFix] = useState<{ field: string; tick: number } | null>(null);
+  const [clampPending, setClampPending] = useState(false);
 
   const [data, setData] = useState<NGOFormState>(INITIAL_NGO_FORM);
   const [currentStep, setCurrentStep] = useState<NGOStep | "submitted">("org-details");
@@ -114,8 +88,22 @@ function NgoDetailsEditor() {
   // A reviewer's per-item correction request: the flagged items start empty and show these notes.
   const [correctionItems, setCorrectionItems] = useState<NgoCorrectionItem[]>([]);
   const flaggedFields = useRef<string[]>([]);
+  /** Each flagged item's value when the wizard opened; a fix must change it. */
+  const originalFlagged = useRef<Record<string, string>>({});
+  /** The status response (holds the originally submitted values of flagged items, when sent). */
+  const statusRef = useRef<Record<string, unknown> | null>(null);
+  const [overallNote, setOverallNote] = useState("");
   const corrections: NgoCorrections = Object.fromEntries(correctionItems.map((i) => [i.field, i.note]));
+  // A corrections resubmission: About us is optional (it may predate the field).
+  useEffect(() => {
+    if (correctionItems.length > 0) setData((d) => (d.aboutUsOptional ? d : { ...d, aboutUsOptional: true }));
+  }, [correctionItems.length]);
   const flaggedSteps = new Set(correctionItems.map((i) => correctionFieldStep(i.field)));
+  const orderedFixes = orderedCorrectionFields(correctionItems.map((i) => i.field));
+  const resubmitting = correctionItems.length > 0;
+  const changedFields = resubmitting ? changedFlaggedFields(data, originalFlagged.current) : new Set<string>();
+  const unfixed = correctionItems.filter((i) => !changedFields.has(i.field));
+  const toFixInStep = (step: NGOStep) => unfixed.filter((i) => correctionFieldStep(i.field) === step).length;
 
   const userIdentifier =
     user?.id ?? user?.userId ?? (user?.email ? user.email.toLowerCase().replace(/[^a-z0-9]/g, "_") : "anonymous");
@@ -175,6 +163,8 @@ function NgoDetailsEditor() {
               // Per-item request: everything else comes back filled in (fields and files).
               flaggedFields.current = items.map((i) => i.field);
               setCorrectionItems(items);
+              statusRef.current = submittedApp;
+              setOverallNote(String(submittedApp.overallNote || submittedApp.needsInformationDetails || ""));
               setReviewMessage("");
               setData(INITIAL_NGO_FORM);
             } else if (submittedApp?.status === "REJECTED" || submittedApp?.status === "NEEDS_INFORMATION") {
@@ -190,7 +180,8 @@ function NgoDetailsEditor() {
               organizationName: submittedApp.organizationName || prev.organizationName,
               applicationId: submittedApp.applicationId,
               submittedAt: submittedApp.submittedAt || "",
-              officialEmail: user?.email || prev.officialEmail,
+              // The org email stays as entered; the OTP step shows the account email it was sent to.
+              officialEmail: prev.officialEmail,
             }));
             setAwaitingVerification("restored");
             setCurrentStep("email-verification");
@@ -239,38 +230,15 @@ function NgoDetailsEditor() {
         }
 
         if (active) {
-          if (draft) {
-            const restoredDocs: Record<string, UploadedFile | null> = {};
-            if (draft.documents) {
-              for (const [key, dto] of Object.entries(draft.documents)) {
-                restoredDocs[key] = fromDto(dto as any);
-              }
+          setData((prev) => {
+            let next = prefillNgoFormWithUser(draft ? applyDraft(prev, draft) : prev, user, flaggedFields.current);
+            if (flaggedFields.current.length) {
+              const sources = { ...(draft ?? {}), ...(statusRef.current ?? {}) } as Record<string, unknown>;
+              originalFlagged.current = originalFlaggedValues(next, flaggedFields.current, sources);
+              next = fillFlaggedFileSlots(next, flaggedFields.current, statusRef.current, draft);
             }
-
-            setData((prev) => prefillNgoFormWithUser({
-              ...prev,
-              organizationName: fieldText(draft.organizationName) || prev.organizationName,
-              legalStructure: (draft.legalStructure as any) || prev.legalStructure,
-              registrationNumber: fieldText(draft.registrationNumber) || prev.registrationNumber,
-              registeredOfficeAddress: fieldText(draft.registeredOfficeAddress) || prev.registeredOfficeAddress,
-              yearOfEstablishment: fieldText(draft.yearOfEstablishment) || prev.yearOfEstablishment,
-              representativeName: fieldText(draft.representativeName) || prev.representativeName,
-              designation: draft.designation || prev.designation,
-              mobileNumber: fieldText(draft.mobileNumber) || prev.mobileNumber,
-              officialEmail: fieldText(draft.officialEmail) || prev.officialEmail,
-              authorizationLetter: fromDto(draft.authorizationLetter) || prev.authorizationLetter,
-              logo: fromDto(draft.logo) || prev.logo,
-              officePhoto: fromDto(draft.officePhoto) || prev.officePhoto,
-              activityPhotos:
-                draft.activityPhotos && draft.activityPhotos.length > 0
-                  ? draft.activityPhotos.map(fromDto)
-                  : prev.activityPhotos,
-              confirmationChecked: draft.confirmationChecked ?? prev.confirmationChecked,
-              documents: { ...prev.documents, ...restoredDocs },
-            }, user, flaggedFields.current));
-          } else {
-            setData((prev) => prefillNgoFormWithUser(prev, user, flaggedFields.current));
-          }
+            return next;
+          });
         }
 
         // Choose the starting step once: a ?step= deep link wins over the saved draft step.
@@ -281,8 +249,12 @@ function NgoDetailsEditor() {
               ? (draft.currentStep as NGOStep)
               : null;
           // After a per-item correction request, open on the first step with something to fix.
-          const startStep = firstCorrectionStep(flaggedFields.current) ?? initialUrlStep.current ?? savedStep;
+          const fix = initialFix.current && flaggedFields.current.includes(initialFix.current) ? initialFix.current : null;
+          if (fix) setActiveFix({ field: fix, tick: 0 });
+          const startStep = (fix ? correctionFieldStep(fix) : null)
+            ?? firstCorrectionStep(flaggedFields.current) ?? initialUrlStep.current ?? savedStep;
           if (startStep) setCurrentStep(startStep);
+          setClampPending(!firstCorrectionStep(flaggedFields.current));
         }
       } finally {
         if (active) setLoading(false);
@@ -328,7 +300,13 @@ function NgoDetailsEditor() {
     const documents = { ...data.documents };
     const activityPhotos = [...data.activityPhotos];
     for (const { field, message } of rejected) {
-      if (field!.startsWith("documents.")) documents[field!.slice(10)] = mark(documents[field!.slice(10)] ?? null, message!);
+      const rep = /^representatives\.(\d)\.idProof$/.exec(field!);
+      if (rep) {
+        const i = Number(rep[1]);
+        const reps = [...(patch.representatives ?? data.representatives)];
+        if (reps[i]) reps[i] = { ...reps[i], idProof: mark(reps[i].idProof, message!) };
+        patch.representatives = reps;
+      } else if (field!.startsWith("documents.")) documents[field!.slice(10)] = mark(documents[field!.slice(10)] ?? null, message!);
       else if (field === "authorizationLetter") patch.authorizationLetter = mark(data.authorizationLetter, message!);
       else if (field === "logo") patch.logo = mark(data.logo, message!);
       else if (field === "officePhoto") patch.officePhoto = mark(data.officePhoto, message!);
@@ -372,29 +350,7 @@ function NgoDetailsEditor() {
         }
         toast.success("Progress saved locally (Demo Mode)");
       } else {
-        const documentsDto: Record<string, ReturnType<typeof toDto>> = {};
-        for (const [id, file] of Object.entries(data.documents)) {
-          documentsDto[id] = toDto(file);
-        }
-
-        await saveNgoDraft({
-          organizationName: data.organizationName,
-          legalStructure: data.legalStructure,
-          registrationNumber: data.registrationNumber,
-          registeredOfficeAddress: data.registeredOfficeAddress,
-          yearOfEstablishment: data.yearOfEstablishment,
-          representativeName: data.representativeName,
-          designation: data.designation,
-          mobileNumber: data.mobileNumber,
-          officialEmail: data.officialEmail,
-          confirmationChecked: data.confirmationChecked,
-          authorizationLetter: toDto(data.authorizationLetter),
-          documents: documentsDto,
-          logo: toDto(data.logo),
-          officePhoto: toDto(data.officePhoto),
-          activityPhotos: data.activityPhotos.map(toDto),
-          currentStep,
-        });
+        await saveNgoDraft(buildDraftPayload(data, currentStep));
         toast.success("Registration draft saved");
       }
     } catch (e) {
@@ -405,10 +361,37 @@ function NgoDetailsEditor() {
     }
   }
 
+  /** Index of the first step not yet complete: the furthest the wizard may move forward. */
+  function firstOpenStepIndex(): number {
+    const done = calculateNgoProgress(data).completedSteps;
+    const i = NGO_STEPS.findIndex(s => !done.has(s));
+    return i < 0 ? NGO_STEPS.length - 1 : i;
+  }
+
   function goToStep(step: NGOStep) {
     if (data.applicationId && step !== "email-verification") return;
     if (currentStep === "submitted") return;
+    // Only the in-form Continue (enabled when the step is valid) moves forward: no skipping
+    // ahead from the step list, ?step= or anything else past an incomplete step.
+    const target = NGO_STEPS.indexOf(step);
+    // A correction round (flagged items) may move between the steps to fix them.
+    const correcting = flaggedFields.current.length > 0 || resubmitting;
+    if (!correcting && target > NGO_STEPS.indexOf(currentStep as NGOStep) && target > firstOpenStepIndex()) {
+      toast.error("Complete this step before moving on");
+      return;
+    }
     setCurrentStep(step);
+    // Auto-save draft in the background so active uploads are never orphaned
+    if (!IS_NGO_DEMO_MODE && !data.applicationId) {
+      try {
+        const res = saveNgoDraft(buildDraftPayload(data, step));
+        if (res && typeof res.catch === "function") {
+          void res.catch(() => {});
+        }
+      } catch {
+        // ignore draft auto-save error
+      }
+    }
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -442,7 +425,7 @@ function NgoDetailsEditor() {
         updateData({
           applicationId: demoAppId,
           submittedAt: subTime,
-          officialEmail: user?.email || data.officialEmail,
+          officialEmail: buildSubmitPayload(data).officialEmail,
         });
         setAwaitingVerification("fresh");
         goToStep("email-verification");
@@ -452,35 +435,47 @@ function NgoDetailsEditor() {
       return;
     }
 
-    try {
-      const documentsDto: Record<string, ReturnType<typeof toDto>> = {};
-      for (const [id, file] of Object.entries(data.documents)) {
-        documentsDto[id] = toDto(file);
+    if (resubmitting) {
+      if (unfixed.length > 0) { setBusy(false); return; }
+      try {
+        const response = await submitNgoApplication(buildSubmitPayload(data));
+        if (response?.status === "PENDING_VERIFICATION") {
+          // The official email changed: the server sent a code to confirm it.
+          updateData({ applicationId: response.applicationId, submittedAt: formatSubmissionTime(new Date()) });
+          setApplicationStatus("PENDING_VERIFICATION");
+          setAwaitingVerification("fresh");
+          setCorrectionItems([]);
+          flaggedFields.current = [];
+          goToStep("email-verification");
+          return;
+        }
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("ngo-application-submitted", {
+            detail: { applicationId: response?.applicationId ?? data.applicationId, status: "UNDER_REVIEW" },
+          }));
+        }
+        toast.success("Changes sent. Your application is under review again.");
+        router.push("/profile");
+      } catch (err) {
+        const rejected = markRejectedFiles(err);
+        const msg = rejected.length ? rejected.join(" · ")
+          : err instanceof Error ? err.message : "Resubmission failed. Please try again.";
+        setSubmitError(msg);
+        toast.error(msg);
+      } finally {
+        setBusy(false);
       }
+      return;
+    }
 
-      const response = await submitNgoApplication({
-        organizationName: data.organizationName,
-        legalStructure: data.legalStructure,
-        registrationNumber: data.registrationNumber,
-        registeredOfficeAddress: data.registeredOfficeAddress,
-        yearOfEstablishment: data.yearOfEstablishment,
-        representativeName: data.representativeName,
-        designation: data.designation,
-        mobileNumber: data.mobileNumber,
-        officialEmail: data.officialEmail,
-        confirmationChecked: data.confirmationChecked,
-        authorizationLetter: toDto(data.authorizationLetter),
-        documents: documentsDto,
-        logo: toDto(data.logo),
-        officePhoto: toDto(data.officePhoto),
-        activityPhotos: data.activityPhotos.map(toDto),
-      });
+    try {
+      const response = await submitNgoApplication(buildSubmitPayload(data));
 
       const subTime = formatSubmissionTime(new Date());
       updateData({
         applicationId: response.applicationId,
         submittedAt: subTime,
-        officialEmail: response.officialEmail || user?.email || data.officialEmail,
+        officialEmail: data.officialEmail,
       });
 
       setApplicationStatus("PENDING_VERIFICATION");
@@ -507,7 +502,7 @@ function NgoDetailsEditor() {
         const payload = JSON.stringify({
           applicationId: data.applicationId,
           status: "UNDER_REVIEW",
-          submittedAt: data.submittedAt || new Date().toLocaleDateString(),
+          submittedAt: data.submittedAt || formatSubmissionTime(new Date()),
         });
         if (IS_NGO_DEMO_MODE) {
           localStorage.setItem(`ngo-demo-application-${userIdentifier}`, payload);
@@ -534,6 +529,39 @@ function NgoDetailsEditor() {
     router.push("/profile");
   }
 
+
+  // Correction mode: once the item's step is on screen, scroll to it, focus it and pulse its note.
+  useEffect(() => {
+    if (loading || !activeFix || correctionFieldStep(activeFix.field) !== currentStep) return;
+    const t = window.setTimeout(() => { focusCorrectionField(activeFix.field); }, 60);
+    return () => window.clearTimeout(t);
+  }, [activeFix, currentStep, loading]);
+
+  /** Goes to one flagged item (its step, then the field). */
+  function openFix(field: string) {
+    setActiveFix((prev) => ({ field, tick: (prev?.tick ?? 0) + 1 }));
+    const step = correctionFieldStep(field);
+    if (step !== currentStep) goToStep(step);
+  }
+
+  /** The flagged item after the current one (wizard order), preferring ones not fixed yet. */
+  function nextFixAfter(field: string | undefined): string | null {
+    const i = field ? orderedFixes.indexOf(field) : -1;
+    const rest = [...orderedFixes.slice(i + 1), ...orderedFixes.slice(0, i + 1)];
+    return rest.find((f) => !changedFields.has(f)) ?? rest[0] ?? null;
+  }
+
+  // A ?step= link or a saved draft can't open past the first incomplete step.
+  useEffect(() => {
+    if (loading || !clampPending) return;
+    setClampPending(false);
+    if (data.applicationId || flaggedFields.current.length > 0 || resubmitting) return;
+    const i = NGO_STEPS.indexOf(currentStep as NGOStep);
+    const open = firstOpenStepIndex();
+    if (i > open) setCurrentStep(NGO_STEPS[open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, after the draft loads
+  }, [loading, clampPending]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950 flex items-center justify-center">
@@ -553,14 +581,17 @@ function NgoDetailsEditor() {
 
   const progress = calculateNgoProgress(data);
   const remaining = Math.max(0, 6 - progress.completedCount);
-  const stillNeeded = currentStep !== "submitted" ? getNgoStillNeededItems(currentStep, data) : [];
+  const stillNeeded = currentStep !== "submitted" ? [
+    ...unfixed.filter((i) => correctionFieldStep(i.field) === currentStep).map((i) => `Fix: ${correctionFieldLabel(i.field)}`),
+    ...getNgoStillNeededItems(currentStep, data),
+  ] : [];
 
   return (
     <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950">
       <div className="flex">
         {/* ── Left Sidebar (Desktop) ─────────────────────────────────── */}
-        <aside className="sticky top-0 hidden h-screen w-[300px] shrink-0 flex-col border-r border-stone-200 bg-white lg:flex dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex flex-col gap-4 border-b border-stone-200 px-7 pb-6 pt-8 dark:border-zinc-800">
+        <aside className="sticky top-0 hidden h-screen w-[300px] shrink-0 flex-col border-r border-[#EADBCE] bg-[#FAF7F2] lg:flex dark:border-emerald-950/80 dark:bg-[#141E18]">
+          <div className="flex flex-col gap-4 border-b border-[#EADBCE] px-7 pb-6 pt-8 dark:border-emerald-950/80">
             <Link
               href="/profile"
               className="inline-flex items-center gap-2 text-sm font-semibold text-ngo-700 hover:text-ngo-600 dark:text-ngo-300 dark:hover:text-ngo-100 transition-colors"
@@ -628,9 +659,13 @@ function NgoDetailsEditor() {
                     {isCompleted ? <Check className="w-3 h-3" /> : index + 1}
                   </span>
                   <span className="truncate">{NGO_STEP_FULL_TITLES[stepKey]}</span>
-                  {flaggedSteps.has(stepKey) && (
-                    <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-amber-500" title="Needs a fix" aria-label="Needs a fix" />
-                  )}
+                  {flaggedSteps.has(stepKey) && (toFixInStep(stepKey) > 0 ? (
+                    <span data-testid={`to-fix-${stepKey}`} className="ml-auto shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-black text-amber-800 dark:bg-amber-900/50 dark:text-amber-200">
+                      {toFixInStep(stepKey)} to fix
+                    </span>
+                  ) : (
+                    <span className="ml-auto shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-3xs font-black text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200">Updated</span>
+                  ))}
                 </button>
               );
             })}
@@ -638,7 +673,7 @@ function NgoDetailsEditor() {
 
           {/* Still Needed Checklist for Active Step */}
           {currentStep !== "submitted" && (
-            <div className="border-t border-stone-200 px-7 py-5 dark:border-zinc-800">
+            <div className="border-t border-[#EADBCE] px-7 py-5 dark:border-emerald-950/80">
               <p className="text-3xs font-black uppercase tracking-[0.18em] text-stone-400">
                 Still needed in this step
               </p>
@@ -666,38 +701,39 @@ function NgoDetailsEditor() {
 
         {/* ── Working Pane ───────────────────────────────────────────── */}
         <div className="flex min-w-0 flex-1 flex-col">
-          {/* Mobile Header (lg:hidden) */}
-          <div className="border-b border-stone-200 bg-white px-5 py-4 lg:hidden dark:border-zinc-800 dark:bg-zinc-900">
-            <Link
-              href="/profile"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-ngo-700 dark:text-ngo-300"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Back to profile
-            </Link>
-            <div className="mt-3 flex items-baseline justify-between gap-3">
-              <h1 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-                Your readiness
-              </h1>
-              <span className="text-2xl font-black tabular-nums text-ngo-700 dark:text-ngo-300">
-                {currentStep === "submitted" ? 100 : progress.percent}%
-              </span>
+          {/* Mobile Compact Top Bar (lg:hidden) */}
+          <div className="border-b border-[#EADBCE] bg-[#FAF7F2] px-4 py-2.5 lg:hidden dark:border-emerald-950/80 dark:bg-[#141E18]">
+            <div className="flex items-center justify-between gap-2">
+              <Link
+                href="/profile"
+                className="inline-flex min-h-[44px] items-center gap-1.5 text-xs font-semibold text-ngo-700 dark:text-ngo-300 hover:text-ngo-800"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-stone-700 dark:text-stone-300">
+                  {currentStep === "submitted"
+                    ? "Submitted"
+                    : `Step ${NGO_STEPS.indexOf(currentStep as NGOStep) + 1} of 6`}
+                </span>
+                <span className="rounded-full bg-ngo-50 dark:bg-ngo-950/50 border border-ngo-200 dark:border-ngo-800 px-2 py-0.5 text-xs font-black tabular-nums text-ngo-700 dark:text-ngo-300">
+                  {currentStep === "submitted" ? 100 : progress.percent}%
+                </span>
+              </div>
             </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-stone-200 dark:bg-zinc-800">
+
+            {/* Progress bar */}
+            <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-stone-200/80 dark:bg-zinc-800">
               <div
                 className="h-full rounded-full bg-ngo-700 transition-[width] duration-500"
                 style={{ width: `${currentStep === "submitted" ? 100 : progress.percent}%` }}
               />
             </div>
-            <p className="mt-2 text-xs text-stone-500">
-              {currentStep === "submitted"
-                ? "Application submitted."
-                : awaitingVerification
-                  ? "Submitted. Enter the email code to finish."
-                  : `${remaining} ${remaining === 1 ? "step" : "steps"} left before submit.`}
-            </p>
+
+            {/* Horizontal step indicator / pills */}
             {currentStep !== "submitted" && (
-              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+              <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                 {NGO_STEPS.map((stepKey, index) => {
                   const isCurrent = currentStep === stepKey;
                   const isCompleted = progress.completedSteps.has(stepKey);
@@ -707,12 +743,16 @@ function NgoDetailsEditor() {
                       type="button"
                       onClick={() => goToStep(stepKey)}
                       disabled={stepKey === "email-verification" || (!!awaitingVerification && !isCurrent)}
-                      className={`min-h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-2xs font-bold transition-colors flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-50 ${isCurrent
-                          ? "bg-ngo-700 text-white"
-                          : "border border-stone-300 text-stone-600 dark:border-zinc-600 dark:text-stone-300"
-                        }`}
+                      className={`min-h-[36px] shrink-0 whitespace-nowrap rounded-full px-3 text-2xs font-bold transition-colors flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50 ${
+                        isCurrent
+                          ? "bg-ngo-700 text-white shadow-sm"
+                          : isCompleted
+                          ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40"
+                          : "border border-[#EADBCE] dark:border-zinc-700 text-stone-600 dark:text-stone-300 bg-white dark:bg-zinc-800/50"
+                      }`}
                     >
-                      {isCompleted ? <Check className="w-3.5 h-3.5" /> : `${index + 1}.`} {NGO_STEP_FULL_TITLES[stepKey]}
+                      {isCompleted ? <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <span>{index + 1}.</span>}
+                      <span>{NGO_STEP_FULL_TITLES[stepKey]}</span>
                     </button>
                   );
                 })}
@@ -722,12 +762,31 @@ function NgoDetailsEditor() {
 
           {/* Form Content Area */}
           <div className="flex flex-1 flex-col">
-            <div className="flex-1 px-5 py-8 sm:px-10">
+            <div className="flex-1 px-4 py-6 sm:px-10 pb-28 sm:pb-24">
               <div className="max-w-3xl">
+                {/* Collapsible Still Needed in this step on mobile */}
+                {currentStep !== "submitted" && stillNeeded.length > 0 && (
+                  <details className="mb-5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/60 dark:bg-amber-950/20 p-3 text-xs lg:hidden">
+                    <summary className="cursor-pointer font-bold text-amber-900 dark:text-amber-200 flex items-center justify-between select-none">
+                      <span className="flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-amber-500" />
+                        Still needed in this step ({stillNeeded.length})
+                      </span>
+                      <span className="text-3xs text-stone-400 font-semibold underline underline-offset-2">Toggle</span>
+                    </summary>
+                    <ul className="mt-2.5 space-y-1 pl-4 list-disc text-stone-700 dark:text-stone-300">
+                      {stillNeeded.map((item) => (
+                        <li key={item}>{item}</li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
                 {reviewMessage && <div role="status" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 whitespace-pre-wrap">{reviewMessage}</div>}
                 {correctionItems.length > 0 && currentStep !== "submitted" && !awaitingVerification && (
                   <div role="status" aria-label="Changes requested" className="mb-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
-                    <p className="font-bold">
+                    <p className="text-base font-black">Our team asked for changes</p>
+                    {overallNote && <p data-testid="overall-note" className="mt-1 whitespace-pre-wrap">{overallNote}</p>}
+                    <p className="mt-2 font-bold">
                       Our team asked you to fix {correctionItems.length === 1 ? "1 item" : `${correctionItems.length} items`}
                     </p>
                     <ul className="mt-2 space-y-1">
@@ -736,15 +795,22 @@ function NgoDetailsEditor() {
                           <button
                             type="button"
                             className="font-semibold underline underline-offset-2"
-                            onClick={() => goToStep(correctionFieldStep(item.field))}
+                            onClick={() => openFix(item.field)}
                           >
                             {correctionFieldLabel(item.field)}
                           </button>
                           {": "}{item.note}
+                          {changedFields.has(item.field) && <span className="ml-1.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-3xs font-black text-emerald-800">Updated</span>}
                         </li>
                       ))}
                     </ul>
                     <p className="mt-2 text-xs">Everything else is filled in from your last application. Fix these items, then submit again.</p>
+                    {orderedFixes.length > 1 && (
+                      <button type="button" onClick={() => { const n = nextFixAfter(activeFix?.field); if (n) openFix(n); }}
+                        className="mt-3 inline-flex min-h-[40px] items-center rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-amber-700">
+                        Next fix
+                      </button>
+                    )}
                   </div>
                 )}
                 {submitError && (
@@ -754,8 +820,8 @@ function NgoDetailsEditor() {
                 )}
 
                 {currentStep === "submitted" ? (
-                  <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900">
-                    <div className="flex items-center gap-3 border-b border-stone-200 pb-5 dark:border-zinc-800">
+                  <div className="rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-5 sm:p-8 dark:border-emerald-950/80 dark:bg-[#141E18]">
+                    <div className="flex items-center gap-3 border-b border-[#EADBCE] pb-5 dark:border-emerald-950/80">
                       <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-ngo-800 to-ngo-600 flex items-center justify-center text-white shadow-md shadow-ngo-700/20">
                         <ShieldCheck className="w-6 h-6" />
                       </div>
@@ -771,7 +837,7 @@ function NgoDetailsEditor() {
                     <div className="mt-6 flex flex-wrap gap-4">
                       <Link
                         href="/profile"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
+                        className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-ngo-700 hover:bg-ngo-600 px-6 py-3 text-xs font-bold text-white transition-colors shadow-sm"
                       >
                         Return to Profile
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -779,7 +845,12 @@ function NgoDetailsEditor() {
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8 dark:border-zinc-800 dark:bg-zinc-900 shadow-sm">
+                  <CorrectionStatusContext.Provider value={resubmitting ? changedFields : null}>
+                  {resubmitting && (
+                    // Amber border on every input that sits next to a reviewer's note (until it is changed).
+                    <style>{`.ck-resubmit div:has(> [data-testid="correction-note"]:not([data-updated])) :is(input:not([type=checkbox]):not([type=radio]),textarea,select){border-color:#f59e0b !important;box-shadow:0 0 0 1px #f59e0b}`}</style>
+                  )}
+                  <div className={`${resubmitting ? "ck-resubmit " : ""}rounded-2xl border border-[#EADBCE] bg-[#FAF7F2] p-5 sm:p-8 dark:border-emerald-950/80 dark:bg-[#141E18] shadow-sm`}>
                     {currentStep === "org-details" && (
                       <OrgDetails
                         data={data}
@@ -828,6 +899,13 @@ function NgoDetailsEditor() {
                         onSubmit={handleSubmitApplication}
                         onEditStep={(s) => goToStep(s)}
                         isSubmitting={busy}
+                        submitError={submitError}
+                        resubmission={resubmitting ? {
+                          changes: correctionItems.filter((i) => changedFields.has(i.field)).map((i) => ({
+                            key: i.field, label: correctionFieldLabel(i.field), value: correctionDisplayValue(data, i.field),
+                          })),
+                          remaining: unfixed.length,
+                        } : null}
                       />
                     )}
 
@@ -841,15 +919,16 @@ function NgoDetailsEditor() {
                       />
                     )}
                   </div>
+                  </CorrectionStatusContext.Provider>
                 )}
               </div>
             </div>
 
             {/* Bottom Sticky Action Bar */}
             {currentStep !== "submitted" && currentStep !== "email-verification" && (
-              <div className="sticky bottom-0 border-t border-stone-200 bg-white px-5 py-4 sm:px-10 dark:border-zinc-800 dark:bg-zinc-900">
-                <div className="flex max-w-3xl flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-stone-500">
+              <div className="sticky bottom-0 z-20 border-t border-[#EADBCE] bg-[#FAF7F2]/95 backdrop-blur-sm px-4 py-3 sm:px-10 dark:border-emerald-950/80 dark:bg-[#141E18]/95 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+                <div className="flex max-w-3xl flex-wrap items-center justify-between gap-2.5">
+                  <p className="text-xs sm:text-sm font-semibold text-stone-500 dark:text-stone-400">
                     Step {NGO_STEPS.indexOf(currentStep as NGOStep) + 1} of 6:{" "}
                     <span className="text-stone-900 dark:text-stone-100 font-bold">
                       {NGO_STEP_FULL_TITLES[currentStep as NGOStep]}
@@ -857,12 +936,12 @@ function NgoDetailsEditor() {
                   </p>
                   {/* Not rendered (rather than hidden) once submitted, so neither action is reachable by keyboard either. */}
                   {!awaitingVerification && (
-                    <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         disabled={busy}
                         onClick={handleSaveDraft}
-                        className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                        className="min-h-[44px] rounded-xl border border-stone-300 dark:border-zinc-700 px-3.5 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                       >
                         {busy ? "Saving…" : "Save draft"}
                       </button>
@@ -871,7 +950,7 @@ function NgoDetailsEditor() {
                           type="button"
                           disabled={busy}
                           onClick={handlePreviousSection}
-                          className="rounded-xl border border-stone-300 dark:border-zinc-700 px-4 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                          className="min-h-[44px] rounded-xl border border-stone-300 dark:border-zinc-700 px-3.5 py-2 text-xs font-bold text-stone-700 dark:text-stone-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
                         >
                           Previous
                         </button>

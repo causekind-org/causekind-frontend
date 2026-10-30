@@ -15,6 +15,7 @@ import {
   getMatch, saveMatchLogistics, generateDeliveryOtp,
   confirmMatchHandoverDonor, confirmMatchHandoverDonee, verifyMatchHandoverOtp, setMatchDoneeCallPermission,
   requestMatchDeliveryAddress, submitMatchDeliveryAddress, getMatchDeliveryAddressSuggestion,
+  updateMatchCourier,
   type ItemMatch,
 } from "@/lib/api";
 import { getHandoverProofs, uploadHandoverProof, removeHandoverProof, type HandoverProofPhoto } from "@/lib/api";
@@ -91,12 +92,15 @@ export default function MatchHandoverHubPage() {
   const saveLogistics = async (p: {
     method: string; scheduledDateTime: string; address?: string;
     latitude?: number; longitude?: number; notes?: string;
+    courierName?: string; trackingNumber?: string;
   }) => {
     setMatch(await saveMatchLogistics(matchId, {
       handoverMethod: p.method,
       pickupDateTime: p.scheduledDateTime,
       handoverAddress: p.address,
       notes: p.notes,
+      courierName: p.courierName,
+      trackingNumber: p.trackingNumber,
       ...(p.latitude != null && p.longitude != null
         ? { handoverLatitude: p.latitude, handoverLongitude: p.longitude } : {}),
     }));
@@ -143,6 +147,7 @@ export default function MatchHandoverHubPage() {
             request: async () => { setMatch(await requestMatchDeliveryAddress(matchId)); },
             submit: async (input) => { setMatch(await submitMatchDeliveryAddress(matchId, input)); },
             suggest: () => getMatchDeliveryAddressSuggestion(matchId),
+            updateCourier: async (data) => { setMatch(await updateMatchCourier(matchId, data)); },
           },
         }}
       />

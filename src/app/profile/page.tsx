@@ -191,7 +191,7 @@ function splitPhone(
 // ── component ─────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, updateUser } = useAuth();
   const router = useRouter();
   const t = useTranslations("profile");
   const tCommon = useTranslations("common");
@@ -513,6 +513,9 @@ export default function ProfilePage() {
         city: cityStr,
       });
       setProfile(updated);
+      // Keep the signed-in user in step, so screens that read useAuth (e.g. the
+      // fundraising "About you" step) show the new name and phone without a reload.
+      updateUser?.({ fullName: updated.fullName ?? undefined, phone: updated.phone ?? undefined });
       toast.success(t("successProfileUpdated"));
       if (updated.documentWarning) toast.warning(updated.documentWarning, { duration: 12000 });
       setSettingsOpen(false);

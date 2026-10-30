@@ -30,6 +30,10 @@ vi.mock("@/lib/api", () => {
     updateNgoDrive: vi.fn(),
     getNgoDriveDetail: (...args: unknown[]) => mockGetNgoDriveDetail(...args),
     uploadNgoDriveReferencePhoto: vi.fn(),
+    getNgoDriveDraft: vi.fn().mockResolvedValue(null),
+    saveNgoDriveDraft: vi.fn().mockResolvedValue(undefined),
+    deleteNgoDriveDraft: vi.fn().mockResolvedValue(undefined),
+    deleteUnusedNgoDrivePhoto: vi.fn().mockResolvedValue(undefined),
   };
 });
 vi.mock("@/lib/toast", () => ({ toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() } }));
@@ -99,7 +103,7 @@ describe("/ngo/drives/new status gate", () => {
     mockSearch = "edit=42";
     mockUseNgoStatus.mockReturnValue(status({ isVerified: true, isPhotosDue: true }));
     mockGetNgoDriveDetail.mockResolvedValue({
-      id: 42, status: "CHANGES_REQUESTED", title: "Winter blankets for the shelter", category: "Household",
+      id: 42, status: "CHANGES_REQUESTED", title: "Winter blankets for the shelter", category: "Household", locationCountry: "IN", locationState: "MH", locationCity: "Mumbai", locationArea: "Andheri", locationPincode: "400053", locationLatitude: 19.1, locationLongitude: 72.85, pickupRadiusKm: 20,
       itemName: "Blankets", quantityNeeded: 40, unit: "PIECES", itemCondition: "NEW_ONLY",
       description: "x".repeat(40), urgency: "NORMAL", beneficiaryGroup: "Elderly", beneficiaryCount: 30,
       neededBy: "2030-01-01", availableDays: "MON,TUE", availableFrom: "10:00:00", availableTo: "17:00:00",

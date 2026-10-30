@@ -4,6 +4,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { TriangleAlert } from "lucide-react";
 import { errorVariants } from "@/features/wizard-kit/wizardMotion";
 
+import { useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * Compact step-level error summary.
  *
@@ -19,6 +21,8 @@ export function StepErrorSummary({
   errors: Record<string, string>;
   onFocusField: (field: string) => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const ui = useUiText();
   const reduced = !!useReducedMotion();
   const entries = Object.entries(errors);
 
@@ -35,7 +39,7 @@ export function StepErrorSummary({
         >
           <p className="flex items-center gap-1.5 text-2xs font-bold text-red-700 dark:text-red-400">
             <TriangleAlert className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            {entries.length === 1 ? "One thing needs fixing" : `${entries.length} things need fixing`}
+            {entries.length === 1 ? ui("One thing needs fixing") : wt("thingsNeedFixing", { count: entries.length })}
           </p>
           <ul className="mt-1.5 space-y-0.5">
             {entries.map(([field, message]) => (

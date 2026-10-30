@@ -50,7 +50,7 @@ describe("NgoRequestsDropdown", () => {
       lockReason: "Available once CauseKind verifies your NGO.",
       hasShownWelcome: true,
       markWelcomeShown: vi.fn(),
-      isError: false,
+      isError: false, viewer: "ngo", verifiedAt: null, rejectionReason: null, statsUnavailable: false,
     });
 
     render(<NgoRequestsDropdown />);
@@ -93,7 +93,7 @@ describe("NgoRequestsDropdown", () => {
       lockReason: "",
       hasShownWelcome: true,
       markWelcomeShown: vi.fn(),
-      isError: false,
+      isError: false, viewer: "ngo", verifiedAt: null, rejectionReason: null, statsUnavailable: false,
     });
 
     render(<NgoRequestsDropdown />);

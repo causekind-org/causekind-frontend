@@ -1,6 +1,7 @@
 "use client";
 
 import { serverDate } from "@/lib/serverTime";
+import { formatIST } from "@/lib/formatIST";
 import { useState } from "react";
 import { CalendarDays, Check, Copy, ExternalLink, MapPin, Navigation, Repeat, StickyNote, Truck } from "lucide-react";
 import { directionsHref, hasCoordinates, mapsHref, staticMapSrc } from "./adapters";
@@ -30,21 +31,18 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
 
   const showMap = hasCoordinates(s.latitude, s.longitude);
   const reschedulesLeft = Math.max(0, s.maxReschedules - s.rescheduleCount);
-  const canReschedule = vm.role === "DONOR" && reschedulesLeft > 0 && !vm.closed && onReschedule;
+  const canReschedule = vm.role === "DONOR" && reschedulesLeft > 0 && !vm.closed && !vm.confirmation.otpVerified && onReschedule;
 
   return (
     <Panel title="Schedule">
       <dl className="space-y-2.5 text-sm">
         <Row icon={CalendarDays} label="When">
           {s.scheduledAt
-            ? serverDate(s.scheduledAt).toLocaleString("en-IN", {
-                weekday: "short", day: "numeric", month: "short",
-                hour: "numeric", minute: "2-digit",
-              })
+            ? formatIST(s.scheduledAt)
             : "Not set"}
         </Row>
         <Row icon={Truck} label="How">{s.methodLabel ?? "Not set"}</Row>
-        {(s.address || showMap) && (
+        {!(s.method === "COURIER" || s.method === "THIRD_PARTY") && (s.address || showMap) && (
           <Row icon={MapPin} label="Where">
             <HandoverPlace address={s.address} lat={showMap ? s.latitude : null} lng={showMap ? s.longitude : null} />
           </Row>
@@ -66,6 +64,11 @@ export function HandoverScheduleSummary({ vm, onReschedule }: {
         >
           Change the time
         </button>
+      )}
+      {vm.role === "DONOR" && vm.confirmation.otpVerified && !vm.closed && (
+        <p className="mt-3 text-xs text-amber-700 dark:text-amber-400">
+          The code has already been confirmed. You cannot reschedule or cancel this handover.
+        </p>
       )}
       {vm.role === "DONEE" && !vm.closed && (
         <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">

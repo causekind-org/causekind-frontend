@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import { getNgoDrive } from "@/lib/api";
+import { useTranslations } from "next-intl";
+import { useUiText } from "@/components/UiText";
 
 export type DriveProgressBarProps = {
   driveId: number;
@@ -18,6 +20,8 @@ export function DriveProgressBar({
   initialQuantityPledged,
   unit,
 }: DriveProgressBarProps) {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
   const [received, setReceived] = useState(initialQuantityReceived);
   const [pledged, setPledged] = useState(initialQuantityPledged);
 
@@ -68,11 +72,11 @@ export function DriveProgressBar({
   const receivedPct = Math.min(100, (received / quantityNeeded) * 100);
   const pledgedPct = Math.min(100 - receivedPct, (pledged / quantityNeeded) * 100);
 
-  let statusText = `${received} received · ${pledged} on the way · ${stillNeeded} still needed`;
+  let statusText = df("progressStatus", { received, pledged, still: stillNeeded });
   if (stillNeeded === 0 && received < quantityNeeded) {
-    statusText = "Fully offered";
+    statusText = ui("Fully offered");
   } else if (received >= quantityNeeded) {
-    statusText = "All received";
+    statusText = ui("All received");
   }
 
   return (

@@ -9,10 +9,12 @@ import {
   type NgoDriveOfferResponse, type NgoDriveOfferHandoverRecordResponse,
 } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
-import { DriveHandover, type DriveHandoverRole } from "./DriveHandover";
-import { DriveLoadError } from "./DriveLoadState";
-import { errorMessage, isNotFound } from "../driveGiveState";
-import Link from "next/link";
+import { type DriveHandoverRole } from "./DriveHandover";
+import { DriveHandoverHub } from "./DriveHandoverHub";
+import { DriveLoadError, HandoverNotFound } from "./DriveLoadState";
+import { errorMessage, isForbidden, isNotFound } from "../driveGiveState";
+import HandoverCelebration from "@/components/handover/HandoverCelebration";
+import { claimCelebration, NGO_DRIVE_OFFER_DONE } from "@/lib/celebration";
 
 /** Loads one drive offer and its handover for the donor or the drive's NGO. */
 export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHandoverRole; offerId: number; driveId?: number }) {
@@ -22,14 +24,15 @@ export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHando
   const [handover, setHandover] = useState<NgoDriveOfferHandoverRecordResponse | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "not-found" | "error">("loading");
   const [message, setMessage] = useState("");
+  const [celebrate, setCelebrate] = useState(false);
 
   const load = useCallback(async () => {
     if (!offerId) return;
     try {
-      const [o, h] = await Promise.all([
-        role === "NGO" && driveId ? getNgoDriveOfferForNgo(driveId, offerId) : getNgoDriveOffer(offerId),
-        getNgoDriveOfferHandover(offerId),
-      ]);
+      // Handover first: reading it can complete a handover that was already ready (code
+      // confirmed + photo), so the offer read after it shows the up-to-date status.
+      const h = await getNgoDriveOfferHandover(offerId);
+      const o = await (role === "NGO" && driveId ? getNgoDriveOfferForNgo(driveId, offerId) : getNgoDriveOffer(offerId));
       setOffer(o); setHandover(h); setState("ready");
     } catch (e) {
       setState(isNotFound(e) ? "not-found" : "error");
@@ -44,17 +47,28 @@ export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHando
   }, [authLoading, user, router, load]);
   useEntityUpdates(["NGO_DRIVE_OFFER", "NGO_DRIVE"], () => { void load(); });
 
+  useEffect(() => {
+    if (!offer || !NGO_DRIVE_OFFER_DONE.has(offer.status) || !offerId) return;
+    if (claimCelebration("NGO_DRIVE_OFFER", offerId, user?.email)) {
+      setCelebrate(true);
+    }
+  }, [offer, offerId, user?.email]);
+
   if (authLoading || !user || state === "loading") return <PageSkeleton><div className="h-96" /></PageSkeleton>;
   if (state === "not-found") {
-    return (
-      <div className="flex min-h-[50vh] flex-col items-center justify-center p-8 text-center">
-        <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Handover not found</h2>
-        <Link href={role === "NGO" ? "/ngo/handovers" : "/dashboard"} className="mt-6 inline-flex min-h-[44px] items-center rounded-full bg-stone-900 px-6 text-sm font-bold text-white dark:bg-stone-100 dark:text-stone-900">
-          {role === "NGO" ? "Back to handovers" : "Back to your dashboard"}
-        </Link>
-      </div>
-    );
+    return <HandoverNotFound driveId={driveId} role={role} />;
   }
-  if (state === "error" || !offer) return <DriveLoadError message={message} onRetry={() => { setState("loading"); void load(); }} />;
-  return <DriveHandover role={role} offer={offer} handover={handover} onChanged={() => void load()} />;
+  if (state === "error" || !offer) return <DriveLoadError title="We couldn't load this handover" message={message} onRetry={() => { setState("loading"); void load(); }} />;
+  return (
+    <>
+      <DriveHandoverHub role={role} offer={offer} handover={handover} userEmail={user.email ?? ""} onChanged={() => void load()} />
+      <HandoverCelebration
+        role={role}
+        contextType="NGO_DRIVE_OFFER"
+        contextId={offerId}
+        open={celebrate}
+        onClose={() => setCelebrate(false)}
+      />
+    </>
+  );
 }

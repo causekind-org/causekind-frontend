@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 
 import sitemap from "./sitemap";
 import { IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
@@ -17,8 +17,20 @@ import { blogPosts } from "@/data/blogData";
  * `generateMetadata`, declaring a canonical, and never offered.
  */
 describe("sitemap", () => {
-  const entries = sitemap();
-  const urls = entries.map((e) => e.url);
+  let entries: Awaited<ReturnType<typeof sitemap>> = [];
+  let urls: string[] = [];
+  beforeAll(async () => {
+    // The verified NGOs' public pages come from the API.
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ slugs: ["hope-trust", "bad slug!"] }), { status: 200 })));
+    entries = await sitemap();
+    urls = entries.map((e) => e.url);
+    vi.unstubAllGlobals();
+  });
+
+  it("lists verified NGOs' public pages, and only well-formed slugs", () => {
+    expect(urls).toContain("https://www.causekind.com/ngos/hope-trust");
+    expect(urls.some(u => u.includes("bad slug"))).toBe(false);
+  });
 
   it("lists every in-kind category page", () => {
     for (const category of IN_KIND_CATEGORIES) {

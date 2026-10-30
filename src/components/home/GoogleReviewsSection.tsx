@@ -40,7 +40,7 @@ export function GoogleReviewsSection() {
   const isPaused = expandedCount > 0;
 
   return (
-    <section className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] py-16 sm:py-24 overflow-hidden transition-colors">
+    <section className="relative w-full bg-[#FAF8F5] dark:bg-[#0E0C0A] pt-8 pb-16 sm:pt-10 sm:pb-24 overflow-hidden transition-colors">
       <style>{`
         @keyframes scroll-left {
           0% { transform: translateX(0%); }

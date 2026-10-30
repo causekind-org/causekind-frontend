@@ -26,9 +26,13 @@ import { LandingText } from "@/components/LandingTranslation";
  * chrome to hide (`ck:immersive-nav`; the header and the mobile dock listen).
  */
 
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import dynamic from "next/dynamic";
+import { createPortal } from "react-dom";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { getLenis } from "@/components/SmoothScroll";
+import { isFilmSkipEligible, markFilmSeen } from "@/lib/filmSeen";
+import { SkipFilmButton } from "@/components/cinematic/SkipFilmButton";
 import styles from "@/sections/landing/cinematic/cinematic.module.css";
 import { cineFonts } from "@/sections/landing/cinematic/fonts";
 
@@ -78,10 +82,25 @@ const Chapter2 = dynamic(
 
 export function CinematicOrchestrator({
   leadInRef,
+  destinationRef,
 }: {
   leadInRef?: RefObject<HTMLElement | null>;
+  /** Where "Skip intro" lands: the labelled section right after the film. */
+  destinationRef?: RefObject<HTMLElement | null>;
 } = {}) {
   const rootRef = useRef<HTMLDivElement>(null);
+  // Nav visibility is owned here, in one place. Both the ScrollTrigger and Skip
+  // go through setNav, so the event and this flag never disagree.
+  const navHidden = useRef(false);
+  const setNav = useCallback((next: boolean) => {
+    if (next === navHidden.current) return;
+    navHidden.current = next;
+    window.dispatchEvent(new CustomEvent("ck:immersive-nav", { detail: next }));
+  }, []);
+  const [active, setActive] = useState(false);
+  // Per-view snapshot (src/lib/filmSeen.ts), read on the client after mount.
+  const [eligible, setEligible] = useState(false);
+  useEffect(() => { setEligible(isFilmSkipEligible()); }, []);
 
   // Hide the nav while the story plays. Starts once the hero's bottom edge has
   // passed the top of the screen (or, with no hero, when the film reaches the
@@ -90,25 +109,43 @@ export function CinematicOrchestrator({
   useEffect(() => {
     const root = rootRef.current;
     if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let hidden = false;
-    const set = (next: boolean) => {
-      if (next === hidden) return;
-      hidden = next;
-      window.dispatchEvent(new CustomEvent("ck:immersive-nav", { detail: next }));
-    };
     const lead = leadInRef?.current;
     const st = ScrollTrigger.create({
       trigger: lead ?? root,
       start: lead ? "bottom top+=24" : "top top",
       endTrigger: root,
       end: "bottom bottom",
-      onToggle: (self) => set(self.isActive),
+      onToggle: (self) => {
+        setNav(self.isActive);
+        setActive(self.isActive);
+        if (self.isActive) markFilmSeen();
+      },
     });
     return () => {
       st.kill();
-      set(false);
+      setNav(false);
+      setActive(false);
     };
-  }, [leadInRef]);
+  }, [leadInRef, setNav]);
+
+  // Jump past the film to "Who we are". One target, header height subtracted
+  // once, used by both scroll paths (no scroll-margin, no Lenis offset).
+  const skip = useCallback(() => {
+    const dest = destinationRef?.current;
+    if (!dest) return;
+    const header = document.querySelector("header");
+    const headerH = header ? header.getBoundingClientRect().height : 0;
+    const targetY = Math.max(0, dest.getBoundingClientRect().top + window.scrollY - headerH);
+    const lenis = getLenis();
+    if (lenis) lenis.scrollTo(targetY, { immediate: true, force: true });
+    else window.scrollTo({ top: targetY, behavior: "instant" });
+    ScrollTrigger.refresh();
+    // Normally the jump makes the trigger inactive and onToggle restores the
+    // nav; this covers a trigger that never fired (chapters still loading).
+    setNav(false);
+    setActive(false);
+    dest.focus({ preventScroll: true });
+  }, [destinationRef, setNav]);
 
   return (
     <div ref={rootRef} className="ck-cinematic relative w-full">
@@ -123,6 +160,9 @@ export function CinematicOrchestrator({
       <div className={`${styles.track} ${styles.track2} ck-film-track`}>
         <Chapter2 />
       </div>
+      {/* Portalled: the film's stages use transforms, which would trap a
+          position:fixed child inside them. */}
+      {eligible && active && destinationRef && createPortal(<SkipFilmButton onSkip={skip} />, document.body)}
     </div>
   );
 }

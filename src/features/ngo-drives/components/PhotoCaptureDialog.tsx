@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { UiText, useUiText } from "@/components/UiText";
 /**
  * Whether "Take photo" should hand over to the device's own camera app.
  *
@@ -25,20 +26,28 @@ export function prefersNativeCamera(): boolean {
   return coarse || mobileUa;
 }
 
-/** Plain words for why the camera could not start. */
-export function describePhotoCameraError(e: unknown): string {
+export type CameraErrorKind = "blocked" | "missing" | "busy" | "failed";
+const CAMERA_ERROR_EN: Record<CameraErrorKind, string> = {
+  blocked: "Camera access was blocked. Allow the camera for this site in your browser, or choose a photo instead.",
+  missing: "No camera was found on this device. Choose a photo instead.",
+  busy: "Your camera is in use by another app. Close it and try again, or choose a photo instead.",
+  failed: "We couldn't start the camera. Choose a photo instead.",
+};
+
+/** Plain words for why the camera could not start. `messages` are the translated sentences; English by default. */
+export function describePhotoCameraError(e: unknown, messages: Record<CameraErrorKind, string> = CAMERA_ERROR_EN): string {
   const name = e instanceof Error ? e.name : (e as { name?: string } | null)?.name ?? "";
   switch (name) {
     case "NotAllowedError":
     case "SecurityError":
-      return "Camera access was blocked. Allow the camera for this site in your browser, or choose a photo instead.";
+      return messages.blocked;
     case "NotFoundError":
     case "OverconstrainedError":
-      return "No camera was found on this device. Choose a photo instead.";
+      return messages.missing;
     case "NotReadableError":
-      return "Your camera is in use by another app. Close it and try again, or choose a photo instead.";
+      return messages.busy;
     default:
-      return "We couldn't start the camera. Choose a photo instead.";
+      return messages.failed;
   }
 }
 
@@ -57,6 +66,13 @@ export function PhotoCaptureDialog({
   onCancel: () => void;
   onCaptured: (file: File) => void;
 }) {
+  const ui = useUiText();
+  const cameraMessages: Record<CameraErrorKind, string> = {
+    blocked: ui("Camera access was blocked. Allow the camera for this site in your browser, or choose a photo instead."),
+    missing: ui("No camera was found on this device. Choose a photo instead."),
+    busy: ui("Your camera is in use by another app. Close it and try again, or choose a photo instead."),
+    failed: ui("We couldn't start the camera. Choose a photo instead."),
+  };
   const [phase, setPhase] = useState<Phase>("starting");
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -79,7 +95,7 @@ export function PhotoCaptureDialog({
     setError(null);
     setPhase("starting");
     if (!navigator.mediaDevices?.getUserMedia) {
-      setError("This browser can't use the camera. Choose a photo instead.");
+      setError(ui("This browser can't use the camera. Choose a photo instead."));
       setPhase("error");
       return;
     }
@@ -95,7 +111,7 @@ export function PhotoCaptureDialog({
       }
       setPhase("live");
     } catch (e) {
-      setError(describePhotoCameraError(e));
+      setError(describePhotoCameraError(e, cameraMessages));
       setPhase("error");
     }
   }, []);
@@ -116,7 +132,7 @@ export function PhotoCaptureDialog({
     canvas.height = height;
     canvas.getContext("2d")?.drawImage(video, 0, 0, width, height);
     canvas.toBlob(blob => {
-      if (!blob) { setError("That photo came out empty. Please try again."); return; }
+      if (!blob) { setError(ui("That photo came out empty. Please try again.")); return; }
       blobRef.current = blob;
       setPreview(URL.createObjectURL(blob));
       setPhase("captured");
@@ -147,21 +163,21 @@ export function PhotoCaptureDialog({
     <Dialog open={open} onOpenChange={next => { if (!next) cancel(); }}>
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle>Take a photo</DialogTitle>
-          <DialogDescription>Hold the item in good light, with all of it in the frame.</DialogDescription>
+          <DialogTitle><UiText>Take a photo</UiText></DialogTitle>
+          <DialogDescription><UiText>Hold the item in good light, with all of it in the frame.</UiText></DialogDescription>
         </DialogHeader>
 
         <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-stone-900">
           {/* Kept mounted so the stream can attach before it is shown. */}
-          <video ref={videoRef} playsInline muted aria-label="Camera preview"
+          <video ref={videoRef} playsInline muted aria-label={ui("Camera preview")}
             className={`h-full w-full object-contain ${phase === "live" ? "" : "invisible"}`} />
           {phase === "captured" && preview && (
             // eslint-disable-next-line @next/next/no-img-element -- a local blob URL
-            <img src={preview} alt="Captured photo" className="absolute inset-0 h-full w-full object-contain" />
+            <img src={preview} alt={ui("Captured photo")} className="absolute inset-0 h-full w-full object-contain" />
           )}
           {phase === "starting" && (
             <span className="absolute inset-0 grid place-items-center text-sm text-white/80">
-              <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Starting camera…</span>
+              <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> <UiText>Starting camera…</UiText></span>
             </span>
           )}
           {phase === "error" && (
@@ -174,29 +190,29 @@ export function PhotoCaptureDialog({
         <div className="flex flex-wrap justify-end gap-2">
           <button type="button" onClick={cancel}
             className="min-h-[44px] rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-200">
-            {phase === "error" ? "Close" : "Cancel"}
+            {phase === "error" ? ui("Close") : ui("Cancel")}
           </button>
           {phase === "error" && (
             <button type="button" onClick={() => void start()}
               className="min-h-[44px] rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-200">
-              Try again
+              <UiText>Try again</UiText>
             </button>
           )}
           {phase === "live" && (
             <button type="button" onClick={capture}
               className="flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-5 text-sm font-bold text-white">
-              <Camera className="h-4 w-4" aria-hidden /> Capture
+              <Camera className="h-4 w-4" aria-hidden /> <UiText>Capture</UiText>
             </button>
           )}
           {phase === "captured" && (
             <>
               <button type="button" onClick={retake}
                 className="flex min-h-[44px] items-center gap-2 rounded-xl border border-stone-300 px-4 text-sm font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-200">
-                <RotateCcw className="h-4 w-4" aria-hidden /> Retake
+                <RotateCcw className="h-4 w-4" aria-hidden /> <UiText>Retake</UiText>
               </button>
               <button type="button" onClick={use}
                 className="flex min-h-[44px] items-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-5 text-sm font-bold text-white">
-                <Check className="h-4 w-4" aria-hidden /> Use photo
+                <Check className="h-4 w-4" aria-hidden /> <UiText>Use photo</UiText>
               </button>
             </>
           )}

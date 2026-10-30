@@ -35,5 +35,11 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     // Scoped to src/ so a stray node_modules fixture is never collected.
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    // Full-suite load: heavy jsdom renders (landing, register, home) overran the 5 s
+    // defaults when every core ran a worker. Fewer workers, longer budgets.
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    maxWorkers: "50%",
+    minWorkers: 1,
   },
 });

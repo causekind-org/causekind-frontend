@@ -424,13 +424,8 @@ export function HowItWorksSection() {
         } as React.CSSProperties
       }
     >
-      {/* Morphing ambient background glow */}
-      <div className="max-md:hidden absolute inset-0 pointer-events-none opacity-40 dark:opacity-20 transition-all duration-700">
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[450px] rounded-full blur-3xl transition-colors duration-700"
-          style={{ backgroundColor: currentTabConfig.roleGlow }}
-        />
-      </div>
+      {/* Role-coloured ambient glow removed (2026-10-13), as in
+          HowItWorksDesktop: it read as a grey patch on the cream. */}
 
       <div className="relative mx-auto max-w-6xl px-5 sm:px-8 w-full">
         {/* Eyebrow / Letter-by-letter typing label */}

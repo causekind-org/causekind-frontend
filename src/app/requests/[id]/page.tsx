@@ -1,5 +1,7 @@
 import { serverDate } from "@/lib/serverTime";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowLeft, Building2, CalendarDays, MapPin, Package, UserRound } from "lucide-react";
 import { ApiError, getPublicItemRequest, type PublicItemRequest } from "@/lib/api";
@@ -8,6 +10,7 @@ import { safeInternalPath } from "@/lib/safeRedirect";
 import HelpAction from "./HelpAction";
 import RetryButton from "./RetryButton";
 
+import { UiText, useUiText } from "@/components/UiText";
 type Props = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ from?: string | string[] }>;
@@ -51,10 +54,11 @@ function backHref(raw: string | string[] | undefined): string {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const res = await load(id);
-  if (res.kind !== "ok") return { title: "Request — CauseKind", robots: { index: false } };
+  const mt = await getTranslations("requestsArea");
+  if (res.kind !== "ok") return { title: mt("metaRequestTitle"), robots: { index: false } };
   return {
     title: `${res.req.title} — CauseKind`,
-    description: `An in-kind request in ${res.req.city || "India"}. Browse freely; sign in when you're ready to offer an item.`,
+    description: mt("metaRequestDescription", { city: res.req.city || mt("india") }),
     alternates: { canonical: `/requests/${res.req.id}` },
   };
 }
@@ -71,24 +75,24 @@ export default async function RequestDetailPage({ params, searchParams }: Props)
           href={back}
           className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-sm font-semibold text-stone-600 hover:text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:text-stone-300"
         >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to requests
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> <UiText>Back to requests</UiText>
         </Link>
 
         {res.kind === "gone" ? (
           <section className="mt-4 rounded-xl border border-stone-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.04]">
-            <h1 className="text-xl font-semibold">This request is no longer open</h1>
+            <h1 className="text-xl font-semibold"><UiText>This request is no longer open</UiText></h1>
             <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">
-              It may have been fulfilled, closed or withdrawn. There are other people and
-              organisations you can still help.
+              <UiText>It may have been fulfilled, closed or withdrawn. There are other people and
+              organisations you can still help.</UiText>
             </p>
             <Link href={back} className="mt-4 inline-flex min-h-11 items-center rounded-lg bg-[var(--ck-role-accent)] px-4 text-sm font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2">
-              Browse open requests
+              <UiText>Browse open requests</UiText>
             </Link>
           </section>
         ) : res.kind === "error" ? (
           <section className="mt-4 rounded-xl border border-stone-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.04]">
-            <h1 className="text-xl font-semibold">We couldn&apos;t load this request</h1>
-            <p className="mt-2 text-sm text-stone-600 dark:text-stone-300">Please try again in a moment.</p>
+            <h1 className="text-xl font-semibold"><UiText>We couldn&apos;t load this request</UiText></h1>
+            <p className="mt-2 text-sm text-stone-600 dark:text-stone-300"><UiText>Please try again in a moment.</UiText></p>
             <RetryButton />
           </section>
         ) : (
@@ -100,8 +104,10 @@ export default async function RequestDetailPage({ params, searchParams }: Props)
 }
 
 function RequestDetail({ req }: { req: PublicItemRequest }) {
+  const rt = useTranslations("requestsArea");
+  const ui = useUiText();
   const isNgo = req.requesterType === "NGO";
-  const who = isNgo ? (req.organizationName || "A registered organisation") : (req.doneeFirstName || "A neighbour");
+  const who = isNgo ? (req.organizationName || ui("A registered organisation")) : (req.doneeFirstName || ui("A neighbour"));
   const visual = CATEGORY_VISUALS[req.category];
   const urgent = req.urgency === "CRITICAL" || req.emergency;
   const posted = req.createdAt ? serverDate(req.createdAt) : null;
@@ -111,11 +117,11 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
       <div className="flex flex-wrap items-center gap-2">
         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[var(--ck-role-accent)]">
           {isNgo ? <Building2 className="h-3.5 w-3.5" aria-hidden="true" /> : <UserRound className="h-3.5 w-3.5" aria-hidden="true" />}
-          {isNgo ? "NGO request" : "Person request"}
+          {isNgo ? ui("NGO request") : ui("Person request")}
         </span>
         {urgent && (
           <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700 dark:text-red-400">
-            Urgent
+            <UiText>Urgent</UiText>
           </span>
         )}
       </div>
@@ -130,7 +136,7 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
           </h1>
           {/* Organisation identity only. No profile link: no public NGO profile route exists. */}
           <p className="mt-1 break-words text-sm font-medium text-stone-700 dark:text-stone-300">
-            Requested by {who}
+            {rt("requestedBy", { who })}
           </p>
         </div>
       </div>
@@ -143,24 +149,24 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
 
       <dl className="mt-5 grid grid-cols-1 gap-3 border-t border-stone-100 pt-5 text-sm dark:border-white/10 sm:grid-cols-2">
         <div>
-          <dt className="text-xs text-stone-500 dark:text-stone-400">Quantity requested</dt>
+          <dt className="text-xs text-stone-500 dark:text-stone-400"><UiText>Quantity requested</UiText></dt>
           <dd className="font-semibold tabular-nums">{req.quantity.toLocaleString("en-IN")}</dd>
         </div>
         {req.category && (
           <div>
-            <dt className="text-xs text-stone-500 dark:text-stone-400">Category</dt>
+            <dt className="text-xs text-stone-500 dark:text-stone-400"><UiText>Category</UiText></dt>
             <dd className="font-semibold">{req.category}</dd>
           </div>
         )}
         {req.city && (
           <div>
-            <dt className="text-xs text-stone-500 dark:text-stone-400">City</dt>
+            <dt className="text-xs text-stone-500 dark:text-stone-400"><UiText>City</UiText></dt>
             <dd className="inline-flex items-center gap-1 font-semibold"><MapPin className="h-3.5 w-3.5" aria-hidden="true" />{req.city}</dd>
           </div>
         )}
         {posted && !Number.isNaN(posted.getTime()) && (
           <div>
-            <dt className="text-xs text-stone-500 dark:text-stone-400">Posted</dt>
+            <dt className="text-xs text-stone-500 dark:text-stone-400"><UiText>Posted</UiText></dt>
             <dd className="inline-flex items-center gap-1 font-semibold">
               <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
               {posted.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
@@ -170,7 +176,7 @@ function RequestDetail({ req }: { req: PublicItemRequest }) {
       </dl>
 
       <p className="mt-5 text-xs text-stone-500 dark:text-stone-400">
-        Exact address and contact details stay private. They are shared only during a confirmed handover.
+        <UiText>Exact address and contact details stay private. They are shared only during a confirmed handover.</UiText>
       </p>
 
       <div className="mt-5">

@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { configure, render, screen, waitFor } from "@testing-library/react";
 import { NgoLandingView } from "./NgoLandingView";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview } from "@/lib/api";
+
+// The hero renders a slideshow and motion; on a busy machine a test can pass 5 s.
+vi.setConfig({ testTimeout: 30000 });
+// The landing chunks load lazily; under full-suite load findBy* needs more than 1 s.
+configure({ asyncUtilTimeout: 8000 });
 
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 101, email: "ngo@example.test", role: "NGO_PARTNER" }, isLoading: false }) }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));
@@ -20,7 +25,7 @@ describe("verified NGO hero (points 4 and 6)", () => {
   it("keeps only the green Start a Drive button: no View my application, no Or start a drive, no sample card", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
-    await screen.findByText("✓ Verified by CauseKind");
+    await screen.findByText("Verified by CauseKind");
 
     const start = screen.getAllByRole("link", { name: /Start a Drive/i })[0];
     expect(start).toHaveAttribute("href", "/ngo/drives/new");
@@ -49,14 +54,14 @@ describe("verified NGO hero (points 4 and 6)", () => {
 });
 
 describe("verified notification card (point 7)", () => {
-  it("is short: title with the tick on one line and one line of body", async () => {
+  it("is short: title with the dot on one line and one line of body", async () => {
     localStorage.removeItem("ngo-verified-welcome-shown-101");
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
 
     const title = await screen.findByText("You're verified");
     const line = title.parentElement!;
-    expect(line.querySelector("svg")).not.toBeNull(); // tick sits inside the title line
+    expect(line.querySelector("span.rounded-full")).not.toBeNull(); // the dot sits inside the title line
     expect(line.className).toContain("flex");
     expect(line.className).toContain("items-center");
     const card = line.closest('[role="status"]')!;

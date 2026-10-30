@@ -128,7 +128,7 @@ export function NgoProblemSolutionSection() {
           className="text-center"
         >
           <p className="text-sm sm:text-base font-medium text-stone-600 dark:text-stone-300 italic"><LandingText>
-            "We built CauseKind so verified organizations get exactly what they need, delivered right to their doorstep."
+            &ldquo;We built CauseKind so verified organizations get exactly what they need, delivered right to their doorstep.&rdquo;
           </LandingText></p>
         </motion.div>
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { driveOfferDonated } from "@/features/ngo-drives/driveCertificate";
+import { imageUrlsOf, resolveMediaUrl } from "@/lib/mediaUrl";
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -24,7 +26,11 @@ import { MyTasksCard } from "@/components/MyTasksCard";
 import { ListingDetailsPanel } from "@/components/listings/ListingDetailsPanel";
 import { RequestDetailsPanel } from "@/components/requests/RequestDetailsPanel";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
+import { DriveProofCard, DriveProofCardLoader } from "@/features/ngo-drives/components/DriveProofCard";
 import { DonorMatchReviewCard } from "@/components/matches/DonorMatchReviewCard";
+import {
+  MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers, distributedLine, type AcceptedDriveOffer, type MatchSegment,
+} from "@/components/matches/NgoAcceptedOffers";
 import { DonorMatchReviewInline } from "@/components/matches/DonorMatchReviewInline";
 import { DoneeMatchReviewCard } from "@/components/matches/DoneeMatchReviewCard";
 import { DoneeMatchReviewInline } from "@/components/matches/DoneeMatchReviewInline";
@@ -49,6 +55,7 @@ import {
 import { canDeleteDraft, canWithdrawRequest, canHideWithdrawnRequest, isRequestActive } from "@/lib/requestActions";
 import { getRequestFulfilment, groupRequestsByFulfilment, offerDeliveredQuantity, type RequestFulfilment } from "@/lib/requestFulfilment";
 import { canDeleteListing, canWithdrawListing, canPauseListing, canResumeListing } from "@/lib/listingActions";
+import { useCancellationCopy } from "@/lib/cancellationCopy";
 import { CancelOfferDialog } from "@/components/CancelOfferDialog";
 import { ClosedOfferCard } from "@/components/ClosedOfferCard";
 import { displayReason, missingInfoLines } from "@/lib/rejectionReason";
@@ -57,8 +64,10 @@ import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { Reveal } from "@/components/Reveal";
 import { ListingDetailPanel } from "@/components/ListingDetailPanel";
 import MatchChatPopup from "@/components/MatchChatPopup";
-import { OfferJourney, donorJourneyIndex, buildDonorJourney } from "@/components/OfferJourney";
+import { OfferJourney, donorJourneyIndex, buildDonorJourney, useJourneyText } from "@/components/OfferJourney";
 import { WithdrawReportedIssue } from "@/components/WithdrawReportedIssue";
+import { DoneeOfferCard } from "@/components/donee/DoneeOfferCard";
+import { DonorOfferCard } from "@/components/donor/DonorOfferCard";
 import { findMatchForListing, isCompletedMatch, getListingCompletionDate } from "@/lib/matchedDonations";
 import { formatMatchProximity } from "@/lib/matchDistance";
 import {
@@ -66,7 +75,10 @@ import {
   type InventoryFilter, type RequestFilter,
 } from "@/lib/dashboardFilters";
 import { DashboardFilterChips } from "@/components/DashboardFilterChips";
+type NgoDriveOfferCert = Pick<NgoDriveOfferResponse, "proofPublished" | "proofQuantityDistributed" | "proofDistributedOn" | "proofLocation" | "proofNote" | "proofPhotoUrls" | "driveBeneficiariesReached" | "driveBeneficiaryGroup">;
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useDashCopy } from "@/lib/dashboardCopy";
 // Once both parties accept, scheduling/confirmation/chat all live on the
 // Handover Hub page instead of inline dashboard forms.
 const HANDOVER_HUB_STATUSES = new Set([
@@ -178,6 +190,11 @@ function WithdrawListingDialog({
   onOpenChange: (open: boolean) => void;
   onConfirmed: (id: number) => Promise<void>;
 }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const [busy, setBusy] = useState(false);
 
   async function handleWithdraw() {
@@ -198,15 +215,15 @@ function WithdrawListingDialog({
       <AlertDialogContent className="role-scope-donor rounded-2xl sm:rounded-3xl max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle className="text-base sm:text-lg font-bold">
-            Withdraw this listing?
+            <UiText>Withdraw this listing?</UiText>
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm text-stone-500 dark:text-stone-400">
-            This cannot be undone.
+            <UiText>This cannot be undone.</UiText>
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2 sm:gap-0 mt-4">
           <AlertDialogCancel disabled={busy} className="rounded-xl">
-            Cancel
+            <UiText>Cancel</UiText>
           </AlertDialogCancel>
           <AlertDialogAction
             disabled={busy}
@@ -218,10 +235,10 @@ function WithdrawListingDialog({
           >
             {busy ? (
               <span className="flex items-center gap-1.5">
-                <Loader2 className="h-3.5 w-3.5 animate-spin" /> Withdrawing…
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> <UiText>Withdrawing…</UiText>
               </span>
             ) : (
-              "Withdraw"
+              ui("Withdraw")
             )}
           </AlertDialogAction>
         </AlertDialogFooter>
@@ -277,6 +294,11 @@ function DonorListingRow({
   /** A match waiting on the donor, answered inside the card's Matched step. */
   review?: React.ReactNode;
 }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const badge = getListingStatusBadge(l.status);
   const isDraft = l.status === "DRAFT";
   const needsInfo = l.status === "NEEDS_INFORMATION";
@@ -307,28 +329,28 @@ function DonorListingRow({
           </p>
           <div className="text-xs text-stone-400 mt-1 flex flex-wrap gap-2 items-center">
             {l.category && <span><TranslatedText text={l.category} /></span>}
-            {l.city && <><span>&middot;</span><span><TranslatedText text={l.city} /></span></>}
-            <span>&middot;</span>
-            <span>Qty: {l.quantity}</span>
-            {l.condition && <><span>&middot;</span><span>{l.condition}</span></>}
+            {l.city && <><span><UiText>&middot;</UiText></span><span><TranslatedText text={l.city} /></span></>}
+            <span><UiText>&middot;</UiText></span>
+            <span>{dt("qtyIs", { qty: l.quantity })}</span>
+            {l.condition && <><span><UiText>&middot;</UiText></span><span>{l.condition}</span></>}
           </div>
         </button>
 
         <div className="flex items-center gap-2 shrink-0 flex-wrap">
           <Badge variant={badge.variant} className={`text-3xs whitespace-nowrap ${badge.className}`}>
-            {badge.label}
+            {pl(badge.label)}
           </Badge>
 
           {/* Listing action buttons per spec §7.4 */}
           {isDraft && (
             <Link href={`/items/new?draft=${l.id}`}>
-              <span className="text-xs text-[var(--ck-role-accent)] font-bold hover:underline">Continue →</span>
+              <span className="text-xs text-[var(--ck-role-accent)] font-bold hover:underline"><UiText>Continue →</UiText></span>
             </Link>
           )}
           {needsInfo && (
             <Link href={`/items/${l.id}/edit`}>
               <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-600 text-white hover:bg-amber-700 transition-colors">
-                Edit &amp; Resubmit →
+                <UiText>Edit &amp; Resubmit →</UiText>
               </span>
             </Link>
           )}
@@ -338,7 +360,7 @@ function DonorListingRow({
               disabled={listingActionLoading === l.id}
               className="text-xs text-stone-500 border border-stone-300 rounded-full px-2.5 py-0.5 hover:border-stone-500 hover:text-stone-700 disabled:opacity-50"
             >
-              {listingActionLoading === l.id ? "…" : "Pause"}
+              {listingActionLoading === l.id ? "…" : ui("Pause")}
             </button>
           )}
           {canResumeListing(l.status) && (
@@ -347,7 +369,7 @@ function DonorListingRow({
               disabled={listingActionLoading === l.id}
               className="text-xs text-green-700 border border-green-400 rounded-full px-2.5 py-0.5 hover:bg-green-50 disabled:opacity-50"
             >
-              {listingActionLoading === l.id ? "…" : "Resume"}
+              {listingActionLoading === l.id ? "…" : ui("Resume")}
             </button>
           )}
           {canWithdrawListing(l.status) && (
@@ -356,7 +378,7 @@ function DonorListingRow({
               disabled={listingActionLoading === l.id}
               className="text-xs text-red-500 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 disabled:opacity-50"
             >
-              Withdraw
+              <UiText>Withdraw</UiText>
             </button>
           )}
           {canDeleteListing(l.status) && (
@@ -365,7 +387,7 @@ function DonorListingRow({
               disabled={listingActionLoading === l.id}
               className="text-xs text-red-600 border border-red-300 rounded-full px-2.5 py-0.5 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-50 font-semibold"
             >
-              {listingActionLoading === l.id ? "…" : isDraft ? "Discard draft" : "Delete"}
+              {listingActionLoading === l.id ? "…" : isDraft ? ui("Discard draft") : ui("Delete")}
             </button>
           )}
         </div>
@@ -375,7 +397,7 @@ function DonorListingRow({
         <div className="mt-3.5 rounded-xl border border-[var(--ck-role-accent)]/20 bg-gradient-to-br from-[var(--ck-role-accent)]/[0.06] to-transparent p-2.5 sm:p-3 dark:border-[var(--ck-role-accent)]/30 dark:from-[var(--ck-role-accent)]/10">
           <p className="flex items-center gap-1.5 text-3xs font-black uppercase tracking-[0.18em] text-[var(--ck-role-accent)]">
             <Handshake className="w-3.5 h-3.5" />
-            Matched to {stripMatches.length} nearby need{stripMatches.length > 1 ? "s" : ""}
+            {dt("matchedNeeds", { count: stripMatches.length })}
           </p>
           <ul className="mt-2 divide-y divide-stone-200/70 dark:divide-zinc-800">
             {stripMatches.map((m) => {
@@ -386,7 +408,7 @@ function DonorListingRow({
                 <li key={m.id} className="flex flex-wrap items-center justify-between gap-2 py-2 first:pt-0.5 last:pb-0">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold text-stone-800 dark:text-stone-200">
-                      <TranslatedText text={m.requestTitle || "A verified need"} />
+                      <TranslatedText text={m.requestTitle || ui("A verified need")} />
                     </p>
                     <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-2xs text-stone-500 dark:text-stone-400">
                       {proximity && (
@@ -394,21 +416,21 @@ function DonorListingRow({
                           <MapPin className="w-3 h-3 text-[var(--ck-role-accent)]" />{proximity}
                         </span>
                       )}
-                      {m.requestQuantity != null && <span>Needs {m.requestQuantity}</span>}
+                      {m.requestQuantity != null && <span>{dt("needsQty", { count: m.requestQuantity })}</span>}
                       {urgent && (
                         <span className="font-bold text-red-600 dark:text-red-400">
-                          {m.requestUrgency === "CRITICAL" ? "Critical" : "Urgent"}
+                          {m.requestUrgency === "CRITICAL" ? ui("Critical") : ui("Urgent")}
                         </span>
                       )}
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
                     <span className={`rounded-full border px-2 py-0.5 text-3xs font-bold whitespace-nowrap ${MATCH_STAGE_TONE[stage.tone]}`}>
-                      {stage.label}
+                      {pl(stage.label)}
                     </span>
                     {HANDOVER_HUB_STATUSES.has(m.status) ? (
                       <Link href={`/matches/${m.id}/handover`} className="text-2xs font-bold text-[var(--ck-role-accent)] hover:underline whitespace-nowrap">
-                        Handover hub →
+                        <UiText>Handover hub →</UiText>
                       </Link>
                     ) : stage.tone === "action" && onOpenMatches ? (
                       <button
@@ -417,7 +439,7 @@ function DonorListingRow({
                         onClick={onOpenMatches}
                         className="text-2xs font-bold text-[var(--ck-role-accent)] hover:underline whitespace-nowrap"
                       >
-                        Review →
+                        <UiText>Review →</UiText>
                       </button>
                     ) : null}
                   </div>
@@ -432,7 +454,7 @@ function DonorListingRow({
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--ck-role-accent)]/60 motion-reduce:hidden" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--ck-role-accent)]" />
           </span>
-          No matching need nearby yet — we check every new verified request and will notify you.
+          <UiText>No matching need nearby yet — we check every new verified request and will notify you.</UiText>
         </p>
       ) : null}
 
@@ -442,26 +464,26 @@ function DonorListingRow({
             ? (() => {
               const lines = missingInfoLines(l.rejectionReason);
               if (lines.length <= 1) {
-                return <>Still needed: {lines[0] ?? displayReason(l.rejectionReason)}</>;
+                return <><UiText>Still needed:</UiText> {lines[0] ?? displayReason(l.rejectionReason)}</>;
               }
               return (
                 <>
-                  <p>Still needed:</p>
+                  <p><UiText>Still needed:</UiText></p>
                   <ul className="mt-1 list-disc space-y-0.5 ps-4 font-normal">
                     {lines.map(line => <li key={line}>{line}</li>)}
                   </ul>
                 </>
               );
             })()
-            : "Admin has requested more information. Please update your listing."}
+            : ui("Admin has requested more information. Please update your listing.")}
         </div>
       )}
 
       {l.status === "REJECTED" && (
         <div className="mt-2.5 rounded-lg bg-red-50 p-2 text-xs font-semibold text-red-700 dark:bg-red-950/20 dark:text-red-400">
           {l.rejectionReason
-            ? <>Reason: {displayReason(l.rejectionReason)}</>
-            : "This listing wasn't approved. Open it for details."}
+            ? <><UiText>Reason:</UiText> {displayReason(l.rejectionReason)}</>
+            : ui("This listing wasn't approved. Open it for details.")}
         </div>
       )}
 
@@ -521,6 +543,11 @@ function getRequestStatusBadge(status: string) {
 /* Fix & Resubmit: reopens a REJECTED request as a draft (REJECTED -> DRAFT) and
    jumps into the request wizard with everything prefilled and documents intact. */
 function FixResubmitButton({ requestId }: { requestId: number }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   return (
@@ -533,15 +560,15 @@ function FixResubmitButton({ requestId }: { requestId: number }) {
         setBusy(true);
         try {
           await reopenItemRequest(requestId);
-          toast.success("Request reopened — fix the issues and resubmit");
+          toast.success(ui("Request reopened — fix the issues and resubmit"));
           router.push(`/requests/new?draftId=${requestId}`);
         } catch (e) {
-          toast.error(e instanceof Error ? e.message : "Could not reopen request");
+          toast.error(e instanceof Error ? e.message : ui("Could not reopen request"));
           setBusy(false);
         }
       }}
     >
-      {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <><RefreshCw className="w-3 h-3 mr-1" /> Fix & Resubmit</>}
+      {busy ? <Loader2 className="w-3 h-3 animate-spin" /> : <><RefreshCw className="w-3 h-3 mr-1" /> <UiText>Fix &amp; Resubmit</UiText></>}
     </Button>
   );
 }
@@ -629,17 +656,22 @@ function ConfirmRequestActionButton({
  * mid-handover. Cancels any live match/offer against it and notifies the donor,
  * same as the backend's cancelRequest(). */
 function CancelRequestButton({ requestId, onCancelled }: { requestId: number; onCancelled: () => void }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   return (
     <ConfirmRequestActionButton
-      label="Withdraw"
-      busyLabel="Withdrawing"
+      label={ui("Withdraw")}
+      busyLabel={ui("Withdrawing")}
       icon={<X className="w-3 h-3 mr-1" />}
-      title="Withdraw this request?"
-      description="Verification and donor matching will stop. If a donor is already matched or mid-handover, they'll be notified and released."
-      confirmLabel="Withdraw request"
-      cancelLabel="Keep request"
-      successMessage="Request withdrawn"
-      errorMessage="Could not withdraw request"
+      title={ui("Withdraw this request?")}
+      description={ui("Verification and donor matching will stop. If a donor is already matched or mid-handover, they'll be notified and released.")}
+      confirmLabel={ui("Withdraw request")}
+      cancelLabel={ui("Keep request")}
+      successMessage={ui("Request withdrawn")}
+      errorMessage={ui("Could not withdraw request")}
       onConfirm={async () => { await cancelItemRequest(requestId); onCancelled(); }}
     />
   );
@@ -652,17 +684,22 @@ function CancelRequestButton({ requestId, onCancelled }: { requestId: number; on
  * it survive for admins. Saying "deleted" would be a promise the backend
  * deliberately doesn't keep. */
 function HideWithdrawnRequestButton({ requestId, onHidden }: { requestId: number; onHidden: () => void }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   return (
     <ConfirmRequestActionButton
-      label="Delete"
-      busyLabel="Removing"
+      label={ui("Delete")}
+      busyLabel={ui("Removing")}
       icon={<Trash2 className="w-3 h-3 mr-1" />}
-      title="Delete this request?"
-      description="This request will be removed from your dashboard. CauseKind may retain its history for safety, support, and auditing."
-      confirmLabel="Delete request"
-      cancelLabel="Keep request"
-      successMessage="Request removed from your dashboard."
-      errorMessage="Could not remove this request — please try again"
+      title={ui("Delete this request?")}
+      description={ui("This request will be removed from your dashboard. CauseKind may retain its history for safety, support, and auditing.")}
+      confirmLabel={ui("Delete request")}
+      cancelLabel={ui("Keep request")}
+      successMessage={ui("Request removed from your dashboard.")}
+      errorMessage={ui("Could not remove this request — please try again")}
       onConfirm={async () => { await hideWithdrawnRequest(requestId); onHidden(); }}
     />
   );
@@ -672,17 +709,22 @@ function HideWithdrawnRequestButton({ requestId, onHidden }: { requestId: number
  * a draft was never seen by anyone, so there's no audit trail to preserve and
  * nothing to notify — see ItemRequestService.deleteDraftRequest(). */
 function DeleteDraftButton({ requestId, onDeleted }: { requestId: number; onDeleted: () => void }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   return (
     <ConfirmRequestActionButton
-      label="Delete draft"
-      busyLabel="Deleting"
+      label={ui("Delete draft")}
+      busyLabel={ui("Deleting")}
       icon={<Trash2 className="w-3 h-3 mr-1" />}
-      title="Delete this draft?"
-      description="This draft has not been submitted. Deleting it will permanently remove the saved request."
-      confirmLabel="Delete draft"
-      cancelLabel="Keep draft"
-      successMessage="Draft deleted"
-      errorMessage="Could not delete draft"
+      title={ui("Delete this draft?")}
+      description={ui("This draft has not been submitted. Deleting it will permanently remove the saved request.")}
+      confirmLabel={ui("Delete draft")}
+      cancelLabel={ui("Keep draft")}
+      successMessage={ui("Draft deleted")}
+      errorMessage={ui("Could not delete draft")}
       onConfirm={async () => { await deleteItemRequestDraft(requestId); onDeleted(); }}
     />
   );
@@ -711,6 +753,11 @@ function journeyStage(status: string, fulfilment: RequestFulfilment): { stage: n
 }
 
 function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: ItemRequest; index: number; onCancelled: () => void; review?: React.ReactNode }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const fulfilment = getRequestFulfilment(r);
   // "Partially fulfilled" and "Remaining" both promise more is on the way, which
   // is only true while the request is open. A withdrawn or expired one keeps its
@@ -719,9 +766,9 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
   // Fully received reads as fulfilled even when the status lags behind the counters —
   // and there's nothing left to withdraw.
   const badge = fulfilment.isFullyFulfilled
-    ? { label: "Fulfilled", variant: "default" as const }
+    ? { label: ui("Fulfilled"), variant: "default" as const }
     : awaitingMore
-      ? { label: "Partially Fulfilled", variant: "secondary" as const }
+      ? { label: ui("Partially Fulfilled"), variant: "secondary" as const }
       : getRequestStatusBadge(r.status);
 
   return (
@@ -741,28 +788,28 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
           </p>
           <div className="text-xs text-stone-400 mt-1 flex flex-wrap gap-2 items-center">
             <span><TranslatedText text={r.category} /></span>
-            <span>&middot;</span>
+            <span><UiText>&middot;</UiText></span>
             <span className={`font-semibold ${fulfilment.fulfilled > 0 ? "text-[var(--ck-role-accent)]" : "text-stone-600 dark:text-stone-300"}`}>
               {fulfilment.fulfilled} / {fulfilment.requested}
             </span>
             {awaitingMore && (
               <>
-                <span>&middot;</span>
-                <span className="font-semibold text-stone-600 dark:text-stone-300">Remaining: {fulfilment.remaining}</span>
+                <span><UiText>&middot;</UiText></span>
+                <span className="font-semibold text-stone-600 dark:text-stone-300">{dt("remaining", { count: fulfilment.remaining })}</span>
               </>
             )}
-            <span>&middot;</span>
-            <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
+            <span><UiText>&middot;</UiText></span>
+            <span className="capitalize">{dt("urgencyLevel", { level: dc(r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase()) })}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
+          <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{pl(badge.label)}</Badge>
           {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
           {canDeleteDraft(r.status) && (
             <>
               <NewRequestLink href={`/requests/new?draftId=${r.id}`}
                 className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[#1e3a60]/30 dark:border-blue-400/40 text-2xs font-bold text-[#1e3a60] dark:text-blue-400 hover:bg-[#1e3a60]/5 dark:hover:bg-blue-400/10 transition-colors">
-                <Pencil className="w-3 h-3" /> Continue editing
+                <Pencil className="w-3 h-3" /> <UiText>Continue editing</UiText>
               </NewRequestLink>
               <DeleteDraftButton requestId={r.id} onDeleted={onCancelled} />
             </>
@@ -775,7 +822,7 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
         <p className="text-2xs text-red-600 dark:text-red-400 mt-2.5 line-clamp-2 leading-snug max-w-xl">{displayReason(r.rejectionReason)}</p>
       )}
       {r.status === "DRAFT" && (
-        <p className="text-2xs text-stone-400 mt-2.5">Saved as a draft &mdash; continue where you left off and submit when ready.</p>
+        <p className="text-2xs text-stone-400 mt-2.5"><UiText>Saved as a draft &mdash; continue where you left off and submit when ready.</UiText></p>
       )}
       {/* Always open, like the donor's listing card (owner, 2026-10-09). */}
       {r.status !== "DRAFT" && (
@@ -789,6 +836,9 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
 /* One compact line per request on the admin's Donee tab: status badge, how much
    has arrived, and the actions a pending or closed request can still take. */
 function CompactRequestRow({ request: r }: { request: ItemRequest }) {
+  const dc = useDashCopy();
+  const pl = usePageLabels();
+  const dt = useTranslations("dashFlow");
   const badge = getRequestStatusBadge(r.status);
   const { fulfilled, requested } = getRequestFulfilment(r);
   return (
@@ -798,9 +848,9 @@ function CompactRequestRow({ request: r }: { request: ItemRequest }) {
         <div className="flex flex-wrap gap-2 items-center text-xs text-stone-400 mt-1">
           <span><TranslatedText text={r.category} /></span>
           <span>•</span>
-          <span>{fulfilled > 0 ? `${fulfilled} / ${requested} received` : `Qty: ${requested}`}</span>
+          <span>{fulfilled > 0 ? dt("slashReceived", { x: fulfilled, y: requested }) : dt("qtyIs", { qty: requested })}</span>
           <span>•</span>
-          <span className="capitalize">{r.urgency.toLowerCase()} urgency</span>
+          <span className="capitalize">{dt("urgencyLevel", { level: dc(r.urgency.charAt(0) + r.urgency.slice(1).toLowerCase()) })}</span>
         </div>
         {r.status === "REJECTED" && r.rejectionReason && (
           <p className="text-2xs text-red-600 dark:text-red-400 mt-1 line-clamp-2 leading-snug">{displayReason(r.rejectionReason)}</p>
@@ -808,13 +858,13 @@ function CompactRequestRow({ request: r }: { request: ItemRequest }) {
       </div>
       <div className="flex flex-col items-end gap-1.5 shrink-0">
         <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
-          {badge.label}
+          {pl(badge.label)}
         </Badge>
         {r.status === "REJECTED" && <FixResubmitButton requestId={r.id} />}
         {r.status === "DRAFT" && (
           <NewRequestLink href={`/requests/new?draftId=${r.id}`}
             className="flex items-center gap-1 h-7 px-2.5 rounded-lg border border-[var(--ck-role-accent)]/30 text-2xs font-bold text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 transition-colors">
-            <Pencil className="w-3 h-3" /> Continue editing
+            <Pencil className="w-3 h-3" /> <UiText>Continue editing</UiText>
           </NewRequestLink>
         )}
       </div>
@@ -899,6 +949,11 @@ function OfferStageCard({
   /** Refetch after a cancellation so the card and counters update. */
   onCancelled?: () => void;
 }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const meta = OFFER_STATUS_META[offer.status] ?? {
     label: offer.status.replace(/_/g, " "),
     explanation: "",
@@ -933,6 +988,30 @@ function OfferStageCard({
      meta.action === "certificate" ? `/certificate?offerId=${offer.id}` :
      meta.action === "browse"      ? `/requests` : null);
 
+  // Request offers that are still moving use the redesigned card (owner-approved
+  // canvas "Donor Offer Card", 2026-10-15). Drive offers, finished and rejected
+  // offers keep the layout below, which carries their certificate / next-step blocks.
+  if (offer._type !== "DRIVE_OFFER" && !isTerminal) {
+    return (
+      <DonorOfferCard
+        offer={offer}
+        statusLabel={pl(meta.label)}
+        needsYou={OFFER_NEEDS_DONOR.includes(offer.status)}
+        explanation={pl(meta.explanation)}
+        actionHref={meta.action === "reconfirm" ? null : actionHref}
+        actionLabel={pl(meta.actionLabel)}
+        onReconfirm={() => onReconfirm(offer.id)}
+        noButton={
+          <ReconfirmDeclineButton offerId={offer.id} onCancelled={onCancelled}
+            label={offer.flowType === "WILL_PURCHASE" ? ui("I can't buy it anymore") : ui("It's no longer available")}
+            className="min-h-12 w-full rounded-xl border border-[#D9C8BA] bg-white text-[15px] font-bold text-[#1F1A17] transition-colors hover:bg-stone-50 dark:border-zinc-600 dark:bg-transparent dark:text-stone-200 dark:hover:bg-zinc-700" />
+        }
+        exit={<OfferCancelAction offerId={offer.id} onCancelled={onCancelled} />}
+        extra={offer.status === "ISSUE_RAISED" ? <WithdrawReportedIssue offerId={offer.id} onChanged={onCancelled} /> : undefined}
+      />
+    );
+  }
+
   const isCompleted = offer.status === "COMPLETED";
   const cardBorderClass = isCompleted
     ? "border-stone-100 dark:border-zinc-800 bg-white dark:bg-zinc-900"
@@ -946,7 +1025,7 @@ function OfferStageCard({
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${style.badge}`}>
               <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
-              {meta.label}
+              {pl(meta.label)}
             </span>
             {offer._type === "DRIVE_OFFER" && (
               <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 px-1.5 py-0.5 rounded text-[10px] uppercase font-bold flex items-center gap-1">
@@ -956,7 +1035,7 @@ function OfferStageCard({
             )}
             {offer.flowType && (
               <span className="text-xs text-stone-400">
-                {offer.flowType === "ALREADY_OWN" ? "Own item" : offer.flowType === "WILL_PURCHASE" ? "Will purchase" : "Similar item"}
+                {offer.flowType === "ALREADY_OWN" ? ui("Own item") : offer.flowType === "WILL_PURCHASE" ? ui("Will purchase") : ui("Similar item")}
               </span>
             )}
           </div>
@@ -986,7 +1065,7 @@ function OfferStageCard({
             {buildDonorJourney("COMPLETED").map((stage, i) => (
               <div key={i} className="flex-1 min-w-0">
                 <div className="text-4xs font-semibold leading-tight truncate text-center text-green-600 dark:text-green-400">
-                  ✓ {stage.label}
+                  ✓ {jt(stage.label)}
                 </div>
               </div>
             ))}
@@ -999,10 +1078,10 @@ function OfferStageCard({
               </span>
               <div>
                 <p className="text-3xs font-bold text-[var(--ck-role-accent)] uppercase tracking-wide">
-                  Now · Complete
+                  <UiText>Now · Complete</UiText>
                 </p>
                 <p className="text-xs text-stone-600 dark:text-stone-300">
-                  The donation was successfully completed.
+                  <UiText>The donation was successfully completed.</UiText>
                 </p>
               </div>
             </div>
@@ -1012,7 +1091,7 @@ function OfferStageCard({
             href={`/certificate?offerId=${offer.id}`}
             className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-green-600 hover:bg-green-700 text-white py-2.5 text-center text-xs font-semibold transition-colors"
           >
-            <Award className="w-3.5 h-3.5" /> View Certificate
+            <Award className="w-3.5 h-3.5" /> <UiText>View Certificate</UiText>
           </Link>
         </div>
       ) : (
@@ -1022,14 +1101,14 @@ function OfferStageCard({
               more detail directly underneath. Terminal offers, unmapped statuses and
               rejections have no journey, so they still need this. */}
           {meta.explanation && (isTerminal || donorJourneyIndex(offer.status) < 0) && (
-            <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{meta.explanation}</p>
+            <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">{pl(meta.explanation)}</p>
           )}
 
           {/* Rejection reason */}
           {offer.rejectionReason && (
             <div className="rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 px-3 py-2 text-xs text-red-700 dark:text-red-400">
               {/* Never the raw value: an admin typed "." and this rendered "Reason: ." */}
-              <span className="font-semibold">Reason: </span>
+              <span className="font-semibold"><UiText>Reason:</UiText> </span>
               {offer.displayRejectionReason ?? displayReason(offer.rejectionReason)}
             </div>
           )}
@@ -1037,30 +1116,30 @@ function OfferStageCard({
           {/* Post-rejection next steps — shown only for ADMIN_REJECTED */}
           {offer.status === "ADMIN_REJECTED" && (
             <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 p-3 space-y-2">
-              <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide">What you can do next</p>
+              <p className="text-xs font-bold text-stone-600 dark:text-stone-300 uppercase tracking-wide"><UiText>What you can do next</UiText></p>
               <div className="space-y-1.5">
                 <Link href={`/requests`}
                   className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[var(--ck-role-accent)] transition-colors">
                   <span className="text-sm">🔍</span>
                   <div>
-                    <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Offer to a different request</p>
-                    <p className="text-3xs text-stone-400">Browse all verified requests and find a better match for your item.</p>
+                    <p className="text-xs font-semibold text-stone-700 dark:text-stone-300"><UiText>Offer to a different request</UiText></p>
+                    <p className="text-3xs text-stone-400"><UiText>Browse all verified requests and find a better match for your item.</UiText></p>
                   </div>
                 </Link>
                 <Link href={`/items/new`}
                   className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[var(--ck-role-accent)] transition-colors">
                   <span className="text-sm">📦</span>
                   <div>
-                    <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">List the item as a general listing</p>
-                    <p className="text-3xs text-stone-400">Let the system find any suitable recipient automatically.</p>
+                    <p className="text-xs font-semibold text-stone-700 dark:text-stone-300"><UiText>List the item as a general listing</UiText></p>
+                    <p className="text-3xs text-stone-400"><UiText>Let the system find any suitable recipient automatically.</UiText></p>
                   </div>
                 </Link>
                 <Link href={`/requests/${offer.requestId}/offer`}
                   className="flex items-start gap-2 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-2 hover:border-[var(--ck-role-accent)] transition-colors">
                   <span className="text-sm">✏️</span>
                   <div>
-                    <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">Re-offer with updated details</p>
-                    <p className="text-3xs text-stone-400">Address the rejection reason and submit a fresh offer for the same request.</p>
+                    <p className="text-xs font-semibold text-stone-700 dark:text-stone-300"><UiText>Re-offer with updated details</UiText></p>
+                    <p className="text-3xs text-stone-400"><UiText>Address the rejection reason and submit a fresh offer for the same request.</UiText></p>
                   </div>
                 </Link>
               </div>
@@ -1081,7 +1160,7 @@ function OfferStageCard({
                   onClick={() => onReconfirm(offer.id)}
                   className="w-full rounded-xl bg-amber-500 hover:bg-amber-600 text-white py-2.5 text-xs font-semibold transition-colors"
                 >
-                  ✓ Yes, item is still available
+                  <UiText>✓ Yes, item is still available</UiText>
                 </button>
                 {/* Was a window.prompt containing a numbered list the donor had to
                     retype — unstructured, unstyled and unvalidatable. The reason now
@@ -1111,7 +1190,7 @@ function OfferStageCard({
                     : "bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white"
                   }`}
               >
-                {meta.actionLabel}
+                {pl(meta.actionLabel)}
               </Link>
             )}
                         {offer._type === "DRIVE_OFFER"
@@ -1130,6 +1209,11 @@ const DRIVE_OFFER_CANCELLABLE = new Set([
   "PENDING_NGO_REVIEW", "NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK",
 ]);
 function DriveOfferCancelAction({ offerId, status, onCancelled }: { offerId: number; status: string; onCancelled: () => void }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   if (!DRIVE_OFFER_CANCELLABLE.has(status)) return null;
@@ -1137,22 +1221,22 @@ function DriveOfferCancelAction({ offerId, status, onCancelled }: { offerId: num
     <AlertDialog open={open} onOpenChange={setOpen}>
       <button type="button" onClick={() => setOpen(true)}
         className="rounded-xl border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-50 dark:border-zinc-700 dark:text-stone-300 dark:hover:bg-zinc-800">
-        Cancel offer
+        <UiText>Cancel offer</UiText>
       </button>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancel your offer to this drive?</AlertDialogTitle>
-          <AlertDialogDescription>The NGO will be told, and the quantity goes back to the drive for other donors.</AlertDialogDescription>
+          <AlertDialogTitle><UiText>Cancel your offer to this drive?</UiText></AlertDialogTitle>
+          <AlertDialogDescription><UiText>The NGO will be told, and the quantity goes back to the drive for other donors.</UiText></AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Keep my offer</AlertDialogCancel>
+          <AlertDialogCancel disabled={busy}><UiText>Keep my offer</UiText></AlertDialogCancel>
           <AlertDialogAction disabled={busy} onClick={async (e) => {
             e.preventDefault();
             setBusy(true);
-            try { await cancelNgoDriveOffer(offerId, "Cancelled by donor"); toast.success("Offer cancelled."); setOpen(false); onCancelled(); }
-            catch (err) { toast.error(err instanceof Error && err.message ? err.message : "We couldn't cancel this offer."); }
+            try { await cancelNgoDriveOffer(offerId, "Cancelled by donor"); toast.success(ui("Offer cancelled.")); setOpen(false); onCancelled(); }
+            catch (err) { toast.error(err instanceof Error && err.message ? err.message : ui("We couldn't cancel this offer.")); }
             finally { setBusy(false); }
-          }}>Cancel offer</AlertDialogAction>
+          }}><UiText>Cancel offer</UiText></AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
@@ -1160,7 +1244,14 @@ function DriveOfferCancelAction({ offerId, status, onCancelled }: { offerId: num
 }
 
 /** "Item is no longer available" on a reconfirmation prompt — same dialog, red styling. */
-function ReconfirmDeclineButton({ offerId, onCancelled }: { offerId: number; onCancelled: () => void }) {
+function ReconfirmDeclineButton({ offerId, onCancelled, label, className }: {
+  offerId: number; onCancelled: () => void; label?: string; className?: string;
+}) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const [option, setOption] = useState<CancellationOption | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -1178,9 +1269,9 @@ function ReconfirmDeclineButton({ offerId, onCancelled }: { offerId: number; onC
       <button
         type="button"
         onClick={() => setDialogOpen(true)}
-        className="w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 py-2 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"
+        className={className ?? "w-full rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 py-2 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors"}
       >
-        ✕ Item is no longer available
+        {label ?? ui("✕ Item is no longer available")}
       </button>
       <CancelOfferDialog offerId={offerId} option={option} open={dialogOpen}
         onOpenChange={setDialogOpen} onCancelled={onCancelled} />
@@ -1195,6 +1286,7 @@ function ReconfirmDeclineButton({ offerId, onCancelled }: { offerId: number; onC
  */
 function OfferCancelAction({ offerId, onCancelled }: { offerId: number; onCancelled: () => void }) {
   const [option, setOption] = useState<CancellationOption | null>(null);
+  const copy = useCancellationCopy();
   const [dialogOpen, setDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -1216,7 +1308,7 @@ function OfferCancelAction({ offerId, onCancelled }: { offerId: number; onCancel
         // with the primary action. flex-1 still fills the row when it is alone.
         className="flex-1 min-w-0 truncate rounded-xl border border-red-200 bg-white py-2 text-xs font-semibold text-red-600 transition-colors hover:bg-red-50 dark:border-red-900 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/30"
       >
-        {option.actionLabel}
+        {copy.label(option)}
       </button>
       <CancelOfferDialog
         offerId={offerId}
@@ -1235,6 +1327,11 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
   onWithdraw: (id: number, reason: string) => void;
   onCancelled?: () => void;
 }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   // Every bucket is derived from ONE list. It used to be two: `active` excluded
   // WITHDRAWN/CANCELLED/COMPLETED while `terminal` also listed ADMIN_REJECTED and
   // DONEE_DECLINED — so a rejected offer fell through into both, rendering once
@@ -1248,18 +1345,21 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
   const needsAction = active.filter(o => OFFER_NEEDS_DONOR.includes(o.status));
 
   return (
-    <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
-      <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
-        <div>
-          <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-            <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation Offers
-          </CardTitle>
-          <p className="text-xs text-stone-400 mt-0.5">Offers you made to fulfil specific requests</p>
+    <Card className="relative bg-white dark:bg-zinc-900 border-[#EADFD6] dark:border-zinc-800 rounded-[20px] shadow-sm overflow-hidden"
+      style={{ fontFamily: "var(--font-nunito), system-ui, sans-serif" }}>
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b border-[#F1E8E0] pb-3 sm:pb-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <CardTitle className="text-[18px] sm:text-[20px] font-extrabold"><UiText>Your donation offers</UiText></CardTitle>
+          {needsAction.length > 0 && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FFF3E0] px-2.5 py-1 text-[13px] font-bold text-[#8A4B00]">
+              <span aria-hidden className="size-[7px] rounded-full bg-amber-600" />
+              {dt("needYou", { count: needsAction.length })}
+            </span>
+          )}
         </div>
         {offers.length > 0 && (
-          <Link href="/offers">
-            <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
+          <Link href="/offers" className="inline-flex min-h-11 items-center text-[15px] font-bold text-[var(--ck-role-accent)] hover:underline">
+            <UiText>View all offers</UiText> <span aria-hidden className="ms-1">›</span>
           </Link>
         )}
       </CardHeader>
@@ -1271,12 +1371,12 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
             <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--ck-role-accent)]/10">
               <Heart className="h-5 w-5 text-[var(--ck-role-accent)]" />
             </div>
-            <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">You haven&apos;t offered anything yet</p>
+            <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>You haven&apos;t offered anything yet</UiText></p>
             <p className="mx-auto max-w-[280px] text-xs text-stone-400">
-              Browse verified needs and offer an item against one — every offer you make is tracked here.
+              <UiText>Browse verified needs and offer an item against one — every offer you make is tracked here.</UiText>
             </p>
             <Link href="/requests" className="inline-block pt-1">
-              <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">Browse needs</Button>
+              <Button size="sm" className="bg-[var(--ck-role-accent)] text-white"><UiText>Browse needs</UiText></Button>
             </Link>
           </div>
         )}
@@ -1284,9 +1384,8 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
         {/* Needs action — shown first and highlighted */}
         {needsAction.length > 0 && (
           <div className="space-y-3">
-            <p className="text-3xs font-black uppercase tracking-wider text-amber-600 flex items-center gap-1.5">
-              <AlertTriangle className="w-3 h-3" /> Action Required
-            </p>
+            {/* Ordered first; the "needs you" count in the header and each card's
+                "Your turn" pill replace the old "Action Required" label. */}
             {needsAction.map(o => (
               <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
             ))}
@@ -1297,7 +1396,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
         {active.filter(o => !needsAction.includes(o)).length > 0 && (
           <div className="space-y-3">
             {needsAction.length > 0 && (
-              <p className="text-3xs font-black uppercase tracking-wider text-stone-400">In Progress</p>
+              <p className="text-3xs font-black uppercase tracking-wider text-stone-400"><UiText>In Progress</UiText></p>
             )}
             {active.filter(o => !needsAction.includes(o)).map(o => (
               <OfferStageCard key={o.id} offer={o} onReconfirm={onReconfirm} onWithdraw={onWithdraw} onCancelled={onCancelled} />
@@ -1308,12 +1407,12 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
         {/* Completed */}
         {completed.length > 0 && (
           <div className="space-y-3">
-            <p className="text-3xs font-black uppercase tracking-wider text-stone-400">Completed</p>
+            <p className="text-3xs font-black uppercase tracking-wider text-stone-400"><UiText>Completed</UiText></p>
             {completed.map(o => (
               <DoneRow
                 key={o.id}
-                title={o.requestTitle ?? "Donation"}
-                sub={["Completed", doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · ")}
+                title={o.requestTitle ?? ui("Donation")}
+                sub={[ui("Completed"), doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · ")}
                 thumb={o.media?.[0]?.mediaUrl}
                 href={`/certificate?offerId=${o.id}`}
               />
@@ -1326,7 +1425,7 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
           <details className="group">
             <summary className="cursor-pointer text-3xs font-black uppercase tracking-wider text-stone-400 flex items-center gap-1">
               <span className="group-open:rotate-90 transition-transform inline-block">▶</span>
-              Closed ({terminal.length})
+              {dt("closedCount", { count: terminal.length })}
             </summary>
             <div className="mt-2 space-y-2">
               {/* Compact summaries, not full stage cards: these are finished, and a
@@ -1358,6 +1457,11 @@ function DoneRow({ title, sub, thumb, href, tag, photos }: {
   /** Every photo of the item; the thumbnail opens them (2026-10-08). */
   photos?: string[];
 }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const all = (photos?.length ? photos : thumb ? [thumb] : []).filter(Boolean) as string[];
   const [viewing, setViewing] = useState<number | null>(null);
   return (
@@ -1366,7 +1470,7 @@ function DoneRow({ title, sub, thumb, href, tag, photos }: {
         type="button"
         disabled={!all.length}
         onClick={() => setViewing(0)}
-        aria-label={all.length ? `View ${all.length} photo${all.length === 1 ? "" : "s"} of ${title}` : undefined}
+        aria-label={all.length ? dt("viewPhotosOf", { count: all.length, title }) : undefined}
         className="relative h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-stone-100 enabled:cursor-zoom-in dark:bg-zinc-800"
       >
         {all[0] ? (
@@ -1380,7 +1484,7 @@ function DoneRow({ title, sub, thumb, href, tag, photos }: {
       </button>
       {viewing !== null && all[viewing] && (
         <div
-          role="dialog" aria-modal="true" aria-label={`Photos of ${title}`}
+          role="dialog" aria-modal="true" aria-label={dt("photosOf", { title })}
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/85 p-4"
           onClick={() => setViewing(null)}
           onKeyDown={e => {
@@ -1393,14 +1497,14 @@ function DoneRow({ title, sub, thumb, href, tag, photos }: {
         >
           {/* eslint-disable-next-line @next/next/no-img-element -- uploaded photo URL */}
           <img src={all[viewing]} alt="" className="max-h-[85vh] max-w-[92vw] rounded-xl object-contain" onClick={e => e.stopPropagation()} />
-          <button type="button" onClick={() => setViewing(null)} aria-label="Close"
+          <button type="button" onClick={() => setViewing(null)} aria-label={ui("Close")}
             className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white hover:bg-white/25">✕</button>
           {all.length > 1 && (
             <>
-              <button type="button" aria-label="Previous photo"
+              <button type="button" aria-label={ui("Previous photo")}
                 onClick={e => { e.stopPropagation(); setViewing(v => v === null ? v : (v - 1 + all.length) % all.length); }}
                 className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg font-bold text-white hover:bg-white/25">‹</button>
-              <button type="button" aria-label="Next photo"
+              <button type="button" aria-label={ui("Next photo")}
                 onClick={e => { e.stopPropagation(); setViewing(v => v === null ? v : (v + 1) % all.length); }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-lg font-bold text-white hover:bg-white/25">›</button>
               <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/80">{viewing + 1} / {all.length}</span>
@@ -1419,7 +1523,7 @@ function DoneRow({ title, sub, thumb, href, tag, photos }: {
       </div>
       {href && (
         <Link href={href} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-bold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400">
-          <Award className="h-3 w-3" aria-hidden /> Certificate
+          <Award className="h-3 w-3" aria-hidden /> <UiText>Certificate</UiText>
         </Link>
       )}
     </div>
@@ -1438,6 +1542,52 @@ const doneDate = (iso?: string | null) => {
  * failed), each with its status and reason. Replaces the separate "Didn't go
  * ahead" fold and the Match history strip.
  */
+/**
+ * An NGO drive offer in History, from the moment the handover completed (code confirmed + first
+ * photo, ISSUE_WINDOW_OPEN): "Donated · certificate issued" + Certificate, and "Proof pending" until
+ * the NGO's distribution proof is approved; then the same entry shows the proof. One entry per offer.
+ */
+type DriveDoneLabels = { ngoDrive: string; certificateIssued: string; distributed: (d: AcceptedDriveOffer) => string | null };
+function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
+  const d = o as unknown as AcceptedDriveOffer & NgoDriveOfferCert & { closedAt?: string | null; createdAt?: string | null; submittedAt?: string | null; receivedAt?: string | null };
+  // The offer carries its own proof once published (freshly signed photos); older servers only flag FULFILLED.
+  const published = d.proofPublished === true || d.driveStatus === "FULFILLED";
+  const distributed = published ? labels.distributed({ ...d, driveStatus: "FULFILLED" }) : null;
+  const proofPhotos = (d.proofPhotoUrls ?? []).map(u => resolveMediaUrl(u)).filter((u): u is string => !!u);
+  const when = d.receivedAt ?? d.closedAt ?? d.createdAt ?? d.submittedAt ?? null;
+  const photos = imageUrlsOf(o.media as never);
+  // TODO later: admin issue ruling + revoke
+  const tag = labels.certificateIssued;
+  return {
+    key: `d${o.id}`,
+    at: Date.parse(when ?? "") || 0,
+    text: [o.requestTitle, o.requestCity, "donated ngo drive certificate", distributed, "issued"].join(" "),
+    node: (
+      <div className="space-y-2" data-testid={`history-drive-offer-${o.id}`}>
+        <DoneRow title={o.requestTitle ?? labels.ngoDrive} tag={tag}
+          sub={distributed ?? [doneDate(when), o.requestCity].filter(Boolean).join(" · ")}
+          thumb={photos[0] ?? null} photos={photos}
+          href={`/certificate?offerId=${o.id}&type=ngo_drive`} />
+        {published && d.proofPublished ? (
+          <DriveProofCard proof={{
+            ngoName: null, beneficiariesReached: d.driveBeneficiariesReached ?? null, beneficiaryGroup: d.driveBeneficiaryGroup ?? null,
+            quantityDistributed: d.proofQuantityDistributed ?? null, itemName: d.driveItemName ?? null, distributedOn: d.proofDistributedOn ?? null,
+            location: d.proofLocation ?? null, ngoStatement: d.proofNote ?? null,
+            media: proofPhotos.map(u => ({ mediaUrl: u, mediaType: "IMAGE" })),
+          } as never} />
+        ) : published && d.driveId ? (
+          <DriveProofCardLoader driveId={d.driveId} />
+        ) : (
+          <p data-testid="history-proof-pending" className="text-2xs text-stone-500 dark:text-stone-400">
+            Proof pending: the NGO will share photos and details after it distributes the items.{" "}
+            <Link href={`/ngo-drive-offers/${o.id}/handover`} className="font-semibold text-emerald-700 hover:underline dark:text-emerald-400">Open handover</Link>
+          </p>
+        )}
+      </div>
+    ),
+  };
+}
+
 function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onChanged }: {
   offers: DonationOffer[];
   fulfilledItems: ItemListing[];
@@ -1446,12 +1596,22 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
   pastMatches: ItemMatch[];
   onChanged: () => void;
 }) {
-  const entries = useMemo(() => {
-    const fromOffers = offers.filter(o => o.status === "COMPLETED").map(o => ({
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
+  const entries = (() => {
+    const driveLabels: DriveDoneLabels = {
+      ngoDrive: ui("NGO drive"), certificateIssued: ui("Donated · certificate issued"),
+      distributed: (d) => distributedLine(d, (k, v) => dt(k, v), ui("people in need")),
+    };
+    // Drive offers count as donated once the handover completed (certificate issued then).
+    const fromOffers = offers.filter(o => isDriveOffer(o) ? driveOfferDonated(o as never) : o.status === "COMPLETED").map(o => isDriveOffer(o) ? driveDoneEntry(o, driveLabels) : ({
       key: `o${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
       text: [o.requestTitle, o.requestCity, "donated completed your offer"].join(" "),
-      node: <DoneRow title={o.requestTitle ?? "Donation"} tag="Donated · your offer"
+      node: <DoneRow title={o.requestTitle ?? ui("Donation")} tag={ui("Donated · your offer")}
         sub={[doneDate(o.closedAt ?? o.createdAt), o.requestCity].filter(Boolean).join(" · ")}
         thumb={o.media?.[0]?.mediaUrl ?? null} photos={(o.media ?? []).map(m => m.mediaUrl)}
         href={`/certificate?offerId=${o.id}`} />,
@@ -1464,14 +1624,15 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         key: `l${item.id}`,
         at: Date.parse(when ?? "") || 0,
         text: [item.title, item.category, match?.requestTitle, match?.doneeName, "donated matched"].join(" "),
-        node: <DoneRow title={item.title} tag="Donated · matched"
-          sub={[doneDate(when), match?.requestTitle ? `for “${match.requestTitle}”` : ""].filter(Boolean).join(" · ")}
+        node: <DoneRow title={item.title} tag={ui("Donated · matched")}
+          sub={[doneDate(when), match?.requestTitle ? dt("forQuotedLower", { title: match.requestTitle }) : ""].filter(Boolean).join(" · ")}
           thumb={item.photoUrls?.[0] || item.imageUrl || (item.imageUrls ? item.imageUrls.split("|")[0] : null)}
           photos={item.photoUrls?.length ? item.photoUrls : (item.imageUrls ? item.imageUrls.split("|") : [])}
           href={isCompletedMatch(match) && match ? `/certificate?matchId=${match.id}` : null} />,
       };
     });
-    const fromClosedOffers = offers.filter(o => TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED").map(o => ({
+    const fromClosedOffers = offers.filter(o => (isDriveOffer(o) ? DRIVE_TERMINAL_STATUSES : TERMINAL_OFFER_STATUSES).includes(o.status) && o.status !== "COMPLETED"
+      && !(isDriveOffer(o) && driveOfferDonated(o as never))).map(o => ({
       key: `c${o.id}`,
       at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
       text: [o.requestTitle, o.requestCity, o.status.replace(/_/g, " "), o.rejectionReason].join(" "),
@@ -1485,7 +1646,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       node: <PastMatchRow m={m} viewer="DONOR" />,
     }));
     return [...fromOffers, ...fromItems, ...fromClosedOffers, ...fromMatches].sort((a, b) => b.at - a.at);
-  }, [offers, fulfilledItems, matches, pastMatches, onChanged]);
+  })();
 
   // Search (owner, 2026-10-10): every word must appear in the row's item, request,
   // person, place, status or reason; case-insensitive.
@@ -1502,16 +1663,16 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
         <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-          <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation history
+          <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> <UiText>Donation history</UiText>
         </CardTitle>
-        <p className="text-xs text-stone-400 mt-0.5">Everything that has ended — donated, cancelled, withdrawn or declined — newest first</p>
+        <p className="text-xs text-stone-400 mt-0.5"><UiText>Everything that has ended — donated, cancelled, withdrawn or declined — newest first</UiText></p>
         </div>
         {entries.length > 0 && (
           <div className="relative w-full shrink-0 sm:w-72">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden />
-            <label htmlFor="donor-history-search" className="sr-only">Search donation history</label>
+            <label htmlFor="donor-history-search" className="sr-only"><UiText>Search donation history</UiText></label>
             <input id="donor-history-search" type="search" value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Search by item, request, person or status"
+              placeholder={ui("Search by item, request, person or status")}
               className="h-11 w-full rounded-xl border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--ck-role-accent)]/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200" />
           </div>
         )}
@@ -1519,11 +1680,11 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       </CardHeader>
       <CardContent className="space-y-2 pt-3 sm:pt-4">
         {entries.length === 0 ? (
-          <p className="py-6 text-center text-sm text-stone-500">Nothing here yet.</p>
+          <p className="py-6 text-center text-sm text-stone-500"><UiText>Nothing here yet.</UiText></p>
         ) : shown.length === 0 ? (
           <p className="py-6 text-center text-sm text-stone-500">
-            Nothing matches &ldquo;{query.trim()}&rdquo;.{" "}
-            <button type="button" onClick={() => setQuery("")} className="font-semibold text-[var(--ck-role-accent)] hover:underline">Clear search</button>
+            {dt("nothingMatches", { query: query.trim() })}{" "}
+            <button type="button" onClick={() => setQuery("")} className="font-semibold text-[var(--ck-role-accent)] hover:underline"><UiText>Clear search</UiText></button>
           </p>
         ) : (
           shown.map(e => <div key={e.key}>{e.node}</div>)
@@ -1548,15 +1709,20 @@ function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClo
   /** Matches that ended without delivery. */
   onlyMatchesClosed: ItemMatch[];
 }) {
-  const rows = useMemo(() => {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
+  const rows = (() => {
     const fromOffers = offers.filter(o => o.status === "COMPLETED" || o.status === "ISSUE_WINDOW_OPEN").map(o => {
       const qty = o.receivedQuantity ?? o.itemDetails?.quantity ?? null;
       return {
         key: `o${o.id}`,
         at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
-        title: o.requestTitle || "Donation",
-        tag: "Donor's offer",
-        sub: ["Received", doneDate(o.closedAt ?? o.createdAt), qty != null ? `${qty} received` : "", `for “${o.requestTitle}”`].filter(Boolean).join(" · "),
+        title: o.requestTitle || ui("Donation"),
+        tag: ui("Donor's offer"),
+        sub: [ui("Received"), doneDate(o.closedAt ?? o.createdAt), qty != null ? dt("nReceived", { count: qty }) : "", dt("forQuotedLower", { title: o.requestTitle ?? "" })].filter(Boolean).join(" · "),
         thumb: o.media?.[0]?.mediaUrl ?? null,
         photos: (o.media ?? []).map(m => m.mediaUrl),
       };
@@ -1566,9 +1732,9 @@ function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClo
       return {
         key: `m${m.id}`,
         at: Date.parse(m.doneeConfirmedAt ?? m.closedAt ?? m.createdAt ?? "") || 0,
-        title: m.listingTitle || m.requestTitle || "Donation",
-        tag: "Matched for you",
-        sub: ["Received", doneDate(m.doneeConfirmedAt ?? m.closedAt), qty != null ? `${qty} received` : "", m.requestTitle ? `for “${m.requestTitle}”` : ""].filter(Boolean).join(" · "),
+        title: m.listingTitle || m.requestTitle || ui("Donation"),
+        tag: ui("Matched for you"),
+        sub: [ui("Received"), doneDate(m.doneeConfirmedAt ?? m.closedAt), qty != null ? dt("nReceived", { count: qty }) : "", m.requestTitle ? dt("forQuotedLower", { title: m.requestTitle }) : ""].filter(Boolean).join(" · "),
         thumb: m.listingPhotoUrls?.[0] ?? m.donorImages?.[0] ?? null,
         photos: m.listingPhotoUrls?.length ? m.listingPhotoUrls : (m.donorImages ?? []),
       };
@@ -1583,7 +1749,7 @@ function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClo
       text: [matchItemLabel(m), m.requestTitle, m.donorName, pastMatchLabel(m.status, "DONEE").label, m.rejectionReason].join(" "),
       node: <PastMatchRow m={m} viewer="DONEE" /> }));
     return [...received, ...closedOffers, ...closedMatches].sort((a, b) => b.at - a.at);
-  }, [offers, matches, onlyOffersClosed, onlyMatchesClosed]);
+  })();
 
   // Search, same as the donor's History (owner, 2026-10-10): every word must match.
   const [query, setQuery] = useState("");
@@ -1598,16 +1764,16 @@ function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClo
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-              <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donations received
+              <PackageCheck className="w-4 h-4 text-[var(--ck-role-accent)]" /> <UiText>Donations received</UiText>
             </CardTitle>
-            <p className="text-xs text-stone-400 mt-0.5">Everything received, and every offer or match that didn&apos;t go ahead, newest first</p>
+            <p className="text-xs text-stone-400 mt-0.5"><UiText>Everything received, and every offer or match that didn&apos;t go ahead, newest first</UiText></p>
           </div>
           {rows.length > 0 && (
             <div className="relative w-full shrink-0 sm:w-72">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden />
-              <label htmlFor="donee-history-search" className="sr-only">Search donations received</label>
+              <label htmlFor="donee-history-search" className="sr-only"><UiText>Search donations received</UiText></label>
               <input id="donee-history-search" type="search" value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Search by item, request, donor or status"
+                placeholder={ui("Search by item, request, donor or status")}
                 className="h-11 w-full rounded-xl border border-stone-200 bg-white pl-9 pr-3 text-sm text-stone-800 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-[var(--ck-role-accent)]/40 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200" />
             </div>
           )}
@@ -1615,11 +1781,11 @@ function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClo
       </CardHeader>
       <CardContent className="space-y-2 pt-3 sm:pt-4">
         {rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-stone-500">Nothing here yet.</p>
+          <p className="py-6 text-center text-sm text-stone-500"><UiText>Nothing here yet.</UiText></p>
         ) : shown.length === 0 ? (
           <p className="py-6 text-center text-sm text-stone-500">
-            Nothing matches &ldquo;{query.trim()}&rdquo;.{" "}
-            <button type="button" onClick={() => setQuery("")} className="font-semibold text-[var(--ck-role-accent)] hover:underline">Clear search</button>
+            {dt("nothingMatches", { query: query.trim() })}{" "}
+            <button type="button" onClick={() => setQuery("")} className="font-semibold text-[var(--ck-role-accent)] hover:underline"><UiText>Clear search</UiText></button>
           </p>
         ) : (
           shown.map(e => <div key={e.key}>{e.node}</div>)
@@ -1649,6 +1815,13 @@ const TERMINAL_OFFER_STATUSES = ["WITHDRAWN", "CANCELLED", "ADMIN_REJECTED", "DO
 const isLiveDonorOffer = (o: DonationOffer) =>
   !TERMINAL_OFFER_STATUSES.includes(o.status) && o.status !== "COMPLETED";
 
+/** Offers to NGO drives travel in the same list, tagged _type "DRIVE_OFFER" (loadAllDonationOffers). */
+const isDriveOffer = (o: object) => (o as { _type?: string })._type === "DRIVE_OFFER";
+/** A drive offer the NGO has not accepted yet: shown in Your Inventory; once accepted it moves to Matches > NGO. */
+const DRIVE_OFFER_PENDING_STATUSES = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "NEEDS_INFORMATION", "PENDING_NGO_REVIEW"];
+/** A drive offer that ended without a handover (History). */
+const DRIVE_TERMINAL_STATUSES = ["NGO_DECLINED", "ENDED", "WITHDRAWN", "CANCELLED", "ADMIN_REJECTED"];
+
 // A completed donation stays among the live offers while the donee can still
 // report a problem with it — the backend allows that until a grace period after
 // the issue window, so at least 7 days past completion — then joins the history.
@@ -1676,6 +1849,7 @@ const shortDate = (ms: number) => new Date(ms).toLocaleDateString("en-IN", { day
    there's still time to use it. The count confirmed is what the request is
    credited with, so a shortfall is the donee's to raise, not ours to guess. */
 function ShortDeliveryNote({ offer }: { offer: DonationOffer }) {
+  const dt = useTranslations("dashFlow");
   const offered = offer.itemDetails?.quantity;
   const received = offer.receivedQuantity;
   if (offered == null || received == null || received >= offered) return null;
@@ -1683,9 +1857,7 @@ function ShortDeliveryNote({ offer }: { offer: DonationOffer }) {
     <p className="flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
       <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
       <span>
-        You received {received} of the {offered} offered. If items are missing,{" "}
-        <Link href={`/offers/${offer.id}/issues`} className="font-semibold underline underline-offset-2">report a problem</Link>
-        {" "}so our team can follow up with the donor.
+        {dt.rich("shortDelivery", { received, offered, report: (chunks) => <Link href={`/offers/${offer.id}/issues`} className="font-semibold underline underline-offset-2">{chunks}</Link> })}
       </span>
     </p>
   );
@@ -1693,16 +1865,20 @@ function ShortDeliveryNote({ offer }: { offer: DonationOffer }) {
 
 /** One offer to the donee that didn't go ahead, as a history row. */
 function PastOfferRow({ o }: { o: DonationOffer }) {
+  const ui = useUiText();
+  const dt = useTranslations("dashFlow");
+  const pl = usePageLabels();
+  const dc = useDashCopy();
   const { label, tone } = pastOfferLabel(o.status);
   const reason = o.rejectionReason ? (o.displayRejectionReason ?? displayReason(o.rejectionReason)) : null;
   return (
     <div className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">{o.requestTitle}</p>
-        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{pl(label)}</span>
       </div>
       <p className="mt-1 truncate text-2xs text-stone-400">
-        Offer{o.donorName ? <> from {o.donorName}</> : null} &middot; {shortDate(offerEndedAt(o))}
+        {o.donorName ? dt("offerFrom", { name: o.donorName }) : ui("Offer")} · {shortDate(offerEndedAt(o))}
       </p>
       {reason && <p className="mt-1 line-clamp-2 text-2xs text-stone-400 dark:text-stone-500" title={reason}>{reason}</p>}
     </div>
@@ -1739,22 +1915,27 @@ const matchEndedAt = (m: ItemMatch) =>
 
 /** One finished match as a history row: what, for whom, when, how it ended, why. */
 function PastMatchRow({ m, viewer }: { m: ItemMatch; viewer: MatchViewer }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const { label, tone } = pastMatchLabel(m.status, viewer);
   const received = MATCH_RECEIVED_STATUSES.has(m.status) ? (m.doneeConfirmedQty ?? m.allocatedQuantity) : null;
   return (
     <div className="rounded-xl border border-stone-100 dark:border-zinc-800 px-3 py-2.5">
       <div className="flex items-center gap-2">
         <p className="min-w-0 flex-1 truncate text-xs font-semibold text-stone-700 dark:text-stone-300">
-          <TranslatedText text={matchItemLabel(m)} />
+          <MatchItemText m={m} />
         </p>
-        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{label}</span>
+        <span className={`flex-shrink-0 rounded-full px-2 py-0.5 text-3xs font-semibold ${tone}`}>{pl(label)}</span>
         <WithdrawFlowButton kind="match" id={m.id} role={viewer === "DONOR" ? "DONOR" : "DONEE"} className="!min-h-[28px] !px-2" />
       </div>
       <p className="mt-1 truncate text-2xs text-stone-400">
-        For: <TranslatedText text={m.requestTitle || (viewer === "DONOR" ? "a request" : "your request")} />
+        <UiText>For:</UiText> <TranslatedText text={m.requestTitle || (viewer === "DONOR" ? ui("a request") : ui("your request"))} />
         {(viewer === "DONOR" ? m.doneeName : m.donorName) && <> &middot; {viewer === "DONOR" ? m.doneeName : m.donorName}</>}
         {" "}&middot; {shortDate(matchEndedAt(m))}
-        {received != null && received > 0 && <> &middot; {received} {viewer === "DONOR" ? "delivered" : "received"}</>}
+        {received != null && received > 0 && <> &middot; {received} {viewer === "DONOR" ? ui("delivered") : ui("received")}</>}
       </p>
       {m.rejectionReason && !MATCH_RECEIVED_STATUSES.has(m.status) && (
         <p className="mt-1 line-clamp-2 text-2xs text-stone-400 dark:text-stone-500">{displayReason(m.rejectionReason)}</p>
@@ -1789,6 +1970,17 @@ const MATCH_NEEDS_DONEE = new Set(["AWAITING_DONEE_CONFIRMATION", "DELIVERED_PEN
  */
 function matchItemLabel(m: ItemMatch, fallback = "Matched item"): string {
   return m.listingTitle || m.donorItemDescription || fallback;
+}
+
+/**
+ * The match's item name for display. Only the public listing title is sent for
+ * translation; the donor's free-text description (used when a match has no
+ * listing) is private and shown as written (Translation Coverage Inventory §6).
+ */
+function MatchItemText({ m, fallback }: { m: ItemMatch; fallback?: string }) {
+  const ui = useUiText();
+  if (m.listingTitle) return <TranslatedText text={m.listingTitle} />;
+  return <>{m.donorItemDescription || fallback || ui("Matched item")}</>;
 }
 
 /**
@@ -1858,7 +2050,7 @@ function SectionTab({ value, icon: Icon, label, shortLabel, count, attention, to
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-75 motion-reduce:hidden" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
           </span>
-          <span className="sr-only">(needs your attention)</span>
+          <span className="sr-only"><UiText>(needs your attention)</UiText></span>
         </>
       )}
     </TabsTrigger>
@@ -1878,6 +2070,11 @@ function DoneeDashboard({
   doneeMatches: ItemMatch[];
   onRefresh: () => Promise<void>;
 }) {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
   const [matchActionLoading, setMatchActionLoading] = useState<number | null>(null);
   const [incomingOffers, setIncomingOffers] = useState<DonationOffer[]>([]);
   const [offerActionLoading, setOfferActionLoading] = useState<number | null>(null);
@@ -1916,24 +2113,24 @@ function DoneeDashboard({
     try {
       const updated = await doneeReviewOffer(offerId, action, declineReason);
       setIncomingOffers(prev => prev.map(o => o.id === offerId ? updated : o));
-      if (action === "ACCEPT") toast.success("Offer accepted! The donor will reconfirm availability next.");
-      else toast.success("Offer declined.");
+      if (action === "ACCEPT") toast.success(ui("Offer accepted! The donor will reconfirm availability next."));
+      else toast.success(ui("Offer declined."));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Action failed");
+      toast.error(e instanceof Error ? e.message : ui("Action failed"));
     } finally {
       setOfferActionLoading(null);
     }
   }
 
   async function handleConfirmNoIssue(offerId: number) {
-    if (!window.confirm("Mark this donation complete? You won't be able to report a problem after this.")) return;
+    if (!window.confirm(ui("Mark this donation complete? You won't be able to report a problem after this."))) return;
     setOfferActionLoading(offerId);
     try {
       const updated = await confirmNoIssue(offerId);
       setIncomingOffers(prev => prev.map(o => o.id === offerId ? updated : o));
-      toast.success("Marked as complete — thank you for confirming!");
+      toast.success(ui("Marked as complete — thank you for confirming!"));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to complete");
+      toast.error(e instanceof Error ? e.message : ui("Failed to complete"));
     } finally {
       setOfferActionLoading(null);
     }
@@ -1943,10 +2140,10 @@ function DoneeDashboard({
     setMatchActionLoading(id);
     try {
       await doneeAcceptMatch(id);
-      toast.success("Match accepted! Logistics will be arranged next.");
+      toast.success(ui("Match accepted! Logistics will be arranged next."));
       await onRefresh();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to accept match");
+      toast.error(e instanceof Error ? e.message : ui("Failed to accept match"));
     } finally {
       setMatchActionLoading(null);
     }
@@ -1956,10 +2153,10 @@ function DoneeDashboard({
     setMatchActionLoading(id);
     try {
       await doneeRejectMatch(id);
-      toast.success("Match declined.");
+      toast.success(ui("Match declined."));
       await onRefresh();
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to decline match");
+      toast.error(e instanceof Error ? e.message : ui("Failed to decline match"));
     } finally {
       setMatchActionLoading(null);
     }
@@ -2034,20 +2231,20 @@ function DoneeDashboard({
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="space-y-3 min-w-0">
               <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-highlight)]/15 border border-[var(--ck-role-highlight)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-bold uppercase tracking-wider">
-                <ShieldCheck className="w-3.5 h-3.5" /> Verified Donee
+                <ShieldCheck className="w-3.5 h-3.5" /> <UiText>Verified Donee</UiText>
               </div>
               <h1 className="text-xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-                Namaste, {myProfile.fullName?.split(" ")[0] || user.email.split("@")[0]}.
+                {dt("greeting", { name: myProfile.fullName?.split(" ")[0] || user.email.split("@")[0] })}
               </h1>
               <p className="text-white/55 text-sm max-w-md">
                 {activeRequests.length > 0
-                  ? `${activeRequests.length} request${activeRequests.length !== 1 ? "s" : ""} on the road — we're scanning donor inventories near ${myProfile.city?.split(",")[0] || "you"}.`
-                  : "Post your first need and we'll find a verified donor near you."}
+                  ? (myProfile.city ? dt("requestsOnRoadNear", { count: activeRequests.length, city: myProfile.city.split(",")[0] }) : dt("requestsOnRoadNearYou", { count: activeRequests.length }))
+                  : ui("Post your first need and we'll find a verified donor near you.")}
               </p>
             </motion.div>
             <NewRequestLink href="/requests/new" data-tour="primary-cta">
               <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a86a] text-stone-950 font-extrabold rounded-xl sm:rounded-2xl px-3.5 sm:px-6 py-2 sm:py-3 h-auto text-sm sm:text-sm flex items-center gap-2 shadow-xl shadow-[var(--ck-role-highlight)]/20 shrink-0">
-                <Plus className="w-4 h-4" /> Post a Need
+                <Plus className="w-4 h-4" /> <UiText>Post a Need</UiText>
               </Button>
             </NewRequestLink>
           </div>
@@ -2055,9 +2252,9 @@ function DoneeDashboard({
           {/* Impact ledger — live numbers over hairline rules, no stat cards */}
           <div data-tour="ledger" className="mt-6 sm:mt-10 grid grid-cols-3 border-t border-white/10">
             {[
-              { n: itemRequests.length, label: "needs posted" },
-              { n: activeMatches.length, label: "active matches" },
-              { n: fulfilledRequests.length, label: "needs received" },
+              { n: itemRequests.length, label: ui("needs posted") },
+              { n: activeMatches.length, label: ui("active matches") },
+              { n: fulfilledRequests.length, label: ui("needs received") },
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                 className={`py-3.5 sm:py-5 ${i > 0 ? "border-l border-white/10 pl-3.5 sm:pl-8" : ""}`}>
@@ -2085,33 +2282,33 @@ function DoneeDashboard({
             {getInitials(myProfile.fullName)}
           </div>
           <p className="font-bold text-stone-800 dark:text-stone-200 truncate">{myProfile.fullName}</p>
-          <span className="text-stone-300 dark:text-zinc-700 hidden sm:inline">&middot;</span>
+          <span className="text-stone-300 dark:text-zinc-700 hidden sm:inline"><UiText>&middot;</UiText></span>
           <p className="truncate hidden sm:block">{user.email}</p>
           {myProfile.city && (
             <>
-              <span className="text-stone-300 dark:text-zinc-700 hidden md:inline">&middot;</span>
+              <span className="text-stone-300 dark:text-zinc-700 hidden md:inline"><UiText>&middot;</UiText></span>
               <p className="hidden md:flex items-center gap-1"><MapPin className="w-3 h-3 text-[#1e3a60] dark:text-blue-400" />{myProfile.city}</p>
             </>
           )}
-          <Link href="/profile" className="ml-auto shrink-0 font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">Edit profile</Link>
+          <Link href="/profile" className="ml-auto shrink-0 font-bold text-[#1e3a60] dark:text-blue-400 hover:underline"><UiText>Edit profile</UiText></Link>
         </div>
 
         {/* ── Sections: offers, requests, matches — one open at a time ── */}
         <Tabs value={section} onValueChange={(v) => { if (isDoneeSection(v)) selectSection(v); }} className="space-y-4 sm:space-y-6">
           <TabsList
-            aria-label="Dashboard sections"
+            aria-label={ui("Dashboard sections")}
             className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
           >
-            <SectionTab value="requests" icon={Package} label="Your Requests" shortLabel="Requests"
+            <SectionTab value="requests" icon={Package} label={ui("Your Requests")} shortLabel={ui("Requests")}
               count={visibleRequests.length} attention={awaitingDoneeMatches.length > 0} tour="requests-list" role="donee" />
-            <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
+            <SectionTab value="matches" icon={Handshake} label={ui("Matches")} shortLabel={ui("Matches")}
               count={flowMatches.length + activeOffers.length} attention={flowMatches.some(m => MATCH_NEEDS_DONEE.has(m.status)) || offersNeedYou} tour="matches" role="donee" />
-            <SectionTab value="offers" icon={Heart} label="History" shortLabel="History"
+            <SectionTab value="offers" icon={Heart} label={ui("History")} shortLabel={ui("History")}
               count={pastOffers.length + pastMatches.length} attention={false} tour="offers" role="donee" />
           </TabsList>
 
           {section === "" && (
-            <div className="space-y-3" aria-busy="true" aria-label="Loading your dashboard">
+            <div className="space-y-3" aria-busy="true" aria-label={ui("Loading your dashboard")}>
               <Skeleton className="h-24 w-full rounded-2xl" />
               <Skeleton className="h-24 w-full rounded-2xl" />
             </div>
@@ -2147,15 +2344,15 @@ function DoneeDashboard({
             <section>
               <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[#1e3a60]/70 dark:border-blue-400/50 pb-3">
                 <div>
-                  <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400">Your Requests</p>
-                  <p className="text-xs text-stone-400 mt-1">Every need travels the same road: posted, verified, matched, received.</p>
+                  <p className="text-3xs font-black uppercase tracking-[0.24em] text-[#1e3a60] dark:text-blue-400"><UiText>Your Requests</UiText></p>
+                  <p className="text-xs text-stone-400 mt-1"><UiText>Every need travels the same road: posted, verified, matched, received.</UiText></p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
                   <Link href="/dashboard/history" className="text-xs font-bold text-stone-600 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-zinc-800 transition-colors flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-stone-300 dark:border-zinc-700">
-                    <History className="w-3.5 h-3.5" /> History
+                    <History className="w-3.5 h-3.5" /> <UiText>History</UiText>
                   </Link>
                   <NewRequestLink href="/requests/new" className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline flex items-center gap-1">
-                    <Plus className="w-3.5 h-3.5" /> New need
+                    <Plus className="w-3.5 h-3.5" /> <UiText>New need</UiText>
                   </NewRequestLink>
                 </div>
               </div>
@@ -2165,15 +2362,15 @@ function DoneeDashboard({
                   <div className="w-11 sm:w-14 h-11 sm:h-14 bg-[#1e3a60]/10 rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto">
                     <Heart className="w-6 h-6 text-[#1e3a60]" />
                   </div>
-                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing posted yet</p>
-                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto">Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</p>
+                  <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>Nothing posted yet</UiText></p>
+                  <p className="text-xs text-stone-400 max-w-[240px] mx-auto"><UiText>Tell us what you need &mdash; books, clothes, medical supplies &mdash; and we&apos;ll find donors nearby.</UiText></p>
                   <NewRequestLink href="/requests/new">
-                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2">Post your first need</Button>
+                    <Button size="sm" className="bg-[#1e3a60] hover:bg-[#162d4a] text-white mt-2"><UiText>Post your first need</UiText></Button>
                   </NewRequestLink>
                 </div>
               ) : (
                 <DashboardFilterChips
-                  label="Filter your requests"
+                  label={ui("Filter your requests")}
                   options={requestOptions}
                   value={requestFilter}
                   onChange={setRequestFilter}
@@ -2186,11 +2383,11 @@ function DoneeDashboard({
                 filteredRequests.length === 0 ? (
                   <div className="py-7 text-center space-y-2">
                     <p className="text-sm text-stone-400">
-                      Nothing under &ldquo;{requestOptions.find(o => o.key === requestFilter)?.label}&rdquo; right now.
+                      {dt("nothingUnder", { label: requestOptions.find(o => o.key === requestFilter)?.label ?? "" })}
                     </p>
                     <button type="button" onClick={() => setRequestFilter("all")}
                       className="text-xs font-bold text-[#1e3a60] dark:text-blue-400 hover:underline">
-                      Show all requests
+                      <UiText>Show all requests</UiText>
                     </button>
                   </div>
                 ) : (
@@ -2210,7 +2407,7 @@ function DoneeDashboard({
                     ["Closed", requestGroups.closed],
                   ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
                     <div key={label}>
-                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
+                      <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{dc(label)}</h4>
                       <AnimatePresence initial={false}>
                         {group.map((r, i) => (
                           <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} />
@@ -2223,8 +2420,8 @@ function DoneeDashboard({
                   {fulfilledRequests.length > 0 && (
                     <Link href="/dashboard/history" className="flex items-center gap-2 rounded-xl border border-emerald-200/70 dark:border-emerald-900/50 bg-emerald-50/60 dark:bg-emerald-950/20 px-3.5 py-2.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors">
                       <CheckCircle2 className="w-4 h-4 shrink-0" />
-                      <span>See who delivered what for your fulfilled request{fulfilledRequests.length !== 1 ? "s" : ""} in History</span>
-                      <span className="ml-auto" aria-hidden>&rarr;</span>
+                      <span>{dt("seeHistory", { count: fulfilledRequests.length })}</span>
+                      <span className="ml-auto" aria-hidden><UiText>&rarr;</UiText></span>
                     </Link>
                   )}
                 </div>
@@ -2236,22 +2433,30 @@ function DoneeDashboard({
           <TabsContent value="matches" className="mt-0">
             <section>
               <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
-                <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Matches</p>
-                <p className="text-xs text-stone-400 mt-1">Donors whose items matched your requests.</p>
+                <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]"><UiText>Matches</UiText></p>
+                <p className="text-xs text-stone-400 mt-1"><UiText>Donors whose items matched your requests.</UiText></p>
               </div>
               <div className="pt-3.5 sm:pt-5">
                 {/* Live donation offers are flows in progress too (owner, 2026-10-07). */}
                 {activeOffers.length > 0 && (
                 <div className="mb-4">
-            <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
-              <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
-              <CardHeader className="flex flex-row items-center justify-between border-b pb-3 sm:pb-4 relative z-10">
-                <CardTitle className="text-sm sm:text-base font-bold flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" /> Donation Offers Received
-                </CardTitle>
+            <Card className="relative bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden">
+              <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 border-b pb-3 sm:pb-4">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <CardTitle className="text-base sm:text-lg font-extrabold"><UiText>Donation offers</UiText></CardTitle>
+                  {(() => {
+                    const toReview = activeOffers.filter(o => o.status === "PENDING_DONEE_REVIEW").length;
+                    return toReview > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                        <span aria-hidden className="size-1.5 rounded-full bg-amber-500" />
+                        {dt("needReview", { count: toReview })}
+                      </span>
+                    ) : null;
+                  })()}
+                </div>
                 {incomingOffers.length > 0 && (
-                  <Link href="/donee/offers">
-                    <Button variant="ghost" size="sm" className="text-xs font-bold text-[var(--ck-role-accent)]">View all</Button>
+                  <Link href="/donee/offers" className="inline-flex min-h-11 items-center text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
+                    <UiText>View all offers</UiText> <span aria-hidden className="ms-1">›</span>
                   </Link>
                 )}
               </CardHeader>
@@ -2261,14 +2466,14 @@ function DoneeDashboard({
                     <div className="w-11 h-11 bg-[var(--ck-role-accent)]/10 rounded-xl flex items-center justify-center mx-auto">
                       <Heart className="w-5 h-5 text-[var(--ck-role-accent)]" />
                     </div>
-                    <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No donation offers yet</p>
+                    <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>No donation offers yet</UiText></p>
                     <p className="text-xs text-stone-400 max-w-[280px] mx-auto">
-                      Once a request is public, donors can offer to fulfil it — you&apos;ll review each offer here.
+                      <UiText>Once a request is public, donors can offer to fulfil it — you&apos;ll review each offer here.</UiText>
                     </p>
                   </div>
                 ) : activeOffers.length === 0 && (
                   <p className="py-2 text-center text-xs text-stone-400">
-                    No active offers right now — your requests stay visible to donors.
+                    <UiText>No active offers right now — your requests stay visible to donors.</UiText>
                   </p>
                 )}
                 {activeOffers
@@ -2283,18 +2488,18 @@ function DoneeDashboard({
                     const isScreening = ["SUBMITTED", "AI_ELIGIBILITY_SCREENING", "AI_COMPATIBILITY_SCREENING", "COMPATIBILITY_CHECKED"].includes(offer.status);
                     const isWithdrawn = offer.status === "WITHDRAWN" || offer.status === "CANCELLED" || offer.status === "ADMIN_REJECTED";
                     const statusLabel =
-                      isPendingReview ? "Awaiting your review" :
-                        isNeedsInfo ? "Waiting on donor to add details" :
-                          isScreening ? "AI screening in progress" :
-                            offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? "Donor is reconfirming" :
-                              offer.status === "DONOR_RECONFIRMED" ? "Under admin review" :
-                                isApproved ? "Approved" :
-                                  isHandover ? "Handover in progress" :
-                                    isIssueWindow ? "Issue window open" :
-                                      isIssueRaised ? "Issue under review" :
-                                        isComplete ? "Completed" :
-                                          offer.status === "ADMIN_REJECTED" ? "Offer not approved" :
-                                            isWithdrawn ? "Offer withdrawn" :
+                      isPendingReview ? ui("Awaiting your review") :
+                        isNeedsInfo ? ui("Waiting on donor to add details") :
+                          isScreening ? ui("AI screening in progress") :
+                            offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? ui("Donor is reconfirming") :
+                              offer.status === "DONOR_RECONFIRMED" ? ui("Under admin review") :
+                                isApproved ? ui("Approved") :
+                                  isHandover ? ui("Handover in progress") :
+                                    isIssueWindow ? ui("Issue window open") :
+                                      isIssueRaised ? ui("Issue under review") :
+                                        isComplete ? ui("Completed") :
+                                          offer.status === "ADMIN_REJECTED" ? ui("Offer not approved") :
+                                            isWithdrawn ? ui("Offer withdrawn") :
                                               offer.status.replace(/_/g, " ");
                     const statusColor =
                       isPendingReview || isNeedsInfo ? "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400" :
@@ -2315,9 +2520,9 @@ function DoneeDashboard({
                       return (
                         <div key={offer.id} className="space-y-1">
                           <DoneRow
-                            title={offer.requestTitle ?? "Donation"}
+                            title={offer.requestTitle ?? ui("Donation")}
                             sub={[
-                              offer.receivedQuantity != null ? `Received ${offer.receivedQuantity}` : "Completed",
+                              offer.receivedQuantity != null ? dt("receivedN", { count: offer.receivedQuantity }) : ui("Completed"),
                               doneDate(offer.closedAt ?? offer.createdAt),
                               offer.itemDetails?.pickupCity,
                             ].filter(Boolean).join(" · ")}
@@ -2326,11 +2531,7 @@ function DoneeDashboard({
                           />
                           {canReport && (
                             <p className="px-1 text-3xs text-stone-400">
-                              Something wrong with the item?{" "}
-                              <Link href={`/offers/${offer.id}/issues`} className="font-semibold text-amber-700 hover:underline dark:text-amber-400">
-                                Report a problem
-                              </Link>{" "}
-                              within 48 hours of handover.
+                              {dt.rich("reportWithin", { report: (chunks) => <Link href={`/offers/${offer.id}/issues`} className="font-semibold text-amber-700 hover:underline dark:text-amber-400">{chunks}</Link> })}
                             </p>
                           )}
                         </div>
@@ -2338,113 +2539,45 @@ function DoneeDashboard({
                     }
 
                     return (
-                      <div key={offer.id} className="rounded-xl sm:rounded-2xl border border-stone-100 dark:border-zinc-800 p-3 sm:p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1 flex-wrap">
-                              <span className={`inline-flex items-center gap-1.5 rounded-full border border-current/20 px-2.5 py-0.5 text-xs font-semibold ${statusColor}`}>
-                                <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                                {statusLabel}
-                              </span>
-                              {offer.compatibilityIndicator && (
-                                <span className="text-xs text-stone-400">
-                                  {offer.compatibilityIndicator === "STRONG_MATCH" ? "Strong match" :
-                                    offer.compatibilityIndicator === "POSSIBLE_MATCH" ? "Possible match" :
-                                      offer.compatibilityIndicator.replace(/_/g, " ").toLowerCase().replace(/^./, c => c.toUpperCase())}
-                                </span>
-                              )}
-                            </div>
-                            <p className="font-semibold text-sm text-stone-900 dark:text-stone-100">{offer.requestTitle}</p>
-                            {offer.itemDetails && (
-                              <p className="text-xs text-stone-500 mt-0.5">
-                                <span className="font-semibold text-stone-700 dark:text-stone-300">
-                                  {offer.receivedQuantity != null
-                                    ? `Received ${offer.receivedQuantity} of ${offer.itemDetails.quantity} offered`
-                                    : `Offering ${offer.itemDetails.quantity} of the ${offer.requestQuantity} you asked for`}
-                                </span>
-                                {" · "}{offer.itemDetails.condition ?? "Condition not specified"}
-                                {offer.itemDetails.pickupCity ? ` · ${offer.itemDetails.pickupCity}` : ""}
-                              </p>
-                            )}
-                          </div>
-                          {offer.media?.[0] && (
-                            <div className="relative h-11 sm:h-14 w-11 sm:w-14 flex-shrink-0 overflow-hidden rounded-xl bg-stone-100 dark:bg-zinc-800">
-                              <Image src={offer.media[0].mediaUrl} alt="" fill className="object-cover" />
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Item details for pending review */}
-                        {isPendingReview && offer.itemDetails && (
-                          <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 text-xs text-stone-600 dark:text-stone-400 space-y-1">
-                            {offer.itemDetails.knownDefects && offer.itemDetails.knownDefects !== "None" && (
-                              <div className="text-orange-600 dark:text-orange-400">Disclosed defects: {offer.itemDetails.knownDefects}</div>
-                            )}
-                            {offer.itemDetails.accessoriesIncluded && <div>Accessories: {offer.itemDetails.accessoriesIncluded}</div>}
-                            {offer.itemDetails.workingStatus && <div>Working status: {offer.itemDetails.workingStatus}</div>}
-                          </div>
-                        )}
-
-                        {/* Same two-level journey the donor card uses, worded for the recipient. */}
-                        {!isWithdrawn && <OfferJourney status={offer.status} role="donee" />}
-
-
-                        {/* Actions */}
-                        {isPendingReview && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleOfferAction(offer.id, "ACCEPT")}
-                              disabled={offerActionLoading === offer.id}
-                              className="flex-1 rounded-xl bg-[var(--ck-role-accent)] py-2 text-xs font-semibold text-white hover:bg-[var(--ck-role-hover)] transition-colors disabled:opacity-50"
-                            >
-                              {offerActionLoading === offer.id ? "..." : "Accept Offer"}
-                            </button>
-                            <button
-                              onClick={() => {
-                                const reason = window.prompt("Reason for declining (optional):");
-                                handleOfferAction(offer.id, "DECLINE", reason ?? undefined);
-                              }}
-                              disabled={offerActionLoading === offer.id}
-                              className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 py-2 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 disabled:opacity-50"
-                            >
-                              Decline
-                            </button>
-                            <Link href={`/donee/offers?offerId=${offer.id}`} className="rounded-xl border border-stone-200 dark:border-zinc-700 px-3 py-2 text-xs font-semibold text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800">
-                              Details
-                            </Link>
-                          </div>
-                        )}
-                        {(isApproved || isHandover) && (
-                          <Link href={`/offers/${offer.id}/handover`} className="block w-full rounded-xl bg-blue-600 py-2 text-center text-xs font-semibold text-white hover:bg-blue-700">
-                            Open Handover Hub →
-                          </Link>
-                        )}
-                        <WithdrawFlowButton kind="offer" id={offer.id} role="DONEE" className="w-full" />
-                        {isIssueWindow && (
-                          <div className="space-y-1.5">
-                            <ShortDeliveryNote offer={offer} />
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleConfirmNoIssue(offer.id)}
-                                disabled={offerActionLoading === offer.id}
-                                className="flex-1 rounded-xl bg-green-600 py-2 text-xs font-semibold text-white hover:bg-green-700 transition-colors disabled:opacity-50"
-                              >
-                                {offerActionLoading === offer.id ? "..." : "Everything's fine — Complete"}
-                              </button>
-                              <Link href={`/offers/${offer.id}/issues`} className="flex-1 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 py-2 text-center text-xs font-semibold text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors">
-                                Report a problem
-                              </Link>
-                            </div>
-                            <p className="text-3xs text-stone-400 text-center">Marking complete ends the issue window — you won&apos;t be able to report a problem afterward.</p>
-                          </div>
-                        )}
-                        {isIssueRaised && (
+                      <DoneeOfferCard
+                        key={offer.id}
+                        offer={offer}
+                        statusLabel={statusLabel}
+                        statusClassName={statusColor}
+                        busy={offerActionLoading === offer.id}
+                        onAccept={() => handleOfferAction(offer.id, "ACCEPT")}
+                        onDecline={() => {
+                          const reason = window.prompt(ui("Reason for declining (optional):"));
+                          // Cancel on the prompt means "don't decline".
+                          if (reason === null) return;
+                          handleOfferAction(offer.id, "DECLINE", reason || undefined);
+                        }}
+                        actions={
                           <>
-                            <p className="text-center text-xs text-stone-400 dark:text-stone-500">Our team is reviewing your report.</p>
-                            <WithdrawReportedIssue offerId={offer.id} onChanged={onRefresh} />
+                            {isIssueWindow && (
+                              <div className="space-y-2">
+                                <ShortDeliveryNote offer={offer} />
+                                <button
+                                  type="button"
+                                  onClick={() => handleConfirmNoIssue(offer.id)}
+                                  disabled={offerActionLoading === offer.id}
+                                  className="min-h-12 w-full rounded-xl bg-[var(--ck-role-accent)] text-sm font-extrabold text-white hover:bg-[var(--ck-role-hover)] disabled:opacity-60"
+                                >
+                                  {offerActionLoading === offer.id ? ui("Saving…") : ui("Everything's fine — complete")}
+                                </button>
+                                <Link href={`/offers/${offer.id}/issues`} className="flex min-h-11 w-full items-center justify-center rounded-xl border border-amber-300 bg-amber-50 text-sm font-bold text-amber-800 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                                  <UiText>Report a problem</UiText>
+                                </Link>
+                                <p className="text-center text-3xs text-stone-500 dark:text-stone-400"><UiText>Completing ends the issue window — you can&apos;t report a problem afterwards.</UiText></p>
+                              </div>
+                            )}
+                            {isIssueRaised && <WithdrawReportedIssue offerId={offer.id} onChanged={onRefresh} />}
+                            {/* Cancelling after accepting. Hidden while the offer awaits
+                                review: Decline above is the one way to say no then. */}
+                            {!isPendingReview && <WithdrawFlowButton kind="offer" id={offer.id} role="DONEE" className="w-full" />}
                           </>
-                        )}
-                      </div>
+                        }
+                      />
                     );
                   })}
 
@@ -2474,21 +2607,21 @@ function DoneeDashboard({
                     </div>
                     {hasRequestInMatching ? (
                       <div>
-                        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Scanning donor inventories</p>
-                        <p className="text-xs text-stone-400 max-w-[250px] mx-auto mt-1">Your verified request is being matched against donor items &mdash; new listings are checked as they arrive. Matches appear here and we&apos;ll notify you.</p>
+                        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>Scanning donor inventories</UiText></p>
+                        <p className="text-xs text-stone-400 max-w-[250px] mx-auto mt-1"><UiText>Your verified request is being matched against donor items &mdash; new listings are checked as they arrive. Matches appear here and we&apos;ll notify you.</UiText></p>
                       </div>
                     ) : activeRequests.length > 0 ? (
                       /* activeRequests, not itemRequests — a dashboard whose only
                          request is withdrawn has nothing awaiting verification, so
                          promising that matching is about to start would be untrue. */
                       <div>
-                        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Matching starts after verification</p>
-                        <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1">Submit your request and once our team verifies it, the matching engine starts scanning donor inventories for you.</p>
+                        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>Matching starts after verification</UiText></p>
+                        <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1"><UiText>Submit your request and once our team verifies it, the matching engine starts scanning donor inventories for you.</UiText></p>
                       </div>
                     ) : (
                       <div>
-                        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">No requests to match yet</p>
-                        <p className="text-xs text-stone-400 max-w-[240px] mx-auto mt-1">Post a need above &mdash; matching begins as soon as it&apos;s verified.</p>
+                        <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>No requests to match yet</UiText></p>
+                        <p className="text-xs text-stone-400 max-w-[240px] mx-auto mt-1"><UiText>Post a need above &mdash; matching begins as soon as it&apos;s verified.</UiText></p>
                       </div>
                     )}
                   </div>
@@ -2501,38 +2634,38 @@ function DoneeDashboard({
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
                               <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors truncate">
-                                <TranslatedText text={matchItemLabel(m)} />
+                                <MatchItemText m={m} />
                               </p>
-                              <p className="text-xs text-stone-400 mt-0.5 truncate">For: <TranslatedText text={m.requestTitle || ""} /></p>
+                              <p className="text-xs text-stone-400 mt-0.5 truncate"><UiText>For:</UiText> <TranslatedText text={m.requestTitle || ""} /></p>
                             </div>
-                            <Badge variant={badge.variant} className="text-3xs whitespace-nowrap shrink-0">{badge.label}</Badge>
+                            <Badge variant={badge.variant} className="text-3xs whitespace-nowrap shrink-0">{pl(badge.label)}</Badge>
                           </div>
                           <div className="flex justify-between items-center text-xs bg-stone-50 dark:bg-zinc-950 p-2.5 rounded-xl">
-                            <div><p className="text-stone-400">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
-                            {m.matchScore && (<div className="text-right"><p className="text-stone-400">AI Match</p><p className="font-bold text-[#1e3a60] dark:text-blue-400">{m.matchScore}%</p></div>)}
+                            <div><p className="text-stone-400"><UiText>Donor</UiText></p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
+                            {m.matchScore && (<div className="text-right"><p className="text-stone-400"><UiText>AI Match</UiText></p><p className="font-bold text-[#1e3a60] dark:text-blue-400">{m.matchScore}%</p></div>)}
                           </div>
                           {m.handoverMethod && (
                             <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900 rounded-xl p-2.5 space-y-1.5 text-xs">
-                              <p className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1"><Calendar className="w-3 h-3" /> Pickup Details</p>
+                              <p className="font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1"><Calendar className="w-3 h-3" /> <UiText>Pickup Details</UiText></p>
                               <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-stone-600 dark:text-stone-400">
-                                <div><span className="text-stone-400">Method: </span><span className="font-medium">{m.handoverMethod.replace(/_/g, " ")}</span></div>
-                                {m.pickupDateTime && <div><span className="text-stone-400">When: </span><span className="font-medium">{serverDate(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span></div>}
-                                {m.handoverAddress && <div className="col-span-2"><span className="text-stone-400">Address: </span><span className="font-medium">{m.handoverAddress}</span></div>}
-                                {m.transportArrangedBy && <div><span className="text-stone-400">Transport by: </span><span className="font-medium">{m.transportArrangedBy.replace(/_/g, " ")}</span></div>}
-                                {m.fulfilmentNotes && <div className="col-span-2"><span className="text-stone-400">Notes: </span><span className="font-medium">{m.fulfilmentNotes}</span></div>}
+                                <div><span className="text-stone-400"><UiText>Method:</UiText> </span><span className="font-medium">{m.handoverMethod.replace(/_/g, " ")}</span></div>
+                                {m.pickupDateTime && <div><span className="text-stone-400"><UiText>When:</UiText> </span><span className="font-medium">{serverDate(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span></div>}
+                                {m.handoverAddress && <div className="col-span-2"><span className="text-stone-400"><UiText>Address:</UiText> </span><span className="font-medium">{m.handoverAddress}</span></div>}
+                                {m.transportArrangedBy && <div><span className="text-stone-400"><UiText>Transport by:</UiText> </span><span className="font-medium">{m.transportArrangedBy.replace(/_/g, " ")}</span></div>}
+                                {m.fulfilmentNotes && <div className="col-span-2"><span className="text-stone-400"><UiText>Notes:</UiText> </span><span className="font-medium">{m.fulfilmentNotes}</span></div>}
                               </div>
                             </div>
                           )}
                           {HANDOVER_HUB_STATUSES.has(m.status) && (
                             <div className="flex gap-2 pt-1">
                               <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
-                                <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
+                                <Truck className="w-3.5 h-3.5" /> <UiText>Go to Handover Hub</UiText>
                               </Link>
                               <button
                                 onClick={() => setChatMatch(m)}
                                 className="flex items-center justify-center gap-1.5 border border-[#1e3a60]/40 text-[#1e3a60] hover:bg-[#1e3a60]/5 dark:text-blue-400 dark:border-blue-400/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
                               >
-                                <MessageCircle className="w-3.5 h-3.5" /> Chat
+                                <MessageCircle className="w-3.5 h-3.5" /> <UiText>Chat</UiText>
                               </button>
                             </div>
                           )}
@@ -2553,7 +2686,7 @@ function DoneeDashboard({
       {chatMatch && (
         <MatchChatPopup
           matchId={chatMatch.id}
-          partnerName={chatMatch.donorName || "Donor"}
+          partnerName={chatMatch.donorName || ui("Donor")}
           itemTitle={chatMatch.listingTitle || chatMatch.requestTitle}
           currentUserEmail={user.email}
           accent="navy"
@@ -2588,11 +2721,22 @@ async function loadAllDonationOffers(): Promise<any[]> {
 }
 
 export default function DashboardPage() {
+  const ui = useUiText();
+  const pl = usePageLabels();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
+  const [matchSegment, setMatchSegment] = useState<MatchSegment>("donee");
+  // Drive notices link to /dashboard?segment=ngo#matches: open the NGO segment.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("segment") === "ngo") setMatchSegment("ngo");
+  }, []);
   const t = useTranslations("dashboard");
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER"], () => {
+  // NGO_DRIVE_OFFER / NGO_DRIVE: a drive handover completing updates Matches > NGO, History and the stats live.
+  useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER", "NGO_DRIVE_OFFER", "NGO_DRIVE"], () => {
     refreshListings();
     refreshMatches();
     getMyItemRequests().then(setItemRequests).catch(() => {});
@@ -2679,9 +2823,9 @@ export default function DashboardPage() {
     try {
       const updated = await reconfirmOfferAvailability(offerId);
       setDonationOffers(prev => prev.map(o => o.id === offerId ? updated : o));
-      toast.success("Availability confirmed! Waiting for admin approval.");
+      toast.success(ui("Availability confirmed! Waiting for admin approval."));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to reconfirm");
+      toast.error(e instanceof Error ? e.message : ui("Failed to reconfirm"));
     }
   }
 
@@ -2689,9 +2833,9 @@ export default function DashboardPage() {
     try {
       const updated = await withdrawOffer(offerId, reason);
       setDonationOffers(prev => prev.map(o => o.id === offerId ? updated : o));
-      toast.success("Offer withdrawn. The recipient has been notified.");
+      toast.success(ui("Offer withdrawn. The recipient has been notified."));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to withdraw offer");
+      toast.error(e instanceof Error ? e.message : ui("Failed to withdraw offer"));
     }
   }
 
@@ -2702,24 +2846,24 @@ export default function DashboardPage() {
       if (action === "resume") await resumeItemListing(id);
       if (action === "withdraw") await withdrawItemListing(id);
       await refreshListings();
-      toast.success(action === "pause" ? "Listing paused" : action === "resume" ? "Listing resumed" : "Listing withdrawn");
+      toast.success(action === "pause" ? ui("Listing paused") : action === "resume" ? ui("Listing resumed") : ui("Listing withdrawn"));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Action failed");
+      toast.error(e instanceof Error ? e.message : ui("Action failed"));
     } finally {
       setListingActionLoading(null);
     }
   }
 
   async function handleDeleteListing(id: number) {
-    if (!confirm("Delete this listing? It will no longer appear here.")) return;
+    if (!confirm(ui("Delete this listing? It will no longer appear here."))) return;
     setListingActionLoading(id);
     try {
       await deleteMyListing(id);
       setItemListings(prev => prev.filter(l => l.id !== id));
       setSelectedListing(prev => (prev?.id === id ? null : prev));
-      toast.success("Listing deleted");
+      toast.success(ui("Listing deleted"));
     } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to delete listing");
+      toast.error(e instanceof Error ? e.message : ui("Failed to delete listing"));
     } finally {
       setListingActionLoading(null);
     }
@@ -2770,7 +2914,7 @@ export default function DashboardPage() {
     const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
     if (last && Date.now() - parseInt(last) < THIRTY_DAYS) return;
     localStorage.setItem(key, Date.now().toString());
-    if (window.confirm(`You have ${rejected.length} rejected listing${rejected.length > 1 ? "s" : ""}. Delete ${rejected.length > 1 ? "them" : "it"} to keep your inventory clean?`)) {
+    if (window.confirm(dt("deleteRejectedListings", { count: rejected.length }))) {
       rejected.forEach(l => handleDeleteListing(l.id));
     }
   }, [itemListings]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2837,18 +2981,18 @@ export default function DashboardPage() {
                   declineMatchId === m.id ? (
                     <div key={m.id} className="space-y-2 rounded-3xl border border-stone-200 bg-white p-4 sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
                       <p className="text-sm font-black text-stone-900 dark:text-stone-100">
-                        Not available for &ldquo;<TranslatedText text={m.requestTitle || "this need"} />&rdquo;?
+                        {dt.rich("notAvailableFor", { title: () => <TranslatedText text={m.requestTitle || ui("this need")} /> })}
                       </p>
-                      <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-sm border border-stone-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
+                      <input type="text" placeholder={ui("Optional reason for declining...")} value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-sm border border-stone-200 dark:border-zinc-700 rounded-xl px-3 py-2.5 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
                       <label className="flex items-center gap-1.5 text-xs text-stone-500 cursor-pointer select-none">
                         <input type="checkbox" checked={declineConditionChanged} onChange={e => setDeclineConditionChanged(e.target.checked)} className="rounded border-stone-300" />
-                        The item&apos;s condition has changed since I listed it (pauses the listing)
+                        <UiText>The item&apos;s condition has changed since I listed it (pauses the listing)</UiText>
                       </label>
                       <div className="flex gap-2">
-                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success("Match declined. We're finding the next best donor."); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to decline match"); } finally { setReviewLoading(null); } }} className="flex-1 h-11 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold transition-colors">
-                          {reviewLoading === m.id ? "Declining..." : "Confirm decline"}
+                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success(ui("Match declined. We're finding the next best donor.")); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : ui("Failed to decline match")); } finally { setReviewLoading(null); } }} className="flex-1 h-11 rounded-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold transition-colors">
+                          {reviewLoading === m.id ? ui("Declining...") : ui("Confirm decline")}
                         </button>
-                        <button onClick={() => setDeclineMatchId(null)} className="h-11 px-5 rounded-full text-sm font-bold text-stone-600 border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800">Cancel</button>
+                        <button onClick={() => setDeclineMatchId(null)} className="h-11 px-5 rounded-full text-sm font-bold text-stone-600 border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800"><UiText>Cancel</UiText></button>
                       </div>
                     </div>
                   ) : (
@@ -2856,7 +3000,7 @@ export default function DashboardPage() {
                       key={m.id}
                       match={m}
                       busy={reviewLoading === m.id}
-                      onAccept={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success("Match accepted! Admin will review shortly."); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to accept match"); } finally { setReviewLoading(null); } }}
+                      onAccept={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success(ui("Match accepted! Admin will review shortly.")); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : ui("Failed to accept match")); } finally { setReviewLoading(null); } }}
                       onDecline={() => { setDeclineMatchId(m.id); setDeclineReason(""); setDeclineConditionChanged(false); }}
                     />
                   )
@@ -2880,7 +3024,19 @@ export default function DashboardPage() {
       review={reviewByListing.has(l.id) ? renderDonorReview(reviewByListing.get(l.id) as ItemMatch, true) : undefined}
     />
   );
-  const liveDonorOffers = donationOffers.filter(isLiveDonorOffer);
+  // Donee segment: offers to donee requests only. NGO segment: offers to NGO drives only.
+  const liveDonorOffers = donationOffers.filter(o => !isDriveOffer(o) && isLiveDonorOffer(o));
+  // Submitted to a drive, not accepted yet: Your Inventory (accepted ones are in Matches > NGO).
+  const pendingDriveOffers = donationOffers.filter(o => isDriveOffer(o) && DRIVE_OFFER_PENDING_STATUSES.includes(o.status));
+  // Matches tab, NGO segment: drive offers from "Offer sent" until the NGO received them.
+  const acceptedNgoOffers = acceptedDriveOffers(donationOffers as { _type?: string; status: string }[]) as unknown as AcceptedDriveOffer[];
+  const liveNgoOfferIds = new Set(acceptedNgoOffers.map(o => o.id));
+  // History: ended request offers, and drive offers that are completed or ended (each once).
+  const donorHistoryOffers = donationOffers.filter(o => isDriveOffer(o)
+    // Donated (handover completed, certificate issued) shows here at once; ended ones once they leave Matches.
+    ? driveOfferDonated(o as never) || (!liveNgoOfferIds.has(o.id) && o.status !== "DRAFT" && DRIVE_TERMINAL_STATUSES.includes(o.status))
+    : !isLiveDonorOffer(o));
+  const ngoOffersNeedYou = acceptedNgoOffers.some(o => ["NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED"].includes(o.status));
   const donorOffersNeedYou = liveDonorOffers.some(o => OFFER_NEEDS_DONOR.includes(o.status));
   const donorMatchesNeedYou = activeDonorMatches.some(m => MATCH_NEEDS_DONOR.has(m.status));
   const donorItemsNeedYou = itemListings.some(l => l.status === "NEEDS_INFORMATION");
@@ -2910,7 +3066,7 @@ export default function DashboardPage() {
     // than a spinner in a 400px void that then jumps to a full page.
     return (
       <PageSkeleton>
-        <DashboardSkeleton tiles={3} label="Loading your dashboard" />
+        <DashboardSkeleton tiles={3} label={ui("Loading your dashboard")} />
       </PageSkeleton>
     );
   }
@@ -2942,15 +3098,15 @@ export default function DashboardPage() {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 sm:gap-6">
             <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55 }} className="min-w-0 space-y-3">
               <div className="inline-flex items-center gap-1.5 bg-[var(--ck-role-accent)]/20 border border-[var(--ck-role-accent)]/30 rounded-full px-2.5 py-0.5 text-2xs sm:px-3 sm:py-1 sm:text-xs text-[var(--ck-role-highlight)] font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5" /> Verified Donor
+                <ShieldCheck className="w-3.5 h-3.5" /> <UiText>Verified Donor</UiText>
               </div>
               <h1 className="text-xl sm:text-5xl tracking-tight leading-[1.05] font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-                Namaste, {myProfile?.fullName?.split(" ")[0] || user.email.split("@")[0]}.
+                {dt("greeting", { name: myProfile?.fullName?.split(" ")[0] || user.email.split("@")[0] })}
               </h1>
               <p className="text-white/55 text-sm max-w-md">
                 {itemListings.length > 0
-                  ? `Your inventory is ${itemListings.some(l => ["ELIGIBLE_FOR_MATCHING", "AVAILABLE"].includes(l.status)) ? "live — we match it against verified needs as they arrive" : "with us — list something new or resume a paused item"}.`
-                  : "List an item privately and we'll match it with a verified need near you."}
+                  ? (itemListings.some(l => ["ELIGIBLE_FOR_MATCHING", "AVAILABLE"].includes(l.status)) ? ui("Your inventory is live — we match it against verified needs as they arrive.") : ui("Your inventory is with us — list something new or resume a paused item."))
+                  : ui("List an item privately and we'll match it with a verified need near you.")}
               </p>
             </motion.div>
 
@@ -2959,25 +3115,25 @@ export default function DashboardPage() {
                 <div className="grid grid-cols-2 gap-1 bg-white/10 border border-white/15 p-1 rounded-xl">
                   <button onClick={() => setActiveTab("donor")}
                     className={`px-3 py-1.5 text-3xs font-bold rounded-lg transition-all ${activeTab === "donor" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
-                    Donor
+                    <UiText>Donor</UiText>
                   </button>
                   <button onClick={() => setActiveTab("donee")}
                     className={`px-3 py-1.5 text-3xs font-bold rounded-lg transition-all ${activeTab === "donee" ? "bg-[var(--ck-role-accent)] text-white" : "text-white/60"}`}>
-                    Donee
+                    <UiText>Donee</UiText>
                   </button>
                 </div>
               )}
               {(myProfile?.role === "DONOR" || myProfile?.role === "ADMIN") && (
                 <Link href="/items/new" data-tour="primary-cta">
                   <Button className="bg-[var(--ck-role-accent)] hover:bg-[#943e11] text-white font-bold rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 h-auto btn-shine flex items-center gap-1.5 text-sm sm:text-sm">
-                    <Plus className="w-4 h-4" /> List Item Privately
+                    <Plus className="w-4 h-4" /> <UiText>List Item Privately</UiText>
                   </Button>
                 </Link>
               )}
               {(myProfile?.role === "DONEE" || myProfile?.role === "ADMIN") && (
                 <NewRequestLink href="/requests/new">
                   <Button className="bg-[var(--ck-role-highlight)] hover:bg-[#e0a96a] text-stone-950 font-bold rounded-xl px-3 sm:px-5 py-2 sm:py-2.5 h-auto flex items-center gap-1.5 text-sm sm:text-sm">
-                    <Plus className="w-4 h-4" /> Post a Need
+                    <Plus className="w-4 h-4" /> <UiText>Post a Need</UiText>
                   </Button>
                 </NewRequestLink>
               )}
@@ -2987,11 +3143,12 @@ export default function DashboardPage() {
           {/* Giving ledger — live numbers over hairline rules, no stat cards */}
           <div data-tour="ledger" className="mt-6 sm:mt-10 grid grid-cols-3 border-t border-white/10">
             {[
-              { n: itemListings.length, label: "items listed" },
+              { n: itemListings.length, label: ui("items listed") },
               // Same list the Matches tab calls live, so the headline number and
               // the tab's count can't disagree about what "active" means.
-              { n: activeDonorMatches.length, label: "active matches" },
-              { n: donorMatches.filter(m => ["FULFILLED", "COMPLETED"].includes(m.status)).length, label: "donations completed" },
+              // Drive offers count once: live ones as active matches, completed ones as donations.
+              { n: activeDonorMatches.length + acceptedNgoOffers.length, label: ui("active matches") },
+              { n: donorMatches.filter(m => ["FULFILLED", "COMPLETED"].includes(m.status)).length + donationOffers.filter(o => isDriveOffer(o) && o.status === "COMPLETED").length, label: ui("donations completed") },
             ].map((stat, i) => (
               <motion.div key={stat.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                 className={`py-3.5 sm:py-5 ${i > 0 ? "border-l border-white/10 pl-3.5 sm:pl-8" : ""}`}>
@@ -3019,15 +3176,15 @@ export default function DashboardPage() {
               {myProfile ? getInitials(myProfile.fullName) : "U"}
             </div>
             <p className="font-bold text-stone-800 dark:text-stone-200 truncate">{myProfile?.fullName || user.email?.split("@")[0]}</p>
-            <span className="text-stone-300 dark:text-zinc-700 hidden sm:inline">&middot;</span>
+            <span className="text-stone-300 dark:text-zinc-700 hidden sm:inline"><UiText>&middot;</UiText></span>
             <p className="truncate hidden sm:block">{user.email}</p>
             {myProfile?.city && (
               <>
-                <span className="text-stone-300 dark:text-zinc-700 hidden md:inline">&middot;</span>
+                <span className="text-stone-300 dark:text-zinc-700 hidden md:inline"><UiText>&middot;</UiText></span>
                 <p className="hidden md:flex items-center gap-1"><MapPin className="w-3 h-3 text-[var(--ck-role-accent)]" />{myProfile.city}</p>
               </>
             )}
-            <Link href="/profile" className="ml-auto shrink-0 font-bold text-[var(--ck-role-accent)] hover:underline">Edit profile</Link>
+            <Link href="/profile" className="ml-auto shrink-0 font-bold text-[var(--ck-role-accent)] hover:underline"><UiText>Edit profile</UiText></Link>
           </div>
 
           {/* RIGHT: Main Dashboard Content */}
@@ -3044,21 +3201,22 @@ export default function DashboardPage() {
                 className="space-y-4 sm:space-y-6"
               >
                 <TabsList
-                  aria-label="Dashboard sections"
+                  aria-label={ui("Dashboard sections")}
                   className="grid h-auto w-full grid-cols-3 gap-1 rounded-2xl border border-stone-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-900/70"
                 >
-                  <SectionTab value="items" icon={Package} label="Your Inventory" shortLabel="Inventory"
+                  <SectionTab value="items" icon={Package} label={ui("Your Inventory")} shortLabel={ui("Inventory")}
                     count={visibleDonorListings.filter(l => !inFlowListingIds.has(l.id)).length} attention={donorItemsNeedYou || reviewDonorMatches.length > 0} tour="inventory" role="donor" />
-                  <SectionTab value="matches" icon={Handshake} label="Matches" shortLabel="Matches"
-                    count={flowDonorMatches.length + liveDonorOffers.length} attention={donorOffersNeedYou} tour="matches" role="donor" />
-                  <SectionTab value="offers" icon={Heart} label="History" shortLabel="History"
-                    count={pastDonorMatches.length + donationOffers.filter(o => !isLiveDonorOffer(o)).length} attention={false} tour="offers" role="donor" />
+                  {/* Matches = Donee segment + NGO segment, each item counted once. */}
+                  <SectionTab value="matches" icon={Handshake} label={ui("Matches")} shortLabel={ui("Matches")}
+                    count={flowDonorMatches.length + liveDonorOffers.length + acceptedNgoOffers.length} attention={donorOffersNeedYou || ngoOffersNeedYou} tour="matches" role="donor" />
+                  <SectionTab value="offers" icon={Heart} label={ui("History")} shortLabel={ui("History")}
+                    count={pastDonorMatches.length + donorHistoryOffers.length} attention={false} tour="offers" role="donor" />
                 </TabsList>
 
                 {/* Donor Flow 2 — Offer Tracker */}
                 <TabsContent value="offers" className="mt-0 space-y-4 sm:space-y-6">
                   <DonorHistorySection
-                    offers={donationOffers.filter(o => !isLiveDonorOffer(o))}
+                    offers={donorHistoryOffers}
                     fulfilledItems={donorListingGroups.fulfilled}
                     matches={donorMatches}
                     pastMatches={pastDonorMatches}
@@ -3076,21 +3234,29 @@ export default function DashboardPage() {
                 {orphanReviews.map((m) => renderDonorReview(m, false))}
                   </div>
                   )}
+                  {pendingDriveOffers.length > 0 && (
+                    <section className="mb-6 space-y-3" data-testid="inventory-pending-drive-offers" aria-label={ui("Offers to NGO drives, waiting for the NGO")}>
+                      <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]"><UiText>Offered to NGO drives · waiting for the NGO</UiText></p>
+                      {pendingDriveOffers.map((o) => (
+                        <OfferStageCard key={`drive-${o.id}`} offer={o} onReconfirm={handleOfferReconfirm} onWithdraw={handleOfferWithdraw} onCancelled={handleOfferCancelled} />
+                      ))}
+                    </section>
+                  )}
                   <section>
                     <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/70 pb-3">
                       <div>
                         <p className="flex items-center gap-2 text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">
-                          <EyeOff className="w-3.5 h-3.5" /> Your Private Inventory
+                          <EyeOff className="w-3.5 h-3.5" /> <UiText>Your Private Inventory</UiText>
                         </p>
-                        <p className="text-xs text-stone-400 mt-1">Only our matching engine sees these — never other users.</p>
+                        <p className="text-xs text-stone-400 mt-1"><UiText>Only our matching engine sees these — never other users.</UiText></p>
                       </div>
                       <Link href="/items/new" className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline flex items-center gap-1 shrink-0 mb-0.5">
-                        <Plus className="w-3.5 h-3.5" /> Add an item
+                        <Plus className="w-3.5 h-3.5" /> <UiText>Add an item</UiText>
                       </Link>
                     </div>
                     {itemListings.length > 0 && (
                       <DashboardFilterChips
-                        label="Filter your inventory"
+                        label={ui("Filter your inventory")}
                         options={inventoryOptions}
                         value={inventoryFilter}
                         onChange={setInventoryFilter}
@@ -3102,18 +3268,18 @@ export default function DashboardPage() {
                       filteredInventory.length === 0 ? (
                         <div className="py-7 text-center space-y-2">
                           <p className="text-sm text-stone-400">
-                            Nothing under &ldquo;{inventoryOptions.find(o => o.key === inventoryFilter)?.label}&rdquo; right now.
+                            {dt("nothingUnder", { label: inventoryOptions.find(o => o.key === inventoryFilter)?.label ?? "" })}
                           </p>
                           <button type="button" onClick={() => setInventoryFilter("all")}
                             className="text-xs font-bold text-[var(--ck-role-accent)] hover:underline">
-                            Show all items
+                            <UiText>Show all items</UiText>
                           </button>
                         </div>
                       ) : (
                         <div className="mt-4">
                           {inventoryFilter === "completed" && (
                             <p className="mb-3 text-2xs text-stone-400">
-                              Certificates for these are under History &rarr; Matched Donations.
+                              <UiText>Certificates for these are under History &rarr; Matched Donations.</UiText>
                             </p>
                           )}
                           <AnimatePresence initial={false}>
@@ -3123,9 +3289,9 @@ export default function DashboardPage() {
                       )
                     ) : visibleDonorListings.length === 0 ? (
                       <div className="py-7 sm:py-12 text-center space-y-2">
-                        <p className="text-sm text-stone-400">You haven&apos;t listed any items to donate yet.</p>
+                        <p className="text-sm text-stone-400"><UiText>You haven&apos;t listed any items to donate yet.</UiText></p>
                         <Link href="/items/new" className="inline-block mt-3">
-                          <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">List your first item</Button>
+                          <Button size="sm" className="bg-[var(--ck-role-accent)] text-white"><UiText>List your first item</UiText></Button>
                         </Link>
                       </div>
                     ) : (
@@ -3137,7 +3303,7 @@ export default function DashboardPage() {
                           ["Closed", donorListingGroups.closed],
                         ] as const).filter(([, group]) => group.length > 0).map(([label, group]) => (
                           <div key={label}>
-                            <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{label}</h4>
+                            <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{dc(label)}</h4>
                             <AnimatePresence initial={false}>
                               {group.map((l, i) => renderListingRow(l, i))}
                             </AnimatePresence>
@@ -3151,10 +3317,19 @@ export default function DashboardPage() {
                 {/* Donor Matches */}
                 <TabsContent value="matches" className="mt-0">
                   <section>
-                    <div className="border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
-                      <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]">Match Opportunities</p>
-                      <p className="text-xs text-stone-400 mt-1">Verified needs your items can fulfil.</p>
+                    <div className="flex flex-wrap items-end justify-between gap-3 border-b-2 border-[var(--ck-role-accent)]/60 pb-3">
+                      <div>
+                        <p className="text-3xs font-black uppercase tracking-[0.24em] text-[var(--ck-role-accent)]"><UiText>Match Opportunities</UiText></p>
+                        <p className="text-xs text-stone-400 mt-1"><UiText>Verified needs your items can fulfil.</UiText></p>
+                      </div>
+                      <MatchSegmentControl value={matchSegment} onChange={setMatchSegment}
+                        doneeCount={flowDonorMatches.length + liveDonorOffers.length} ngoCount={acceptedNgoOffers.length} />
                     </div>
+                    {matchSegment === "ngo" ? (
+                      <div className="pt-3.5 sm:pt-5">
+                        <NgoAcceptedOffersList offers={acceptedNgoOffers} />
+                      </div>
+                    ) : (
                     <div className="pt-3.5 sm:pt-5 space-y-3 sm:space-y-4">
                       {/* Live offers to requests are donations in progress too. */}
                       {liveDonorOffers.length > 0 && (
@@ -3185,24 +3360,24 @@ export default function DashboardPage() {
                           </div>
                           {itemListings.some(l => ["ELIGIBLE_FOR_MATCHING", "AVAILABLE"].includes(l.status)) ? (
                             <div>
-                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Scanning incoming needs</p>
-                              <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1">Your live items are checked against every verified need as it arrives. Matches appear here &mdash; and we&apos;ll notify you.</p>
+                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>Scanning incoming needs</UiText></p>
+                              <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1"><UiText>Your live items are checked against every verified need as it arrives. Matches appear here &mdash; and we&apos;ll notify you.</UiText></p>
                             </div>
                           ) : itemListings.length > 0 ? (
                             <div>
-                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Matching starts once an item goes live</p>
-                              <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1">Your items are awaiting screening or paused &mdash; once one is live, the engine starts scanning for it.</p>
+                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>Matching starts once an item goes live</UiText></p>
+                              <p className="text-xs text-stone-400 max-w-[260px] mx-auto mt-1"><UiText>Your items are awaiting screening or paused &mdash; once one is live, the engine starts scanning for it.</UiText></p>
                             </div>
                           ) : (
                             <div>
-                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400">Nothing to match yet</p>
-                              <p className="text-xs text-stone-400 max-w-[240px] mx-auto mt-1">List an item above &mdash; matching begins as soon as it passes screening.</p>
+                              <p className="text-sm font-semibold text-stone-600 dark:text-stone-400"><UiText>Nothing to match yet</UiText></p>
+                              <p className="text-xs text-stone-400 max-w-[240px] mx-auto mt-1"><UiText>List an item above &mdash; matching begins as soon as it passes screening.</UiText></p>
                             </div>
                           )}
                         </div>
                       ) : flowDonorMatches.length === 0 ? (
                         <p className="py-2 text-center text-xs text-stone-400">
-                          No accepted matches right now — your listed items stay in the matching engine.
+                          <UiText>No accepted matches right now — your listed items stay in the matching engine.</UiText>
                         </p>
                       ) : (
                         <div className="divide-y space-y-3 sm:space-y-4">
@@ -3217,10 +3392,10 @@ export default function DashboardPage() {
                               return (
                                 <div key={m.id} className="flex items-center justify-between gap-3 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/5 p-3 text-sm">
                                   <p className="font-bold text-stone-800 dark:text-stone-100">
-                                    &ldquo;<TranslatedText text={m.requestTitle || "A nearby need"} />&rdquo; is waiting for your answer
+                                    {dt.rich("waitingForAnswer", { title: () => <TranslatedText text={m.requestTitle || ui("A nearby need")} /> })}
                                   </p>
                                   <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="shrink-0 text-xs font-black text-[var(--ck-role-accent)] hover:underline">
-                                    Answer at the top
+                                    <UiText>Answer at the top</UiText>
                                   </button>
                                 </div>
                               );
@@ -3230,45 +3405,45 @@ export default function DashboardPage() {
                                 {isDonorReview && (
                                   <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 text-xs font-bold pb-1">
                                     <AlertTriangle className="w-3.5 h-3.5" />
-                                    Action Required — Please confirm this donation
+                                    <UiText>Action Required — Please confirm this donation</UiText>
                                   </div>
                                 )}
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className={`font-bold text-sm text-stone-900 dark:text-stone-100 transition-colors ${isDonorReview ? "" : "group-hover:text-[var(--ck-role-accent)]"}`}>
-                                      Matched need for: <TranslatedText text={m.requestTitle || "Requested Need"} />
+                                      <UiText>Matched need for:</UiText> <TranslatedText text={m.requestTitle || ui("Requested Need")} />
                                     </p>
-                                    <p className="text-xs text-stone-400 mt-0.5">Matched with item: <TranslatedText text={matchItemLabel(m)} /></p>
+                                    <p className="text-xs text-stone-400 mt-0.5"><UiText>Matched with item:</UiText> <MatchItemText m={m} /></p>
                                   </div>
-                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
+                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{pl(badge.label)}</Badge>
                                 </div>
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
-                                  <div><p className="text-stone-500">Recipient Donee</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.doneeName}</p></div>
-                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
+                                  <div><p className="text-stone-500"><UiText>Recipient Donee</UiText></p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.doneeName}</p></div>
+                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500"><UiText>AI Score</UiText></p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
                                 </div>
                                 {isDonorReview && (
                                   <div className="space-y-2 pt-1">
                                     {!isDeclining ? (
                                       <div className="flex gap-2">
-                                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success("Match accepted! Admin will review shortly."); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to accept match"); } finally { setReviewLoading(null); } }} className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
-                                          {reviewLoading === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5" />} Accept
+                                        <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorAcceptMatch(m.id); toast.success(ui("Match accepted! Admin will review shortly.")); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : ui("Failed to accept match")); } finally { setReviewLoading(null); } }} className="flex-1 flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                          {reviewLoading === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5" />} <UiText>Accept</UiText>
                                         </button>
                                         <button disabled={reviewLoading === m.id} onClick={() => { setDeclineMatchId(m.id); setDeclineReason(""); setDeclineConditionChanged(false); }} className="flex-1 flex items-center justify-center gap-1.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
-                                          <ThumbsDown className="w-3.5 h-3.5" /> Decline
+                                          <ThumbsDown className="w-3.5 h-3.5" /> <UiText>Decline</UiText>
                                         </button>
                                       </div>
                                     ) : (
                                       <div className="space-y-2">
-                                        <input type="text" placeholder="Optional reason for declining..." value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
+                                        <input type="text" placeholder={ui("Optional reason for declining...")} value={declineReason} onChange={e => setDeclineReason(e.target.value)} className="w-full text-xs border border-stone-200 dark:border-zinc-700 rounded-lg px-3 py-2 bg-white dark:bg-zinc-900 focus:outline-none focus:ring-2 focus:ring-red-400" />
                                         <label className="flex items-center gap-1.5 text-2xs text-stone-500 cursor-pointer select-none">
                                           <input type="checkbox" checked={declineConditionChanged} onChange={e => setDeclineConditionChanged(e.target.checked)} className="rounded border-stone-300" />
-                                          The item&apos;s condition has changed since I listed it (pauses the listing)
+                                          <UiText>The item&apos;s condition has changed since I listed it (pauses the listing)</UiText>
                                         </label>
                                         <div className="flex gap-2">
-                                          <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success("Match declined. We're finding the next best donor."); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : "Failed to decline match"); } finally { setReviewLoading(null); } }} className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
-                                            {reviewLoading === m.id ? "Declining..." : "Confirm Decline"}
+                                          <button disabled={reviewLoading === m.id} onClick={async () => { setReviewLoading(m.id); try { await donorRejectMatch(m.id, declineReason || undefined, declineConditionChanged); toast.success(ui("Match declined. We're finding the next best donor.")); setDeclineMatchId(null); await refreshMatches(); } catch (e: unknown) { toast.error(e instanceof Error ? e.message : ui("Failed to decline match")); } finally { setReviewLoading(null); } }} className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
+                                            {reviewLoading === m.id ? ui("Declining...") : ui("Confirm Decline")}
                                           </button>
-                                          <button onClick={() => setDeclineMatchId(null)} className="px-3 py-2 text-xs text-stone-500 hover:text-stone-800 rounded-lg border border-stone-200 dark:border-zinc-700">Cancel</button>
+                                          <button onClick={() => setDeclineMatchId(null)} className="px-3 py-2 text-xs text-stone-500 hover:text-stone-800 rounded-lg border border-stone-200 dark:border-zinc-700"><UiText>Cancel</UiText></button>
                                         </div>
                                       </div>
                                     )}
@@ -3277,7 +3452,7 @@ export default function DashboardPage() {
                                 {m.status === "DONEE_ACCEPTED" && (
                                   <div className="space-y-1 pt-1">
                                     <p className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                                      <Check className="w-3 h-3" /> Donee confirmed — please give your final confirmation
+                                      <Check className="w-3 h-3" /> <UiText>Donee confirmed — please give your final confirmation</UiText>
                                     </p>
                                     <button
                                       disabled={reviewLoading === m.id}
@@ -3285,35 +3460,35 @@ export default function DashboardPage() {
                                         setReviewLoading(m.id);
                                         try {
                                           await donorConfirmMatch(m.id);
-                                          toast.success("Donation confirmed! Logistics will be arranged next.");
+                                          toast.success(ui("Donation confirmed! Logistics will be arranged next."));
                                           await refreshMatches();
                                         } catch (e: unknown) {
-                                          toast.error(e instanceof Error ? e.message : "Failed to confirm");
+                                          toast.error(e instanceof Error ? e.message : ui("Failed to confirm"));
                                         } finally { setReviewLoading(null); }
                                       }}
                                       className="w-full flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all"
                                     >
-                                      {reviewLoading === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> Confirm Donation</>}
+                                      {reviewLoading === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Check className="w-3.5 h-3.5" /> <UiText>Confirm Donation</UiText></>}
                                     </button>
                                   </div>
                                 )}
                                 {HANDOVER_HUB_STATUSES.has(m.status) && (
                                   <div className="flex gap-2 pt-1">
                                     <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
-                                      <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
+                                      <Truck className="w-3.5 h-3.5" /> <UiText>Go to Handover Hub</UiText>
                                     </Link>
                                     <button
                                       onClick={() => setChatMatch(m)}
                                       className="flex items-center justify-center gap-1.5 border border-[var(--ck-role-accent)]/40 text-[var(--ck-role-accent)] hover:bg-[var(--ck-role-accent)]/5 dark:text-[var(--ck-role-secondary)] dark:border-[var(--ck-role-secondary)]/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
                                     >
-                                      <MessageCircle className="w-3.5 h-3.5" /> Chat
+                                      <MessageCircle className="w-3.5 h-3.5" /> <UiText>Chat</UiText>
                                     </button>
                                   </div>
                                 )}
                                 <WithdrawFlowButton kind="match" id={m.id} role="DONOR" onChanged={refreshMatches} className="w-full" />
                                 {m.status === "COMPLETED" && (
                                   <Link href={`/certificate?matchId=${m.id}`} className="flex items-center justify-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
-                                    <Award className="w-3.5 h-3.5" /> View Certificate
+                                    <Award className="w-3.5 h-3.5" /> <UiText>View Certificate</UiText>
                                   </Link>
                                 )}
                               </div>
@@ -3323,6 +3498,7 @@ export default function DashboardPage() {
                       )}
 
                     </div>
+                    )}
                   </section>
                 </TabsContent>
               </Tabs>
@@ -3339,7 +3515,7 @@ export default function DashboardPage() {
                         <ShieldCheck className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-xs text-stone-500">Total Needs Posted</p>
+                        <p className="text-xs text-stone-500"><UiText>Total Needs Posted</UiText></p>
                         <p className="text-base sm:text-xl font-bold">{itemRequests.length}</p>
                       </div>
                     </CardContent>
@@ -3352,7 +3528,7 @@ export default function DashboardPage() {
                         <Package className="w-5 h-5" />
                       </div>
                       <div>
-                        <p className="text-xs text-stone-500">Fulfilled Needs</p>
+                        <p className="text-xs text-stone-500"><UiText>Fulfilled Needs</UiText></p>
                         <p className="text-base sm:text-xl font-bold">{doneeRequestGroups.fulfilled.length}</p>
                       </div>
                     </CardContent>
@@ -3368,14 +3544,14 @@ export default function DashboardPage() {
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">01</div>
                     <CardHeader className="border-b pb-3 sm:pb-4 mb-4 relative z-10">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <CardTitle className="text-sm sm:text-base font-bold">My Needs & Requests</CardTitle>
+                        <CardTitle className="text-sm sm:text-base font-bold"><UiText>My Needs & Requests</UiText></CardTitle>
                         <div className="flex items-center gap-2">
                           <Link href="/dashboard/history" className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors text-xs font-bold text-stone-600 dark:text-stone-300">
-                            <History className="w-3.5 h-3.5" /> History
+                            <History className="w-3.5 h-3.5" /> <UiText>History</UiText>
                           </Link>
                           <NewRequestLink href="/requests/new">
                             <Button variant="ghost" size="sm" className="h-8 text-xs font-bold text-[var(--ck-role-accent)]">
-                              <Plus className="w-3.5 h-3.5 mr-1" /> New Need
+                              <Plus className="w-3.5 h-3.5 mr-1" /> <UiText>New Need</UiText>
                             </Button>
                           </NewRequestLink>
                         </div>
@@ -3386,12 +3562,12 @@ export default function DashboardPage() {
                         <div className="py-7 sm:py-12 text-center">
                           <p className="text-sm text-stone-400">
                             {doneeRequestGroups.fulfilled.length > 0
-                              ? "Every need you posted has been fulfilled — see History."
-                              : <>You haven&apos;t posted any active needs yet.</>}
+                              ? ui("Every need you posted has been fulfilled — see History.")
+                              : <UiText>You haven&apos;t posted any active needs yet.</UiText>}
                           </p>
                           <NewRequestLink href="/requests/new" className="inline-block mt-3">
                             <Button size="sm" className="bg-[var(--ck-role-accent)] text-white">
-                              {doneeRequestGroups.fulfilled.length > 0 ? "Post a new need" : "Post your first need"}
+                              {doneeRequestGroups.fulfilled.length > 0 ? ui("Post a new need") : ui("Post your first need")}
                             </Button>
                           </NewRequestLink>
                         </div>
@@ -3400,7 +3576,7 @@ export default function DashboardPage() {
                           {/* Pending Requests */}
                           {doneeRequestGroups.pending.length > 0 && (
                             <div>
-                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Pending</h4>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2"><UiText>Pending</UiText></h4>
                               <div className="divide-y space-y-3">
                                 {doneeRequestGroups.pending.map((r) => <CompactRequestRow key={r.id} request={r} />)}
                               </div>
@@ -3410,7 +3586,7 @@ export default function DashboardPage() {
                           {/* Partially Fulfilled Requests */}
                           {doneeRequestGroups.partial.length > 0 && (
                             <div>
-                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Partially Fulfilled</h4>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2"><UiText>Partially Fulfilled</UiText></h4>
                               <div className="divide-y space-y-3">
                                 {doneeRequestGroups.partial.map((r) => {
                                   const badge = getRequestStatusBadge(r.status);
@@ -3423,20 +3599,20 @@ export default function DashboardPage() {
                                           <p className="text-xs text-stone-500 mt-0.5"><TranslatedText text={r.category} /></p>
                                         </div>
                                         <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">
-                                          {badge.label}
+                                          {pl(badge.label)}
                                         </Badge>
                                       </div>
                                       <div className="grid grid-cols-3 gap-2 mt-1">
                                         <div className="bg-white dark:bg-zinc-800 rounded p-1.5 text-center shadow-sm border border-stone-100 dark:border-zinc-700">
-                                          <p className="text-[10px] text-stone-500 uppercase tracking-wider">Requested</p>
+                                          <p className="text-[10px] text-stone-500 uppercase tracking-wider"><UiText>Requested</UiText></p>
                                           <p className="font-bold text-sm text-stone-700 dark:text-stone-300">{f.requested}</p>
                                         </div>
                                         <div className="bg-white dark:bg-zinc-800 rounded p-1.5 text-center shadow-sm border border-emerald-100 dark:border-emerald-900/30">
-                                          <p className="text-[10px] text-emerald-600 uppercase tracking-wider">Fulfilled</p>
+                                          <p className="text-[10px] text-emerald-600 uppercase tracking-wider"><UiText>Fulfilled</UiText></p>
                                           <p className="font-bold text-sm text-emerald-600">{f.fulfilled}</p>
                                         </div>
                                         <div className="bg-[var(--ck-role-accent)] text-white rounded p-1.5 text-center shadow-sm">
-                                          <p className="text-[10px] uppercase tracking-wider opacity-90">Remaining</p>
+                                          <p className="text-[10px] uppercase tracking-wider opacity-90"><UiText>Remaining</UiText></p>
                                           <p className="font-bold text-sm">{f.remaining}</p>
                                         </div>
                                       </div>
@@ -3450,7 +3626,7 @@ export default function DashboardPage() {
                           {/* Closed Requests — rejected, expired or withdrawn */}
                           {doneeRequestGroups.closed.length > 0 && (
                             <div>
-                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2">Closed</h4>
+                              <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3 px-2"><UiText>Closed</UiText></h4>
                               <div className="divide-y space-y-3">
                                 {doneeRequestGroups.closed.map((r) => <CompactRequestRow key={r.id} request={r} />)}
                               </div>
@@ -3466,13 +3642,13 @@ export default function DashboardPage() {
                     <div className="absolute left-0 top-0 w-full h-[3px] bg-emerald-500" />
                     <div className="absolute right-3 top-3 text-7xl font-black text-stone-100 dark:text-zinc-800/20 select-none pointer-events-none">02</div>
                     <CardHeader className="border-b pb-3 sm:pb-4 mb-4 relative z-10">
-                      <CardTitle className="text-sm sm:text-base font-bold">Matches &amp; Handover Status</CardTitle>
+                      <CardTitle className="text-sm sm:text-base font-bold"><UiText>Matches &amp; Handover Status</UiText></CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 sm:space-y-4 relative z-10">
                       {doneeMatches.filter(m => m.status !== "FULFILLED" && m.status !== "COMPLETED").length === 0 ? (
                         <div className="py-7 sm:py-12 text-center">
-                          <p className="text-sm text-stone-400">No active matches found for your requests yet.</p>
-                          <p className="text-xs text-stone-400/80 mt-1">We are actively checking private inventory to find matching items.</p>
+                          <p className="text-sm text-stone-400"><UiText>No active matches found for your requests yet.</UiText></p>
+                          <p className="text-xs text-stone-400/80 mt-1"><UiText>We are actively checking private inventory to find matching items.</UiText></p>
                         </div>
                       ) : (
                         <div className="divide-y space-y-3 sm:space-y-4">
@@ -3483,26 +3659,26 @@ export default function DashboardPage() {
                                 <div className="flex items-start justify-between gap-3">
                                   <div>
                                     <p className="font-bold text-sm text-stone-900 dark:text-stone-100 group-hover:text-emerald-550 transition-colors">
-                                      Matched item: <TranslatedText text={matchItemLabel(m, "Donated Item")} />
+                                      <UiText>Matched item:</UiText> <MatchItemText m={m} fallback={ui("Donated Item")} />
                                     </p>
-                                    <p className="text-xs text-stone-400 mt-0.5">For your need: <TranslatedText text={m.requestTitle || ""} /></p>
+                                    <p className="text-xs text-stone-400 mt-0.5"><UiText>For your need:</UiText> <TranslatedText text={m.requestTitle || ""} /></p>
                                   </div>
-                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{badge.label}</Badge>
+                                  <Badge variant={badge.variant} className="text-3xs whitespace-nowrap">{pl(badge.label)}</Badge>
                                 </div>
                                 <div className="flex flex-wrap justify-between items-center text-xs bg-stone-100/60 dark:bg-zinc-950 p-2.5 rounded-xl gap-2">
-                                  <div><p className="text-stone-500">Donor</p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
-                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500">AI Score</p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
+                                  <div><p className="text-stone-500"><UiText>Donor</UiText></p><p className="font-semibold text-stone-700 dark:text-stone-300">{m.donorName}</p></div>
+                                  {m.matchScore && (<div className="text-right"><p className="text-stone-500"><UiText>AI Score</UiText></p><p className="font-bold text-[var(--ck-role-accent)]">{m.matchScore}%</p></div>)}
                                 </div>
                                 {HANDOVER_HUB_STATUSES.has(m.status) && (
                                   <div className="flex gap-2 pt-1">
                                     <Link href={`/matches/${m.id}/handover`} className="flex flex-1 items-center justify-center gap-1.5 bg-[#1e3a60] hover:bg-[#162d4a] text-white text-xs font-bold py-2 px-3 rounded-lg transition-all">
-                                      <Truck className="w-3.5 h-3.5" /> Go to Handover Hub
+                                      <Truck className="w-3.5 h-3.5" /> <UiText>Go to Handover Hub</UiText>
                                     </Link>
                                     <button
                                       onClick={() => setChatMatch(m)}
                                       className="flex items-center justify-center gap-1.5 border border-[#1e3a60]/40 text-[#1e3a60] hover:bg-[#1e3a60]/5 dark:text-blue-400 dark:border-blue-400/40 text-xs font-bold py-2 px-3 rounded-lg transition-all"
                                     >
-                                      <MessageCircle className="w-3.5 h-3.5" /> Chat
+                                      <MessageCircle className="w-3.5 h-3.5" /> <UiText>Chat</UiText>
                                     </button>
                                   </div>
                                 )}
@@ -3532,7 +3708,7 @@ export default function DashboardPage() {
         return (
           <MatchChatPopup
             matchId={chatMatch.id}
-            partnerName={(iAmDonee ? chatMatch.donorName : chatMatch.doneeName) || "Match partner"}
+            partnerName={(iAmDonee ? chatMatch.donorName : chatMatch.doneeName) || ui("Match partner")}
             itemTitle={chatMatch.listingTitle || chatMatch.requestTitle}
             currentUserEmail={user.email}
             accent={iAmDonee ? "navy" : "copper"}
@@ -3567,4 +3743,127 @@ export default function DashboardPage() {
       />
     </div>
   );
+}
+
+/** Display text for the English stage copy above (the builders stay English: tests and callers compare it). */
+export function usePageLabels(): (text: string | null | undefined) => string {
+  const ui = useUiText();
+  const map = new Map<string, string>([
+    ["Fulfilled", ui("Fulfilled")],
+    ["Live — Matching", ui("Live — Matching")],
+    ["Paused", ui("Paused")],
+    ["Draft", ui("Draft")],
+    ["Under Review", ui("Under Review")],
+    ["More Info Needed", ui("More Info Needed")],
+    ["Manual Review", ui("Manual Review")],
+    ["Soft Reserved", ui("Soft Reserved")],
+    ["Matched", ui("Matched")],
+    ["Partially Donated", ui("Partially Donated")],
+    ["Rejected", ui("Rejected")],
+    ["Withdrawn", ui("Withdrawn")],
+    ["Expired", ui("Expired")],
+    ["Confirm it's available", ui("Confirm it's available")],
+    ["Give final confirmation", ui("Give final confirmation")],
+    ["Admin reviewing", ui("Admin reviewing")],
+    ["Waiting on recipient", ui("Waiting on recipient")],
+    ["Delivered — awaiting confirmation", ui("Delivered — awaiting confirmation")],
+    ["Handover in progress", ui("Handover in progress")],
+    ["⚠ Awaiting Donor's Confirmation", ui("⚠ Awaiting Donor's Confirmation")],
+    ["Donor Declined", ui("Donor Declined")],
+    ["Pending Admin Approval", ui("Pending Admin Approval")],
+    ["Discussion Enabled", ui("Discussion Enabled")],
+    ["Delivery Agreed", ui("Delivery Agreed")],
+    ["Pickup Scheduled", ui("Pickup Scheduled")],
+    ["Picked Up", ui("Picked Up")],
+    ["In Transit", ui("In Transit")],
+    ["Delivered (Pending)", ui("Delivered (Pending)")],
+    ["Completed & Closed", ui("Completed & Closed")],
+    ["Delivery Failed", ui("Delivery Failed")],
+    ["Match Cancelled", ui("Match Cancelled")],
+    ["Match Rejected", ui("Match Rejected")],
+    ["Under Verification", ui("Under Verification")],
+    ["Finding a donor", ui("Finding a donor")],
+    ["Match Pending Approval", ui("Match Pending Approval")],
+    ["Consent Needed", ui("Consent Needed")],
+    ["Public Appeal", ui("Public Appeal")],
+    ["Reserved", ui("Reserved")],
+    ["Match In Progress", ui("Match In Progress")],
+    ["Fulfilment In Progress", ui("Fulfilment In Progress")],
+    ["Partially Matched", ui("Partially Matched")],
+    ["Partially Fulfilled", ui("Partially Fulfilled")],
+    ["On Hold", ui("On Hold")],
+    ["Completed", ui("Completed")],
+    ["Complete your item details and photos to submit the offer.", ui("Complete your item details and photos to submit the offer.")],
+    ["Continue offer", ui("Continue offer")],
+    ["Submitted", ui("Submitted")],
+    ["Your offer has been submitted and is queued for AI screening.", ui("Your offer has been submitted and is queued for AI screening.")],
+    ["AI Eligibility Check", ui("AI Eligibility Check")],
+    ["We are checking if your item is safe and eligible to donate.", ui("We are checking if your item is safe and eligible to donate.")],
+    ["AI Compatibility Check", ui("AI Compatibility Check")],
+    ["We are comparing your item details against the request requirements.", ui("We are comparing your item details against the request requirements.")],
+    ["Compatibility Checked", ui("Compatibility Checked")],
+    ["AI check is complete. Sending to the recipient for review.", ui("AI check is complete. Sending to the recipient for review.")],
+    ["More Information Needed", ui("More Information Needed")],
+    ["Your offer needs additional details before it can proceed.", ui("Your offer needs additional details before it can proceed.")],
+    ["Update details", ui("Update details")],
+    ["Sent to Recipient", ui("Sent to Recipient")],
+    ["Your offer is the primary offer and the recipient is reviewing it.", ui("Your offer is the primary offer and the recipient is reviewing it.")],
+    ["Backup Offer", ui("Backup Offer")],
+    ["Your offer is on standby as a backup in case the primary offer falls through.", ui("Your offer is on standby as a backup in case the primary offer falls through.")],
+    ["Recipient Reviewing", ui("Recipient Reviewing")],
+    ["The recipient is reviewing your item photos and details.", ui("The recipient is reviewing your item photos and details.")],
+    ["Recipient Accepted", ui("Recipient Accepted")],
+    ["Great! The recipient accepted your offer. Waiting for you to reconfirm.", ui("Great! The recipient accepted your offer. Waiting for you to reconfirm.")],
+    ["Reconfirm availability", ui("Reconfirm availability")],
+    ["Recipient Declined", ui("Recipient Declined")],
+    ["The recipient declined this offer.", ui("The recipient declined this offer.")],
+    ["Reconfirmation Required", ui("Reconfirmation Required")],
+    ["Please confirm your item is still available and in the same condition.", ui("Please confirm your item is still available and in the same condition.")],
+    ["Confirm item is ready", ui("Confirm item is ready")],
+    ["Reconfirmed", ui("Reconfirmed")],
+    ["You confirmed availability. Waiting for CauseKind admin to do a final review.", ui("You confirmed availability. Waiting for CauseKind admin to do a final review.")],
+    ["Re-screening", ui("Re-screening")],
+    ["Item condition changed — AI is re-checking your updated details.", ui("Item condition changed — AI is re-checking your updated details.")],
+    ["Admin Reviewing", ui("Admin Reviewing")],
+    ["CauseKind admin is doing a final check before approving the handover.", ui("CauseKind admin is doing a final check before approving the handover.")],
+    ["Approved! Schedule Handover", ui("Approved! Schedule Handover")],
+    ["Your offer was approved. Please schedule the handover now.", ui("Your offer was approved. Please schedule the handover now.")],
+    ["Go to Handover Hub", ui("Go to Handover Hub")],
+    ["Rejected by Admin", ui("Rejected by Admin")],
+    ["Admin could not approve this offer. See the reason and your next steps below.", ui("Admin could not approve this offer. See the reason and your next steps below.")],
+    ["Browse other requests", ui("Browse other requests")],
+    ["NGO Reviewing", ui("NGO Reviewing")],
+    ["The NGO is reviewing your photos and details.", ui("The NGO is reviewing your photos and details.")],
+    ["Accepted! Plan Handover", ui("Accepted! Plan Handover")],
+    ["The NGO accepted your offer. Plan the handover now.", ui("The NGO accepted your offer. Plan the handover now.")],
+    ["Declined by NGO", ui("Declined by NGO")],
+    ["The NGO could not use this offer. See the reason below.", ui("The NGO could not use this offer. See the reason below.")],
+    ["Browse other needs", ui("Browse other needs")],
+    ["Drive Ended", ui("Drive Ended")],
+    ["This drive closed before your offer was handed over.", ui("This drive closed before your offer was handed over.")],
+    ["Handover in Progress", ui("Handover in Progress")],
+    ["The handover is scheduled. Confirm the OTP when you physically hand over the item.", ui("The handover is scheduled. Confirm the OTP when you physically hand over the item.")],
+    ["Open Handover Hub", ui("Open Handover Hub")],
+    ["Handover At Risk", ui("Handover At Risk")],
+    ["The handover has been rescheduled multiple times. Admin review may be required.", ui("The handover has been rescheduled multiple times. Admin review may be required.")],
+    ["View Handover Hub", ui("View Handover Hub")],
+    ["Issue Window Open", ui("Issue Window Open")],
+    ["Delivery confirmed! Both parties can report any problems within the issue window.", ui("Delivery confirmed! Both parties can report any problems within the issue window.")],
+    ["Report an issue", ui("Report an issue")],
+    ["Issue Under Review", ui("Issue Under Review")],
+    ["An issue has been reported. Our team is looking into it.", ui("An issue has been reported. Our team is looking into it.")],
+    ["Donation Complete!", ui("Donation Complete!")],
+    ["The donation was successfully completed.", ui("The donation was successfully completed.")],
+    ["View Certificate", ui("View Certificate")],
+    ["Cancelled", ui("Cancelled")],
+    ["This offer was cancelled.", ui("This offer was cancelled.")],
+    ["You withdrew this offer.", ui("You withdrew this offer.")],
+    ["Not approved", ui("Not approved")],
+    ["You declined", ui("You declined")],
+    ["Delivered", ui("Delivered")],
+    ["Received", ui("Received")],
+    ["Donor declined", ui("Donor declined")],
+    ["Delivery failed", ui("Delivery failed")],
+  ]);
+  return (text) => (text ? map.get(text) ?? text : "");
 }

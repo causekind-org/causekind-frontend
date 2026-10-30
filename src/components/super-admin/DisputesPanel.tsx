@@ -3,7 +3,7 @@
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import {
-  superAdminListDisputes, superAdminResolveDispute, type PostDeliveryIssue,
+  adminResolvePurchaseIssue, superAdminListDisputes, superAdminResolveDispute, type PostDeliveryIssue,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { Scale, Loader2, ExternalLink, CheckCircle2, Clock } from "lucide-react";
@@ -93,6 +93,23 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
     return () => { active = false; };
   }, [tab]);
 
+  /** Purchase problems resolve through the purchase lifecycle so stock and status move with them. */
+  async function handlePurchaseResolve(d: PostDeliveryIssue, action: "RETRY_DELIVERY" | "CANCEL_REMAINDER") {
+    const reason = (drafts[d.id] ?? "").trim();
+    if (reason.length < 10 || d.offerId == null) { toast.error("Add a reason of at least 10 characters"); return; }
+    setResolvingId(d.id);
+    try {
+      await adminResolvePurchaseIssue(d.offerId, { action, reason });
+      toast.success(action === "RETRY_DELIVERY" ? "Redelivery expected — the donor has been told" : "Remainder closed");
+      const fresh = await superAdminListDisputes(tab);
+      setDisputes(fresh);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not resolve dispute");
+    } finally {
+      setResolvingId(null);
+    }
+  }
+
   async function handleResolve(id: number) {
     const resolution = (drafts[id] ?? "").trim();
     if (!resolution) { toast.error("Add a resolution note before resolving"); return; }
@@ -142,6 +159,7 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
               draft={drafts[d.id] ?? ""}
               onDraftChange={(v) => setDrafts((prev) => ({ ...prev, [d.id]: v }))}
               onResolve={() => handleResolve(d.id)}
+              onPurchaseResolve={(action) => handlePurchaseResolve(d, action)}
             />
           ))}
         </div>
@@ -151,10 +169,11 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
 }
 
 function DisputeCard({
-  d, t, resolving, draft, onDraftChange, onResolve,
+  d, t, resolving, draft, onDraftChange, onResolve, onPurchaseResolve,
 }: {
   d: PostDeliveryIssue; t: Theme; resolving: boolean;
   draft: string; onDraftChange: (v: string) => void; onResolve: () => void;
+  onPurchaseResolve: (action: "RETRY_DELIVERY" | "CANCEL_REMAINDER") => void;
 }) {
   const resolved = !!d.resolvedAt;
   return (
@@ -169,6 +188,7 @@ function DisputeCard({
             <span className={`text-3xs font-bold uppercase tracking-wider ${t.muted}`}>
               {ISSUE_TYPE_LABELS[d.issueType ?? ""] ?? d.issueType ?? "Unknown"}
             </span>
+            {d.purchase && <span className={`text-3xs font-bold uppercase tracking-wider ${t.muted}`}>· Purchase delivery{d.affectedQuantity != null ? ` · ${d.affectedQuantity} affected` : ""}</span>}
           </div>
           <p className={`mt-1.5 font-bold text-sm ${t.heading}`}>{d.itemTitle ?? `Offer #${d.offerId}`}</p>
           <p className={`text-xs mt-0.5 ${t.dim}`}>
@@ -183,6 +203,14 @@ function DisputeCard({
       </div>
 
       <p className={`text-sm leading-relaxed ${t.muted}`}>{d.description}</p>
+      {d.purchase && (
+        <p className={`text-xs leading-relaxed ${t.dim}`}>
+          {d.counterpartyResponse
+            ? <>{d.reportedByIsDonor ? "Recipient" : "Donor"} replied: {d.counterpartyResponse}</>
+            : <>No reply from the {d.reportedByIsDonor ? "recipient" : "donor"} yet.</>}
+          {" "}Delivery proof, photos and tracking are in Admin → Offers → Purchases.
+        </p>
+      )}
 
       {d.evidenceUrls.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -200,6 +228,27 @@ function DisputeCard({
           <p className={`font-bold ${t.ok}`}>Resolution</p>
           <p className={`mt-1 ${t.muted}`}>{d.adminResolution}</p>
           <p className={`mt-1.5 ${t.dim}`}>{d.resolvedAt && serverDate(d.resolvedAt).toLocaleString("en-IN")}</p>
+        </div>
+      ) : d.purchase ? (
+        <div className="space-y-2">
+          <textarea
+            value={draft}
+            onChange={(e) => onDraftChange(e.target.value)}
+            placeholder="Reason — recorded in the audit log and shown to both participants (at least 10 characters)"
+            rows={2}
+            className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none ${t.textarea}`}
+          />
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => onPurchaseResolve("RETRY_DELIVERY")} disabled={resolving || draft.trim().length < 10}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 ${t.primaryBtn}`}>
+              {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Expect redelivery / replacement"}
+            </button>
+            <button onClick={() => onPurchaseResolve("CANCEL_REMAINDER")} disabled={resolving || draft.trim().length < 10}
+              className={`px-4 py-2 rounded-xl border text-sm font-bold transition-colors disabled:opacity-50 ${t.chipInactive}`}>
+              Close undelivered remainder
+            </button>
+          </div>
+          <p className={`text-3xs ${t.dim}`}>Closing counts only what was confirmed received; the rest goes back to the request. If nothing was received, the offer is cancelled.</p>
         </div>
       ) : (
         <div className="flex flex-col sm:flex-row gap-2">

@@ -97,7 +97,6 @@ export const LANDING_ROUTES = {
   ngoRegister: "/register?role=NGO",
   postNeed: "/requests/new",
   browseNeeds: "/requests",
-  safetyGuidelines: "/give-safely",
   login: "/login",
   faq: "/faq",
   contact: "/contact",

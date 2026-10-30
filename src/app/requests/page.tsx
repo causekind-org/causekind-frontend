@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { getPublicItemRequests } from "@/lib/api";
 import RequestsClient from "./RequestsClient";
 
@@ -7,11 +8,14 @@ import RequestsClient from "./RequestsClient";
 // layout's site-wide title and description. The canonical is relative and
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
-export const metadata: Metadata = {
-  title: "Verified Requests — CauseKind",
-  description: "See admin-verified in-kind requests from families and organisations near you, and donate the specific items they have asked for.",
-  alternates: { canonical: "/requests" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const mt = await getTranslations("requestsArea");
+  return {
+    title: mt("metaListTitle"),
+    description: mt("metaListDescription"),
+    alternates: { canonical: "/requests" },
+  };
+}
 
 // Matches the homepage. The public board is @Cacheable on the backend and its
 // projection carries no per-visitor data, so a shared 60s cache is safe here.
