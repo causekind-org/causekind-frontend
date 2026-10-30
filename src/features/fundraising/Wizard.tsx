@@ -31,7 +31,10 @@ function useChoiceLabel() {
   return (v: string): string => ({
     "Under 18": ui("Under 18"), "18–39": ui("18–39"), "40–59": ui("40–59"), "60 or over": ui("60 or over"),
     Parent: ui("Parent"), Child: ui("Child"), Spouse: ui("Spouse"), Sibling: ui("Sibling"),
-    "Other relative": ui("Other relative"), Guardian: ui("Guardian"), Other: ui("Other", "relationship"),
+    "Other relative": ui("Other relative"), Guardian: ui("Guardian"),
+    // Non-family (owner, 2026-10-30): these prove a connection instead of a family relationship.
+    Employee: ui("Employee (e.g. domestic worker, driver)"), Friend: ui("Friend"), Neighbour: ui("Neighbour"),
+    "Community or workplace": ui("Community or workplace"), Other: ui("Other", "relationship"),
   } as Record<string, string>)[v] ?? v;
 }
 
@@ -42,6 +45,7 @@ function useRequirementCopy() {
     identity: { title: ui("Your identity"), hint: ui("A government ID in your name.") },
     consent: { title: ui("Their consent"), hint: ui("A signed note from the person you're raising for, saying they agree to this fundraiser.") },
     relationship: { title: ui("Proof of relationship"), hint: ui("A ration card, birth certificate, or IDs showing the same family name or address.") },
+    connection: { title: ui("Proof you know them"), hint: ui("Any one of: salary or payment records to them (bank or UPI), a letter from a local authority such as a sarpanch, ward member or society secretary, or photos together with a short note on how you know them.") },
     medicalReport: { title: ui("Medical report"), hint: ui("The doctor's or hospital's report for this condition, dated within the last 6 months. Not a full medical history.") },
     treatmentEstimate: { title: ui("Treatment estimate"), hint: ui("On the hospital's letterhead, showing the costs in your breakdown.") },
     enrolment: { title: ui("Admission or enrolment letter"), hint: ui("From the school, college or institute, showing the student and the course.") },
@@ -271,7 +275,7 @@ function WhoNeedsHelp({ app, set, onBack, onNext }: { app: FundraisingApplicatio
                 </select></div>
               <div><label className={s.lbl} htmlFor="rl"><UiText>Your relationship to them</UiText> <FieldInfo localize k="rl" /></label>
                 <select id="rl" className={s.in} value={app.relationship ?? ""} onChange={(e) => set({ relationship: e.target.value })}>
-                  <option value=""><UiText>Choose</UiText></option>{["Parent", "Child", "Spouse", "Sibling", "Other relative", "Guardian", "Other"].map((o) => <option key={o} value={o}>{choiceLabel(o)}</option>)}
+                  <option value=""><UiText>Choose</UiText></option>{["Parent", "Child", "Spouse", "Sibling", "Other relative", "Guardian", "Employee", "Friend", "Neighbour", "Community or workplace", "Other"].map((o) => <option key={o} value={o}>{choiceLabel(o)}</option>)}
                 </select></div>
             </div>
             <div><label className={s.lbl} htmlFor="au"><UiText>Why are you the right person to organise this?</UiText> <FieldInfo localize k="au" /></label><textarea id="au" className={s.in} rows={3} value={app.authorityExplanation ?? ""} onChange={(e) => set({ authorityExplanation: e.target.value })} maxLength={4000} style={{ resize: "vertical" }} /></div>
@@ -508,7 +512,7 @@ export function EvidenceSections({ app, setApp, profile }: {
         return (
           <section key={sec.key} aria-labelledby={`g-${sec.key}`} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, borderTop: gi ? "1px solid #efe7de" : 0, background: failed[sec.key] ? "#fffaf9" : undefined }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <div><h2 id={`g-${sec.key}`} style={{ fontSize: 16, fontWeight: 700 }}>{title} <FieldInfo localize k={sec.key === "supporting" ? "ev_supporting" : `ev_${sec.uploadAs}`} />{optional && <span className={s.muted} style={{ fontWeight: 500 }}> <UiText>(optional)</UiText></span>}</h2>{hint && <p className={`${s.muted} ${s.small}`}>{hint}</p>}</div>
+              <div><h2 id={`g-${sec.key}`} style={{ fontSize: 16, fontWeight: 700 }}>{title} <FieldInfo localize k={sec.key === "supporting" || sec.key === "connection" ? `ev_${sec.key}` : `ev_${sec.uploadAs}`} />{optional && <span className={s.muted} style={{ fontWeight: 500 }}> <UiText>(optional)</UiText></span>}</h2>{hint && <p className={`${s.muted} ${s.small}`}>{hint}</p>}</div>
               {busy === sec.key ? <span className={`${s.chip} ${s.cN}`}><Icon name="upload" /><UiText>Uploading</UiText></span>
                 : failed[sec.key] ? <span className={`${s.chip} ${s.cX}`}><Icon name="x" /><UiText>Not uploaded</UiText></span>
                 : files.length ? <span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Ready</UiText></span>

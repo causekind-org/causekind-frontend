@@ -283,7 +283,7 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
 
 /** Admin names for the server's requirement groups (FundraisingEvidenceRules). Admin copy stays English. */
 const REQUIREMENT_LABEL: Record<string, string> = {
-  identity: "Organiser ID", consent: "Beneficiary's consent", relationship: "Proof of relationship",
+  identity: "Organiser ID", consent: "Beneficiary's consent", relationship: "Proof of relationship", connection: "Proof of connection (non-family)",
   medicalReport: "Medical report", treatmentEstimate: "Treatment estimate",
   enrolment: "Admission or enrolment letter", fees: "Fee demand",
   event: "Proof of what happened", cost: "Cost proof", supporting: "Supporting document",

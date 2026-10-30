@@ -3958,7 +3958,13 @@
     "attach_file_eaa236e3": "+ Adjuntar archivo",
     "add_another_file_21cf3604": "+ Añadir otro archivo",
     "choose_files_1964f5bf": "Elegir archivos",
-    "you_can_pick_more_than_7401c8db": "Puedes elegir más de uno."
+    "you_can_pick_more_than_7401c8db": "Puedes elegir más de uno.",
+    "any_one_of_salary_or_cd6737eb": "Cualquiera de estos: registros de sueldo o pagos a esa persona (banco o UPI), una carta de una autoridad local como un sarpanch, un concejal o el secretario de la comunidad, o fotos juntos con una nota breve sobre cómo la conoces.",
+    "community_or_workplace_3ef673e3": "Comunidad o trabajo",
+    "employee_e_g_domestic_worker_ecac5fde": "Empleado/a (p. ej., trabajador/a doméstico/a, chófer)",
+    "friend_3df32aad": "Amigo/a",
+    "neighbour_2973d788": "Vecino/a",
+    "proof_you_know_them_8e1746c9": "Prueba de que la conoces"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
@@ -4116,7 +4122,7 @@
     },
     "rl": {
       "title": "Tu relación",
-      "text": "Cómo la conoces: padre o madre, cónyuge, tutor, etc."
+      "text": "Cómo la conoces: familia, tutor, empleado/a, amigo/a, etc."
     },
     "au": {
       "title": "Por qué tú",
@@ -4277,6 +4283,10 @@
     "ev_supporting": {
       "title": "Documento de respaldo",
       "text": "Otro documento que muestre que la necesidad es real, como una carta oficial o un informe. Debe subirse aparte de la prueba del costo."
+    },
+    "ev_connection": {
+      "title": "Prueba de que la conoces",
+      "text": "Para alguien que no es de tu familia: registros de sueldo o pagos, una carta de una autoridad local, o fotos juntos con una nota breve sobre cómo la conoces."
     }
   },
   "requestsArea": {

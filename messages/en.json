@@ -2023,6 +2023,7 @@
     "any_amount_one_time_c8296e9e": "Any amount, one time",
     "any_good_condition_ebe41757": "Any good condition",
     "any_government_photo_id_0029c281": "Any government photo ID",
+    "any_one_of_salary_or_cd6737eb": "Any one of: salary or payment records to them (bank or UPI), a letter from a local authority such as a sarpanch, ward member or society secretary, or photos together with a short note on how you know them.",
     "any_usable_condition_780a1212": "Any usable condition",
     "any_usable_condition_minor_repairs_26500a64": "Any usable condition (minor repairs OK)",
     "anything_else_666156a0": "Anything else",
@@ -2274,6 +2275,7 @@
     "coming_soon_91ee7fb9": "Coming soon",
     "community_d559270e": "Community",
     "community_drives_run_by_verified_092cc4e2": "Community drives run by verified NGOs across India. Give the exact items they are collecting, and see the proof.",
+    "community_or_workplace_3ef673e3": "Community or workplace",
     "compatibility_checked_2c607712": "Compatibility Checked",
     "complete_628ea1a2": "Complete",
     "complete_donation_024880c4": "Complete Donation",
@@ -2619,6 +2621,7 @@
     "emergency_household_support_f2ac4398": "Emergency household support",
     "emergency_need_3a204ec6": "Emergency need",
     "emergency_proof_fir_news_article_73109f82": "Emergency proof (FIR / news article / relief letter)",
+    "employee_e_g_domestic_worker_ecac5fde": "Employee (e.g. domestic worker, driver)",
     "end_date_4408c3ca": "End date",
     "end_time_must_be_after_07e35b40": "End time must be after start time",
     "ended_ec2b41db": "Ended",
@@ -2707,6 +2710,7 @@
     "four_af9641c5": "Four",
     "frequently_asked_questions_e466bfa9": "Frequently asked questions",
     "fri_2663fbe8": "Fri",
+    "friend_3df32aad": "Friend",
     "from_application_3785b507": "From application",
     "from_government_schemes_or_grants_527638f8": "From government schemes or grants",
     "from_insurance_0ec83709": "From insurance",
@@ -3141,6 +3145,7 @@
     "needs_received_d822386d": "needs received",
     "needs_your_action_first_4b681a5f": "Needs your action first",
     "needs_your_attention_355ef7ec": "(needs your attention)",
+    "neighbour_2973d788": "Neighbour",
     "nepal_977_05fa7a26": "Nepal (+977)",
     "new_here_a09f7366": "New here?",
     "new_need_5c17f9d7": "New Need",
@@ -3524,6 +3529,7 @@
     "proof_submitted_fd4a86c4": "Proof submitted",
     "proof_submitted_it_goes_to_f162871a": "Proof submitted. It goes to our team for review.",
     "proof_submitted_our_team_is_d5783856": "Proof submitted. Our team is reviewing it.",
+    "proof_you_know_them_8e1746c9": "Proof you know them",
     "propose_changes_51c916a8": "Propose changes",
     "propose_changes_to_the_live_0f3c6b33": "Propose changes to the live page",
     "provided_23a86c86": "Provided",
@@ -4944,7 +4950,7 @@
     },
     "rl": {
       "title": "Your relationship",
-      "text": "How you know them — parent, spouse, guardian and so on."
+      "text": "How you know them — family, guardian, employee, friend and so on."
     },
     "au": {
       "title": "Why you",
@@ -5105,6 +5111,10 @@
     "ev_supporting": {
       "title": "Supporting document",
       "text": "One more document that shows the need is real, such as an official letter or a report of what happened. It must be a separate upload from your cost proof."
+    },
+    "ev_connection": {
+      "title": "Proof you know them",
+      "text": "For someone who isn't family: salary or payment records to them, a letter from a local authority, or photos together with a short note on how you know them."
     }
   },
   "fundraiserFlow": {
