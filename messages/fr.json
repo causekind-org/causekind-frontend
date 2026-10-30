@@ -3920,7 +3920,31 @@
     "upi_id_if_you_have_0b25d1b9": "Identifiant UPI (si vous en avez un)",
     "where_the_money_raised_will_052ce249": "C’est là que l’argent collecté sera envoyé. Seule notre équipe voit ces informations.",
     "write_it_exactly_as_the_8622554b": "Écrivez-le exactement comme la banque l’a enregistré.",
-    "donated_certificate_issued_27751959": "Donné · certificat émis"
+    "donated_certificate_issued_27751959": "Donné · certificat émis",
+    "how_much_money_you_want_d62e4219": "Combien voulez-vous collecter avec cette collecte (₹)",
+    "a_quotation_estimate_or_bill_15abd0cf": "Un devis, une estimation ou une facture de ce que l’argent paiera.",
+    "a_ration_card_birth_certificate_d84e1718": "Carte de rationnement, acte de naissance, ou pièces d’identité avec le même nom de famille ou la même adresse.",
+    "a_signed_note_from_the_ba753ef4": "Un mot signé par la personne aidée, disant qu’elle accepte cette collecte.",
+    "add_the_needed_documents_to_6faa56c3": "Ajoutez les documents demandés pour envoyer",
+    "admission_or_enrolment_letter_c746db1d": "Lettre d’admission ou d’inscription",
+    "an_fir_or_police_report_b38c60b6": "Plainte (FIR) ou rapport de police (vol, accident), rapport des pompiers ou panchnama (incendie), certificat du tehsildar ou d’aide aux sinistrés (inondation), ou acte de décès (perte d’un soutien de famille).",
+    "cost_proof_c08259f6": "Justificatif de coût",
+    "documents_5a036285": "Documents",
+    "fee_demand_ed307cda": "Avis de frais",
+    "from_the_institution_showing_the_28b005bc": "De l’établissement, indiquant le montant dû et la période couverte.",
+    "from_the_school_college_or_93849dc1": "De l’école, l’université ou l’institut, indiquant l’élève et la formation.",
+    "needed_to_resubmit_2f42d0d6": "Requis pour renvoyer",
+    "on_the_hospital_s_letterhead_6b85edde": "Sur papier à en-tête de l’hôpital, avec les coûts de votre détail.",
+    "one_more_document_showing_the_593adbd7": "Un autre document montrant que le besoin est réel, comme une lettre officielle ou un rapport. Votre justificatif de coût ne compte pas deux fois.",
+    "proof_of_relationship_03510d60": "Preuve du lien",
+    "proof_of_what_happened_f2a166a5": "Preuve de ce qui s’est passé",
+    "resubmitting_checks_your_documents_again_6ce82680": "Au renvoi, vos documents sont vérifiés selon la liste actuelle pour ce type de collecte. Ajoutez ce qui est demandé avant d’envoyer.",
+    "supporting_document_f462e609": "Document justificatif",
+    "the_doctor_s_or_hospital_e6d068bf": "Le rapport du médecin ou de l’hôpital pour cette maladie, daté de moins de 6 mois. Pas tout le dossier médical.",
+    "their_consent_863d08dd": "Son accord",
+    "donors_see_this_name_their_222e8c07": "Les donateurs voient ce nom. Son nom légal reste privé.",
+    "if_a_document_doesn_t_773614ac": "Si un document ne s’ouvre pas, rechargez cette page.",
+    "the_documents_behind_this_need_909735c1": "Les documents à l’appui de ce besoin, tels qu’envoyés à notre équipe. Les documents d’identité et familiaux restent privés."
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",
@@ -4154,7 +4178,7 @@
     },
     "ev_EVENT_EVIDENCE": {
       "title": "Ce qui s’est passé",
-      "text": "Des photos, un procès-verbal (FIR), un article de presse ou un courrier officiel montrant l’événement — par ex. dégâts d’inondation ou d’incendie."
+      "text": "Un document officiel sur l’événement : plainte (FIR) ou rapport de police (vol, accident), rapport des pompiers ou panchnama (incendie), certificat du tehsildar ou d’aide aux sinistrés (inondation), ou acte de décès (perte d’un soutien de famille)."
     },
     "ev_CONSENT": {
       "title": "Consentement",
@@ -4227,6 +4251,18 @@
     "ref": {
       "title": "Numéro de facture ou de reçu",
       "text": "Le numéro imprimé sur la facture, le reçu ou le devis de cette chose. Il nous aide à vérifier vos papiers."
+    },
+    "ev_RELATIONSHIP_PROOF": {
+      "title": "Preuve du lien",
+      "text": "Montre votre lien avec la personne aidée : carte de rationnement, acte de naissance, ou pièces d’identité avec le même nom de famille ou la même adresse."
+    },
+    "ev_COST_PROOF": {
+      "title": "Justificatif de coût",
+      "text": "Un devis, une estimation ou une facture de ce que l’argent paiera, pour que l’équipe vérifie le montant."
+    },
+    "ev_supporting": {
+      "title": "Document justificatif",
+      "text": "Un autre document montrant que le besoin est réel, comme une lettre officielle ou un rapport. Il doit être envoyé séparément du justificatif de coût."
     }
   },
   "requestsArea": {

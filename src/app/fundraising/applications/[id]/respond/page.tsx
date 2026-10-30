@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "@/components/AppLink";
 import { fundraising, ApiError, type FundraisingApplication, type FundraisingInfoRequest } from "@/lib/api";
 import { DoneeGate } from "@/features/fundraising/DoneeGate";
+import { EvidenceSections } from "@/features/fundraising/Wizard";
 import { StatusChip, Icon } from "@/features/fundraising/ui";
 import s from "@/features/fundraising/fundraising.module.css";
 
@@ -31,6 +32,11 @@ function Respond({ id }: { id: number }) {
   const [sending, setSending] = useState(false);
 
   useEffect(() => { fundraising.get(id).then(setApp).catch(() => setError(ui("Couldn't load this application."))); }, [id]);
+  // Documents show while any requirement is unmet, and stay on screen once something was added here.
+  const docsMissing = (app?.requiredEvidence ?? []).some((g) => g.state !== "MET");
+  const [docsTouched, setDocsTouched] = useState(false);
+  useEffect(() => { if (docsMissing) setDocsTouched(true); }, [docsMissing]);
+  const docsNeeded = docsMissing || docsTouched;
 
   if (!app) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }}>{error && <p role="alert" className={s.errText}>{error}</p>}</main>;
   if (app.status !== "INFORMATION_REQUESTED") {
@@ -108,12 +114,21 @@ function Respond({ id }: { id: number }) {
           );
         })}
 
+        {docsNeeded && (
+          <section aria-labelledby="docs" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <h2 id="docs" style={{ fontSize: 18, fontWeight: 700 }}><UiText>Documents</UiText></h2>
+            <p className={s.muted} style={{ maxWidth: 700 }}><UiText>Resubmitting checks your documents against the current list for this kind of fundraiser. Add anything marked as needed before you send.</UiText></p>
+            <EvidenceSections app={app} setApp={setApp} profile={null} />
+          </section>
+        )}
+
         {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
           <Link href="/fundraising" className={`${s.btn} ${s.bs}`}><UiText>Save and finish later</UiText></Link>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            {open.length > 0 && <span className={`${s.muted} ${s.small}`}><UiText>Answer every question to send</UiText></span>}
-            <button type="button" className={`${s.btn} ${s.bp}`} onClick={send} disabled={open.length > 0 || sending}>{sending ? ui("Sending…") : ui("Send responses")}</button>
+            {open.length > 0 ? <span className={`${s.muted} ${s.small}`}><UiText>Answer every question to send</UiText></span>
+              : docsMissing && <span className={`${s.muted} ${s.small}`}><UiText>Add the needed documents to send</UiText></span>}
+            <button type="button" className={`${s.btn} ${s.bp}`} onClick={send} disabled={open.length > 0 || docsMissing || sending}>{sending ? ui("Sending…") : ui("Send responses")}</button>
           </div>
         </div>
         <p className={`${s.muted} ${s.small}`}><UiText>Once sent, your application shows</UiText> <strong><UiText>Resubmitted</UiText></strong> <UiText>and goes back to the reviewer. Need to replace a document? Uploads during a review are kept alongside the earlier version.</UiText></p>

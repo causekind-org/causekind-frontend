@@ -32,26 +32,22 @@ function useChoiceLabel() {
   } as Record<string, string>)[v] ?? v;
 }
 
-function useEvidenceLabel() {
+/** Title and hint for each server requirement group, keyed by its code (FundraisingEvidenceRules). */
+function useRequirementCopy() {
   const ui = useUiText();
-  return (type: FundraisingEvidenceType): string => ({
-    ORGANISER_ID: ui("Your identity"), ADDRESS_PROOF: ui("Address proof"), MEDICAL_REPORT: ui("Medical report"),
-    TREATMENT_ESTIMATE: ui("Treatment estimate"), ENROLMENT_PROOF: ui("Enrolment or admission letter"), FEE_STATEMENT: ui("Fee statement"),
-    EVENT_EVIDENCE: ui("Evidence of what happened"), CONSENT: ui("Consent"), OTHER: ui("Anything else"),
-  } as Record<FundraisingEvidenceType, string>)[type] ?? EVIDENCE_LABEL[type];
-}
-
-function useEvidenceHint() {
-  const ui = useUiText();
-  return (type: FundraisingEvidenceType): string | undefined => ({
-    ORGANISER_ID: ui("A government ID in your name."),
-    MEDICAL_REPORT: ui("The doctor's note or report for this condition — not a full medical history."),
-    TREATMENT_ESTIMATE: ui("From the hospital, showing the costs in your breakdown."),
-    ENROLMENT_PROOF: ui("Shows the institution and the course."),
-    FEE_STATEMENT: ui("Shows the fee amount and the period it covers."),
-    CONSENT: ui("A signed note that they agree to this fundraiser. What counts is still being finalised."),
-    OTHER: ui("Optional documents don't speed up review."),
-  } as Partial<Record<FundraisingEvidenceType, string>>)[type];
+  return (key: string): { title: string; hint: string } => ({
+    identity: { title: ui("Your identity"), hint: ui("A government ID in your name.") },
+    consent: { title: ui("Their consent"), hint: ui("A signed note from the person you're raising for, saying they agree to this fundraiser.") },
+    relationship: { title: ui("Proof of relationship"), hint: ui("A ration card, birth certificate, or IDs showing the same family name or address.") },
+    medicalReport: { title: ui("Medical report"), hint: ui("The doctor's or hospital's report for this condition, dated within the last 6 months. Not a full medical history.") },
+    treatmentEstimate: { title: ui("Treatment estimate"), hint: ui("On the hospital's letterhead, showing the costs in your breakdown.") },
+    enrolment: { title: ui("Admission or enrolment letter"), hint: ui("From the school, college or institute, showing the student and the course.") },
+    fees: { title: ui("Fee demand"), hint: ui("From the institution, showing the amount due and the period it covers.") },
+    event: { title: ui("Proof of what happened"), hint: ui("An FIR or police report (theft, accident), a fire brigade report or panchnama (fire), a tehsildar or disaster relief certificate (flood), or a death certificate (loss of an earning member).") },
+    cost: { title: ui("Cost proof"), hint: ui("A quotation, estimate or bill for what the money will pay for.") },
+    supporting: { title: ui("Supporting document"), hint: ui("One more document showing the need is real, such as an official letter or a report of what happened. Your cost proof doesn't count twice.") },
+    other: { title: ui("Anything else"), hint: ui("Optional documents don't speed up review.") },
+  } as Record<string, { title: string; hint: string }>)[key] ?? { title: key, hint: "" };
 }
 
 export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplication; onLeftDraft: (a: FundraisingApplication) => void }) {
@@ -141,9 +137,9 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         {step === 1 && <WhoNeedsHelp app={app} set={set} onBack={() => go(0)} onNext={() => go(2)} />}
         {step === 2 && <TheNeed app={app} set={set} onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
-        {step >= 4 && step <= 6 && <PageStep step={step as 4 | 5 | 6} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
-        {step === 7 && <BankDetails app={app} set={set} onBack={() => go(6)} onNext={() => go(8)} />}
-        {step === 8 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
+        {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
+        {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
+        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
       </main>
     </>
   );
@@ -354,7 +350,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
               onChange={(e) => set({ urgency: e.target.value })} />
             <p className={s.hint}><UiText>For example, the day of the operation, or the last day to pay the fees.</UiText></p></div>
           {/* The amount comes first (owner, 2026-10-26); the breakdown below explains it. */}
-          <div><label className={s.lbl} htmlFor="ask"><UiText>How much money do you need? (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
+          <div><label className={s.lbl} htmlFor="ask"><UiText>How much money you want from this fundraising (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
         </div>
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
@@ -407,54 +403,14 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
 }
 
 // F06 — A4 Evidence
-const EVIDENCE_LABEL: Record<FundraisingEvidenceType, string> = {
-  ORGANISER_ID: "Your identity", ADDRESS_PROOF: "Address proof", MEDICAL_REPORT: "Medical report",
-  TREATMENT_ESTIMATE: "Treatment estimate", ENROLMENT_PROOF: "Enrolment or admission letter", FEE_STATEMENT: "Fee statement",
-  EVENT_EVIDENCE: "Evidence of what happened", CONSENT: "Consent", OTHER: "Anything else",
-};
-const EVIDENCE_HINT: Partial<Record<FundraisingEvidenceType, string>> = {
-  ORGANISER_ID: "A government ID in your name.",
-  MEDICAL_REPORT: "The doctor's note or report for this condition — not a full medical history.",
-  TREATMENT_ESTIMATE: "From the hospital, showing the costs in your breakdown.",
-  ENROLMENT_PROOF: "Shows the institution and the course.",
-  FEE_STATEMENT: "Shows the fee amount and the period it covers.",
-  CONSENT: "A signed note that they agree to this fundraiser. What counts is still being finalised.",
-  OTHER: "Optional documents don't speed up review.",
-};
-
-function groupsFor(app: FundraisingApplication): FundraisingEvidenceType[] {
-  const g: FundraisingEvidenceType[] = ["ORGANISER_ID"];
-  if (app.category === "MEDICAL") g.push("MEDICAL_REPORT", "TREATMENT_ESTIMATE");
-  if (app.category === "EDUCATION") g.push("ENROLMENT_PROOF", "FEE_STATEMENT");
-  if (app.category === "EMERGENCY_HOUSEHOLD") g.push("EVENT_EVIDENCE");
-  if (!app.forSelf) g.push("CONSENT");
-  g.push("OTHER");
-  return g;
-}
 
 function Evidence({ app, setApp, profile, onBack, onNext }: {
   app: FundraisingApplication; setApp: (a: FundraisingApplication) => void; profile: DoneeNeedProfile | null;
   onBack: () => void; onNext: () => void;
 }) {
   const t = useTranslations("fundraiserFlow");
-  const evidenceLabel = useEvidenceLabel();
-  const evidenceHint = useEvidenceHint();
   const fmt = useFundraisingLabels();
   const ui = useUiText();
-  const [busy, setBusy] = useState<FundraisingEvidenceType | null>(null);
-  const [failed, setFailed] = useState<Partial<Record<FundraisingEvidenceType, string>>>({});
-  const profileId = profile?.documents.find((d) => d.docType === "GOVT_ID_ANY");
-  const active = app.evidence.filter((e) => !e.superseded);
-
-  async function upload(type: FundraisingEvidenceType, file: File, replaces?: FundraisingEvidence) {
-    setBusy(type); setFailed((f) => ({ ...f, [type]: undefined }));
-    try { setApp(await fundraising.uploadEvidence(app.id, type, file, replaces?.id)); }
-    catch (e) { setFailed((f) => ({ ...f, [type]: e instanceof ApiError ? e.message : ui("Upload failed. The file is still on your device — try again.") })); }
-    finally { setBusy(null); }
-  }
-  async function remove(e: FundraisingEvidence) { setApp(await fundraising.removeEvidence(app.id, e.id)); }
-  async function reuseId() { if (profileId) setApp(await fundraising.useProfileDocument(app.id, profileId.id, "ORGANISER_ID")); }
-
   return (
     <>
       <Heading title={ui("Evidence for this need")} sub={t("evidenceIntro", { category: app.category ? t("evidenceIntroCategory", { category: fmt.category(app.category).toLowerCase() }) : "", forOther: app.forSelf ? "" : t("evidenceIntroForOther") })} />
@@ -462,49 +418,87 @@ function Evidence({ app, setApp, profile, onBack, onNext }: {
         <Icon name="lock" />
         <p className={s.small}><strong><UiText>Private — only authorised reviewers can view these.</UiText></strong> <UiText>Nothing here appears on a public page. You&apos;ll choose public photos separately, later.</UiText></p>
       </div>
-      <div className={s.card} style={{ maxWidth: 860, overflow: "hidden" }}>
-        {groupsFor(app).map((type, gi) => {
-          const files = active.filter((e) => e.type === type);
-          const inputId = `f-${type}`;
-          return (
-            <section key={type} aria-labelledby={`g-${type}`} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, borderTop: gi ? "1px solid #efe7de" : 0, background: failed[type] ? "#fffaf9" : undefined }}>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-                <div><h2 id={`g-${type}`} style={{ fontSize: 16, fontWeight: 700 }}>{evidenceLabel(type)} <FieldInfo localize k={`ev_${type}`} />{type === "OTHER" && <span className={s.muted} style={{ fontWeight: 500 }}> <UiText>(optional)</UiText></span>}</h2>{evidenceHint(type) && <p className={`${s.muted} ${s.small}`}>{evidenceHint(type)}</p>}</div>
-                {busy === type ? <span className={`${s.chip} ${s.cN}`}><Icon name="upload" /><UiText>Uploading</UiText></span>
-                  : failed[type] ? <span className={`${s.chip} ${s.cX}`}><Icon name="x" /><UiText>Not uploaded</UiText></span>
-                  : files.length ? <span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Ready</UiText></span>
-                  : type !== "OTHER" ? <span className={`${s.chip} ${s.cM}`}><UiText>Needed</UiText></span> : null}
-              </div>
-              {files.map((f) => (
-                <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", border: "1px solid #e7ddd2", borderRadius: 10, background: "#fff", flexWrap: "wrap" }}>
-                  <span style={{ width: 40, height: 48, borderRadius: 6, background: "#f1ece6", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b5d52" }} aria-hidden="true"><Icon name="file" /></span>
-                  <div style={{ flex: "1 1 220px", minWidth: 0 }}><strong>{f.fromProfile ? ui("Government ID") : f.fileName ?? ui("Document")}</strong>{f.fromProfile && <> <span className={`${s.chip} ${s.cM}`}><UiText>On file in your profile</UiText></span></>}<div className={`${s.muted} ${s.small}`}><UiText>Uploaded</UiText></div></div>
-                  {f.viewUrl && <a className={`${s.btn} ${s.bq}`} href={f.viewUrl} target="_blank" rel="noreferrer"><UiText>Preview</UiText></a>}
-                  <label className={`${s.btn} ${s.bq}`}><UiText>Replace</UiText><input type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(type, file, f); e.target.value = ""; }} /></label>
-                  <button type="button" className={`${s.btn} ${s.bq} ${s.danger}`} onClick={() => void remove(f)}><UiText>Remove</UiText></button>
-                </div>
-              ))}
-              {failed[type] && <p className={s.errText}><Icon name="alert" />{failed[type]}</p>}
-              {type === "ORGANISER_ID" && !files.length && profileId && (
-                <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", border: "1px solid #e7ddd2", borderRadius: 10, flexWrap: "wrap" }}>
-                  <div style={{ flex: "1 1 220px" }}><strong><UiText>Government ID</UiText></strong> <span className={`${s.chip} ${s.cM}`}><UiText>On file in your profile</UiText></span></div>
-                  <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void reuseId()}><UiText>Use this</UiText></button>
-                </div>
-              )}
-              {(!files.length || type === "OTHER") && (
-                <div style={{ border: "2px dashed #b9c9de", borderRadius: 10, padding: 16, display: "flex", gap: 12, alignItems: "center", justifyContent: "center", background: "#f8fafd", flexWrap: "wrap" }}>
-                  <span style={{ color: "#1e3a60" }}><Icon name="upload" /></span>
-                  <label htmlFor={inputId} className={`${s.btn} ${s.bs}`}><UiText>Choose file</UiText></label>
-                  <input id={inputId} type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(type, file); e.target.value = ""; }} />
-                </div>
-              )}
-            </section>
-          );
-        })}
-      </div>
+      <EvidenceSections app={app} setApp={setApp} profile={profile} />
       <p className={`${s.muted} ${s.small}`} style={{ maxWidth: 860 }}><UiText>A file you choose is only saved once its upload finishes. Whether profile documents can be reused for fundraising is still being decided.</UiText></p>
       <div style={{ maxWidth: 860 }}><Nav onBack={onBack} onNext={onNext} /></div>
     </>
+  );
+}
+
+/**
+ * The document sections, one per server requirement group (FundraisingEvidenceRules) plus an optional
+ * "Anything else". A group is met by a document of any of its types, so an earlier upload of another
+ * accepted type still counts. Also used on the respond page while information is requested.
+ */
+export function EvidenceSections({ app, setApp, profile }: {
+  app: FundraisingApplication; setApp: (a: FundraisingApplication) => void; profile: DoneeNeedProfile | null;
+}) {
+  const copy = useRequirementCopy();
+  const ui = useUiText();
+  const [busy, setBusy] = useState<string | null>(null);
+  const [failed, setFailed] = useState<Record<string, string | undefined>>({});
+  const profileId = profile?.documents.find((d) => d.docType === "GOVT_ID_ANY");
+  const active = app.evidence.filter((e) => !e.superseded);
+  const groups = app.requiredEvidence ?? [];
+  // "Anything else" is offered unless a requirement already accepts it (Other's supporting document).
+  const sections = [
+    ...groups.map((g) => ({ key: g.key, anyOf: g.anyOf, state: g.state as string | null, uploadAs: (g.key === "supporting" ? "OTHER" : g.anyOf[0]) as FundraisingEvidenceType })),
+    ...(groups.some((g) => g.anyOf.includes("OTHER")) ? [] : [{ key: "other", anyOf: ["OTHER"] as FundraisingEvidenceType[], state: null, uploadAs: "OTHER" as FundraisingEvidenceType }]),
+  ];
+
+  async function upload(key: string, type: FundraisingEvidenceType, file: File, replaces?: FundraisingEvidence) {
+    setBusy(key); setFailed((f) => ({ ...f, [key]: undefined }));
+    try { setApp(await fundraising.uploadEvidence(app.id, type, file, replaces?.id)); }
+    catch (e) { setFailed((f) => ({ ...f, [key]: e instanceof ApiError ? e.message : ui("Upload failed. The file is still on your device — try again.") })); }
+    finally { setBusy(null); }
+  }
+  async function remove(e: FundraisingEvidence) { setApp(await fundraising.removeEvidence(app.id, e.id)); }
+  async function reuseId() { if (profileId) setApp(await fundraising.useProfileDocument(app.id, profileId.id, "ORGANISER_ID")); }
+
+  return (
+    <div className={s.card} style={{ maxWidth: 860, overflow: "hidden" }}>
+      {sections.map((sec, gi) => {
+        const files = active.filter((e) => sec.anyOf.includes(e.type));
+        const { title, hint } = copy(sec.key);
+        const optional = sec.state === null;
+        const inputId = `f-${sec.key}`;
+        return (
+          <section key={sec.key} aria-labelledby={`g-${sec.key}`} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, borderTop: gi ? "1px solid #efe7de" : 0, background: failed[sec.key] ? "#fffaf9" : undefined }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
+              <div><h2 id={`g-${sec.key}`} style={{ fontSize: 16, fontWeight: 700 }}>{title} <FieldInfo localize k={sec.key === "supporting" ? "ev_supporting" : `ev_${sec.uploadAs}`} />{optional && <span className={s.muted} style={{ fontWeight: 500 }}> <UiText>(optional)</UiText></span>}</h2>{hint && <p className={`${s.muted} ${s.small}`}>{hint}</p>}</div>
+              {busy === sec.key ? <span className={`${s.chip} ${s.cN}`}><Icon name="upload" /><UiText>Uploading</UiText></span>
+                : failed[sec.key] ? <span className={`${s.chip} ${s.cX}`}><Icon name="x" /><UiText>Not uploaded</UiText></span>
+                : files.length ? <span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Ready</UiText></span>
+                : sec.state === "NEXT_SUBMISSION" ? <span className={`${s.chip} ${s.cW}`}><UiText>Needed to resubmit</UiText></span>
+                : !optional ? <span className={`${s.chip} ${s.cM}`}><UiText>Needed</UiText></span> : null}
+            </div>
+            {files.map((f) => (
+              <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", border: "1px solid #e7ddd2", borderRadius: 10, background: "#fff", flexWrap: "wrap" }}>
+                <span style={{ width: 40, height: 48, borderRadius: 6, background: "#f1ece6", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b5d52" }} aria-hidden="true"><Icon name="file" /></span>
+                <div style={{ flex: "1 1 220px", minWidth: 0 }}><strong>{f.fromProfile ? ui("Government ID") : f.fileName ?? ui("Document")}</strong>{f.fromProfile && <> <span className={`${s.chip} ${s.cM}`}><UiText>On file in your profile</UiText></span></>}<div className={`${s.muted} ${s.small}`}><UiText>Uploaded</UiText></div></div>
+                {f.viewUrl && <a className={`${s.btn} ${s.bq}`} href={f.viewUrl} target="_blank" rel="noreferrer"><UiText>Preview</UiText></a>}
+                <label className={`${s.btn} ${s.bq}`}><UiText>Replace</UiText><input type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(sec.key, f.type, file, f); e.target.value = ""; }} /></label>
+                <button type="button" className={`${s.btn} ${s.bq} ${s.danger}`} onClick={() => void remove(f)}><UiText>Remove</UiText></button>
+              </div>
+            ))}
+            {failed[sec.key] && <p className={s.errText}><Icon name="alert" />{failed[sec.key]}</p>}
+            {sec.key === "identity" && !files.length && profileId && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", border: "1px solid #e7ddd2", borderRadius: 10, flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 220px" }}><strong><UiText>Government ID</UiText></strong> <span className={`${s.chip} ${s.cM}`}><UiText>On file in your profile</UiText></span></div>
+                <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void reuseId()}><UiText>Use this</UiText></button>
+              </div>
+            )}
+            {(!files.length || optional) && (
+              <div style={{ border: "2px dashed #b9c9de", borderRadius: 10, padding: 16, display: "flex", gap: 12, alignItems: "center", justifyContent: "center", background: "#f8fafd", flexWrap: "wrap" }}>
+                <span style={{ color: "#1e3a60" }}><Icon name="upload" /></span>
+                <label htmlFor={inputId} className={`${s.btn} ${s.bs}`}><UiText>Choose file</UiText></label>
+                <input id={inputId} type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(sec.key, sec.uploadAs, file); e.target.value = ""; }} />
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
   );
 }
 
@@ -604,7 +598,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
           <dt className={s.muted}><UiText>Last day to collect money</UiText></dt><dd>{/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? fmt.date(app.urgency!) : "—"}</dd>
           <dt className={s.muted}><UiText>Shown name</UiText></dt><dd>{page?.beneficiaryDisplayName || "—"}</dd>
         </dl>)}
-        {sec(ui("Bank details", "wizard step"), 7, <dl style={kv}>
+        {sec(ui("Bank details", "wizard step"), 6, <dl style={kv}>
           <dt className={s.muted}><UiText>Account holder</UiText></dt><dd>{app.payout.holderName || "—"}</dd>
           <dt className={s.muted}><UiText>Account number</UiText></dt><dd>{app.payout.accountLast4 ? `XXXX${app.payout.accountLast4}` : "—"}</dd>
           <dt className={s.muted}><UiText>IFSC</UiText></dt><dd>{app.payout.ifsc || "—"}</dd>
@@ -626,7 +620,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
       )}
       {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
       <div style={{ maxWidth: 860, display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(7)}><UiText>Back</UiText></button>
+        <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => goTo(6)}><UiText>Back</UiText></button>
         <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <span className={`${s.muted} ${s.small}`}><UiText>Submitting doesn&apos;t make anything public.</UiText></span>
           <button type="button" className={`${s.btn} ${s.bp}`} onClick={submit} disabled={submitting || stillNeeded.length > 0}>{submitting ? ui("Submitting…") : ui("Submit for review")}</button>

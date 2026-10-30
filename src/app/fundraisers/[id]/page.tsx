@@ -14,6 +14,11 @@ import { UiText, useUiText } from "@/components/UiText";
 export default function FundraiserPage() {
   const fmt = useFundraisingLabels();
   const ui = useUiText();
+  const docLabel = (type: string): string => ({
+    MEDICAL_REPORT: ui("Medical report"), TREATMENT_ESTIMATE: ui("Treatment estimate"),
+    ENROLMENT_PROOF: ui("Admission or enrolment letter"), FEE_STATEMENT: ui("Fee demand"),
+    EVENT_EVIDENCE: ui("Proof of what happened"), COST_PROOF: ui("Cost proof"), OTHER: ui("Supporting document"),
+  } as Record<string, string>)[type] ?? ui("Document");
   const t = useTranslations("fundraiserFlow");
   const { id } = useParams<{ id: string }>();
   const [d, setD] = useState<FundraiserDetail | null>(null);
@@ -72,6 +77,23 @@ export default function FundraiserPage() {
               </tbody>
             </table>
           </section>
+
+          {(d.documents ?? []).length > 0 && (
+            <section style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-labelledby="dc">
+              <h2 id="dc" className={s.serif} style={{ fontSize: 22 }}><UiText>Documents</UiText></h2>
+              <p className={`${s.muted} ${s.small}`}><UiText>The documents behind this need, as sent to our team. Identity and family documents stay private.</UiText></p>
+              <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+                {d.documents.map((doc, i) => (
+                  <li key={i} className={s.card} style={{ padding: "12px 14px", display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ color: "#6b5d52" }} aria-hidden="true"><Icon name="file" /></span>
+                    <div style={{ flex: "1 1 200px", minWidth: 0 }}><strong>{docLabel(doc.type)}</strong>{doc.fileName && <div className={`${s.muted} ${s.small}`} style={{ overflowWrap: "anywhere" }}>{doc.fileName}</div>}</div>
+                    <a className={`${s.btn} ${s.bs}`} href={doc.url} target="_blank" rel="noreferrer"><UiText>View</UiText></a>
+                  </li>
+                ))}
+              </ul>
+              <p className={`${s.muted} ${s.small}`}><UiText>If a document doesn&apos;t open, reload this page.</UiText></p>
+            </section>
+          )}
 
           <section className={s.card} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 8 }} aria-labelledby="vc">
             <h2 id="vc" style={{ fontSize: 17, fontWeight: 700, display: "flex", gap: 8, alignItems: "center" }}><span style={{ color: "#1d5b3a" }}><Icon name="check" /></span><UiText>What CauseKind checked</UiText></h2>

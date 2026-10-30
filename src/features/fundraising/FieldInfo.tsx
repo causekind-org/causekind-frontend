@@ -42,7 +42,10 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   ev_TREATMENT_ESTIMATE: { title: "Treatment estimate", text: "The hospital's written estimate or quote showing the costs you listed." },
   ev_ENROLMENT_PROOF: { title: "Enrolment proof", text: "Your admission letter or ID card showing the institution and course." },
   ev_FEE_STATEMENT: { title: "Fee statement", text: "The fee receipt or demand from the institution showing the amount and period." },
-  ev_EVENT_EVIDENCE: { title: "What happened", text: "Photos, an FIR, a news report or official letter showing the event — e.g. flood or fire damage." },
+  ev_EVENT_EVIDENCE: { title: "What happened", text: "An official record of the event: an FIR or police report (theft, accident), a fire brigade report or panchnama (fire), a tehsildar or disaster relief certificate (flood), or a death certificate (loss of an earning member)." },
+  ev_RELATIONSHIP_PROOF: { title: "Proof of relationship", text: "Shows how you are related to the person you're raising for: a ration card, birth certificate, or IDs with the same family name or address." },
+  ev_COST_PROOF: { title: "Cost proof", text: "A quotation, estimate or bill for what the money will pay for, so reviewers can check the amount." },
+  ev_supporting: { title: "Supporting document", text: "One more document that shows the need is real, such as an official letter or a report of what happened. It must be a separate upload from your cost proof." },
   ev_CONSENT: { title: "Consent", text: "A signed note from the person you're raising for, saying they agree to this fundraiser." },
   ev_OTHER: { title: "Anything else", text: "Optional. Anything that helps explain the need. It won't speed up the review." },
   // Campaign page

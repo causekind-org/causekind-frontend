@@ -3920,7 +3920,31 @@
     "upi_id_if_you_have_0b25d1b9": "ID de UPI (si tienes uno)",
     "where_the_money_raised_will_052ce249": "Aquí se enviará el dinero recaudado. Solo nuestro equipo puede ver estos datos.",
     "write_it_exactly_as_the_8622554b": "Escríbelo exactamente como lo tiene el banco.",
-    "donated_certificate_issued_27751959": "Donado · certificado emitido"
+    "donated_certificate_issued_27751959": "Donado · certificado emitido",
+    "how_much_money_you_want_d62e4219": "Cuánto dinero quieres conseguir con esta recaudación (₹)",
+    "a_quotation_estimate_or_bill_15abd0cf": "Un presupuesto, estimación o factura de lo que pagará el dinero.",
+    "a_ration_card_birth_certificate_d84e1718": "Cartilla de racionamiento, acta de nacimiento, o documentos con el mismo apellido o dirección.",
+    "a_signed_note_from_the_ba753ef4": "Una nota firmada por la persona a quien ayudas, diciendo que está de acuerdo con esta recaudación.",
+    "add_the_needed_documents_to_6faa56c3": "Añade los documentos necesarios para enviar",
+    "admission_or_enrolment_letter_c746db1d": "Carta de admisión o matrícula",
+    "an_fir_or_police_report_b38c60b6": "Denuncia (FIR) o informe policial (robo, accidente), informe de bomberos o panchnama (incendio), certificado del tehsildar o de ayuda por desastre (inundación), o certificado de defunción (pérdida de quien aportaba ingresos).",
+    "cost_proof_c08259f6": "Prueba del costo",
+    "documents_5a036285": "Documentos",
+    "fee_demand_ed307cda": "Aviso de pago de cuotas",
+    "from_the_institution_showing_the_28b005bc": "De la institución, con el monto adeudado y el periodo que cubre.",
+    "from_the_school_college_or_93849dc1": "De la escuela, universidad o instituto, con el estudiante y el curso.",
+    "needed_to_resubmit_2f42d0d6": "Necesario para reenviar",
+    "on_the_hospital_s_letterhead_6b85edde": "En papel membretado del hospital, con los costos de tu desglose.",
+    "one_more_document_showing_the_593adbd7": "Otro documento que muestre que la necesidad es real, como una carta oficial o un informe. Tu prueba del costo no cuenta dos veces.",
+    "proof_of_relationship_03510d60": "Prueba de parentesco",
+    "proof_of_what_happened_f2a166a5": "Prueba de lo que pasó",
+    "resubmitting_checks_your_documents_again_6ce82680": "Al reenviar, tus documentos se revisan con la lista actual para este tipo de recaudación. Añade lo marcado como necesario antes de enviar.",
+    "supporting_document_f462e609": "Documento de respaldo",
+    "the_doctor_s_or_hospital_e6d068bf": "El informe del médico o del hospital sobre esta condición, con menos de 6 meses. No todo el historial médico.",
+    "their_consent_863d08dd": "Su consentimiento",
+    "donors_see_this_name_their_222e8c07": "Los donantes ven este nombre. Su nombre legal sigue siendo privado.",
+    "if_a_document_doesn_t_773614ac": "Si un documento no se abre, recarga esta página.",
+    "the_documents_behind_this_need_909735c1": "Los documentos que respaldan esta necesidad, tal como se enviaron a nuestro equipo. Los documentos de identidad y familiares siguen siendo privados."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
@@ -4154,7 +4178,7 @@
     },
     "ev_EVENT_EVIDENCE": {
       "title": "Qué pasó",
-      "text": "Fotos, una denuncia (FIR), una noticia o una carta oficial que muestre lo ocurrido, p. ej., daños por inundación o incendio."
+      "text": "Un registro oficial del hecho: denuncia (FIR) o informe policial (robo, accidente), informe de bomberos o panchnama (incendio), certificado del tehsildar o de ayuda por desastre (inundación), o certificado de defunción (pérdida de quien aportaba ingresos)."
     },
     "ev_CONSENT": {
       "title": "Consentimiento",
@@ -4227,6 +4251,18 @@
     "ref": {
       "title": "Número de factura o recibo",
       "text": "El número impreso en la factura, el recibo o el presupuesto de esta cosa. Nos ayuda a revisar tus papeles."
+    },
+    "ev_RELATIONSHIP_PROOF": {
+      "title": "Prueba de parentesco",
+      "text": "Muestra tu relación con la persona: cartilla de racionamiento, acta de nacimiento, o documentos de identidad con el mismo apellido o dirección."
+    },
+    "ev_COST_PROOF": {
+      "title": "Prueba del costo",
+      "text": "Un presupuesto, estimación o factura de lo que pagará el dinero, para que el equipo revise el monto."
+    },
+    "ev_supporting": {
+      "title": "Documento de respaldo",
+      "text": "Otro documento que muestre que la necesidad es real, como una carta oficial o un informe. Debe subirse aparte de la prueba del costo."
     }
   },
   "requestsArea": {

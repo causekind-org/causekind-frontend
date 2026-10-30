@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { fundraisingCampaigns, type FundraisingApplication, type FundraisingCampaign, type FundraisingCampaignSave } from "@/lib/api";
-import { Basics, Privacy, Story, type SetFn } from "./CampaignWizard";
+import { Basics, Story, type SetFn } from "./CampaignWizard";
 import { Icon, SaveIndicator, type SaveState } from "./ui";
 import s from "./fundraising.module.css";
 import { UiText } from "@/components/UiText";
@@ -72,7 +72,7 @@ export function pageGaps(page: FundraisingCampaign | null, labels: { title: stri
 }
 
 export function PageStep({ step, draft, nav, neededBy = null }: {
-  step: 4 | 5 | 6;
+  step: 4 | 5;
   draft: ReturnType<typeof usePageDraft>;
   /** Step 3's "by which date" — shown read-only as the page's last day. */
   neededBy?: string | null;
@@ -99,7 +99,6 @@ export function PageStep({ step, draft, nav, neededBy = null }: {
       )}
       {step === 4 && <Basics c={page} set={set} setC={setPage} nav={nav} inApplication neededBy={neededBy} />}
       {step === 5 && <Story c={page} set={set} nav={nav} />}
-      {step === 6 && <Privacy c={page} set={set} nav={nav} />}
     </>
   );
 }
