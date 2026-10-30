@@ -3951,10 +3951,11 @@
     "you_haven_t_added_any_c476dfa7": "Todavía no has añadido ningún documento.",
     "your_document_choices_haven_t_f7ca3c6d": "Tus elecciones de documentos aún no se han guardado. Inténtalo de nuevo antes de enviar.",
     "your_document_choices_weren_t_9eef49d5": "Tus elecciones de documentos no se guardaron. Inténtalo de nuevo.",
-    "attach_the_bill_or_estimate_55ddcad8": "+ Adjuntar la factura o el presupuesto",
     "bill_attached_c5edb3f0": "Factura adjunta",
     "remove_from_this_row_0bf03a9d": "Quitar de esta fila",
-    "the_file_didn_t_upload_ba162de2": "El archivo no se subió. Inténtalo de nuevo."
+    "the_file_didn_t_upload_ba162de2": "El archivo no se subió. Inténtalo de nuevo.",
+    "bill_or_estimate_641aab49": "Factura o presupuesto",
+    "attach_file_eaa236e3": "+ Adjuntar archivo"
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

@@ -345,12 +345,12 @@ function TheNeed({ app, set, onEvidence, onBack, onNext }: {
     <>
       <Heading title={ui("What do you need money for?")} sub={ui("Tell us in simple words. You can write the full story later.")} />
       {errors.length > 0 && (
-        <div role="alert" style={{ maxWidth: 820, border: "2px solid #b42318", borderRadius: 12, background: "#fff", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div role="alert" style={{ maxWidth: 1000, border: "2px solid #b42318", borderRadius: 12, background: "#fff", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
           <strong style={{ color: "#8f1d1d" }}>{t("thingsToFix", { count: errors.length })}</strong>
           {errors.map((i) => <a key={i} href={`#amt${i}`}>{t("costRowMissing", { n: i + 1 })}</a>)}
         </div>
       )}
-      <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 820 }}>
+      <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 1000 }}>
         <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
           <legend className={s.lbl}><UiText>What is the money for?</UiText> <FieldInfo localize k="cat" /></legend>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -375,11 +375,11 @@ function TheNeed({ app, set, onEvidence, onBack, onNext }: {
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
           <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>What will the money pay for?</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(you can skip this)</UiText></span> <FieldInfo localize k="costs" /></h2>
-          <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
-            <span><UiText>What is it?</UiText></span><span style={{ textAlign: "right" }}><UiText>How much? (₹)</UiText></span><span><UiText>Bill or receipt number</UiText> <span style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span> <FieldInfo localize k="ref" /></span><span />
+          <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 150px minmax(0,170px) 190px 40px", gap: 10, fontWeight: 600 }}>
+            <span><UiText>What is it?</UiText></span><span style={{ textAlign: "right" }}><UiText>How much? (₹)</UiText></span><span><UiText>Bill or receipt number</UiText> <span style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span> <FieldInfo localize k="ref" /></span><span><UiText>Bill or estimate</UiText> <span style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></span><span />
           </div>
           {costs.map((c, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, alignItems: "start" }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 150px minmax(0,170px) 190px 40px", gap: 10, alignItems: "start" }}>
               <input className={s.in} aria-label={`Expense ${i + 1}`} placeholder={ui("What is it for?")} value={c.expense} onChange={(e) => edit(i, { expense: e.target.value })} maxLength={160} />
               <div>
                 <input id={`amt${i}`} className={`${s.in} ${s.tabular}`} style={{ textAlign: "right" }} aria-label={`Amount ${i + 1}`} inputMode="decimal" value={c.amount ?? ""} aria-invalid={shownAmount[i] || undefined} aria-describedby={shownAmount[i] ? `e${i}` : undefined} onChange={(e) => edit(i, { amount: num(e.target.value) })} />
@@ -388,22 +388,23 @@ function TheNeed({ app, set, onEvidence, onBack, onNext }: {
               <div>
                 <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Number on the bill")} value={c.reference ?? ""} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
               </div>
-              <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: 0 }} aria-label={t("removeRow", { n: i + 1 })} onClick={() => setCosts(costs.filter((_, j) => j !== i))}>✕</button>
-              <div className={s.small} style={{ gridColumn: "1 / -1", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: -4 }}>
+              <div>
                 {docName(c.evidenceId) ? (
-                  <>
-                    <Icon name="check" /><span>{docName(c.evidenceId)}</span>
-                    <button type="button" className={`${s.btn} ${s.bq}`} onClick={() => edit(i, { evidenceId: null })}><UiText>Remove from this row</UiText></button>
-                  </>
+                  <div className={`${s.in} ${s.small}`} style={{ display: "flex", alignItems: "center", gap: 6, background: "#f5f8fc" }}>
+                    <Icon name="check" />
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={docName(c.evidenceId) ?? undefined}>{docName(c.evidenceId)}</span>
+                    <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: "0 4px", minHeight: 0 }} aria-label={ui("Remove from this row")} title={ui("Remove from this row")} onClick={() => edit(i, { evidenceId: null })}>✕</button>
+                  </div>
                 ) : (
-                  <label className={`${s.btn} ${s.bq}`} style={{ cursor: attaching === i ? "wait" : "pointer" }}>
-                    {attaching === i ? ui("Uploading…") : ui("+ Attach the bill or estimate")}
+                  <label className={`${s.btn} ${s.bs}`} style={{ width: "100%", justifyContent: "center", cursor: attaching === i ? "wait" : "pointer" }}>
+                    {attaching === i ? ui("Uploading…") : ui("+ Attach file")}
                     <input type="file" accept="image/*,application/pdf" style={{ display: "none" }} disabled={attaching !== null}
                       onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void attach(i, f); }} />
                   </label>
                 )}
-                {attachError === i && <span role="alert" className={s.errText}><Icon name="alert" /><UiText>The file didn&apos;t upload. Try again.</UiText></span>}
+                {attachError === i && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>The file didn&apos;t upload. Try again.</UiText></p>}
               </div>
+              <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: 0 }} aria-label={t("removeRow", { n: i + 1 })} onClick={() => setCosts(costs.filter((_, j) => j !== i))}>✕</button>
             </div>
           ))}
           <div><button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setCosts([...costs, { expense: "", amount: null, reference: null }])}><UiText>+ Add one more thing</UiText></button></div>

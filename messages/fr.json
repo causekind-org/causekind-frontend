@@ -3951,10 +3951,11 @@
     "you_haven_t_added_any_c476dfa7": "Vous n''avez encore ajouté aucun document.",
     "your_document_choices_haven_t_f7ca3c6d": "Vos choix de documents ne sont pas encore enregistrés. Réessayez avant d''envoyer.",
     "your_document_choices_weren_t_9eef49d5": "Vos choix de documents n''ont pas été enregistrés. Réessayez.",
-    "attach_the_bill_or_estimate_55ddcad8": "+ Joindre la facture ou le devis",
     "bill_attached_c5edb3f0": "Facture jointe",
     "remove_from_this_row_0bf03a9d": "Retirer de cette ligne",
-    "the_file_didn_t_upload_ba162de2": "Le fichier n''a pas été envoyé. Réessayez."
+    "the_file_didn_t_upload_ba162de2": "Le fichier n''a pas été envoyé. Réessayez.",
+    "bill_or_estimate_641aab49": "Facture ou devis",
+    "attach_file_eaa236e3": "+ Joindre un fichier"
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",
