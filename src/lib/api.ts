@@ -3493,6 +3493,30 @@ export function adminGetAllDonations() {
   return request<AdminDonation[]>("/api/v1/admin/donations");
 }
 
+/** Admin documents queue (2026-10-30): fundraiser donations whose documents need a person. */
+export type DocumentsQueueRow = {
+  id: number; fundraiser: string | null; donorName: string | null; donorEmail: string | null;
+  amount: number; createdAt: string; documentsStatus: DocumentsStatus; attempts: number | null;
+  capturedAtUtc: string | null; captureTimeSource: "WEBHOOK_EVENT" | "ADMIN_RECONCILED" | "LEGACY_PAYMENT_CREATED_AT" | null;
+  captureObservedAtUtc: string | null; captureTimeConflict: string | null;
+  certificateNumber: string | null; razorpayOrderId: string | null; razorpayPaymentId: string | null;
+};
+
+export function adminDocumentsQueue(statuses?: DocumentsStatus[]) {
+  const q = statuses?.length ? `?${statuses.map((s) => `status=${s}`).join("&")}` : "";
+  return request<DocumentsQueueRow[]>(`/api/v1/admin/donations/documents${q}`);
+}
+
+/** delivered=true only for UNCERTAIN; false queues another attempt. Reason required; audited. */
+export function adminReconcileDocuments(id: number, delivered: boolean, reason: string) {
+  return request<void>(`/api/v1/admin/donations/${id}/documents/reconcile?delivered=${delivered}&reason=${encodeURIComponent(reason)}`, { method: "POST" });
+}
+
+/** Capture time from an authoritative provider record; capturedAt is ISO with an offset. Audited; queues only. */
+export function adminReconcileCaptureTime(id: number, body: { capturedAt: string; reason: string; evidenceRef: string }) {
+  return request<void>(`/api/v1/admin/donations/${id}/capture-time`, { method: "POST", body: JSON.stringify(body) });
+}
+
 export function adminGetDonationStats() {
   return request<DonationStats>("/api/v1/admin/donations/stats");
 }

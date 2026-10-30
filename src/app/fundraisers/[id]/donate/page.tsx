@@ -24,23 +24,49 @@ const ERR_UNAVAILABLE = "\u0000unavailable";
 const ERR_OPEN = "\u0000open";
 const ERR_START = "\u0000start";
 
+const pendingKey = (campaignId: number) => `ck:fundraiser-pending:${campaignId}`;
+
+/** What happened to a donation this browser started earlier, when it can't be checked out again. */
+type Prior =
+  | { kind: "failed"; donationId: number }      // explicit "Start a new payment"
+  | { kind: "unknown"; donationId: number }     // status couldn't be recovered — explicit new payment only
+  | { kind: "lookupFailed"; donationId: number }; // keep it, offer retry
+
+type CheckoutResult =
+  | { order: Awaited<ReturnType<typeof fundraisers.checkout>> }
+  | { redirect: number }
+  | { prior: Prior };
+
 /**
- * Starts (or resumes) the donation, then asks the server for the payment details. A retry with the same amount
- * and name choice reuses the donation already started — the server's checkout step is idempotent and returns the
- * same order — so leaving Razorpay and paying again never creates a second donation. A changed amount, or a
- * donation the server no longer accepts for checkout (paid, failed, gone), starts a fresh one.
+ * Starts or resumes the donation, then asks the server for the payment details (server checkout is idempotent:
+ * same order every time). A retry with the same amount and name choice reuses the donation already started.
+ * If the server won't check that donation out again, its status decides — never an automatic second donation:
+ * paid or still confirming → its result page; failed → an explicit "Start a new payment"; status unknown or
+ * unreadable → explained, and a new payment needs an explicit click. {@code fresh} is that explicit click.
  */
-async function checkoutReusingDonation(campaignId: number, amount: number, anonymous: boolean) {
-  const key = `ck:fundraiser-pending:${campaignId}`;
+async function checkoutReusingDonation(campaignId: number, amount: number, anonymous: boolean, fresh: boolean): Promise<CheckoutResult> {
+  const key = pendingKey(campaignId);
   let saved: { donationId: number; amount: number; anonymous: boolean } | null = null;
   try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
-  if (saved && saved.amount === amount && saved.anonymous === anonymous) {
-    try { return await fundraisers.checkout(saved.donationId); }
-    catch (e) { if (!(e instanceof ApiError) || (e.status !== 404 && e.status !== 409)) throw e; }
+  if (!fresh && saved && saved.amount === amount && saved.anonymous === anonymous) {
+    try { return { order: await fundraisers.checkout(saved.donationId) }; }
+    catch (e) {
+      if (!(e instanceof ApiError) || (e.status !== 404 && e.status !== 409)) throw e;
+      if (e.status === 404) return { prior: { kind: "unknown", donationId: saved.donationId } };
+      try {
+        const status = (await fundraisers.checkDonation(saved.donationId)).status;
+        if (status === "COMPLETED" || status === "INITIATED") return { redirect: saved.donationId };
+        if (status === "FAILED") return { prior: { kind: "failed", donationId: saved.donationId } };
+        return { prior: { kind: "unknown", donationId: saved.donationId } };
+      } catch (inner) {
+        if (inner instanceof ApiError && inner.status === 404) return { prior: { kind: "unknown", donationId: saved.donationId } };
+        return { prior: { kind: "lookupFailed", donationId: saved.donationId } };
+      }
+    }
   }
   const started = await fundraisers.donate(campaignId, amount, anonymous);
   try { sessionStorage.setItem(key, JSON.stringify({ donationId: started.donationId, amount, anonymous })); } catch { /* fine */ }
-  return fundraisers.checkout(started.donationId);
+  return { order: await fundraisers.checkout(started.donationId) };
 }
 
 export default function DonatePage() {
@@ -57,6 +83,7 @@ export default function DonatePage() {
   const [anonymous, setAnonymous] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [prior, setPrior] = useState<Prior | null>(null);
   // Fallback errors are stored as markers and translated here, at render; server messages show as sent.
   const errorText = error === ERR_UNAVAILABLE ? ui("This fundraiser isn't available.")
     : error === ERR_OPEN ? ui("We couldn't open payment right now. Nothing was charged. Try again in a moment.")
@@ -78,13 +105,16 @@ export default function DonatePage() {
   const fee = Number.isFinite(value) ? Math.round(value * d.platformFeePercent) / 100 : 0;
   const gateway = Number.isFinite(value) ? Math.round(value * GATEWAY_PERCENT) / 100 : 0;
 
-  async function pay() {
-    setBusy(true); setError(null);
+  async function pay(fresh = false) {
+    setBusy(true); setError(null); setPrior(null);
     try {
       const ok = await loadRazorpay();
       const Rzp = rzpCtor();
       if (!ok || !Rzp) { setError(ERR_OPEN); setBusy(false); return; }
-      const order = await checkoutReusingDonation(Number(id), value, anonymous);
+      const result = await checkoutReusingDonation(Number(id), value, anonymous, fresh);
+      if ("redirect" in result) { router.push(`/fundraisers/donations/${result.redirect}`); return; }
+      if ("prior" in result) { setPrior(result.prior); setBusy(false); return; }
+      const order = result.order;
       const rzp = new Rzp({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
         name: "CauseKind", description: d!.card.title ?? "Fundraiser", order_id: order.razorpayOrderId,
@@ -172,12 +202,25 @@ export default function DonatePage() {
                 <h2 id="pt" style={{ fontSize: 15, fontWeight: 700 }}><UiText>Before you pay</UiText></h2>
                 <p className={s.small}><UiText>Your donation is received by</UiText> <strong><UiText>Sahas Charitable Trust</UiText></strong><UiText>, which transfers it to the beneficiary.</UiText></p>
                 <p className={s.small}><strong><UiText>Donations are not refundable.</UiText></strong></p>
-                <p className={s.small}><UiText>You&apos;ll get a payment confirmation. Fundraiser donations do not get an 80G tax receipt.</UiText></p>
+                <p className={s.small}><UiText>You&apos;ll get a donation certificate by email. Fundraiser donations don&apos;t get an 80G tax receipt yet.</UiText></p>
               </section>
               {error && <p role="alert" className={s.errText}><Icon name="alert" />{errorText}</p>}
+              {prior && (
+                <div role="status" style={{ padding: "14px 16px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {prior.kind === "failed" && <p><strong><UiText>Your last payment for this fundraiser didn&apos;t go through.</UiText></strong> <UiText>You weren&apos;t charged for it.</UiText></p>}
+                  {prior.kind === "unknown" && <p><strong><UiText>We couldn&apos;t find the status of your earlier payment.</UiText></strong> <UiText>If you were charged, it will still be confirmed — check your donations before paying again.</UiText></p>}
+                  {prior.kind === "lookupFailed" && <p><strong><UiText>We couldn&apos;t check your earlier payment just now.</UiText></strong> <UiText>Try again in a moment — please don&apos;t pay twice.</UiText></p>}
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    {prior.kind === "lookupFailed"
+                      ? <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy}><UiText>Try again</UiText></button>
+                      : <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay(true)} disabled={busy}><UiText>Start a new payment</UiText></button>}
+                    <Link href={`/fundraisers/donations/${prior.donationId}`} className={`${s.btn} ${s.bs}`}><UiText>See the earlier payment</UiText></Link>
+                  </div>
+                </div>
+              )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => setStep(1)}><UiText>Back</UiText></button>
-                <button type="button" className={`${s.btn} ${s.bp}`} onClick={pay} disabled={busy}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value) })}</button>
+                <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy || prior !== null}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value) })}</button>
               </div>
             </>
           )}
