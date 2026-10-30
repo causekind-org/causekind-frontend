@@ -6293,7 +6293,21 @@ export type FundraiserDetail = {
   outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
   /** Every current document except identity and family ones; links are signed and expire after ~10 minutes. */
   documents: { type: FundraisingEvidenceType; fileName: string | null; url: string }[];
+  /** Show the 80G section on the donate page (switch on and the Trust's 80G details configured). */
+  taxReceiptOffered?: boolean;
 };
+
+/** Fundraiser donation: the signed-in donor's PAN photo for an 80G receipt, before checkout. */
+export function uploadDonationPanPhoto(donationId: number, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${BASE_URL}/api/v1/donations/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
+    .then((res) => {
+      // 409 with "already uploaded" means a retry after a successful upload: fine.
+      if (res.ok) return;
+      throw new ApiError(res.status, "The PAN photo didn't upload.", null);
+    });
+}
 
 export const fundraisers = {
   live: (category?: FundraisingCategory) =>
@@ -6302,8 +6316,8 @@ export const fundraisers = {
   /** Donor-only: asks Razorpay directly when the webhook is late (or never comes, e.g. localhost). */
   checkDonation: (donationId: number) => request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
-  donate: (campaignId: number, amount: number, anonymous: boolean) =>
-    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous }) }),
+  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }) =>
+    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, ...(tax ?? {}) }) }),
   /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
   checkout: (donationId: number) => request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
   setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>

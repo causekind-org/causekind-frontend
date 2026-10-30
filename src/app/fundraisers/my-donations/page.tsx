@@ -58,7 +58,7 @@ export default function MyFundraiserDonationsPage() {
             </table>
           </div>
         )}
-        <p className={`${s.small} ${s.muted}`}><UiText>Fundraiser donations are not refundable. You get a donation certificate; 80G receipts aren&apos;t available for fundraiser donations yet. Donations to the CauseKind trust are listed separately.</UiText></p>
+        <p className={`${s.small} ${s.muted}`}><UiText>Fundraiser donations are not refundable. You get a donation certificate, and an 80G receipt if you added your PAN card before paying. Donations to the CauseKind trust are listed separately.</UiText></p>
       </main>
     </div>
   );
