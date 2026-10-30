@@ -3965,7 +3965,8 @@
     "friend_3df32aad": "दोस्त",
     "neighbour_2973d788": "पड़ोसी",
     "proof_you_know_them_8e1746c9": "आप उन्हें जानते हैं, इसका सबूत",
-    "tick_this_box_to_continue_c50e0b27": "आगे बढ़ने के लिए इस बॉक्स पर टिक करें।"
+    "tick_this_box_to_continue_c50e0b27": "आगे बढ़ने के लिए इस बॉक्स पर टिक करें।",
+    "accept_all_d0efcbee": "सभी स्वीकार करें"
   },
   "fundraisersList": {
     "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",

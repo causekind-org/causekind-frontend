@@ -691,6 +691,13 @@ function Review({ app, set, flush, goTo, onSubmitted, page, setPage, reloadPage 
       {page && <DocumentConsent page={page} evidence={app.evidence} set={setPage} />}
       <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
         <legend style={{ fontWeight: 700, fontSize: 16, padding: "0 6px" }}><UiText>Please confirm</UiText></legend>
+        {/* One click ticks every declaration shown (owner, 2026-10-30); each stays individually untickable. */}
+        <div style={{ paddingBottom: 10 }}>
+          <button type="button" className={`${s.btn} ${s.bs}`}
+            onClick={() => set({ declaredAccurate: true, declaredUseOfFunds: true, declaredVerificationConsent: true, ...(app.forSelf ? {} : { declaredAuthority: true }) })}>
+            <Icon name="check" /><UiText>Accept all</UiText>
+          </button>
+        </div>
         {check("declaredAccurate", ui("What I've told you is true and complete as far as I know."))}
         {!app.forSelf && check("declaredAuthority", ui("I have their agreement to organise this fundraiser for them."))}
         {check("declaredUseOfFunds", ui("Money raised will be used only for the need described here."))}

@@ -3965,7 +3965,8 @@
     "friend_3df32aad": "Ami·e",
     "neighbour_2973d788": "Voisin·e",
     "proof_you_know_them_8e1746c9": "Preuve que vous la connaissez",
-    "tick_this_box_to_continue_c50e0b27": "Cochez cette case pour continuer."
+    "tick_this_box_to_continue_c50e0b27": "Cochez cette case pour continuer.",
+    "accept_all_d0efcbee": "Tout accepter"
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",
