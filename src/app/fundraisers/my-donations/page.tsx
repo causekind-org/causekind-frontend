@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { loginUrlFor } from "@/lib/safeRedirect";
 import { getMyDonations, type Donation } from "@/lib/api";
 import { useFundraisingLabels, formatINR } from "@/features/fundraising/ui";
+import { DonationDocuments } from "@/features/fundraising/DonationDocuments";
 import s from "@/features/fundraising/fundraising.module.css";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -47,7 +48,7 @@ export default function MyFundraiserDonationsPage() {
                     <td style={{ padding: "14px 18px" }}><strong>{d.campaignTitle}</strong><div className={`${s.small} ${s.muted}`}>{d.razorpayOrderId}</div></td>
                     <td className={s.tabular} style={{ textAlign: "right" }}>{formatINR(d.amount)}</td>
                     <td className={s.small} style={{ paddingLeft: 16 }}>{fmt.date(d.createdAt)}</td>
-                    <td>{chip(d.status)}</td>
+                    <td>{chip(d.status)}<div style={{ marginTop: 6 }}><DonationDocuments d={d} compact /></div></td>
                     <td style={{ paddingRight: 18 }}>{d.campaignRemoved && d.status !== "INITIATED"
                       ? <span className={`${s.small} ${s.muted}`}><UiText>This fundraiser was removed. Your donation and receipt are kept.</UiText></span>
                       : <Link href={d.status === "INITIATED" ? `/fundraisers/donations/${d.id}` : `/fundraisers/${d.campaignId}`} className={s.small}>{d.status === "INITIATED" ? ui("Check status") : ui("Open fundraiser")}</Link>}</td>
@@ -57,7 +58,7 @@ export default function MyFundraiserDonationsPage() {
             </table>
           </div>
         )}
-        <p className={`${s.small} ${s.muted}`}><UiText>Fundraiser donations are not refundable and don&apos;t get an 80G receipt. Donations to the CauseKind trust are listed separately.</UiText></p>
+        <p className={`${s.small} ${s.muted}`}><UiText>Fundraiser donations are not refundable. You get a donation certificate, and an 80G receipt if you added your PAN card before paying. Donations to the CauseKind trust are listed separately.</UiText></p>
       </main>
     </div>
   );

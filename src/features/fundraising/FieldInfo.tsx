@@ -21,7 +21,7 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   bn: { title: "Their full legal name", text: "The person's name exactly as on their ID. Only CauseKind reviewers see it — never donors." },
   pn: { title: "Name shown to donors", text: "What donors will see, e.g. “Ramesh” or “Ramesh K.”. A first name is fine if they want privacy." },
   ag: { title: "Their age", text: "Pick the age group they fall in. Fundraisers for children may need extra checks." },
-  rl: { title: "Your relationship", text: "How you know them — parent, spouse, guardian and so on." },
+  rl: { title: "Your relationship", text: "How you know them — family, guardian, employee, friend and so on." },
   au: { title: "Why you", text: "In a few lines, why you're the right person to raise money for them. For example: “I'm her son and I'm handling the hospital bills.”" },
   // Application — Need & gap
   cat: { title: "What is the money for?", text: "Pick the one closest to your need. It tells us which papers to ask you for." },
@@ -45,6 +45,7 @@ export const FIELD_HELP: Record<string, { title: string; text: string }> = {
   ev_EVENT_EVIDENCE: { title: "What happened", text: "An official record of the event: an FIR or police report (theft, accident), a fire brigade report or panchnama (fire), a tehsildar or disaster relief certificate (flood), or a death certificate (loss of an earning member)." },
   ev_RELATIONSHIP_PROOF: { title: "Proof of relationship", text: "Shows how you are related to the person you're raising for: a ration card, birth certificate, or IDs with the same family name or address." },
   ev_COST_PROOF: { title: "Cost proof", text: "A quotation, estimate or bill for what the money will pay for, so reviewers can check the amount." },
+  ev_connection: { title: "Proof you know them", text: "For someone who isn't family: salary or payment records to them, a letter from a local authority, or photos together with a short note on how you know them." },
   ev_supporting: { title: "Supporting document", text: "One more document that shows the need is real, such as an official letter or a report of what happened. It must be a separate upload from your cost proof." },
   ev_CONSENT: { title: "Consent", text: "A signed note from the person you're raising for, saying they agree to this fundraiser." },
   ev_OTHER: { title: "Anything else", text: "Optional. Anything that helps explain the need. It won't speed up the review." },

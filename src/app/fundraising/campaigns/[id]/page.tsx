@@ -8,6 +8,7 @@ import { DoneeGate } from "@/features/fundraising/DoneeGate";
 import { CampaignWizard } from "@/features/fundraising/CampaignWizard";
 import { CampaignStatusView } from "@/features/fundraising/CampaignStatusView";
 import { ManageWorkspace } from "@/features/fundraising/ManageWorkspace";
+import { ShowDocumentsOptIn } from "@/features/fundraising/DocumentConsent";
 import s from "@/features/fundraising/fundraising.module.css";
 
 import { UiText } from "@/components/UiText";
@@ -35,7 +36,9 @@ function CampaignScreen({ id }: { id: number }) {
     );
   }
   if (!c) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }} />;
-  if (["APPROVED", "PAUSED", "COLLECTIONS_CLOSED", "OUTCOME_REPORTING"].includes(c.status)) return <ManageWorkspace c={c} />;
+  // Older fundraisers keep documents private until the donee agrees once (owner, 2026-10-30).
+  const optIn = <ShowDocumentsOptIn c={c} onDone={setC} />;
+  if (["APPROVED", "PAUSED", "COLLECTIONS_CLOSED", "OUTCOME_REPORTING"].includes(c.status)) return <>{optIn}<ManageWorkspace c={c} /></>;
   if (c.status === "DRAFT" || c.status === "CHANGES_REQUESTED") return <CampaignWizard initial={c} onSubmitted={setC} />;
-  return <CampaignStatusView c={c} />;
+  return <>{optIn}<CampaignStatusView c={c} /></>;
 }

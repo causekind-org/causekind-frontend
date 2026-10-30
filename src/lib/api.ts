@@ -671,6 +671,15 @@ export type DonationOrder = {
   razorpayKeyId: string;
 };
 
+/** Starting a fundraiser donation returns no payment details; those come only from checkout (2026-10-30). */
+export type FundraiserDonationStart = { donationId: number; amountInPaise: number; currency: string };
+
+/** Fundraiser donation documents, from the server (2026-10-30). */
+export type DocumentPolicy = "CERTIFICATE_ONLY" | "RECEIPT_AND_CERTIFICATE";
+export type DocumentsStatus =
+  | "PENDING" | "ISSUED" | "PARTIAL" | "FAILED" | "UNCERTAIN" | "SUPPRESSED" | "GAVE_UP"
+  | "AWAITING_CAPTURE_TIME" | "CAPTURE_TIME_REVIEW" | "PAN_REVIEW";
+
 export type Donation = {
   id: number;
   campaignId: number;
@@ -684,7 +693,22 @@ export type Donation = {
   donorName?: string;
   /** True when a super admin deleted the fundraiser; the donation and receipt remain. */
   campaignRemoved?: boolean;
+  /** Fundraiser donations only; null for general donations and donations not covered by the launch. */
+  documentPolicy?: DocumentPolicy | null;
+  documentsStatus?: DocumentsStatus | null;
+  /** The signed-in donor can download it now. */
+  receiptAvailable?: boolean;
+  certificateAvailable?: boolean;
+  /** Whether the 80G option is offered for fundraiser donations (false until the CA confirms). */
+  taxReceiptOffered?: boolean;
 };
+
+/** Downloads a donation document for the signed-in donor (cookie auth, so fetched rather than linked). */
+export async function downloadDonationDocument(donationId: number, kind: "certificate" | "receipt"): Promise<Blob> {
+  const res = await fetch(`${BASE_URL}/api/v1/donations/${donationId}/${kind}.pdf`, { credentials: "include" });
+  if (!res.ok) throw new ApiError(res.status, "Couldn't download the document. Try again in a moment.", null);
+  return res.blob();
+}
 
 export function initiateDonation(campaignId: number, amount: number) {
   return request<DonationOrder>("/api/v1/donations", {
@@ -3627,6 +3651,38 @@ export function adminGetAllDonations() {
   return request<AdminDonation[]>("/api/v1/admin/donations");
 }
 
+/** Admin documents queue (2026-10-30): fundraiser donations whose documents need a person. */
+export type DocumentsQueueRow = {
+  id: number; fundraiser: string | null; donorName: string | null; donorEmail: string | null;
+  amount: number; createdAt: string; documentsStatus: DocumentsStatus; attempts: number | null;
+  capturedAtUtc: string | null; captureTimeSource: "WEBHOOK_EVENT" | "ADMIN_RECONCILED" | "LEGACY_PAYMENT_CREATED_AT" | null;
+  captureObservedAtUtc: string | null; captureTimeConflict: string | null;
+  certificateNumber: string | null; razorpayOrderId: string | null; razorpayPaymentId: string | null;
+  /** PAN review: declared vs read off the photo by the server. */
+  panDeclared: string | null; panRead: string | null; panNameRead: string | null;
+  panScreenStatus: "MATCH" | "MISMATCH" | "UNREADABLE" | "ERROR" | null;
+};
+
+/** Decide a held PAN: approve → 80G receipt; otherwise certificate only. Reason required; audited; queues only. */
+export function adminReviewPan(id: number, approve: boolean, reason: string) {
+  return request<void>(`/api/v1/admin/donations/${id}/pan-review`, { method: "POST", body: JSON.stringify({ approve, reason }) });
+}
+
+export function adminDocumentsQueue(statuses?: DocumentsStatus[]) {
+  const q = statuses?.length ? `?${statuses.map((s) => `status=${s}`).join("&")}` : "";
+  return request<DocumentsQueueRow[]>(`/api/v1/admin/donations/documents${q}`);
+}
+
+/** delivered=true only for UNCERTAIN; false queues another attempt. Reason required; audited. */
+export function adminReconcileDocuments(id: number, delivered: boolean, reason: string) {
+  return request<void>(`/api/v1/admin/donations/${id}/documents/reconcile?delivered=${delivered}&reason=${encodeURIComponent(reason)}`, { method: "POST" });
+}
+
+/** Capture time from an authoritative provider record; capturedAt is ISO with an offset. Audited; queues only. */
+export function adminReconcileCaptureTime(id: number, body: { capturedAt: string; reason: string; evidenceRef: string }) {
+  return request<void>(`/api/v1/admin/donations/${id}/capture-time`, { method: "POST", body: JSON.stringify(body) });
+}
+
 export function adminGetDonationStats() {
   return request<DonationStats>("/api/v1/admin/donations/stats");
 }
@@ -6479,7 +6535,11 @@ export type FundraisingEvidenceRequirement = {
 };
 export type FundraisingScope = "THIS_NEED" | "ACCOUNT";
 
-export type FundraisingCostItem = { expense: string; amount: number | null; reference: string | null };
+export type FundraisingCostItem = {
+  expense: string; amount: number | null; reference: string | null;
+  /** The COST_PROOF document attached to this row (applications only). */
+  evidenceId?: number | null;
+};
 export type FundraisingEvidence = {
   id: number; type: FundraisingEvidenceType; fileName: string | null; fromProfile: boolean;
   superseded: boolean; uploadedAt: string; viewUrl: string | null;
@@ -6591,7 +6651,14 @@ export type FundraisingCampaign = {
   costItems: CampaignCostRow[]; totalCosts: number; otherHelp: number; remainingGap: number;
   changeReason: string | null; hasMaterialChanges: boolean;
   beneficiaryNameVisibility: NameVisibility | null; organiserNameVisibility: NameVisibility | null;
-  locationVisibility: LocationVisibility | null; publicEvidenceIds: number[];
+  locationVisibility: LocationVisibility | null;
+  /** Chosen under the current disclosure version — drives the "Show to donors" boxes. */
+  publicEvidenceIds: number[];
+  /** Chosen before versioned consent (2026-10-30); never public, never shown as checked. */
+  legacyPublicEvidenceIds: number[];
+  /** When each current-version selection was consented to. */
+  publicEvidenceConsents: { evidenceId: number; consentedAt: string | null; disclosureVersion: string }[];
+  disclosureVersion: string;
   selectableEvidence: { evidenceId: number; type: string; fileName: string | null }[];
   reviewerMessage: string | null; submittedAt: string | null; decidedAt: string | null;
   paymentSetupComplete: boolean; missing: string[]; createdAt: string; updatedAt: string;
@@ -6601,6 +6668,8 @@ export type FundraisingCampaignSave = {
   targetAmount?: number | null; endDate?: string | null; costItems?: FundraisingCostItem[]; changeReason?: string;
   beneficiaryNameVisibility?: NameVisibility; organiserNameVisibility?: NameVisibility;
   locationVisibility?: LocationVisibility; publicEvidenceIds?: number[];
+  /** Required with a non-empty publicEvidenceIds: the disclosure version the organiser saw. */
+  acknowledgedDisclosureVersion?: string;
 };
 export type FundraisingAdminCampaign = {
   campaign: FundraisingCampaign; applicantName: string; applicantEmail: string; internalNote: string | null; decidedBy: string | null;
@@ -6622,6 +6691,9 @@ export const fundraisingCampaigns = {
   save: (id: number, body: FundraisingCampaignSave) => request<FundraisingCampaign>(`${FC}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   submit: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/submit`, { method: "POST" }),
   cancel: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/cancel`, { method: "POST" }),
+  /** One-time opt-in for older applications: show non-private documents to donors. */
+  showDocuments: (id: number, acknowledgedDisclosureVersion: string) =>
+    request<FundraisingCampaign>(`${FC}/${id}/show-documents`, { method: "POST", body: JSON.stringify({ acknowledgedDisclosureVersion }) }),
   async uploadCover(id: number, file: File) {
     const fd = new FormData();
     fd.append("file", file);
@@ -6659,7 +6731,21 @@ export type FundraiserDetail = {
   outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
   /** Every current document except identity and family ones; links are signed and expire after ~10 minutes. */
   documents: { type: FundraisingEvidenceType; fileName: string | null; url: string }[];
+  /** Show the 80G section on the donate page (switch on and the Trust's 80G details configured). */
+  taxReceiptOffered?: boolean;
 };
+
+/** Fundraiser donation: the signed-in donor's PAN photo for an 80G receipt, before checkout. */
+export function uploadDonationPanPhoto(donationId: number, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${BASE_URL}/api/v1/donations/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
+    .then((res) => {
+      // 409 with "already uploaded" means a retry after a successful upload: fine.
+      if (res.ok) return;
+      throw new ApiError(res.status, "The PAN photo didn't upload.", null);
+    });
+}
 
 export const fundraisers = {
   live: (category?: FundraisingCategory) =>
@@ -6668,8 +6754,10 @@ export const fundraisers = {
   /** Donor-only: asks Razorpay directly when the webhook is late (or never comes, e.g. localhost). */
   checkDonation: (donationId: number) => request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
-  donate: (campaignId: number, amount: number, anonymous: boolean) =>
-    request<DonationOrder>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous }) }),
+  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }) =>
+    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, ...(tax ?? {}) }) }),
+  /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
+  checkout: (donationId: number) => request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
   setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>
     request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${id}/payout-ready`, { method: "POST", body: JSON.stringify({ expectedVersion, ready }) }),
 };

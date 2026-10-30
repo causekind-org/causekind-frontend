@@ -68,7 +68,7 @@ export default function AdminCampaignReviewPage() {
                 <tr><td><strong>End date</strong></td><td>—</td><td>{formatDate(c.endDate)}</td><td>Review</td></tr>
                 <tr><td><strong>Shown as</strong></td><td>—</td><td>&ldquo;{c.beneficiaryDisplayName ?? "—"}&rdquo; ({(c.beneficiaryNameVisibility ?? "").toLowerCase().replace("_", " ")}) · {(c.locationVisibility ?? "").toLowerCase()}</td><td>Within privacy</td></tr>
                 <tr><td><strong>Cover photo</strong></td><td>—</td><td>{c.coverUrl ? "1 photo" : "None"} · {c.coverAltText ? "description" : "no description"} · {c.coverConsent ? "permission ticked" : "permission not ticked"}</td><td>Review</td></tr>
-                <tr><td><strong>Public documents</strong></td><td>Private</td><td>{c.publicEvidenceIds.length ? `${c.publicEvidenceIds.length} chosen · redaction needed` : "None"}</td><td>{c.publicEvidenceIds.length ? "Redact" : "—"}</td></tr>
+                <tr><td><strong>Public documents</strong></td><td>Private</td><td>{c.publicEvidenceIds.length ? `${c.publicEvidenceIds.length} consented (v${c.disclosureVersion}) · redaction needed` : "None"}{c.legacyPublicEvidenceIds.length ? ` · ${c.legacyPublicEvidenceIds.length} old selection(s), not consented, stay private` : ""}</td><td>{c.publicEvidenceIds.length ? "Redact" : "—"}</td></tr>
               </tbody>
             </table>
             {c.changeReason && <p className={a.small} style={{ padding: "12px 16px" }}><span className={a.muted}>Organiser&apos;s reason for the change:</span> {c.changeReason}</p>}

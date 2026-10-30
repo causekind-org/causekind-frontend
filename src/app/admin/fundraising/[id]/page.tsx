@@ -82,7 +82,11 @@ export default function AdminFundraisingReviewPage() {
           <section className={`${a.card} ${a.pane}`} aria-labelledby="fb">
             <h2 id="fb" className={a.h}>Funding breakdown</h2>
             <dl style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: "4px 12px" }}>
-              {app.costItems.map((c, i) => <Row key={i} k={c.expense} v={formatINR(c.amount)} />)}
+              {app.costItems.map((c, i) => {
+                const bill = c.evidenceId == null ? undefined : app.evidence.find((e) => e.id === c.evidenceId);
+                const extras = [c.reference ? `bill no. ${c.reference}` : null, bill ? `file: ${bill.fileName ?? "bill"}` : null].filter(Boolean).join(" · ");
+                return <Row key={i} k={extras ? `${c.expense} (${extras})` : c.expense} v={formatINR(c.amount)} />;
+              })}
               <Row k="Total" v={formatINR(app.totalCosts)} bold />
               {/* Money already in hand is shown for context only; it is not subtracted (owner, 2026-10-26). */}
               <Row k="Insurance (not subtracted)" v={formatINR(app.insuranceAmount ?? 0)} />
@@ -111,7 +115,19 @@ export default function AdminFundraisingReviewPage() {
               <p className={a.small}><span className={a.muted}>Title:</span> <strong>{page.title || "—"}</strong></p>
               <p className={a.small}><span className={a.muted}>Shown name:</span> {page.beneficiaryDisplayName || "—"} · <span className={a.muted}>Last day to collect:</span> {page.endDate ? formatDate(page.endDate) : "—"}</p>
               <p className={a.small}><span className={a.muted}>Cover permission:</span> {page.coverConsent ? "Confirmed" : "Not confirmed"}</p>
-              <p className={a.small}><span className={a.muted}>Donors see:</span> beneficiary {page.beneficiaryNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · organiser {page.organiserNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · location {page.locationVisibility?.toLowerCase() ?? "—"}{page.publicEvidenceIds.length ? ` · ${page.publicEvidenceIds.length} document(s) picked to show` : ""}</p>
+              <p className={a.small}><span className={a.muted}>Donors see:</span> beneficiary {page.beneficiaryNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · organiser {page.organiserNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · location {page.locationVisibility?.toLowerCase() ?? "—"}</p>
+              <div className={a.small}>
+                <div className={a.muted}>Documents shown to donors (consent version {page.disclosureVersion})</div>
+                {app.evidence.filter((e) => page.publicEvidenceIds.includes(e.id) || page.legacyPublicEvidenceIds.includes(e.id)).map((e) => (
+                  <div key={e.id}>{e.fileName ?? typeWords(e.type)} — {page.publicEvidenceIds.includes(e.id)
+                    ? <><strong>Public (consented)</strong>{(() => {
+                        const at = page.publicEvidenceConsents.find((x) => x.evidenceId === e.id)?.consentedAt;
+                        return at ? <span className={a.muted}> · {new Date(at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span> : null;
+                      })()}</>
+                    : <span className={a.muted}>Old selection, not consented — stays private</span>}</div>
+                ))}
+                {page.publicEvidenceIds.length === 0 && page.legacyPublicEvidenceIds.length === 0 && <div>None — every document stays private.</div>}
+              </div>
               <div>
                 <div className={`${a.small} ${a.muted}`}>Story</div>
                 <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{page.story || "—"}</p>
@@ -267,7 +283,7 @@ function DecisionDialog({ data, initial, onClose, onDone, onStale }: {
 
 /** Admin names for the server's requirement groups (FundraisingEvidenceRules). Admin copy stays English. */
 const REQUIREMENT_LABEL: Record<string, string> = {
-  identity: "Organiser ID", consent: "Beneficiary's consent", relationship: "Proof of relationship",
+  identity: "Organiser ID", consent: "Beneficiary's consent", relationship: "Proof of relationship", connection: "Proof of connection (non-family)",
   medicalReport: "Medical report", treatmentEstimate: "Treatment estimate",
   enrolment: "Admission or enrolment letter", fees: "Fee demand",
   event: "Proof of what happened", cost: "Cost proof", supporting: "Supporting document",

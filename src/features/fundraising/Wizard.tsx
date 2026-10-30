@@ -13,6 +13,9 @@ import {
 import { useFundraisingLabels, Icon, type SaveState, SaveIndicator, Stepper, formatINR } from "./ui";
 import { FieldInfo } from "./FieldInfo";
 import { PageStep, pageGaps, usePageDraft } from "./PageSteps";
+import { DisclosureNotice, DocumentVisibility } from "./DocumentConsent";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { coverConsentMissing } from "./CampaignWizard";
 import type { FundraisingCampaign } from "@/lib/api";
 import s from "./fundraising.module.css";
 
@@ -28,7 +31,10 @@ function useChoiceLabel() {
   return (v: string): string => ({
     "Under 18": ui("Under 18"), "18–39": ui("18–39"), "40–59": ui("40–59"), "60 or over": ui("60 or over"),
     Parent: ui("Parent"), Child: ui("Child"), Spouse: ui("Spouse"), Sibling: ui("Sibling"),
-    "Other relative": ui("Other relative"), Guardian: ui("Guardian"), Other: ui("Other", "relationship"),
+    "Other relative": ui("Other relative"), Guardian: ui("Guardian"),
+    // Non-family (owner, 2026-10-30): these prove a connection instead of a family relationship.
+    Employee: ui("Employee (e.g. domestic worker, driver)"), Friend: ui("Friend"), Neighbour: ui("Neighbour"),
+    "Community or workplace": ui("Community or workplace"), Other: ui("Other", "relationship"),
   } as Record<string, string>)[v] ?? v;
 }
 
@@ -39,6 +45,7 @@ function useRequirementCopy() {
     identity: { title: ui("Your identity"), hint: ui("A government ID in your name.") },
     consent: { title: ui("Their consent"), hint: ui("A signed note from the person you're raising for, saying they agree to this fundraiser.") },
     relationship: { title: ui("Proof of relationship"), hint: ui("A ration card, birth certificate, or IDs showing the same family name or address.") },
+    connection: { title: ui("Proof you know them"), hint: ui("Any one of: salary or payment records to them (bank or UPI), a letter from a local authority such as a sarpanch, ward member or society secretary, or photos together with a short note on how you know them.") },
     medicalReport: { title: ui("Medical report"), hint: ui("The doctor's or hospital's report for this condition, dated within the last 6 months. Not a full medical history.") },
     treatmentEstimate: { title: ui("Treatment estimate"), hint: ui("On the hospital's letterhead, showing the costs in your breakdown.") },
     enrolment: { title: ui("Admission or enrolment letter"), hint: ui("From the school, college or institute, showing the student and the course.") },
@@ -55,6 +62,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
   const router = useRouter();
   const [app, setApp] = useState(initial);
   const [step, setStep] = useState(0);
+  const [consentTried, setConsentTried] = useState(false);
   const [save, setSave] = useState<SaveState>("saved");
   const pending = useRef<FundraisingSave>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -135,11 +143,16 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         )}
         {step === 0 && <AboutYou profile={profile} onNext={() => go(1)} />}
         {step === 1 && <WhoNeedsHelp app={app} set={set} onBack={() => go(0)} onNext={() => go(2)} />}
-        {step === 2 && <TheNeed app={app} set={set} onBack={() => go(1)} onNext={() => go(3)} />}
+        {step === 2 && <TheNeed app={app} set={set} onEvidence={(next) => setApp((cur) => ({ ...cur, evidence: next.evidence, requiredEvidence: next.requiredEvidence }))}onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
-        {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
+        {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} showConsentError={consentTried}
+          nav={<Nav onBack={() => go(step - 1)} onNext={() => {
+            // The cover photo's permission box must be ticked before leaving "Your page" (owner, 2026-10-30).
+            if (step === 4 && coverConsentMissing(draft.page)) { setConsentTried(true); document.getElementById("coverConsent")?.focus(); return; }
+            void go(step + 1);
+          }} />} />}
         {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
-        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
+        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} reloadPage={draft.reload} />}
       </main>
     </>
   );
@@ -268,7 +281,7 @@ function WhoNeedsHelp({ app, set, onBack, onNext }: { app: FundraisingApplicatio
                 </select></div>
               <div><label className={s.lbl} htmlFor="rl"><UiText>Your relationship to them</UiText> <FieldInfo localize k="rl" /></label>
                 <select id="rl" className={s.in} value={app.relationship ?? ""} onChange={(e) => set({ relationship: e.target.value })}>
-                  <option value=""><UiText>Choose</UiText></option>{["Parent", "Child", "Spouse", "Sibling", "Other relative", "Guardian", "Other"].map((o) => <option key={o} value={o}>{choiceLabel(o)}</option>)}
+                  <option value=""><UiText>Choose</UiText></option>{["Parent", "Child", "Spouse", "Sibling", "Other relative", "Guardian", "Employee", "Friend", "Neighbour", "Community or workplace", "Other"].map((o) => <option key={o} value={o}>{choiceLabel(o)}</option>)}
                 </select></div>
             </div>
             <div><label className={s.lbl} htmlFor="au"><UiText>Why are you the right person to organise this?</UiText> <FieldInfo localize k="au" /></label><textarea id="au" className={s.in} rows={3} value={app.authorityExplanation ?? ""} onChange={(e) => set({ authorityExplanation: e.target.value })} maxLength={4000} style={{ resize: "vertical" }} /></div>
@@ -288,7 +301,12 @@ function WhoNeedsHelp({ app, set, onBack, onNext }: { app: FundraisingApplicatio
 // F05 — A3 The need and funding gap
 const CATEGORIES: FundraisingCategory[] = ["MEDICAL", "EDUCATION", "EMERGENCY_HOUSEHOLD", "OTHER"];
 
-function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; set: SetFn; onBack: () => void; onNext: () => void }) {
+function TheNeed({ app, set, onEvidence, onBack, onNext }: {
+  app: FundraisingApplication; set: SetFn;
+  /** Takes only the documents from an upload result, so unsaved rows here aren't overwritten. */
+  onEvidence: (next: FundraisingApplication) => void;
+  onBack: () => void; onNext: () => void;
+}) {
   const t = useTranslations("fundraiserFlow");
   const fmt = useFundraisingLabels();
   const ui = useUiText();
@@ -305,14 +323,29 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
   // Money the donee already has is recorded for reviewers but not subtracted (owner, 2026-10-26).
   const gap = total;
   const mismatch = app.requestedAmount != null && total > 0 && Math.abs(app.requestedAmount - gap) > 0.5;
-  // A row in use needs an amount and a supporting reference (owner, 2026-10-26).
+  // A row in use needs an amount; the bill number is optional (owner, 2026-10-30).
   const used = (c: FundraisingCostItem) => c.expense.trim() !== "" || c.amount != null;
   const amountMissing = costs.map((c) => used(c) && c.amount == null);
-  const refMissing = costs.map((c) => used(c) && !(c.reference ?? "").trim());
-  const rowErrors = costs.map((_, i) => amountMissing[i] || refMissing[i]);
   const shownAmount = tried ? amountMissing : costs.map(() => false);
-  const shownRef = tried ? refMissing : costs.map(() => false);
-  const errors = tried ? rowErrors.map((e, i) => (e ? i : -1)).filter((i) => i >= 0) : [];
+  const errors = tried ? amountMissing.map((e, i) => (e ? i : -1)).filter((i) => i >= 0) : [];
+  // A row can carry its bill: uploaded as a cost proof and linked to the row (V108).
+  const [attaching, setAttaching] = useState<number | null>(null);
+  const [attachError, setAttachError] = useState<number | null>(null);
+  const docName = (id: number | null | undefined) => {
+    const e = id == null ? undefined : app.evidence.find((x) => x.id === id && !x.superseded);
+    return e ? (e.fileName ?? ui("Bill attached")) : null;
+  };
+  async function attach(i: number, file: File) {
+    setAttaching(i); setAttachError(null);
+    const before = new Set(app.evidence.map((e) => e.id));
+    try {
+      const next = await fundraising.uploadEvidence(app.id, "COST_PROOF", file);
+      onEvidence(next);
+      const added = next.evidence.filter((e) => e.type === "COST_PROOF" && !before.has(e.id)).sort((a, b) => b.id - a.id)[0];
+      if (added) edit(i, { evidenceId: added.id });
+    } catch { setAttachError(i); }
+    finally { setAttaching(null); }
+  }
   const pill = (sel: boolean, open: boolean) => ({
     display: "inline-flex", alignItems: "center", minHeight: 40, padding: "0 16px", borderRadius: 999, fontWeight: 600, fontSize: 14,
     border: sel ? "2px solid #1e3a60" : "1px solid #cfc3b6", color: sel ? "#1e3a60" : open ? "#1f140c" : "#9a8b7f",
@@ -323,14 +356,12 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
     <>
       <Heading title={ui("What do you need money for?")} sub={ui("Tell us in simple words. You can write the full story later.")} />
       {errors.length > 0 && (
-        <div role="alert" style={{ maxWidth: 820, border: "2px solid #b42318", borderRadius: 12, background: "#fff", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div role="alert" style={{ maxWidth: 1000, border: "2px solid #b42318", borderRadius: 12, background: "#fff", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
           <strong style={{ color: "#8f1d1d" }}>{t("thingsToFix", { count: errors.length })}</strong>
-          {errors.map((i) => amountMissing[i]
-            ? <a key={i} href={`#amt${i}`}>{t("costRowMissing", { n: i + 1 })}</a>
-            : <a key={i} href={`#ref${i}`}>{t("costRowReference", { n: i + 1 })}</a>)}
+          {errors.map((i) => <a key={i} href={`#amt${i}`}>{t("costRowMissing", { n: i + 1 })}</a>)}
         </div>
       )}
-      <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 820 }}>
+      <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 1000 }}>
         <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
           <legend className={s.lbl}><UiText>What is the money for?</UiText> <FieldInfo localize k="cat" /></legend>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -355,19 +386,34 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
 
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
           <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>What will the money pay for?</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(you can skip this)</UiText></span> <FieldInfo localize k="costs" /></h2>
-          <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
-            <span><UiText>What is it?</UiText></span><span style={{ textAlign: "right" }}><UiText>How much? (₹)</UiText></span><span><UiText>Bill or receipt number</UiText> <FieldInfo localize k="ref" /></span><span />
+          <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 150px minmax(0,170px) 190px 40px", gap: 10, fontWeight: 600 }}>
+            <span><UiText>What is it?</UiText></span><span style={{ textAlign: "right" }}><UiText>How much? (₹)</UiText></span><span><UiText>Bill or receipt number</UiText> <span style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span> <FieldInfo localize k="ref" /></span><span><UiText>Bill or estimate</UiText> <span style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></span><span />
           </div>
           {costs.map((c, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, alignItems: "start" }}>
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 150px minmax(0,170px) 190px 40px", gap: 10, alignItems: "start" }}>
               <input className={s.in} aria-label={`Expense ${i + 1}`} placeholder={ui("What is it for?")} value={c.expense} onChange={(e) => edit(i, { expense: e.target.value })} maxLength={160} />
               <div>
                 <input id={`amt${i}`} className={`${s.in} ${s.tabular}`} style={{ textAlign: "right" }} aria-label={`Amount ${i + 1}`} inputMode="decimal" value={c.amount ?? ""} aria-invalid={shownAmount[i] || undefined} aria-describedby={shownAmount[i] ? `e${i}` : undefined} onChange={(e) => edit(i, { amount: num(e.target.value) })} />
                 {shownAmount[i] && <p id={`e${i}`} className={s.errText}><Icon name="alert" /><UiText>Write the amount</UiText></p>}
               </div>
               <div>
-                <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Number on the bill")} value={c.reference ?? ""} aria-invalid={shownRef[i] || undefined} aria-describedby={shownRef[i] ? `r${i}` : undefined} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
-                {shownRef[i] && <p id={`r${i}`} className={s.errText}><Icon name="alert" /><UiText>Write the bill number</UiText></p>}
+                <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Number on the bill")} value={c.reference ?? ""} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
+              </div>
+              <div>
+                {docName(c.evidenceId) ? (
+                  <div className={`${s.in} ${s.small}`} style={{ display: "flex", alignItems: "center", gap: 6, background: "#f5f8fc" }}>
+                    <Icon name="check" />
+                    <span style={{ flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={docName(c.evidenceId) ?? undefined}>{docName(c.evidenceId)}</span>
+                    <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: "0 4px", minHeight: 0 }} aria-label={ui("Remove from this row")} title={ui("Remove from this row")} onClick={() => edit(i, { evidenceId: null })}>✕</button>
+                  </div>
+                ) : (
+                  <label className={`${s.btn} ${s.bs}`} style={{ width: "100%", justifyContent: "center", cursor: attaching === i ? "wait" : "pointer" }}>
+                    {attaching === i ? ui("Uploading…") : ui("+ Attach file")}
+                    <input type="file" accept="image/*,application/pdf" style={{ display: "none" }} disabled={attaching !== null}
+                      onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void attach(i, f); }} />
+                  </label>
+                )}
+                {attachError === i && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>The file didn&apos;t upload. Try again.</UiText></p>}
               </div>
               <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: 0 }} aria-label={t("removeRow", { n: i + 1 })} onClick={() => setCosts(costs.filter((_, j) => j !== i))}>✕</button>
             </div>
@@ -396,7 +442,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
             </div>
           )}
         </section>
-        <Nav onBack={onBack} onNext={() => { setTried(true); if (!rowErrors.some(Boolean)) onNext(); }} />
+        <Nav onBack={onBack} onNext={() => { setTried(true); if (!amountMissing.some(Boolean)) onNext(); }} />
       </div>
     </>
   );
@@ -414,10 +460,7 @@ function Evidence({ app, setApp, profile, onBack, onNext }: {
   return (
     <>
       <Heading title={ui("Evidence for this need")} sub={t("evidenceIntro", { category: app.category ? t("evidenceIntroCategory", { category: fmt.category(app.category).toLowerCase() }) : "", forOther: app.forSelf ? "" : t("evidenceIntroForOther") })} />
-      <div style={{ maxWidth: 860, display: "flex", gap: 12, alignItems: "center", padding: "12px 16px", borderRadius: 10, background: "#eaf0f8", color: "#1e3a60" }}>
-        <Icon name="lock" />
-        <p className={s.small}><strong><UiText>Private — only authorised reviewers can view these.</UiText></strong> <UiText>Nothing here appears on a public page. You&apos;ll choose public photos separately, later.</UiText></p>
-      </div>
+      <DisclosureNotice />
       <EvidenceSections app={app} setApp={setApp} profile={profile} />
       <p className={`${s.muted} ${s.small}`} style={{ maxWidth: 860 }}><UiText>A file you choose is only saved once its upload finishes. Whether profile documents can be reused for fundraising is still being decided.</UiText></p>
       <div style={{ maxWidth: 860 }}><Nav onBack={onBack} onNext={onNext} /></div>
@@ -452,7 +495,16 @@ export function EvidenceSections({ app, setApp, profile }: {
     catch (e) { setFailed((f) => ({ ...f, [key]: e instanceof ApiError ? e.message : ui("Upload failed. The file is still on your device — try again.") })); }
     finally { setBusy(null); }
   }
+  /** One at a time, so each result carries the files before it; stops at the first failure. */
+  async function uploadAll(key: string, type: FundraisingEvidenceType, picked: File[]) {
+    setBusy(key); setFailed((f) => ({ ...f, [key]: undefined }));
+    try { for (const file of picked) setApp(await fundraising.uploadEvidence(app.id, type, file)); }
+    catch (e) { setFailed((f) => ({ ...f, [key]: e instanceof ApiError ? e.message : ui("Upload failed. The file is still on your device — try again.") })); }
+    finally { setBusy(null); }
+  }
   async function remove(e: FundraisingEvidence) { setApp(await fundraising.removeEvidence(app.id, e.id)); }
+  // Preview opens on this page (owner, 2026-10-30), not in a new tab.
+  const [preview, setPreview] = useState<FundraisingEvidence | null>(null);
   async function reuseId() { if (profileId) setApp(await fundraising.useProfileDocument(app.id, profileId.id, "ORGANISER_ID")); }
 
   return (
@@ -465,7 +517,7 @@ export function EvidenceSections({ app, setApp, profile }: {
         return (
           <section key={sec.key} aria-labelledby={`g-${sec.key}`} style={{ padding: "20px 22px", display: "flex", flexDirection: "column", gap: 12, borderTop: gi ? "1px solid #efe7de" : 0, background: failed[sec.key] ? "#fffaf9" : undefined }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start", flexWrap: "wrap" }}>
-              <div><h2 id={`g-${sec.key}`} style={{ fontSize: 16, fontWeight: 700 }}>{title} <FieldInfo localize k={sec.key === "supporting" ? "ev_supporting" : `ev_${sec.uploadAs}`} />{optional && <span className={s.muted} style={{ fontWeight: 500 }}> <UiText>(optional)</UiText></span>}</h2>{hint && <p className={`${s.muted} ${s.small}`}>{hint}</p>}</div>
+              <div><h2 id={`g-${sec.key}`} style={{ fontSize: 16, fontWeight: 700 }}>{title} <FieldInfo localize k={sec.key === "supporting" || sec.key === "connection" ? `ev_${sec.key}` : `ev_${sec.uploadAs}`} />{optional && <span className={s.muted} style={{ fontWeight: 500 }}> <UiText>(optional)</UiText></span>}</h2>{hint && <p className={`${s.muted} ${s.small}`}>{hint}</p>}</div>
               {busy === sec.key ? <span className={`${s.chip} ${s.cN}`}><Icon name="upload" /><UiText>Uploading</UiText></span>
                 : failed[sec.key] ? <span className={`${s.chip} ${s.cX}`}><Icon name="x" /><UiText>Not uploaded</UiText></span>
                 : files.length ? <span className={`${s.chip} ${s.cOk}`}><Icon name="check" /><UiText>Ready</UiText></span>
@@ -476,7 +528,7 @@ export function EvidenceSections({ app, setApp, profile }: {
               <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", border: "1px solid #e7ddd2", borderRadius: 10, background: "#fff", flexWrap: "wrap" }}>
                 <span style={{ width: 40, height: 48, borderRadius: 6, background: "#f1ece6", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b5d52" }} aria-hidden="true"><Icon name="file" /></span>
                 <div style={{ flex: "1 1 220px", minWidth: 0 }}><strong>{f.fromProfile ? ui("Government ID") : f.fileName ?? ui("Document")}</strong>{f.fromProfile && <> <span className={`${s.chip} ${s.cM}`}><UiText>On file in your profile</UiText></span></>}<div className={`${s.muted} ${s.small}`}><UiText>Uploaded</UiText></div></div>
-                {f.viewUrl && <a className={`${s.btn} ${s.bq}`} href={f.viewUrl} target="_blank" rel="noreferrer"><UiText>Preview</UiText></a>}
+                {f.viewUrl && <button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setPreview(f)}><UiText>Preview</UiText></button>}
                 <label className={`${s.btn} ${s.bq}`}><UiText>Replace</UiText><input type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(sec.key, f.type, file, f); e.target.value = ""; }} /></label>
                 <button type="button" className={`${s.btn} ${s.bq} ${s.danger}`} onClick={() => void remove(f)}><UiText>Remove</UiText></button>
               </div>
@@ -488,17 +540,44 @@ export function EvidenceSections({ app, setApp, profile }: {
                 <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void reuseId()}><UiText>Use this</UiText></button>
               </div>
             )}
-            {(!files.length || optional) && (
+            {/* Every section takes several files (owner, 2026-10-30); the server already stores any number per type. */}
+            <input id={inputId} type="file" accept="application/pdf,image/*" multiple hidden disabled={busy !== null}
+              onChange={(e) => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; if (picked.length) void uploadAll(sec.key, sec.uploadAs, picked); }} />
+            {!files.length ? (
               <div style={{ border: "2px dashed #b9c9de", borderRadius: 10, padding: 16, display: "flex", gap: 12, alignItems: "center", justifyContent: "center", background: "#f8fafd", flexWrap: "wrap" }}>
                 <span style={{ color: "#1e3a60" }}><Icon name="upload" /></span>
-                <label htmlFor={inputId} className={`${s.btn} ${s.bs}`}><UiText>Choose file</UiText></label>
-                <input id={inputId} type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(sec.key, sec.uploadAs, file); e.target.value = ""; }} />
+                <label htmlFor={inputId} className={`${s.btn} ${s.bs}`}><UiText>Choose files</UiText></label>
+                <span className={`${s.muted} ${s.small}`}><UiText>You can pick more than one.</UiText></span>
               </div>
+            ) : (
+              <div><label htmlFor={inputId} className={`${s.btn} ${s.bq}`}><Icon name="upload" /><UiText>+ Add another file</UiText></label></div>
             )}
           </section>
         );
       })}
+      <EvidencePreview file={preview} onClose={() => setPreview(null)} />
     </div>
+  );
+}
+
+/** Shows an uploaded document in a dialog: images inline, anything else (PDFs) in a frame. */
+function EvidencePreview({ file, onClose }: { file: FundraisingEvidence | null; onClose: () => void }) {
+  const ui = useUiText();
+  const name = file?.fromProfile ? ui("Government ID") : file?.fileName ?? ui("Document");
+  const path = (file?.fileName ?? file?.viewUrl?.split("?")[0] ?? "").toLowerCase();
+  const isImage = /\.(jpe?g|png|gif|webp|heic|bmp)$/.test(path);
+  return (
+    <Dialog open={file != null && !!file.viewUrl} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader><DialogTitle>{name}</DialogTitle></DialogHeader>
+        <DialogBody>
+          {file?.viewUrl && (isImage
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={file.viewUrl} alt={name} style={{ display: "block", maxWidth: "100%", maxHeight: "75vh", margin: "0 auto", objectFit: "contain" }} />
+            : <iframe src={file.viewUrl} title={name} style={{ width: "100%", height: "75vh", border: 0, borderRadius: 8, background: "#f1ece6" }} />)}
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -550,10 +629,13 @@ function BankDetails({ app, set, onBack, onNext }: { app: FundraisingApplication
   );
 }
 
-function Review({ app, set, flush, goTo, onSubmitted, page }: {
+function Review({ app, set, flush, goTo, onSubmitted, page, reloadPage }: {
   app: FundraisingApplication; set: SetFn; flush: () => Promise<boolean>; goTo: (step: number) => void;
   onSubmitted: (a: FundraisingApplication) => void; page: FundraisingCampaign | null;
+  reloadPage: () => void;
 }) {
+  // The documents that can be shown depend on what was uploaded on step 3: refresh the list here.
+  useEffect(() => { reloadPage(); }, [reloadPage]);
   const t = useTranslations("fundraiserFlow");
   const choiceLabel = useChoiceLabel();
   const fmt = useFundraisingLabels();
@@ -605,8 +687,16 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
         </dl>)}
         {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}
       </div>
+      {page && <DocumentVisibility page={page} evidence={app.evidence} />}
       <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
         <legend style={{ fontWeight: 700, fontSize: 16, padding: "0 6px" }}><UiText>Please confirm</UiText></legend>
+        {/* One click ticks every declaration shown (owner, 2026-10-30); each stays individually untickable. */}
+        <div style={{ paddingBottom: 10 }}>
+          <button type="button" className={`${s.btn} ${s.bs}`}
+            onClick={() => set({ declaredAccurate: true, declaredUseOfFunds: true, declaredVerificationConsent: true, ...(app.forSelf ? {} : { declaredAuthority: true }) })}>
+            <Icon name="check" /><UiText>Accept all</UiText>
+          </button>
+        </div>
         {check("declaredAccurate", ui("What I've told you is true and complete as far as I know."))}
         {!app.forSelf && check("declaredAuthority", ui("I have their agreement to organise this fundraiser for them."))}
         {check("declaredUseOfFunds", ui("Money raised will be used only for the need described here."))}

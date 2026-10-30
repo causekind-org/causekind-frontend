@@ -21,6 +21,7 @@ export function CampaignWizard({ initial, onSubmitted }: { initial: FundraisingC
   const router = useRouter();
   const [c, setC] = useState(initial);
   const [step, setStep] = useState(0);
+  const [consentTried, setConsentTried] = useState(false);
   const [save, setSave] = useState<SaveState>("saved");
   const pending = useRef<FundraisingCampaignSave>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -72,7 +73,10 @@ export function CampaignWizard({ initial, onSubmitted }: { initial: FundraisingC
       {back === null ? <span /> : <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => go(back)}><UiText>Back</UiText></button>}
       <div style={{ display: "flex", gap: 8 }}>
         <button type="button" className={`${s.btn} ${s.bq} ${s.danger}`} onClick={() => setConfirmCancel(true)}><UiText>Cancel draft</UiText></button>
-        {next !== null && <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => go(next)}>{nextLabel ?? ui("Continue")}<Icon name="arrow" /></button>}
+        {next !== null && <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => {
+          if (step === 0 && coverConsentMissing(c)) { setConsentTried(true); document.getElementById("coverConsent")?.focus(); return; }
+          void go(next);
+        }}>{nextLabel ?? ui("Continue")}<Icon name="arrow" /></button>}
       </div>
     </div>
   );
@@ -104,7 +108,7 @@ export function CampaignWizard({ initial, onSubmitted }: { initial: FundraisingC
             <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void flush()}><UiText>Try again</UiText></button>
           </div>
         )}
-        {step === 0 && <Basics c={c} set={set} setC={setC} nav={nav(null, 1)} />}
+        {step === 0 && <Basics c={c} set={set} setC={setC} nav={nav(null, 1)} showConsentError={consentTried} />}
         {step === 1 && <Story c={c} set={set} nav={nav(0, 2)} />}
         {step === 2 && <Target c={c} set={set} nav={nav(1, 3, ui("Continue to preview"))} />}
         {step === 3 && <Preview c={c} flush={flush} back={() => go(2)} onCancel={() => setConfirmCancel(true)} onSubmitted={onSubmitted} />}
@@ -138,7 +142,10 @@ function Heading({ title, sub }: { title: string; sub: string }) {
  * nothing is approved yet, the category comes from "The need", and the end date is asked here
  * because the separate Target step is gone.
  */
-export function Basics({ c, set, setC, nav, inApplication = false, neededBy = null }: { c: FundraisingCampaign; set: SetFn; setC: (c: FundraisingCampaign) => void; nav: React.ReactNode; inApplication?: boolean; neededBy?: string | null }) {
+/** Continue is blocked while a cover photo has no permission ticked (owner, 2026-10-30). */
+export const coverConsentMissing = (c: FundraisingCampaign | null) => !!c?.coverUrl && !c.coverConsent;
+
+export function Basics({ c, set, setC, nav, inApplication = false, neededBy = null, showConsentError = false }: { c: FundraisingCampaign; set: SetFn; setC: (c: FundraisingCampaign) => void; nav: React.ReactNode; showConsentError?: boolean; inApplication?: boolean; neededBy?: string | null }) {
   const t = useTranslations("fundraiserFlow");
   const fmt = useFundraisingLabels();
   const ui = useUiText();
@@ -175,7 +182,8 @@ export function Basics({ c, set, setC, nav, inApplication = false, neededBy = nu
                 <input type="file" accept="image/*" hidden onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} /></label>
               {err && <p role="alert" className={s.errText}><Icon name="alert" />{err}</p>}
               <div><label className={s.lbl} htmlFor="alt"><UiText>Describe the photo for people who can&apos;t see it</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span> <FieldInfo localize k="alt" /></label><input id="alt" className={s.in} maxLength={300} value={c.coverAltText ?? ""} onChange={(e) => set({ coverAltText: e.target.value })} /></div>
-              <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><input type="checkbox" checked={c.coverConsent} onChange={(e) => set({ coverConsent: e.target.checked })} style={{ width: 20, height: 20, marginTop: 2, accentColor: "#1e3a60" }} /><span className={s.small}><UiText>I took this photo or have permission to use it, and everyone in it agrees to it being public.</UiText></span></label>
+              <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}><input id="coverConsent" type="checkbox" checked={c.coverConsent} aria-invalid={(showConsentError && !c.coverConsent) || undefined} aria-describedby={showConsentError && !c.coverConsent ? "coverConsentErr" : undefined} onChange={(e) => set({ coverConsent: e.target.checked })} style={{ width: 20, height: 20, marginTop: 2, accentColor: "#1e3a60" }} /><span className={s.small}><UiText>I took this photo or have permission to use it, and everyone in it agrees to it being public.</UiText></span></label>
+              {showConsentError && !c.coverConsent && <p id="coverConsentErr" role="alert" className={s.errText}><Icon name="alert" /><UiText>Tick this box to continue.</UiText></p>}
             </div>
           </div>
           <p className={s.hint} style={{ margin: 0 }}><UiText>Cover photos are chosen here, separately from your private documents. Your ID or reports are never offered as photos.</UiText></p>

@@ -7,6 +7,8 @@ import Link from "@/components/AppLink";
 import { fundraising, ApiError, type FundraisingApplication, type FundraisingInfoRequest } from "@/lib/api";
 import { DoneeGate } from "@/features/fundraising/DoneeGate";
 import { EvidenceSections } from "@/features/fundraising/Wizard";
+import { DocumentVisibility } from "@/features/fundraising/DocumentConsent";
+import { usePageDraft } from "@/features/fundraising/PageSteps";
 import { StatusChip, Icon } from "@/features/fundraising/ui";
 import s from "@/features/fundraising/fundraising.module.css";
 
@@ -23,22 +25,35 @@ export default function RespondPage() {
 
 function Respond({ id }: { id: number }) {
   const ui = useUiText();
+  const [app, setApp] = useState<FundraisingApplication | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => { fundraising.get(id).then(setApp).catch(() => setLoadError(ui("Couldn't load this application."))); }, [id]);
+
+  if (!app) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }}>{loadError && <p role="alert" className={s.errText}>{loadError}</p>}</main>;
+  return <RespondBody id={id} app={app} setApp={setApp} />;
+}
+
+/** Split from Respond so the page-draft hook only runs once the application has loaded. */
+function RespondBody({ id, app, setApp }: { id: number; app: FundraisingApplication; setApp: (a: FundraisingApplication) => void }) {
+  const ui = useUiText();
   const t = useTranslations("fundraiserFlow");
   const router = useRouter();
-  const [app, setApp] = useState<FundraisingApplication | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
   const [saving, setSaving] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
-
-  useEffect(() => { fundraising.get(id).then(setApp).catch(() => setError(ui("Couldn't load this application."))); }, [id]);
   // Documents show while any requirement is unmet, and stay on screen once something was added here.
-  const docsMissing = (app?.requiredEvidence ?? []).some((g) => g.state !== "MET");
+  const docsMissing = (app.requiredEvidence ?? []).some((g) => g.state !== "MET");
   const [docsTouched, setDocsTouched] = useState(false);
   useEffect(() => { if (docsMissing) setDocsTouched(true); }, [docsMissing]);
   const docsNeeded = docsMissing || docsTouched;
-
-  if (!app) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }}>{error && <p role="alert" className={s.errText}>{error}</p>}</main>;
+  // The application's page stays DRAFT while information is requested: its document choices
+  // load and save here, through the campaign the application already has.
+  const page = usePageDraft(app, app.status === "INFORMATION_REQUESTED");
+  const { reload: reloadPage } = page;
+  const evidenceKey = app.evidence.map((e) => `${e.id}:${e.superseded}`).join(",");
+  useEffect(() => { if (app.status === "INFORMATION_REQUESTED") reloadPage(); }, [evidenceKey, app.status, reloadPage]);
   if (app.status !== "INFORMATION_REQUESTED") {
     return (
       <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -63,6 +78,7 @@ function Respond({ id }: { id: number }) {
 
   async function send() {
     setSending(true); setError(null);
+    if (!(await page.flush())) { setSending(false); setError(ui("Your document choices haven't saved yet. Try again before sending.")); return; }
     try { await fundraising.resubmit(id); router.push(`/fundraising/applications/${id}`); }
     catch (e) { setError(e instanceof ApiError ? e.message : ui("Couldn't send. Try again.")); setSending(false); }
   }
@@ -121,6 +137,14 @@ function Respond({ id }: { id: number }) {
             <EvidenceSections app={app} setApp={setApp} profile={null} />
           </section>
         )}
+
+        {page.page && (
+          <section aria-label={ui("What donors can see")} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <DocumentVisibility page={page.page} evidence={app.evidence} />
+            {page.save === "error" && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Your document choices weren&apos;t saved. Try again.</UiText></p>}
+          </section>
+        )}
+        {page.loadError && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Couldn&apos;t load your document choices.</UiText> <button type="button" className={`${s.btn} ${s.bq}`} onClick={page.reload}><UiText>Try again</UiText></button></p>}
 
         {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
