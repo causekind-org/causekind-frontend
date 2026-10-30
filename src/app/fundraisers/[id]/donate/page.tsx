@@ -24,6 +24,25 @@ const ERR_UNAVAILABLE = "\u0000unavailable";
 const ERR_OPEN = "\u0000open";
 const ERR_START = "\u0000start";
 
+/**
+ * Starts (or resumes) the donation, then asks the server for the payment details. A retry with the same amount
+ * and name choice reuses the donation already started — the server's checkout step is idempotent and returns the
+ * same order — so leaving Razorpay and paying again never creates a second donation. A changed amount, or a
+ * donation the server no longer accepts for checkout (paid, failed, gone), starts a fresh one.
+ */
+async function checkoutReusingDonation(campaignId: number, amount: number, anonymous: boolean) {
+  const key = `ck:fundraiser-pending:${campaignId}`;
+  let saved: { donationId: number; amount: number; anonymous: boolean } | null = null;
+  try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
+  if (saved && saved.amount === amount && saved.anonymous === anonymous) {
+    try { return await fundraisers.checkout(saved.donationId); }
+    catch (e) { if (!(e instanceof ApiError) || (e.status !== 404 && e.status !== 409)) throw e; }
+  }
+  const started = await fundraisers.donate(campaignId, amount, anonymous);
+  try { sessionStorage.setItem(key, JSON.stringify({ donationId: started.donationId, amount, anonymous })); } catch { /* fine */ }
+  return fundraisers.checkout(started.donationId);
+}
+
 export default function DonatePage() {
   const ui = useUiText();
   const t = useTranslations("fundraiserFlow");
@@ -65,7 +84,7 @@ export default function DonatePage() {
       const ok = await loadRazorpay();
       const Rzp = rzpCtor();
       if (!ok || !Rzp) { setError(ERR_OPEN); setBusy(false); return; }
-      const order = await fundraisers.donate(Number(id), value, anonymous);
+      const order = await checkoutReusingDonation(Number(id), value, anonymous);
       const rzp = new Rzp({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
         name: "CauseKind", description: d!.card.title ?? "Fundraiser", order_id: order.razorpayOrderId,

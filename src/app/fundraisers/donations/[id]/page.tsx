@@ -6,6 +6,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import Link from "@/components/AppLink";
 import { fundraisers, type Donation } from "@/lib/api";
 import { Icon, formatINR } from "@/features/fundraising/ui";
+import { DonationDocuments } from "@/features/fundraising/DonationDocuments";
 import s from "@/features/fundraising/fundraising.module.css";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -68,7 +69,8 @@ export default function DonationResultPage() {
             <h1 className={s.serif} style={{ fontSize: 30 }}><UiText>Donation confirmed</UiText></h1>
             <p>{t.rich("donationReceived", { amount: formatINR(d!.amount), title: d!.campaignTitle ?? "", strong: (chunks) => <strong>{chunks}</strong> })}</p>
             {ref}
-            <p className={`${s.small} ${s.muted}`}><UiText>This is a payment confirmation, not a tax receipt.</UiText></p>
+            {/* The payment is confirmed whatever happens to the documents; they have their own status below. */}
+            <DonationDocuments d={d!} />
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><Link href="/fundraisers/my-donations" className={`${s.btn} ${s.bp}`}><UiText>View donation</UiText></Link>{back}</div>
           </>
         ) : status === "FAILED" ? (

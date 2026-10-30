@@ -637,6 +637,15 @@ export type DonationOrder = {
   razorpayKeyId: string;
 };
 
+/** Starting a fundraiser donation returns no payment details; those come only from checkout (2026-10-30). */
+export type FundraiserDonationStart = { donationId: number; amountInPaise: number; currency: string };
+
+/** Fundraiser donation documents, from the server (2026-10-30). */
+export type DocumentPolicy = "CERTIFICATE_ONLY" | "RECEIPT_AND_CERTIFICATE";
+export type DocumentsStatus =
+  | "PENDING" | "ISSUED" | "PARTIAL" | "FAILED" | "UNCERTAIN" | "SUPPRESSED" | "GAVE_UP"
+  | "AWAITING_CAPTURE_TIME" | "CAPTURE_TIME_REVIEW";
+
 export type Donation = {
   id: number;
   campaignId: number;
@@ -650,7 +659,22 @@ export type Donation = {
   donorName?: string;
   /** True when a super admin deleted the fundraiser; the donation and receipt remain. */
   campaignRemoved?: boolean;
+  /** Fundraiser donations only; null for general donations and donations not covered by the launch. */
+  documentPolicy?: DocumentPolicy | null;
+  documentsStatus?: DocumentsStatus | null;
+  /** The signed-in donor can download it now. */
+  receiptAvailable?: boolean;
+  certificateAvailable?: boolean;
+  /** Whether the 80G option is offered for fundraiser donations (false until the CA confirms). */
+  taxReceiptOffered?: boolean;
 };
+
+/** Downloads a donation document for the signed-in donor (cookie auth, so fetched rather than linked). */
+export async function downloadDonationDocument(donationId: number, kind: "certificate" | "receipt"): Promise<Blob> {
+  const res = await fetch(`${BASE_URL}/api/v1/donations/${donationId}/${kind}.pdf`, { credentials: "include" });
+  if (!res.ok) throw new ApiError(res.status, "Couldn't download the document. Try again in a moment.", null);
+  return res.blob();
+}
 
 export function initiateDonation(campaignId: number, amount: number) {
   return request<DonationOrder>("/api/v1/donations", {
@@ -6255,7 +6279,9 @@ export const fundraisers = {
   checkDonation: (donationId: number) => request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
   donate: (campaignId: number, amount: number, anonymous: boolean) =>
-    request<DonationOrder>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous }) }),
+    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous }) }),
+  /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
+  checkout: (donationId: number) => request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
   setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>
     request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${id}/payout-ready`, { method: "POST", body: JSON.stringify({ expectedVersion, ready }) }),
 };
