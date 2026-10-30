@@ -4008,7 +4008,8 @@
     "you_ll_get_your_80g_82ea5efc": "Vous recevrez votre reçu 80G et votre certificat de don par e-mail.",
     "your_address_ebd58a96": "Votre adresse",
     "your_pan_photo_didn_t_84a9ff50": "Votre photo PAN n''a pas été envoyée.",
-    "fundraiser_donations_are_not_refundable_d93a6b3c": "Les dons aux collectes ne sont pas remboursables. Vous recevez un certificat de don, et un reçu 80G si vous avez ajouté votre carte PAN avant de payer. Les dons à la fondation CauseKind sont listés à part."
+    "fundraiser_donations_are_not_refundable_d93a6b3c": "Les dons aux collectes ne sont pas remboursables. Vous recevez un certificat de don, et un reçu 80G si vous avez ajouté votre carte PAN avant de payer. Les dons à la fondation CauseKind sont listés à part.",
+    "we_re_checking_your_pan_3f7d3aea": "Nous vérifions vos informations PAN avant d''émettre votre reçu 80G et votre certificat."
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",

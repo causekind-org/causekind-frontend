@@ -35,6 +35,8 @@ export function DonationDocuments({ d, compact = false }: { d: Donation; compact
   const note = d.certificateAvailable || d.receiptAvailable ? null
     : st === "PENDING" || st === "PARTIAL" || st === "FAILED" || st === "AWAITING_CAPTURE_TIME"
       ? ui("Your donation certificate is being prepared. We'll email it to you, and it will appear here.")
+    : st === "PAN_REVIEW"
+      ? ui("We're checking your PAN details before issuing your 80G receipt and certificate.")
     : st === "UNCERTAIN" || st === "CAPTURE_TIME_REVIEW"
       ? ui("Your certificate is taking longer than usual. Contact support if it doesn't appear.")
     : st === "SUPPRESSED"
@@ -44,7 +46,7 @@ export function DonationDocuments({ d, compact = false }: { d: Donation; compact
     : null;
   // The page doesn't update by itself (no polling yet), so say so wherever the state can still change.
   const refresh = !d.certificateAvailable && (st === "PENDING" || st === "PARTIAL" || st === "FAILED"
-    || st === "AWAITING_CAPTURE_TIME" || st === "UNCERTAIN" || st === "CAPTURE_TIME_REVIEW");
+    || st === "AWAITING_CAPTURE_TIME" || st === "UNCERTAIN" || st === "CAPTURE_TIME_REVIEW" || st === "PAN_REVIEW");
   if (!d.certificateAvailable && !d.receiptAvailable && !note) return null;
 
   return (

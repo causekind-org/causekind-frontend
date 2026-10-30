@@ -644,7 +644,7 @@ export type FundraiserDonationStart = { donationId: number; amountInPaise: numbe
 export type DocumentPolicy = "CERTIFICATE_ONLY" | "RECEIPT_AND_CERTIFICATE";
 export type DocumentsStatus =
   | "PENDING" | "ISSUED" | "PARTIAL" | "FAILED" | "UNCERTAIN" | "SUPPRESSED" | "GAVE_UP"
-  | "AWAITING_CAPTURE_TIME" | "CAPTURE_TIME_REVIEW";
+  | "AWAITING_CAPTURE_TIME" | "CAPTURE_TIME_REVIEW" | "PAN_REVIEW";
 
 export type Donation = {
   id: number;
@@ -3500,7 +3500,15 @@ export type DocumentsQueueRow = {
   capturedAtUtc: string | null; captureTimeSource: "WEBHOOK_EVENT" | "ADMIN_RECONCILED" | "LEGACY_PAYMENT_CREATED_AT" | null;
   captureObservedAtUtc: string | null; captureTimeConflict: string | null;
   certificateNumber: string | null; razorpayOrderId: string | null; razorpayPaymentId: string | null;
+  /** PAN review: declared vs read off the photo by the server. */
+  panDeclared: string | null; panRead: string | null; panNameRead: string | null;
+  panScreenStatus: "MATCH" | "MISMATCH" | "UNREADABLE" | "ERROR" | null;
 };
+
+/** Decide a held PAN: approve → 80G receipt; otherwise certificate only. Reason required; audited; queues only. */
+export function adminReviewPan(id: number, approve: boolean, reason: string) {
+  return request<void>(`/api/v1/admin/donations/${id}/pan-review`, { method: "POST", body: JSON.stringify({ approve, reason }) });
+}
 
 export function adminDocumentsQueue(statuses?: DocumentsStatus[]) {
   const q = statuses?.length ? `?${statuses.map((s) => `status=${s}`).join("&")}` : "";

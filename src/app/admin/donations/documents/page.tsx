@@ -3,22 +3,23 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  ApiError, adminDocumentsQueue, adminReconcileCaptureTime, adminReconcileDocuments,
+  ApiError, adminDocumentsQueue, adminReconcileCaptureTime, adminReconcileDocuments, adminReviewPan,
   type DocumentsQueueRow, type DocumentsStatus,
 } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
 import a from "@/features/fundraising/admin.module.css";
 
-const ATTENTION: DocumentsStatus[] = ["GAVE_UP", "UNCERTAIN", "SUPPRESSED", "CAPTURE_TIME_REVIEW"];
+const ATTENTION: DocumentsStatus[] = ["GAVE_UP", "UNCERTAIN", "SUPPRESSED", "CAPTURE_TIME_REVIEW", "PAN_REVIEW"];
 const LABEL: Record<string, string> = {
   GAVE_UP: "Couldn't deliver", UNCERTAIN: "Delivery uncertain", SUPPRESSED: "Address suppressed",
-  CAPTURE_TIME_REVIEW: "Capture time review",
+  CAPTURE_TIME_REVIEW: "Capture time review", PAN_REVIEW: "PAN review",
 };
 const HELP: Record<string, string> = {
   GAVE_UP: "Every retry failed before the email left. Fix the cause, then queue another attempt.",
   UNCERTAIN: "The send may have reached the donor. Ask them: confirm delivered, or queue another attempt.",
   SUPPRESSED: "The donor's address is on the suppression list. Queuing again is refused by the sender until the address is cleared.",
   CAPTURE_TIME_REVIEW: "No trustworthy capture time. Enter it from a Razorpay record (report or dashboard export) — not the payment's created time.",
+  PAN_REVIEW: "The PAN photo didn't match what the donor entered (or couldn't be read). Compare below; check the photo through the governance reveal if needed. Approve issues the 80G receipt with the declared PAN.",
 };
 
 /**
@@ -97,6 +98,13 @@ function QueueCard({ r, onDone }: { r: DocumentsQueueRow; onDone: () => void }) 
           {r.captureTimeConflict && <><br /><span className={a.err}>Conflict: {r.captureTimeConflict}</span></>}
         </p>
       )}
+      {r.documentsStatus === "PAN_REVIEW" && (
+        <p className={a.small}>
+          Screening: <strong>{r.panScreenStatus ?? "—"}</strong><br />
+          Declared PAN: {r.panDeclared ?? "—"} · read from photo: {r.panRead ?? "—"}<br />
+          Account name: {r.donorName ?? "—"} · name on card: {r.panNameRead ?? "—"}
+        </p>
+      )}
       <label className={a.small}>Reason (required, recorded in the audit log)
         <input className={a.in} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={1000} />
       </label>
@@ -113,6 +121,13 @@ function QueueCard({ r, onDone }: { r: DocumentsQueueRow; onDone: () => void }) 
               capturedAt: new Date(capturedAt).toISOString(), reason: reason.trim(), evidenceRef: evidenceRef.trim(),
             }))}>Save capture time and queue documents</button></div>
         </>
+      ) : r.documentsStatus === "PAN_REVIEW" ? (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <button type="button" className={`${a.btn} ${a.bp}`} disabled={busy || needReason}
+            onClick={() => void act(() => adminReviewPan(r.id, true, reason.trim()))}>Approve — issue the 80G receipt</button>
+          <button type="button" className={`${a.btn} ${a.bs}`} disabled={busy || needReason}
+            onClick={() => void act(() => adminReviewPan(r.id, false, reason.trim()))}>Certificate only</button>
+        </div>
       ) : (
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {r.documentsStatus === "UNCERTAIN" && (

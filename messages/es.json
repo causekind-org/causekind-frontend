@@ -4008,7 +4008,8 @@
     "you_ll_get_your_80g_82ea5efc": "Recibirás tu recibo 80G y tu certificado de donación por correo.",
     "your_address_ebd58a96": "Tu dirección",
     "your_pan_photo_didn_t_84a9ff50": "Tu foto del PAN no se subió.",
-    "fundraiser_donations_are_not_refundable_d93a6b3c": "Las donaciones a recaudaciones no son reembolsables. Recibes un certificado de donación, y un recibo 80G si añadiste tu tarjeta PAN antes de pagar. Las donaciones al fideicomiso CauseKind aparecen por separado."
+    "fundraiser_donations_are_not_refundable_d93a6b3c": "Las donaciones a recaudaciones no son reembolsables. Recibes un certificado de donación, y un recibo 80G si añadiste tu tarjeta PAN antes de pagar. Las donaciones al fideicomiso CauseKind aparecen por separado.",
+    "we_re_checking_your_pan_3f7d3aea": "Estamos comprobando tus datos de PAN antes de emitir tu recibo 80G y tu certificado."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
