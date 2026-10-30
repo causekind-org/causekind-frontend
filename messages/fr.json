@@ -3942,12 +3942,8 @@
     "if_a_document_doesn_t_773614ac": "Si un document ne s’ouvre pas, rechargez cette page.",
     "the_documents_behind_this_need_909735c1": "Les documents à l’appui de ce besoin, tels qu’envoyés à notre équipe. Les documents d’identité et familiaux restent privés.",
     "always_private_6e623907": "Toujours privé",
-    "choices_you_made_before_this_0e7dc78b": "Les choix faits avant l''ajout de cette note ne comptent plus. Cochez à nouveau un document si vous voulez que les donateurs le voient.",
     "couldn_t_load_your_document_e0db3539": "Impossible de charger vos choix de documents.",
     "identity_family_and_profile_documents_c9e8b8ce": "Les documents d''identité, familiaux et de profil restent toujours privés.",
-    "other_documents_stay_private_unless_92c085b1": "Les autres documents restent privés sauf si vous sélectionnez « Montrer aux donateurs ». Les documents sélectionnés deviennent accessibles publiquement lorsque votre collecte est publiée. Tout le monde peut les consulter, les télécharger ou les partager. Vos choix sont verrouillés lorsque vous soumettez pour examen.",
-    "show_to_donors_7d3242de": "Montrer aux donateurs",
-    "you_choose_which_documents_to_ff02badd": "Vous choisissez les documents à montrer à l''étape « Vérifier et envoyer ». D''ici là, rien n''est affiché.",
     "you_haven_t_added_any_c476dfa7": "Vous n''avez encore ajouté aucun document.",
     "your_document_choices_haven_t_f7ca3c6d": "Vos choix de documents ne sont pas encore enregistrés. Réessayez avant d''envoyer.",
     "your_document_choices_weren_t_9eef49d5": "Vos choix de documents n''ont pas été enregistrés. Réessayez.",
@@ -3966,7 +3962,14 @@
     "neighbour_2973d788": "Voisin·e",
     "proof_you_know_them_8e1746c9": "Preuve que vous la connaissez",
     "tick_this_box_to_continue_c50e0b27": "Cochez cette case pour continuer.",
-    "accept_all_d0efcbee": "Tout accepter"
+    "accept_all_d0efcbee": "Tout accepter",
+    "all_your_other_documents_will_572c013f": "Tous vos autres documents seront montrés aux donateurs sur la page de votre collecte une fois celle-ci publiée. Tout le monde peut les consulter, les télécharger ou les partager.",
+    "i_agree_that_my_documents_0fa9e24d": "J''accepte que mes documents, sauf ceux d''identité, familiaux et de profil, soient montrés aux donateurs.",
+    "show_my_documents_3acf6cb4": "Montrer mes documents",
+    "show_your_documents_to_donors_642790c0": "Montrer vos documents aux donateurs ?",
+    "shown_to_donors_fa2d2e90": "Montré aux donateurs",
+    "that_didn_t_save_try_7cc47be4": "Ce n''a pas été enregistré. Réessayez.",
+    "you_uploaded_these_when_we_1b033f13": "Vous les avez envoyés quand nous disions que les documents restaient privés, donc les donateurs ne peuvent pas encore les voir. Les donateurs font plus facilement confiance aux collectes qui montrent leurs documents."
   },
   "fundraisersList": {
     "nothingMatches": "Aucun résultat pour « {query} ».",

@@ -7,7 +7,7 @@ import Link from "@/components/AppLink";
 import { fundraising, ApiError, type FundraisingApplication, type FundraisingInfoRequest } from "@/lib/api";
 import { DoneeGate } from "@/features/fundraising/DoneeGate";
 import { EvidenceSections } from "@/features/fundraising/Wizard";
-import { DocumentConsent } from "@/features/fundraising/DocumentConsent";
+import { DocumentVisibility } from "@/features/fundraising/DocumentConsent";
 import { usePageDraft } from "@/features/fundraising/PageSteps";
 import { StatusChip, Icon } from "@/features/fundraising/ui";
 import s from "@/features/fundraising/fundraising.module.css";
@@ -140,7 +140,7 @@ function RespondBody({ id, app, setApp }: { id: number; app: FundraisingApplicat
 
         {page.page && (
           <section aria-label={ui("What donors can see")} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <DocumentConsent page={page.page} evidence={app.evidence} set={page.set} />
+            <DocumentVisibility page={page.page} evidence={app.evidence} />
             {page.save === "error" && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Your document choices weren&apos;t saved. Try again.</UiText></p>}
           </section>
         )}

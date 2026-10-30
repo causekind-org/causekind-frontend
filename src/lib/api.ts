@@ -6205,6 +6205,9 @@ export const fundraisingCampaigns = {
   save: (id: number, body: FundraisingCampaignSave) => request<FundraisingCampaign>(`${FC}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
   submit: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/submit`, { method: "POST" }),
   cancel: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/cancel`, { method: "POST" }),
+  /** One-time opt-in for older applications: show non-private documents to donors. */
+  showDocuments: (id: number, acknowledgedDisclosureVersion: string) =>
+    request<FundraisingCampaign>(`${FC}/${id}/show-documents`, { method: "POST", body: JSON.stringify({ acknowledgedDisclosureVersion }) }),
   async uploadCover(id: number, file: File) {
     const fd = new FormData();
     fd.append("file", file);

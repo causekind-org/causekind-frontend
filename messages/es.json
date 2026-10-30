@@ -3942,12 +3942,8 @@
     "if_a_document_doesn_t_773614ac": "Si un documento no se abre, recarga esta página.",
     "the_documents_behind_this_need_909735c1": "Los documentos que respaldan esta necesidad, tal como se enviaron a nuestro equipo. Los documentos de identidad y familiares siguen siendo privados.",
     "always_private_6e623907": "Siempre privado",
-    "choices_you_made_before_this_0e7dc78b": "Las elecciones que hiciste antes de que se añadiera esta nota ya no cuentan. Vuelve a marcar un documento si quieres que los donantes lo vean.",
     "couldn_t_load_your_document_e0db3539": "No se pudieron cargar tus elecciones de documentos.",
     "identity_family_and_profile_documents_c9e8b8ce": "Los documentos de identidad, familiares y de perfil siempre son privados.",
-    "other_documents_stay_private_unless_92c085b1": "Los demás documentos siguen siendo privados a menos que selecciones «Mostrar a los donantes». Los documentos seleccionados pasan a ser públicos cuando se publica tu recaudación. Cualquiera puede verlos, descargarlos o compartirlos. Tus elecciones quedan bloqueadas cuando envías para revisión.",
-    "show_to_donors_7d3242de": "Mostrar a los donantes",
-    "you_choose_which_documents_to_ff02badd": "Eliges qué documentos mostrar en el paso «Revisar y enviar». Hasta entonces, no se muestra nada.",
     "you_haven_t_added_any_c476dfa7": "Todavía no has añadido ningún documento.",
     "your_document_choices_haven_t_f7ca3c6d": "Tus elecciones de documentos aún no se han guardado. Inténtalo de nuevo antes de enviar.",
     "your_document_choices_weren_t_9eef49d5": "Tus elecciones de documentos no se guardaron. Inténtalo de nuevo.",
@@ -3966,7 +3962,14 @@
     "neighbour_2973d788": "Vecino/a",
     "proof_you_know_them_8e1746c9": "Prueba de que la conoces",
     "tick_this_box_to_continue_c50e0b27": "Marca esta casilla para continuar.",
-    "accept_all_d0efcbee": "Aceptar todo"
+    "accept_all_d0efcbee": "Aceptar todo",
+    "all_your_other_documents_will_572c013f": "Todos tus demás documentos se mostrarán a los donantes en la página de tu recaudación cuando se publique. Cualquiera puede verlos, descargarlos o compartirlos.",
+    "i_agree_that_my_documents_0fa9e24d": "Acepto que mis documentos, excepto los de identidad, familiares y de perfil, se muestren a los donantes.",
+    "show_my_documents_3acf6cb4": "Mostrar mis documentos",
+    "show_your_documents_to_donors_642790c0": "¿Mostrar tus documentos a los donantes?",
+    "shown_to_donors_fa2d2e90": "Visible para los donantes",
+    "that_didn_t_save_try_7cc47be4": "No se guardó. Inténtalo de nuevo.",
+    "you_uploaded_these_when_we_1b033f13": "Los subiste cuando decíamos que los documentos eran privados, así que los donantes aún no pueden verlos. Los donantes confían más en las recaudaciones que muestran sus documentos."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",

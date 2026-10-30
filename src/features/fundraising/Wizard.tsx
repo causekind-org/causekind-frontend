@@ -13,9 +13,9 @@ import {
 import { useFundraisingLabels, Icon, type SaveState, SaveIndicator, Stepper, formatINR } from "./ui";
 import { FieldInfo } from "./FieldInfo";
 import { PageStep, pageGaps, usePageDraft } from "./PageSteps";
-import { DisclosureNotice, DocumentConsent } from "./DocumentConsent";
+import { DisclosureNotice, DocumentVisibility } from "./DocumentConsent";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { coverConsentMissing, type SetFn as CampaignSetFn } from "./CampaignWizard";
+import { coverConsentMissing } from "./CampaignWizard";
 import type { FundraisingCampaign } from "@/lib/api";
 import s from "./fundraising.module.css";
 
@@ -152,7 +152,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
             void go(step + 1);
           }} />} />}
         {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
-        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} setPage={draft.set} reloadPage={draft.reload} />}
+        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} reloadPage={draft.reload} />}
       </main>
     </>
   );
@@ -461,7 +461,6 @@ function Evidence({ app, setApp, profile, onBack, onNext }: {
     <>
       <Heading title={ui("Evidence for this need")} sub={t("evidenceIntro", { category: app.category ? t("evidenceIntroCategory", { category: fmt.category(app.category).toLowerCase() }) : "", forOther: app.forSelf ? "" : t("evidenceIntroForOther") })} />
       <DisclosureNotice />
-      <p className={`${s.muted} ${s.small}`} style={{ maxWidth: 860 }}><UiText>You choose which documents to show on the &ldquo;Check and submit&rdquo; step. Until then, nothing is shown.</UiText></p>
       <EvidenceSections app={app} setApp={setApp} profile={profile} />
       <p className={`${s.muted} ${s.small}`} style={{ maxWidth: 860 }}><UiText>A file you choose is only saved once its upload finishes. Whether profile documents can be reused for fundraising is still being decided.</UiText></p>
       <div style={{ maxWidth: 860 }}><Nav onBack={onBack} onNext={onNext} /></div>
@@ -630,10 +629,10 @@ function BankDetails({ app, set, onBack, onNext }: { app: FundraisingApplication
   );
 }
 
-function Review({ app, set, flush, goTo, onSubmitted, page, setPage, reloadPage }: {
+function Review({ app, set, flush, goTo, onSubmitted, page, reloadPage }: {
   app: FundraisingApplication; set: SetFn; flush: () => Promise<boolean>; goTo: (step: number) => void;
   onSubmitted: (a: FundraisingApplication) => void; page: FundraisingCampaign | null;
-  setPage: CampaignSetFn; reloadPage: () => void;
+  reloadPage: () => void;
 }) {
   // The documents that can be shown depend on what was uploaded on step 3: refresh the list here.
   useEffect(() => { reloadPage(); }, [reloadPage]);
@@ -688,7 +687,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page, setPage, reloadPage 
         </dl>)}
         {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}
       </div>
-      {page && <DocumentConsent page={page} evidence={app.evidence} set={setPage} />}
+      {page && <DocumentVisibility page={page} evidence={app.evidence} />}
       <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
         <legend style={{ fontWeight: 700, fontSize: 16, padding: "0 6px" }}><UiText>Please confirm</UiText></legend>
         {/* One click ticks every declaration shown (owner, 2026-10-30); each stays individually untickable. */}
