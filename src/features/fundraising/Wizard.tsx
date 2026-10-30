@@ -13,6 +13,8 @@ import {
 import { useFundraisingLabels, Icon, type SaveState, SaveIndicator, Stepper, formatINR } from "./ui";
 import { FieldInfo } from "./FieldInfo";
 import { PageStep, pageGaps, usePageDraft } from "./PageSteps";
+import { DisclosureNotice, DocumentConsent } from "./DocumentConsent";
+import type { SetFn as CampaignSetFn } from "./CampaignWizard";
 import type { FundraisingCampaign } from "@/lib/api";
 import s from "./fundraising.module.css";
 
@@ -139,7 +141,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
         {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
         {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
-        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} />}
+        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} setPage={draft.set} reloadPage={draft.reload} />}
       </main>
     </>
   );
@@ -414,10 +416,8 @@ function Evidence({ app, setApp, profile, onBack, onNext }: {
   return (
     <>
       <Heading title={ui("Evidence for this need")} sub={t("evidenceIntro", { category: app.category ? t("evidenceIntroCategory", { category: fmt.category(app.category).toLowerCase() }) : "", forOther: app.forSelf ? "" : t("evidenceIntroForOther") })} />
-      <div style={{ maxWidth: 860, display: "flex", gap: 12, alignItems: "center", padding: "12px 16px", borderRadius: 10, background: "#eaf0f8", color: "#1e3a60" }}>
-        <Icon name="lock" />
-        <p className={s.small}><strong><UiText>Private — only authorised reviewers can view these.</UiText></strong> <UiText>Nothing here appears on a public page. You&apos;ll choose public photos separately, later.</UiText></p>
-      </div>
+      <DisclosureNotice />
+      <p className={`${s.muted} ${s.small}`} style={{ maxWidth: 860 }}><UiText>You choose which documents to show on the &ldquo;Check and submit&rdquo; step. Until then, nothing is shown.</UiText></p>
       <EvidenceSections app={app} setApp={setApp} profile={profile} />
       <p className={`${s.muted} ${s.small}`} style={{ maxWidth: 860 }}><UiText>A file you choose is only saved once its upload finishes. Whether profile documents can be reused for fundraising is still being decided.</UiText></p>
       <div style={{ maxWidth: 860 }}><Nav onBack={onBack} onNext={onNext} /></div>
@@ -550,10 +550,13 @@ function BankDetails({ app, set, onBack, onNext }: { app: FundraisingApplication
   );
 }
 
-function Review({ app, set, flush, goTo, onSubmitted, page }: {
+function Review({ app, set, flush, goTo, onSubmitted, page, setPage, reloadPage }: {
   app: FundraisingApplication; set: SetFn; flush: () => Promise<boolean>; goTo: (step: number) => void;
   onSubmitted: (a: FundraisingApplication) => void; page: FundraisingCampaign | null;
+  setPage: CampaignSetFn; reloadPage: () => void;
 }) {
+  // The documents that can be shown depend on what was uploaded on step 3: refresh the list here.
+  useEffect(() => { reloadPage(); }, [reloadPage]);
   const t = useTranslations("fundraiserFlow");
   const choiceLabel = useChoiceLabel();
   const fmt = useFundraisingLabels();
@@ -605,6 +608,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page }: {
         </dl>)}
         {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}
       </div>
+      {page && <DocumentConsent page={page} set={setPage} />}
       <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
         <legend style={{ fontWeight: 700, fontSize: 16, padding: "0 6px" }}><UiText>Please confirm</UiText></legend>
         {check("declaredAccurate", ui("What I've told you is true and complete as far as I know."))}

@@ -111,7 +111,16 @@ export default function AdminFundraisingReviewPage() {
               <p className={a.small}><span className={a.muted}>Title:</span> <strong>{page.title || "—"}</strong></p>
               <p className={a.small}><span className={a.muted}>Shown name:</span> {page.beneficiaryDisplayName || "—"} · <span className={a.muted}>Last day to collect:</span> {page.endDate ? formatDate(page.endDate) : "—"}</p>
               <p className={a.small}><span className={a.muted}>Cover permission:</span> {page.coverConsent ? "Confirmed" : "Not confirmed"}</p>
-              <p className={a.small}><span className={a.muted}>Donors see:</span> beneficiary {page.beneficiaryNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · organiser {page.organiserNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · location {page.locationVisibility?.toLowerCase() ?? "—"}{page.publicEvidenceIds.length ? ` · ${page.publicEvidenceIds.length} document(s) picked to show` : ""}</p>
+              <p className={a.small}><span className={a.muted}>Donors see:</span> beneficiary {page.beneficiaryNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · organiser {page.organiserNameVisibility?.toLowerCase().replace("_", " ") ?? "—"} · location {page.locationVisibility?.toLowerCase() ?? "—"}</p>
+              <div className={a.small}>
+                <div className={a.muted}>Documents shown to donors (consent version {page.disclosureVersion})</div>
+                {app.evidence.filter((e) => page.publicEvidenceIds.includes(e.id) || page.legacyPublicEvidenceIds.includes(e.id)).map((e) => (
+                  <div key={e.id}>{e.fileName ?? typeWords(e.type)} — {page.publicEvidenceIds.includes(e.id)
+                    ? <strong>Public (consented)</strong>
+                    : <span className={a.muted}>Old selection, not consented — stays private</span>}</div>
+                ))}
+                {page.publicEvidenceIds.length === 0 && page.legacyPublicEvidenceIds.length === 0 && <div>None — every document stays private.</div>}
+              </div>
               <div>
                 <div className={`${a.small} ${a.muted}`}>Story</div>
                 <p className={a.small} style={{ whiteSpace: "pre-wrap" }}>{page.story || "—"}</p>

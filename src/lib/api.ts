@@ -6161,7 +6161,12 @@ export type FundraisingCampaign = {
   costItems: CampaignCostRow[]; totalCosts: number; otherHelp: number; remainingGap: number;
   changeReason: string | null; hasMaterialChanges: boolean;
   beneficiaryNameVisibility: NameVisibility | null; organiserNameVisibility: NameVisibility | null;
-  locationVisibility: LocationVisibility | null; publicEvidenceIds: number[];
+  locationVisibility: LocationVisibility | null;
+  /** Chosen under the current disclosure version — drives the "Show to donors" boxes. */
+  publicEvidenceIds: number[];
+  /** Chosen before versioned consent (2026-10-30); never public, never shown as checked. */
+  legacyPublicEvidenceIds: number[];
+  disclosureVersion: string;
   selectableEvidence: { evidenceId: number; type: string; fileName: string | null }[];
   reviewerMessage: string | null; submittedAt: string | null; decidedAt: string | null;
   paymentSetupComplete: boolean; missing: string[]; createdAt: string; updatedAt: string;
@@ -6171,6 +6176,8 @@ export type FundraisingCampaignSave = {
   targetAmount?: number | null; endDate?: string | null; costItems?: FundraisingCostItem[]; changeReason?: string;
   beneficiaryNameVisibility?: NameVisibility; organiserNameVisibility?: NameVisibility;
   locationVisibility?: LocationVisibility; publicEvidenceIds?: number[];
+  /** Required with a non-empty publicEvidenceIds: the disclosure version the organiser saw. */
+  acknowledgedDisclosureVersion?: string;
 };
 export type FundraisingAdminCampaign = {
   campaign: FundraisingCampaign; applicantName: string; applicantEmail: string; internalNote: string | null; decidedBy: string | null;
