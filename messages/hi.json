@@ -3955,7 +3955,10 @@
     "remove_from_this_row_0bf03a9d": "इस पंक्ति से हटाएँ",
     "the_file_didn_t_upload_ba162de2": "फ़ाइल अपलोड नहीं हुई। फिर से कोशिश करें।",
     "bill_or_estimate_641aab49": "बिल या अनुमान",
-    "attach_file_eaa236e3": "+ फ़ाइल जोड़ें"
+    "attach_file_eaa236e3": "+ फ़ाइल जोड़ें",
+    "add_another_file_21cf3604": "+ एक और फ़ाइल जोड़ें",
+    "choose_files_1964f5bf": "फ़ाइलें चुनें",
+    "you_can_pick_more_than_7401c8db": "आप एक से ज़्यादा चुन सकते हैं।"
   },
   "fundraisersList": {
     "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",

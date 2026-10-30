@@ -485,6 +485,13 @@ export function EvidenceSections({ app, setApp, profile }: {
     catch (e) { setFailed((f) => ({ ...f, [key]: e instanceof ApiError ? e.message : ui("Upload failed. The file is still on your device — try again.") })); }
     finally { setBusy(null); }
   }
+  /** One at a time, so each result carries the files before it; stops at the first failure. */
+  async function uploadAll(key: string, type: FundraisingEvidenceType, picked: File[]) {
+    setBusy(key); setFailed((f) => ({ ...f, [key]: undefined }));
+    try { for (const file of picked) setApp(await fundraising.uploadEvidence(app.id, type, file)); }
+    catch (e) { setFailed((f) => ({ ...f, [key]: e instanceof ApiError ? e.message : ui("Upload failed. The file is still on your device — try again.") })); }
+    finally { setBusy(null); }
+  }
   async function remove(e: FundraisingEvidence) { setApp(await fundraising.removeEvidence(app.id, e.id)); }
   async function reuseId() { if (profileId) setApp(await fundraising.useProfileDocument(app.id, profileId.id, "ORGANISER_ID")); }
 
@@ -521,12 +528,17 @@ export function EvidenceSections({ app, setApp, profile }: {
                 <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void reuseId()}><UiText>Use this</UiText></button>
               </div>
             )}
-            {(!files.length || optional) && (
+            {/* Every section takes several files (owner, 2026-10-30); the server already stores any number per type. */}
+            <input id={inputId} type="file" accept="application/pdf,image/*" multiple hidden disabled={busy !== null}
+              onChange={(e) => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; if (picked.length) void uploadAll(sec.key, sec.uploadAs, picked); }} />
+            {!files.length ? (
               <div style={{ border: "2px dashed #b9c9de", borderRadius: 10, padding: 16, display: "flex", gap: 12, alignItems: "center", justifyContent: "center", background: "#f8fafd", flexWrap: "wrap" }}>
                 <span style={{ color: "#1e3a60" }}><Icon name="upload" /></span>
-                <label htmlFor={inputId} className={`${s.btn} ${s.bs}`}><UiText>Choose file</UiText></label>
-                <input id={inputId} type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(sec.key, sec.uploadAs, file); e.target.value = ""; }} />
+                <label htmlFor={inputId} className={`${s.btn} ${s.bs}`}><UiText>Choose files</UiText></label>
+                <span className={`${s.muted} ${s.small}`}><UiText>You can pick more than one.</UiText></span>
               </div>
+            ) : (
+              <div><label htmlFor={inputId} className={`${s.btn} ${s.bq}`}><Icon name="upload" /><UiText>+ Add another file</UiText></label></div>
             )}
           </section>
         );

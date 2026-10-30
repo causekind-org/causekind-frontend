@@ -3955,7 +3955,10 @@
     "remove_from_this_row_0bf03a9d": "Quitar de esta fila",
     "the_file_didn_t_upload_ba162de2": "El archivo no se subió. Inténtalo de nuevo.",
     "bill_or_estimate_641aab49": "Factura o presupuesto",
-    "attach_file_eaa236e3": "+ Adjuntar archivo"
+    "attach_file_eaa236e3": "+ Adjuntar archivo",
+    "add_another_file_21cf3604": "+ Añadir otro archivo",
+    "choose_files_1964f5bf": "Elegir archivos",
+    "you_can_pick_more_than_7401c8db": "Puedes elegir más de uno."
   },
   "fundraisersList": {
     "nothingMatches": "Ningún resultado para «{query}».",
