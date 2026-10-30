@@ -6166,6 +6166,8 @@ export type FundraisingCampaign = {
   publicEvidenceIds: number[];
   /** Chosen before versioned consent (2026-10-30); never public, never shown as checked. */
   legacyPublicEvidenceIds: number[];
+  /** When each current-version selection was consented to. */
+  publicEvidenceConsents: { evidenceId: number; consentedAt: string | null; disclosureVersion: string }[];
   disclosureVersion: string;
   selectableEvidence: { evidenceId: number; type: string; fileName: string | null }[];
   reviewerMessage: string | null; submittedAt: string | null; decidedAt: string | null;

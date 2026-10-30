@@ -140,7 +140,7 @@ function RespondBody({ id, app, setApp }: { id: number; app: FundraisingApplicat
 
         {page.page && (
           <section aria-label={ui("What donors can see")} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <DocumentConsent page={page.page} set={page.set} />
+            <DocumentConsent page={page.page} evidence={app.evidence} set={page.set} />
             {page.save === "error" && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Your document choices weren&apos;t saved. Try again.</UiText></p>}
           </section>
         )}

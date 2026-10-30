@@ -608,7 +608,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page, setPage, reloadPage 
         </dl>)}
         {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}
       </div>
-      {page && <DocumentConsent page={page} set={setPage} />}
+      {page && <DocumentConsent page={page} evidence={app.evidence} set={setPage} />}
       <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
         <legend style={{ fontWeight: 700, fontSize: 16, padding: "0 6px" }}><UiText>Please confirm</UiText></legend>
         {check("declaredAccurate", ui("What I've told you is true and complete as far as I know."))}

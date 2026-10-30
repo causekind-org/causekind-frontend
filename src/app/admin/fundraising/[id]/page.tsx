@@ -116,7 +116,10 @@ export default function AdminFundraisingReviewPage() {
                 <div className={a.muted}>Documents shown to donors (consent version {page.disclosureVersion})</div>
                 {app.evidence.filter((e) => page.publicEvidenceIds.includes(e.id) || page.legacyPublicEvidenceIds.includes(e.id)).map((e) => (
                   <div key={e.id}>{e.fileName ?? typeWords(e.type)} — {page.publicEvidenceIds.includes(e.id)
-                    ? <strong>Public (consented)</strong>
+                    ? <><strong>Public (consented)</strong>{(() => {
+                        const at = page.publicEvidenceConsents.find((x) => x.evidenceId === e.id)?.consentedAt;
+                        return at ? <span className={a.muted}> · {new Date(at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</span> : null;
+                      })()}</>
                     : <span className={a.muted}>Old selection, not consented — stays private</span>}</div>
                 ))}
                 {page.publicEvidenceIds.length === 0 && page.legacyPublicEvidenceIds.length === 0 && <div>None — every document stays private.</div>}
