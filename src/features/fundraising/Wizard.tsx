@@ -14,6 +14,7 @@ import { useFundraisingLabels, Icon, type SaveState, SaveIndicator, Stepper, for
 import { FieldInfo } from "./FieldInfo";
 import { PageStep, pageGaps, usePageDraft } from "./PageSteps";
 import { DisclosureNotice, DocumentConsent } from "./DocumentConsent";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { SetFn as CampaignSetFn } from "./CampaignWizard";
 import type { FundraisingCampaign } from "@/lib/api";
 import s from "./fundraising.module.css";
@@ -493,6 +494,8 @@ export function EvidenceSections({ app, setApp, profile }: {
     finally { setBusy(null); }
   }
   async function remove(e: FundraisingEvidence) { setApp(await fundraising.removeEvidence(app.id, e.id)); }
+  // Preview opens on this page (owner, 2026-10-30), not in a new tab.
+  const [preview, setPreview] = useState<FundraisingEvidence | null>(null);
   async function reuseId() { if (profileId) setApp(await fundraising.useProfileDocument(app.id, profileId.id, "ORGANISER_ID")); }
 
   return (
@@ -516,7 +519,7 @@ export function EvidenceSections({ app, setApp, profile }: {
               <div key={f.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", border: "1px solid #e7ddd2", borderRadius: 10, background: "#fff", flexWrap: "wrap" }}>
                 <span style={{ width: 40, height: 48, borderRadius: 6, background: "#f1ece6", display: "flex", alignItems: "center", justifyContent: "center", color: "#6b5d52" }} aria-hidden="true"><Icon name="file" /></span>
                 <div style={{ flex: "1 1 220px", minWidth: 0 }}><strong>{f.fromProfile ? ui("Government ID") : f.fileName ?? ui("Document")}</strong>{f.fromProfile && <> <span className={`${s.chip} ${s.cM}`}><UiText>On file in your profile</UiText></span></>}<div className={`${s.muted} ${s.small}`}><UiText>Uploaded</UiText></div></div>
-                {f.viewUrl && <a className={`${s.btn} ${s.bq}`} href={f.viewUrl} target="_blank" rel="noreferrer"><UiText>Preview</UiText></a>}
+                {f.viewUrl && <button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setPreview(f)}><UiText>Preview</UiText></button>}
                 <label className={`${s.btn} ${s.bq}`}><UiText>Replace</UiText><input type="file" accept="application/pdf,image/*" hidden onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(sec.key, f.type, file, f); e.target.value = ""; }} /></label>
                 <button type="button" className={`${s.btn} ${s.bq} ${s.danger}`} onClick={() => void remove(f)}><UiText>Remove</UiText></button>
               </div>
@@ -543,7 +546,29 @@ export function EvidenceSections({ app, setApp, profile }: {
           </section>
         );
       })}
+      <EvidencePreview file={preview} onClose={() => setPreview(null)} />
     </div>
+  );
+}
+
+/** Shows an uploaded document in a dialog: images inline, anything else (PDFs) in a frame. */
+function EvidencePreview({ file, onClose }: { file: FundraisingEvidence | null; onClose: () => void }) {
+  const ui = useUiText();
+  const name = file?.fromProfile ? ui("Government ID") : file?.fileName ?? ui("Document");
+  const path = (file?.fileName ?? file?.viewUrl?.split("?")[0] ?? "").toLowerCase();
+  const isImage = /\.(jpe?g|png|gif|webp|heic|bmp)$/.test(path);
+  return (
+    <Dialog open={file != null && !!file.viewUrl} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader><DialogTitle>{name}</DialogTitle></DialogHeader>
+        <DialogBody>
+          {file?.viewUrl && (isImage
+            // eslint-disable-next-line @next/next/no-img-element
+            ? <img src={file.viewUrl} alt={name} style={{ display: "block", maxWidth: "100%", maxHeight: "75vh", margin: "0 auto", objectFit: "contain" }} />
+            : <iframe src={file.viewUrl} title={name} style={{ width: "100%", height: "75vh", border: 0, borderRadius: 8, background: "#f1ece6" }} />)}
+        </DialogBody>
+      </DialogContent>
+    </Dialog>
   );
 }
 
