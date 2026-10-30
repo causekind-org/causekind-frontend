@@ -3853,7 +3853,6 @@
     "how_much_97365331": "कितना? (₹)",
     "bill_or_receipt_number_a55beae6": "बिल या रसीद नंबर",
     "number_on_the_bill_3bb41963": "बिल पर लिखा नंबर",
-    "write_the_bill_number_6fd47945": "बिल नंबर लिखें",
     "write_the_amount_8d7e04a9": "राशि लिखें",
     "add_one_more_thing_f6fe7a1e": "+ एक और चीज़ जोड़ें",
     "new_item_b59cbbe4": "नई चीज़",
@@ -3951,7 +3950,11 @@
     "you_choose_which_documents_to_ff02badd": "कौन-से दस्तावेज़ दिखाने हैं, यह आप “जाँचें और सबमिट करें” चरण में चुनते हैं। तब तक कुछ भी नहीं दिखाया जाता।",
     "you_haven_t_added_any_c476dfa7": "आपने अभी तक कोई दस्तावेज़ नहीं जोड़ा है।",
     "your_document_choices_haven_t_f7ca3c6d": "आपके दस्तावेज़ों के चुनाव अभी सहेजे नहीं गए हैं। भेजने से पहले फिर से कोशिश करें।",
-    "your_document_choices_weren_t_9eef49d5": "आपके दस्तावेज़ों के चुनाव सहेजे नहीं गए। फिर से कोशिश करें।"
+    "your_document_choices_weren_t_9eef49d5": "आपके दस्तावेज़ों के चुनाव सहेजे नहीं गए। फिर से कोशिश करें।",
+    "attach_the_bill_or_estimate_55ddcad8": "+ बिल या अनुमान जोड़ें",
+    "bill_attached_c5edb3f0": "बिल जोड़ा गया",
+    "remove_from_this_row_0bf03a9d": "इस पंक्ति से हटाएँ",
+    "the_file_didn_t_upload_ba162de2": "फ़ाइल अपलोड नहीं हुई। फिर से कोशिश करें।"
   },
   "fundraisersList": {
     "nothingMatches": "“{query}” से कुछ भी मेल नहीं खाता।",

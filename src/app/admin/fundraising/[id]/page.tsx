@@ -82,7 +82,11 @@ export default function AdminFundraisingReviewPage() {
           <section className={`${a.card} ${a.pane}`} aria-labelledby="fb">
             <h2 id="fb" className={a.h}>Funding breakdown</h2>
             <dl style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) auto", gap: "4px 12px" }}>
-              {app.costItems.map((c, i) => <Row key={i} k={c.expense} v={formatINR(c.amount)} />)}
+              {app.costItems.map((c, i) => {
+                const bill = c.evidenceId == null ? undefined : app.evidence.find((e) => e.id === c.evidenceId);
+                const extras = [c.reference ? `bill no. ${c.reference}` : null, bill ? `file: ${bill.fileName ?? "bill"}` : null].filter(Boolean).join(" · ");
+                return <Row key={i} k={extras ? `${c.expense} (${extras})` : c.expense} v={formatINR(c.amount)} />;
+              })}
               <Row k="Total" v={formatINR(app.totalCosts)} bold />
               {/* Money already in hand is shown for context only; it is not subtracted (owner, 2026-10-26). */}
               <Row k="Insurance (not subtracted)" v={formatINR(app.insuranceAmount ?? 0)} />

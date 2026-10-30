@@ -6049,7 +6049,11 @@ export type FundraisingEvidenceRequirement = {
 };
 export type FundraisingScope = "THIS_NEED" | "ACCOUNT";
 
-export type FundraisingCostItem = { expense: string; amount: number | null; reference: string | null };
+export type FundraisingCostItem = {
+  expense: string; amount: number | null; reference: string | null;
+  /** The COST_PROOF document attached to this row (applications only). */
+  evidenceId?: number | null;
+};
 export type FundraisingEvidence = {
   id: number; type: FundraisingEvidenceType; fileName: string | null; fromProfile: boolean;
   superseded: boolean; uploadedAt: string; viewUrl: string | null;

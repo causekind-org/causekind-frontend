@@ -137,7 +137,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         )}
         {step === 0 && <AboutYou profile={profile} onNext={() => go(1)} />}
         {step === 1 && <WhoNeedsHelp app={app} set={set} onBack={() => go(0)} onNext={() => go(2)} />}
-        {step === 2 && <TheNeed app={app} set={set} onBack={() => go(1)} onNext={() => go(3)} />}
+        {step === 2 && <TheNeed app={app} set={set} onEvidence={(next) => setApp((cur) => ({ ...cur, evidence: next.evidence, requiredEvidence: next.requiredEvidence }))}onBack={() => go(1)} onNext={() => go(3)} />}
         {step === 3 && <Evidence app={app} setApp={setApp} profile={profile} onBack={() => go(2)} onNext={() => go(4)} />}
         {step >= 4 && step <= 5 && <PageStep step={step as 4 | 5} draft={draft} neededBy={app.urgency ?? null} nav={<Nav onBack={() => go(step - 1)} onNext={() => go(step + 1)} />} />}
         {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
@@ -290,7 +290,12 @@ function WhoNeedsHelp({ app, set, onBack, onNext }: { app: FundraisingApplicatio
 // F05 — A3 The need and funding gap
 const CATEGORIES: FundraisingCategory[] = ["MEDICAL", "EDUCATION", "EMERGENCY_HOUSEHOLD", "OTHER"];
 
-function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; set: SetFn; onBack: () => void; onNext: () => void }) {
+function TheNeed({ app, set, onEvidence, onBack, onNext }: {
+  app: FundraisingApplication; set: SetFn;
+  /** Takes only the documents from an upload result, so unsaved rows here aren't overwritten. */
+  onEvidence: (next: FundraisingApplication) => void;
+  onBack: () => void; onNext: () => void;
+}) {
   const t = useTranslations("fundraiserFlow");
   const fmt = useFundraisingLabels();
   const ui = useUiText();
@@ -307,14 +312,29 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
   // Money the donee already has is recorded for reviewers but not subtracted (owner, 2026-10-26).
   const gap = total;
   const mismatch = app.requestedAmount != null && total > 0 && Math.abs(app.requestedAmount - gap) > 0.5;
-  // A row in use needs an amount and a supporting reference (owner, 2026-10-26).
+  // A row in use needs an amount; the bill number is optional (owner, 2026-10-30).
   const used = (c: FundraisingCostItem) => c.expense.trim() !== "" || c.amount != null;
   const amountMissing = costs.map((c) => used(c) && c.amount == null);
-  const refMissing = costs.map((c) => used(c) && !(c.reference ?? "").trim());
-  const rowErrors = costs.map((_, i) => amountMissing[i] || refMissing[i]);
   const shownAmount = tried ? amountMissing : costs.map(() => false);
-  const shownRef = tried ? refMissing : costs.map(() => false);
-  const errors = tried ? rowErrors.map((e, i) => (e ? i : -1)).filter((i) => i >= 0) : [];
+  const errors = tried ? amountMissing.map((e, i) => (e ? i : -1)).filter((i) => i >= 0) : [];
+  // A row can carry its bill: uploaded as a cost proof and linked to the row (V108).
+  const [attaching, setAttaching] = useState<number | null>(null);
+  const [attachError, setAttachError] = useState<number | null>(null);
+  const docName = (id: number | null | undefined) => {
+    const e = id == null ? undefined : app.evidence.find((x) => x.id === id && !x.superseded);
+    return e ? (e.fileName ?? ui("Bill attached")) : null;
+  };
+  async function attach(i: number, file: File) {
+    setAttaching(i); setAttachError(null);
+    const before = new Set(app.evidence.map((e) => e.id));
+    try {
+      const next = await fundraising.uploadEvidence(app.id, "COST_PROOF", file);
+      onEvidence(next);
+      const added = next.evidence.filter((e) => e.type === "COST_PROOF" && !before.has(e.id)).sort((a, b) => b.id - a.id)[0];
+      if (added) edit(i, { evidenceId: added.id });
+    } catch { setAttachError(i); }
+    finally { setAttaching(null); }
+  }
   const pill = (sel: boolean, open: boolean) => ({
     display: "inline-flex", alignItems: "center", minHeight: 40, padding: "0 16px", borderRadius: 999, fontWeight: 600, fontSize: 14,
     border: sel ? "2px solid #1e3a60" : "1px solid #cfc3b6", color: sel ? "#1e3a60" : open ? "#1f140c" : "#9a8b7f",
@@ -327,9 +347,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
       {errors.length > 0 && (
         <div role="alert" style={{ maxWidth: 820, border: "2px solid #b42318", borderRadius: 12, background: "#fff", padding: "16px 18px", display: "flex", flexDirection: "column", gap: 6 }}>
           <strong style={{ color: "#8f1d1d" }}>{t("thingsToFix", { count: errors.length })}</strong>
-          {errors.map((i) => amountMissing[i]
-            ? <a key={i} href={`#amt${i}`}>{t("costRowMissing", { n: i + 1 })}</a>
-            : <a key={i} href={`#ref${i}`}>{t("costRowReference", { n: i + 1 })}</a>)}
+          {errors.map((i) => <a key={i} href={`#amt${i}`}>{t("costRowMissing", { n: i + 1 })}</a>)}
         </div>
       )}
       <div className={s.card} style={{ padding: 28, display: "flex", flexDirection: "column", gap: 26, maxWidth: 820 }}>
@@ -358,7 +376,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
         <section style={{ display: "flex", flexDirection: "column", gap: 10 }} aria-labelledby="cbh">
           <h2 id="cbh" style={{ fontSize: 17, fontWeight: 700 }}><UiText>What will the money pay for?</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(you can skip this)</UiText></span> <FieldInfo localize k="costs" /></h2>
           <div aria-hidden="true" className={`${s.muted} ${s.small}`} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, fontWeight: 600 }}>
-            <span><UiText>What is it?</UiText></span><span style={{ textAlign: "right" }}><UiText>How much? (₹)</UiText></span><span><UiText>Bill or receipt number</UiText> <FieldInfo localize k="ref" /></span><span />
+            <span><UiText>What is it?</UiText></span><span style={{ textAlign: "right" }}><UiText>How much? (₹)</UiText></span><span><UiText>Bill or receipt number</UiText> <span style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span> <FieldInfo localize k="ref" /></span><span />
           </div>
           {costs.map((c, i) => (
             <div key={i} style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) 170px minmax(0,190px) 40px", gap: 10, alignItems: "start" }}>
@@ -368,10 +386,24 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
                 {shownAmount[i] && <p id={`e${i}`} className={s.errText}><Icon name="alert" /><UiText>Write the amount</UiText></p>}
               </div>
               <div>
-                <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Number on the bill")} value={c.reference ?? ""} aria-invalid={shownRef[i] || undefined} aria-describedby={shownRef[i] ? `r${i}` : undefined} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
-                {shownRef[i] && <p id={`r${i}`} className={s.errText}><Icon name="alert" /><UiText>Write the bill number</UiText></p>}
+                <input id={`ref${i}`} className={s.in} aria-label={`Reference ${i + 1}`} placeholder={ui("Number on the bill")} value={c.reference ?? ""} onChange={(e) => edit(i, { reference: e.target.value })} maxLength={160} />
               </div>
               <button type="button" className={`${s.btn} ${s.bq}`} style={{ padding: 0 }} aria-label={t("removeRow", { n: i + 1 })} onClick={() => setCosts(costs.filter((_, j) => j !== i))}>✕</button>
+              <div className={s.small} style={{ gridColumn: "1 / -1", display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap", marginTop: -4 }}>
+                {docName(c.evidenceId) ? (
+                  <>
+                    <Icon name="check" /><span>{docName(c.evidenceId)}</span>
+                    <button type="button" className={`${s.btn} ${s.bq}`} onClick={() => edit(i, { evidenceId: null })}><UiText>Remove from this row</UiText></button>
+                  </>
+                ) : (
+                  <label className={`${s.btn} ${s.bq}`} style={{ cursor: attaching === i ? "wait" : "pointer" }}>
+                    {attaching === i ? ui("Uploading…") : ui("+ Attach the bill or estimate")}
+                    <input type="file" accept="image/*,application/pdf" style={{ display: "none" }} disabled={attaching !== null}
+                      onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void attach(i, f); }} />
+                  </label>
+                )}
+                {attachError === i && <span role="alert" className={s.errText}><Icon name="alert" /><UiText>The file didn&apos;t upload. Try again.</UiText></span>}
+              </div>
             </div>
           ))}
           <div><button type="button" className={`${s.btn} ${s.bq}`} onClick={() => setCosts([...costs, { expense: "", amount: null, reference: null }])}><UiText>+ Add one more thing</UiText></button></div>
@@ -398,7 +430,7 @@ function TheNeed({ app, set, onBack, onNext }: { app: FundraisingApplication; se
             </div>
           )}
         </section>
-        <Nav onBack={onBack} onNext={() => { setTried(true); if (!rowErrors.some(Boolean)) onNext(); }} />
+        <Nav onBack={onBack} onNext={() => { setTried(true); if (!amountMissing.some(Boolean)) onNext(); }} />
       </div>
     </>
   );
