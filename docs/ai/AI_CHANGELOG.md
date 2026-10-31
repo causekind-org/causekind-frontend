@@ -343,3 +343,7 @@ Pre-existing state recorded by the audit (uncommitted on branch
 ## 2026-10-31 — Fundraisers on phones: arrows
 
 - `DiwaliCampaigns` gains previous/next arrows over the swipe row. On the last card, or when only one fundraiser is live, next links to `/fundraisers`.
+
+## 2026-10-31 — Fundraisers on phones: pager
+
+- Overlay arrows replaced by the Live needs pager (outlined arrows and dots below the row). Next no longer links away; "See all fundraisers" stays as the route to the full list.

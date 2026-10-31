@@ -333,26 +333,13 @@
   .ck-dw-c-sub { margin-top: 0.6rem; max-width: 34ch; font-size: 0.9rem; line-height: 1.5; color: #5d4030; }
   .ck-dw-c-row { display: flex; gap: 0.875rem; overflow-x: auto; padding: 0.25rem 1.25rem 1rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1.25rem; scrollbar-width: none; }
   .ck-dw-c-row::-webkit-scrollbar { display: none; }
-  .ck-dw-c-stage { position: relative; --dw-arrow-top: calc(0.25rem + min(78vw, 300px) * 9 / 32 - 1.375rem); }
-  .ck-dw-c-stage[data-single] { --dw-arrow-top: calc(0.25rem + (100vw - 2.5rem) * 9 / 32 - 1.375rem); }
-  .ck-dw-c-arrow {
-    position: absolute;
-    top: var(--dw-arrow-top);
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 999px;
-    background: var(--dw-card);
-    color: var(--dw-heading);
-    box-shadow: 0 6px 18px rgb(58 7 22 / 0.3);
-    transition: transform 0.15s ease;
-  }
-  .ck-dw-c-arrow:active { transform: scale(0.92); }
-  .ck-dw-c-arrow-prev { left: 0.5rem; }
-  .ck-dw-c-arrow-next { right: 0.5rem; }
+  .ck-dw-c-row { position: relative; }
+  .ck-dw-c-pager { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; color: var(--dw-heading); }
+  .ck-dw-c-arrow { display: flex; align-items: center; justify-content: center; flex: none; width: 2.75rem; height: 2.75rem; border: 1px solid currentColor; border-radius: 999px; }
+  .ck-dw-c-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+  .ck-dw-c-dot { display: flex; align-items: center; justify-content: center; flex: none; width: 2rem; height: 2.75rem; }
+  .ck-dw-c-dot span { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: currentColor; opacity: 0.3; }
+  .ck-dw-c-dot[aria-current] span { opacity: 1; }
   .ck-dw-card { flex: 0 0 min(78vw, 300px); scroll-snap-align: start; display: flex; flex-direction: column; overflow: hidden; border-radius: 1.25rem; background: var(--dw-card); color: #2a1208; text-decoration: none; box-shadow: 0 14px 30px -20px rgb(114 13 45 / 0.55); transition: transform 0.2s ease; }
   .ck-dw-card:only-child { flex-basis: 100%; }
   .ck-dw-card:active { transform: scale(0.98); }
@@ -373,7 +360,7 @@
   .ck-dw-c-sums strong { color: var(--dw-heading); font-size: 0.98rem; }
   .ck-dw-c-cta { display: flex; align-items: center; justify-content: center; min-height: 2.75rem; margin-top: 0.3rem; border-radius: 0.75rem; background: var(--dw-burgundy); color: var(--dw-white); font-size: 0.86rem; font-weight: 800; }
   .ck-dw-card.is-skeleton { min-height: 22rem; opacity: 0.55; pointer-events: none; }
-  .ck-dw-c-all { display: inline-flex; align-items: center; min-height: 2.75rem; margin: 0 1.25rem; padding-inline: 1.1rem; border: 1px solid var(--dw-burgundy); border-radius: 999px; font-size: 0.85rem; font-weight: 700; color: var(--dw-heading); }
+  .ck-dw-c-all { display: flex; width: fit-content; align-items: center; min-height: 2.75rem; margin: 0 auto; padding-inline: 1.1rem; border: 1px solid var(--dw-burgundy); border-radius: 999px; font-size: 0.85rem; font-weight: 700; color: var(--dw-heading); }
   .ck-dw-c-empty .ck-dw-c-name { -webkit-line-clamp: unset; }
 
   .dark body:has(.ck-home-page) header[data-home-hero="top"] .ck-mobile-header > a { background: var(--dw-night); }

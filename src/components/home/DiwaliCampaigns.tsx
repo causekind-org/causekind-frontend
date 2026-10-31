@@ -59,25 +59,27 @@ function Card({ card }: { card: FundraiserCard }) {
 export function DiwaliCampaigns() {
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
   const rowRef = useRef<HTMLDivElement>(null);
-  const [edge, setEdge] = useState({ atStart: true, atEnd: false });
+  const [active, setActive] = useState(0);
   const previousLabel = useLandingTranslation("Previous fundraiser");
   const nextLabel = useLandingTranslation("Next fundraiser");
-  const allLabel = useLandingTranslation("See all fundraisers");
+  const pagerLabel = useLandingTranslation("Fundraisers pages");
 
-  const syncEdge = () => {
+  const syncActive = () => {
     const row = rowRef.current;
-    if (!row) return;
-    const atStart = row.scrollLeft < 8;
+    const count = row?.children.length ?? 0;
+    if (!row || count < 2) return;
+    const step = (row.children[1] as HTMLElement).offsetLeft - (row.children[0] as HTMLElement).offsetLeft;
     const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 8;
-    setEdge((current) => (current.atStart === atStart && current.atEnd === atEnd ? current : { atStart, atEnd }));
+    setActive(atEnd ? count - 1 : Math.round(row.scrollLeft / step));
   };
 
-  const move = (direction: 1 | -1) => {
+  const goTo = (index: number) => {
     const row = rowRef.current;
-    const card = row?.querySelector<HTMLElement>(".ck-dw-card");
+    const card = row?.children[index] as HTMLElement | undefined;
     if (!row || !card) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    row.scrollBy({ left: direction * (card.offsetWidth + 14), behavior: reduced ? "auto" : "smooth" });
+    const left = card.offsetLeft - (row.children[0] as HTMLElement).offsetLeft;
+    row.scrollTo({ left, behavior: reduced ? "auto" : "smooth" });
   };
 
   useEffect(() => {
@@ -91,7 +93,6 @@ export function DiwaliCampaigns() {
 
   useEffect(() => {
     if (cards) ScrollTrigger.refresh();
-    syncEdge();
   }, [cards]);
 
   return (
@@ -105,8 +106,7 @@ export function DiwaliCampaigns() {
         <p className="ck-dw-c-sub"><LandingText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</LandingText></p>
       </div>
 
-      <div className="ck-dw-c-stage" data-single={cards?.length === 1 || undefined}>
-      <div ref={rowRef} className="ck-dw-c-row" onScroll={syncEdge}>
+      <div ref={rowRef} className="ck-dw-c-row" onScroll={syncActive}>
         {cards === null ? (
           <div className="ck-dw-card is-skeleton" aria-hidden><span className="ck-dw-c-photo" /><span className="ck-dw-c-body" /></div>
         ) : cards.length > 0 ? (
@@ -122,22 +122,22 @@ export function DiwaliCampaigns() {
           </Link>
         )}
       </div>
-      {cards && cards.length > 0 && !edge.atStart && (
-        <button type="button" className="ck-dw-c-arrow ck-dw-c-arrow-prev" aria-label={previousLabel} onClick={() => move(-1)}>
-          <ChevronLeft className="size-5" aria-hidden />
-        </button>
+      {/* The same pager as the Live needs section. */}
+      {cards && cards.length > 0 && (
+        <nav aria-label={pagerLabel} className="ck-dw-c-pager">
+          <button type="button" className="ck-dw-c-arrow" aria-label={previousLabel} disabled={active === 0} onClick={() => goTo(active - 1)}>
+            <ChevronLeft size={20} aria-hidden />
+          </button>
+          {cards.map((card, index) => (
+            <button key={card.id} type="button" className="ck-dw-c-dot" aria-label={`${index + 1} / ${cards.length}`} aria-current={index === active ? "page" : undefined} onClick={() => goTo(index)}>
+              <span />
+            </button>
+          ))}
+          <button type="button" className="ck-dw-c-arrow" aria-label={nextLabel} disabled={active === cards.length - 1} onClick={() => goTo(active + 1)}>
+            <ChevronRight size={20} aria-hidden />
+          </button>
+        </nav>
       )}
-      {/* Past the last card, next is the full list. */}
-      {cards && cards.length > 0 && (edge.atEnd ? (
-        <Link href="/fundraisers" className="ck-dw-c-arrow ck-dw-c-arrow-next" aria-label={allLabel}>
-          <ChevronRight className="size-5" aria-hidden />
-        </Link>
-      ) : (
-        <button type="button" className="ck-dw-c-arrow ck-dw-c-arrow-next" aria-label={nextLabel} onClick={() => move(1)}>
-          <ChevronRight className="size-5" aria-hidden />
-        </button>
-      ))}
-      </div>
 
       {cards && cards.length > 0 && (
         <Link href="/fundraisers" className="ck-dw-c-all"><LandingText>See all fundraisers</LandingText></Link>
