@@ -339,3 +339,7 @@ Pre-existing state recorded by the audit (uncommitted on branch
 ## 2026-10-31 — Diwali on phones: more lanterns and diyas
 
 - Round paper lanterns (`lantern-round.svg`) hang from selected seams and the fundraisers; `DiwaliSeam` gains `lanterns` and `diyas`. Three-lamp clusters added after About and before the Founder note, five above the footer.
+
+## 2026-10-31 — Fundraisers on phones: arrows
+
+- `DiwaliCampaigns` gains previous/next arrows over the swipe row. On the last card, or when only one fundraiser is live, next links to `/fundraisers`.

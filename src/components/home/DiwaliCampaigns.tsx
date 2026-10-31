@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import Link from "@/components/AppLink";
-import { LandingText } from "@/components/LandingTranslation";
+import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { fundraisers, type FundraiserCard, type FundraisingCategory } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
@@ -57,6 +58,27 @@ function Card({ card }: { card: FundraiserCard }) {
  */
 export function DiwaliCampaigns() {
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const [edge, setEdge] = useState({ atStart: true, atEnd: false });
+  const previousLabel = useLandingTranslation("Previous fundraiser");
+  const nextLabel = useLandingTranslation("Next fundraiser");
+  const allLabel = useLandingTranslation("See all fundraisers");
+
+  const syncEdge = () => {
+    const row = rowRef.current;
+    if (!row) return;
+    const atStart = row.scrollLeft < 8;
+    const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 8;
+    setEdge((current) => (current.atStart === atStart && current.atEnd === atEnd ? current : { atStart, atEnd }));
+  };
+
+  const move = (direction: 1 | -1) => {
+    const row = rowRef.current;
+    const card = row?.querySelector<HTMLElement>(".ck-dw-card");
+    if (!row || !card) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    row.scrollBy({ left: direction * (card.offsetWidth + 14), behavior: reduced ? "auto" : "smooth" });
+  };
 
   useEffect(() => {
     if (!window.matchMedia(PHONE_QUERY).matches) return;
@@ -69,6 +91,7 @@ export function DiwaliCampaigns() {
 
   useEffect(() => {
     if (cards) ScrollTrigger.refresh();
+    syncEdge();
   }, [cards]);
 
   return (
@@ -82,7 +105,8 @@ export function DiwaliCampaigns() {
         <p className="ck-dw-c-sub"><LandingText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</LandingText></p>
       </div>
 
-      <div className="ck-dw-c-row">
+      <div className="ck-dw-c-stage" data-single={cards?.length === 1 || undefined}>
+      <div ref={rowRef} className="ck-dw-c-row" onScroll={syncEdge}>
         {cards === null ? (
           <div className="ck-dw-card is-skeleton" aria-hidden><span className="ck-dw-c-photo" /><span className="ck-dw-c-body" /></div>
         ) : cards.length > 0 ? (
@@ -97,6 +121,22 @@ export function DiwaliCampaigns() {
             </span>
           </Link>
         )}
+      </div>
+      {cards && cards.length > 0 && !edge.atStart && (
+        <button type="button" className="ck-dw-c-arrow ck-dw-c-arrow-prev" aria-label={previousLabel} onClick={() => move(-1)}>
+          <ChevronLeft className="size-5" aria-hidden />
+        </button>
+      )}
+      {/* Past the last card, next is the full list. */}
+      {cards && cards.length > 0 && (edge.atEnd ? (
+        <Link href="/fundraisers" className="ck-dw-c-arrow ck-dw-c-arrow-next" aria-label={allLabel}>
+          <ChevronRight className="size-5" aria-hidden />
+        </Link>
+      ) : (
+        <button type="button" className="ck-dw-c-arrow ck-dw-c-arrow-next" aria-label={nextLabel} onClick={() => move(1)}>
+          <ChevronRight className="size-5" aria-hidden />
+        </button>
+      ))}
       </div>
 
       {cards && cards.length > 0 && (

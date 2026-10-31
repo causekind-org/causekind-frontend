@@ -333,6 +333,26 @@
   .ck-dw-c-sub { margin-top: 0.6rem; max-width: 34ch; font-size: 0.9rem; line-height: 1.5; color: #5d4030; }
   .ck-dw-c-row { display: flex; gap: 0.875rem; overflow-x: auto; padding: 0.25rem 1.25rem 1rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1.25rem; scrollbar-width: none; }
   .ck-dw-c-row::-webkit-scrollbar { display: none; }
+  .ck-dw-c-stage { position: relative; --dw-arrow-top: calc(0.25rem + min(78vw, 300px) * 9 / 32 - 1.375rem); }
+  .ck-dw-c-stage[data-single] { --dw-arrow-top: calc(0.25rem + (100vw - 2.5rem) * 9 / 32 - 1.375rem); }
+  .ck-dw-c-arrow {
+    position: absolute;
+    top: var(--dw-arrow-top);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    background: var(--dw-card);
+    color: var(--dw-heading);
+    box-shadow: 0 6px 18px rgb(58 7 22 / 0.3);
+    transition: transform 0.15s ease;
+  }
+  .ck-dw-c-arrow:active { transform: scale(0.92); }
+  .ck-dw-c-arrow-prev { left: 0.5rem; }
+  .ck-dw-c-arrow-next { right: 0.5rem; }
   .ck-dw-card { flex: 0 0 min(78vw, 300px); scroll-snap-align: start; display: flex; flex-direction: column; overflow: hidden; border-radius: 1.25rem; background: var(--dw-card); color: #2a1208; text-decoration: none; box-shadow: 0 14px 30px -20px rgb(114 13 45 / 0.55); transition: transform 0.2s ease; }
   .ck-dw-card:only-child { flex-basis: 100%; }
   .ck-dw-card:active { transform: scale(0.98); }
