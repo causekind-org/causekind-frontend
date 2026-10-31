@@ -1,5 +1,6 @@
 "use client";
 
+import { openDatePicker } from "@/lib/openDatePicker";
 import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherSpecifyField";
 import { otherTextError } from "@/features/ngo-registration/ngoRegistrationModel";
 import { UploadedFilePreview } from "@/features/ngo-registration/components/UploadedFilePreview";
@@ -1650,7 +1651,7 @@ const [altContact, setAltContact] = useState("");
           <WizardField label={ui("Needed by")} required error={fieldErrors.neededBy}>
             {({ id, describedBy, invalid }) => (
               <div>
-                <Input id={id} name="neededBy" type="date" min={minDateStr} max={maxDateStr} value={neededBy} onChange={e => setNeededBy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <Input id={id} name="neededBy" type="date" onClick={openDatePicker} min={minDateStr} max={maxDateStr} value={neededBy} onChange={e => setNeededBy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
                 {neededBy && (
                   <p className="text-xs text-stone-500 mt-1">{df("neededByColon", { date: formatDateDDMMYYYY(neededBy) })}</p>
                 )}

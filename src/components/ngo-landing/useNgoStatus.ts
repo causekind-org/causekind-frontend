@@ -1,5 +1,6 @@
 "use client";
 
+import { NGO_TOAST_STYLE } from "./ngoToastStyle";
 import { SLOW_REQUEST_MESSAGE, isSlowRequestError } from "@/lib/api";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
@@ -71,6 +72,7 @@ export function triggerNgoLockedToast(
 ) {
   if (isLoggedOut) {
     toast.info("Log in as an NGO to access this.", {
+      ...NGO_TOAST_STYLE,
       action: router
         ? {
           label: "Log in",
@@ -81,7 +83,8 @@ export function triggerNgoLockedToast(
     return;
   }
   if (status === "incomplete") {
-    toast.info("Complete your profile to get verified. Continue →", {
+    toast.info("Complete your profile to get verified.", {
+      ...NGO_TOAST_STYLE,
       action: router
         ? {
           label: "Continue",
@@ -91,6 +94,7 @@ export function triggerNgoLockedToast(
     });
   } else if (status === "pending_otp") {
     toast.info("Verify your email to send your application for review.", {
+      ...NGO_TOAST_STYLE,
       action: router
         ? {
           label: "Verify",
@@ -103,7 +107,8 @@ export function triggerNgoLockedToast(
   } else if (status === "rejected") {
     toast.info("Your application was not approved. See your application for the reason.");
   } else if (status === "changes_requested") {
-    toast.warning("A few documents need fixing. Fix now →", {
+    toast.warning("A few documents need fixing.", {
+      ...NGO_TOAST_STYLE,
       action: router
         ? {
           label: "Fix now",
@@ -113,6 +118,7 @@ export function triggerNgoLockedToast(
     });
   } else if (isPhotosDue) {
     toast.warning(`Upload handover photos for ${photosDueRequestName} to start your next drive.`, {
+      ...NGO_TOAST_STYLE,
       action: router
         ? {
             label: "Upload",

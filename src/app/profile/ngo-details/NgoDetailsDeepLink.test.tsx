@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
   useSearchParams: () => ({ get: (k: string) => mockParams[k] ?? null }),
 }));
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/api", () => ({ getMyNgoActivities: vi.fn(() => Promise.resolve([])),
   getMyNgoApplication: vi.fn(),
   getNgoDraft: vi.fn(),
   saveNgoDraft: vi.fn(),

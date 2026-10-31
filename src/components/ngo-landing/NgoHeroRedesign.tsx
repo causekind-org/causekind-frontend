@@ -1,5 +1,6 @@
 "use client";
 
+import { NGO_TOAST_STYLE } from "./ngoToastStyle";
 import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -53,9 +54,10 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
       const isZero = stepNumber === 0;
       toast.info(
         isZero
-          ? "Start your application to get verified. Start now →"
-          : "Complete your profile to get verified. Continue →",
+          ? "Start your application to get verified."
+          : "Complete your profile to get verified.",
         {
+          ...NGO_TOAST_STYLE,
           action: {
             label: isZero ? "Start now" : "Continue",
             onClick: () => router.push(wizardHref || "/profile/ngo-details"),
@@ -64,6 +66,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
       );
     } else if (ngoStatus === "pending_otp") {
       toast.info("Verify your email to send your application for review.", {
+        ...NGO_TOAST_STYLE,
         action: { label: "Verify", onClick: () => router.push("/profile/ngo-details") },
       });
     } else if (ngoStatus === "under_review") {
@@ -71,7 +74,8 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
     } else if (ngoStatus === "rejected") {
       toast.info("Your application was not approved. See your application for the reason.");
     } else if (ngoStatus === "changes_requested") {
-      toast.warning("A few documents need fixing. Fix now →", {
+      toast.warning("A few documents need fixing.", {
+        ...NGO_TOAST_STYLE,
         action: {
           label: "Fix now",
           onClick: () => router.push("/profile/ngo-details"),
@@ -79,6 +83,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
       });
     } else if (isPhotosDue) {
       toast.warning(`Upload handover photos for ${photosDueRequestName} to start your next drive.`, {
+        ...NGO_TOAST_STYLE,
         action: {
           label: "Upload",
           onClick: () => router.push("/ngo/handovers"),

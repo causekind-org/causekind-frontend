@@ -1,5 +1,6 @@
 "use client";
 
+import { openDatePicker } from "@/lib/openDatePicker";
 import { directionsHref } from "@/features/handover/adapters";
 import { CallAction, HandoverContactsCall } from "@/features/handover/HandoverContactPanel";
 import { DriveOfferChatPanel } from "./DriveOfferChatPanel";
@@ -124,7 +125,7 @@ function PlanForm({
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm font-bold text-stone-800 dark:text-stone-200">Date
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={field} required />
+          <input type="date" value={date} onClick={openDatePicker} onChange={(e) => setDate(e.target.value)} className={field} required />
         </label>
         <label className="text-sm font-bold text-stone-800 dark:text-stone-200">Time
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} min={hhmm(offer.driveAvailableFrom) || undefined}

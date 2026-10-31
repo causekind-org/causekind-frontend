@@ -1,5 +1,6 @@
 "use client";
 
+import { openDatePicker } from "@/lib/openDatePicker";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Plus, Trash2, UploadCloud } from "lucide-react";
 import {
@@ -88,7 +89,7 @@ export function PastActivityForm({ onSaved, onCancel }: { onSaved: (a: NgoActivi
       </div>
       <div className="space-y-1">
         <label htmlFor="activity-date" className="text-xs font-bold text-stone-700 dark:text-stone-200">Activity date <span className="text-red-500">*</span></label>
-        <input id="activity-date" type="date" max={todayIst()} value={date} onChange={(e) => setDate(e.target.value)} className={field} />
+        <input id="activity-date" type="date" onClick={openDatePicker} max={todayIst()} value={date} onChange={(e) => setDate(e.target.value)} className={field} />
       </div>
       <div className="space-y-1">
         <label htmlFor="activity-work" className="text-xs font-bold text-stone-700 dark:text-stone-200">What work did you do? <span className="text-red-500">*</span></label>
@@ -224,7 +225,7 @@ export function PastActivitySection({ onCountChange, required = false, headingCl
         <h3 id="past-activity-heading" className={headingClassName ?? "text-sm font-bold text-stone-900 dark:text-stone-100"}>
           Past activity{required && <span className="text-red-500"> *</span>}
         </h3>
-        {!adding && (
+        {!adding && !(required && items?.length === 0) && (
           <button type="button" onClick={() => setAdding(true)} aria-label="Add activity"
             className="inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-ngo-700/40 px-3 text-xs font-bold text-ngo-700 hover:bg-ngo-50 dark:text-ngo-300">
             <Plus className="h-3.5 w-3.5" aria-hidden /> Add activity
@@ -237,7 +238,15 @@ export function PastActivitySection({ onCountChange, required = false, headingCl
       {items == null ? (
         <Loader2 className="h-5 w-5 animate-spin text-stone-400" aria-label="Loading" />
       ) : items.length === 0 && !adding ? (
-        <p className="text-xs text-stone-500">No past activity added yet.</p>
+        required ? (
+          <div data-testid="past-activity-empty" className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-stone-300 bg-white p-6 text-center dark:border-zinc-700 dark:bg-zinc-900">
+            <p className="text-sm font-semibold text-stone-700 dark:text-stone-200">No activities yet</p>
+            <button type="button" onClick={() => setAdding(true)} aria-label="Add activity"
+              className="inline-flex min-h-[44px] items-center gap-1 rounded-lg border border-ngo-700/40 px-3 text-xs font-bold text-ngo-700 hover:bg-ngo-50 dark:text-ngo-300">
+              <Plus className="h-3.5 w-3.5" aria-hidden /> Add activity
+            </button>
+          </div>
+        ) : <p className="text-xs text-stone-500">No past activity added yet.</p>
       ) : carousel ? (
         <ActivityCarousel label="Past activity">
           {items.map((a) => <PastActivityCard key={a.id} activity={a} onDelete={remove} />)}

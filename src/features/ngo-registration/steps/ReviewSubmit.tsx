@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
-import { getNgoFilePreviewUrl } from "@/lib/api";
+import { getMyNgoActivities, getNgoFilePreviewUrl, type NgoActivity } from "@/lib/api";
+import { formatActivityDate } from "@/features/ngo-profile/PastActivity";
 import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
 import {
   PAN_DOC,
@@ -46,6 +47,12 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
 
   // Every uploaded file on this page, in page order, for the preview popup.
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [activities, setActivities] = useState<NgoActivity[]>([]);
+  useEffect(() => {
+    let live = true;
+    Promise.resolve(getMyNgoActivities()).then((list) => { if (live) setActivities(list ?? []); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
   const previewFiles = useMemo(() => {
     const out: { key: string; file: PreviewFile }[] = [];
     const add = (key: string, label: string, f: UploadedFile | null | undefined, kind: "document" | "photo") => {
@@ -358,13 +365,32 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
               <p className="text-3xs uppercase text-stone-400 font-semibold">Office Photo</p>
               <div className="mt-1">{fileChip("office", data.officePhoto, "None")}</div>
             </div>
-            <div className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800">
-              <p className="text-3xs uppercase text-stone-400 font-semibold">Activity Photos</p>
-              {activityPhotosCount > 0 ? (
-                <div className="mt-1 flex flex-wrap gap-1">
+            <div data-testid="review-past-activity" className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800 sm:col-span-3">
+              <p className="text-3xs uppercase text-stone-400 font-semibold">Past activity</p>
+              {activities.length > 0 ? (
+                <ul className="mt-1 space-y-2">
+                  {activities.map((a) => (
+                    <li key={a.id} data-testid="review-activity" className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 font-bold text-stone-800 dark:text-stone-200">
+                        <span className="min-w-0 break-words">{a.title}</span>
+                        {a.status === "PENDING" && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Under review</span>}
+                      </p>
+                      <p className="text-3xs text-stone-500 dark:text-stone-400">Activity date: {formatActivityDate(a.activityDate)}</p>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {a.media.filter((m) => m.mediaType === "IMAGE" && m.url).map((m) => (
+                          // eslint-disable-next-line @next/next/no-img-element -- signed photo link
+                          <img key={m.id} src={m.url!} alt="" className="size-12 rounded-md object-cover" />
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="mt-1 font-bold text-stone-800 dark:text-stone-200">None</p>}
+              {activityPhotosCount > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
                   {data.activityPhotos.map((f, i) => f ? <span key={i}>{fileChip(`activity-${i}`, f)}</span> : null)}
                 </div>
-              ) : <p className="mt-1 font-bold text-stone-800 dark:text-stone-200">None</p>}
+              )}
             </div>
           </div>
         </section>

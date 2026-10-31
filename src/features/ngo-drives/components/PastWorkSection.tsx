@@ -64,25 +64,29 @@ function Lightbox({ photos, start, title, onClose }: { photos: string[]; start: 
 export function ActivityDetailDialog({ a, photos, onClose, onPhoto }: { a: PublicNgoActivity; photos: string[]; onClose: () => void; onPhoto: (i: number) => void }) {
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent data-testid="past-work-detail" className="max-h-[90vh] max-w-2xl overflow-y-auto">
-        <DialogTitle className="break-words pr-8 font-serif text-xl font-semibold text-stone-900 dark:text-stone-100">{a.title}</DialogTitle>
-        {a.activityDate && (
-          <p className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-            <CalendarDays className="size-3.5" aria-hidden="true" /> Activity date: {formatActivityDate(a.activityDate)}
-          </p>
-        )}
-        {photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {photos.map((src, i) => (
-              <button key={src} type="button" onClick={() => onPhoto(i)} aria-label={`Open photo ${i + 1} of ${a.title}`}
-                className="aspect-[4/3] overflow-hidden rounded-lg bg-stone-100 dark:bg-zinc-800">
-                {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
-                <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
-              </button>
-            ))}
-          </div>
-        )}
-        {a.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-stone-700 dark:text-stone-300">{a.description}</p>}
+      <DialogContent data-testid="past-work-detail" className="max-h-[85dvh] max-w-2xl max-sm:left-0 max-sm:top-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none">
+        <div className="shrink-0 border-b border-stone-200 px-5 py-4 pr-12 dark:border-zinc-800">
+          <DialogTitle className="break-words font-serif text-xl font-semibold text-stone-900 dark:text-stone-100">{a.title}</DialogTitle>
+          {a.activityDate && (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+              <CalendarDays className="size-3.5" aria-hidden="true" /> Activity date: {formatActivityDate(a.activityDate)}
+            </p>
+          )}
+        </div>
+        <div data-testid="past-work-detail-body" className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          {photos.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {photos.map((src, i) => (
+                <button key={src} type="button" onClick={() => onPhoto(i)} aria-label={`Open photo ${i + 1} of ${a.title}`}
+                  className="aspect-[4/3] overflow-hidden rounded-lg bg-stone-100 dark:bg-zinc-800">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
+                  <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
+          {a.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-stone-700 dark:text-stone-300">{a.description}</p>}
+        </div>
       </DialogContent>
     </Dialog>
   );

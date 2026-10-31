@@ -445,6 +445,12 @@
   .ck-dw-seam-line[data-art="kandil"] .ck-dw-hang { width: 24px; height: 82px; }
   .ck-dw-seam-line .ck-dw-hang-left { left: 12px; }
   .ck-dw-seam-line .ck-dw-hang-right { right: 12px; }
+  /* The drives seam sits in the padded column: it bleeds like the section below it, so
+     `round` fits whole scallops edge to edge. Its lamp stays in a corner the heading leaves clear. */
+  .ck-home-page .ck-dw-seam-line:has(+ #ngo-drives-section) { margin-inline: -1.25rem; }
+  .ck-home-page .ck-dw-seam-line:has(+ #ngo-drives-section) .ck-dw-hang { width: 16px; height: 42px; }
+  .ck-home-page .ck-dw-seam-line:has(+ #ngo-drives-section) .ck-dw-hang-right { right: 4px; }
+  .ck-home-page #ngo-drives-section h2 { padding-right: 1.5rem; }
   /* On butter, a margin would show cream either side; the lamps below sit between
      the lanterns, so this seam stays on top of theirs. */
   .ck-dw-seam-line[data-from="butter"] { height: 24px; margin-block: 0; z-index: 6; }

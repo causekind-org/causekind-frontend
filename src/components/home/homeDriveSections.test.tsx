@@ -43,5 +43,13 @@ describe("home drive sections", () => {
     }
   });
 
+  it("on phones the drives seam spans the viewport and its lamp clears the heading", () => {
+    const mobile = readFileSync(resolve(__dirname, "diwaliMobile.css"), "utf8");
+    expect(mobile).toContain(".ck-dw-seam-line:has(+ #ngo-drives-section) { margin-inline: -1.25rem; }");
+    expect(mobile).toContain("#ngo-drives-section h2 { padding-right: 1.5rem; }");
+    const desktop = readFileSync(resolve(__dirname, "diwaliDesktop.css"), "utf8");
+    expect(desktop).not.toContain(":has(+ #ngo-drives-section)");
+  });
+
   it("is a static check only (no render needed)", () => { expect(vi).toBeDefined(); });
 });

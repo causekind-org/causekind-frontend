@@ -1,5 +1,6 @@
 "use client";
 
+import { openDatePicker } from "@/lib/openDatePicker";
 import { useEffect, useRef, useState } from "react";
 import { Camera, FileText, Loader2, Upload } from "lucide-react";
 import { LEGAL_STRUCTURES } from "@/features/ngo-registration/ngoRegistrationModel";
@@ -177,6 +178,7 @@ export function NgoDateOfFormationField({ value, onChange, onBlur, error }: {
       <input
         id="dateOfFormation"
         type="date"
+        onClick={openDatePicker}
         max={todayIso()}
         value={value}
         onChange={(e) => onChange(e.target.value)}
