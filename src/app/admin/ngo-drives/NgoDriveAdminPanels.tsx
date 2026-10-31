@@ -1,5 +1,7 @@
 "use client";
+import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 
+import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -12,6 +14,26 @@ import {
   type AdminPendingDriveOffer, type AdminProofDrive, type NgoDrive,
 } from "@/lib/api";
 import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
+import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
+import { formatIST, formatISTDate } from "@/lib/formatIST";
+import { AdminSearchBox, NoSearchResults, matchesQuery } from "@/components/admin/AdminSearchBox";
+import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
+import { readUrlParam, statusIndexFromUrl, writeUrlParams } from "@/components/admin/adminUrlState";
+
+/** ?q= search state for a panel; cleared from the URL when the panel unmounts. */
+function useUrlQuery(): [string, (q: string) => void] {
+  const [query, setQuery] = useState(() => readUrlParam("q").trim().slice(0, 100));
+  useEffect(() => { writeUrlParams({ q: query || null }); }, [query]);
+  useEffect(() => () => writeUrlParams({ q: null, status: null }), []);
+  return [query, setQuery];
+}
+
+/** ?status= tab state over a list of options (index; default first). */
+function useUrlStatus<T extends { value: string }>(options: T[], fallback: number): [number, (i: number) => void] {
+  const [index, setIndex] = useState(() => statusIndexFromUrl(options, fallback));
+  useEffect(() => { writeUrlParams({ status: index === fallback ? null : options[index].value }); }, [index, fallback, options]);
+  return [index, setIndex];
+}
 
 const field = "w-full rounded-lg border border-stone-300 bg-white p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 const button = "rounded-lg border border-stone-300 px-4 py-2 text-sm font-semibold disabled:opacity-50 dark:border-zinc-700";
@@ -69,7 +91,9 @@ const DRIVE_DECISIONS: { value: DriveDecision; text: string; confirm: string }[]
 ];
 
 export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
-  const [status, setStatus] = useState<AdminDriveStatusFilter>("PENDING_REVIEW");
+  const [statusIndex, setStatusIndex] = useUrlStatus(DRIVE_FILTERS, 0);
+  const status = DRIVE_FILTERS[statusIndex].value;
+  const [query, setQuery] = useUrlQuery();
   const [drives, setDrives] = useState<NgoDrive[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<NgoDrive | null>(null);
@@ -115,19 +139,19 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
   }
 
   const d = detail;
+  const shownDrives = drives.filter(x => matchesQuery(query, x.title, x.id, x.ngoUser?.fullName, (x as { ngoName?: string | null }).ngoName, x.itemName));
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
-      <label className="block max-w-xs text-sm">Drive status
-        <select className={field} value={status} onChange={e => { setStatus(e.target.value as AdminDriveStatusFilter); setDetail(null); }}>
-          {DRIVE_FILTERS.map(f => <option key={f.value} value={f.value}>{f.text}</option>)}
-        </select>
-      </label>
+      <AdminStatusTabs label="Drive status" options={DRIVE_FILTERS.map(f => ({ label: f.text }))} selected={statusIndex}
+        onSelect={i => { if (i !== statusIndex) { setStatusIndex(i); setDetail(null); } }} />
+      <AdminSearchBox value={query} onChange={setQuery} label="Search drives" placeholder="Search drive title, ID, NGO name or item" />
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
         <section aria-label="Drives" className="space-y-3">
-          {loading ? <p role="status">Loading drives…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No drives in this status.</p> : null}
-          {drives.map(drive => (
+          {loading ? <p role="status">Loading drives…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No drives in this status.</p>
+            : shownDrives.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
+          {shownDrives.map(drive => (
             <button key={drive.id} onClick={() => void open(drive.id)}
               className={`w-full rounded-xl border bg-white p-4 text-left dark:bg-zinc-900 ${d?.id === drive.id ? "border-ngo-700 ring-1 ring-ngo-700" : "border-stone-200 dark:border-zinc-700"}`}>
               <span className="block font-semibold">{drive.title}</span>
@@ -139,6 +163,7 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
         <section aria-label="Drive details" className={card}>
           {!d ? <p className="text-sm text-stone-500">Select a drive to review it.</p> : <>
             <h2 className="text-2xl font-bold">{d.title}</h2>
+            {d.tagline && <p className="mt-1 text-sm italic text-stone-500">{d.tagline}</p>}
             <p className="mt-1 text-sm capitalize">{label(d.status)}</p>
             {ngo && (
               <p className="mt-2 text-sm">
@@ -147,20 +172,78 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
                   View NGO application ({label(ngo.applicationStatus)})</Link></>}
               </p>
             )}
+            {d.locationLatitude != null && d.locationLongitude != null && (
+              <div className="mt-4">
+                <iframe
+                  title="Drive location on the map"
+                  className="h-48 w-full rounded-lg border border-stone-200 dark:border-zinc-700"
+                  loading="lazy"
+                  src={`https://maps.google.com/maps?q=${d.locationLatitude},${d.locationLongitude}&z=15&output=embed`}
+                />
+              </div>
+            )}
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
               {Object.entries({
+                Location: [d.locationArea, d.locationCity, d.locationPincode].filter(Boolean).join(", "),
+                "Drop-off address": driveDropOffAddress(d),
+                "Pickup radius": d.pickupRadiusKm != null ? `${d.pickupRadiusKm} km` : "Not set (older drive)",
                 Category: d.category, Item: d.itemName, Quantity: `${d.quantityNeeded} ${label(d.unit)}`,
-                "Condition accepted": [driveConditionLabel(d.itemCondition), driveConditionRule(d.itemCondition)].filter(Boolean).join(" · "),
+                "Condition accepted": [
+                  driveConditionLabel(d.itemCondition),
+                  driveConditionRule(d.itemCondition),
+                  d.mustBeWorking ? "(Must be in working order)" : null,
+                  d.requireClean ? "(Washed and clean)" : null,
+                ].filter(Boolean).join(" · "),
+                ...Object.fromEntries(categoryDetailRows(d.category, d.categoryDetails).map(r => [r.label, r.value])),
                 Urgency: label(d.urgency),
-                "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}`,
-                "Needed by": d.neededBy, "Available days": (d.availableDays || "").split(",").join(", "),
+                "People who will benefit": `${d.beneficiaryCount} · ${d.beneficiaryGroup}${d.beneficiaryDescription ? ` (${d.beneficiaryDescription})` : ""}`,
+                "Needed by": d.neededBy,
+                "Handover mode": label(d.handoverMode || "BOTH"),
+                "Available days": (d.availableDays || "").split(",").join(", "),
                 Hours: `${(d.availableFrom || "").slice(0, 5)} – ${(d.availableTo || "").slice(0, 5)}`,
                 Contact: `${d.contactName} · ${d.contactPhone}`,
-              }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
+                "Alt contact": d.altContact,
+                "Past work": d.pastWorkUrl,
+              }).filter(([, v]) => v).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
             </dl>
-            <div className="mt-5 text-sm"><p className="text-stone-500">Why it&apos;s needed</p><p className="mt-1 whitespace-pre-wrap">{d.description}</p></div>
+            {d.whoFor || d.whyNow || d.whatChanges ? (
+              <div className="mt-5 space-y-2 text-sm border-t border-stone-100 pt-4 dark:border-zinc-800">
+                <p className="text-stone-500 font-semibold">Drive Story</p>
+                {d.whoFor && <div><span className="text-xs text-stone-500 font-medium">Who is this for:</span><p className="whitespace-pre-wrap">{d.whoFor}</p></div>}
+                {d.whyNow && <div><span className="text-xs text-stone-500 font-medium">Why now:</span><p className="whitespace-pre-wrap">{d.whyNow}</p></div>}
+                {d.whatChanges && <div><span className="text-xs text-stone-500 font-medium">What will change:</span><p className="whitespace-pre-wrap">{d.whatChanges}</p></div>}
+              </div>
+            ) : (
+              <div className="mt-5 text-sm"><p className="text-stone-500">Why it&apos;s needed</p><p className="mt-1 whitespace-pre-wrap">{d.description}</p></div>
+            )}
             {d.details && <div className="mt-4 text-sm"><p className="text-stone-500">Details</p><p className="mt-1 whitespace-pre-wrap">{d.details}</p></div>}
-            {d.referencePhotoUrl && <div className="mt-4 text-sm"><p className="mb-1 text-stone-500">Reference photo</p><Photo src={d.referencePhotoUrl} alt="Reference" /></div>}
+            {(d.changemakerName || d.changemakerWhy) && (
+              <div className="mt-4 text-sm space-y-2 border-t border-stone-100 pt-3 dark:border-zinc-800">
+                <p className="text-stone-500 font-semibold">Who is behind the drive</p>
+                <div className="flex items-start gap-3">
+                  {d.changemakerPhotoUrl && <Photo src={d.changemakerPhotoUrl} alt={d.changemakerName || "Changemaker"} />}
+                  <div>
+                    <p className="font-medium">{d.changemakerName} {d.changemakerRole ? `(${d.changemakerRole})` : ""}</p>
+                    {d.changemakerWhy && <p className="mt-1 text-xs text-stone-600 dark:text-stone-400 italic whitespace-pre-wrap">{d.changemakerWhy}</p>}
+                  </div>
+                </div>
+              </div>
+            )}
+            {Array.isArray(d.photos) && d.photos.length > 0 ? (
+              <div className="mt-4 text-sm">
+                <p className="mb-2 text-stone-500 font-semibold">Photos ({d.photos.length})</p>
+                <div className="flex flex-wrap gap-2">
+                  {d.photos.map((p, idx) => (
+                    <div key={p.url || idx} className="relative">
+                      <Photo src={p.url} alt={`Photo ${idx + 1}`} />
+                      {idx === 0 && <span className="absolute bottom-1 left-1 bg-ngo-700 text-white text-[9px] px-1 py-0.5 rounded font-bold uppercase">Cover</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : d.referencePhotoUrl ? (
+              <div className="mt-4 text-sm"><p className="mb-1 text-stone-500">Reference photo</p><Photo src={d.referencePhotoUrl} alt="Reference" /></div>
+            ) : null}
             {d.adminReason && <p className="mt-4 rounded-lg bg-stone-50 p-3 text-sm dark:bg-zinc-800"><strong>Last reason given:</strong> {d.adminReason}</p>}
             {d.status === "PENDING_REVIEW" && (
               <div className="mt-6 space-y-4 border-t border-stone-200 pt-6 dark:border-zinc-700">
@@ -216,7 +299,9 @@ const OFFER_FILTERS: { value: AdminDriveOfferFilter; text: string; empty: string
  * admin to approve here. Never shows donor contact details.
  */
 export function NgoDriveOffersPanel() {
-  const [status, setStatus] = useState<AdminDriveOfferFilter>("IN_HANDOVER");
+  const [statusIndex, setStatusIndex] = useUrlStatus(OFFER_FILTERS, OFFER_FILTERS.findIndex(f => f.value === "IN_HANDOVER"));
+  const status = OFFER_FILTERS[statusIndex].value;
+  const [query, setQuery] = useUrlQuery();
   const [offers, setOffers] = useState<AdminPendingDriveOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdminDriveOfferDetail | null>(null);
@@ -239,28 +324,54 @@ export function NgoDriveOffersPanel() {
 
   const when = (v?: string | null) => (v ? new Date(v).toLocaleString() : null);
   const empty = OFFER_FILTERS.find(f => f.value === status)?.empty;
+  const shownOffers = offers.filter(o => matchesQuery(query, o.donorName, o.ngoName, o.driveTitle, o.id));
 
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
-      <label className="block text-sm font-semibold">Status
-        <select className={`${field} mt-1 max-w-xs`} value={status} onChange={e => { setDetail(null); setStatus(e.target.value as AdminDriveOfferFilter); }}>
-          {OFFER_FILTERS.map(f => <option key={f.value} value={f.value}>{f.text}</option>)}
-        </select>
-      </label>
+      <AdminStatusTabs label="Status" options={OFFER_FILTERS.map(f => ({ label: f.text }))} selected={statusIndex}
+        onSelect={i => { if (i !== statusIndex) { setDetail(null); setStatusIndex(i); } }} />
+      <AdminSearchBox value={query} onChange={setQuery} label="Search drive offers" placeholder="Search donor, NGO, drive title or offer ID" />
       <p className="text-sm text-stone-500">Read only. The NGO accepts or declines each offer, and the handover starts as soon as it accepts.</p>
       {errorView}
-      {loading ? <p role="status">Loading drive offers…</p> : offers.length === 0 ? <p className="text-sm text-stone-500">{empty}</p> : null}
-      {offers.map(o => (
+      {loading ? <p role="status">Loading drive offers…</p> : offers.length === 0 ? <p className="text-sm text-stone-500">{empty}</p>
+        : shownOffers.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
+      {shownOffers.map(o => (
         <article key={o.id} className={card}>
           <h2 className="text-lg font-bold">{o.donorName || "Donor"} → {o.driveTitle}</h2>
           <p className="mt-1 text-sm text-stone-500">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${serverDate(o.submittedAt).toLocaleString()}` : ""}</p>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-            {Object.entries({
-              Offering: `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}`,
-              Condition: label(o.condition), "Item age": o.approximateAge, "Known defects": o.knownDefects,
-              Handover: label(o.handoverMethod), "Donor city": o.donorCity,
-              Compatibility: label(o.compatibilityIndicator), "Notes for NGO": o.notesForNgo,
-            }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
+            {([
+              ["Offering", `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}`],
+              ["Condition", label(o.condition)],
+              ["Item age", formatAgeRange(o.ageRange) || o.approximateAge],
+              ["Size / spec", o.sizeSpec],
+              ["Tested working", o.confirmedWorking != null ? (
+                o.confirmedWorking ? (
+                  <span className="inline-flex items-center gap-1.5 text-stone-800 dark:text-stone-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                    Tested and works
+                  </span>
+                ) : "No"
+              ) : undefined],
+              ["Washed & clean", o.confirmedClean != null ? (
+                o.confirmedClean ? (
+                  <span className="inline-flex items-center gap-1.5 text-stone-800 dark:text-stone-200">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                    Washed and clean
+                  </span>
+                ) : "No"
+              ) : undefined],
+              ["Known defects", o.knownDefects],
+              ["Handover", label(o.handoverMethod)],
+              ["Donor city", o.donorCity],
+              ["Compatibility", label(o.compatibilityIndicator)],
+              ["Notes for NGO", o.notesForNgo],
+            ] as [string, React.ReactNode][]).filter(([_, value]) => value !== undefined).map(([name, value]) => (
+              <div key={name}>
+                <dt className="text-stone-500">{name}</dt>
+                <dd className="mt-1 break-words">{value || "Not provided"}</dd>
+              </div>
+            ))}
           </dl>
           <button className={`${button} mt-4`} aria-expanded={detail?.id === o.id} onClick={() => void open(o.id)}>
             {detail?.id === o.id ? "Hide details" : "View details"}
@@ -299,6 +410,8 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
+  const [query, setQuery] = useUrlQuery();
+  const [enlarged, setEnlarged] = useState<string | null>(null);
   const { fail, clear, view: errorView } = useErrors();
 
   const load = useCallback(async () => {
@@ -321,22 +434,24 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
     finally { setBusy(null); }
   }
 
+  const shownProofs = drives.filter(x => matchesQuery(query, x.ngoName, x.ngoUser?.fullName, x.title, x.id));
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
+      {enlarged && (
+        <div role="dialog" aria-modal="true" aria-label="Proof photo" className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setEnlarged(null)}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- signed URL */}
+          <img src={enlarged} alt="Proof photo, enlarged" className="max-h-[85vh] max-w-full rounded-lg object-contain" />
+          <button type="button" className="absolute right-4 top-4 rounded-full bg-white/90 px-3 py-1 text-sm font-semibold text-stone-900" onClick={() => setEnlarged(null)}>Close</button>
+        </div>
+      )}
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
-      {loading ? <p role="status">Loading distribution proofs…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No distribution proofs are waiting for review.</p> : null}
-      {drives.map(d => (
-        <article key={d.id} className={card}>
-          <h2 className="text-lg font-bold">{d.title}</h2>
-          <p className="mt-1 text-sm text-stone-500">{d.ngoUser?.fullName}{d.distributionProofSubmittedAt ? ` · submitted ${serverDate(d.distributionProofSubmittedAt).toLocaleString()}` : ""}</p>
-          <p className="mt-3 text-sm">
-            Received {d.quantityReceived ?? 0} of {d.quantityNeeded} {label(d.unit)} · reached {d.beneficiariesReached ?? "not reported"} {label(d.beneficiaryGroup)}
-            <span className="block text-xs text-stone-500">The drive planned for about {d.beneficiaryCount}.</span>
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {(d.distributionProofUrls || "").split("|").filter(Boolean).map((url, i) => <Photo key={url} src={url} alt={`Proof photo ${i + 1}`} />)}
-          </div>
+      <AdminSearchBox value={query} onChange={setQuery} label="Search distribution proofs" placeholder="Search NGO name, drive title or drive ID" />
+      {loading ? <p role="status">Loading distribution proofs…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No distribution proofs are waiting for review.</p>
+        : shownProofs.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
+      {shownProofs.map(d => (
+        <article key={d.id} className={card} data-testid="proof-card">
+          <ProofDetails d={d} onEnlarge={setEnlarged} />
           <label className="mt-4 block text-sm">Reason (required to reject)
             <textarea className={field} rows={2} maxLength={500} value={reasons[d.id] ?? ""} disabled={busy === d.id}
               onChange={e => setReasons(prev => ({ ...prev, [d.id]: e.target.value }))} />
@@ -348,5 +463,56 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
         </article>
       ))}
     </div>
+  );
+}
+
+/** Everything the NGO submitted with its distribution proof, as in its own drive report. */
+export function ProofDetails({ d, onEnlarge }: { d: AdminProofDrive; onEnlarge: (url: string) => void }) {
+  const photos = d.proofPhotoUrls?.length ? d.proofPhotoUrls : (d.distributionProofUrls || "").split("|").filter(Boolean);
+  const unit = label(d.unit);
+  const yesNo = (v?: boolean | null) => (v == null ? "Not reported" : v ? "Yes" : "No");
+  const rows: [string, React.ReactNode][] = [
+    ["Drive", <>{d.title} <span className="text-stone-500">· #{d.id}</span></>],
+    ["NGO", d.ngoName || d.ngoUser?.fullName || "Not provided"],
+    ["Collection dates", [d.collectionStartedAt || d.liveAt || d.createdAt, d.collectionCompletedAt].some(Boolean)
+      ? `${formatISTDate(d.collectionStartedAt || d.liveAt || d.createdAt) || "?"} – ${formatISTDate(d.collectionCompletedAt) || "ongoing"}` : "Not recorded"],
+    ["Quantity needed / received", `${d.quantityNeeded ?? "?"} / ${d.quantityReceived ?? 0} ${unit}`],
+    ["People reached", d.beneficiariesReached != null ? `${d.beneficiariesReached} ${label(d.beneficiaryGroup)} (planned about ${d.beneficiaryCount})` : "Not reported"],
+    ["Quantity distributed", d.proofQuantityDistributed != null ? `${d.proofQuantityDistributed} ${unit}` : "Not reported"],
+    ["Distribution date", formatISTDate(d.proofDistributedOn) || "Not reported"],
+    ["Location", d.proofLocation || "Not reported"],
+    ["Note", d.proofNote || "None"],
+    ["Faces blurred / consent confirmed", d.proofFacesBlurred != null && d.proofFacesBlurred !== d.proofConsentConfirmed
+      ? `Faces blurred: ${yesNo(d.proofFacesBlurred)} · Consent: ${yesNo(d.proofConsentConfirmed)}` : yesNo(d.proofConsentConfirmed ?? d.proofFacesBlurred)],
+    ["Submitted at", formatIST(d.distributionProofSubmittedAt) || "Not recorded"],
+  ];
+  const rejection = d.previousProofRejectionReason || d.previousRejectionReason || d.proofRejectionReason;
+  const donors = d.proofDonors?.length ? d.proofDonors : (d.donors ?? []);
+  return (
+    <>
+      <h2 className="text-lg font-bold">{d.title}</h2>
+      <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2" data-testid="proof-fields">
+        {rows.map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 whitespace-pre-wrap break-words">{value}</dd></div>)}
+      </dl>
+      {rejection && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100"><strong>Previous rejection reason:</strong> {rejection}</p>}
+      <p className="mt-4 text-sm font-semibold text-stone-500">Photos ({photos.length})</p>
+      <div className="mt-2 flex flex-wrap gap-3">
+        {photos.map((url, i) => (
+          <button key={url} type="button" aria-label={`Enlarge proof photo ${i + 1}`} onClick={() => onEnlarge(url)}>
+            <Photo src={url} alt={`Proof photo ${i + 1}`} />
+          </button>
+        ))}
+      </div>
+      <p className="mt-4 text-sm font-semibold text-stone-500">Donors</p>
+      {donors.length === 0 ? <p className="text-sm text-stone-500">No donor list sent.</p> : (
+        <ul className="mt-1 divide-y divide-stone-100 text-sm dark:divide-zinc-800" data-testid="proof-donors">
+          {donors.map((x, i) => (
+            <li key={x.offerId ?? i} className="py-2">
+              <span className="font-semibold">{x.donorName}</span> · {x.quantity ?? "—"} {unit} · received {formatISTDate(x.receivedAt) || "—"}
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }

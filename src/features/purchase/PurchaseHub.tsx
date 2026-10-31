@@ -609,7 +609,7 @@ function daysLeft(value: string): string | undefined {
 
 function AddressPanel({ view, busy, onShare, onRevoke }: {
   view: PurchaseView; busy: string | null;
-  onShare: (a: { address: string; contactName: string; contactPhone: string; latitude?: number; longitude?: number }) => Promise<boolean>;
+  onShare: (a: { address: string; contactName?: string; contactPhone?: string; latitude?: number; longitude?: number }) => Promise<boolean>;
   onRevoke: () => Promise<boolean>;
 }) {
   // Separate fields make a complete address more likely; the backend stores

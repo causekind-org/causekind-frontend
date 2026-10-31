@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { pressProps } from "@/features/wizard-kit/wizardMotion";
 
+import { UiText, useUiText } from "@/components/UiText";
 /**
  * Sticky action footer.
  *
@@ -55,6 +56,7 @@ export function WizardNavigation({
    */
   variant?: "bar" | "floating";
 }) {
+  const ui = useUiText();
   const reduced = !!useReducedMotion();
 
   const compact = variant === "floating";
@@ -83,11 +85,11 @@ export function WizardNavigation({
           animate={{ scale: 1 }}
           transition={{ duration: 0.25 }}
         >
-          <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> Submitted
+          <Check className="h-4 w-4" strokeWidth={3} aria-hidden /> <UiText>Submitted</UiText>
         </motion.span>
       ) : submitting || advancing ? (
         <>
-          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {advancing ? advancingLabel : "Submitting…"}
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> {advancing ? advancingLabel : ui("Submitting…")}
         </>
       ) : (
         <>
@@ -117,7 +119,7 @@ export function WizardNavigation({
             <motion.button
               type="button"
               onClick={onBack}
-              aria-label="Back"
+              aria-label={ui("Back")}
               {...pressProps(reduced)}
               // h-10 w-10 visually, but the touch target stays at 48 via the
               // `after:-inset-1` trick — a 40px tap target is below the
@@ -148,7 +150,7 @@ export function WizardNavigation({
             disabled={savingExit}
             className="inline-flex items-center min-h-[40px] shrink-0 rounded-lg px-2 text-2xs font-bold text-stone-500 underline underline-offset-2 transition-colors hover:text-stone-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:text-stone-400"
           >
-            {savingExit ? "Saving…" : "Save & exit"}
+            {savingExit ? ui("Saving…") : ui("Save & exit")}
           </button>
           {continueButton}
         </div>
@@ -171,7 +173,7 @@ export function WizardNavigation({
             className="flex min-h-[44px] items-center gap-1.5 rounded-xl border border-stone-300 px-3.5 text-sm font-bold text-stone-600 transition-colors hover:bg-stone-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:text-stone-300 dark:hover:bg-zinc-800"
           >
             <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden />
-            <span className="hidden sm:inline">Back</span>
+            <span className="hidden sm:inline"><UiText>Back</UiText></span>
           </motion.button>
         )}
 
@@ -189,7 +191,7 @@ export function WizardNavigation({
             disabled={savingExit}
             className="relative z-10 inline-flex min-h-[44px] shrink-0 items-center rounded-xl px-2.5 text-xs font-bold text-stone-500 underline underline-offset-2 transition-colors hover:text-stone-700 disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)] dark:text-stone-400"
           >
-            {savingExit ? "Saving…" : "Save & exit"}
+            {savingExit ? ui("Saving…") : ui("Save & exit")}
           </button>
           <div className="sm:min-w-[150px] [&>button]:w-full">
             {continueButton}

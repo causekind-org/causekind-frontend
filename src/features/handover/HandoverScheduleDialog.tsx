@@ -12,6 +12,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { HandoverLocationField } from "./HandoverLocationField";
+import { formatISTDate } from "@/lib/formatIST";
 import { handoverScope, type HandoverViewModel } from "./model";
 import {
   handoverPrimary, handoverSecondary, handoverInput, handoverLabel,
@@ -47,6 +48,46 @@ export type SchedulePayload = {
  * directly, because both portal to `<body>` and would otherwise land outside the
  * `.handover-donor` scope with no accent at all.
  */
+const DAY_CODES = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+const DAY_WORDS: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
+type DriveWindow = { availableDays?: string | string[] | null; availableFrom?: string | null; availableTo?: string | null };
+const dayCodes = (d: DriveWindow) => (Array.isArray(d.availableDays) ? d.availableDays : String(d.availableDays ?? "").split(","))
+  .map(x => x.trim().toUpperCase().slice(0, 3)).filter(Boolean);
+const hhmm = (t?: string | null) => (t ? t.slice(0, 5) : "");
+
+/** "on Mon, Wed between 18:11 and 19:11". */
+export function driveWindowText(d: DriveWindow): string {
+  const days = dayCodes(d).map(c => DAY_WORDS[c] ?? c).join(", ");
+  const hours = d.availableFrom && d.availableTo ? `between ${hhmm(d.availableFrom)} and ${hhmm(d.availableTo)}` : "";
+  return [days ? `on ${days}` : "", hours].filter(Boolean).join(" ") || "at a time you agree";
+}
+
+/** IST wall-clock "yyyy-MM-ddTHH:mm" for an instant. The server reads drive times as Asia/Kolkata (UTC+5:30, no DST). */
+export function istWallTime(at: Date = new Date()): string {
+  return new Date(at.getTime() + 330 * 60_000).toISOString().slice(0, 16);
+}
+
+/**
+ * Why a picked time (yyyy-MM-ddTHH:mm, meant as IST) is outside the NGO's days and hours, or null.
+ * Mirrors the server's validateSlot: future in Asia/Kolkata, weekday of the picked date, HH:mm within from..to.
+ * Independent of the browser's time zone.
+ */
+export function driveSlotProblem(d: DriveWindow, when: string, now = new Date()): string | null {
+  const [date, time] = when.split("T");
+  if (!date || !time) return null;
+  const [y, m, day] = date.split("-").map(Number);
+  if (!y || !m || !day) return null;
+  const t = time.slice(0, 5);
+  if (`${date}T${t}` <= istWallTime(now)) return "Pick a date and time in the future.";
+  const weekday = new Date(Date.UTC(y, m - 1, day)).getUTCDay();
+  const codes = dayCodes(d);
+  if (codes.length && !codes.includes(DAY_CODES[weekday])) return `The NGO receives items on ${codes.map(c => DAY_WORDS[c] ?? c).join(", ")} only.`;
+  if (d.availableFrom && d.availableTo && (t < hhmm(d.availableFrom) || t > hhmm(d.availableTo))) {
+    return `Pick a time between ${hhmm(d.availableFrom)} and ${hhmm(d.availableTo)}.`;
+  }
+  return null;
+}
+
 export function HandoverScheduleDialog({
   vm, open, onOpenChange, onSubmit, isReschedule,
 }: {
@@ -96,31 +137,25 @@ export function HandoverScheduleDialog({
     setError(null);
   }, [open, vm.schedule, vm.methodOptions]);
 
+  // NGO drive drop-off: the donor goes to the NGO's address, so there is no map or pin to pick.
+  const driveDropOff = vm.flow === "NGO_OFFER" && method === "DONOR_DROP_OFF";
+  const dropOff = vm.dropOff ?? null;
+  const window_: DriveWindow | null = drive ?? (vm.flow === "NGO_OFFER" && dropOff
+    ? { availableDays: dropOff.days, availableFrom: dropOff.from, availableTo: dropOff.to } : null);
   // A reschedule costs the other person a trip, so it has to say why.
   const reasonRequired = isReschedule;
   const isCourier = method === "COURIER" || method === "THIRD_PARTY";
   const hasPin = lat != null && lng != null;
-  // For in-person handovers, the donee is sent both the written address and a map link,
-  // so both are required. For courier deliveries, the delivery address will be provided
-  // by the recipient in the hub, so meeting location is not required here.
-  const locationValid = isCourier || (!locationBusy && address.trim() !== "" && hasPin);
+  // In-person handovers send the donee both the written address and a map link, so both
+  // are required and Save waits for any lookup still filling one from the other. Courier
+  // deliveries get the recipient's address in the hub; NGO drop-offs use the NGO's address.
+  const locationValid = isCourier || driveDropOff || (!locationBusy && address.trim() !== "" && hasPin);
   let canSubmit = !busy && when.trim() !== "" && locationValid
     && (!reasonRequired || reason.trim().length >= 3);
 
-  // Validate NGO Drop off limits
-  if (canSubmit && method === "DONOR_DROP_OFF" && drive) {
-    const d = new Date(when);
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'long' });
-    const availableDays = (drive.availableDays || "").split(",").map((s: string) => s.trim());
-    if (availableDays.length > 0 && !availableDays.includes("Everyday") && !availableDays.includes(dayName)) {
-      canSubmit = false;
-    }
-    const neededBy = new Date(drive.neededBy);
-    if (d > neededBy) {
-      canSubmit = false;
-    }
-    // Time slot validation could go here, but for simplicity we rely on the submit warning if it fails.
-  }
+  // NGO drive offers: the NGO's handover days and hours (the same rule the server checks).
+  const slotProblem = vm.flow === "NGO_OFFER" && window_ && when ? driveSlotProblem(window_, when) : null;
+  if (slotProblem) canSubmit = false;
 
   async function submit() {
     if (busy || !canSubmit) return;      // `disabled` lags a fast double-click
@@ -129,9 +164,11 @@ export function HandoverScheduleDialog({
     try {
       await onSubmit({
         method,
-        scheduledDateTime: new Date(when).toISOString(),
-        address: isCourier ? undefined : (address.trim() || undefined),
-        ...(!isCourier && lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
+        // Drive handovers: the local (IST) time as picked — toISOString() turned 18:30 IST into
+        // 13:00, which the server read as outside the NGO's hours. Other flows unchanged.
+        scheduledDateTime: vm.flow === "NGO_OFFER" ? `${when.slice(0, 16)}:00` : new Date(when).toISOString(),
+        address: driveDropOff ? (dropOff?.address ?? undefined) : isCourier ? undefined : (address.trim() || undefined),
+        ...(!driveDropOff && !isCourier && lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
         notes: notes.trim() || undefined,
         courierName: courierName.trim() || undefined,
         trackingNumber: trackingNumber.trim() || undefined,
@@ -183,19 +220,23 @@ export function HandoverScheduleDialog({
             {selectedHint && <Hint>{selectedHint}</Hint>}
           </Field>
 
-          {method === "DONOR_DROP_OFF" && vm.flow === "NGO_OFFER" && (
-            <div className="bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg border border-amber-100 text-sm text-amber-800 dark:text-amber-400">
-              <strong>Drop-off Location:</strong> {vm.counterpart.name}
-              <br />
-              {drive ? (
-                <>
-                  Available days: {drive.availableDays} (up to {new Date(drive.neededBy).toLocaleDateString()})
-                  <br/>
-                  Hours: {drive.availableFrom} - {drive.availableTo}
-                </>
-              ) : (
-                "Please select a time during their operating hours."
+          {vm.flow === "NGO_OFFER" && window_ && !driveDropOff && (
+            <p data-testid="drive-handover-window" className="text-sm text-stone-700 dark:text-stone-300">
+              The NGO receives items {driveWindowText(window_)} (India time).
+            </p>
+          )}
+          {driveDropOff && (
+            <div data-testid="drive-dropoff-details" className="space-y-1.5 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-sm text-stone-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-stone-200">
+              <p className="font-bold text-emerald-900 dark:text-emerald-200">Drop off at {vm.counterpart.name}</p>
+              <p><span className="font-semibold">Address:</span> {dropOff?.address || "Shared by the NGO after it accepts your offer."}</p>
+              {(dropOff?.contactName || dropOff?.contactPhone) && (
+                <p><span className="font-semibold">Handover contact:</span> {[dropOff?.contactName, dropOff?.contactPhone].filter(Boolean).join(", ")}</p>
               )}
+              <p data-testid="drive-handover-window">
+                <span className="font-semibold">Open for drop-off:</span>{" "}
+                {window_ ? driveWindowText(window_) : dropOff?.hoursText || "at a time you agree"}
+                {drive?.neededBy ? `, until ${formatISTDate(drive.neededBy)}` : ""} (India time)
+              </p>
             </div>
           )}
 
@@ -207,9 +248,10 @@ export function HandoverScheduleDialog({
               onChange={(e) => setWhen(e.target.value)}
               disabled={busy}
               className={handoverInput}
-              min={method === "DONOR_DROP_OFF" ? new Date(Date.now() + 86400000).toISOString().slice(0, 16) : undefined}
-              max={method === "DONOR_DROP_OFF" && drive ? new Date(drive.neededBy).toISOString().slice(0, 16) : undefined}
+              min={vm.flow === "NGO_OFFER" ? istWallTime() : undefined}
+              max={vm.flow === "NGO_OFFER" && drive?.neededBy ? `${String(drive.neededBy).slice(0, 10)}T23:59` : undefined}
             />
+            {slotProblem && <p role="alert" data-testid="drive-slot-problem" className="mt-1 text-sm font-medium text-destructive">{slotProblem}</p>}
             {isCourier && (
               <Hint>Estimated date and time you plan to hand over or dispatch the parcel.</Hint>
             )}
@@ -224,7 +266,7 @@ export function HandoverScheduleDialog({
                 You won't need to specify a meeting location for courier delivery. Once scheduled, you will request the recipient's delivery address directly in the handover hub.
               </p>
             </div>
-          ) : (
+          ) : !driveDropOff && (
             <Field label="Where?" required>
               <HandoverLocationField
                 address={address}

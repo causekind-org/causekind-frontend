@@ -4,7 +4,7 @@ import { OfferPhotosStep } from "@/features/donation-offer-wizard/steps/OfferPho
 import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferReviewStep";
 import { emptyOfferModel } from "@/features/donation-offer-wizard/offerModel";
 
-vi.mock("next-intl", () => ({ useTranslations: () => (k: string) => k }));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 
 /**
  * The drive give form added optional props to these shared steps. Without them, the
@@ -41,5 +41,14 @@ describe("shared offer steps without the drive-only props (donor↔donee flow)",
     imgs.forEach(img => expect(img.className).toContain("object-cover"));
     expect(screen.queryByRole("list", { name: "Your photos" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Enlarge photo/ })).not.toBeInTheDocument();
+  });
+
+  it("OfferReviewStep without driveDetails shows no drive-only rows (size, age, working, clean)", () => {
+    const model = { ...emptyOfferModel, quantity: "1", sizeSpec: "Adult Large", ageRange: "Y1_2", confirmedWorking: true, confirmedClean: true } as never;
+    render(<OfferReviewStep model={model} errors={{}} requestTitle={null} compat={null}
+      declarationsInvalidated={false} onChange={vi.fn()} onEdit={vi.fn()} />);
+    expect(screen.queryByText("Adult Large")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tested and works/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Washed and clean/)).not.toBeInTheDocument();
   });
 });

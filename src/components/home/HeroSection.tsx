@@ -2,7 +2,7 @@
 import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
 
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image, { getImageProps } from "next/image";
 import { Anton } from "next/font/google";
 import Link from "@/components/AppLink";
@@ -13,6 +13,7 @@ import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { CategoryStrip } from "@/components/home/CategoryStrip";
+import { DiwaliHangingLanterns } from "@/components/home/DiwaliHangingLanterns";
 import { TrustBand } from "@/components/home/TrustBand";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavratriCampaign } from "@/hooks/useNavratriCampaign";
@@ -21,6 +22,19 @@ import { registerUrlPreserving } from "@/lib/postAuthDestination";
 const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
 const mobileDisplay = Anton({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-hero-mobile" });
 const HERO_FOREGROUND = "/images/causekind-hero-foreground.png";
+const DIWALI_VIDEO = "/videos/diwali-hero.mp4";
+const DIWALI_POSTER = "/images/diwali-hero-poster.jpg";
+const DIWALI_MOBILE_VIDEO = "/videos/diwali-hero-mobile.mp4";
+const DIWALI_MOBILE_POSTER = "/images/diwali-hero-mobile-poster.jpg";
+const DIWALI_MOBILE_QUERY = "(max-width: 767px)";
+const DIWALI_DESKTOP_QUERY = "(min-width: 1024px)";
+
+/** Diwali hero copy, phones and desktop. The subtext stays the everyday hero's line. */
+const DIWALI_COPY = {
+  badge: "A festival of giving",
+  headlineTop: "This Diwali, Share the Light of Kindness",
+  headlineAccent: "with Someone in Need",
+};
 
 /** Navratri hero copy (11–20 Oct 2026, see src/lib/navratri.ts). Same for every role. */
 const NAVRATRI_COPY = {
@@ -146,6 +160,90 @@ function NavratriArt() {
             </span>
           ))}
         </span>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * The Diwali rangoli, decorative, on phones and desktop; tablets keep the handover
+ * photo. The poster is the server render and <picture> fetches only the one for
+ * this width, so the video never holds up first paint. One video joins it after
+ * mount, chosen by width and swapped on rotate or resize, unless reduced motion or
+ * Save-Data is set, and it pauses while the hero is off screen.
+ */
+function DiwaliMedia() {
+  const mediaRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [video, setVideo] = useState<{ src: string; poster: string } | null>(null);
+  const { props: desktopProps } = getImageProps({
+    src: DIWALI_POSTER,
+    alt: "",
+    fill: true,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "75vw",
+  });
+  const { props: mobileProps } = getImageProps({
+    src: DIWALI_MOBILE_POSTER,
+    alt: "",
+    fill: true,
+    sizes: "100vw",
+  });
+
+  useEffect(() => {
+    const mobile = window.matchMedia(DIWALI_MOBILE_QUERY);
+    const desktop = window.matchMedia(DIWALI_DESKTOP_QUERY);
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const queries = [mobile, desktop, reduced];
+    const choose = () => {
+      const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+      if (reduced.matches || connection?.saveData) setVideo(null);
+      else if (mobile.matches) setVideo({ src: DIWALI_MOBILE_VIDEO, poster: DIWALI_MOBILE_POSTER });
+      else if (desktop.matches) setVideo({ src: DIWALI_VIDEO, poster: DIWALI_POSTER });
+      else setVideo(null);
+    };
+    choose();
+    queries.forEach((query) => query.addEventListener("change", choose));
+    return () => queries.forEach((query) => query.removeEventListener("change", choose));
+  }, []);
+
+  const videoSrc = video?.src;
+  useEffect(() => {
+    const media = mediaRef.current;
+    if (!videoSrc || !media || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) void videoRef.current?.play().catch(() => {});
+      else videoRef.current?.pause();
+    });
+    io.observe(media);
+    return () => io.disconnect();
+  }, [videoSrc]);
+
+  return (
+    <div ref={mediaRef} className="ck-diwali-media" aria-hidden>
+      <div className="ck-diwali-box">
+        <picture>
+          <source media={DIWALI_MOBILE_QUERY} srcSet={mobileProps.srcSet} sizes={mobileProps.sizes} />
+          <source media="(min-width: 768px) and (max-width: 1023px)" srcSet={BLANK_PIXEL} />
+          {/* eslint-disable-next-line jsx-a11y/alt-text -- alt is in desktopProps */}
+          <img {...desktopProps} className="ck-diwali-fill" />
+        </picture>
+        {video && (
+          <video
+            key={video.src}
+            ref={videoRef}
+            className="ck-diwali-fill"
+            src={video.src}
+            poster={video.poster}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden
+          />
+        )}
       </div>
     </div>
   );
@@ -316,6 +414,14 @@ export function HeroSection() {
   const headlineTop = navratri ? NAVRATRI_COPY.headlineTop : t("headlineTop");
   const headlineAccent = navratri ? NAVRATRI_COPY.headlineAccent : t("headlineAccent");
   const subtext = navratri ? NAVRATRI_COPY.subtext : t("subtext");
+  const { props: heroPhotoProps } = getImageProps({
+    src: HERO_IMAGE,
+    alt: t("photoAlt"),
+    fill: true,
+    loading: "eager",
+    fetchPriority: "high",
+    sizes: "100vw",
+  });
 
   return (
     <MotionConfig reducedMotion="user">
@@ -323,10 +429,9 @@ export function HeroSection() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className={`${navratri ? "ck-hero-navratri " : ""}ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
+        className={`${navratri ? "ck-hero-navratri" : "ck-hero-diwali"} ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
-
 
         <div className="ck-hero-frame relative z-10 mx-auto min-w-0 w-full max-w-[1920px]">
           {/* Below lg the photograph becomes the hero's ground rather than a
@@ -347,7 +452,7 @@ export function HeroSection() {
             {/* Heaviest at the foot where the copy lands, lifted again at the
                 top so the header stays legible over a bright frame. */}
             <div
-              className="pointer-events-none absolute inset-0 z-[6] bg-[linear-gradient(to_top,rgba(20,14,9,0.93)_0%,rgba(20,14,9,0.66)_38%,rgba(20,14,9,0.12)_70%,rgba(20,14,9,0.38)_100%)] lg:hidden"
+              className="ck-diwali-scrim pointer-events-none absolute inset-0 z-[6] bg-[linear-gradient(to_top,rgba(20,14,9,0.93)_0%,rgba(20,14,9,0.66)_38%,rgba(20,14,9,0.12)_70%,rgba(20,14,9,0.38)_100%)] lg:hidden"
               aria-hidden
             />
 
@@ -360,7 +465,7 @@ export function HeroSection() {
               <div className="ck-hero-eyebrow hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex dark:bg-white/5 dark:text-[var(--ck-home-highlight,#f29a65)] dark:ring-white/10">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
                 <p className="text-[0.65rem] font-medium uppercase tracking-[0.2em]">
-                  {t("eyebrow")}
+                  {navratri ? t("eyebrow") : <LandingText>{DIWALI_COPY.badge}</LandingText>}
                 </p>
               </div>
 
@@ -369,7 +474,14 @@ export function HeroSection() {
                   that there would make the two layouts compete. */}
               <div className="ck-mobile-hero-badge lg:hidden">
                 <Heart className="size-3 fill-current" strokeWidth={0} aria-hidden />
-                <span>{t("badge")}</span>
+                {navratri ? (
+                  <span>{t("badge")}</span>
+                ) : (
+                  <>
+                    <span className="md:hidden"><LandingText>{DIWALI_COPY.badge}</LandingText></span>
+                    <span className="hidden md:inline">{t("badge")}</span>
+                  </>
+                )}
               </div>
 
               <h1
@@ -378,10 +490,16 @@ export function HeroSection() {
               >
                 {/* Mobile copy wraps naturally with the bundled condensed font;
                     desktop retains the existing two-line composition. */}
-                <span className="block lg:whitespace-nowrap"><LandingText>{headlineTop}</LandingText></span>
-                <span className="ck-hero-headline-accent block text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
+                <span className={navratri ? "block lg:whitespace-nowrap" : "hidden md:block lg:hidden"}><LandingText>{headlineTop}</LandingText></span>
+                {!navratri && <span className="block [text-wrap:balance] md:hidden lg:block"><LandingText>{DIWALI_COPY.headlineTop}</LandingText></span>}
+                <span className={`ck-hero-headline-accent text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)] ${navratri ? "block" : "hidden md:block lg:hidden"}`}>
                   <LandingText>{headlineAccent}</LandingText>
                 </span>
+                {!navratri && (
+                  <span className="ck-hero-headline-accent block text-[var(--ck-home-highlight,#f0a06a)] md:hidden lg:block lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
+                    <LandingText>{DIWALI_COPY.headlineAccent}</LandingText>
+                  </span>
+                )}
               </h1>
 
               <p className="ck-hero-subtext mt-3.5 max-w-[30ch] text-[0.95rem] font-medium leading-relaxed text-[#fdf5ed]/80 [text-wrap:pretty] lg:mt-[clamp(0.7rem,1.8vh,1.4rem)] lg:text-sm lg:text-[#34322f] dark:text-stone-300 lg:max-w-[25rem] lg:text-[clamp(0.98rem,1.2vw,1.32rem)] lg:leading-[1.55]">
@@ -433,18 +551,12 @@ export function HeroSection() {
               </div>
             </div>
 
-            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
+            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <><DiwaliMedia /><DiwaliHangingLanterns /><div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
+                <source media="(max-width: 767px), (min-width: 1024px)" srcSet={BLANK_PIXEL} />
                 <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
-                <LandingAttributes><Image
-                  src={HERO_IMAGE}
-                  alt={t("photoAlt")}
-                  fill
-                  priority
-                  sizes="(max-width: 1023px) 100vw, (max-width: 1919px) 62vw, 1180px"
-                  className="ck-hero-photo-image object-cover object-center"
-                /></LandingAttributes>
+                <LandingAttributes><img {...heroPhotoProps} className="ck-hero-photo-image object-cover object-center" /></LandingAttributes>
                 </picture>
                 <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-[12%] bg-gradient-to-r from-[#fdf5ed]/65 to-transparent lg:block dark:from-[#1a1512]/78" aria-hidden />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-[17%] bg-gradient-to-t from-[var(--ck-home-deep,#5d2608)]/18 to-transparent" aria-hidden />
@@ -462,7 +574,7 @@ export function HeroSection() {
                 /></LandingAttributes>
               </div>
               <ConnectionPins />
-            </div>}
+            </div></>}
 
             {/* Melts the hero's bottom edge into the section below it, so the
                 photograph and the cream read as one surface rather than two

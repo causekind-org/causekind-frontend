@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ArrowLeft, Check, KeyRound, Loader2, Mail, RefreshCw, ShieldCheck } from "lucide-react";
-import { OTPInput, REGEXP_ONLY_DIGITS } from "input-otp";
+import { NgoOtpInput } from "@/features/ngo-registration/components/NgoOtpInput";
 import { IS_NGO_DEMO_MODE, type NGOFormState } from "@/features/ngo-registration/ngoRegistrationModel";
 import { cn } from "@/lib/utils";
 import { verifyNgoOtp, resendNgoOtp } from "@/lib/api";
@@ -130,7 +130,7 @@ export function EmailVerification({ data, onChange, onBack, onVerified, resumed 
           Verify Official Email
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          We sent a 6-digit verification code to your account signup email:
+          We&apos;ll send a verification code to:
         </p>
         <p className="inline-flex items-center gap-1.5 rounded-lg bg-stone-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-stone-800 dark:text-stone-200 mt-1">
           <Mail className="h-3.5 w-3.5 text-ngo-700 dark:text-ngo-300" />
@@ -162,38 +162,13 @@ export function EmailVerification({ data, onChange, onBack, onVerified, resumed 
 
         {/* input-otp container */}
         <div className="flex justify-center my-2">
-          <OTPInput
-            maxLength={OTP_LENGTH}
+          <NgoOtpInput
             value={code}
             onChange={(val) => {
               setCode(val);
               if (error) setError(null);
-              if (val.length === OTP_LENGTH) {
-                handleVerify(val);
-              }
             }}
-            pattern={REGEXP_ONLY_DIGITS}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            render={({ slots }) => (
-              <div className="flex items-center gap-2 sm:gap-2.5">
-                {slots.map((slot, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "flex h-12 w-10 sm:h-14 sm:w-12 items-center justify-center rounded-xl border bg-white dark:bg-zinc-900 font-mono text-lg sm:text-xl font-bold transition-all",
-                      slot.isActive
-                        ? "border-ngo-700 ring-2 ring-ngo-700/25 shadow-sm"
-                        : slot.char
-                        ? "border-ngo-300/40 bg-ngo-50/40"
-                        : "border-stone-200 dark:border-zinc-700 text-stone-400"
-                    )}
-                  >
-                    {slot.char || ""}
-                  </div>
-                ))}
-              </div>
-            )}
+            onComplete={handleVerify}
           />
         </div>
 

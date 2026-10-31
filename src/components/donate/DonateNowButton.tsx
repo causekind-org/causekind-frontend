@@ -1,13 +1,14 @@
 
-import { LandingText } from "@/components/LandingTranslation";
+import { UiText } from "@/components/UiText";
 import Link from "@/components/AppLink";
 import { DONATE_HREF } from "@/lib/donateScroll";
 
 /**
  * The animated "Donate Now" call to action.
  *
- * <p>The button shell has no "use client", hooks or auth read. Its label uses
- * the small LandingText client boundary to translate on landing routes.
+ * <p>The button shell has no "use client", hooks or auth read. The default
+ * label is translated through the catalogue (UiText); a custom `label` must be
+ * passed already translated (e.g. ui("Donate") or t("footer.donate")).
  * Everything that varies is CSS:
  *
  * <ul>
@@ -31,7 +32,7 @@ import { DONATE_HREF } from "@/lib/donateScroll";
 export function DonateNowButton({
   size = "md",
   variant = "solid",
-  label = "Donate Now",
+  label,
   showArrow = true,
   fullWidth = false,
   className = "",
@@ -40,6 +41,7 @@ export function DonateNowButton({
 }: {
   size?: "sm" | "md" | "lg";
   variant?: "solid" | "outline";
+  /** Already-translated text; omit for the translated default "Donate Now". */
   label?: string;
   showArrow?: boolean;
   fullWidth?: boolean;
@@ -84,7 +86,7 @@ export function DonateNowButton({
         </svg>
       </span>
 
-      <span className="ck-donate-label"><LandingText>{label}</LandingText></span>
+      <span className="ck-donate-label">{label ?? <UiText>Donate Now</UiText>}</span>
 
       {showArrow && (
         <span className="ck-donate-arrow" aria-hidden="true">

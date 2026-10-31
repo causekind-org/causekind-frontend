@@ -4,6 +4,7 @@ import { ReviewRow, ReviewSection } from "@/features/wizard-kit/ReviewSection";
 import type { RequestVerification, VerificationDocumentType, VerificationDocument } from "@/lib/api";
 import type { DoneeRequestStep } from "../doneeRequestModel";
 
+import { UiText, useUiText } from "@/components/UiText";
 export function DoneeReviewStep({
   title,
   category,
@@ -36,45 +37,46 @@ export function DoneeReviewStep({
   uploadedDocs: Map<VerificationDocumentType, VerificationDocument>;
   onEdit: (step: DoneeRequestStep) => void;
 }) {
+  const ui = useUiText();
   return (
     <div className="space-y-3">
-      <ReviewSection title="Need Details" onEdit={() => onEdit("need-details")}>
-        <ReviewRow label="Title" value={title || "Not specified"} />
-        <ReviewRow label="Category" value={category || "Not specified"} />
-        <ReviewRow label="Quantity" value={quantity} />
-        <ReviewRow label="Urgency" value={urgency || "NORMAL"} />
+      <ReviewSection title={ui("Need Details")} onEdit={() => onEdit("need-details")}>
+        <ReviewRow label={ui("Title")} value={title || "Not specified"} />
+        <ReviewRow label={ui("Category")} value={category || "Not specified"} />
+        <ReviewRow label={ui("Quantity")} value={quantity} />
+        <ReviewRow label={ui("Urgency")} value={urgency || "NORMAL"} />
         <div className="py-2 border-t border-stone-100 dark:border-zinc-800/50 mt-2">
-          <p className="text-xs text-stone-500 mb-1">Description</p>
-          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{description || "No description provided"}</p>
+          <p className="text-xs text-stone-500 mb-1"><UiText>Description</UiText></p>
+          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{description || ui("No description provided")}</p>
         </div>
       </ReviewSection>
 
-      <ReviewSection title="Location" onEdit={() => onEdit("location")}>
-        <ReviewRow label="City" value={city || "Not specified"} />
-        {locality?.trim() && <ReviewRow label="Locality" value={locality} />}
-        <ReviewRow label="PIN code" value={pincode || "Not specified"} />
+      <ReviewSection title={ui("Location")} onEdit={() => onEdit("location")}>
+        <ReviewRow label={ui("City")} value={city || "Not specified"} />
+        {locality?.trim() && <ReviewRow label={ui("Locality")} value={locality} />}
+        <ReviewRow label={ui("PIN code")} value={pincode || "Not specified"} />
       </ReviewSection>
 
       {isEmergency && (
-        <ReviewSection title="Emergency Details" onEdit={() => onEdit("need-details")}>
-          <ReviewRow label="Nature of emergency" value={emergencyNature || "Not specified"} />
-          {incidentDate && <ReviewRow label="Incident date" value={new Date(incidentDate).toLocaleDateString()} />}
+        <ReviewSection title={ui("Emergency Details")} onEdit={() => onEdit("need-details")}>
+          <ReviewRow label={ui("Nature of emergency")} value={emergencyNature || "Not specified"} />
+          {incidentDate && <ReviewRow label={ui("Incident date")} value={new Date(incidentDate).toLocaleDateString()} />}
         </ReviewSection>
       )}
 
-      <ReviewSection title="Request Context" onEdit={() => onEdit("household-situation")}>
-        <ReviewRow label="Requesting for" value={verification.requestingForSomeoneElse ? "Someone else" : "Myself"} />
+      <ReviewSection title={ui("Request Context")} onEdit={() => onEdit("household-situation")}>
+        <ReviewRow label={ui("Requesting for")} value={verification.requestingForSomeoneElse ? "Someone else" : "Myself"} />
         {verification.requestingForSomeoneElse && (
-          <ReviewRow label="Beneficiary Details" value={verification.beneficiaryDetails || "Not specified"} />
+          <ReviewRow label={ui("Beneficiary Details")} value={verification.beneficiaryDetails || "Not specified"} />
         )}
         <div className="py-2 border-t border-stone-100 dark:border-zinc-800/50 mt-2">
-          <p className="text-xs text-stone-500 mb-1">Why they cannot buy this item</p>
-          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{verification.reasonCannotBuy || "Not provided"}</p>
+          <p className="text-xs text-stone-500 mb-1"><UiText>Why they cannot buy this item</UiText></p>
+          <p className="text-sm text-stone-900 dark:text-stone-100 whitespace-pre-line wrap-anywhere">{verification.reasonCannotBuy || ui("Not provided")}</p>
         </div>
       </ReviewSection>
 
-      <ReviewSection title="Evidence" onEdit={() => onEdit("household-situation")}>
-        <ReviewRow label="Documents uploaded" value={`${uploadedDocs.size} document(s)`} />
+      <ReviewSection title={ui("Evidence")} onEdit={() => onEdit("household-situation")}>
+        <ReviewRow label={ui("Documents uploaded")} value={`${uploadedDocs.size} document(s)`} />
       </ReviewSection>
     </div>
   );

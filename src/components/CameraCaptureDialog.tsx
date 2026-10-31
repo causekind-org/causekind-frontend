@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { UiText, useUiText } from "@/components/UiText";
 import {
   AlertTriangle,
   Camera,
@@ -52,26 +53,43 @@ type CameraCaptureDialogProps = {
   filenamePrefix?: string;
 };
 
-function cameraErrorMessage(error: unknown): string {
-  if (!window.isSecureContext) {
-    return "Camera access requires a secure HTTPS connection.";
-  }
-  if (!(error instanceof DOMException)) {
-    return "We couldn't start your camera. Please try again or choose a photo.";
-  }
+/**
+ * Error codes, not text: the camera callbacks set these, and the copy is looked
+ * up at render (useCameraErrorCopy). Keeping translation out of those callbacks
+ * keeps their dependencies stable, so the camera never restarts on a re-render.
+ */
+type CameraError = "insecure" | "unsupported" | "generic" | "blocked" | "notFound" | "inUse" | "stillStarting" | "captureFailed";
+
+function cameraErrorCode(error: unknown): CameraError {
+  if (!window.isSecureContext) return "insecure";
+  if (!(error instanceof DOMException)) return "generic";
   switch (error.name) {
     case "NotAllowedError":
     case "SecurityError":
-      return "Camera access is blocked. Allow camera access in your browser settings, then try again.";
+      return "blocked";
     case "NotFoundError":
     case "DevicesNotFoundError":
-      return "No camera was found on this device.";
+      return "notFound";
     case "NotReadableError":
     case "TrackStartError":
-      return "Your camera is being used by another app. Close that app and try again.";
+      return "inUse";
     default:
-      return "We couldn't start your camera. Please try again or choose a photo.";
+      return "generic";
   }
+}
+
+function useCameraErrorCopy(): Record<CameraError, string> {
+  const ui = useUiText();
+  return {
+    insecure: ui("Camera access requires a secure HTTPS connection."),
+    unsupported: ui("This browser doesn't support in-app camera access. Please choose a photo instead."),
+    generic: ui("We couldn't start your camera. Please try again or choose a photo."),
+    blocked: ui("Camera access is blocked. Allow camera access in your browser settings, then try again."),
+    notFound: ui("No camera was found on this device."),
+    inUse: ui("Your camera is being used by another app. Close that app and try again."),
+    stillStarting: ui("The camera is still starting. Please wait a moment and try again."),
+    captureFailed: ui("We couldn't capture that frame. Please try again."),
+  };
 }
 
 export function CameraCaptureDialog({
@@ -81,17 +99,19 @@ export function CameraCaptureDialog({
   onChoosePhoto,
   facingMode = "user",
   mirrored = facingMode === "user",
-  title = "Take a photo",
-  instructions = "Keep your face clearly visible in the frame.",
+  title,
+  instructions,
   filenamePrefix = "donee-photo",
 }: CameraCaptureDialogProps) {
+  const ui = useUiText();
+  const errorCopy = useCameraErrorCopy();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraAttemptRef = useRef(0);
   const openRef = useRef(open);
   const [status, setStatus] = useState<CameraStatus>("requesting");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<CameraError | null>(null);
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
 
   useEffect(() => {
@@ -112,11 +132,7 @@ export function CameraCaptureDialog({
     setStatus("requesting");
 
     if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-      setErrorMessage(
-        window.isSecureContext
-          ? "This browser doesn't support in-app camera access. Please choose a photo instead."
-          : "Camera access requires a secure HTTPS connection."
-      );
+      setErrorMessage(window.isSecureContext ? "unsupported" : "insecure");
       setStatus("error");
       return;
     }
@@ -149,7 +165,7 @@ export function CameraCaptureDialog({
     } catch (error) {
       stopCamera();
       if (!openRef.current || attempt !== cameraAttemptRef.current) return;
-      setErrorMessage(cameraErrorMessage(error));
+      setErrorMessage(cameraErrorCode(error));
       setStatus("error");
     }
   }, [stopCamera, facingMode]);
@@ -187,7 +203,7 @@ export function CameraCaptureDialog({
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) {
-      setErrorMessage("The camera is still starting. Please wait a moment and try again.");
+      setErrorMessage("stillStarting");
       setStatus("error");
       stopCamera();
       return;
@@ -204,7 +220,7 @@ export function CameraCaptureDialog({
 
     const context = canvas.getContext("2d");
     if (!context) {
-      setErrorMessage("We couldn't capture that frame. Please try again.");
+      setErrorMessage("captureFailed");
       setStatus("error");
       stopCamera();
       return;
@@ -228,7 +244,7 @@ export function CameraCaptureDialog({
         stopCamera();
         if (!openRef.current || attempt !== cameraAttemptRef.current) return;
         if (!blob) {
-          setErrorMessage("We couldn't capture that frame. Please try again.");
+          setErrorMessage("captureFailed");
           setStatus("error");
           return;
         }
@@ -273,18 +289,18 @@ export function CameraCaptureDialog({
         <div className="flex items-center justify-between border-b border-stone-200 px-4 py-3 dark:border-zinc-700">
           <div>
             <h2 id="camera-dialog-title" className="text-base font-bold text-stone-900 dark:text-white">
-              {title}
+              {title ?? ui("Take a photo")}
             </h2>
             <p className="text-xs text-stone-500 dark:text-stone-400">
-              {instructions}
+              {instructions ?? ui("Keep your face clearly visible in the frame.")}
             </p>
           </div>
           <button
             type="button"
             onClick={close}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-stone-500 transition-colors hover:bg-stone-100 hover:text-stone-900 dark:hover:bg-zinc-800 dark:hover:text-white"
-            aria-label="Close camera"
-            title="Close camera"
+            aria-label={ui("Close camera")}
+            title={ui("Close camera")}
           >
             <X className="h-5 w-5" />
           </button>
@@ -314,7 +330,7 @@ export function CameraCaptureDialog({
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/55 text-white">
                 <Loader2 className="h-7 w-7 animate-spin" />
                 <p className="text-sm font-semibold">
-                  {status === "capturing" ? "Preparing your photo…" : "Starting camera…"}
+                  {status === "capturing" ? ui("Preparing your photo…") : ui("Starting camera…")}
                 </p>
               </div>
             )}
@@ -324,7 +340,7 @@ export function CameraCaptureDialog({
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/15 text-amber-400">
                   <AlertTriangle className="h-6 w-6" />
                 </div>
-                <p className="max-w-sm text-sm leading-6 text-zinc-200">{errorMessage}</p>
+                <p className="max-w-sm text-sm leading-6 text-zinc-200">{errorMessage && errorCopy[errorMessage]}</p>
               </div>
             )}
           </div>
@@ -336,8 +352,8 @@ export function CameraCaptureDialog({
               type="button"
               onClick={capturePhoto}
               className="flex h-14 w-14 items-center justify-center rounded-full border-4 border-[var(--ck-role-accent)]/25 bg-[var(--ck-role-accent)] text-white shadow-lg transition-transform hover:scale-105 active:scale-95"
-              aria-label="Capture photo"
-              title="Capture photo"
+              aria-label={ui("Capture photo")}
+              title={ui("Capture photo")}
             >
               <Camera className="h-6 w-6" />
             </button>
@@ -351,7 +367,7 @@ export function CameraCaptureDialog({
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-stone-300 px-4 text-sm font-bold text-stone-700 transition-colors hover:bg-stone-100 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
                 <RotateCcw className="h-4 w-4" />
-                Retake
+                <UiText>Retake</UiText>
               </button>
               <button
                 type="button"
@@ -359,7 +375,7 @@ export function CameraCaptureDialog({
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-4 text-sm font-bold text-white transition-colors hover:bg-[#963e12]"
               >
                 <Check className="h-4 w-4" />
-                Use photo
+                <UiText>Use photo</UiText>
               </button>
             </>
           )}
@@ -372,7 +388,7 @@ export function CameraCaptureDialog({
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-stone-300 px-4 text-sm font-bold text-stone-700 transition-colors hover:bg-stone-100 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
               >
                 <RotateCcw className="h-4 w-4" />
-                Try camera again
+                <UiText>Try camera again</UiText>
               </button>
               <button
                 type="button"
@@ -380,7 +396,7 @@ export function CameraCaptureDialog({
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-4 text-sm font-bold text-white transition-colors hover:bg-[#963e12]"
               >
                 <Upload className="h-4 w-4" />
-                Choose photo
+                <UiText>Choose photo</UiText>
               </button>
             </>
           )}

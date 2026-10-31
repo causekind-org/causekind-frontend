@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { HeroSection } from "@/components/home/HeroSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
+import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
@@ -44,6 +45,9 @@ export function RoleHome({
       <SupportGallery />
       <div className="ck-home-paper relative z-10">
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
+      </div>
+      <div className="ck-home-paper relative z-10">
+        <NgoDrivesSection />
       </div>
       <TrustSafetySection variant="desktop" />
       <FoundersNoteSection variant="desktop" />

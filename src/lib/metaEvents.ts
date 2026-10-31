@@ -1,15 +1,18 @@
 /**
- * Central place for Meta (Facebook) conversion events fired from app code,
- * e.g. CompleteRegistration, Donate, Lead.
+ * Central place for the Meta (Facebook) pixel.
  *
- * LIVE: events are sent to the real production pixel via `trackSingle`.
- *
- * TO REVERT TO TESTING (send to the test pixel instead):
- *   - Set EVENT_PIXEL_ID to "28686496047640631" (Causekind Temp), or
- *   - Set EVENT_PIXEL_ID to "" to send to ALL initialised pixels (uses `track`).
- * Only this one line changes — the call sites stay the same.
+ * `META_PIXEL_ID` is the single pixel for the whole site — the base PageView
+ * pixel (see MetaPixel.tsx) AND every conversion event fired from app code
+ * (CompleteRegistration, ListItem, RequestItem, Donate). Change the pixel in
+ * exactly one place: here.
  */
-const EVENT_PIXEL_ID = "1618600203011745"; // Real production pixel (Causekind)
+export const META_PIXEL_ID = "1104899899072358"; // Production pixel (Causekind)
+
+/**
+ * Which pixel conversion events report to. Defaults to the one site pixel.
+ * Set to "" to send to ALL initialised pixels instead (uses `track`).
+ */
+const EVENT_PIXEL_ID = META_PIXEL_ID;
 
 type FbqParams = Record<string, unknown>;
 

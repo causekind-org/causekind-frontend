@@ -3,6 +3,7 @@
 import Link from "@/components/AppLink";
 import { AlertTriangle } from "lucide-react";
 
+import { UiText } from "@/components/UiText";
 export default function CategoryError({ reset }: { error: Error; reset: () => void }) {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col items-center px-4 py-24 text-center">
@@ -10,10 +11,10 @@ export default function CategoryError({ reset }: { error: Error; reset: () => vo
         <AlertTriangle className="w-6 h-6" aria-hidden="true" />
       </span>
       <h1 className="mt-4 text-xl font-bold text-stone-800 dark:text-stone-100">
-        This page didn&apos;t load
+        <UiText>This page didn&apos;t load</UiText>
       </h1>
       <p className="mt-2 text-sm leading-relaxed text-stone-500 dark:text-stone-400">
-        Something went wrong rendering the category guidance. Trying again usually fixes it.
+        <UiText>Something went wrong rendering the category guidance. Trying again usually fixes it.</UiText>
       </p>
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <button
@@ -21,13 +22,13 @@ export default function CategoryError({ reset }: { error: Error; reset: () => vo
           onClick={reset}
           className="rounded-full bg-[var(--ck-role-accent)] px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
-          Try again
+          <UiText>Try again</UiText>
         </button>
         <Link
           href="/requests"
           className="rounded-full border border-stone-300 px-4 py-2 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-100 dark:border-white/15 dark:text-stone-200 dark:hover:bg-white/5"
         >
-          All needs
+          <UiText>All needs</UiText>
         </Link>
       </div>
     </main>

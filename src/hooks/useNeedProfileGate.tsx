@@ -8,7 +8,7 @@ import { NeedProfileGateModal } from "@/components/NeedProfileGateModal";
 export type NeedProfileGateState =
   | { mode: "closed" }
   | { mode: "incomplete"; destination: string; missing: string[] }
-  | { mode: "error"; destination: string; message: string };
+  | { mode: "error"; destination: string; /** Server text, or null: the modal shows its translated "unreachable" copy. */ message: string | null };
 
 type NeedProfileGateValue = {
   /**
@@ -82,7 +82,7 @@ export function NeedProfileGateProvider({ children }: { children: React.ReactNod
         destination,
         message: e instanceof Error && e.message && e.message !== "Failed to fetch"
           ? e.message
-          : "We could not reach CauseKind to check your profile. Please check your connection and try again.",
+          : null,
       });
       return false;
     } finally {

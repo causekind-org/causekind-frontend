@@ -1,11 +1,49 @@
 import "@testing-library/jest-dom/vitest";
 import { afterEach, vi } from "vitest";
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
+
+// Under full-suite load a findBy*/waitFor can need more than RTL's 1 s default.
+configure({ asyncUtilTimeout: 8000 });
 
 // NGO signup is off unless NEXT_PUBLIC_NGO_ENABLED is "true" (production shows
 // "Coming soon"). The suites exercise the NGO flows, so they run with it on;
 // the off state has its own test (register/NgoComingSoon.test.tsx).
 process.env.NEXT_PUBLIC_NGO_ENABLED ??= "true";
+
+// jsdom logs "not implemented" for scrolling; nothing under test depends on it.
+window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
+
+/**
+ * Components translate their copy with next-intl (2026-10 translation pass). Most suites render them
+ * without a NextIntlClientProvider, where useTranslations throws. NO_PROVIDER_FALLBACK: outside a
+ * provider, translate from the English catalogue instead, so those suites see the real English copy.
+ * Inside a provider (suites that pass their own messages) the real hooks run unchanged.
+ */
+vi.mock("next-intl", async (importOriginal) => {
+  const real = await importOriginal<typeof import("next-intl")>();
+  const en = (await import("./messages/en.json")).default as Record<string, unknown>;
+  // One translator per namespace: building one walks the whole catalogue, too slow to repeat per render.
+  const cache = new Map<string, unknown>();
+  const fallback = (namespace?: string) => {
+    const key = namespace ?? "";
+    let t = cache.get(key);
+    if (!t) cache.set(key, (t = real.createTranslator({ locale: "en", messages: en as never, namespace: namespace as never })));
+    return t as never;
+  };
+  return {
+    ...real,
+    useTranslations: ((namespace?: string) => {
+      try {
+        return real.useTranslations(namespace as never);
+      } catch {
+        return fallback(namespace);
+      }
+    }) as typeof real.useTranslations,
+    useLocale: () => {
+      try { return real.useLocale(); } catch { return "en"; }
+    },
+  };
+});
 
 afterEach(() => {
   cleanup();

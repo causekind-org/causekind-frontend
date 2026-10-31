@@ -33,6 +33,8 @@ export type HandoverState =
   | "awaiting_schedule"
   | "scheduled"
   | "ready_to_handover"
+  /** NGO drive offers only: the code is confirmed, one handover photo completes it. */
+  | "photo_pending"
   | "partially_confirmed"
   | "at_risk"
   | "issue_window"
@@ -48,7 +50,8 @@ export type HandoverState =
  * doesn't carry the class resolves `var(--handover-accent)` to nothing and comes
  * out colourless. See the note in styles.css.
  */
-export function handoverScope(role: HandoverRole): string {
+export function handoverScope(role: HandoverRole | "NGO"): string {
+  if (role === "NGO") return "handover-ngo-drive";
   return role === "DONOR" ? "handover-donor" : "handover-donee";
 }
 
@@ -88,6 +91,8 @@ export type HandoverParticipant = {
   name: string | null;
   /** Present only when the counterpart has permitted contact. Never rendered as text. */
   phone: string | null;
+  /** NGO drives: every handover contact, first = primary (phones null until calls are allowed). */
+  contacts?: { name: string; phone: string | null; role?: string | null }[];
 };
 
 export type HandoverViewModel = {
@@ -125,6 +130,21 @@ export type HandoverViewModel = {
   offeredQuantity: number | null;
   /** Courier destination the recipient supplies; null when the backend sends none. */
   delivery: HandoverDelivery | null;
+  /** NGO drives only: where and when the donor drops the items off (no map needed). */
+  dropOff?: HandoverDropOff | null;
+};
+
+export type HandoverDropOff = {
+  /** Drive location and the NGO's address, joined. */
+  address: string | null;
+  contactName: string | null;
+  contactPhone: string | null;
+  /** MON..SUN codes. */
+  days: string[];
+  from: string | null;
+  to: string | null;
+  /** Free-text hours from the NGO profile, when the drive has no from/to. */
+  hoursText: string | null;
 };
 
 
@@ -258,9 +278,8 @@ export const JOURNEY_STEPS_NGO: { key: string; label: string }[] = [
   { key: "review", label: "NGO reviews" },
   { key: "approved", label: "Approved" },
   { key: "scheduled", label: "Handover scheduled" },
-  { key: "received", label: "Received \u2713" },
-  { key: "certificate", label: "Certificate" },
-  { key: "fulfilled", label: "Fulfilled" },
+  { key: "photo", label: "Photo" },
+  { key: "received", label: "Received" },
 ];
 
 /**
@@ -275,10 +294,12 @@ export function journeyIndex(state: HandoverState, flow?: HandoverFlow): number 
       case "scheduled":           return 3;
       case "ready_to_handover":   return 3;
       case "at_risk":             return 3;
-      case "partially_confirmed": return 4;
-      case "issue_window":        return 4;
-      case "issue_raised":        return 4;
-      case "completed":           return 6;
+      case "partially_confirmed": return 3;
+      case "photo_pending":       return 4;
+      // Handover complete: past the last step, so "Received" shows as done (not the open current dot).
+      case "issue_window":        return JOURNEY_STEPS_NGO.length;
+      case "issue_raised":        return JOURNEY_STEPS_NGO.length;
+      case "completed":           return JOURNEY_STEPS_NGO.length;
     }
   }
 
@@ -289,6 +310,7 @@ export function journeyIndex(state: HandoverState, flow?: HandoverFlow): number 
     case "ready_to_handover":   return 2;
     case "at_risk":             return 2;
     case "partially_confirmed": return 3;
+    case "photo_pending":       return 3;
     case "issue_window":        return 3;
     case "issue_raised":        return 3;
     case "completed":           return 4;
@@ -315,6 +337,8 @@ export function resolveHandoverState(input: {
   atRisk: boolean;
   donorConfirmedAt: string | null;
   doneeConfirmedAt: string | null;
+  /** NGO drive offers: the NGO has confirmed the donor's code (the photo step comes next). */
+  otpVerified?: boolean;
 }): HandoverState {
   const { flow, status, hasSchedule, atRisk, donorConfirmedAt, doneeConfirmedAt } = input;
 
@@ -326,6 +350,10 @@ export function resolveHandoverState(input: {
     // MATCH has no equivalent — it completes straight from dual confirmation.
     return flow === "OFFER" || flow === "NGO_OFFER" ? "issue_window" : "completed";
   }
+
+  // NGO drive offer: code confirmed but not completed yet. A legacy row (code confirmed
+  // before the photo-completes flow) lands here too, so it reaches the photo step.
+  if (flow === "NGO_OFFER" && input.otpVerified && (READY_STATUSES.has(status) || status === "HANDOVER_AT_RISK")) return "photo_pending";
 
   // Before status: the half-confirmed window has no status in either flow.
   const partly = (donorConfirmedAt != null) !== (doneeConfirmedAt != null);
@@ -424,11 +452,21 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
             body: "Check the time and place below. Need a different time? Ask in the chat — only the donor can reschedule." };
 
     case "ready_to_handover":
+      if (vm.flow === "NGO_OFFER") {
+        return donor
+          ? { title: "Hand over the items", body: "Take a handover photo, then show your code to the NGO when you meet." }
+          : { title: "Confirm what you received", body: "Upload a photo of the items, then enter the donor's code and the quantity received." };
+      }
       return donor
         ? { title: "Confirm the handover",
             body: "Generate a code for the recipient, then confirm you've handed the item over." }
         : { title: "Confirm what you received",
             body: "Enter the 6-digit code the donor gives you, then record the quantity and condition." };
+
+    case "photo_pending":
+      return donor
+        ? { title: "Take a handover photo", body: "The NGO confirmed your code. One photo of the handover, from you or the NGO, completes it." }
+        : { title: "Take a handover photo", body: "You confirmed the donor's code. One photo of the received items, from you or the donor, completes it." };
 
     case "partially_confirmed": {
       const youConfirmed = donor ? vm.confirmation.donorConfirmedAt : vm.confirmation.doneeConfirmedAt;
@@ -450,7 +488,7 @@ export function nextStepCopy(vm: HandoverViewModel): { title: string; body: stri
       if (vm.flow === "NGO_OFFER") {
         return donor
           ? { title: "Delivery confirmed",
-              body: "Your certificate will be ready after the review window." }
+              body: "The NGO received your items. Thank you. If something's wrong, report it within 7 days." }
           : { title: "Is everything alright with the item?",
               body: "You have a short window to tell us if something's wrong. If it's all fine, you can close this now." };
       }

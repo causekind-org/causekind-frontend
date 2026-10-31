@@ -8,8 +8,9 @@
  * component. Normalizing at the edge keeps the conditional in exactly two files.
  */
 
+import { driveCertificateIssued } from "@/features/ngo-drives/driveCertificate";
 import { toZonedIso } from "@/lib/serverTime";
-import type { DonationOffer, HandoverRecord, ItemMatch } from "@/lib/api";
+import type { DonationOffer, HandoverRecord, ItemMatch, NgoDriveOfferResponse } from "@/lib/api";
 import {
   resolveHandoverState, resolveRole,
   type HandoverMethodOption, type HandoverRole, type HandoverViewModel,
@@ -300,6 +301,7 @@ export function adaptNgoOffer(
     atRisk: handover?.atRisk ?? false,
     donorConfirmedAt,
     doneeConfirmedAt,
+    otpVerified: confirmation?.otpVerified === true,
   });
 
   return {
@@ -313,17 +315,23 @@ export function adaptNgoOffer(
     imageUrl: offer.media?.[0]?.mediaUrl ?? null,
     transactionCode: `CK-ND${String(offer.id).padStart(5, "0")}`,
     counterpart: role === "DONOR"
-      ? { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null }
+      ? { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null, contacts: offer.handoverDetails?.contacts ?? undefined }
       : { name: offer.donorDisplayName, phone: null },
-    donorAllowsDoneeCall: false, // Not applicable for NGO drives
+    donorAllowsDoneeCall: offer.ngoAllowsDonorCall === true,
     schedule: handover
       ? {
-          method: handover.method,
-          methodLabel: methodLabel(handover.method, NGO_OFFER_METHODS),
+          // The drive API speaks DROP_OFF / PICKUP; the hub's options are DONOR_DROP_OFF / NGO_PICKUP.
+          method: handover.method === "PICKUP" ? "NGO_PICKUP" : "DONOR_DROP_OFF",
+          methodLabel: methodLabel(handover.method === "PICKUP" ? "NGO_PICKUP" : "DONOR_DROP_OFF", NGO_OFFER_METHODS),
           scheduledAt: toZonedIso(handover.scheduledDateTime),
-          address: handover.locationAddress,
-          latitude: handover.locationLatitude,
-          longitude: handover.locationLongitude,
+          // A drop-off goes to the drive's address (the record keeps none).
+          address: handover.method === "PICKUP" ? handover.locationAddress : (handover.dropOffAddressDisplay || handover.dropOffAddress || handover.locationAddress || ngoOfferDropOffAddress(offer) || null),
+          // Directions (same helper as donor↔donee): the handover's own pin, else the drive's pin for a
+          // drop-off or the donor's pin for a pickup (the donor's pin reaches only people allowed to see it).
+          latitude: handover.locationLatitude
+            ?? (handover.method === "PICKUP" ? offer.donorLatitude : offer.driveLocationLatitude) ?? null,
+          longitude: handover.locationLongitude
+            ?? (handover.method === "PICKUP" ? offer.donorLongitude : offer.driveLocationLongitude) ?? null,
           notes: null,
           rescheduleCount: handover.rescheduleCount,
           maxReschedules: 2, // MAX_RESCHEDULES
@@ -337,16 +345,40 @@ export function adaptNgoOffer(
       doneeConfirmedQty: confirmation?.ngoConfirmedQty ?? null,
       conditionRating: null, // No condition rating for NGO drives
       partlyConfirmed: (donorConfirmedAt != null) !== (doneeConfirmedAt != null),
-      // NGO drives keep their one-step flow (code entered with the receipt).
-      otpVerified: false,
+      otpVerified: confirmation?.otpVerified ?? false,
     },
-    methodOptions: NGO_OFFER_METHODS,
+    // Outside the NGO's pickup radius only drop-off is offered.
+    methodOptions: offer.dropOffOnly ? NGO_OFFER_METHODS.filter(m => m.value !== "NGO_PICKUP") : NGO_OFFER_METHODS,
     certificateCode: null, // Handled differently if needed
-    certificateHref: role === "DONOR" && offer.status === "COMPLETED"
-      ? `/certificate?offerId=${offer.id}&type=ngo_drive` : null, // Assuming this is how certificates work for NGO drives
+    // Issued when the handover completes (code + first photo → ISSUE_WINDOW_OPEN).
+    certificateHref: role === "DONOR" && driveCertificateIssued(offer)
+      ? `/certificate?offerId=${offer.id}&type=ngo_drive` : null,
     closed: state === "completed" || state === "cancelled_or_failed",
     completedAt: null, // Optional, could parse from statusHistory
     offeredQuantity: offer.quantity,
     delivery: null, // Delivery address flow is not used for NGO drives
+    dropOff: {
+      address: ngoOfferDropOffAddress(offer) || null,
+      contactName: offer.handoverDetails?.contactName ?? null,
+      contactPhone: offer.handoverDetails?.contactPhone ?? null,
+      days: (offer.driveAvailableDays?.length ? offer.driveAvailableDays
+        : String(offer.handoverDetails?.availableDays ?? "").split(",")).map((d: string) => d.trim().toUpperCase().slice(0, 3)).filter(Boolean),
+      from: offer.driveAvailableFrom ?? null,
+      to: offer.driveAvailableTo ?? null,
+      hoursText: offer.handoverDetails?.availableHours ?? null,
+    },
   };
+}
+
+/**
+ * The drive's full drop-off address for an offer: the new field when the server sends it,
+ * else locality + city + PIN (older drives / servers).
+ */
+export function ngoOfferDropOffAddress(offer: NgoDriveOfferResponse): string {
+  const full = [offer.dropOffAddressDisplay, offer.driveDropOffAddress, offer.dropOffAddress,
+    offer.handoverDetails?.dropOffAddressDisplay, offer.handoverDetails?.dropOffAddress]
+    .map(v => (v || "").trim()).find(Boolean);
+  if (full) return full;
+  return [offer.driveLocationArea, offer.driveLocationCity, offer.driveLocationPincode]
+    .map(v => (v || "").trim()).filter(Boolean).join(", ");
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { ArrowLeft, ArrowRight, Info } from "lucide-react";
 import {
   getDocsForStructure,
@@ -9,6 +10,8 @@ import {
 } from "@/features/ngo-registration/ngoRegistrationModel";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
+import { getNgoFilePreviewUrl } from "@/lib/api";
 
 interface LegalDocumentsProps {
   data: NGOFormState;
@@ -22,7 +25,7 @@ interface LegalDocumentsProps {
 /**
  * Step 2 — Legal Documents.
  *
- * <p>The document set is dynamically chosen from the legal structure selected
+ * The document set is dynamically chosen from the legal structure selected
  * in Step 1. Changing the structure (via Back → Step 1) clears the documents
  * state, so stale uploads from a previous structure don't bleed through.
  */
@@ -33,6 +36,32 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
 
   // All "Must Have" docs must be uploaded to continue.
   const missingMustHave = mustHaveDocs.filter((d) => !data.documents[d.id]);
+
+  // Full-size preview dialog for all uploaded files in this step
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const previewFiles = useMemo(() => {
+    const out: { id: string; file: PreviewFile }[] = [];
+    for (const d of docs) {
+      const f = data.documents[d.id];
+      if (f && !f.demo) {
+        out.push({
+          id: d.id,
+          file: {
+            name: `${d.label}: ${f.name}`,
+            mimeType: f.mimeType,
+            resolve: f.documentId != null ? async () => await getNgoFilePreviewUrl("document", f.documentId!) : undefined,
+            url: f.documentId == null ? f.s3Url : undefined,
+          },
+        });
+      }
+    }
+    return out;
+  }, [docs, data.documents]);
+
+  const openPreview = (id: string) => {
+    const idx = previewFiles.findIndex((x) => x.id === id);
+    if (idx >= 0) setPreviewIndex(idx);
+  };
 
   function setDoc(id: string, file: UploadedFile | null) {
     onChange({ documents: { ...data.documents, [id]: file } });
@@ -45,6 +74,13 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
 
   return (
     <div className="space-y-6">
+      <FilePreviewDialog
+        files={previewFiles.map((x) => x.file)}
+        index={previewIndex}
+        onIndexChange={setPreviewIndex}
+        onClose={() => setPreviewIndex(null)}
+      />
+
       {/* Header */}
       <div className="space-y-1">
         <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
@@ -54,8 +90,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
           Legal Documents
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          Upload your organization&apos;s legal documents. Required documents are tagged{" "}
-          <span className="font-bold text-ngo-700 dark:text-ngo-300">Must Have</span>.
+          Upload your organization&apos;s legal documents.
         </p>
       </div>
 
@@ -72,7 +107,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
       {mustHaveDocs.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-2xs font-black uppercase tracking-widest text-stone-400">
-            Must Have
+            Required
           </h3>
           <div className="space-y-2.5">
             {mustHaveDocs.map((doc) => (
@@ -81,11 +116,13 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
                   docId={doc.id}
                   label={doc.label}
                   category={doc.category}
+                  hint={doc.hint}
                   uploaded={data.documents[doc.id] ?? null}
                   onUpload={(file) => setDoc(doc.id, file)}
                   onRemove={() => setDoc(doc.id, null)}
+                  onPreview={() => openPreview(doc.id)}
                 />
-                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} />
+                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} field={`documents.${doc.id}`} />
               </div>
             ))}
           </div>
@@ -96,7 +133,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
       {supportingDocs.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-2xs font-black uppercase tracking-widest text-stone-400">
-            Supporting Documents
+            Optional (a plus for reviewers)
           </h3>
           <div className="space-y-2.5">
             {supportingDocs.map((doc) => (
@@ -105,11 +142,13 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
                   docId={doc.id}
                   label={doc.label}
                   category={doc.category}
+                  hint={doc.hint}
                   uploaded={data.documents[doc.id] ?? null}
                   onUpload={(file) => setDoc(doc.id, file)}
                   onRemove={() => setDoc(doc.id, null)}
+                  onPreview={() => openPreview(doc.id)}
                 />
-                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} />
+                <CorrectionNote note={corrections?.[`documents.${doc.id}`]} field={`documents.${doc.id}`} />
               </div>
             ))}
           </div>
@@ -119,7 +158,7 @@ export function LegalDocuments({ data, onChange, onBack, onContinue, corrections
       {/* Validation message */}
       {missingMustHave.length > 0 && (
         <p className="text-3xs text-stone-400 dark:text-stone-500 text-center">
-          Upload all <span className="font-bold text-ngo-700 dark:text-ngo-300">Must Have</span> documents to continue.
+          Upload all <span className="font-bold text-ngo-700 dark:text-ngo-300">Required</span> documents to continue.
         </p>
       )}
 

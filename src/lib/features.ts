@@ -18,14 +18,20 @@
 // src/sections/landing/cinematic/README.md). On scroll the hero slides off it
 // and the film plays (src/components/cinematic/HeroFilm.tsx). While false, its
 // code is not even downloaded — HeroFilm loads it with next/dynamic.
+//
+// `fundraising`: donee money-fundraiser applications (handoff screens F01–F12,
+// 2026-10-16). Off unless NEXT_PUBLIC_FUNDRAISING_ENABLED="true"; the backend
+// has its own switch (fundraising.enabled) and answers 404 while it is off.
 export const FEATURES: {
   money: boolean;
   bottomBlur: boolean;
   ngoRegistration: boolean;
   cinematicLanding: boolean;
+  fundraising: boolean;
 } = {
   money: false,
   bottomBlur: false,
   ngoRegistration: process.env.NEXT_PUBLIC_NGO_ENABLED === "true",
   cinematicLanding: true,
+  fundraising: process.env.NEXT_PUBLIC_FUNDRAISING_ENABLED === "true",
 };

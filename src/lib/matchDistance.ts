@@ -51,12 +51,14 @@ export function matchDistanceKm(m: Partial<DistanceFields>): number | null {
  */
 export function formatMatchProximity(
   m: Partial<DistanceFields> & { requestCity?: string | null; doneeCity?: string | null },
+  t: (key: "underOneKm" | "approxKmAway" | "inCity", values?: Record<string, string | number>) => string = (key, v = {}) =>
+    key === "underOneKm" ? "Under 1 km away" : key === "approxKmAway" ? `~${v.km} km away` : `In ${v.city}`,
 ): string | null {
   const km = matchDistanceKm(m);
   if (km != null) {
-    if (km < 1) return "Under 1 km away";
-    return `~${Math.round(km)} km away`;
+    if (km < 1) return t("underOneKm");
+    return t("approxKmAway", { km: Math.round(km) });
   }
   const city = m.requestCity || m.doneeCity;
-  return city ? `In ${city}` : null;
+  return city ? t("inCity", { city }) : null;
 }

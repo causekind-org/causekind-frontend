@@ -1,5 +1,5 @@
 "use client";
-import { LandingText, LandingAttributes } from "@/components/LandingTranslation";
+import { LandingText, LandingAttributes, useLandingTranslation } from "@/components/LandingTranslation";
 
 
 /**
@@ -24,7 +24,7 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
  *   4. Mobile layout (still inline — ~200 lines — a future task can extract it too)
  */
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import { isNgoRole } from "@/lib/isNgoRole";
 import Image from "next/image";
 import Link from "next/link";
@@ -81,6 +81,7 @@ import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
+import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
@@ -243,7 +244,9 @@ export default function HomeClient({
   const showLiveNeeds = roleStr !== "DONEE";
   // Guests get Prachi's split "choose your path" CTA (6a6cc53); signed-in viewers
   // the dark card. Restored 2026-10-08 — a merge on 10-07 dropped this switch.
-  const isGuest = !user;
+  // Not a guest while the session is restoring: a signed-in visitor must never
+  // see the guest's signup CTA flash during hydration.
+  const isGuest = !isRestoring && !user;
   
   const [isDesktop, setIsDesktop] = useState(true);
   useEffect(() => {
@@ -262,6 +265,11 @@ export default function HomeClient({
   const isRoleHome = isDonorOrDonee && !isRestoring;
   // The donee page has no lines between its sections (desktop RoleHome and this phone column).
   const isDoneeHome = roleStr === "DONEE" && !isRestoring;
+
+  // Where the landing film's "Skip intro" lands and moves focus to: one labelled
+  // region around both "Who we are" variants (handoffs/Landing Film Skip Plan.md).
+  const afterFilmRef = useRef<HTMLElement>(null);
+  const whoWeAreLabel = useLandingTranslation("Who we are");
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -288,15 +296,17 @@ export default function HomeClient({
           <DashedJourneyRoad />
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
-      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} /> : <HeroComponent />}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} destinationRef={afterFilmRef} /> : <HeroComponent />}
 
-      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit) */}
-      <div className="hidden lg:block">
-        <WhoAreWeDesktop />
-      </div>
-      <div className="lg:hidden">
-        <WhoAreWeSection />
-      </div>
+      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit). Also the film's skip target. */}
+      <section id="who-we-are" ref={afterFilmRef} tabIndex={-1} aria-label={whoWeAreLabel} className="outline-none">
+        <div className="hidden lg:block">
+          <WhoAreWeDesktop />
+        </div>
+        <div className="lg:hidden">
+          <WhoAreWeSection />
+        </div>
+      </section>
 
       <SupportGallery />
 
@@ -312,8 +322,9 @@ export default function HomeClient({
 
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       {showLiveNeeds && (
-        <div className="ck-home-paper hidden lg:block relative z-10">
+        <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
           <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+          <NgoDrivesSection />
         </div>
       )}
 
@@ -450,7 +461,7 @@ export default function HomeClient({
         <CreditsSection />
 
         {/* SECTION 9 — FINAL CTA */}
-        <FinalCtaComponent variant="desktop" card={!isGuest} />
+        {!isRestoring && <FinalCtaComponent variant="desktop" card={!isGuest} />}
       </div>
       </div>
       )}
@@ -523,7 +534,12 @@ export default function HomeClient({
         )}
 
         {/* SECTION 6 — LIVE NEEDS */}
-        {showLiveNeeds && <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />}
+        {showLiveNeeds && (
+          <div className="space-y-8">
+            <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+            <NgoDrivesSection />
+          </div>
+        )}
 
         {/* SECTION 5 — CAN I TRUST YOU */}
         <div className="-mx-5">
@@ -619,7 +635,7 @@ export default function HomeClient({
         {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
         {!isRoleHome && (
           <div className="-mx-5">
-            <FinalCtaComponent variant="mobile" card={!isGuest} />
+            {!isRestoring && <FinalCtaComponent variant="mobile" card={!isGuest} />}
           </div>
         )}
 

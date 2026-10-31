@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useOfferErrorText } from "./offerErrorText";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -40,28 +41,42 @@ import {
 } from "./offerSerializer";
 import { offerStepForField, validateOfferAll, validateOfferStep } from "./offerSchema";
 
-const STEP_LABELS: Record<OfferStep, string> = {
-  location: "Check your location",
-  photos: "Show the item",
-  purchasePlan: "What you'll buy",
-  details: "Tell us about the item",
-  condition: "Condition & fit",
-  pickup: "Pickup & delivery",
-  review: "Review your offer",
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+/** Display copy for STEP_LABELS, translated (was a module constant). */
+function useStepLabelsCopy(): Record<OfferStep, string> {
+  const ui = useUiText();
+  return {
+  location: ui("Check your location"),
+  photos: ui("Show the item"),
+  purchasePlan: ui("What you'll buy"),
+  details: ui("Tell us about the item"),
+  condition: ui("Condition & fit"),
+  pickup: ui("Pickup & delivery"),
+  review: ui("Review your offer"),
 };
+}
 
-const STEP_INTROS: Record<OfferStep, string> = {
-  location: "We check that you are close enough to the person who needs this.",
-  photos: "A few good photos do most of the work.",
-  purchasePlan: "Choose how it reaches the recipient, what you plan to buy, and how soon.",
-  details: "What are you giving, and how much of it?",
-  condition: "How is it doing, and what should the recipient know?",
-  pickup: "Where would this be collected from?",
-  review: "One last look before it goes to the recipient and our team.",
+/** Display copy for STEP_INTROS, translated (was a module constant). */
+function useStepIntrosCopy(): Record<OfferStep, string> {
+  const ui = useUiText();
+  return {
+  location: ui("We check that you are close enough to the person who needs this."),
+  photos: ui("A few good photos do most of the work."),
+  purchasePlan: ui("Choose how it reaches the recipient, what you plan to buy, and how soon."),
+  details: ui("What are you giving, and how much of it?"),
+  condition: ui("How is it doing, and what should the recipient know?"),
+  pickup: ui("Where would this be collected from?"),
+  review: ui("One last look before it goes to the recipient and our team."),
 };
+}
 
 /** Step count in words, for the sidebar. Two flows, two lengths. */
-const STEP_COUNT_WORD: Record<number, string> = { 3: "Three", 4: "Four", 5: "Five" };
+/** Display copy for STEP_COUNT_WORD, translated (was a module constant). */
+function useStepCountWordCopy(): Record<number, string> {
+  const ui = useUiText();
+  return { 3: ui("Three"), 4: ui("Four"), 5: ui("Five") };
+}
 
 /**
  * The five-step donation-offer editor.
@@ -126,6 +141,11 @@ export function DonationOfferWizard({
   /** Returns from the editor to the request/offer-type prelude. */
   onExit: () => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const STEP_COUNT_WORD = useStepCountWordCopy();
+  const STEP_INTROS = useStepIntrosCopy();
+  const STEP_LABELS = useStepLabelsCopy();
+  const ui = useUiText();
   const reduced = !!useReducedMotion();
   const locale = useLocale();
   const isRtl = locale === "ar" || locale === "ur";
@@ -196,7 +216,13 @@ export function DonationOfferWizard({
     try { sessionStorage.setItem(stepKey, step); } catch { /* best-effort */ }
   }, [stepKey, step]);
   const [direction, setDirection] = useState(1);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [rawErrors, setErrors] = useState<Record<string, string>>({});
+  const offerErrorText = useOfferErrorText();
+  // Validation codes from offerSchema → text in the reader's language, at render.
+  const errors = useMemo(
+    () => Object.fromEntries(Object.entries(rawErrors).map(([k, v]) => [k, offerErrorText(v) ?? v])) as Record<string, string>,
+    [rawErrors, offerErrorText],
+  );
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [savingExit, setSavingExit] = useState(false);
@@ -360,7 +386,7 @@ export function DonationOfferWizard({
       const res = await analyzeOfferImages(await ensureDraft());
       if (token !== screenTokenRef.current) return; // superseded
       if (!res.aiAvailable) {
-        setScreening({ kind: "unavailable", note: res.note ?? "We couldn't check your photos just now — you can continue." });
+        setScreening({ kind: "unavailable", note: res.note ?? ui("We couldn't check your photos just now — you can continue.") });
       } else if (res.prohibited) {
         setScreening({ kind: "prohibited", code: res.prohibitedCode, category: res.prohibitedCategory });
       } else {
@@ -368,7 +394,7 @@ export function DonationOfferWizard({
       }
     } catch {
       if (token !== screenTokenRef.current) return;
-      setScreening({ kind: "unavailable", note: "We couldn't check your photos just now — you can continue." });
+      setScreening({ kind: "unavailable", note: ui("We couldn't check your photos just now — you can continue.") });
     }
   }, [model.photos, ensureDraft]);
 
@@ -497,7 +523,7 @@ export function DonationOfferWizard({
   const handleContinue = useCallback(async () => {
     const stepErrors = validateOfferStep(step, model, flowType, stillNeededQuantity);
     if (step === "photos" && photosBlocked) {
-      setErrors({ photos: "Remove the photo we cannot accept before continuing." });
+      setErrors({ photos: ui("Remove the photo we cannot accept before continuing.") });
       return;
     }
     if (Object.keys(stepErrors).length > 0) {
@@ -517,7 +543,7 @@ export function DonationOfferWizard({
         // a field with an EMPTY string, which WizardField and StepErrorSummary
         // both treat as "no error" — it rendered nowhere and only looked like
         // feedback in the source.
-        toast.error("We couldn't save your changes. Check your connection and try again.");
+        toast.error(ui("We couldn't save your changes. Check your connection and try again."));
         return;
       }
       goTo(steps[idx + 1], 1);
@@ -550,14 +576,14 @@ export function DonationOfferWizard({
     }
     if (photosBlocked) {
       submitLockRef.current = false;
-      setSubmitError("One of your photos shows something we cannot accept. Replace it to submit.");
+      setSubmitError(ui("One of your photos shows something we cannot accept. Replace it to submit."));
       return;
     }
 
     setSubmitting(true);
     try {
       const saved = await flush(model);
-      if (!saved) throw new Error("Your latest changes could not be saved.");
+      if (!saved) throw new Error(ui("Your latest changes could not be saved."));
       const result = await submitOffer(await ensureDraft(), true);
       setSubmitted(true);
       onSubmitted(result);
@@ -575,7 +601,7 @@ export function DonationOfferWizard({
     setSavingExit(true);
     try {
       const saved = await flush(model);
-      if (!saved) { toast.error("We couldn't save your changes — please try again."); return; }
+      if (!saved) { toast.error(ui("We couldn't save your changes — please try again.")); return; }
       (onSaveExit ?? onExit)();
     } finally {
       setSavingExit(false);
@@ -732,7 +758,7 @@ export function DonationOfferWizard({
           onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
           submitting={submitting} submitted={submitted} savingExit={savingExit}
         >
-          {adminNote && <p role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">Our team asked for more information: {adminNote}</p>}
+          {adminNote && <p role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200">{wt("teamAskedMore", { note: adminNote })}</p>}
           {stepContent}
         </GuidedPurchaseLayout>
       </MotionConfig>
@@ -750,19 +776,19 @@ export function DonationOfferWizard({
               onClick={onExit}
               className="mb-8 flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-white/60 transition-colors hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-highlight)]"
             >
-              <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> <UiText>Back</UiText>
             </button>
             <h2 className="mb-1 text-2xl font-bold" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
-              Offer this item
+              <UiText>Offer this item</UiText>
             </h2>
             <p className="mb-8 text-sm text-white/50">
-              {STEP_COUNT_WORD[steps.length] ?? steps.length} short steps. We save as you go.
+              {wt("shortSteps", { count: STEP_COUNT_WORD[steps.length] ?? steps.length })}
             </p>
             <WizardProgressRail
-              current={step} steps={steps} navLabel="Donation offer progress"
+              current={step} steps={steps} navLabel={ui("Donation offer progress")}
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
-          <p className="text-2xs text-white/35">Your name and address stay private until a match is approved.</p>
+          <p className="text-2xs text-white/35"><UiText>Your name and address stay private until a match is approved.</UiText></p>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col justify-between">
@@ -774,12 +800,12 @@ export function DonationOfferWizard({
                 onClick={onExit}
                 className="flex min-h-[44px] items-center gap-1 text-sm font-medium text-stone-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
               >
-                <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Back
+                <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> <UiText>Back</UiText>
               </button>
               <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
             </div>
             <WizardProgressBar
-              current={step} steps={steps} navLabel="Donation offer progress"
+              current={step} steps={steps} navLabel={ui("Donation offer progress")}
               labels={STEP_LABELS} availability={availability} onJump={s => goTo(s, -1)} />
           </div>
 
@@ -790,7 +816,7 @@ export function DonationOfferWizard({
             <div className="mx-auto w-full max-w-[680px]">
               <div className="mb-4 hidden items-center justify-between lg:flex">
                 <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
-                  Step {offerStepIndex(step, steps) + 1} of {steps.length}
+                  {wt("stepOf", { n: offerStepIndex(step, steps) + 1, total: steps.length })}
                 </p>
                 <DraftSaveStatus status={draft.status} onRetry={draft.retry} />
               </div>
@@ -798,7 +824,7 @@ export function DonationOfferWizard({
               {adminNote && (
                 <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
                   <p className="flex items-center gap-1.5 text-2xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
-                    <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> Our team asked for more information
+                    <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> <UiText>Our team asked for more information</UiText>
                   </p>
                   <p className="mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
                 </div>
@@ -815,7 +841,7 @@ export function DonationOfferWizard({
             onBack={() => goTo(steps[offerStepIndex(step, steps) - 1], -1)}
             onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
             onSaveExit={() => void handleSaveExit()}
-            continueLabel={isLast ? "Submit donation offer" : "Continue"}
+            continueLabel={isLast ? ui("Submit donation offer") : ui("Continue")}
             isLast={isLast}
             submitting={submitting}
             submitted={submitted}

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DashboardPage from "./page";
 
@@ -18,13 +18,14 @@ const mocks = vi.hoisted(() => ({
   listings: vi.fn(),
   matches: vi.fn(),
   offers: vi.fn(),
+  driveOffers: vi.fn(),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: { email: "ravi@donor.test", role: "DONOR" }, isLoading: false }),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/components/MyTasksCard", () => ({ MyTasksCard: () => null }));
 vi.mock("@/hooks/useDynamicTranslation", () => ({ TranslatedText: ({ text }: { text: string }) => <>{text}</> }));
@@ -32,12 +33,15 @@ vi.mock("@/components/NewRequestLink", () => ({
   NewRequestLink: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) =>
     <a href={href} className={className}>{children}</a>,
 }));
+const live = vi.hoisted(() => ({ listeners: [] as { types: string[]; cb: () => void }[] }));
+vi.mock("@/hooks/useEntityUpdates", () => ({ useEntityUpdates: (types: string[], cb: () => void) => { live.listeners.push({ types, cb }); } }));
 vi.mock("@/lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   getMyProfile: mocks.profile,
   getMyItemListings: mocks.listings,
   getMyMatches: mocks.matches,
   getMyDonationOffers: mocks.offers,
+  getMyNgoDriveOffers: mocks.driveOffers,
   getMyItemRequests: () => Promise.resolve([]),
   getOffersForMyRequests: () => Promise.resolve([]),
   getMatchCancellationOptions: () => Promise.resolve({ allowed: false, outcome: "NONE", actionLabel: null }),
@@ -77,6 +81,7 @@ beforeEach(() => {
   mocks.listings.mockResolvedValue([]);
   mocks.matches.mockResolvedValue([]);
   mocks.offers.mockResolvedValue([]);
+  mocks.driveOffers.mockResolvedValue([]);
 });
 
 const tab = (name: RegExp) => screen.findByRole("tab", { name });
@@ -380,5 +385,88 @@ describe("donation history & fulfilled inventory", () => {
     expect(screen.getAllByText("earbuds").length).toBeGreaterThan(0);
     // No certificate for the listing: listingId 99 is not the match's 88.
     expect(screen.queryByRole("link", { name: /Certificate/i })).toBeNull();
+  });
+});
+
+describe("Matches: Donee | NGO segments count and show each item once", () => {
+  const driveOffer = (id: number, status: string, over: Record<string, unknown> = {}) => ({
+    id, status, driveId: 5, driveTitle: "Winter jackets drive", ngoName: "Hope Trust", quantity: 10,
+    driveItemName: "Jackets", driveUnit: "PIECES", submittedAt: iso(2 * DAY), media: [], ...over,
+  });
+
+  it("one donee match + one drive offer: Donee 1, NGO 1, Matches 2, and each segment shows only its own", async () => {
+    mocks.matches.mockResolvedValue([match(1, "BOTH_PARTIES_ACCEPTED")]);
+    mocks.driveOffers.mockResolvedValue([driveOffer(3, "NGO_ACCEPTED")]);
+    window.history.replaceState(null, "", "/dashboard#matches");
+    render(<DashboardPage />);
+    await openTab(/Matches/);
+    const seg = await screen.findByTestId("match-segment");
+    expect(within(seg).getByRole("radio", { name: /Donee/ })).toHaveTextContent(/Donee\s*1/);
+    expect(within(seg).getByRole("radio", { name: /NGO/ })).toHaveTextContent(/NGO\s*1/);
+    expect(await tab(/Matches/)).toHaveTextContent(/2/);
+    // Donee segment: the match only, never the drive offer.
+    expect(screen.queryByText("Winter jackets drive")).toBeNull();
+    within(seg).getByRole("radio", { name: /NGO/ }).click();
+    expect(await screen.findByText("Winter jackets drive")).toBeInTheDocument();
+    expect(screen.queryByText("Listed laptop 1")).toBeNull();
+  });
+
+  it("completed and declined drive offers go to History once, never to Matches", async () => {
+    mocks.driveOffers.mockResolvedValue([
+      driveOffer(3, "COMPLETED", { driveStatus: "FULFILLED", driveBeneficiariesReached: 50, driveBeneficiaryGroup: "Children" }),
+      driveOffer(4, "NGO_DECLINED", { driveTitle: "School bags drive" }),
+    ]);
+    window.history.replaceState(null, "", "/dashboard#offers");
+    render(<DashboardPage />);
+    await openTab(/History/);
+    expect(await tab(/History/)).toHaveTextContent(/2/);
+    expect(await screen.findByText("The NGO has distributed your 10 jackets. This drive reached 50 people (children).")).toBeInTheDocument();
+    expect(screen.getByText(/School bags drive/)).toBeInTheDocument();
+    expect(await tab(/Matches/)).toHaveTextContent(/0/);
+  });
+});
+
+describe("History: an NGO drive offer from handover to proof", () => {
+  const driveOffer = (id: number, status: string, over: Record<string, unknown> = {}) => ({
+    id, status, driveId: 5, driveTitle: "Winter jackets drive", ngoName: "Hope Trust", quantity: 10,
+    driveItemName: "Jackets", driveUnit: "PIECES", submittedAt: iso(2 * DAY), media: [], ...over,
+  });
+  const openHistory = async () => {
+    window.history.replaceState(null, "", "/dashboard#offers");
+    render(<DashboardPage />);
+    await openTab(/History/);
+  };
+
+  it("handover completed (ISSUE_WINDOW_OPEN): Donated · certificate issued, Certificate link, proof pending", async () => {
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "ISSUE_WINDOW_OPEN")]);
+    await openHistory();
+    const entry = await screen.findByTestId("history-drive-offer-7");
+    expect(entry).toHaveTextContent("Donated · certificate issued");
+    expect(within(entry).getByRole("link", { name: /Certificate/ })).toHaveAttribute("href", "/certificate?offerId=7&type=ngo_drive");
+    expect(within(entry).getByTestId("history-proof-pending")).toBeInTheDocument();
+  });
+
+  it("proof published: the same single entry shows the distribution line, no duplicate", async () => {
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "COMPLETED", { driveStatus: "FULFILLED", driveBeneficiariesReached: 50, driveBeneficiaryGroup: "Elderly" })]);
+    await openHistory();
+    expect(await screen.findAllByTestId("history-drive-offer-7")).toHaveLength(1);
+    expect(screen.getByText("The NGO has distributed your 10 jackets. This drive reached 50 people (elderly).")).toBeInTheDocument();
+    expect(screen.queryByTestId("history-proof-pending")).toBeNull();
+  });
+});
+
+describe("live update: the donor dashboard follows a drive handover", () => {
+  it("NGO_DRIVE_OFFER refetches: Matches > NGO moves to 'Received by NGO'", async () => {
+    const d = { id: 3, driveId: 5, driveTitle: "Winter jackets drive", ngoName: "Hope Trust", quantity: 5, driveItemName: "Jackets", submittedAt: iso(DAY), media: [] };
+    mocks.driveOffers.mockResolvedValue([{ ...d, status: "HANDOVER_IN_PROGRESS" }]);
+    window.history.replaceState(null, "", "/dashboard?segment=ngo#matches");
+    render(<DashboardPage />);
+    const stage = async () => (await screen.findByTestId("drive-offer-stages")).querySelector('[aria-current="step"]')?.textContent;
+    await waitFor(async () => expect(await stage()).toBe("Handover scheduled"));
+    mocks.driveOffers.mockResolvedValue([{ ...d, status: "ISSUE_WINDOW_OPEN" }]);
+    const listener = [...live.listeners].reverse().find((l) => l.types.includes("NGO_DRIVE_OFFER"));
+    expect(listener).toBeDefined();
+    listener!.cb();
+    await waitFor(async () => expect(await stage()).toBe("Received by NGO"));
   });
 });

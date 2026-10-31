@@ -1,6 +1,7 @@
 "use client";
 
 import { serverDate } from "@/lib/serverTime";
+import { formatIST } from "@/lib/formatIST";
 import { useState } from "react";
 import { Check, Copy, ExternalLink, Loader2, MapPin, Package, Phone, Send, Truck, UserRound, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,7 +38,7 @@ export type DeliveryAddressActions = {
 };
 
 const whenShort = (iso: string | null) =>
-  iso ? serverDate(iso).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) : null;
+  iso ? formatIST(iso) : null;
 
 /** The address step as the next action, while it's pending. */
 export function DeliveryAddressStep({ vm, actions }: { vm: HandoverViewModel; actions: DeliveryAddressActions }) {

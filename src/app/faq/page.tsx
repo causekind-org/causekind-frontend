@@ -83,15 +83,7 @@ export default function FaqPage() {
           "text": "You can cancel, and the need goes back live for other donors."
         }
       },
-      {
-        "@type": "Question",
-        "name": "Which cities are you in?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "We're currently live in Mumbai with more cities coming soon."
-        }
-      },
-      {
+            {
         "@type": "Question",
         "name": "How does money get to the campaign?",
         "acceptedAnswer": {

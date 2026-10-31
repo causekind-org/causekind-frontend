@@ -3,6 +3,7 @@ import {
   MIN_OFFER_PHOTOS, PURCHASE_METHODS, PURCHASE_TIMELINES, isPurchaseFlow,
   offerStepsFor, type OfferModel, type OfferStep,
 } from "./offerModel";
+import { offerErrorCode } from "./offerErrorText";
 
 /**
  * One schema for the whole offer, with cross-field rules in `superRefine` so a
@@ -54,7 +55,7 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
       if (uploaded < MIN_OFFER_PHOTOS) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["photos"],
-          message: `Add at least ${MIN_OFFER_PHOTOS} photos of the item.`,
+          message: offerErrorCode("photosMin", { min: MIN_OFFER_PHOTOS }),
         });
       }
     }
@@ -69,7 +70,7 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
       if (!PURCHASE_METHODS.some(m => m.value === v.fulfilmentMethod)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["fulfilmentMethod"],
-          message: "Choose how the item will reach the recipient.",
+          message: offerErrorCode("chooseMethod"),
         });
       }
 
@@ -132,12 +133,12 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
       if (!v.purchaseTimeline) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["purchaseTimeline"],
-          message: "How soon can you buy it?",
+          message: offerErrorCode("timelineRequired"),
         });
       } else if (!PURCHASE_TIMELINES.some(o => o.value === v.purchaseTimeline)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["purchaseTimeline"],
-          message: "Choose one of the options.",
+          message: offerErrorCode("chooseOption"),
         });
       }
     }
@@ -147,18 +148,18 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
     // cap: how much is "too much" otherwise is the backend compatibility rule.
     const qty = Number(v.quantity);
     if (v.quantity.trim() === "") {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quantity"], message: "How many are you donating?" });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["quantity"], message: offerErrorCode("quantityRequired") });
     } else if (!Number.isInteger(qty) || qty < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom, path: ["quantity"],
-        message: "Enter a whole number of items, at least 1.",
+        message: offerErrorCode("quantityWhole"),
       });
     } else if (maxQuantity != null && maxQuantity > 0 && qty > maxQuantity) {
       // Caps at what the request still needs. The backend enforces this too
       // (DonationOfferService), but an inline error beats a 400 after submit.
       ctx.addIssue({
         code: z.ZodIssueCode.custom, path: ["quantity"],
-        message: `This request needs only ${maxQuantity} more — you can offer up to ${maxQuantity}.`,
+        message: offerErrorCode("quantityMax", { max: maxQuantity }),
       });
     }
 
@@ -166,7 +167,7 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
     // for a new one and never renders this step.
     if (!purchase) {
       if (!v.condition) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["condition"], message: "Select the item's condition." });
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["condition"], message: offerErrorCode("conditionRequired") });
       }
 
       // A ticked defects box with an empty box beneath it discloses nothing, which
@@ -174,7 +175,7 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
       if (v.hasKnownDefects && v.knownDefects.trim().length < 3) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["knownDefects"],
-          message: "Describe the defects so the recipient knows what to expect.",
+          message: offerErrorCode("defectsRequired"),
         });
       }
     }
@@ -182,21 +183,21 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
     // Required for an item the donor already owns (owner, 2026-10-09). A purchase
     // is new, and NGO drive offers (no flowType) are unchanged.
     if (flowType === "ALREADY_OWN" && !v.approximateAge.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: "How old is the item? A rough estimate is fine." });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["approximateAge"], message: offerErrorCode("ageRequired") });
     }
 
     // The location step: a pin, and the city it gives (whitespace is not a city).
     if (v.latitude == null || v.longitude == null) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["latitude"], message: "Use your current location, or find it on the map, to continue." });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["latitude"], message: offerErrorCode("locationRequired") });
     }
     if (!v.pickupCity.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: "Add your city." });
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: offerErrorCode("cityRequired") });
     }
 
     if (!v.declarationsConfirmed) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom, path: ["declarationsConfirmed"],
-        message: "Please confirm the declarations before submitting.",
+        message: offerErrorCode("declarationsRequired"),
       });
     }
   });
@@ -214,7 +215,7 @@ export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]
     "purchaseTimeline", "estimatedCost", "proposedBrand", "proposedModel",
     "intendedStore", "purchaseNotes",
   ],
-  details: ["quantity", "approximateAge", "accessoriesIncluded", "specNotes"],
+  details: ["quantity", "approximateAge", "sizeSpec", "ageRange", "confirmedWorking", "confirmedClean", "accessoriesIncluded", "specNotes"],
   condition: ["condition", "hasKnownDefects", "knownDefects"],
   review: ["declarationsConfirmed"],
 };

@@ -22,7 +22,7 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: { email: "asha@donee.test", role: "DONEE" }, isLoading: false }),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/components/MyTasksCard", () => ({ MyTasksCard: () => null }));
 vi.mock("@/hooks/useDynamicTranslation", () => ({ TranslatedText: ({ text }: { text: string }) => <>{text}</> }));

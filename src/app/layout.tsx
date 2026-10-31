@@ -1,8 +1,11 @@
+import { StartDriveChoice } from "@/components/ngo-landing/StartDriveChoice";
+import { StoredImageFallback } from "@/components/media/StoredImageFallback";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
 import Script from "next/script";
 import { RouteProgressBar } from "@/components/RouteProgressBar";
+import { FilmViewObserver } from "@/components/FilmViewObserver";
 import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages } from "next-intl/server";
@@ -49,6 +52,7 @@ import { DeferredOverlays } from "@/components/DeferredOverlays";
 import { DonateChoice } from "@/components/donate/DonateChoice";
 import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
 import { MatchActionDock } from "@/components/matches/MatchActionDock";
+import { DriveNotificationDock } from "@/components/notifications/DriveNotificationDock";
 import { CompletionCelebrationWatcher } from "@/components/handover/CompletionCelebrationWatcher";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -158,6 +162,7 @@ export default async function RootLayout({
         />
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+        <StoredImageFallback />
         {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
             banner coming back — see the TESTING_BYPASS note in each
             component. Remove this comment once the banner is restored. */}
@@ -177,6 +182,7 @@ export default async function RootLayout({
                 <Suspense fallback={null}>
                   <RouteProgressBar />
                 </Suspense>
+                <FilmViewObserver />
                 <RoleThemeBridge />
                 <SuperAdminRedirect />
                 <AdminRedirect />
@@ -192,7 +198,7 @@ export default async function RootLayout({
                 >
                   <ScrollProgress />
                   <SiteHeader />
-                  <main className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
+                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
                   <SiteFooter />
                   {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <MobileBottomNav />
@@ -214,10 +220,13 @@ export default async function RootLayout({
                   <DeferredOverlays />
                   {/* Every Donate button opens this In-Kind / Money choice. */}
                   <DonateChoice />
+                  <StartDriveChoice />
                   {/* Guests' and donors' next step after "Donate items". */}
                   <DonateItemsChoiceModal />
                   {/* Donor-only: a waiting match, once, until answered or closed. */}
                   <MatchActionDock />
+                  {/* NGO and donor drive notices: unread ones, one at a time. */}
+                  <DriveNotificationDock />
                   <CompletionCelebrationWatcher />
                 </RoleClickSpark>
                 </NeedProfileGateProvider>

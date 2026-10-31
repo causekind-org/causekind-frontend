@@ -13,6 +13,7 @@ import { buildSupportGmailUrl, DEFAULT_SUPPORT_GMAIL_URL } from "@/lib/utils";
 import { useNearFooter } from "@/hooks/useNearFooter";
 import { useDraggableBubble } from "@/hooks/useDraggableBubble";
 import { RequestNudge } from "@/components/RequestNudge";
+import { scrollToTop } from "@/lib/scrollToTop";
 import GlassSurface from "@/components/GlassSurface";
 import { useImmersiveNav } from "@/hooks/useImmersiveNav";
 
@@ -124,6 +125,24 @@ export function MobileBottomNav() {
     setIsDragging(false);
     dragPointerId.current = null;
   }, [pathname, user?.role]);
+
+  /**
+   * The one rule for every way a tab is activated (link tap, bead tap, bead
+   * drag-release, Enter): already on that exact page → scroll to the top and
+   * leave the URL (query, hash) alone; anywhere else, including a sub-page of
+   * the tab → navigate to the tab. Returns true when it scrolled instead.
+   */
+  function activateTab(index: number, navigate: boolean): boolean {
+    const item = items[index];
+    if (!item) return false;
+    if (pathname === item.href) {
+      scrollToTop();
+      return true;
+    }
+    setPendingIndex(index);
+    if (navigate) router.push(item.href);
+    return false;
+  }
 
   function pointOnTrack(clientX: number) {
     const track = trackRef.current;
@@ -240,7 +259,8 @@ export function MobileBottomNav() {
                   event.shiftKey ||
                   event.altKey
                 ) return;
-                setPendingIndex(index);
+                // The link navigates on its own; only stop it when scrolling instead.
+                if (activateTab(index, false)) event.preventDefault();
               }}
               className="group relative z-10 flex min-w-0 items-center justify-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[#faf8f5] dark:focus-visible:ring-offset-zinc-950"
             >
@@ -293,8 +313,7 @@ export function MobileBottomNav() {
               setDragPosition(null);
               setDragIndex(null);
               if (!point) return;
-              setPendingIndex(point.index);
-              router.push(items[point.index].href);
+              activateTab(point.index, true);
             }}
             onPointerCancel={() => {
               dragPointerId.current = null;

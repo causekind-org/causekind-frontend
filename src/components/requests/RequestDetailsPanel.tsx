@@ -5,6 +5,9 @@ import { useEffect, useState, type ReactNode } from "react";
 import { PhotoThumbs } from "@/components/PhotoThumbs";
 import { getRequestActivity, type ItemRequest, type RequestActivityEntry } from "@/lib/api";
 
+import { UiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDashCopy } from "@/lib/dashboardCopy";
 // The statuses that first mark each station as reached, for its date.
 const VERIFIED = ["VERIFIED_PRIVATE_MATCHING", "POTENTIAL_MATCH_FOUND", "AWAITING_MATCH_APPROVAL",
   "PUBLICATION_CONSENT_REQUIRED", "PUBLIC_REQUEST"];
@@ -41,6 +44,8 @@ export function RequestDetailsPanel({ request: r, stage: baseStage, state: baseS
   review?: ReactNode;
 }) {
   const [activity, setActivity] = useState<RequestActivityEntry[] | null>(null);
+  const dt = useTranslations("dashFlow");
+  const dc = useDashCopy();
 
   useEffect(() => {
     let live = true;
@@ -59,15 +64,15 @@ export function RequestDetailsPanel({ request: r, stage: baseStage, state: baseS
       ["Received", firstAt(entries, RECEIVED)]] as const;
 
   const facts = [
-    `${fulfilled} of ${requested} received`,
-    `${r.urgency.charAt(0)}${r.urgency.slice(1).toLowerCase()} urgency`,
-    r.isEmergency && (r.emergencyNature ? `Emergency: ${r.emergencyNature.replaceAll("_", " ").toLowerCase()}` : "Emergency"),
+    dt("xOfYReceived", { x: fulfilled, y: requested }),
+    dt("urgencyLevel", { level: dc(`${r.urgency.charAt(0)}${r.urgency.slice(1).toLowerCase()}`) }),
+    r.isEmergency && (r.emergencyNature ? dt("emergencyIs", { nature: r.emergencyNature.replaceAll("_", " ").toLowerCase() }) : dc("Emergency")),
   ].filter(Boolean) as string[];
   const delivery = [
-    `Location: ${[r.city, r.pincode].filter(Boolean).join(", ")}`,
-    r.pickupRadiusKm != null && `Donors within ${r.pickupRadiusKm} km`,
-    r.verificationTier && `Verification: ${TIER_LABEL[r.verificationTier] ?? r.verificationTier}`,
-    r.verificationDueAt && stage <= 1 && state !== "broken" && `Review due by ${fmt(r.verificationDueAt)}`,
+    dt("locationIs", { place: [r.city, r.pincode].filter(Boolean).join(", ") }),
+    r.pickupRadiusKm != null && dt("donorsWithin", { km: r.pickupRadiusKm }),
+    r.verificationTier && dt("verificationIs", { tier: TIER_LABEL[r.verificationTier] ? dc(TIER_LABEL[r.verificationTier]) : r.verificationTier }),
+    r.verificationDueAt && stage <= 1 && state !== "broken" && dt("reviewDueBy", { date: fmt(r.verificationDueAt) ?? "" }),
   ].filter(Boolean) as string[];
   const heading = "text-3xs font-bold uppercase tracking-[0.14em] text-stone-500 dark:text-stone-400";
 
@@ -77,26 +82,26 @@ export function RequestDetailsPanel({ request: r, stage: baseStage, state: baseS
       {review}
       <div className="grid gap-5 p-4 sm:grid-cols-3 sm:p-5">
       <div className="flex min-w-0 flex-col gap-2.5">
-        <h3 className={heading}>Request</h3>
+        <h3 className={heading}><UiText>Request</UiText></h3>
         <PhotoThumbs photos={r.imageUrl ? [r.imageUrl] : []} alt={r.title} size={72} />
         {r.description && <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300">{r.description}</p>}
         <p className="text-2xs text-stone-500 dark:text-stone-400">{facts.join(" · ")}</p>
       </div>
 
       <div className="flex min-w-0 flex-col gap-2">
-        <h3 className={heading}>Delivery</h3>
+        <h3 className={heading}><UiText>Delivery</UiText></h3>
         {delivery.map(line => <p key={line} className="text-xs text-stone-700 dark:text-stone-300">{line}</p>)}
       </div>
 
       <div className="flex min-w-0 flex-col">
-        <h3 className={`${heading} mb-3`}>Progress</h3>
+        <h3 className={`${heading} mb-3`}><UiText>Progress</UiText></h3>
         <ol>
           {stations.map(([name, at], i) => {
             const reached = i < stage || (i === stage && state === "done");
             const current = i === stage && state !== "done";
             const broken = current && state === "broken";
             const isLast = i === stations.length - 1;
-            const date = broken ? "Stopped here" : current && !at ? "Now" : reached || current ? fmt(at) : "Upcoming";
+            const date = broken ? dc("Stopped here") : current && !at ? dc("Now") : reached || current ? fmt(at) : dc("Upcoming");
             return (
               <li key={name} className="flex gap-3">
                 <div className="flex flex-col items-center">
@@ -108,12 +113,12 @@ export function RequestDetailsPanel({ request: r, stage: baseStage, state: baseS
                 </div>
                 <div className={`min-w-0 flex-1 ${isLast ? "" : "pb-3"}`}>
                   <p className={`text-xs font-semibold ${broken ? "text-red-600" : reached || current ? "text-stone-800 dark:text-stone-200" : "text-stone-500"}`}>
-                    {name}
+                    {dc(name)}
                     {review && name === "Matched" && (
-                      <span className="ms-2 bg-[#1e3a60]/10 px-2 py-0.5 text-3xs font-black text-[#1e3a60] dark:bg-blue-400/15 dark:text-blue-300">Waiting for you</span>
+                      <span className="ms-2 bg-[#1e3a60]/10 px-2 py-0.5 text-3xs font-black text-[#1e3a60] dark:bg-blue-400/15 dark:text-blue-300"><UiText>Waiting for you</UiText></span>
                     )}
                   </p>
-                  {review && name === "Matched" ? <p className="mt-0.5 text-2xs font-semibold text-[#1e3a60] dark:text-blue-300">Waiting for your reply</p> : date && <p className="mt-0.5 text-2xs text-stone-500 dark:text-stone-400">{date}</p>}
+                  {review && name === "Matched" ? <p className="mt-0.5 text-2xs font-semibold text-[#1e3a60] dark:text-blue-300"><UiText>Waiting for your reply</UiText></p> : date && <p className="mt-0.5 text-2xs text-stone-500 dark:text-stone-400">{date}</p>}
                 </div>
               </li>
             );

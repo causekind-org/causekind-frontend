@@ -1,5 +1,7 @@
 "use client";
 
+import { UiText, useUiText } from "@/components/UiText";
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -37,6 +39,7 @@ function AuthenticatedNgoProfileToast({
   isProfileComplete = false,
   isModalOpen = false,
 }: NgoProfileToastProps) {
+  const ui = useUiText();
   const pathname = usePathname();
   const { status, stepNumber, totalSteps, isLoading: isStatusLoading } = useNgoStatus();
 
@@ -203,10 +206,10 @@ function AuthenticatedNgoProfileToast({
           {/* Text */}
           <div className="flex flex-col gap-0 min-w-0 flex-1">
             <span className="text-sm font-bold text-stone-900 dark:text-stone-100 truncate leading-tight">
-              Complete your profile
+              <UiText>Complete your profile</UiText>
             </span>
             <span className="text-3xs sm:text-2xs text-stone-500 dark:text-stone-400 truncate leading-tight">
-              Unlock verification and drives
+              <UiText>Unlock verification and drives</UiText>
             </span>
           </div>
 
@@ -219,13 +222,13 @@ function AuthenticatedNgoProfileToast({
             onClick={handleAction}
             className="flex items-center gap-1.5 bg-ngo-700 hover:bg-ngo-600 active:scale-95 text-white text-2xs sm:text-xs font-black uppercase tracking-wide px-3 py-1.5 sm:px-3.5 rounded-full transition-all whitespace-nowrap shrink-0 shadow-sm"
           >
-            Complete Now →
+            <UiText>Complete Now →</UiText>
           </Link>
 
           {/* Dismiss */}
           <button
             onClick={dismiss}
-            aria-label="Dismiss"
+            aria-label={ui("Dismiss")}
             className="w-6 h-6 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 hover:bg-stone-100 dark:hover:bg-zinc-800 dark:hover:text-stone-200 transition-all shrink-0"
           >
             <X className="w-3 h-3" />

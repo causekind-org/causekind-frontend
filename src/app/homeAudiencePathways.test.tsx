@@ -3,6 +3,9 @@ import { act, render, screen } from "@testing-library/react";
 
 import enMessages from "../../messages/en.json";
 
+// HomeClient renders the whole landing tree; under parallel load a render can pass 5 s.
+vi.setConfig({ testTimeout: 20000 });
+
 /**
  * The donor/donee signup pathways are guest-only.
  *
@@ -104,6 +107,23 @@ vi.mock("@/components/home/CTASection", () => ({ CTASection: () => null }));
 // next/dynamic with ssr:false. Nothing here depends on what it draws.
 vi.mock("@/components/LightRays", () => ({ default: () => null }));
 
+// gsap-driven chrome from the cinematic landing: stubbed so no ScrollTrigger sync
+// interval or animation timer starts and outlives this file.
+// Every gsap call (to, timeline, matchMedia().add, context().revert, …) is a no-op
+// that returns another no-op, so sections can chain whatever they like.
+vi.mock("gsap", () => {
+  const noop: unknown = new Proxy(function () {}, { get: () => noop, apply: () => noop });
+  return { gsap: noop, default: noop };
+});
+vi.mock("gsap/ScrollTrigger", () => {
+  const noop: unknown = new Proxy(function () {}, { get: () => noop, apply: () => noop });
+  return { ScrollTrigger: noop, default: noop };
+});
+vi.mock("@/components/SmoothScroll", () => ({ SmoothScroll: () => null, getLenis: () => null }));
+vi.mock("@/components/cinematic/HeroFilm", () => ({
+  HeroFilm: ({ hero }: { hero: React.ReactNode }) => <>{hero}</>,
+}));
+
 import HomeClient from "./HomeClient";
 
 /**
@@ -182,10 +202,12 @@ describe("a guest, once auth has resolved", () => {
    * trees is the guest's way in, not this particular component. Both halves are
    * asserted here so a regression that drops either one still fails.
    */
-  it("keeps the pathways section in the desktop tree only", async () => {
+  // The pathways section was replaced by the final "choose your path" CTA in the
+  // landing redesign (198fdfb), which is rendered once in each tree on purpose.
+  it("gives the guest the join CTA once in each tree (desktop and mobile)", async () => {
     await renderHome();
 
-    expect(headings()).toHaveLength(1);
+    expect(headings()).toHaveLength(2);
   });
 
   it("gives a guest both doors on mobile, without duplicating the desktop CTAs", async () => {

@@ -2,7 +2,8 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
-import { getMyNotifications, markAllNotificationsRead, type SavedNotification, getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers, getMyNgoDrives, getNgoDriveOffersForNgo, getMyNgoDriveOffers } from "@/lib/api";
+import { getMyNotifications, markAllNotificationsRead, type SavedNotification, getMyMatches, getMyItemRequests, getMyItemListings, getOffersForMyRequests, getMyDonationOffers, markNotificationRead } from "@/lib/api";
+import { useTranslations } from "next-intl";
 import { useAuth } from "./useAuth";
 
 export type AppNotification = {
@@ -41,6 +42,8 @@ type NotificationsContextValue = {
   unread: number;
   markAllRead: () => void;
   refresh: () => Promise<void>;
+  isUnread: (n: AppNotification) => boolean;
+  markRead: (id: string) => void;
 };
 
 const NotificationsContext = createContext<NotificationsContextValue | null>(null);
@@ -49,8 +52,9 @@ function normalizeRole(role: string | null | undefined) {
   return (role ?? "").toUpperCase().replace(/^ROLE_/, "");
 }
 
+/** The match's request or listing title, or null (a translated fallback is used then). */
 function matchItemTitle(m: { requestTitle?: string | null; listingTitle?: string | null }) {
-  return m.requestTitle ?? m.listingTitle ?? "a request";
+  return m.requestTitle ?? m.listingTitle ?? null;
 }
 
 function loadSeen(): Set<string> {
@@ -103,9 +107,42 @@ function toTimestamp(iso: string | null | undefined): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
-async function deriveNotifications(rawRole: string): Promise<IncomingNotification[]> {
+/**
+ * A notice worked out from the user's data, as a catalogue key + values rather than
+ * English text (messages/en.json → notif.<key>.title / .body). Translated when the
+ * list is built for display (useNotificationState's memo), so polling, SSE and
+ * refresh never depend on the language and a language change never refetches.
+ * Values are user content or server text (titles, admin/AI reasons) and are
+ * inserted as written. A missing title uses a translated fallback (notif.fallback.*).
+ */
+type DerivedNotification = Omit<IncomingNotification, "title" | "body"> & {
+  key: string;
+  params?: Record<string, string | number>;
+  /** Fallback for a missing {subject}: a notif.fallback.* key. */
+  subjectFallback?: "aRequest" | "anItem" | "yourRequest" | "yourRequestCap";
+};
+
+function notice(
+  id: string, key: string, type: AppNotification["type"], link: string, timestamp: number,
+  params?: Record<string, string | number>, subjectFallback?: DerivedNotification["subjectFallback"],
+): DerivedNotification {
+  return { id, key, type, link, timestamp, params, subjectFallback };
+}
+
+/** Same notice with or without an admin/AI reason: picks `<key>` or `<key>Reason`. */
+function withReason(
+  id: string, key: string, type: AppNotification["type"], link: string, timestamp: number,
+  params: Record<string, string | number>, reason: string | null | undefined,
+  subjectFallback?: DerivedNotification["subjectFallback"],
+): DerivedNotification {
+  return reason
+    ? notice(id, `${key}Reason`, type, link, timestamp, { ...params, reason }, subjectFallback)
+    : notice(id, key, type, link, timestamp, params, subjectFallback);
+}
+
+async function deriveNotifications(rawRole: string): Promise<DerivedNotification[]> {
   const role = normalizeRole(rawRole);
-  const notifs: IncomingNotification[] = [];
+  const notifs: DerivedNotification[] = [];
 
   // ── DONEE notifications ────────────────────────────────────────────────────
   if (role === "DONEE") {
@@ -117,211 +154,174 @@ async function deriveNotifications(rawRole: string): Promise<IncomingNotificatio
 
     requests.forEach(r => {
       const ts = toTimestamp(r.createdAt);
+      const p = { subject: r.title };
       if (r.status === "PENDING_VERIFICATION") {
-        notifs.push({ id: `req-submitted-${r.id}`, title: "Request submitted", body: `"${r.title}" has been received and is awaiting review`, type: "info", link: "/dashboard#my-requests", timestamp: ts });
+        notifs.push(notice(`req-submitted-${r.id}`, "reqSubmitted", "info", "/dashboard#my-requests", ts, p));
       }
       if (r.status === "PUBLIC_REQUEST" || r.status === "VERIFIED_PRIVATE_MATCHING" || r.status === "POTENTIAL_MATCH_FOUND") {
-        notifs.push({ id: `req-approved-${r.id}`, title: "Request approved ✓", body: `"${r.title}" has been verified and is being matched`, type: "approved", link: "/dashboard#my-requests", timestamp: ts });
+        notifs.push(notice(`req-approved-${r.id}`, "reqApproved", "approved", "/dashboard#my-requests", ts, p));
       }
       // POTENTIAL_MATCH_FOUND must look identical to VERIFIED_PRIVATE_MATCHING
       // for the donee — a separate notification here would reveal that a
       // specific donor has been identified, leaking need-first state.
       if (r.status === "PUBLIC_REQUEST") {
-        notifs.push({ id: `req-published-${r.id}`, title: "Your request is visible to donors", body: `"${r.title}" is now published on the need board so donors can offer to help.`, type: "info", link: "/dashboard#my-requests", timestamp: ts });
+        notifs.push(notice(`req-published-${r.id}`, "reqPublished", "info", "/dashboard#my-requests", ts, p));
       }
       if (r.status === "REJECTED") {
-        notifs.push({ id: `req-rejected-${r.id}`, title: "Request not approved", body: `"${r.title}" was not approved${r.rejectionReason ? ": " + r.rejectionReason : ". Contact support if you believe this is an error."}`, type: "rejected", link: "/dashboard#my-requests", timestamp: ts });
+        notifs.push(withReason(`req-rejected-${r.id}`, "reqRejected", "rejected", "/dashboard#my-requests", ts, p, r.rejectionReason));
       }
     });
 
     // Donor Flow 2 incoming offers
     incomingOffers.forEach(o => {
       const ts = toTimestamp(o.createdAt);
+      const p = { subject: o.requestTitle };
       if (o.status === "PENDING_DONEE_REVIEW") {
-        notifs.push({ id: `offer-review-${o.id}`, title: "Someone wants to donate!", body: `A donor offered to fulfil "${o.requestTitle}" — review their offer now`, type: "match", link: `/donee/offers?offerId=${o.id}`, timestamp: ts });
+        notifs.push(notice(`offer-review-${o.id}`, "offerReview", "match", `/donee/offers?offerId=${o.id}`, ts, p));
       }
       if (o.status === "DONOR_RECONFIRMED") {
-        notifs.push({ id: `offer-reconfirmed-${o.id}`, title: "Donor confirmed availability", body: `The donor reconfirmed their item for "${o.requestTitle}" — pending admin approval`, type: "info", link: "/donee/offers", timestamp: ts });
+        notifs.push(notice(`offer-reconfirmed-${o.id}`, "offerReconfirmed", "info", "/donee/offers", ts, p));
       }
       if (o.status === "ADMIN_APPROVED" && o.flowType === "WILL_PURCHASE") {
-        notifs.push({ id: `offer-admin-approved-${o.id}`, title: "Purchase approved", body: `The donor can now buy the item for "${o.requestTitle}". Check if anything is needed from you.`, type: "approved", link: `/offers/${o.id}/purchase`, timestamp: ts });
+        notifs.push(notice(`offer-admin-approved-${o.id}`, "offerPurchaseApproved", "approved", `/offers/${o.id}/purchase`, ts, p));
       } else if (o.status === "ADMIN_APPROVED") {
-        notifs.push({ id: `offer-admin-approved-${o.id}`, title: "Donation approved!", body: `The donation for "${o.requestTitle}" has been approved. Handover will be scheduled.`, type: "approved", link: `/offers/${o.id}/handover`, timestamp: ts });
+        notifs.push(notice(`offer-admin-approved-${o.id}`, "offerDonationApproved", "approved", `/offers/${o.id}/handover`, ts, p));
       }
       if (o.status === "HANDOVER_IN_PROGRESS") {
-        notifs.push({ id: `offer-handover-${o.id}`, title: "Handover scheduled", body: `Your donation for "${o.requestTitle}" has a handover scheduled.`, type: "match", link: `/offers/${o.id}/handover`, timestamp: ts });
+        notifs.push(notice(`offer-handover-${o.id}`, "offerHandover", "match", `/offers/${o.id}/handover`, ts, p));
       }
       if (o.status === "COMPLETED") {
-        notifs.push({ id: `offer-complete-${o.id}`, title: "Item received! 🎉", body: `"${o.requestTitle}" has been successfully donated and delivered.`, type: "fulfilled", link: "/donee/offers", timestamp: ts });
+        notifs.push(notice(`offer-complete-${o.id}`, "offerReceived", "fulfilled", "/donee/offers", ts, p));
       }
     });
 
     matches.forEach(m => {
       const ts = toTimestamp(m.createdAt);
+      const subject = m.requestTitle ?? null;
+      const p: Record<string, string> = subject ? { subject } : {};
       // Need-first privacy: matches in DONOR_REVIEW / PENDING_APPROVAL no longer reach
       // the donee at all (the backend filters them out of /matches/mine until the donor
       // reconfirms and admin approves) — the donee's journey starts at
       // AWAITING_DONEE_CONFIRMATION. PENDING_APPROVAL below only fires for
       // donee-initiated REQUEST_LISTING matches, which they can always see.
       if (m.status === "PENDING_APPROVAL") {
-        notifs.push({ id: `donee-match-pending-${m.id}`, title: "Your item request is under review", body: `Your request for "${m.requestTitle ?? "an item"}" is being reviewed by our team`, type: "info", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donee-match-pending-${m.id}`, "doneeMatchPending", "info", "/dashboard", ts, p, "anItem"));
       }
       if (m.status === "TRANSPORT_DISCUSSION") {
-        notifs.push({ id: `contact-shared-${m.id}`, title: "Contact details shared", body: `Donor contact was shared for "${m.requestTitle ?? "your request"}" — reach out to arrange pickup`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`contact-shared-${m.id}`, "contactShared", "match", "/dashboard", ts, p, "yourRequest"));
       }
       if (m.status === "AWAITING_DONEE_CONFIRMATION") {
-        notifs.push({ id: `donee-action-${m.id}`, title: "Action required — confirm receipt", body: `Your match for "${m.requestTitle ?? "your request"}" was approved — please confirm to proceed`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donee-action-${m.id}`, "doneeConfirm", "match", "/dashboard", ts, p, "yourRequest"));
       }
       if (m.status === "FULFILLED") {
-        notifs.push({ id: `donee-fulfilled-${m.id}`, title: "Item received! 🎉", body: `"${m.requestTitle ?? "Your request"}" has been fulfilled. Thank you for being part of CauseKind!`, type: "fulfilled", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donee-fulfilled-${m.id}`, "doneeFulfilled", "fulfilled", "/dashboard", ts, p, "yourRequestCap"));
       }
       if (m.status === "REJECTED") {
-        notifs.push({ id: `match-rejected-donee-${m.id}`, title: "Match not approved", body: `The match for "${m.requestTitle ?? "your request"}" was not approved${m.rejectionReason ? ": " + m.rejectionReason : "."}`, type: "rejected", link: "/dashboard", timestamp: ts });
+        notifs.push(withReason(`match-rejected-donee-${m.id}`, "matchRejected", "rejected", "/dashboard", ts, p, m.rejectionReason, "yourRequest"));
       }
     });
   }
 
-  // ── NGO notifications (drives only) ────────────────────────────────────────
-  if (role === "NGO_PARTNER") {
-    const drives = await getMyNgoDrives().catch(() => []);
-    for (const d of drives) {
-      const ts = toTimestamp(d.reviewedAt ?? d.submittedAt ?? d.createdAt);
-      const page = `/ngo/drives/${d.id}`;
-      if (d.status === "PENDING_REVIEW") {
-        notifs.push({ id: `ngo-drive-review-${d.id}`, title: "Drive submitted for review", body: `"${d.title}" is with our team. We'll let you know once it's reviewed.`, type: "info", link: page, timestamp: ts });
-      } else if (d.status === "CHANGES_REQUESTED") {
-        notifs.push({ id: `ngo-drive-changes-${d.id}`, title: "Changes requested", body: `"${d.title}" needs changes${d.adminReason ? ": " + d.adminReason : "."}`, type: "rejected", link: page, timestamp: ts });
-      } else if (d.status === "REJECTED") {
-        notifs.push({ id: `ngo-drive-rejected-${d.id}`, title: "Drive not approved", body: `"${d.title}" was not approved${d.adminReason ? ": " + d.adminReason : "."}`, type: "rejected", link: page, timestamp: ts });
-      } else if (d.status === "LIVE" || d.status === "FULLY_PLEDGED") {
-        notifs.push({ id: `ngo-drive-live-${d.id}`, title: d.status === "LIVE" ? "Your drive is live" : "Your drive is fully pledged", body: `"${d.title}" is visible to donors near you.`, type: "approved", link: page, timestamp: ts });
-        const offers = await getNgoDriveOffersForNgo(d.id, "PENDING_NGO_REVIEW").catch(() => []);
-        offers.forEach(o => notifs.push({ id: `ngo-drive-offer-${o.id}`, title: "New offer to review", body: `${o.donorDisplayName || "A donor"} offered ${o.quantity ?? ""} for "${d.title}". Accept or decline it.`, type: "match", link: page, timestamp: toTimestamp(o.submittedAt) }));
-      } else if (d.status === "COLLECTION_COMPLETE") {
-        notifs.push({ id: `ngo-drive-collected-${d.id}`, title: "Upload your distribution proof", body: `Collection for "${d.title}" is complete. Distribute the items and upload your proof.`, type: "info", link: `${page}?tab=proof`, timestamp: ts });
-      } else if (d.status === "PROOF_SUBMITTED") {
-        notifs.push({ id: `ngo-drive-proof-${d.id}`, title: "Proof under review", body: `We're reviewing your distribution proof for "${d.title}".`, type: "info", link: page, timestamp: ts });
-      } else if (d.status === "FULFILLED") {
-        notifs.push({ id: `ngo-drive-fulfilled-${d.id}`, title: "Drive fulfilled", body: `"${d.title}" is complete. You can start a new drive.`, type: "fulfilled", link: "/dashboard/ngo", timestamp: ts });
-      } else if (d.status === "CLOSED") {
-        notifs.push({ id: `ngo-drive-closed-${d.id}`, title: "Drive closed", body: `"${d.title}" closed with nothing received. You can start a new drive.`, type: "info", link: "/dashboard/ngo", timestamp: ts });
-      }
-    }
-  }
+  // NGO drive notices come from the server only (NgoDriveNotifier stores each event,
+  // deduped and grouped); deriving them here as well showed every event twice.
 
   // ── DONOR notifications ────────────────────────────────────────────────────
   if (role === "DONOR") {
-    const [listings, matches, myOffers, driveOffers] = await Promise.all([
+    const [listings, matches, myOffers] = await Promise.all([
       getMyItemListings({ silent401: true }).catch(() => []),
       getMyMatches().catch(() => []),
       getMyDonationOffers().catch(() => []),
-      getMyNgoDriveOffers().catch(() => []),
     ]);
 
-    // Offers to NGO drives: the NGO reviews; the handover starts as soon as it accepts.
-    driveOffers.forEach(o => {
-      const ts = toTimestamp(o.submittedAt);
-      const hub = `/ngo-drive-offers/${o.id}/handover`;
-      if (o.status === "NGO_ACCEPTED") {
-        notifs.push({ id: `drive-offer-accepted-${o.id}`, title: "The NGO accepted your offer", body: `Plan the handover for "${o.driveTitle}" now.`, type: "approved", link: hub, timestamp: ts });
-      } else if (o.status === "NGO_DECLINED") {
-        notifs.push({ id: `drive-offer-declined-${o.id}`, title: "The NGO declined your offer", body: `"${o.driveTitle}"${o.ngoDeclineReason ? ": " + o.ngoDeclineReason : ""}`, type: "rejected", link: "/dashboard", timestamp: ts });
-      } else if (o.status === "NEEDS_INFORMATION") {
-        notifs.push({ id: `drive-offer-info-${o.id}`, title: "Update your drive offer", body: `The NGO needs a change to your offer for "${o.driveTitle}".`, type: "info", link: `/drives/${o.driveId}/give`, timestamp: ts });
-      } else if (o.status === "HANDOVER_IN_PROGRESS" || o.status === "HANDOVER_AT_RISK") {
-        notifs.push({ id: `drive-offer-handover-${o.id}`, title: "Handover planned", body: `Show the OTP to the NGO when you hand over your items for "${o.driveTitle}".`, type: "match", link: hub, timestamp: ts });
-      } else if (o.status === "ISSUE_WINDOW_OPEN") {
-        notifs.push({ id: `drive-offer-received-${o.id}`, title: "The NGO received your items", body: `Thank you for giving to "${o.driveTitle}".`, type: "fulfilled", link: hub, timestamp: ts });
-      } else if (o.status === "COMPLETED") {
-        notifs.push({ id: `drive-offer-complete-${o.id}`, title: "See how your items were used", body: `"${o.driveTitle}" is fulfilled. View the distribution proof.`, type: "fulfilled", link: `/drives/${o.driveId}/proof`, timestamp: ts });
-      } else if (o.status === "ENDED") {
-        notifs.push({ id: `drive-offer-ended-${o.id}`, title: "Drive ended", body: `"${o.driveTitle}" closed before your offer was handed over.`, type: "info", link: "/dashboard", timestamp: ts });
-      }
-    });
+    // Offers to NGO drives: their notices come from the server only (see the NGO note above).
 
     // Donor Flow 2 offer status notifications
     myOffers.forEach(o => {
       const ts = toTimestamp(o.createdAt);
+      const p = { subject: o.requestTitle };
       if (o.status === "NEEDS_INFORMATION") {
-        notifs.push({ id: `offer-needs-info-${o.id}`, title: "Action required", body: `More information is needed for your offer on "${o.requestTitle}"`, type: "info", link: `/requests/${o.requestId}/offer`, timestamp: ts });
+        notifs.push(notice(`offer-needs-info-${o.id}`, "offerNeedsInfo", "info", `/requests/${o.requestId}/offer`, ts, p));
       }
       if (o.status === "DONEE_ACCEPTED" || o.status === "DONOR_RECONFIRMATION_REQUIRED") {
-        notifs.push({ id: `offer-reconfirm-${o.id}`, title: "Recipient accepted your offer!", body: `Please reconfirm your item is available for "${o.requestTitle}"`, type: "match", link: "/offers", timestamp: ts });
+        notifs.push(notice(`offer-reconfirm-${o.id}`, "offerReconfirm", "match", "/offers", ts, p));
       }
       if (o.status === "ADMIN_APPROVED" && o.flowType === "WILL_PURCHASE") {
         // A purchase offer is bought before any handover, so it lands on the purchase hub.
-        notifs.push({ id: `offer-approved-${o.id}`, title: "Offer approved — open your purchase", body: `See whether you can buy the item for "${o.requestTitle}" now`, type: "approved", link: `/offers/${o.id}/purchase`, timestamp: ts });
+        notifs.push(notice(`offer-approved-${o.id}`, "offerApprovedPurchase", "approved", `/offers/${o.id}/purchase`, ts, p));
       } else if (o.status === "ADMIN_APPROVED") {
-        notifs.push({ id: `offer-approved-${o.id}`, title: "Offer approved! Schedule handover", body: `Your donation for "${o.requestTitle}" was approved — schedule the handover now`, type: "approved", link: `/offers/${o.id}/handover`, timestamp: ts });
+        notifs.push(notice(`offer-approved-${o.id}`, "offerApprovedHandover", "approved", `/offers/${o.id}/handover`, ts, p));
       }
       if (o.status === "DONEE_DECLINED") {
-        notifs.push({ id: `offer-declined-${o.id}`, title: "Offer declined", body: `The recipient declined your offer for "${o.requestTitle}"`, type: "info", link: "/offers", timestamp: ts });
+        notifs.push(notice(`offer-declined-${o.id}`, "offerDeclined", "info", "/offers", ts, p));
       }
       if (o.status === "COMPLETED") {
-        notifs.push({ id: `offer-cert-${o.id}`, title: "Donation complete! 🎉", body: `Your donation for "${o.requestTitle}" is done — view your certificate`, type: "fulfilled", link: `/certificate?offerId=${o.id}`, timestamp: ts });
+        notifs.push(notice(`offer-cert-${o.id}`, "offerComplete", "fulfilled", `/certificate?offerId=${o.id}`, ts, p));
       }
     });
 
     listings.forEach(l => {
       const ts = toTimestamp(l.submittedAt ?? l.createdAt);
+      const p = { subject: l.title };
       if (l.status === "SUBMITTED" || l.status === "AI_SCREENING") {
-        notifs.push({ id: `listing-screening-${l.id}`, title: "Item submitted for review", body: `"${l.title}" has been received and is being screened by our AI system`, type: "info", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`listing-screening-${l.id}`, "listingScreening", "info", "/dashboard", ts, p));
       }
       if (l.status === "ELIGIBLE_FOR_MATCHING" || l.status === "AVAILABLE" || l.status === "PENDING_REVIEW") {
-        notifs.push({ id: `listing-approved-${l.id}`, title: "Item approved! ✓", body: `"${l.title}" passed screening and is now live — we'll find you a match soon`, type: "approved", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`listing-approved-${l.id}`, "listingApproved", "approved", "/dashboard", ts, p));
       }
       if (l.status === "REJECTED" && l.rejectedByAi) {
-        notifs.push({ id: `listing-ai-rejected-${l.id}`, title: "Item flagged by AI screening", body: `Our AI screening could not approve "${l.title}"${l.rejectionReason ? ": " + l.rejectionReason : ""}. You can edit and resubmit, or contact support.`, type: "rejected", link: "/dashboard", timestamp: ts });
+        notifs.push(withReason(`listing-ai-rejected-${l.id}`, "listingAiRejected", "rejected", "/dashboard", ts, p, l.rejectionReason));
       }
       if (l.status === "REJECTED" && !l.rejectedByAi) {
-        notifs.push({ id: `listing-admin-rejected-${l.id}`, title: "Item not approved", body: `"${l.title}" was reviewed and not approved${l.rejectionReason ? ": " + l.rejectionReason : ". Contact support for more details."}`, type: "rejected", link: "/dashboard", timestamp: ts });
+        notifs.push(withReason(`listing-admin-rejected-${l.id}`, "listingRejected", "rejected", "/dashboard", ts, p, l.rejectionReason));
       }
       if (l.status === "NEEDS_INFORMATION") {
-        notifs.push({ id: `listing-needs-info-${l.id}`, title: "More information needed", body: `"${l.title}" requires additional details before it can be approved${l.rejectionReason ? ": " + l.rejectionReason : ""}. Please update your listing.`, type: "info", link: "/dashboard", timestamp: ts });
+        notifs.push(withReason(`listing-needs-info-${l.id}`, "listingNeedsInfo", "info", "/dashboard", ts, p, l.rejectionReason));
       }
       if (l.status === "MANUAL_REVIEW") {
-        notifs.push({ id: `listing-manual-review-${l.id}`, title: "Item under manual review", body: `"${l.title}" needs a closer look from our team. You'll hear back soon.`, type: "info", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`listing-manual-review-${l.id}`, "listingManualReview", "info", "/dashboard", ts, p));
       }
       if (l.status === "SOFT_RESERVED" || l.status === "MATCHED" || l.status === "RESERVED") {
-        notifs.push({ id: `listing-matched-${l.id}`, title: "Item matched", body: `"${l.title}" has been reserved for a recipient. Check your dashboard for the next step.`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`listing-matched-${l.id}`, "listingMatched", "match", "/dashboard", ts, p));
       }
       if (l.status === "PARTIALLY_DONATED" || l.status === "DONATED" || l.status === "FULFILLED") {
-        notifs.push({ id: `listing-fulfilled-${l.id}`, title: "Donation completed", body: `"${l.title}" has been marked as donated. Thank you for helping through CauseKind!`, type: "fulfilled", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`listing-fulfilled-${l.id}`, "listingFulfilled", "fulfilled", "/dashboard", ts, p));
       }
     });
 
     matches.forEach(m => {
       const itemTitle = matchItemTitle(m);
       const ts = toTimestamp(m.createdAt);
+      const p: Record<string, string> = itemTitle ? { subject: itemTitle } : {};
       if (m.status === "DONOR_REVIEW") {
-        notifs.push({ id: `donor-action-${m.id}`, title: "Action required — confirm donation", body: `Please accept or decline the match for "${itemTitle}"`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-action-${m.id}`, "donorConfirm", "match", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "TRANSPORT_DISCUSSION") {
-        notifs.push({ id: `donor-match-${m.id}`, title: "New match!", body: `Your item matched with "${itemTitle}" — contact details have been shared`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-match-${m.id}`, "donorMatch", "match", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "PENDING_APPROVAL") {
-        notifs.push({ id: `donor-pending-${m.id}`, title: "Match pending review", body: `Your donation to "${itemTitle}" is under admin review`, type: "info", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-pending-${m.id}`, "donorPending", "info", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "AWAITING_DONEE_CONFIRMATION") {
-        notifs.push({ id: `donor-awaiting-donee-${m.id}`, title: "Waiting for recipient confirmation", body: `Your match for "${itemTitle}" was approved. The recipient now needs to confirm.`, type: "info", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-awaiting-donee-${m.id}`, "donorAwaitingDonee", "info", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "DONEE_ACCEPTED") {
-        notifs.push({ id: `donor-final-confirm-${m.id}`, title: "Final confirmation needed", body: `The recipient accepted the match for "${itemTitle}" — please give final confirmation`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-final-confirm-${m.id}`, "donorFinalConfirm", "match", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "BOTH_PARTIES_ACCEPTED" || m.status === "LOGISTICS_CONFIRMED" || m.status === "ARRANGEMENT_AGREED" || m.status === "PICKUP_SCHEDULED") {
-        notifs.push({ id: `donor-logistics-${m.id}`, title: "Donation handover is next", body: `Your donation for "${itemTitle}" is ready for logistics and handover.`, type: "match", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-logistics-${m.id}`, "donorLogistics", "match", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "PICKED_UP" || m.status === "IN_TRANSIT" || m.status === "DELIVERED_PENDING_CONFIRMATION") {
-        notifs.push({ id: `donor-in-transit-${m.id}`, title: "Donation in progress", body: `"${itemTitle}" is in the delivery flow and awaiting final confirmation.`, type: "info", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-in-transit-${m.id}`, "donorInTransit", "info", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "FULFILLED" || m.status === "COMPLETED") {
-        notifs.push({ id: `donor-fulfilled-${m.id}`, title: "Donation complete! ✓", body: `"${itemTitle}" was delivered successfully. Thank you!`, type: "fulfilled", link: "/dashboard", timestamp: ts });
+        notifs.push(notice(`donor-fulfilled-${m.id}`, "donorFulfilled", "fulfilled", "/dashboard", ts, p, "aRequest"));
       }
       if (m.status === "REJECTED") {
-        notifs.push({ id: `match-rejected-donor-${m.id}`, title: "Match not approved", body: `The match for "${m.requestTitle ?? "a request"}" was not approved${m.rejectionReason ? ": " + m.rejectionReason : "."}`, type: "rejected", link: "/dashboard", timestamp: ts });
+        const rp: Record<string, string> = m.requestTitle ? { subject: m.requestTitle } : {};
+        notifs.push(withReason(`match-rejected-donor-${m.id}`, "matchRejected", "rejected", "/dashboard", ts, rp, m.rejectionReason, "aRequest"));
       }
       if (m.status === "CANCELLED" || m.status === "FAILED") {
-        notifs.push({ id: `match-cancelled-donor-${m.id}`, title: "Match cancelled", body: `The match for "${itemTitle}" could not continue${m.rejectionReason ? ": " + m.rejectionReason : "."}`, type: "rejected", link: "/dashboard", timestamp: ts });
+        notifs.push(withReason(`match-cancelled-donor-${m.id}`, "matchCancelled", "rejected", "/dashboard", ts, p, m.rejectionReason, "aRequest"));
       }
     });
   }
@@ -338,7 +338,16 @@ function useNotificationState(): NotificationsContextValue {
   //    requests/matches/offers on each refresh, replaced wholesale every time.
   const [saved, setSaved] = useState<AppNotification[]>([]);
   const [savedRead, setSavedRead] = useState<Set<string>>(new Set());
-  const [derived, setDerived] = useState<AppNotification[]>([]);
+  const [derived, setDerived] = useState<(DerivedNotification & { receivedAt: number })[]>([]);
+  // Translation happens only here, at display time: a language change re-renders
+  // the list, and never touches polling, SSE or refresh (none of them use it).
+  // No provider (tests): show the key rather than throw.
+  let t: ReturnType<typeof useTranslations> | null;
+  try {
+    t = useTranslations("notif");
+  } catch {
+    t = null;
+  }
   const [seenVersion, setSeenVersion] = useState(0);
 
   useEffect(() => { purgeLegacyStores(); }, []);
@@ -352,10 +361,16 @@ function useNotificationState(): NotificationsContextValue {
   }, [userKey]);
 
   const notifications = useMemo(() => {
+    const shown: AppNotification[] = derived.map(({ key, params, subjectFallback, ...rest }) => {
+      if (!t) return { ...rest, title: key, body: "" };
+      const values = { ...params };
+      if (values.subject == null && subjectFallback) values.subject = t(`fallback.${subjectFallback}`);
+      return { ...rest, title: t(`${key}.title`, values), body: t(`${key}.body`, values) };
+    });
     const ids = new Set<string>();
-    const all = [...saved, ...derived].filter(n => (ids.has(n.id) ? false : (ids.add(n.id), true)));
+    const all = [...saved, ...shown].filter(n => (ids.has(n.id) ? false : (ids.add(n.id), true)));
     return sortAndCap(all);
-  }, [saved, derived]);
+  }, [saved, derived, t]);
 
   const unread = useMemo(() => {
     const seen = loadSeen();
@@ -366,7 +381,21 @@ function useNotificationState(): NotificationsContextValue {
 
   const addNotification = useCallback((n: IncomingNotification) => {
     const now = Date.now();
-    setSaved(prev => (prev.some(p => p.id === n.id) ? prev : [{ ...n, receivedAt: now }, ...prev]));
+    // The same id again is a grouped drive notice ("3 new offers") updated on the server:
+    // replace it, move it to the top and show it as unread again.
+    setSaved(prev => [{ ...n, receivedAt: now }, ...prev.filter(p => p.id !== n.id)]);
+    setSavedRead(prev => { if (!prev.has(n.id)) return prev; const next = new Set(prev); next.delete(n.id); return next; });
+  }, []);
+
+  const isUnread = useCallback((n: AppNotification) => (n.id.startsWith("n-") ? !savedRead.has(n.id) : !loadSeen().has(n.id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [savedRead, seenVersion]);
+
+  /** One saved notice read (the bottom dock's primary action). */
+  const markRead = useCallback((id: string) => {
+    if (!id.startsWith("n-")) return;
+    setSavedRead(prev => new Set(prev).add(id));
+    markNotificationRead(id).catch(() => { /* the bell still shows it; a later refresh corrects it */ });
   }, []);
 
   const refresh = useCallback(async () => {
@@ -514,8 +543,8 @@ function useNotificationState(): NotificationsContextValue {
   }, [derived, saved, savedRead]);
 
   return useMemo(
-    () => ({ notifications, unread, markAllRead, refresh }),
-    [notifications, unread, markAllRead, refresh],
+    () => ({ notifications, unread, markAllRead, refresh, isUnread, markRead }),
+    [notifications, unread, markAllRead, refresh, isUnread, markRead],
   );
 }
 

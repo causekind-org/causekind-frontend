@@ -4,6 +4,7 @@ import { MoneyFlowStory } from "@/components/money-donation/MoneyFlowStory";
 import { MoneyDonationForm } from "@/components/money-donation/MoneyDonationForm";
 import { AboutSahas } from "@/components/money-donation/AboutSahas";
 import { ImpactCarousel } from "@/components/money-donation/ImpactCarousel";
+import { TrustCertificates } from "@/components/money-donation/TrustCertificates";
 
 import { Suspense } from "react";
 import { DonateScrollOnArrival } from "@/components/donate/DonateScrollOnArrival";
@@ -36,6 +37,8 @@ export default function MoneyDonateClient() {
           old hero's wording); About Sahas follows it. */}
       <ImpactCarousel />
       <AboutSahas />
+      {/* Owner, 2026-10-16: certificates only, back from the old Trust section. */}
+      <TrustCertificates />
       <MoneyDonationForm />
       <MoneyFlowStory />
       <TrustCredibility />

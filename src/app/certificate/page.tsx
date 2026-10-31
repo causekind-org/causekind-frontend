@@ -3,7 +3,7 @@
 import { serverDate } from "@/lib/serverTime";
 import React, { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { getOfferCertificate, getMatchCertificate, verifyCertificate, type Certificate } from "@/lib/api";
+import { getOfferCertificate, getMatchCertificate, verifyCertificate, downloadNgoDriveOfferCertificatePdf, type Certificate } from "@/lib/api";
 import Link from "@/components/AppLink";
 import { ArrowLeft, Download } from "lucide-react";
 import QRCode from "qrcode";
@@ -34,6 +34,19 @@ export default function CertificatePage() {
   // overflowed a 240px-tall card. The PDF snapshot drops the scale.
   const frameRef = useRef<HTMLDivElement>(null);
   const [cardScale, setCardScale] = useState(1);
+  // Drawn once its web fonts and the logo are in, so the first paint is the final layout
+  // (no reflow over the border lines); a slow network still shows it after 1.5 s.
+  const [cardReady, setCardReady] = useState(false);
+  useEffect(() => {
+    let done = false;
+    const show = () => { if (!done) { done = true; setCardReady(true); } };
+    const logo = new window.Image();
+    const logoLoaded = new Promise<void>((resolve) => { logo.onload = () => resolve(); logo.onerror = () => resolve(); });
+    logo.src = "/logo-filled.webp";
+    void Promise.all([document.fonts?.ready ?? Promise.resolve(), logoLoaded]).then(show);
+    const t = window.setTimeout(show, 1500);
+    return () => window.clearTimeout(t);
+  }, []);
   useEffect(() => {
     const el = frameRef.current;
     if (!el) return;
@@ -85,7 +98,21 @@ export default function CertificatePage() {
   // actually clicks download. The card's 1414:1000 ratio matches A4 landscape
   // exactly, so the snapshot fills the page edge to edge with no letterboxing.
   async function handleDownload() {
-    if (!printRef.current || !cert || generating) return;
+    if (!cert || generating) return;
+    if (type === "ngo_drive" && offerId) {
+      // Drive certificates: the backend renders the PDF (NGO + Drive rows, no Condition).
+      setDownloadError(null);
+      setGenerating(true);
+      try {
+        await downloadNgoDriveOfferCertificatePdf(Number(offerId), cert.certificateNumber);
+      } catch (error) {
+        setDownloadError(error instanceof Error ? `Could not download the certificate: ${error.message}` : "Could not download the certificate. Please try again.");
+      } finally {
+        setGenerating(false);
+      }
+      return;
+    }
+    if (!printRef.current) return;
     setDownloadError(null);
     setGenerating(true);
     try {
@@ -143,6 +170,7 @@ export default function CertificatePage() {
   // Absent means in-kind: certificates issued before the field existed do not
   // carry it, and this page must keep rendering them unchanged.
   const isMoney = cert.type === "MONEY";
+  const isDrive = type === "ngo_drive" || cert.ngoName != null || cert.driveTitle != null;
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
@@ -191,7 +219,10 @@ export default function CertificatePage() {
 
       {/* Nav — hidden on print */}
       <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between print:hidden">
-        <button onClick={() => router.back()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+        <button
+          // Opened from an email or a new tab there is no history: an NGO drive certificate falls back to the NGO dashboard.
+          onClick={() => (window.history.length > 1 ? router.back() : router.push(type === "ngo_drive" ? "/dashboard/ngo" : "/dashboard"))}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
           <ArrowLeft size={14} /> Back
         </button>
         <button
@@ -219,6 +250,7 @@ export default function CertificatePage() {
           aspectRatio: "1414 / 1000",
           transform: cardScale < 1 ? `scale(${cardScale})` : undefined,
           transformOrigin: "top left",
+          visibility: cardReady ? "visible" : "hidden",
         }}
       >
         <div
@@ -247,7 +279,7 @@ export default function CertificatePage() {
           <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-filled.webp" alt="CauseKind" style={{ width: "64px", height: "64px", objectFit: "contain" }} />
-            <div style={{ fontSize: "var(--text-lg)", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
+            <div style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
               <span style={{ color: "#c4501a" }}>Cause</span>Kind
             </div>
           </div>
@@ -255,7 +287,7 @@ export default function CertificatePage() {
           {/* Title */}
           <div style={{ textAlign: "center", marginBottom: "12px" }}>
             <div style={{
-              fontSize: "clamp(2rem, 1.3333rem + 3.3333vw, 4rem)",
+              fontSize: "4rem",
               fontWeight: "900",
               letterSpacing: "0.15em",
               color: "#1a1008",
@@ -265,7 +297,7 @@ export default function CertificatePage() {
               CERTIFICATE
             </div>
             <div style={{
-              fontSize: "clamp(0.6875rem, 0.5417rem + 0.7292vw, 1.125rem)",
+              fontSize: "1.125rem",
               letterSpacing: "0.35em",
               color: "#1a1008",
               fontWeight: "600",
@@ -282,7 +314,7 @@ export default function CertificatePage() {
             fontStyle: "italic",
             textAlign: "center",
             color: "#3a2a1a",
-            fontSize: "clamp(0.625rem, 0.5208rem + 0.5208vw, 0.9375rem)",
+            fontSize: "0.9375rem",
             lineHeight: 1.7,
             maxWidth: "580px",
             marginBottom: "20px",
@@ -308,12 +340,12 @@ export default function CertificatePage() {
           {/* Donor name with signature style */}
           <div style={{ marginBottom: "24px", textAlign: "center" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: "8px", justifyContent: "center" }}>
-              <span style={{ fontSize: "clamp(0.625rem, 0.5417rem + 0.4167vw, 0.875rem)", color: "#5a4a3a" }}>Mr./Ms.</span>
+              <span style={{ fontSize: "0.875rem", color: "#5a4a3a" }}>Mr./Ms.</span>
               <div style={{ borderBottom: "1.5px solid #5a4a3a", minWidth: "220px", textAlign: "center" }}>
                 <span style={{
                   fontFamily: dancingScript.style.fontFamily,
                   fontWeight: 700,
-                  fontSize: "clamp(1.625rem, 1.2083rem + 2.0833vw, 2.875rem)",
+                  fontSize: "2.875rem",
                   color: "#1a1008",
                 }}>
                   {cert.donorName}
@@ -326,14 +358,19 @@ export default function CertificatePage() {
           <table style={{
             borderCollapse: "collapse",
             marginBottom: "20px",
-            fontSize: "clamp(0.625rem, 0.5417rem + 0.4167vw, 0.875rem)",
+            fontSize: "0.875rem",
           }}>
             <tbody>
               {/* No amount on the money variant. This page is reachable by anyone
                   holding a certificate number, and the verify endpoint is
                   unauthenticated — showing what a named person gave would turn a
                   verification check into a disclosure. */}
+              {isDrive && cert.ngoName?.trim() && <TableRow label="NGO" value={cert.ngoName} wrap />}
+              {isDrive && cert.driveTitle?.trim() && <TableRow label="Drive" value={cert.driveTitle} wrap />}
               <TableRow label={isMoney ? "Contribution" : "Item Donated"} value={cert.category} />
+              {!isDrive && cert.condition && <TableRow label="Condition" value={cert.condition} />}
+              {/* Same label/value as the backend PDF (CertificatePdfRenderer.renderDrive): a bare number, no unit. */}
+              {isDrive && <TableRow label="Quantity" value={cert.quantityUnit ? `${cert.quantityDelivered} ${cert.quantityUnit}` : String(cert.quantityDelivered)} />}
               <TableRow label="Donation Date" value={handoverDate} />
               <TableRow label="Certificate ID" value={cert.certificateNumber} />
             </tbody>
@@ -343,7 +380,7 @@ export default function CertificatePage() {
           <div style={{
             fontStyle: "italic",
             color: "#5a4a3a",
-            fontSize: "clamp(0.625rem, 0.5417rem + 0.4167vw, 0.875rem)",
+            fontSize: "0.875rem",
             marginBottom: "8px",
           }}>
             www.causekind.com
@@ -353,7 +390,7 @@ export default function CertificatePage() {
           <div style={{
             fontStyle: "italic",
             color: "#7a6a5a",
-            fontSize: "clamp(0.5rem, 0.4375rem + 0.3125vw, 0.6875rem)",
+            fontSize: "0.6875rem",
             marginBottom: "10px",
           }}>
             {/* The PDF's only footer line, and the page carries the same one.
@@ -370,8 +407,8 @@ export default function CertificatePage() {
           {qrDataUrl && (
             <div style={{
               position: "absolute",
-              bottom: "clamp(56px, 8vw, 80px)",
-              right: "clamp(56px, 8vw, 80px)",
+              bottom: "80px",
+              right: "80px",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -380,9 +417,9 @@ export default function CertificatePage() {
               <img
                 src={qrDataUrl}
                 alt="Scan to verify this certificate"
-                style={{ width: "clamp(48px, 7vw, 72px)", height: "clamp(48px, 7vw, 72px)" }}
+                style={{ width: "72px", height: "72px" }}
               />
-              <span style={{ fontSize: "clamp(0.4375rem, 0.375rem + 0.3125vw, 0.625rem)", color: "#5a4a3a", marginTop: "3px" }}>
+              <span style={{ fontSize: "0.625rem", color: "#5a4a3a", marginTop: "3px" }}>
                 Scan to verify
               </span>
             </div>
@@ -403,7 +440,7 @@ export default function CertificatePage() {
   );
 }
 
-function TableRow({ label, value }: { label: string; value: string }) {
+function TableRow({ label, value, wrap }: { label: string; value: string; wrap?: boolean }) {
   return (
     <tr>
       <td style={{
@@ -421,6 +458,7 @@ function TableRow({ label, value }: { label: string; value: string }) {
         color: "#3a2a1a",
         backgroundColor: "rgba(255,255,255,0.3)",
         minWidth: "160px",
+        ...(wrap ? { maxWidth: "420px", overflowWrap: "anywhere" as const, wordBreak: "break-word" as const } : {}),
       }}>
         {value}
       </td>

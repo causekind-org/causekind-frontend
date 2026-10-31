@@ -4,6 +4,7 @@ import * as React from "react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { UiText } from "@/components/UiText";
 
 /**
  * Standard modal dialog — Radix `Dialog`, matching the conventions already used
@@ -133,7 +134,7 @@ const DialogContent = React.forwardRef<
           )}
         >
           <XIcon className="size-4" aria-hidden />
-          <span className="sr-only">Close</span>
+          <span className="sr-only"><UiText>Close</UiText></span>
         </DialogPrimitive.Close>
       )}
     </DialogPrimitive.Content>

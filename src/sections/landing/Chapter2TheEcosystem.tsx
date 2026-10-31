@@ -1452,7 +1452,7 @@ export function Chapter2TheEcosystem() {
         </p>
         <span className="c2-final-line mt-8 block h-[18vh] w-[3px] origin-top rounded-full bg-gradient-to-b from-[#ff7a2f] to-transparent shadow-[0_0_18px_rgba(255,122,47,0.7)]" />
         <div className={`c2-donate-btn pointer-events-auto ${styles.clayCtaWrap} mt-6`}>
-          <DonateNowButton size="lg" label="Donate Now" className={styles.clayCta} />
+          <DonateNowButton size="lg" className={styles.clayCta} />
         </div>
       </div>
 

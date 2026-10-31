@@ -1,5 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
+
+// First render pulls in the animation library; under full-suite load it can pass 5 s.
+vi.setConfig({ testTimeout: 20000 });
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "./StaggeredMenu";
 
@@ -76,7 +79,10 @@ describe("StaggeredMenu Component", () => {
     );
 
     const parentButton = screen.getByRole("button", { name: "My Drives" });
-    fireEvent.click(parentButton);
+    // Opened the keyboard way: focusing the parent opens it. (A click via fireEvent
+    // leaves focus elsewhere, so Escape's focus() call would fire a focus event and
+    // reopen the submenu, which a real browser never does.)
+    act(() => parentButton.focus());
     expect(parentButton).toHaveAttribute("aria-expanded", "true");
 
     fireEvent.keyDown(parentButton, { key: "Escape" });

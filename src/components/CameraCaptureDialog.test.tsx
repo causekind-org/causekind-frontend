@@ -3,6 +3,11 @@ import { render, screen, waitFor } from "@testing-library/react";
 
 import { CameraCaptureDialog } from "./CameraCaptureDialog";
 
+// UiText needs a translator; "no entry" (has: false) renders the English source.
+vi.mock("next-intl", () => ({
+  useTranslations: () => Object.assign((key: string) => key, { has: () => false }),
+}));
+
 /**
  * The shared capture dialog, which serves two opposite jobs.
  *
