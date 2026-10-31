@@ -54,22 +54,37 @@ export function DiwaliSeam({
   from = "cream",
   to = "cream",
   lanterns,
+  webLanterns,
+  art,
   diyas = 1,
 }: {
-  kind: "line" | "edge" | "diya" | "arch-bulbs" | "arch-step" | "arch-swell";
+  kind: "line" | "edge" | "diya" | "lotus" | "arch-bulbs" | "arch-step" | "arch-swell";
   from?: SeamTone;
   to?: SeamTone;
   /** Lanterns hung from this join into the empty corners of the next section. */
   lanterns?: "left" | "right" | "both";
+  /** The same, on desktop only, for seams that carry none on phones. */
+  webLanterns?: "left" | "right" | "both";
+  /** Which desktop lantern hangs here; the two brass lamps by default. */
+  art?: "kandil" | "oval";
   /** Lamps in a `diya` seam. */
   diyas?: 1 | 3 | 5;
 }) {
   return (
-    <div className={`ck-dw-seam ck-dw-seam-${kind}`} data-from={from} data-to={to} aria-hidden>
+    <div className={`ck-dw-seam ck-dw-seam-${kind}`} data-from={from} data-to={to} data-art={art} aria-hidden>
       {kind === "diya" && Array.from({ length: diyas }, (_, index) => <span key={index} className="ck-dw-diya" />)}
       {kind === "arch-swell" && <span className="ck-dw-diya" />}
+      {kind === "lotus" && (
+        <>
+          <span className="ck-dw-lotus ck-dw-lotus-gold" />
+          <span className="ck-dw-lotus" />
+          <span className="ck-dw-lotus ck-dw-lotus-gold" />
+        </>
+      )}
       {lanterns && lanterns !== "right" && <span className="ck-dw-hang ck-dw-hang-left" />}
       {lanterns && lanterns !== "left" && <span className="ck-dw-hang ck-dw-hang-right" />}
+      {webLanterns && webLanterns !== "right" && <span className="ck-dw-hang ck-dw-hang-web ck-dw-hang-left" />}
+      {webLanterns && webLanterns !== "left" && <span className="ck-dw-hang ck-dw-hang-web ck-dw-hang-right" />}
     </div>
   );
 }

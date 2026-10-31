@@ -5,6 +5,7 @@
    Unlayered, so it outranks the Tailwind utilities on the shared markup. */
 .ck-dw-layer,
 .ck-dw-lantern-d,
+.ck-dw-hang-web,
 .ck-dw-seam,
 .ck-dw-campaigns { display: none; }
 
@@ -126,7 +127,7 @@
     top: 0;
     width: 44px;
     height: 110px;
-    background: url("/images/diwali/lantern.svg") center top / contain no-repeat;
+    background: center top / contain no-repeat;
     transform-origin: 50% 0;
     animation: ck-dw-sway 4.6s ease-in-out infinite alternate;
   }
@@ -214,7 +215,7 @@
     z-index: 5;
     width: 34px;
     height: 68px;
-    background: url("/images/diwali/lantern-round.svg") center top / contain no-repeat;
+    background: center top / contain no-repeat;
     transform-origin: 50% 0;
     animation: ck-dw-sway 4.4s ease-in-out infinite alternate;
     pointer-events: none;
@@ -343,6 +344,12 @@
   .ck-dw-c-sub { margin-top: 0.6rem; max-width: 34ch; font-size: 0.9rem; line-height: 1.5; color: #5d4030; }
   .ck-dw-c-row { display: flex; gap: 0.875rem; overflow-x: auto; padding: 0.25rem 1.25rem 1rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1.25rem; scrollbar-width: none; }
   .ck-dw-c-row::-webkit-scrollbar { display: none; }
+  /* Gliding: no snap to fight the motion, and the cards fade in and out at the edges. */
+  .ck-dw-c-row[data-loop] {
+    scroll-snap-type: none;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+  }
   .ck-dw-c-row { position: relative; }
   .ck-dw-c-pager { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; color: var(--dw-heading); }
   .ck-dw-c-arrow { display: flex; align-items: center; justify-content: center; flex: none; width: 2.75rem; height: 2.75rem; border: 1px solid currentColor; border-radius: 999px; }
@@ -406,4 +413,45 @@
   .ck-dw-diya::after,
   .ck-dw-hang { animation: none; }
   .ck-dw-spark { opacity: 0.6; }
+}
+
+/* Signed in, the header's bell sits top left: the lantern moves clear of it. */
+@media (max-width: 767.98px) {
+  body:has(.ck-mobile-header > div button) .ck-dw-lantern-left { left: 58px; }
+}
+
+/* The lanterns from the asset sheet, the same ones as desktop, and the footer's
+   lotuses. Heights are set per place; width follows each lantern's shape. */
+@media (max-width: 767.98px) {
+  .ck-dw-lantern { background-image: url("/images/diwali/lantern-kandil.webp"); }
+  .ck-dw-lantern-left { width: 30px; height: 100px; }
+  .ck-dw-lantern-right { width: 24px; height: 92px; background-image: url("/images/diwali/lantern-brass2.webp"); }
+  .ck-dw-seam .ck-dw-hang { background-image: url("/images/diwali/lantern-brass.webp"); }
+  .ck-dw-seam .ck-dw-hang-right { background-image: url("/images/diwali/lantern-brass2.webp"); }
+  .ck-dw-seam[data-art="kandil"] .ck-dw-hang { background-image: url("/images/diwali/lantern-kandil.webp"); }
+  .ck-dw-seam[data-art="oval"] .ck-dw-hang,
+  .ck-dw-campaigns > .ck-dw-hang { background-image: url("/images/diwali/lantern-oval.webp"); }
+  .ck-dw-campaigns > .ck-dw-hang { width: 30px; height: 80px; }
+  .ck-dw-seam-arch-bulbs .ck-dw-hang { width: 20px; height: 76px; }
+  .ck-dw-seam-arch-step .ck-dw-hang,
+  .ck-dw-seam-arch-swell .ck-dw-hang { width: 20px; height: 76px; }
+  .ck-dw-seam-edge .ck-dw-hang,
+  .ck-dw-seam-line .ck-dw-hang { width: 22px; height: 58px; }
+  .ck-dw-seam-line .ck-dw-hang { top: 60%; }
+  .ck-dw-seam-line[data-art="kandil"] .ck-dw-hang { width: 24px; height: 82px; }
+  .ck-dw-seam-line .ck-dw-hang-left { left: 12px; }
+  .ck-dw-seam-line .ck-dw-hang-right { right: 12px; }
+  /* On butter, a margin would show cream either side; the lamps below sit between
+     the lanterns, so this seam stays on top of theirs. */
+  .ck-dw-seam-line[data-from="butter"] { height: 24px; margin-block: 0; z-index: 6; }
+
+  /* Room for the arch lanterns above these two sections' first line. */
+  .ck-home-page #trust { padding-top: 2.5rem !important; }
+  .ck-home-page #join { padding-top: 2.75rem !important; }
+
+  .ck-dw-seam-lotus { display: flex; justify-content: center; align-items: flex-end; gap: 1.1rem; padding-block: 1.5rem 0.5rem; }
+  .ck-dw-seam-lotus::before,
+  .ck-dw-seam-lotus::after { content: none; }
+  .ck-dw-lotus { width: 78px; height: 50px; background: url("/images/diwali/lotus-pink.webp") center bottom / contain no-repeat; }
+  .ck-dw-lotus-gold { width: 50px; height: 36px; background-image: url("/images/diwali/lotus-gold.webp"); opacity: 0.9; }
 }

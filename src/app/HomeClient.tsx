@@ -79,7 +79,6 @@ import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
 import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
-import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
@@ -294,9 +293,7 @@ export default function HomeClient({
       <SmoothScroll />
       {/* SHARED / GUEST DESKTOP TREE */}
       {showGuestDesktopTree && (
-        <div className="ck-guest-desktop">
-          {/* Continuous dashed road across whole desktop page */}
-          <DashedJourneyRoad />
+        <div className="ck-guest-desktop ck-dw-web">
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {/* Live fundraisers follow the hero and leave with it, then the film. */}
@@ -321,12 +318,12 @@ export default function HomeClient({
 
       {/* SECTION 3 — HOW DO WE WORK */}
       <div className="hidden lg:block">
-        <DiwaliSeam kind="edge" to="butter" lanterns="both" />
+        <DiwaliSeam kind="edge" to="butter" />
         <HowItWorksDesktop />
       </div>
       {!isRoleHome && (
         <div className="lg:hidden">
-          <DiwaliSeam kind="edge" to="butter" lanterns="both" />
+          <DiwaliSeam kind="edge" to="butter" />
           <HowItWorksSection />
         </div>
       )}
@@ -334,7 +331,7 @@ export default function HomeClient({
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       {showLiveNeeds && (
         <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
-          <DiwaliSeam kind="edge" from="butter" lanterns="right" />
+          <DiwaliSeam kind="edge" from="butter" lanterns="right" art="oval" />
           <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
           <NgoDrivesSection />
         </div>
@@ -349,6 +346,7 @@ export default function HomeClient({
       {/* FOUNDER'S NOTE (Desktop) */}
       <div className="hidden lg:block">
         <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
+        <DiwaliSeam kind="line" from="butter" webLanterns="both" art="kandil" />
         <FoundersNoteSection variant="desktop" />
       </div>
 
@@ -479,14 +477,14 @@ export default function HomeClient({
         <DiwaliSeam kind="arch-swell" to="crimson" lanterns="both" />
         {!isRestoring && <FinalCtaComponent variant="desktop" card={!isGuest} />}
         <DiwaliSeam kind="edge" from="crimson" to="night" />
-        <DiwaliSeam kind="diya" from="night" to="night" diyas={5} />
+        <DiwaliSeam kind="lotus" from="night" to="night" />
       </div>
       </div>
       )}
 
       {/* ROLE HOME FOR DESKTOP */}
       {isDonorOrDonee && !isRestoring && isDesktop && (
-        <div className="max-lg:hidden w-full">
+        <div className="ck-dw-web max-lg:hidden w-full">
           <RoleHome 
             role={roleStr?.toLowerCase() as "donor" | "donee"} 
             initialPublicRequests={initialPublicRequests} 
@@ -552,7 +550,7 @@ export default function HomeClient({
         )}
 
         {/* SECTION 6 — LIVE NEEDS */}
-        {showLiveNeeds && (isRoleHome ? <DiwaliSeam kind="line" /> : <DiwaliSeam kind="edge" from="butter" lanterns="right" />)}
+        {showLiveNeeds && (isRoleHome ? <DiwaliSeam kind="line" lanterns="right" art="oval" /> : <DiwaliSeam kind="edge" from="butter" lanterns="right" art="oval" />)}
         {showLiveNeeds && (
           <div className="space-y-8">
             <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
@@ -567,6 +565,7 @@ export default function HomeClient({
         </div>
 
         {/* FOUNDER'S NOTE */}
+        <DiwaliSeam kind="line" from="butter" lanterns="both" art="kandil" />
         <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
         <div className="-mx-5">
           <FoundersNoteSection variant="mobile" seamless={isDoneeHome} />
@@ -662,7 +661,7 @@ export default function HomeClient({
           </div>
         )}
         <DiwaliSeam kind="edge" from={isRoleHome ? "cream" : "crimson"} to="night" />
-        <DiwaliSeam kind="diya" from="night" to="night" diyas={5} />
+        <DiwaliSeam kind="lotus" from="night" to="night" />
 
       </div>
     </div>
