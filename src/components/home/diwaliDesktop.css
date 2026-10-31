@@ -178,14 +178,14 @@
   /* ── Grounds ── */
   .ck-home-page:has(.ck-dw-web),
   .ck-dw-web .ck-home-paper { background-color: var(--dw-cream); }
-  .ck-dw-web :is(#about-causekind, #where-support-goes, #live-needs-section, section[aria-labelledby="credits-heading"], [data-dw-panel] > section) { background-color: var(--dw-cream); }
+  .ck-dw-web :is(#about-causekind, #where-support-goes, #live-needs-section, #ngo-drives-section, section[aria-labelledby="credits-heading"], [data-dw-panel] > section) { background-color: var(--dw-cream); }
   .ck-dw-web :is(#how-it-works, #how-receiving-works, #trust, #founders-note) { background-color: var(--dw-butter); }
   .ck-dw-web :is(#my-requests, #handover-tips, section[aria-labelledby="donor-two-doors-title"]) { background-color: var(--dw-cream); }
   .ck-dw-web :is(#about-causekind, #trust, #join) { min-height: 0; }
   .ck-dw-web #about-causekind { padding-block: 1rem 4rem; }
   .ck-dw-web #trust { padding-block: 1rem 4.5rem; }
   .ck-dw-web .ck-home-paper > .ck-dw-seam + * { margin-top: 0; }
-  .ck-dw-web :is(#about-causekind, #how-it-works, #live-needs-section, #trust, #founders-note, [data-dw-panel] > section) :is(h2, h2 *):not([class*="text-[var(--ck-home"], [class*="bg-[var(--ck-role"] *) { color: var(--dw-heading); }
+  .ck-dw-web :is(#about-causekind, #how-it-works, #live-needs-section, #ngo-drives-section, #trust, #founders-note, [data-dw-panel] > section) :is(h2, h2 *):not([class*="text-[var(--ck-home"], [class*="bg-[var(--ck-role"] *) { color: var(--dw-heading); }
   .ck-dw-web #where-support-goes h2 :is(em, i) { color: var(--dw-burgundy); }
 
   /* The orange hardcoded in the sections' classes and role tabs. */
@@ -227,17 +227,21 @@
 
   /* Cards share one warm edge. */
   .ck-dw-web #live-needs-section [role="region"] > *,
-  .ck-dw-web #live-needs-section .ck-live-needs-footer-gap {
+  .ck-dw-web #live-needs-section .ck-live-needs-footer-gap,
+  .ck-dw-web #ngo-drives-section [role="region"] > *,
+  .ck-dw-web #ngo-drives-section .ck-live-needs-footer-gap {
     background-color: var(--dw-card);
     border: 1px solid var(--dw-line);
     box-shadow: 0 16px 34px -24px rgb(114 13 45 / 0.5);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
-  .ck-dw-web #live-needs-section [role="region"] > *:hover {
+  .ck-dw-web #live-needs-section [role="region"] > *:hover,
+  .ck-dw-web #ngo-drives-section [role="region"] > *:hover {
     transform: translateY(-4px);
     box-shadow: 0 24px 40px -22px rgb(114 13 45 / 0.6);
   }
-  .ck-dw-web #live-needs-section [role="region"] h3 { color: var(--dw-heading); }
+  .ck-dw-web #live-needs-section [role="region"] h3,
+  .ck-dw-web #ngo-drives-section [role="region"] h3 { color: var(--dw-heading); }
 
   /* ── Seams, wide ── */
   /* Height, not margin: a margin showed the page's cream either side of the wave. */

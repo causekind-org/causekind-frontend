@@ -145,11 +145,12 @@
   .ck-home-page,
   .ck-home-page > .lg\:hidden { background-color: var(--dw-cream); }
   .ck-home-page > .lg\:hidden > .ck-dw-seam { margin-inline: -1.25rem; }
-  .ck-home-page :is(#about-causekind, #where-support-goes, #live-needs-section, section[aria-labelledby="credits-heading"], [data-dw-panel] > section) { background-color: var(--dw-cream); }
+  .ck-home-page :is(#about-causekind, #where-support-goes, #live-needs-section, #ngo-drives-section, section[aria-labelledby="credits-heading"], [data-dw-panel] > section) { background-color: var(--dw-cream); }
   .ck-home-page :is(#how-it-works, #trust, #founders-note) { background-color: var(--dw-butter); }
-  .ck-home-page #live-needs-section { width: auto; margin-inline: -1.25rem; padding-inline: 1.25rem; }
-  .ck-home-page :is(#about-causekind, #where-support-goes, #how-it-works, #trust, #founders-note, #live-needs-section) { padding-bottom: 1.5rem !important; }
-  .ck-home-page :is(#about-causekind, #how-it-works, #live-needs-section, #trust, #founders-note) :is(h2, h2 *):not([class*="text-[var(--ck-home"]) { color: var(--dw-heading); }
+  .ck-home-page #live-needs-section,
+  .ck-home-page #ngo-drives-section { width: auto; margin-inline: -1.25rem; padding-inline: 1.25rem; }
+  .ck-home-page :is(#about-causekind, #where-support-goes, #how-it-works, #trust, #founders-note, #live-needs-section, #ngo-drives-section) { padding-bottom: 1.5rem !important; }
+  .ck-home-page :is(#about-causekind, #how-it-works, #live-needs-section, #ngo-drives-section, #trust, #founders-note) :is(h2, h2 *):not([class*="text-[var(--ck-home"]) { color: var(--dw-heading); }
   .ck-home-page #where-support-goes h2 :is(em, i) { color: var(--dw-burgundy); }
 
   /* The orange still hardcoded in the sections' classes and role tabs. */
@@ -160,12 +161,15 @@
   .ck-home-page [style*="--role:#B5480F"] { --role: var(--dw-burgundy); }
 
   .ck-home-page #live-needs-section [role="region"] > *,
-  .ck-home-page #live-needs-section .ck-live-needs-footer-gap {
+  .ck-home-page #live-needs-section .ck-live-needs-footer-gap,
+  .ck-home-page #ngo-drives-section [role="region"] > *,
+  .ck-home-page #ngo-drives-section .ck-live-needs-footer-gap {
     background-color: var(--dw-card);
     border: 1px solid var(--dw-line);
     box-shadow: 0 12px 28px -20px rgb(114 13 45 / 0.45);
   }
-  .ck-home-page #live-needs-section [role="region"] h3 { color: var(--dw-heading); }
+  .ck-home-page #live-needs-section [role="region"] h3,
+  .ck-home-page #ngo-drives-section [role="region"] h3 { color: var(--dw-heading); }
 
 }
 

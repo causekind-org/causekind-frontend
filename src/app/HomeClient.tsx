@@ -243,6 +243,8 @@ export default function HomeClient({
   const isDonorOrDonee = roleStr === "DONOR" || roleStr === "DONEE";
   // The live needs board is for givers; a donee is shown no one else's needs.
   const showLiveNeeds = roleStr !== "DONEE";
+  // NGO drives: visible to guests and logged-in donors; not for NGO, donee, or admin.
+  const showNgoDrives = !user || roleStr === "DONOR";
   // Guests get Prachi's split "choose your path" CTA (6a6cc53); signed-in viewers
   // the dark card. Restored 2026-10-08 — a merge on 10-07 dropped this switch.
   // Not a guest while the session is restoring: a signed-in visitor must never
@@ -333,7 +335,7 @@ export default function HomeClient({
         <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
           <DiwaliSeam kind="edge" from="butter" lanterns="right" art="oval" />
           <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-          <NgoDrivesSection />
+          {showNgoDrives && <NgoDrivesSection />}
         </div>
       )}
 
@@ -554,7 +556,7 @@ export default function HomeClient({
         {showLiveNeeds && (
           <div className="space-y-8">
             <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-            <NgoDrivesSection />
+            {showNgoDrives && <NgoDrivesSection />}
           </div>
         )}
 

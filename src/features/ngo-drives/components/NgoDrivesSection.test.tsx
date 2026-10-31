@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DRIVES_LOAD_TIMEOUT_MS, NgoDrivesSection } from "./NgoDrivesSection";
@@ -113,19 +113,45 @@ describe("NgoDrivesSection", () => {
     // Bottom banner
     expect(screen.getByText("Want to see every drive?")).toBeInTheDocument();
     const seeAllLink = screen.getByRole("link", { name: /SEE ALL DRIVES/i });
-    expect(seeAllLink).toHaveAttribute("href", "/requests?source=ngo");
+    expect(seeAllLink).toHaveAttribute("href", "/requests?type=ngos");
   });
 
-  it("hides the whole section when zero live drives exist", async () => {
+  it("0 live drives: keeps the title and trust card, with the calm empty card", async () => {
     mockGetNgoDrives.mockResolvedValue([]);
-    const { container } = render(<NgoDrivesSection />);
+    render(<NgoDrivesSection />);
+    expect(await screen.findByTestId("ngo-drives-empty")).toHaveTextContent("No live drives right now. Verified NGOs post their needs here, check back soon.");
+    expect(screen.getByRole("heading", { name: /Drives by/ })).toBeInTheDocument();
+    expect(screen.getByText("Every NGO is verified")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Browse donee needs/ })).toHaveAttribute("href", "/requests");
+    expect(screen.queryByRole("group", { name: /Filter NGO drives/ })).toBeNull();
+  });
 
-    // Waits for load to settle and component to unmount/return null
-    await vi.waitFor(() => {
-      expect(screen.queryByText(/Drives by/i)).toBeNull();
+  describe("below 768px", () => {
+    const realMatchMedia = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((q: string) => ({ matches: q.includes("max-width: 767px"), media: q, addEventListener() {}, removeEventListener() {} })) as never;
     });
+    afterEach(() => { window.matchMedia = realMatchMedia; });
 
-    expect(container.firstChild).toBeNull();
+    it("shows one card with chips, dots, arrows, swipe and the more link", async () => {
+      render(<NgoDrivesSection />);
+      await screen.findByRole("button", { name: "Next drive" });
+      expect(screen.getAllByTestId(/^ngo-drive-card-/)).toHaveLength(1);
+      expect(screen.getByRole("group", { name: /Filter NGO drives/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous drive" })).toBeDisabled();
+      expect(screen.getAllByRole("button", { name: /^Drive \d$/ })).toHaveLength(3);
+      expect(screen.getByRole("link", { name: /2 more open drives/ })).toHaveAttribute("href", "/requests?type=ngos");
+      expect(screen.getByText("Want to help an NGO?")).toBeInTheDocument();
+      expect(screen.getByText("Documents and registration checked before a drive goes live")).toBeInTheDocument();
+
+      const first = screen.getByTestId(/^ngo-drive-card-/).getAttribute("data-testid");
+      fireEvent.click(screen.getByRole("button", { name: "Next drive" }));
+      expect(screen.getByTestId(/^ngo-drive-card-/).getAttribute("data-testid")).not.toBe(first);
+      const region = screen.getByRole("region", { name: "Active NGO drives" });
+      fireEvent.touchStart(region, { touches: [{ clientX: 200 }] });
+      fireEvent.touchEnd(region, { changedTouches: [{ clientX: 300 }] });
+      expect(screen.getByTestId(/^ngo-drive-card-/).getAttribute("data-testid")).toBe(first);
+    });
   });
 
   it("renders category chips with counts and disables zero-count categories", async () => {
