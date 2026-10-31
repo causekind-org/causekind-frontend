@@ -499,6 +499,83 @@ function Pile({
   );
 }
 
+/* ══ Mandala ═════════════════════════════════════════════════════════════ */
+
+/**
+ * The rotating gold mandala behind the whole section, desktop only. The layer is
+ * display:none below lg, so its lazy poster is never fetched there. The video
+ * mounts only at lg when the section nears the screen, never with reduced motion
+ * or Save-Data, and pauses while the section is off screen.
+ */
+function SupportMandala() {
+  const layerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [desktop, setDesktop] = useState(false);
+  const [near, setNear] = useState(false);
+
+  useEffect(() => {
+    const wide = window.matchMedia("(min-width: 1024px)");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const choose = () => {
+      const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+      setDesktop(wide.matches && !reduced.matches && !connection?.saveData);
+    };
+    choose();
+    wide.addEventListener("change", choose);
+    reduced.addEventListener("change", choose);
+    return () => {
+      wide.removeEventListener("change", choose);
+      reduced.removeEventListener("change", choose);
+    };
+  }, []);
+
+  useEffect(() => {
+    const layer = layerRef.current;
+    if (!desktop || !layer || typeof IntersectionObserver === "undefined") return;
+    const nearby = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setNear(true);
+    }, { rootMargin: "300px" });
+    const visible = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) void videoRef.current?.play().catch(() => {});
+      else videoRef.current?.pause();
+    });
+    nearby.observe(layer);
+    visible.observe(layer);
+    return () => {
+      nearby.disconnect();
+      visible.disconnect();
+    };
+  }, [desktop, near]);
+
+  return (
+    <div ref={layerRef} className={styles.mandala} aria-hidden>
+      <div className={styles.mandalaBox}>
+        <Image
+          src="/images/diwali-support-mandala-poster.jpg"
+          alt=""
+          fill
+          sizes="(min-width: 1024px) 100vw, 1px"
+          className={styles.mandalaMedia}
+        />
+        {desktop && near && (
+          <video
+            ref={videoRef}
+            className={styles.mandalaMedia}
+            src="/videos/diwali-support-mandala.mp4"
+            poster="/images/diwali-support-mandala-poster.jpg"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-hidden
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ══ Section ═════════════════════════════════════════════════════════════ */
 
 export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
@@ -508,6 +585,7 @@ export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
       aria-label="Where does my support go? Photographs from CauseKind drives"
       className={`${styles.section} ${galleryFonts} ck-m-section`}
     >
+      <SupportMandala />
       <div className="relative hidden px-4 py-14 md:block lg:px-8 lg:py-20">
         <Table photos={photos} />
       </div>

@@ -5061,3 +5061,186 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
     animation: none;
   }
 }
+
+/* ── Diwali hero (phones and desktop) ─────────────────────────────────────────
+   The rangoli video in place of the handover photo. Tablets (768–1023px) keep
+   the everyday hero, so nothing here applies to them. Unlayered, so it outranks
+   the Tailwind utilities on the shared markup. */
+.ck-diwali-media {
+  display: none;
+  pointer-events: none;
+}
+.ck-diwali-fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ck-diwali-hanging { display: none; }
+
+@media (max-width: 767px), (min-width: 1024px) {
+  .ck-hero-diwali .ck-hero-photo-shell { display: none; }
+  .ck-diwali-media { display: block; }
+}
+
+/* Phones: the 9:16 video anchored to the top at full width, so the rangoli is
+   never cropped at the sides. The copy starts below the rangoli, which ends 60%
+   down the file, on the ground colour sampled from the video's foot. */
+@media (max-width: 767px) {
+  .ck-showcase-hero.ck-hero-diwali { background: #0e0800; }
+  .ck-hero-diwali .ck-lead-hero-stage,
+  .dark .ck-hero-diwali .ck-lead-hero-stage { background: transparent; }
+  .ck-hero-diwali .ck-diwali-scrim { display: none; }
+  .ck-diwali-media {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+    width: 100%;
+    aspect-ratio: 9 / 16;
+  }
+  .ck-diwali-media::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 18%;
+    background: linear-gradient(to bottom, transparent, #0e0800);
+  }
+  .ck-diwali-box { position: absolute; inset: 0; }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-copy {
+    margin-top: 0;
+    padding-top: calc(100vw * 16 / 9 * 0.6);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-headline {
+    font-size: clamp(1.9rem, 8.6vw, 3rem);
+  }
+}
+
+/* Desktop: the rangoli is the hero, whole and uncovered. --ck-diwali-h is the top
+   row's height: the first screen, unless that would bring the diyas within 24px
+   of the buttons (--ck-diwali-copy-end). The diyas span the file's right 86.8% of
+   its height. The video fills the row exactly; the original category strip and
+   trust band follow below it. */
+@media (min-width: 1024px) {
+  .ck-hero-diwali {
+    --ck-diwali-copy-end: calc(var(--ck-hero-side-gutter, 0px) + clamp(0.75rem, 1.2vw, 1.75rem) + 632.6px + 24px);
+    --ck-diwali-h: clamp(
+      560px,
+      calc(100svh - max(var(--ck-nav-h, 0px), 5.5rem) - 1rem),
+      calc((100vw - var(--ck-diwali-copy-end)) / 0.868)
+    );
+  }
+  .ck-hero-diwali .ck-lead-hero-stage {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    min-height: var(--ck-diwali-h);
+  }
+  .ck-diwali-media {
+    position: absolute;
+    top: 0;
+    left: calc(-1 * var(--ck-hero-side-gutter, 0px));
+    right: calc(-1 * var(--ck-hero-side-gutter, 0px));
+    z-index: 0;
+    height: var(--ck-diwali-h);
+    overflow: hidden;
+  }
+  .ck-diwali-box {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    aspect-ratio: 16 / 9;
+    /* The file's own cream melts into the page's. */
+    mask-image: linear-gradient(to right, transparent, #000 20%), linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
+    mask-composite: intersect;
+  }
+  .ck-diwali-fill { object-position: right center; }
+  /* Dark mode keeps only the file's dark circle, so the copy sits on the dark page. */
+  .dark .ck-diwali-box {
+    mask-image: radial-gradient(circle calc(var(--ck-diwali-h) * 16 / 9 * 0.35) at 84.7% 47.3%, #000 98%, transparent 100%), linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
+    mask-composite: intersect;
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-copy { padding-right: 0; }
+  /* The strip, ~18% larger to suit the rangoli, overlaps only the video's empty
+     foot (its bottom 7% is at least 39px), hiding the video's bottom edge. */
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-category-rail { margin-top: -1.5rem; }
+  .ck-hero-diwali .ck-hero-category-rail nav { padding-block: clamp(0.65rem, 1.55vh, 1.12rem); }
+  .ck-hero-diwali .ck-hero-category-rail a { min-height: clamp(5.65rem, 11.4vh, 7.8rem); gap: 0.6rem; }
+  .ck-hero-diwali .ck-hero-category-rail a > span:first-child { width: 2.95rem; height: 2.95rem; }
+  .ck-hero-diwali .ck-hero-category-rail a svg { width: 1.75rem; height: 1.75rem; }
+  /* 1024 has the least room per column, and ELECTRONICS cannot break. */
+  .ck-hero-diwali .ck-hero-category-rail a > span:last-child { font-size: clamp(0.62rem, 0.76vw, 0.9rem); }
+  @media (min-width: 1200px) {
+    .ck-hero-diwali .ck-hero-category-rail a > span:last-child { font-size: clamp(0.68rem, 0.76vw, 0.9rem); }
+  }
+  /* Below 1280 the buttons wrap (same sizes), which leaves the rangoli more room. */
+  @media (max-width: 1279px) {
+    .ck-hero-diwali { --ck-diwali-copy-end: calc(var(--ck-hero-side-gutter, 0px) + clamp(0.75rem, 1.2vw, 1.75rem) + 421.6px + 24px); }
+    .ck-hero-diwali .ck-hero-actions { width: 100%; flex-wrap: wrap; }
+  }
+
+  /* The hanging lanterns: from the hero's left edge to 1rem short of the rangoli's
+     ring, which starts 0.94 of the row from the hero's right. The composition is
+     1195 wide, its longest lantern ends at 288 and its sprites at 308. The copy
+     starts 1rem below that lantern. */
+  .ck-hero-diwali {
+    --ck-diwali-hanging-w: calc(100vw - var(--ck-diwali-h) * 0.94 - 1rem);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-copy { padding-top: calc(var(--ck-diwali-hanging-w) * 288 / 1195 + 1rem); }
+  .ck-diwali-hanging {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: calc(-1 * var(--ck-hero-side-gutter, 0px));
+    z-index: 1;
+    width: var(--ck-diwali-hanging-w);
+    height: calc(var(--ck-diwali-hanging-w) * 308 / 1195);
+    pointer-events: none;
+  }
+  .ck-diwali-hanging-sprite {
+    position: absolute;
+    top: 0;
+    background-image: url("/images/diwali-lanterns-atlas.webp");
+    background-repeat: no-repeat;
+    animation: ck-diwali-lantern-sway var(--ck-lantern-sway) ease-in-out var(--ck-lantern-sway-delay) infinite alternate;
+  }
+  /* A second copy over the first: solid pixels stay as they are, only the
+     semi-transparent halo brightens and dims, so just the glow flickers. */
+  .ck-diwali-hanging-sprite::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: inherit;
+    animation: ck-diwali-lantern-flicker var(--ck-lantern-flicker) ease-in-out var(--ck-lantern-flicker-delay) infinite alternate;
+  }
+
+  /* Gentle entrance: each block rises in, 80ms apart. */
+  .ck-hero-diwali :is(.ck-hero-eyebrow, .ck-hero-headline, .ck-hero-subtext, .ck-hero-actions, .ck-hero-category-rail, .ck-hero-trust-rail) {
+    animation: ck-diwali-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .ck-hero-diwali .ck-hero-headline { animation-delay: 80ms; }
+  .ck-hero-diwali .ck-hero-subtext { animation-delay: 160ms; }
+  .ck-hero-diwali .ck-hero-actions { animation-delay: 240ms; }
+  .ck-hero-diwali .ck-hero-category-rail { animation-delay: 320ms; }
+  .ck-hero-diwali .ck-hero-trust-rail { animation-delay: 400ms; }
+}
+@keyframes ck-diwali-lantern-sway {
+  from { transform: rotate(-2deg); }
+  to { transform: rotate(2deg); }
+}
+@keyframes ck-diwali-lantern-flicker {
+  from { opacity: 0.2; }
+  to { opacity: 0.6; }
+}
+@keyframes ck-diwali-rise {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: none; }
+}
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .ck-diwali-hanging-sprite { animation: none; }
+  .ck-diwali-hanging-sprite::after { animation: none; opacity: 0.4; }
+  .ck-hero-diwali :is(.ck-hero-eyebrow, .ck-hero-headline, .ck-hero-subtext, .ck-hero-actions, .ck-hero-category-rail, .ck-hero-trust-rail) {
+    animation: none;
+  }
+}
