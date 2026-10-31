@@ -8,6 +8,8 @@ import type { LucideIcon } from "lucide-react";
 import { EASE } from "@/features/wizard-kit/wizardMotion";
 import type { DonationOffer } from "@/lib/api";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * What the donor sees after submitting.
  *
@@ -23,11 +25,15 @@ import type { DonationOffer } from "@/lib/api";
 
 type Stage = "screening" | "recipient" | "approved" | "closed";
 
-const STAGES: { key: Exclude<Stage, "closed">; label: string; icon: LucideIcon }[] = [
-  { key: "screening", label: "Checks", icon: ScanSearch },
-  { key: "recipient", label: "Recipient", icon: Heart },
-  { key: "approved", label: "Handover", icon: PackageCheck },
+/** Display copy for STAGES, translated (was a module constant). */
+function useStagesCopy(): { key: Exclude<Stage, "closed">; label: string; icon: LucideIcon }[] {
+  const ui = useUiText();
+  return [
+  { key: "screening", label: ui("Checks"), icon: ScanSearch },
+  { key: "recipient", label: ui("Recipient"), icon: Heart },
+  { key: "approved", label: ui("Handover"), icon: PackageCheck },
 ];
+}
 
 type Presentation = {
   stage: Stage;
@@ -41,25 +47,28 @@ type Presentation = {
   primary?: { label: string; action: "offers" | "edit" | "requests" };
 };
 
-function present(status: string | undefined, rejectionReason: string | null | undefined): Presentation {
+/** Translated presentation for each offer status (was a plain function). */
+function usePresent() {
+  const ui = useUiText();
+  return function present(status: string | undefined, rejectionReason: string | null | undefined): Presentation {
   switch (status) {
     case "SUBMITTED":
     case "AI_ELIGIBILITY_SCREENING":
     case "AI_COMPATIBILITY_SCREENING":
       return {
         stage: "screening", tone: "accent", icon: ScanSearch, pending: true,
-        title: "Offer sent for checks",
-        body: "We're reviewing your photos and details. This usually takes a few minutes — you don't need to wait here.",
-        primary: { label: "View my offers", action: "offers" },
+        title: ui("Offer sent for checks"),
+        body: ui("We're reviewing your photos and details. This usually takes a few minutes — you don't need to wait here."),
+        primary: { label: ui("View my offers"), action: "offers" },
       };
 
     case "COMPATIBILITY_CHECKED":
     case "PENDING_ADMIN_APPROVAL":
       return {
         stage: "screening", tone: "accent", icon: Clock, pending: true,
-        title: "With our team",
-        body: "Your offer passed the automated checks and a person is taking a final look. We'll let you know as soon as that's done.",
-        primary: { label: "View my offers", action: "offers" },
+        title: ui("With our team"),
+        body: ui("Your offer passed the automated checks and a person is taking a final look. We'll let you know as soon as that's done."),
+        primary: { label: ui("View my offers"), action: "offers" },
       };
 
     case "PENDING_DONEE_REVIEW":
@@ -67,9 +76,9 @@ function present(status: string | undefined, rejectionReason: string | null | un
     case "SOFT_RESERVED_BACKUP":
       return {
         stage: "recipient", tone: "green", icon: Heart, pending: true,
-        title: "Sent to the recipient",
-        body: "Your offer looks suitable and is now with the person who asked for it. They'll review it and decide.",
-        primary: { label: "View my offers", action: "offers" },
+        title: ui("Sent to the recipient"),
+        body: ui("Your offer looks suitable and is now with the person who asked for it. They'll review it and decide."),
+        primary: { label: ui("View my offers"), action: "offers" },
       };
 
     case "DONEE_ACCEPTED":
@@ -77,33 +86,33 @@ function present(status: string | undefined, rejectionReason: string | null | un
     case "HANDOVER_IN_PROGRESS":
       return {
         stage: "approved", tone: "green", icon: PackageCheck,
-        title: "Your offer was accepted",
-        body: "Someone is receiving this because of you. Next comes arranging the handover.",
-        primary: { label: "Go to my offers", action: "offers" },
+        title: ui("Your offer was accepted"),
+        body: ui("Someone is receiving this because of you. Next comes arranging the handover."),
+        primary: { label: ui("Go to my offers"), action: "offers" },
       };
 
     case "NEEDS_INFORMATION":
       return {
         stage: "screening", tone: "amber", icon: Pencil,
-        title: "A few more details needed",
+        title: ui("A few more details needed"),
         body: rejectionReason?.trim()
           ? rejectionReason
-          : "Our team needs a little more information before this can go to the recipient.",
-        primary: { label: "Update my offer", action: "edit" },
+          : ui("Our team needs a little more information before this can go to the recipient."),
+        primary: { label: ui("Update my offer"), action: "edit" },
       };
 
     case "ADMIN_REJECTED":
     case "DONEE_DECLINED":
       return {
         stage: "closed", tone: "red", icon: ShieldX,
-        title: status === "DONEE_DECLINED" ? "The recipient passed on this" : "This offer wasn't approved",
+        title: status === "DONEE_DECLINED" ? ui("The recipient passed on this") : ui("This offer wasn't approved"),
         body: rejectionReason?.trim()
           ? rejectionReason
-          : "It happens, and it isn't a reflection on you. Plenty of other people are asking for things right now.",
+          : ui("It happens, and it isn't a reflection on you. Plenty of other people are asking for things right now."),
         // "requests", not "offers": the copy above has just told this donor
         // that other people are asking for things, so the button has to take
         // them to the need board — it used to send them to their own offers.
-        primary: { label: "Browse other requests", action: "requests" },
+        primary: { label: ui("Browse other requests"), action: "requests" },
       };
 
     default:
@@ -111,11 +120,12 @@ function present(status: string | undefined, rejectionReason: string | null | un
       // donor's problem, and "SUBMITTED" meant nothing to them anyway.
       return {
         stage: "screening", tone: "accent", icon: Sparkles, pending: true,
-        title: "Offer submitted",
-        body: "Thank you — it's in the queue. You can follow its progress from your offers at any time.",
-        primary: { label: "View my offers", action: "offers" },
+        title: ui("Offer submitted"),
+        body: ui("Thank you — it's in the queue. You can follow its progress from your offers at any time."),
+        primary: { label: ui("View my offers"), action: "offers" },
       };
   }
+};
 }
 
 const TONE = {
@@ -135,7 +145,11 @@ export function OfferResult({
   /** The need board — for the decline/reject copy, which promises other requests. */
   onBrowseRequests: () => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const STAGES = useStagesCopy();
+  const ui = useUiText();
   const reduced = !!useReducedMotion();
+  const present = usePresent();
   const p = present(offer?.status, offer?.rejectionReason);
   const tone = TONE[p.tone];
 
@@ -198,7 +212,7 @@ export function OfferResult({
 
           {requestTitle && (
             <motion.p {...rise(3)} className="mt-3 text-2xs text-stone-400 dark:text-zinc-500">
-              Towards <span className="font-bold text-stone-600 dark:text-stone-300">{requestTitle}</span>
+              {wt.rich("towardsTitle", { title: requestTitle, b: (chunks) => <span className="font-bold text-stone-600 dark:text-stone-300">{chunks}</span> })}
             </motion.p>
           )}
         </div>
@@ -206,7 +220,7 @@ export function OfferResult({
         {/* Journey. Hidden once the offer is closed — showing a path it will
             never walk would be a small cruelty. */}
         {p.stage !== "closed" && (
-          <motion.ol {...rise(4)} className="mt-7 flex items-start justify-between gap-1 px-5 sm:px-8" aria-label="Offer progress">
+          <motion.ol {...rise(4)} className="mt-7 flex items-start justify-between gap-1 px-5 sm:px-8" aria-label={ui("Offer progress")}>
             {STAGES.map((s, i) => {
               const done = i < reachedIndex;
               const current = i === reachedIndex;
@@ -246,7 +260,7 @@ export function OfferResult({
             }
             className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-4 text-sm font-black text-white transition-colors hover:bg-[var(--ck-role-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
           >
-            {p.primary?.label ?? "View my offers"}
+            {p.primary?.label ?? ui("View my offers")}
             <ArrowRight className="h-4 w-4 rtl:rotate-180" aria-hidden />
           </button>
         </motion.div>
@@ -254,7 +268,7 @@ export function OfferResult({
 
       {p.pending && (
         <motion.p {...rise(6)} className="mt-4 text-center text-2xs text-stone-400 dark:text-zinc-600">
-          We&apos;ll email you when there&apos;s news — nothing else to do right now.
+          <UiText>We&apos;ll email you when there&apos;s news — nothing else to do right now.</UiText>
         </motion.p>
       )}
     </div>

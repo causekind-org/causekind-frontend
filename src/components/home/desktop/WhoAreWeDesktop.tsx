@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { HOME_ROLE_COLORS } from "@/lib/landingConstants";
 import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
-import FlipCard from "@/components/FlipCard";
 
 /* ════════════════════════════════════════════════════════════════════════════════
    SVG INLINE ILLUSTRATIONS FOR MOBILE ECOSYSTEM
@@ -114,53 +113,18 @@ function BoxIcon({ size = 26 }: { size?: number }) {
  */
 export type WhoAreWeVariant = "donor" | "donee";
 
-function HoverFlipCard({ title, desc, icon: Icon, variant = "donor" }: { title: string, desc: string, icon: any, variant?: WhoAreWeVariant }) {
-  const [isHovered, setIsHovered] = useState(false);
-  const badgeClass = variant === "donee"
-    ? "w-10 h-10 rounded-xl bg-[var(--ck-role-accent)] flex items-center justify-center mb-4"
-    : "w-10 h-10 rounded-xl bg-[#B5480F] flex items-center justify-center mb-4";
-  const badgeIconClass = variant === "donee" ? "w-5 h-5 text-[var(--ck-role-on-accent)]" : "w-5 h-5 text-white";
-  // The donor border resolves to a warm peach on the home page: an unlayered
-  // `* { border-color }` in styles.css beats every border utility. The donee
-  // edge is the role border token, marked important so it actually applies.
-  const faceClass = variant === "donee"
-    ? "bg-white dark:bg-zinc-900 border-[var(--ck-role-border)]!"
-    : "bg-white dark:bg-[#1C1410] border-stone-200 dark:border-stone-800";
+/** One row of the statement layout's list: tinted icon tile, title, always-visible line. */
+function AboutPoint({ title, desc, icon: Icon, last = false }: { title: string; desc: string; icon: React.ComponentType<{ className?: string }>; last?: boolean }) {
   return (
-    <div
-      className="w-full h-full min-h-[160px] cursor-default"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onFocus={() => setIsHovered(true)}
-      onBlur={() => setIsHovered(false)}
-    >
-      <FlipCard
-        flipped={isHovered}
-        axis="y"
-        flipOnClick={false}
-        width="100%"
-        height="100%"
-        background="transparent"
-        shadow={false}
-        front={
-          <div className={`w-full h-full flex flex-col items-start text-left rounded-2xl p-5 sm:p-6 border shadow-sm transition-shadow ${faceClass}`}>
-            <div className={badgeClass}>
-              <Icon className={badgeIconClass} />
-            </div>
-            <h3 className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 mb-2">
-              <LandingText>{title}</LandingText>
-            </h3>
-          </div>
-        }
-        back={
-          <div className={`w-full h-full flex flex-col items-start justify-center text-left rounded-2xl p-5 sm:p-6 border shadow-sm transition-shadow ${faceClass}`}>
-            <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400 leading-snug">
-              <LandingText>{desc}</LandingText>
-            </p>
-          </div>
-        }
-      />
-    </div>
+    <li className={`flex items-start gap-5 py-5 border-t ${last ? "border-b" : ""} border-[#E7DFD3]! dark:border-stone-800!`}>
+      <span className="flex-none w-11 h-11 rounded-xl flex items-center justify-center bg-[rgba(var(--ck-role-shadow-rgb,181,72,15),0.1)] text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)]" aria-hidden="true">
+        <Icon className="w-[22px] h-[22px]" />
+      </span>
+      <div className="flex flex-col gap-1">
+        <h3 className="m-0 text-lg sm:text-xl font-extrabold text-stone-900 dark:text-stone-100"><LandingText>{title}</LandingText></h3>
+        <p className="m-0 text-sm sm:text-[15px] leading-normal text-stone-600 dark:text-stone-400"><LandingText>{desc}</LandingText></p>
+      </div>
+    </li>
   );
 }
 
@@ -406,7 +370,7 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
       id="about-causekind"
       aria-label="About CauseKind"
       data-ck-role-theme={isDonee ? "donee" : undefined}
-      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#F8F6F2] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
+      className="relative w-full min-h-[calc(100svh-4rem)] lg:min-h-[calc(100svh-4.5rem)] flex flex-col justify-center py-8 sm:py-12 lg:py-10 bg-[#FAF8F5] dark:bg-[#0E0C0A] text-[#1C1410] dark:text-[#F5EEE8] overflow-hidden transition-colors duration-300"
     >
       {/* Decorative ambient background subtle radial glows */}
       <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-20" aria-hidden="true">
@@ -421,89 +385,46 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
         <div className="absolute bottom-1/4 right-1/4 w-[550px] h-[550px] bg-[radial-gradient(circle,_rgba(127,176,232,0.18)_0%,_transparent_70%)] blur-3xl" />
       </div>
 
+      {/* Statement layout (2026-10-16, from the "About Section Redesign" canvas, option C):
+          accent panel with the heading + "No cash" line, then the description and three points. */}
       <div className="relative mx-auto max-w-7xl w-full px-5 sm:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center w-full">
-          {/* LEFT COLUMN: Text Content */}
-          <div className="flex flex-col items-start text-left w-full">
-            {/* =========================================================================
-                1. LABEL: "ABOUT CAUSEKIND"
-            ========================================================================= */}
-            <div className="relative w-full select-none py-1 flex items-center justify-start gap-3 mb-6">
-              <span className="w-10 sm:w-12 h-[3px] bg-[var(--ck-role-accent,#B5480F)] rounded-full" />
-              <h2 className="text-xl sm:text-2xl font-extrabold uppercase tracking-[0.2em] text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)]"><LandingText>
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] gap-10 lg:gap-16 items-stretch w-full">
+          {/* LEFT: accent statement panel */}
+          <div className="flex flex-col justify-between gap-10 rounded-[28px] p-8 sm:p-12 bg-[var(--ck-role-accent,#B5480F)] text-[var(--ck-role-on-accent,#FFFFFF)]">
+            <div className="flex flex-col gap-6">
+              <h2 className="m-0 text-sm font-bold uppercase tracking-[0.22em] opacity-85"><LandingText>
                 About CauseKind
               </LandingText></h2>
+              <p className="m-0 text-3xl sm:text-4xl lg:text-[clamp(2.25rem,2.6vw+0.4rem,2.9rem)] font-extrabold tracking-tight leading-[1.1]"><LandingText>
+                We connect people who have extra things with people nearby who need them.
+              </LandingText></p>
             </div>
-
-            {/* Heading with Living Words & Marker Underlines */}
-            <h2 className="text-2xl sm:text-3xl lg:text-[clamp(1.75rem,2.2vw+0.2rem,2.6rem)] font-extrabold tracking-tight leading-[1.3] text-stone-900 dark:text-stone-100 max-w-3xl">
-              <span><LandingText>We connect people who have </LandingText></span>
-              {/* "extra things": static marker underline (hover burst removed 2026-10-06) */}
-              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold"><LandingText>
-                extra things
-                </LandingText><span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
-              </span>
-              <span><LandingText> with people nearby who </LandingText></span>
-              {/* "need them.": static marker underline (hover burst removed 2026-10-06) */}
-              <span className="relative inline-block text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-extrabold"><LandingText>
-                need them.
-                </LandingText><span aria-hidden="true" className="absolute left-0 bottom-0.5 w-full h-[3px] sm:h-1 bg-[var(--ck-role-accent,#B5480F)]/40 dark:bg-[var(--ck-role-accent,#F4A25B)]/50 rounded-full" />
-              </span>
-            </h2>
-
-            {/* Paragraph Text (Exact unaltered wording) */}
-            <p className="text-sm sm:text-base text-stone-600 dark:text-stone-300 font-normal sm:font-medium leading-relaxed mt-6 max-w-2xl"><LandingText>
-              CauseKind is a free platform in India where donors give useful items — books, clothes,
-              furniture, electronics and more — directly to verified people and NGOs near them. No cash.
-              No middlemen. Just real things reaching real people.
-            </LandingText></p>
-
-            {/* ── "Know More" Button ── */}
-            <div className="mt-8 sm:mt-10 flex justify-start w-full">
-              {/* Primary Action Button */}
+            <div className="flex flex-col items-start gap-7">
+              <p className="m-0 text-lg sm:text-[22px] font-semibold leading-snug opacity-85"><LandingText>
+                No cash. No middlemen. Just real things reaching real people.
+              </LandingText></p>
               <Link
                 href="/about"
-                className={`inline-flex items-center justify-center gap-2.5 px-6 sm:px-8 py-3.5 rounded-full bg-[var(--ck-role-accent,#B5480F)] hover:bg-[var(--ck-role-hover,#C95413)] ${isDonee ? "text-[var(--ck-role-on-accent)]" : "text-white"} font-extrabold text-xs sm:text-sm tracking-wide shadow-md hover:shadow-lg transition-all duration-200 group active:scale-95`}
+                className="inline-flex items-center justify-center gap-2.5 min-h-[52px] px-7 rounded-full bg-white text-[#7A2F0C] dark:bg-stone-950 dark:text-stone-100 font-bold text-base shadow-md hover:shadow-lg transition-all duration-200 group active:scale-95"
+                style={isDonee ? { color: "var(--ck-role-accent)" } : undefined}
               >
                 <span><LandingText>Know more</LandingText></span>
-                <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+                <ArrowRight className="w-[18px] h-[18px] transition-transform duration-200 group-hover:translate-x-1" aria-hidden="true" />
               </Link>
             </div>
           </div>
 
-          {/* RIGHT COLUMN: 2x2 Grid of Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full mt-10 lg:mt-0">
-            {/* Card 1 */}
-            <LandingAttributes><HoverFlipCard
-              title="Direct Giving"
-              variant={variant}
-              desc="Donors give items directly to people or NGOs nearby — no warehouses, no delays."
-              icon={Gift}
-            /></LandingAttributes>
-
-            {/* Card 2 */}
-            <LandingAttributes><HoverFlipCard
-              title="Verified & Safe"
-              variant={variant}
-              desc="Every request is admin-reviewed, and every handover is confirmed with a one-time code."
-              icon={ShieldCheck}
-            /></LandingAttributes>
-
-            {/* Card 3 */}
-            <LandingAttributes><HoverFlipCard
-              title="Zero Cash, No Middlemen"
-              variant={variant}
-              desc="Only in-kind items change hands — books, clothes, furniture, electronics, and more."
-              icon={HeartHandshake}
-            /></LandingAttributes>
-
-            {/* Card 4 */}
-            <LandingAttributes><HoverFlipCard
-              title="Local Matching"
-              variant={variant}
-              desc="Donors and recipients are matched within 10km, so help reaches people nearby, fast."
-              icon={MapPin}
-            /></LandingAttributes>
+          {/* RIGHT: description and the three points */}
+          <div className="flex flex-col justify-center">
+            <p className="m-0 mb-5 text-base sm:text-lg leading-relaxed text-stone-600 dark:text-stone-300"><LandingText>
+              CauseKind is a free platform in India where donors give useful items — books, clothes,
+              furniture, electronics and more — directly to verified people and NGOs near them.
+            </LandingText></p>
+            <ul className="m-0 p-0 list-none">
+              <AboutPoint title="Direct giving" desc="Items go straight from the donor to the person who asked." icon={Gift} />
+              <AboutPoint title="Verified & safe" desc="Receivers are verified; each handover is confirmed with a one-time code." icon={ShieldCheck} />
+              <AboutPoint title="Local matching" desc="Needs meet donors nearby, so items travel a short way." icon={MapPin} last />
+            </ul>
           </div>
         </div>
       </div>

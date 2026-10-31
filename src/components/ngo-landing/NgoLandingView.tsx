@@ -1,44 +1,56 @@
 "use client";
 
-import { Suspense } from "react";
-import { NgoHeroSection } from "./NgoHeroSection";
-import { NgoGlanceStrip } from "./NgoGlanceStrip";
-import { NgoProblemSolutionSection } from "./NgoProblemSolutionSection";
-import { NgoTransparencySection } from "./NgoTransparencySection";
-import { NgoTrustSection } from "./NgoTrustSection";
-import { NgoHowItWorksSection } from "./NgoHowItWorksSection";
-import { CreditsSection } from "@/components/home/CreditsSection";
-import { NgoVerifiedWelcomeModal } from "./NgoVerifiedWelcomeModal";
+import { Suspense, lazy } from "react";
+import Link from "next/link";
+import { useNgoStatus } from "./useNgoStatus";
+import { NgoVerifiedWelcomeModal } from "./NgoVerifiedBadgeMoment";
+import "./ngo-redesign.css";
+
+const PostApprovalLanding = lazy(() => import("./PostApprovalLanding"));
+const PreApprovalLanding = lazy(() => import("./PreApprovalLanding"));
 
 function NgoLandingViewContent() {
+  const status = useNgoStatus();
+  const { isVerified, isLoading, error, refresh, viewer } = status;
+
+  // Donors and donees get no NGO status, CTAs or NGO API calls (useNgoStatus skips them).
+  if (viewer === "other" && !isLoading) {
+    return (
+      <div className="ck-ngo-landing-page ngo-theme-wrapper min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
+        <p className="text-lg font-semibold mb-4">This area is for NGO partners.</p>
+        <Link
+          href="/"
+          className="inline-flex min-h-11 items-center px-5 py-2.5 rounded-full bg-[#1E6B4F] text-white font-medium hover:bg-[#16533D] transition-colors"
+        >
+          Go to home
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <div className="ck-ngo-landing-page min-h-screen bg-[#FBF9F4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 transition-colors duration-300 overflow-x-clip">
-      {/* VERIFIED WELCOME MOMENT (shown once on first visit after verification) */}
+    <div className="ck-ngo-landing-page ngo-theme-wrapper min-h-screen transition-colors duration-300">
       <NgoVerifiedWelcomeModal />
 
-      {/* SECTION 1 — HERO (Contains Image Wall, Category Pill Bar, and Restyled Trust Card) */}
-      <NgoHeroSection />
-
-      {/* "YOUR NGO AT A GLANCE" STRIP (verified ONLY, directly under hero) */}
-      <NgoGlanceStrip />
-
-      {/* SECTION 2 — PROBLEM / SOLUTION (before verification ONLY) */}
-      <NgoProblemSolutionSection />
-
-      {/* SECTION 3 — TRANSPARENCY (Gift Journey Tracker + Live Stats + Live Ticker + What Great Proof Looks Like) */}
-      <NgoTransparencySection />
-
-      {/* SECTION 4 — TRUST (Trust Grid before verification + Dynamic Scorecard) */}
-      <NgoTrustSection />
-
-      {/* SECTION 5 — HOW IT WORKS (For NGOs and trusts / True Focus headline + 3 Step Cards + CTA) */}
-      <NgoHowItWorksSection />
-
-      {/* The people behind CauseKind: same credit as the public home page. */}
-      <CreditsSection />
-
-      {/* SECTION 6 — COMMUNITY REVIEWS (Trusted by Givers and NGOs Marquee - last section before footer) */}
-      {/* Publish testimonials only when sourced and approved for use. */}
+      {error ? (
+        <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center" role="alert">
+          <p className="text-red-600 dark:text-red-400 font-semibold mb-4">{error}</p>
+          <button
+            onClick={() => refresh()}
+            className="px-5 py-2.5 rounded-full bg-[#1E6B4F] text-white font-medium hover:bg-[#16533D] transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      ) : isVerified ? (
+        <Suspense fallback={<div className="min-h-screen bg-[#0B3D2E]" />}>
+          <PostApprovalLanding status={status} />
+        </Suspense>
+      ) : (
+        <Suspense fallback={<div className="min-h-screen bg-[#0B3D2E]" />}>
+          <PreApprovalLanding status={status} />
+        </Suspense>
+      )}
     </div>
   );
 }

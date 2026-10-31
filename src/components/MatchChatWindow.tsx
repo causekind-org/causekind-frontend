@@ -22,7 +22,30 @@ interface Props {
   embedded?: boolean;
   /** Shown while the thread is empty. */
   emptyText?: string;
+  /**
+   * Where the thread lives. Optional: without it this is the donor↔donee match
+   * chat, exactly as before. The NGO drive-offer chat passes its own endpoints
+   * (and source, so match push events never land in it).
+   */
+  endpoints?: ChatEndpoints;
 }
+
+export type ChatEndpoints = {
+  /** The push event source this thread listens for ("MATCH" for the match chat). */
+  source: string;
+  messages: (id: number) => Promise<ChatMessage[]>;
+  since: (id: number, since: string) => Promise<ChatMessage[]>;
+  send: (id: number, content: string) => Promise<ChatMessage>;
+  markRead: (id: number) => Promise<unknown>;
+};
+
+export const MATCH_CHAT_ENDPOINTS: ChatEndpoints = {
+  source: "MATCH",
+  messages: getMatchChatMessages,
+  since: getMatchChatMessagesSince,
+  send: sendMatchChatMessage,
+  markRead: markMatchChatMessagesRead,
+};
 
 const POLL_INTERVAL_MS = 5_000;
 
@@ -36,7 +59,10 @@ const POLL_INTERVAL_MS = 5_000;
  */
 const EPOCH_SINCE = "1970-01-01T00:00:00";
 
-export default function MatchChatWindow({ matchId, currentUserEmail, locked = false, className = "", embedded = false, emptyText = "No messages yet." }: Props) {
+export default function MatchChatWindow({ matchId, currentUserEmail, locked = false, className = "", embedded = false, emptyText = "No messages yet.", endpoints = MATCH_CHAT_ENDPOINTS }: Props) {
+  // Read through a ref so a caller passing a new object each render doesn't restart the effects.
+  const api = useRef(endpoints);
+  api.current = endpoints;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -48,11 +74,11 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
 
   // Initial load
   useEffect(() => {
-    getMatchChatMessages(matchId)
+    api.current.messages(matchId)
       .then((msgs) => {
         setMessages(msgs);
         if (msgs.length > 0) lastSentAt.current = msgs[msgs.length - 1].sentAt;
-        markMatchChatMessagesRead(matchId).catch(() => {});
+        api.current.markRead(matchId).catch(() => {});
       })
       .catch(() => {});
   }, [matchId]);
@@ -61,7 +87,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
   // page (scrollIntoView walks every scrollable ancestor and yanks the page down).
   useEffect(() => {
     const el = listRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    if (el && typeof el.scrollTo === "function") el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   // Polling fallback — covers SSE reconnect gaps, same dual SSE+poll pattern as ChatWindow.
@@ -75,7 +101,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
       if (failures > 0 && skipTicks.current > 0) { skipTicks.current -= 1; return; }
 
       try {
-        const newMsgs = await getMatchChatMessagesSince(matchId, lastSentAt.current ?? EPOCH_SINCE);
+        const newMsgs = await api.current.since(matchId, lastSentAt.current ?? EPOCH_SINCE);
         failures = 0;
         if (newMsgs.length > 0) {
           setMessages((prev) => {
@@ -83,7 +109,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
             const fresh = newMsgs.filter((m) => !existingIds.has(m.id));
             if (fresh.length === 0) return prev;
             lastSentAt.current = fresh[fresh.length - 1].sentAt;
-            markMatchChatMessagesRead(matchId).catch(() => {});
+            api.current.markRead(matchId).catch(() => {});
             return [...prev, ...fresh];
           });
         }
@@ -107,7 +133,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
         senderEmail: string; content: string; messageType: ChatMessage["messageType"];
         recipientTarget: ChatMessage["recipientTarget"]; sentAt: string; source?: string;
       } | undefined;
-      if (!detail || detail.source !== "MATCH" || detail.offerId !== matchId) return;
+      if (!detail || detail.source !== api.current.source || detail.offerId !== matchId) return;
       const message: ChatMessage = {
         id: detail.id, threadId: detail.threadId, senderId: detail.senderId, senderName: detail.senderName,
         senderEmail: detail.senderEmail, content: detail.content, messageType: detail.messageType,
@@ -118,7 +144,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
         lastSentAt.current = message.sentAt;
         return [...prev, message];
       });
-      markMatchChatMessagesRead(matchId).catch(() => {});
+      api.current.markRead(matchId).catch(() => {});
     }
     window.addEventListener("ck-chat-message", onPush);
     return () => window.removeEventListener("ck-chat-message", onPush);
@@ -130,7 +156,7 @@ export default function MatchChatWindow({ matchId, currentUserEmail, locked = fa
     setSending(true);
     setError(null);
     try {
-      const msg = await sendMatchChatMessage(matchId, text);
+      const msg = await api.current.send(matchId, text);
       setMessages((prev) => [...prev, msg]);
       lastSentAt.current = msg.sentAt;
       setInput("");

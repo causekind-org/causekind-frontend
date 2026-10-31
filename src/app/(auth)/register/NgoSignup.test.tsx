@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, configure } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RegisterPage from "./page";
 import { registerNgo, ApiError } from "@/lib/api";
@@ -9,7 +9,13 @@ const mockReplace = vi.fn();
 
 let mockSearchParams = new URLSearchParams();
 
+// Under full-suite load the 8 s waits below outlived the default 5 s test timeout, and
+// findBy* gave up after 1 s. Give both room, and start every test with clean mock calls.
+vi.setConfig({ testTimeout: 30000 });
+configure({ asyncUtilTimeout: 8000 });
+
 beforeEach(() => {
+  vi.clearAllMocks();
   mockSearchParams = new URLSearchParams();
 });
 

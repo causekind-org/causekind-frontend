@@ -28,7 +28,7 @@ import type { HandoverViewModel } from "./model";
  * regardless of role — a success is a success whoever is reading it.
  */
 export function HandoverHubShell({
-  vm, userEmail, otp, actions, onChanged,
+  vm, userEmail, otp, actions, onChanged, drive,
 }: {
   vm: HandoverViewModel;
   userEmail: string;
@@ -48,13 +48,22 @@ export function HandoverHubShell({
     deliveryAddress?: DeliveryAddressActions;
   };
   onChanged: () => void;
+  /**
+   * NGO drive handovers only (optional): where Back goes, the header line, the
+   * drive's own confirm panel (photos before the code, receipt + code + quantity)
+   * and extra rail content. Absent for donor↔donee, which renders as before.
+   */
+  drive?: { backHref: string; subtitle: string; confirmPanel: React.ReactNode; aside?: React.ReactNode;
+    /** Replaces the donor's "Schedule handover" button (drive drop-off outside the radius). */
+    schedulePanel?: React.ReactNode };
 }) {
   const router = useRouter();
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
 
   const isReschedule = vm.schedule != null;
-  const roleClass = vm.role === "DONOR" ? "handover-donor" : "handover-donee";
+  // NGO drives use the NGO green (scoped to the page); donor↔donee is unchanged.
+  const roleClass = drive ? "handover-ngo-drive" : vm.role === "DONOR" ? "handover-donor" : "handover-donee";
 
   /**
    * One "message them" affordance, two surfaces. On desktop the chat is already
@@ -76,13 +85,13 @@ export function HandoverHubShell({
   return (
     // Only has to clear the dock now — the chat launcher floats, so it needs no
     // page gutter of its own.
-    <main className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-[calc(var(--ck-bottom-chrome)+1.5rem)] lg:pb-10`}>
+    <main data-ck-role-theme={drive ? "ngo" : undefined} className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-[calc(var(--ck-bottom-chrome)+1.5rem)] lg:pb-10`}>
       <div className="mx-auto max-w-6xl px-4 pt-5">
         {/* ── Context header ─────────────────────────────────────────────── */}
         <header className="mb-5">
           <button
             type="button"
-            onClick={() => router.back()}
+            onClick={() => (drive ? router.push(drive.backHref) : router.back())}
             className="group mb-3 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-[var(--handover-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--handover-ring)]"
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" aria-hidden />
@@ -96,8 +105,10 @@ export function HandoverHubShell({
                 {vm.title}
               </h1>
               <p className="mt-0.5 truncate text-sm text-stone-500 dark:text-stone-400">
-                {vm.role === "DONOR" ? "For " : "From "}
-                {vm.counterpart.name ?? (vm.role === "DONOR" ? "the recipient" : "the donor")}
+                {drive ? drive.subtitle : <>
+                  {vm.role === "DONOR" ? "For " : "From "}
+                  {vm.counterpart.name ?? (vm.role === "DONOR" ? "the recipient" : "the donor")}
+                </>}
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="font-mono text-2xs text-stone-400">{vm.transactionCode}</span>
@@ -129,6 +140,8 @@ export function HandoverHubShell({
               onOpenChat={openChat}
               onChanged={onChanged}
               deliveryActions={actions.deliveryAddress}
+              confirmPanel={drive?.confirmPanel}
+              schedulePanel={drive?.schedulePanel}
             />
 
             {/* Mobile keeps schedule directly under the action; desktop moves it
@@ -158,6 +171,7 @@ export function HandoverHubShell({
               <HandoverScheduleSummary vm={vm} onReschedule={() => setScheduleOpen(true)} />
             </div>
             <HandoverContactPanel vm={vm} onTogglePermission={actions.setCallPermission} />
+            {drive?.aside}
           </aside>
         </div>
       </div>
@@ -218,19 +232,31 @@ function HelpSection({ vm }: { vm: HandoverViewModel }) {
       <dl className="mt-2.5 space-y-2 text-sm text-stone-600 dark:text-stone-400">
         <div>
           <dt className="font-semibold text-stone-700 dark:text-stone-300">The code</dt>
-          <dd>The donor generates a 6-digit code and gives it to the recipient in person. It confirms you both met.</dd>
+          <dd>{vm.flow === "NGO_OFFER"
+            ? "The donor shows a 6-digit code and the NGO enters it with the quantity received. The code stays the same for 30 minutes."
+            : "The donor generates a 6-digit code and gives it to the recipient in person. It confirms you both met."}</dd>
         </div>
+        {vm.flow === "NGO_OFFER" && (
+          <div>
+            <dt className="font-semibold text-stone-700 dark:text-stone-300">The photo</dt>
+            <dd>After the code is confirmed, either side takes one live-camera photo of the handover. That photo completes the handover.</dd>
+          </div>
+        )}
         <div>
           <dt className="font-semibold text-stone-700 dark:text-stone-300">Closing it</dt>
           <dd>
-            {vm.flow === "OFFER"
+            {vm.flow === "NGO_OFFER"
+              ? "Once it's complete, both of you have 7 days to report a problem."
+              : vm.flow === "OFFER"
               ? "Once you both confirm, there's a short window for the recipient to flag a problem. After that it completes and a certificate is issued to the donor."
               : "Once you both confirm, the handover completes immediately and a delivery record is created."}
           </dd>
         </div>
         <div>
           <dt className="font-semibold text-stone-700 dark:text-stone-300">Changing the time</dt>
-          <dd>Only the donor can reschedule, up to twice. After that it goes to our team for review.</dd>
+          <dd>{vm.flow === "NGO_OFFER"
+            ? "The time can be changed up to twice, within the NGO's handover days and hours. Either side can cancel with a reason."
+            : "Only the donor can reschedule, up to twice. After that it goes to our team for review."}</dd>
         </div>
       </dl>
     </section>

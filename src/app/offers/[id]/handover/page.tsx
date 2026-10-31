@@ -14,6 +14,7 @@ import {
   getDonationOffer, getHandover, scheduleHandover, rescheduleHandover,
   generateHandoverOtp, confirmHandoverDonor, confirmHandoverDonee, verifyHandoverOtp,
   requestOfferDeliveryAddress, submitOfferDeliveryAddress, getOfferDeliveryAddressSuggestion,
+  updateOfferCourier,
   setDoneeCallPermission,
   type DonationOffer, type HandoverRecord, type OfferHandoverMethod,
 } from "@/lib/api";
@@ -128,6 +129,8 @@ export default function OfferHandoverHubPage() {
               locationAddress: p.address,
               ...(p.latitude != null && p.longitude != null
                 ? { locationLatitude: p.latitude, locationLongitude: p.longitude } : {}),
+              courierName: p.courierName,
+              trackingNumber: p.trackingNumber,
             }));
           },
           reschedule: async (p) => {
@@ -173,6 +176,7 @@ export default function OfferHandoverHubPage() {
             request: async () => { applyHandover(await requestOfferDeliveryAddress(offerId)); },
             submit: async (input) => { applyHandover(await submitOfferDeliveryAddress(offerId, input)); },
             suggest: () => getOfferDeliveryAddressSuggestion(offerId),
+            updateCourier: async (data) => { applyHandover(await updateOfferCourier(offerId, data)); },
           },
         }}
       />

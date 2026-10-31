@@ -28,13 +28,14 @@ vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>(
 vi.mock("@/features/wizard-kit/videoPreflight", () => ({ videoPreflight: vi.fn().mockResolvedValue({ ok: true }) }));
 vi.mock("@/lib/imageCompression", () => ({ compressDisplayPhoto: vi.fn(async (f: File) => f) }));
 vi.mock("@/app/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
-vi.mock("next-intl", () => ({ useLocale: () => "en", useTranslations: () => (k: string) => k }));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), loading: vi.fn(() => "t"), dismiss: vi.fn() }) }));
 
 import { NgoDriveOfferWizard } from "./NgoDriveOfferWizard";
 
 const photo = (id: number) => ({ id, mediaUrl: `https://cdn.test/ngo-drive-offers/9/${id}.png`, mediaType: "IMAGE", status: "APPROVED", sortOrder: id });
-const emptyDraft = { id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust", media: [] };
+const LOC = { donorCity: "Pune", donorLocality: "Kothrud", donorPincode: "411038", donorLatitude: 18.5, donorLongitude: 73.8, distanceKm: 4, dropOffOnly: false };
+const emptyDraft = { id: 9, driveId: 5, status: "DRAFT", quantity: 1, driveTitle: "Winter blankets", ngoName: "Hope Trust", media: [], ...LOC };
 const withPhotos = { ...emptyDraft, quantity: null, media: [photo(1), photo(2)] };
 
 const heading = () => screen.getAllByRole("heading").map(h => h.textContent).join(" | ");
@@ -79,12 +80,12 @@ afterEach(() => {
   delete (window as { matchMedia?: unknown }).matchMedia;
 });
 
-describe("drive give form: four steps, no pickup, no progress card", { timeout: 20000 }, () => {
-  it("shows four steps and no progress card", async () => {
+describe("drive give form: five steps, no pickup, no progress card", { timeout: 20000 }, () => {
+  it("shows five steps and no progress card", async () => {
     renderWizard();
     await waitFor(() => expect(heading()).toMatch(/Show the item/));
-    expect(screen.getByText("Four short steps. We save as you go.")).toBeInTheDocument();
-    expect(screen.getAllByText("Step 1 of 4").length).toBeGreaterThan(0);
+    expect(screen.getByText("Five short steps. We save as you go.")).toBeInTheDocument();
+    expect(screen.getAllByText("Step 2 of 5").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Pickup & delivery/)).not.toBeInTheDocument();
     expect(screen.queryByText(/still needed/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/on the way/i)).not.toBeInTheDocument();
@@ -221,4 +222,36 @@ describe("drive give form: review", { timeout: 20000 }, () => {
     const video = (await screen.findByTestId("review-video")).querySelector("video")!;
     expect(video).toHaveAttribute("src", "https://s3.test/clean.mp4");
   });
+
+  it("every step filled: Review shows no errors, size is optional and submit sends the autosaved offer", async () => {
+    api.submitNgoDriveOffer.mockResolvedValue({ id: 9, status: "PENDING_ADMIN_REVIEW" });
+    const onSubmitted = vi.fn();
+    const { container } = render(
+      <NgoDriveOfferWizard offerId={9} offer={withPhotos as never} driveId={5} ngoName="Hope Trust" driveUnit="PIECES"
+        initialQuantityReceived={0} initialQuantityPledged={0} requestTitle="Winter blankets" requestedQuantity={50}
+        stillNeededQuantity={50} adminNote={null} onSubmitted={onSubmitted} onExit={vi.fn()} onSaveExit={vi.fn()}
+        driveCategory="Clothing" requireClean acceptedConditions={["Unused", "Like New"]} />,
+    );
+    await toDetails();
+    expect(screen.queryByText(/Required for clothing/)).not.toBeInTheDocument();
+    fireEvent.change(field(container, "quantity"), { target: { value: "3" } });
+    fireEvent.change(field(container, "approximateAge"), { target: { value: "1 year" } });
+    fireEvent.click(field(container, "confirmedClean"));
+    clickLast(/^continue$/i);
+    await waitFor(() => expect(heading()).toMatch(/Condition & fit/));
+    expect(screen.getByText("This drive accepts: Unused, Like New")).toBeInTheDocument();
+    expect(within(field(container, "condition") as unknown as HTMLElement).getAllByRole("option").map(o => o.textContent)).toEqual(["Select…", "Unused", "Like New"]);
+    fireEvent.change(field(container, "condition"), { target: { value: "Like New" } });
+    clickLast(/^continue$/i);
+    await waitFor(() => expect(heading()).toMatch(/Review your offer/));
+    container.querySelectorAll<HTMLInputElement>('input[type="checkbox"]').forEach(c => { if (!c.checked) fireEvent.click(c); });
+    clickLast(/send|submit/i);
+    await waitFor(() => expect(api.submitNgoDriveOffer).toHaveBeenCalledWith(9));
+    expect(screen.queryByText(/Choose the item|Enter the size|how old the item is|washed and clean|matches what the drive/)).not.toBeInTheDocument();
+    const last = api.updateNgoDriveOfferItem.mock.calls.at(-1)!;
+    expect(last[0]).toBe(9);
+    expect(last[1]).toMatchObject({ condition: "Like New", quantity: 3, matchesRequirements: true });
+    await waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+  });
 });
+

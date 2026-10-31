@@ -23,6 +23,9 @@ import CategoryNeedsBoard from "@/components/CategoryNeedsBoard";
 import CategoryExplorer from "@/components/CategoryExplorer";
 import "./CategoryPageClient.css";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useCategoryLabel } from "@/lib/categoryLabel";
 /* ── Props ─────────────────────────────────────────────────────────────── */
 
 type Props = {
@@ -67,6 +70,11 @@ const CATEGORY_GRADIENT: Record<string, string> = {
 /* ── Main Component ────────────────────────────────────────────────────── */
 
 export default function CategoryPageClient({ cat }: Props) {
+  const rt = useTranslations("requestsArea");
+  const ui = useUiText();
+  const categoryLabel = useCategoryLabel();
+  // Shown inside sentences; the slug/ID stays as data.
+  const catName = categoryLabel(cat.name).toLowerCase();
   const visual = CATEGORY_VISUALS[cat.name];
 
   // Interactive Hero hover state
@@ -97,19 +105,19 @@ export default function CategoryPageClient({ cat }: Props) {
 
   const IMPACT_STORIES = [
     {
-      quote: `The ${cat.name.toLowerCase()} we received changed everything for us. We finally had what we needed, and it gave us so much hope.`,
+      quote: rt("story1", { category: catName }),
       author: "Priya Sharma",
       initial: "P",
       image: getImg(0),
     },
     {
-      quote: `I can't believe how quickly the community came together to help. The ${cat.name.toLowerCase()} arrived exactly when we needed it the most.`,
+      quote: rt("story2", { category: catName }),
       author: "Rahul Verma",
       initial: "R",
       image: getImg(1),
     },
     {
-      quote: `This simple donation of ${cat.name.toLowerCase()} made a world of difference. It's a reminder that kindness still exists.`,
+      quote: rt("story3", { category: catName }),
       author: "Anjali Gupta",
       initial: "A",
       image: getImg(2),
@@ -128,7 +136,7 @@ export default function CategoryPageClient({ cat }: Props) {
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 transition-colors hover:text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] rounded dark:text-stone-400"
         >
           <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-          All needs
+          <UiText>All needs</UiText>
         </Link>
       </motion.div>
 
@@ -230,10 +238,10 @@ export default function CategoryPageClient({ cat }: Props) {
       >
         <div className="mb-5">
           <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
-            Donation Guidelines
+            <UiText>Donation Guidelines</UiText>
           </h2>
           <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            Verified criteria to ensure your items are ready for immediate, dignified use.
+            <UiText>Verified criteria to ensure your items are ready for immediate, dignified use.</UiText>
           </p>
         </div>
         
@@ -246,7 +254,7 @@ export default function CategoryPageClient({ cat }: Props) {
                   <ShieldCheck className="w-5 h-5" />
                 </span>
                 <h3 className="text-lg font-bold text-emerald-800 dark:text-emerald-300">
-                  Good to donate
+                  <UiText>Good to donate</UiText>
                 </h3>
               </div>
               <ul className="space-y-3">
@@ -270,7 +278,7 @@ export default function CategoryPageClient({ cat }: Props) {
                   <AlertTriangle className="w-5 h-5" />
                 </span>
                 <h3 className="text-lg font-bold text-red-800 dark:text-red-300">
-                  Please avoid
+                  <UiText>Please avoid</UiText>
                 </h3>
               </div>
               <ul className="space-y-3">
@@ -300,10 +308,10 @@ export default function CategoryPageClient({ cat }: Props) {
       >
         <div className="mb-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100">
-            How donating works
+            <UiText>How donating works</UiText>
           </h2>
           <p className="text-stone-500 dark:text-stone-400 mt-2 text-base sm:text-lg">
-            Giving your {cat.name.toLowerCase()} items is simple, safe, and direct.
+            {rt("givingSimple", { category: catName })}
           </p>
         </div>
         
@@ -311,9 +319,9 @@ export default function CategoryPageClient({ cat }: Props) {
           <div className="absolute top-1/2 left-0 w-full h-px bg-gradient-to-r from-transparent via-stone-200 dark:via-stone-700 to-transparent hidden md:block -translate-y-1/2 z-0" />
           
           {[
-            { step: 1, title: "List your item", desc: "Snap a quick photo and add basic details. It takes less than 2 minutes." },
-            { step: 2, title: "We find a match", desc: "We connect you with verified local needs near you." },
-            { step: 3, title: "Handover securely", desc: "Meet up safely in a public spot or ship directly to them." },
+            { step: 1, title: ui("List your item"), desc: ui("Snap a quick photo and add basic details. It takes less than 2 minutes.") },
+            { step: 2, title: ui("We find a match"), desc: ui("We connect you with verified local needs near you.") },
+            { step: 3, title: ui("Handover securely"), desc: ui("Meet up safely in a public spot or ship directly to them.") },
           ].map((s) => (
             <div key={s.step} className="relative z-10 flex flex-col items-center text-center p-8 bg-white/60 dark:bg-black/20 backdrop-blur-md rounded-3xl border border-stone-200/80 dark:border-white/10 shadow-lg hover:scale-[1.02] transition-transform">
               <div className="w-14 h-14 flex items-center justify-center rounded-2xl bg-[var(--ck-role-accent)] text-white font-bold text-2xl mb-5 shadow-lg shadow-[var(--ck-role-accent)]/30">
@@ -338,7 +346,7 @@ export default function CategoryPageClient({ cat }: Props) {
           <div className="md:col-span-3 p-10 sm:p-14 flex flex-col justify-between relative z-10 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md">
             <div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--ck-role-accent)]/10 text-[var(--ck-role-accent)] text-xs font-bold uppercase tracking-wider mb-8 w-fit border border-[var(--ck-role-accent)]/20">
-                <Sparkles className="w-3.5 h-3.5" /> Impact Stories
+                <Sparkles className="w-3.5 h-3.5" /> <UiText>Impact Stories</UiText>
               </div>
               <AnimatePresence mode="wait">
                 <motion.div
@@ -357,7 +365,7 @@ export default function CategoryPageClient({ cat }: Props) {
                     </div>
                     <div>
                       <p className="font-bold text-stone-900 dark:text-stone-100 text-lg">{IMPACT_STORIES[currentStoryIndex].author}</p>
-                      <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">Received {cat.name.toLowerCase()}</p>
+                      <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">{rt("receivedCategory", { category: catName })}</p>
                     </div>
                   </div>
                 </motion.div>
@@ -379,7 +387,7 @@ export default function CategoryPageClient({ cat }: Props) {
                     className={`w-2 h-2 rounded-full transition-all ${
                       idx === currentStoryIndex ? "bg-[var(--ck-role-accent)] w-6" : "bg-stone-300 dark:bg-stone-700"
                     }`}
-                    aria-label={`Go to story ${idx + 1}`}
+                    aria-label={rt("goToStory", { n: idx + 1 })}
                   />
                 ))}
               </div>
@@ -435,11 +443,11 @@ export default function CategoryPageClient({ cat }: Props) {
           </motion.div>
           
           <h2 className="text-3xl sm:text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-md">
-            Ready to donate {cat.name.toLowerCase()}?
+            {rt("readyToDonate", { category: catName })}
           </h2>
           
           <p className="text-lg sm:text-xl text-white/90 font-medium mb-10 drop-shadow-sm max-w-lg">
-            {cat.preparation.length > 0 ? cat.preparation[0] : "Your contribution can make a huge difference right now."}
+            {cat.preparation.length > 0 ? cat.preparation[0] : ui("Your contribution can make a huge difference right now.")}
           </p>
           
           <div className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto">
@@ -447,14 +455,14 @@ export default function CategoryPageClient({ cat }: Props) {
               href={`/give?category=${encodeURIComponent(cat.name)}`}
               className="group relative inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full bg-white text-stone-900 font-bold text-lg hover:scale-[1.03] active:scale-[0.97] transition-all shadow-xl"
             >
-              List an item
+              <UiText>List an item</UiText>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <Link 
               href={`/requests?category=${encodeURIComponent(cat.name)}`}
               className="inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full bg-white/10 text-white font-bold text-lg hover:bg-white/20 border border-white/30 hover:scale-[1.03] active:scale-[0.97] transition-all shadow-xl backdrop-blur-md"
             >
-              Browse needs
+              <UiText>Browse needs</UiText>
             </Link>
           </div>
         </div>
@@ -473,8 +481,8 @@ export default function CategoryPageClient({ cat }: Props) {
       >
         <CategoryExplorer
           exclude={cat.name}
-          heading="Other categories"
-          blurb="Each one has its own guidance on what genuinely helps."
+          heading={ui("Other categories")}
+          blurb={ui("Each one has its own guidance on what genuinely helps.")}
         />
       </motion.div>
     </main>

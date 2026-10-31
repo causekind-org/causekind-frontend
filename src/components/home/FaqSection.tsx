@@ -12,7 +12,7 @@ import {
   MessageCircle,
   Mail,
 } from "lucide-react";
-import { OPERATING_CITIES, CONTACT_INFO, LANDING_ROUTES } from "@/lib/landingConstants";
+import { CONTACT_INFO, LANDING_ROUTES } from "@/lib/landingConstants";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -63,11 +63,6 @@ const FAQ_ITEMS: FaqItem[] = [
     id: "faq-cancelled",
     question: "What if the handover doesn't happen?",
     answer: "You can cancel, and the need goes back live for other donors.",
-  },
-  {
-    id: "faq-cities",
-    question: "Which cities are you in?",
-    answer: `We're currently live in ${OPERATING_CITIES.join(", ")}, with more cities coming soon.`,
   },
 ];
 

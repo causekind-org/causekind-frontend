@@ -1,19 +1,37 @@
 "use client";
 
-import { useState } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherSpecifyField";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2, Plus, Trash2 } from "lucide-react";
 import {
   DESIGNATIONS,
+  isOtherChoice,
+  EMPTY_REPRESENTATIVE,
   IS_NGO_DEMO_MODE,
-  type NGOFormState,
-  getNgoStillNeededItems,
+  MAX_REPRESENTATIVES,
+  authorizationDocumentLabel,
   fieldText,
+  getNgoStillNeededItems,
+  isPersonalPan,
+  isValidEmail,
+  isValidMobile,
+  mobileError,
+  isValidPan,
+  normalizePan,
+  type NGOFormState,
+  type RepresentativeCard,
 } from "@/features/ngo-registration/ngoRegistrationModel";
-import { uploadNgoDocument } from "@/lib/api";
+import { sendNgoRepresentativeEmailCode, verifyNgoRepresentativeEmailCode } from "@/lib/api";
 import { controlClass } from "@/features/wizard-kit/WizardField";
 import { cn } from "@/lib/utils";
 import { DocUploadCard } from "@/features/ngo-registration/components/DocUploadCard";
+import { IndianPhoneInput } from "@/features/ngo-registration/components/IndianPhoneInput";
+import { NgoOtpInput } from "@/features/ngo-registration/components/NgoOtpInput";
 import { CorrectionNote, type NgoCorrections } from "@/features/ngo-registration/components/CorrectionNote";
+import { WizardSelect } from "@/features/ngo-registration/components/WizardSelect";
+import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
+import { getNgoFilePreviewUrl } from "@/lib/api";
+import { useMemo } from "react";
 
 interface AuthorizedRepresentativeProps {
   data: NGOFormState;
@@ -24,147 +42,158 @@ interface AuthorizedRepresentativeProps {
   corrections?: NgoCorrections;
 }
 
-/** Step 3 — Authorized Representative */
-export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, corrections }: AuthorizedRepresentativeProps) {
-  const [errors, setErrors] = useState<Record<string, string>>({});
+/** Older applications flagged Representative 1 under these keys. */
+const OLDER_KEYS: Record<string, string> = {
+  fullName: "representativeName",
+  designation: "designation",
+  mobileNumber: "mobileNumber",
+  email: "officialEmail",
+};
 
-  function validate(): boolean {
-    const next: Record<string, string> = {};
-    if (!fieldText(data.representativeName)) next.representativeName = "Full name is required.";
-    if (!data.designation) next.designation = "Please select a designation.";
-    if (!fieldText(data.mobileNumber)) next.mobileNumber = "Mobile number is required.";
-    if (!fieldText(data.officialEmail)) next.officialEmail = "Official email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.officialEmail)) next.officialEmail = "Enter a valid email address.";
-    setErrors(next);
-    return Object.keys(next).length === 0;
+/** Step 3 — Authorized Representatives */
+export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, corrections }: AuthorizedRepresentativeProps) {
+  const reps = data.representatives?.length ? data.representatives : [EMPTY_REPRESENTATIVE];
+  // Stable keys so each card keeps its own email-code state when another card is removed.
+  const nextKey = useRef(reps.length);
+  const [keys, setKeys] = useState<number[]>(() => reps.map((_, i) => i));
+  useEffect(() => {
+    if (keys.length !== reps.length) {
+      setKeys(reps.map((_, i) => nextKey.current + i));
+      nextKey.current += reps.length;
+    }
+  }, [reps.length, keys.length]);
+
+  function updateCard(index: number, patch: Partial<RepresentativeCard>) {
+    const next = reps.map((card, i) => (i === index ? { ...card, ...patch } : card));
+    onChange({ representatives: next });
+  }
+
+  function addCard() {
+    if (reps.length >= MAX_REPRESENTATIVES) return;
+    setKeys((k) => [...k, nextKey.current++]);
+    onChange({ representatives: [...reps, { ...EMPTY_REPRESENTATIVE }] });
+  }
+
+  function removeCard(index: number) {
+    if (index === 0) return;
+    setKeys((k) => k.filter((_, i) => i !== index));
+    onChange({ representatives: reps.filter((_, i) => i !== index) });
   }
 
   const missing = getNgoStillNeededItems("authorized-rep", data);
 
-  function handleContinue() {
-    if (validate()) onContinue();
-  }
+  // Full-size preview dialog for all uploaded files in this step
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const previewFiles = useMemo(() => {
+    const out: { id: string; file: PreviewFile }[] = [];
+    if (data.authorizationLetter && !data.authorizationLetter.demo) {
+      out.push({
+        id: "auth",
+        file: {
+          name: `${authorizationDocumentLabel(data.legalStructure)}: ${data.authorizationLetter.name}`,
+          mimeType: data.authorizationLetter.mimeType,
+          resolve:
+            data.authorizationLetter.documentId != null
+              ? async () => await getNgoFilePreviewUrl("document", data.authorizationLetter!.documentId!)
+              : undefined,
+          url: data.authorizationLetter.documentId == null ? data.authorizationLetter.s3Url : undefined,
+        },
+      });
+    }
+    reps.forEach((r, i) => {
+      if (r.idProof && !r.idProof.demo) {
+        out.push({
+          id: `rep-${i}`,
+          file: {
+            name: `${r.fullName || `Representative ${i + 1}`} ID proof: ${r.idProof.name}`,
+            mimeType: r.idProof.mimeType,
+            resolve:
+              r.idProof.documentId != null
+                ? async () => await getNgoFilePreviewUrl("document", r.idProof!.documentId!)
+                : undefined,
+            url: r.idProof.documentId == null ? r.idProof.s3Url : undefined,
+          },
+        });
+      }
+    });
+    return out;
+  }, [data.authorizationLetter, data.legalStructure, reps]);
 
-  function err(key: string) {
-    return (
-      <>
-        {errors[key] ? (
-          <p className="mt-1 text-3xs font-semibold text-red-600 dark:text-red-400">{errors[key]}</p>
-        ) : null}
-        <CorrectionNote note={corrections?.[key]} />
-      </>
-    );
-  }
+  const openPreview = (id: string) => {
+    const idx = previewFiles.findIndex((x) => x.id === id);
+    if (idx >= 0) setPreviewIndex(idx);
+  };
 
   return (
     <div className="space-y-6">
+      <FilePreviewDialog
+        files={previewFiles.map((x) => x.file)}
+        index={previewIndex}
+        onIndexChange={setPreviewIndex}
+        onClose={() => setPreviewIndex(null)}
+      />
       {/* Header */}
       <div className="space-y-1">
         <span className="text-2xs font-black uppercase tracking-widest text-ngo-700 dark:text-ngo-300">
           Step 3 of 6
         </span>
         <h2 className="text-xl sm:text-2xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
-          Authorized Representative
+          Authorized Representatives
         </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400">
-          The person responsible for managing this CauseKind account.
+          The people your organization has authorized to manage this CauseKind account.
         </p>
       </div>
 
-      <div className="space-y-4">
-        {/* Full Name */}
-        <div className="space-y-1">
-          <label htmlFor="rep-name" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Full Name <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
-          </label>
-          <input
-            id="rep-name"
-            type="text"
-            autoComplete="name"
-            value={data.representativeName}
-            aria-invalid={!!errors.representativeName}
-            onChange={(e) => { onChange({ representativeName: e.target.value }); if (errors.representativeName) setErrors((p) => ({ ...p, representativeName: "" })); }}
-            className={cn(controlClass, errors.representativeName && "border-red-400")}
+      {/* Section A: authorization document */}
+      <section className="space-y-1.5" aria-label="Authorization document">
+        <h3 className="text-2xs font-black uppercase tracking-widest text-stone-400">A. Authorization document</h3>
+        <DocUploadCard
+          key={`auth-${data.legalStructure}`}
+          docId="authorization-letter"
+          label={authorizationDocumentLabel(data.legalStructure)}
+          hint="It should name the people below and what they may do for the organization."
+          category="must-have"
+          uploaded={data.authorizationLetter}
+          onUpload={(file) => onChange({ authorizationLetter: file })}
+          onRemove={() => onChange({ authorizationLetter: null })}
+          onPreview={() => openPreview("auth")}
+        />
+        <CorrectionNote note={corrections?.authorizationLetter} field="authorizationLetter" />
+      </section>
+
+      {/* Section B: one card per person */}
+      <section className="space-y-3" aria-label="Representatives">
+        <h3 className="text-2xs font-black uppercase tracking-widest text-stone-400">B. Representatives</h3>
+        {reps.map((card, index) => (
+          <RepresentativeCardEditor
+            key={keys[index] ?? index}
+            index={index}
+            card={card}
+            corrections={corrections}
+            onChange={(patch) => updateCard(index, patch)}
+            onRemove={index > 0 ? () => removeCard(index) : undefined}
+            onPreview={() => openPreview(`rep-${index}`)}
           />
-          {err("representativeName")}
-        </div>
+        ))}
+      </section>
 
-        {/* Designation */}
-        <div className="space-y-1">
-          <label htmlFor="rep-designation" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Designation <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
-          </label>
-          <select
-            id="rep-designation"
-            value={data.designation}
-            aria-invalid={!!errors.designation}
-            onChange={(e) => { onChange({ designation: e.target.value }); if (errors.designation) setErrors((p) => ({ ...p, designation: "" })); }}
-            className={cn(controlClass, "cursor-pointer", errors.designation && "border-red-400")}
-          >
-            <option value="">Select designation</option>
-            {DESIGNATIONS.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-          {err("designation")}
-        </div>
-
-        {/* Mobile Number */}
-        <div className="space-y-1">
-          <label htmlFor="rep-mobile" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Mobile Number <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
-          </label>
-          <input
-            id="rep-mobile"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
-            value={data.mobileNumber}
-            aria-invalid={!!errors.mobileNumber}
-            onChange={(e) => { onChange({ mobileNumber: e.target.value }); if (errors.mobileNumber) setErrors((p) => ({ ...p, mobileNumber: "" })); }}
-            className={cn(controlClass, errors.mobileNumber && "border-red-400")}
-          />
-          {err("mobileNumber")}
-        </div>
-
-        {/* Official Email */}
-        <div className="space-y-1">
-          <label htmlFor="rep-email" className="block text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Official Email Address <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>
-          </label>
-          <input
-            id="rep-email"
-            type="email"
-            autoComplete="email"
-            value={data.officialEmail}
-            aria-invalid={!!errors.officialEmail}
-            onChange={(e) => { onChange({ officialEmail: e.target.value }); if (errors.officialEmail) setErrors((p) => ({ ...p, officialEmail: "" })); }}
-            className={cn(controlClass, errors.officialEmail && "border-red-400")}
-          />
-          {err("officialEmail")}
-        </div>
-
-        {/* Authorization Letter */}
-        <div className="space-y-1.5">
-          <div>
-            <p className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-              Authorization Letter
-            </p>
-            <p className="text-3xs text-stone-400 dark:text-stone-500 mt-0.5">
-              A letter on organization letterhead authorizing this person to manage the account
-            </p>
-          </div>
-
-          <DocUploadCard
-            docId="authorization-letter"
-            label="Authorization letter"
-            category="must-have"
-            uploaded={data.authorizationLetter}
-            onUpload={(file) => onChange({ authorizationLetter: file })}
-            onRemove={() => onChange({ authorizationLetter: null })}
-          />
-          <CorrectionNote note={corrections?.authorizationLetter} />
-        </div>
+      {/* Section C: add */}
+      <div>
+        <button
+          type="button"
+          onClick={addCard}
+          disabled={reps.length >= MAX_REPRESENTATIVES}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-ngo-700/40 px-4 py-2 text-xs font-bold text-ngo-700 hover:bg-ngo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-ngo-300 dark:hover:bg-ngo-900/30"
+        >
+          <Plus className="h-3.5 w-3.5" aria-hidden />
+          Add representative
+        </button>
+        <p className="mt-1 text-3xs text-stone-500 dark:text-stone-400">
+          {reps.length >= MAX_REPRESENTATIVES
+            ? `You can add up to ${MAX_REPRESENTATIVES} representatives.`
+            : `Optional. Up to ${MAX_REPRESENTATIVES} representatives; Representative 1 is required.`}
+        </p>
       </div>
 
       {/* Navigation */}
@@ -174,7 +203,7 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
             <ArrowLeft className="h-4 w-4" aria-hidden />
             Back
           </button>
-          <button type="button" onClick={handleContinue} disabled={missing.length > 0} className="flex items-center gap-1.5 rounded-xl bg-ngo-700 disabled:bg-stone-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
+          <button type="button" onClick={onContinue} disabled={missing.length > 0} className="flex items-center gap-1.5 rounded-xl bg-ngo-700 disabled:bg-stone-300 dark:disabled:bg-zinc-700 disabled:cursor-not-allowed hover:bg-ngo-600 active:bg-ngo-800 px-5 py-2.5 text-sm font-bold text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ngo-700/40">
             Continue
             <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
@@ -184,6 +213,223 @@ export function AuthorizedRepresentative({ data, onChange, onBack, onContinue, c
             Still needed: {missing.join(", ")}
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+interface RepresentativeCardEditorProps {
+  index: number;
+  card: RepresentativeCard;
+  corrections?: NgoCorrections;
+  onChange: (patch: Partial<RepresentativeCard>) => void;
+  onRemove?: () => void;
+  onPreview?: () => void;
+}
+
+function RepresentativeCardEditor({ index, card, corrections, onChange, onRemove, onPreview }: RepresentativeCardEditorProps) {
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState<"send" | "verify" | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [panTouched, setPanTouched] = useState(false);
+  const codeRef = useRef<HTMLInputElement>(null);
+  const prefix = `rep-${index}`;
+  const pan = normalizePan(card.panNumber);
+
+  function note(fieldName: string) {
+    const key = `representatives.${index}.${fieldName}`;
+    const older = index === 0 && OLDER_KEYS[fieldName] ? corrections?.[OLDER_KEYS[fieldName]] : undefined;
+    return <CorrectionNote note={corrections?.[key] ?? older} field={corrections?.[key] ? key : OLDER_KEYS[fieldName]} />;
+  }
+
+  async function sendCode() {
+    setCodeError(null);
+    // TEMPORARY Demo Mode (development builds only): any 6 digits verify, nothing is sent.
+    if (IS_NGO_DEMO_MODE) {
+      setCodeSent(true);
+      return;
+    }
+    setBusy("send");
+    try {
+      const res = await sendNgoRepresentativeEmailCode(fieldText(card.email), fieldText(card.fullName));
+      if (res.verified) {
+        onChange({ emailVerified: true });
+        setCodeSent(false);
+      } else {
+        setCodeSent(true);
+      }
+    } catch (err) {
+      setCodeError(err instanceof Error ? err.message : "We couldn't send the code. Please try again.");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function verifyCode(value: string = code) {
+    setBusy("verify");
+    setCodeError(null);
+    try {
+      if (!IS_NGO_DEMO_MODE) await verifyNgoRepresentativeEmailCode(fieldText(card.email), value.trim());
+      onChange({ emailVerified: true });
+      setCodeSent(false);
+      setCode("");
+    } catch (err) {
+      // Wrong code: show why, clear the boxes and put the cursor back in them.
+      setCodeError(err instanceof Error ? err.message : "That code didn't work. Please try again.");
+      setCode("");
+      setTimeout(() => codeRef.current?.focus(), 0);
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  const labelClass = "block text-xs font-semibold text-stone-700 dark:text-stone-300";
+  const required = <span className="text-ngo-700 dark:text-ngo-300" aria-hidden>*</span>;
+
+  return (
+    <div role="group" aria-label={`Representative ${index + 1}`}
+      className="space-y-3 rounded-xl border border-[#EADBCE] bg-[#FAF7F2] p-4 dark:border-emerald-950/80 dark:bg-[#141E18]">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-bold text-stone-800 dark:text-stone-200">
+          Representative {index + 1}
+          <span className="ml-2 text-3xs font-black uppercase tracking-wide text-stone-400">
+            {index === 0 ? "Required" : "Optional"}
+          </span>
+        </p>
+        {onRemove && (
+          <button type="button" onClick={onRemove} aria-label={`Remove representative ${index + 1}`}
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1 text-2xs font-bold text-stone-400 hover:text-red-600 transition-colors">
+            <Trash2 className="h-3.5 w-3.5" aria-hidden /> Remove
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="space-y-1">
+          <label htmlFor={`${prefix}-name`} className={labelClass}>Full name {required}</label>
+          <input id={`${prefix}-name`} name={`${prefix}-name`} type="text" autoComplete="off" value={card.fullName}
+            onChange={(e) => onChange({ fullName: e.target.value })} className={cn(controlClass, "min-h-[44px]")} />
+          {note("fullName")}
+        </div>
+        <div className="space-y-1">
+          <label htmlFor={`${prefix}-designation`} className={labelClass}>Designation / role {required}</label>
+          <WizardSelect
+            id={`${prefix}-designation`}
+            value={isOtherChoice(card.designation, DESIGNATIONS) ? "Other" : card.designation}
+            onChange={(val) => onChange({ designation: val })}
+            options={DESIGNATIONS}
+            aria-label="Designation / role"
+          />
+          {/* "Other": the typed role is what is saved and shown everywhere. */}
+          {isOtherChoice(card.designation, DESIGNATIONS) && (
+            <OtherSpecifyField id={`${prefix}-designation-other`} value={card.designation}
+              onChange={(text) => onChange({ designation: text || "Other" })} />
+          )}
+          {note("designation")}
+        </div>
+        <div className="space-y-1">
+          <label htmlFor={`${prefix}-mobile`} className={labelClass}>Mobile number {required}</label>
+          <IndianPhoneInput
+            id={`${prefix}-mobile`}
+            name={`${prefix}-mobile`}
+            value={card.mobileNumber}
+            hasError={!!fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber)}
+            aria-invalid={!!fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber)}
+            onChange={(formattedVal) => onChange({ mobileNumber: formattedVal })}
+          />
+          {fieldText(card.mobileNumber) && !isValidMobile(card.mobileNumber) && (
+            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">{mobileError(card.mobileNumber)}</p>
+          )}
+          {note("mobileNumber")}
+        </div>
+        <div className="space-y-1">
+          <label htmlFor={`${prefix}-pan`} className={labelClass}>PAN number {required}</label>
+          <input
+            id={`${prefix}-pan`}
+            name={`${prefix}-pan`}
+            type="text"
+            autoComplete="off"
+            maxLength={10}
+            value={card.panNumber}
+            onBlur={() => setPanTouched(true)}
+            aria-invalid={!!((panTouched && !pan) || (pan.length > 0 && !isValidPan(pan)))}
+            onChange={(e) => {
+              onChange({ panNumber: e.target.value.toUpperCase() });
+              if (panTouched) setPanTouched(false);
+            }}
+            className={cn(controlClass, "min-h-[44px] font-mono uppercase", ((panTouched && !pan) || (pan.length > 0 && !isValidPan(pan))) && "border-red-400")}
+          />
+          {panTouched && !pan && (
+            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">PAN number is required.</p>
+          )}
+          {pan.length > 0 && !isValidPan(pan) && (
+            <p className="text-3xs font-semibold text-red-600 dark:text-red-400">A PAN is 5 letters, 4 digits and 1 letter.</p>
+          )}
+          {isValidPan(pan) && !isPersonalPan(pan) && (
+            <p className="flex items-start gap-1 text-3xs font-semibold text-amber-700 dark:text-amber-300">
+              <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+              This is not a personal PAN (its 4th letter is not P). Please use this person&apos;s own PAN.
+            </p>
+          )}
+          {note("panNumber")}
+        </div>
+      </div>
+
+      {/* Email with code */}
+      <div className="space-y-1">
+        <label htmlFor={`${prefix}-email`} className={labelClass}>Email {required}</label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <input id={`${prefix}-email`} name={`${prefix}-email`} type="email" autoComplete="off" value={card.email}
+            onChange={(e) => {
+              onChange({ email: e.target.value, emailVerified: false });
+              setCodeSent(false);
+              setCode("");
+              setCodeError(null);
+            }}
+            className={cn(controlClass, "min-w-0 flex-1 min-h-[44px]")} />
+          {card.emailVerified ? (
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400 py-1 sm:py-0">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-600 dark:bg-emerald-400" aria-hidden />
+              Verified
+            </span>
+          ) : (
+            <button type="button" onClick={sendCode} disabled={!isValidEmail(card.email) || busy !== null}
+              className="w-full sm:w-auto inline-flex min-h-[44px] items-center justify-center rounded-lg border border-ngo-700/50 px-4 py-2 text-xs font-bold text-ngo-700 hover:bg-ngo-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-ngo-300">
+              {busy === "send" ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-label="Sending" /> : codeSent ? "Resend code" : "Send code"}
+            </button>
+          )}
+        </div>
+        {!card.emailVerified && codeSent && (
+          <div className="space-y-1.5 pt-1">
+            <p className="text-3xs font-semibold text-stone-600 dark:text-stone-300">
+              Enter the 6-digit code we sent to {fieldText(card.email)}
+            </p>
+            <NgoOtpInput ref={codeRef} id={`${prefix}-code`} aria-label={`6-digit code for representative ${index + 1}`}
+              value={code} disabled={busy === "verify"}
+              onChange={(v) => { setCode(v); if (codeError) setCodeError(null); }}
+              onComplete={(v) => void verifyCode(v)} />
+            {busy === "verify" && <p className="flex items-center gap-1 text-3xs text-stone-500"><Loader2 className="h-3 w-3 animate-spin" /> Checking…</p>}
+          </div>
+        )}
+        {codeError && <p role="alert" className="text-3xs font-semibold text-red-600 dark:text-red-400">{codeError}</p>}
+        {note("email")}
+      </div>
+
+      {/* ID proof */}
+      <div className="space-y-1">
+        <DocUploadCard
+          docId="rep-id-proof"
+          inputId={`${prefix}-id-proof`}
+          label={`ID proof of Representative ${index + 1}`}
+          hint="PAN card preferred; another government ID is accepted"
+          category="must-have"
+          uploaded={card.idProof}
+          onUpload={(file) => onChange({ idProof: file })}
+          onRemove={() => onChange({ idProof: null })}
+          onPreview={onPreview}
+        />
+        {note("idProof")}
       </div>
     </div>
   );

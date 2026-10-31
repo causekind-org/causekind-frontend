@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Check, CircleDot, Route, TriangleAlert } from "lucide-react";
 import {
@@ -7,6 +8,8 @@ import {
   DrawerHeader, DrawerTitle, DrawerTrigger,
 } from "@/components/ui/drawer";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 /**
  * The donor's seven-milestone donation journey.
  *
@@ -162,6 +165,8 @@ const isAtRiskStatus = (status: string) =>
   status === "HANDOVER_AT_RISK" || status === "ISSUE_RAISED";
 
 export function OfferJourney({ status, role = "donor" }: { status: string; role?: "donor" | "donee" }) {
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
   const reduce = useReducedMotion();
   const stages = role === "donee" ? buildDoneeJourney(status) : buildDonorJourney(status);
   const idx = stages.findIndex(s => s.statuses.includes(status));
@@ -179,9 +184,9 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
       {/* Step count + normalized milestone name */}
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-3xs font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
-          Step {idx + 1} of {stages.length}
+          {dt("stepOf", { n: idx + 1, total: stages.length })}
         </span>
-        <span className={`min-w-0 break-words text-end text-2xs font-bold ${accent}`}>{current.label}</span>
+        <span className={`min-w-0 break-words text-end text-2xs font-bold ${accent}`}>{jt(current.label)}</span>
       </div>
 
       <JourneyRail stages={stages} idx={idx} atRisk={atRisk} reduce={!!reduce} />
@@ -190,36 +195,60 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
           generic explanation and this one back to back. */}
       <div className="rounded-xl border border-stone-100 bg-stone-50 p-2.5 dark:border-zinc-700 dark:bg-zinc-800">
         <p className={`text-3xs font-black uppercase tracking-wider ${accent}`}>
-          Now · {current.label}
+          {dt("nowLabel", { label: jt(current.label) })}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-          {current.nowText}
+          {jt(current.nowText)}
         </p>
       </div>
 
       {next && (
         <p className="break-words text-2xs leading-relaxed text-stone-400 dark:text-stone-500">
-          <span className="font-semibold">Next:</span> {next.label} — {next.sublabel}
+          <span className="font-semibold"><UiText>Next:</UiText></span> {jt(next.label)} — {jt(next.sublabel)}
         </p>
       )}
 
+      <OfferJourneyDrawer status={status} role={role}>
+        <button
+          type="button"
+          className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-600 transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-transparent dark:text-stone-300 dark:hover:bg-zinc-800"
+        >
+          <Route className="h-3.5 w-3.5" aria-hidden />
+          <UiText>View full journey</UiText>
+          <span aria-hidden className="text-stone-400">›</span>
+        </button>
+      </OfferJourneyDrawer>
+    </div>
+  );
+}
+
+/**
+ * The full-journey bottom sheet on its own, opened by whatever trigger the
+ * caller passes (one focusable element). The donee offer card uses it behind a
+ * plain "See every step" link instead of the compact rail.
+ */
+export function OfferJourneyDrawer({
+  status, role = "donor", children,
+}: { status: string; role?: "donor" | "donee"; children: ReactNode }) {
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
+  const reduce = useReducedMotion();
+  const stages = role === "donee" ? buildDoneeJourney(status) : buildDonorJourney(status);
+  const idx = stages.findIndex(s => s.statuses.includes(status));
+  if (idx < 0) return null;
+  const atRisk = isAtRiskStatus(status);
+  const current = stages[idx];
+  const accent = atRisk ? "text-amber-600 dark:text-amber-400" : "text-[var(--ck-role-accent)]";
+
+  return (
       <Drawer>
-        <DrawerTrigger asChild>
-          <button
-            type="button"
-            className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-stone-200 bg-white text-xs font-bold text-stone-600 transition-colors hover:bg-stone-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-transparent dark:text-stone-300 dark:hover:bg-zinc-800"
-          >
-            <Route className="h-3.5 w-3.5" aria-hidden />
-            View full journey
-            <span aria-hidden className="text-stone-400">›</span>
-          </button>
-        </DrawerTrigger>
+        <DrawerTrigger asChild>{children}</DrawerTrigger>
 
         <DrawerContent className="max-h-[85dvh] overflow-hidden">
           <DrawerHeader>
-            <DrawerTitle>Donation journey</DrawerTitle>
+            <DrawerTitle><UiText>Donation journey</UiText></DrawerTitle>
             <DrawerDescription>
-              Step {idx + 1} of {stages.length} · {current.label}
+              {dt("stepOf", { n: idx + 1, total: stages.length })} · {jt(current.label)}
             </DrawerDescription>
           </DrawerHeader>
 
@@ -233,7 +262,7 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
                 const last = i === stages.length - 1;
 
                 return (
-                  <li key={stage.label} className="flex gap-3">
+                  <li key={jt(stage.label)} className="flex gap-3">
                     {/* Marker column + vertical connector */}
                     <div className="flex flex-col items-center">
                       <Marker
@@ -261,10 +290,10 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
                             : "text-stone-400 dark:text-stone-500"
                         }`}
                       >
-                        {stage.label}
+                        {jt(stage.label)}
                       </p>
                       <p className="mt-0.5 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-                        {stage.sublabel}
+                        {jt(stage.sublabel)}
                       </p>
                       {isCurrent && (
                         <motion.p
@@ -273,7 +302,7 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
                           transition={{ duration: 0.28, ease: "easeOut" }}
                           className="mt-2 rounded-lg border border-stone-100 bg-stone-50 p-2.5 text-xs leading-relaxed text-stone-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-300"
                         >
-                          {stage.nowText}
+                          {jt(stage.nowText)}
                         </motion.p>
                       )}
                     </div>
@@ -289,13 +318,12 @@ export function OfferJourney({ status, role = "donor" }: { status: string; role?
                 type="button"
                 className="min-h-[44px] w-full rounded-xl bg-stone-100 text-xs font-bold text-stone-600 transition-colors hover:bg-stone-200 dark:bg-zinc-800 dark:text-stone-300 dark:hover:bg-zinc-700"
               >
-                Close
+                <UiText>Close</UiText>
               </button>
             </DrawerClose>
           </div>
         </DrawerContent>
       </Drawer>
-    </div>
   );
 }
 
@@ -305,20 +333,23 @@ function JourneyRail({
 }: {
   stages: JourneyStage[]; idx: number; atRisk: boolean; reduce: boolean;
 }) {
+  const ui = useUiText();
+  const jt = useJourneyText();
+  const dt = useTranslations("dashFlow");
   return (
-    <nav aria-label="Donation progress">
+    <nav aria-label={ui("Donation progress")}>
       <ol className="flex items-center">
         {stages.map((stage, i) => {
           const done = i < idx;
           const isCurrent = i === idx;
 
           return (
-            <li key={stage.label} className={`flex items-center ${i < stages.length - 1 ? "flex-1" : ""}`}>
+            <li key={jt(stage.label)} className={`flex items-center ${i < stages.length - 1 ? "flex-1" : ""}`}>
               <Marker
                 kind={done ? "done" : isCurrent ? "current" : "upcoming"}
                 atRisk={isCurrent && atRisk}
                 small
-                label={stage.label}
+                label={jt(stage.label)}
                 isCurrent={isCurrent}
               />
               {i < stages.length - 1 && (
@@ -338,7 +369,7 @@ function JourneyRail({
       </ol>
       {/* Once this sentence exists the rail itself is decorative to a screen reader. */}
       <p className="sr-only" aria-live="polite">
-        Step {idx + 1} of {stages.length}: {stages[idx]?.label}.
+        {dt("stepOfSr", { n: idx + 1, total: stages.length, label: jt(stages[idx]?.label) })}
       </p>
     </nav>
   );
@@ -377,4 +408,62 @@ function Marker({
     );
   }
   return <span {...a11y} className={`${base} border-stone-300 bg-transparent dark:border-zinc-700`} />;
+}
+
+/** Display text for the English stage copy above (the builders stay English: tests and callers compare it). */
+export function useJourneyText(): (text: string | null | undefined) => string {
+  const ui = useUiText();
+  const map = new Map<string, string>([
+    ["Submitted", ui("Submitted")],
+    ["Your offer was submitted for review", ui("Your offer was submitted for review")],
+    ["Complete your item details and photos to submit the offer.", ui("Complete your item details and photos to submit the offer.")],
+    ["AI screening found missing details. Please update your offer before it can proceed.", ui("AI screening found missing details. Please update your offer before it can proceed.")],
+    ["Your offer has been submitted. AI is checking your item details and photos. No action needed.", ui("Your offer has been submitted. AI is checking your item details and photos. No action needed.")],
+    ["Sent to Recipient", ui("Sent to Recipient")],
+    ["Recipient is reviewing your item", ui("Recipient is reviewing your item")],
+    ["Your offer is on standby as a backup in case the primary offer falls through.", ui("Your offer is on standby as a backup in case the primary offer falls through.")],
+    ["Your offer has passed AI screening and has been sent to the recipient. Waiting for them to accept or decline.", ui("Your offer has passed AI screening and has been sent to the recipient. Waiting for them to accept or decline.")],
+    ["Recipient Accepted", ui("Recipient Accepted")],
+    ["Recipient accepted — waiting for you", ui("Recipient accepted — waiting for you")],
+    ["The recipient accepted your offer! Please confirm that your item is still available and in the same condition before we proceed.", ui("The recipient accepted your offer! Please confirm that your item is still available and in the same condition before we proceed.")],
+    ["You Reconfirmed", ui("You Reconfirmed")],
+    ["You confirmed item availability", ui("You confirmed item availability")],
+    ["Your updated item details are being re-checked by AI.", ui("Your updated item details are being re-checked by AI.")],
+    ["You confirmed availability. CauseKind admin is doing a final review before approving the match.", ui("You confirmed availability. CauseKind admin is doing a final review before approving the match.")],
+    ["Admin Approved", ui("Admin Approved")],
+    ["CauseKind approved the match", ui("CauseKind approved the match")],
+    ["Your donation has been approved! Please go to the Handover Hub to schedule when and how you will hand over the item.", ui("Your donation has been approved! Please go to the Handover Hub to schedule when and how you will hand over the item.")],
+    ["Handover", ui("Handover")],
+    ["Item handed over to recipient", ui("Item handed over to recipient")],
+    ["The handover has been rescheduled multiple times. Please contact us or the recipient to resolve the scheduling.", ui("The handover has been rescheduled multiple times. Please contact us or the recipient to resolve the scheduling.")],
+    ["A handover has been scheduled. Generate the OTP in the Handover Hub and hand it over to the recipient at the agreed time.", ui("A handover has been scheduled. Generate the OTP in the Handover Hub and hand it over to the recipient at the agreed time.")],
+    ["Complete", ui("Complete")],
+    ["Donation successfully delivered", ui("Donation successfully delivered")],
+    ["An issue was reported for this donation. Our team is reviewing it.", ui("An issue was reported for this donation. Our team is reviewing it.")],
+    ["The recipient confirmed they got the item. A short issue window is open. Once it closes, your certificate will be issued.", ui("The recipient confirmed they got the item. A short issue window is open. Once it closes, your certificate will be issued.")],
+    ["Your donation is complete! Download your certificate as a record of your contribution.", ui("Your donation is complete! Download your certificate as a record of your contribution.")],
+    ["Offer Received", ui("Offer Received")],
+    ["A donor offered an item", ui("A donor offered an item")],
+    ["A donor has offered to fulfil your request. Review their item details above and accept or decline.", ui("A donor has offered to fulfil your request. Review their item details above and accept or decline.")],
+    ["The donor is adding missing details to their offer. No action needed from you yet.", ui("The donor is adding missing details to their offer. No action needed from you yet.")],
+    ["AI is checking the donor's item details and photos. You'll be asked to review it next.", ui("AI is checking the donor's item details and photos. You'll be asked to review it next.")],
+    ["You Accepted", ui("You Accepted")],
+    ["You accepted the offer", ui("You accepted the offer")],
+    ["You accepted this offer. Waiting for the donor to confirm their item is still available.", ui("You accepted this offer. Waiting for the donor to confirm their item is still available.")],
+    ["Donor Confirmed", ui("Donor Confirmed")],
+    ["Donor reconfirmed the item", ui("Donor reconfirmed the item")],
+    ["The donor confirmed availability. CauseKind admin is doing a final review before approving.", ui("The donor confirmed availability. CauseKind admin is doing a final review before approving.")],
+    ["CauseKind verified the match", ui("CauseKind verified the match")],
+    ["The donation has been approved! The donor will arrange pickup or delivery with you.", ui("The donation has been approved! The donor will arrange pickup or delivery with you.")],
+    ["Item collected or delivered", ui("Item collected or delivered")],
+    ["The handover has been rescheduled multiple times. Admin may step in to help coordinate.", ui("The handover has been rescheduled multiple times. Admin may step in to help coordinate.")],
+    ["A handover has been scheduled. Be ready to receive the item and confirm it via the Handover Hub.", ui("A handover has been scheduled. Be ready to receive the item and confirm it via the Handover Hub.")],
+    ["Item Received", ui("Item Received")],
+    ["You confirmed receipt", ui("You confirmed receipt")],
+    ["An issue was reported. The CauseKind team is reviewing it.", ui("An issue was reported. The CauseKind team is reviewing it.")],
+    ["You received the item. If anything is wrong, report it now within the issue window.", ui("You received the item. If anything is wrong, report it now within the issue window.")],
+    ["Donation successfully fulfilled", ui("Donation successfully fulfilled")],
+    ["The donation is complete. Thank you for using CauseKind!", ui("The donation is complete. Thank you for using CauseKind!")],
+  ]);
+  return (text) => (text ? map.get(text) ?? text : "");
 }

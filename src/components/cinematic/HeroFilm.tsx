@@ -22,7 +22,7 @@
 import { useRef } from "react";
 import { CinematicOrchestrator } from "@/components/cinematic/CinematicOrchestrator";
 
-export function HeroFilm({ hero }: { hero: React.ReactNode }) {
+export function HeroFilm({ hero, destinationRef }: { hero: React.ReactNode; destinationRef?: React.RefObject<HTMLElement | null> }) {
   const heroRef = useRef<HTMLDivElement>(null);
   return (
     <div className="ck-hero-film">
@@ -30,7 +30,7 @@ export function HeroFilm({ hero }: { hero: React.ReactNode }) {
         {hero}
       </div>
       <div className="ck-hero-film-stage">
-        <CinematicOrchestrator leadInRef={heroRef} />
+        <CinematicOrchestrator leadInRef={heroRef} destinationRef={destinationRef} />
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { DRIVE_CHAT_ENDPOINTS } from "@/features/ngo-drives/components/DriveOfferChatPanel";
 import { useEffect, useState } from "react";
 import { Lock, MessageCircle } from "lucide-react";
 import {
@@ -21,6 +22,10 @@ const EMPTY_TEXT = "No messages yet. Say hello and agree the details of the hand
 
 /** The thread itself: one of the two existing chat windows, framed by its host. */
 function Thread({ vm, currentUserEmail }: { vm: HandoverViewModel; currentUserEmail: string }) {
+  if (vm.flow === "NGO_OFFER") {
+    return <MatchChatWindow matchId={vm.id} currentUserEmail={currentUserEmail} locked={vm.closed} embedded emptyText={EMPTY_TEXT}
+      className="h-full" endpoints={DRIVE_CHAT_ENDPOINTS} />;
+  }
   return vm.flow === "OFFER"
     ? <ChatWindow offerId={vm.id} currentUserEmail={currentUserEmail} locked={vm.closed} embedded emptyText={EMPTY_TEXT} className="h-full" />
     : <MatchChatWindow matchId={vm.id} currentUserEmail={currentUserEmail} locked={vm.closed} embedded emptyText={EMPTY_TEXT} className="h-full" />;

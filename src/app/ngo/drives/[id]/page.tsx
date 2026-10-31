@@ -1,57 +1,49 @@
 "use client";
+import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 
-import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
-  getNgoDriveDetail, getNgoDriveOffersForNgo, reviewNgoDriveOffer, uploadDistributionProof, closeNgoDrive,
+  getNgoDriveDetail, getNgoDriveOffersForNgo, closeNgoDrive,
   type NgoDrive, type NgoDriveOfferResponse,
 } from "@/lib/api";
 import { isNgoRole } from "@/lib/isNgoRole";
 import { PageSkeleton } from "@/components/skeletons";
 import { toast } from "@/lib/toast";
-import { ArrowLeft, Loader2, ShieldCheck, Check, X } from "lucide-react";
+import { AlertCircle, ArrowLeft, Camera, CalendarDays, ClipboardList, ExternalLink, FileText, Handshake, Inbox, MapPin, Phone, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
-import { DriveQuantityBar } from "@/features/ngo-drives/components/DriveQuantityBar";
 import { errorMessage, isNotFound } from "@/features/ngo-drives/driveGiveState";
 import { driveConditionLabel, driveConditionRule } from "@/features/ngo-drives/driveConditions";
+import { activityHref, driveSummaryParts, isHandover, isOfferToReview, isProofDue, DRIVE_STATUS_LABEL } from "@/features/ngo-drives/components/manage/driveActivity";
+import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
+import { formatDaysLeft } from "@/features/ngo-drives/ngoDriveFilters";
+import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { formatISTDate } from "@/lib/formatIST";
 
-type Tab = "review" | "handovers" | "proof" | "close";
-const CLOSED_OFFER = new Set(["NGO_DECLINED", "CANCELLED", "WITHDRAWN", "ADMIN_REJECTED", "ENDED", "DRAFT"]);
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
+import { useDriveCopy } from "@/features/ngo-drives/driveCopy";
 const humanize = (v?: string | null) => (v ? v.replaceAll("_", " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) : "");
-const OFFER_STATUS: Record<string, string> = {
-  NGO_ACCEPTED: "Accepted · waiting for the donor's plan",
-  PENDING_ADMIN_APPROVAL: "Accepted · waiting for the donor's plan",
-  ADMIN_APPROVED: "Accepted · waiting for the donor's plan",
-  HANDOVER_IN_PROGRESS: "Handover planned",
-  HANDOVER_AT_RISK: "Handover needs attention",
-  ISSUE_WINDOW_OPEN: "Received",
-  ISSUE_RAISED: "Issue being reviewed",
-  COMPLETED: "Completed",
-  SUBMITTED: "Being checked",
-  AI_ELIGIBILITY_SCREENING: "Being checked",
-  AI_COMPATIBILITY_SCREENING: "Being checked",
-  NEEDS_INFORMATION: "Waiting for the donor",
-};
 
 /** Status banner for every drive state the NGO can be in. */
 function StatusBanner({ drive }: { drive: NgoDrive }) {
+  const ui = useUiText();
   const banners: Record<string, { tone: string; title: string; body: React.ReactNode }> = {
-    PENDING_REVIEW: { tone: "amber", title: "Under review", body: "Our team is checking this drive. We'll notify you when it goes live." },
-    CHANGES_REQUESTED: { tone: "amber", title: "Changes requested", body: <><strong>Reason:</strong> {drive.adminReason || "No reason was given."}</> },
-    REJECTED: { tone: "red", title: "This drive was rejected", body: <><strong>Reason:</strong> {drive.adminReason || "No reason was given."}</> },
-    LIVE: { tone: "green", title: "Live", body: "Donors near you can see this drive and offer items. Review their offers below." },
-    FULLY_PLEDGED: { tone: "green", title: "Fully pledged", body: "Every item has been offered. Complete the handovers to collect them." },
-    COLLECTION_COMPLETE: { tone: "amber", title: "Collection complete", body: "Distribute what you received, then upload your distribution proof." },
-    PROOF_SUBMITTED: { tone: "blue", title: "Proof submitted", body: "Our team is reviewing your distribution proof." },
-    FULFILLED: { tone: "green", title: "Fulfilled", body: "Your proof was approved and donors can see it. You can start a new drive." },
-    CLOSED: { tone: "stone", title: "Closed", body: drive.quantityReceived > 0 ? "This drive closed. Upload your distribution proof for what you received." : "This drive closed with nothing received. You can start a new drive." },
-    CANCELLED: { tone: "stone", title: "Cancelled", body: "This drive was cancelled." },
+    PENDING_REVIEW: { tone: "amber", title: ui("Under review"), body: ui("Our team is checking this drive. We'll notify you when it goes live.") },
+    CHANGES_REQUESTED: { tone: "amber", title: ui("Changes requested"), body: <><strong><UiText>Reason:</UiText></strong> {drive.adminReason || ui("No reason was given.")}</> },
+    REJECTED: { tone: "red", title: ui("This drive was rejected"), body: <><strong><UiText>Reason:</UiText></strong> {drive.adminReason || ui("No reason was given.")}</> },
+    LIVE: { tone: "green", title: ui("Live"), body: ui("Donors near you can see this drive and offer items. Review their offers in your dashboard's Activity.") },
+    FULLY_PLEDGED: { tone: "green", title: ui("Fully pledged"), body: ui("Every item has been offered. Complete the handovers to collect them.") },
+    COLLECTION_COMPLETE: { tone: "amber", title: ui("Collection complete"), body: ui("Distribute what you received, then upload your distribution proof.") },
+    PROOF_SUBMITTED: { tone: "blue", title: ui("Proof submitted"), body: ui("Our team is reviewing your distribution proof.") },
+    FULFILLED: { tone: "green", title: ui("Fulfilled"), body: ui("Your proof was approved and donors can see it. You can start a new drive.") },
+    CLOSED: { tone: "stone", title: ui("Closed"), body: drive.quantityReceived > 0 ? ui("This drive closed. Upload your distribution proof for what you received.") : ui("This drive closed with nothing received. You can start a new drive.") },
+    CANCELLED: { tone: "stone", title: ui("Cancelled"), body: ui("This drive was cancelled.") },
   };
   const b = banners[drive.status];
   if (!b) return null;
@@ -68,17 +60,60 @@ function StatusBanner({ drive }: { drive: NgoDrive }) {
       <p className="mt-1 text-sm">{b.body}</p>
       {drive.status === "CHANGES_REQUESTED" && (
         <Link href={`/ngo/drives/new?edit=${drive.id}`} className="mt-4 inline-flex min-h-[44px] items-center rounded-full bg-ngo-700 px-5 text-sm font-bold text-white hover:bg-ngo-600">
-          Edit &amp; resubmit
+          <UiText>Edit &amp; resubmit</UiText>
         </Link>
       )}
     </div>
   );
 }
 
+/** Statuses where the NGO still has to confirm the handover. */
+const TO_CONFIRM = new Set(["NGO_ACCEPTED", "PENDING_ADMIN_APPROVAL", "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK"]);
+/** Offers that count as a donor on the drive (same set the public donor count uses). */
+const COUNTED = new Set([...TO_CONFIRM, "ISSUE_WINDOW_OPEN", "ISSUE_RAISED", "COMPLETED"]);
+
+const STATUS_TONE: Record<string, string> = {
+  LIVE: "bg-ngo-100 text-ngo-900 dark:bg-ngo-900/50 dark:text-ngo-100",
+  FULLY_PLEDGED: "bg-ngo-100 text-ngo-900 dark:bg-ngo-900/50 dark:text-ngo-100",
+  FULFILLED: "bg-ngo-100 text-ngo-900 dark:bg-ngo-900/50 dark:text-ngo-100",
+  PENDING_REVIEW: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100",
+  CHANGES_REQUESTED: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100",
+  COLLECTION_COMPLETE: "bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100",
+  PROOF_SUBMITTED: "bg-sky-100 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100",
+  REJECTED: "bg-red-100 text-red-900 dark:bg-red-900/40 dark:text-red-100",
+};
+
+const SECTIONS = [["overview", "Overview"], ["offers", "Offers"], ["handovers", "Handovers"], ["proof", "Proof & report"]] as const;
+
+function Panel({ id, title, icon: Icon, children, action }: {
+  id?: string; title: string; icon?: React.ComponentType<{ className?: string }>; children: React.ReactNode; action?: React.ReactNode;
+}) {
+  return (
+    <section id={id} aria-labelledby={id ? `${id}-title` : undefined} className="scroll-mt-24 rounded-3xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <h2 id={id ? `${id}-title` : undefined} className="flex items-center gap-2 font-serif text-xl font-semibold text-stone-900 dark:text-stone-100">
+          {Icon && <Icon className="h-5 w-5 text-ngo-700 dark:text-ngo-300" aria-hidden="true" />}{title}
+        </h2>
+        {action}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+const pill = "inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition-colors";
+const pillPrimary = `${pill} bg-ngo-700 text-white hover:bg-ngo-800`;
+const pillGhost = `${pill} border border-stone-300 bg-white text-stone-800 hover:bg-stone-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100 dark:hover:bg-zinc-800`;
+const linkCls = "inline-flex min-h-[44px] items-center text-sm font-bold text-ngo-800 hover:underline dark:text-ngo-300";
+
 export default function NgoDriveManagePage() {
+  const ui = useUiText();
+  const df = useTranslations("driveFlow");
+  const dc = useDriveCopy();
   const params = useParams();
   const id = Number(params.id);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
 
   const [drive, setDrive] = useState<NgoDrive | null>(null);
@@ -86,10 +121,6 @@ export default function NgoDriveManagePage() {
   const [offers, setOffers] = useState<NgoDriveOfferResponse[]>([]);
   const [offersError, setOffersError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<number | null>(null);
-  const [tab, setTab] = useState<Tab>("review");
-  const [declining, setDeclining] = useState<NgoDriveOfferResponse | null>(null);
-  const [declineReason, setDeclineReason] = useState("");
   const [closeOpen, setCloseOpen] = useState(false);
   const [closeReason, setCloseReason] = useState("");
   const [saving, setSaving] = useState(false);
@@ -102,12 +133,12 @@ export default function NgoDriveManagePage() {
     try {
       setDrive(await getNgoDriveDetail(id));
     } catch (e) {
-      setLoadError({ notFound: isNotFound(e), message: errorMessage(e, "Please check your connection and try again.") });
+      setLoadError({ notFound: isNotFound(e), message: errorMessage(e, ui("Please check your connection and try again.")) });
       setLoading(false);
       return;
     }
     try { setOffers(await getNgoDriveOffersForNgo(id)); }
-    catch (e) { setOffersError(errorMessage(e, "We couldn't load the offers.")); }
+    catch (e) { setOffersError(errorMessage(e, ui("We couldn't load the offers."))); }
     finally { setLoading(false); }
   }, [id]);
 
@@ -118,275 +149,284 @@ export default function NgoDriveManagePage() {
   }, [authLoading, user, router, load]);
   useEntityUpdates(["NGO_DRIVE", "NGO_DRIVE_OFFER"], () => { void load(); });
 
-  useEffect(() => {
-    if (!drive) return;
-    if (drive.status === "COLLECTION_COMPLETE" || drive.status === "PROOF_SUBMITTED" || drive.status === "FULFILLED") setTab("proof");
-  }, [drive?.status]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function accept(offer: NgoDriveOfferResponse) {
-    setBusy(offer.id);
-    try { await reviewNgoDriveOffer(id, offer.id, "ACCEPT"); toast.success("Offer accepted. The donor can now plan the handover."); await load(); }
-    catch (e) { toast.error(errorMessage(e, "We couldn't accept this offer.")); }
-    finally { setBusy(null); }
-  }
-
-  async function decline() {
-    if (!declining) return;
-    setBusy(declining.id);
-    try {
-      await reviewNgoDriveOffer(id, declining.id, "DECLINE", declineReason.trim());
-      toast.success("Offer declined. The donor will see your reason.");
-      setDeclining(null); setDeclineReason("");
-      await load();
-    } catch (e) { toast.error(errorMessage(e, "We couldn't decline this offer.")); }
-    finally { setBusy(null); }
-  }
+  // "Back to dashboard" returns to the tab the NGO came from: ?from=<tab>, else browser history.
+  const from = searchParams?.get("from") ?? null;
+  const backHref = from && /^[a-z-]+$/i.test(from) ? `/dashboard/ngo?tab=${from}` : "/dashboard/ngo";
+  const goBack = (e: React.MouseEvent) => {
+    if (from) return;
+    if (typeof document !== "undefined" && document.referrer.includes("/dashboard/ngo") && window.history.length > 1) {
+      e.preventDefault();
+      router.back();
+    }
+  };
 
   if (authLoading || loading) return <PageSkeleton><div className="h-96" /></PageSkeleton>;
-  if (loadError?.notFound) return <DriveNotFound backHref="/dashboard/ngo" backLabel="Back to dashboard" />;
-  if (loadError || !drive) return <DriveLoadError message={loadError?.message ?? "Something went wrong."} onRetry={() => { setLoading(true); void load(); }} />;
+  if (loadError?.notFound) return <DriveNotFound backHref="/dashboard/ngo" backLabel={ui("Back to dashboard")} />;
+  if (loadError || !drive) return <DriveLoadError message={loadError?.message ?? ui("Something went wrong.")} onRetry={() => { setLoading(true); void load(); }} />;
 
   const pending = offers.filter((o) => o.status === "PENDING_NGO_REVIEW");
-  const handovers = offers.filter((o) => o.status !== "PENDING_NGO_REVIEW" && !CLOSED_OFFER.has(o.status));
-
+  const toReview = offers.filter(isOfferToReview);
+  const handovers = offers.filter((o) => isHandover(o));
+  const toConfirm = offers.filter((o) => TO_CONFIRM.has(o.status));
+  const proofDue = isProofDue(drive);
   const canClose = drive.status === "LIVE" || drive.status === "FULLY_PLEDGED";
-  const canUploadProof = drive.status === "COLLECTION_COMPLETE" || (drive.status === "CLOSED" && drive.quantityReceived > 0);
+  const summary = driveSummaryParts(drive, offers);
   // Stored as "MON,TUE,..." on the NGO's own drive record.
   const days = String(drive.availableDays ?? "").split(",").filter(Boolean).join(", ");
+  const hours = `${days}${drive.availableFrom ? `, ${drive.availableFrom}–${drive.availableTo}` : ""}`;
+  const unit = humanize(drive.unit).toLowerCase();
+  const needed = Math.max(0, drive.quantityNeeded ?? 0);
+  const received = Math.max(0, drive.quantityReceived ?? 0);
+  const pledged = Math.max(0, drive.quantityPledged ?? 0);
+  const still = Math.max(0, needed - received - pledged);
+  const donors = drive.donorCount ?? new Set(offers.filter((o) => COUNTED.has(o.status)).map((o) => o.donorDisplayName)).size;
+  const pct = (n: number) => `${needed ? Math.min(100, (n / needed) * 100) : 0}%`;
+  const daysLeft = formatDaysLeft(drive.neededBy);
+  const statusLabel = DRIVE_STATUS_LABEL[drive.status] ?? humanize(drive.status);
+  const photo = resolveMediaUrl(drive.coverPhotoUrl ?? drive.referencePhotoUrl);
+  const isPublic = ["LIVE", "FULLY_PLEDGED", "COLLECTION_COMPLETE", "PROOF_SUBMITTED", "FULFILLED"].includes(drive.status);
 
-  const fields: [string, React.ReactNode][] = [
-    ["Category", drive.category],
-    ["Item", drive.itemName],
-    ["Quantity", `${drive.quantityNeeded} ${humanize(drive.unit)}`],
-    ["Condition accepted", [driveConditionLabel(drive.itemCondition), driveConditionRule(drive.itemCondition)].filter(Boolean).join(" · ")],
-    ["Urgency", humanize(drive.urgency)],
-    ["People who will benefit", `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
-    ["Needed by", drive.neededBy ? new Date(drive.neededBy).toLocaleDateString() : ""],
-    ["Handover days & hours", `${days}${drive.availableFrom ? `, ${drive.availableFrom}–${drive.availableTo}` : ""}`],
-    ["Contact", `${drive.contactName ?? ""}${drive.contactPhone ? ` · ${drive.contactPhone}` : ""}`],
+  const details: [string, React.ReactNode][] = [
+    [ui("Category"), drive.category],
+    [ui("Item"), drive.itemName],
+    [ui("Quantity"), `${drive.quantityNeeded} ${humanize(drive.unit)}`],
+    [ui("Condition accepted"), [driveConditionLabel(drive.itemCondition), driveConditionRule(drive.itemCondition)].filter(Boolean).join(" · ")],
+    ...categoryDetailRows(drive.category, drive.categoryDetails).map((r) => [r.label, r.value] as [string, React.ReactNode]),
+    [ui("Urgency"), humanize(drive.urgency)],
+    [ui("People who will benefit"), `${drive.beneficiaryCount} ${drive.beneficiaryGroup ?? ""}`],
+    [ui("Location"), [drive.locationArea, drive.locationCity, drive.locationState, drive.locationPincode].filter(Boolean).join(", ")],
+    ["Drop-off address", driveDropOffAddress(drive)],
+    [ui("Pickup radius"), drive.pickupRadiusKm ? `NGO picks up within ${drive.pickupRadiusKm} km; donors farther away drop off` : ui("Donors drop off at the drive address")],
+    [ui("Needed by"), drive.neededBy ? formatISTDate(drive.neededBy) : ""],
+    [ui("Handover days & hours"), hours],
+    ["Handover contact", `${drive.contactName ?? ""}${drive.contactPhone ? ` · ${drive.contactPhone}` : ""}`],
   ];
-  const tabs: [Tab, string][] = [
-    ["review", `Offers to review (${pending.length})`],
-    ["handovers", `Handovers (${handovers.length})`],
-    ["proof", "Distribution proof"],
-    ["close", "Close drive"],
-  ];
+
+  type Attention = { key: string; icon: React.ComponentType<{ className?: string }>; label: string; href: string };
+  const attention: Attention[] = [];
+  if (toReview.length) attention.push({ key: "offers", icon: Inbox, label: `${toReview.length} ${toReview.length === 1 ? "offer" : "offers"} to review`, href: activityHref("offers", drive.id) });
+  if (toConfirm.length) attention.push({ key: "handovers", icon: Handshake, label: `${toConfirm.length} ${toConfirm.length === 1 ? "handover" : "handovers"} to confirm`, href: activityHref("handovers", drive.id) });
+  if (proofDue) attention.push({ key: "proof", icon: Camera, label: "Distribution photos due", href: activityHref("proof", drive.id) });
+  const primary: Attention | null = attention[0] ?? (isPublic ? { key: "preview", label: "View as donor", href: `/drives/${drive.id}`, icon: ExternalLink } : null);
 
   return (
-    <main className="min-h-screen bg-stone-50 pb-20 dark:bg-zinc-950">
-      <div className="bg-ngo-900 px-4 py-6 text-ngo-50 sm:px-6 sm:py-8">
-        <div className="mx-auto max-w-5xl">
-          <Link href="/dashboard/ngo" className="mb-5 inline-flex items-center gap-2 text-sm text-ngo-200 hover:text-white">
+    <main data-ck-role-theme="ngo" className="min-h-screen bg-[var(--surface-cream,#faf8f5)] pb-28 dark:bg-zinc-950 sm:pb-16">
+      {/* Header: title, status, category, needed-by, actions */}
+      <div className="border-b border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mx-auto max-w-6xl px-4 py-5 sm:px-6 sm:py-8">
+          <Link href={backHref} onClick={goBack} data-testid="back-to-dashboard"
+            className="mb-4 inline-flex min-h-[44px] items-center gap-2 text-sm font-semibold text-ngo-800 hover:underline dark:text-ngo-300">
             <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to dashboard
           </Link>
-          <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-ngo-700 bg-ngo-800/50 px-3 py-1">
-            <ShieldCheck className="h-4 w-4 text-ngo-300" aria-hidden="true" />
-            <span className="text-xs font-bold uppercase tracking-wider text-ngo-200">Manage drive</span>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            {photo && (
+              // eslint-disable-next-line @next/next/no-img-element -- signed storage link
+              <img src={photo} alt="" className="h-20 w-20 shrink-0 rounded-2xl object-cover sm:h-24 sm:w-24" />
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span data-testid="drive-status-badge" className={`rounded-full px-3 py-1 text-xs font-bold ${STATUS_TONE[drive.status] ?? "bg-stone-100 text-stone-800 dark:bg-zinc-800 dark:text-stone-200"}`}>{statusLabel}</span>
+                <span className="rounded-full border border-stone-200 px-3 py-1 text-xs font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-300">{drive.category}</span>
+              </div>
+              <h1 className="mt-2 break-words font-serif text-2xl font-semibold text-stone-900 dark:text-stone-50 sm:text-4xl">{drive.title}</h1>
+              {drive.neededBy && (
+                <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-stone-600 dark:text-stone-400">
+                  <CalendarDays className="h-4 w-4" aria-hidden="true" /> Needed by {formatISTDate(drive.neededBy)}
+                  {daysLeft && <span className={daysLeft.isAmber ? "font-bold text-amber-700 dark:text-amber-400" : "font-semibold"}>· {daysLeft.label}</span>}
+                </p>
+              )}
+              {summary.length > 0 && (
+                <p data-testid="drive-activity-summary" className="mt-2 flex flex-wrap gap-x-2 text-sm text-stone-700 dark:text-stone-300">
+                  {summary.map((part, i) => (
+                    <span key={part.filter}>
+                      {i > 0 && <span aria-hidden="true" className="mr-2">-</span>}
+                      <Link href={part.href} className="font-semibold text-ngo-800 underline underline-offset-2 hover:text-ngo-900 dark:text-ngo-300">{part.label}</Link>
+                    </span>
+                  ))}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2 sm:justify-end">
+              {drive.status === "CHANGES_REQUESTED" && (
+                <Link href={`/ngo/drives/new?edit=${drive.id}`} className={pillPrimary}>Edit &amp; resubmit</Link>
+              )}
+              {isPublic && (
+                <Link href={`/drives/${drive.id}`} target="_blank" data-testid="donor-preview-link" className={pillGhost}>
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" /> View as donor
+                </Link>
+              )}
+              {canClose && (
+                <Button variant="outline" data-testid="close-drive" onClick={() => setCloseOpen(true)}
+                  className="min-h-[44px] rounded-full border-red-300 text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/30">Close drive</Button>
+              )}
+            </div>
           </div>
-          <h1 className="text-2xl font-black text-white sm:text-4xl">{drive.title}</h1>
         </div>
       </div>
 
-      <div className="mx-auto mt-6 max-w-5xl space-y-6 px-4 sm:px-6">
+      <div className="mx-auto mt-6 max-w-6xl space-y-6 px-4 sm:px-6">
+        {/* KPI strip */}
+        <dl data-testid="drive-kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {([["Needed", needed], ["Pledged", pledged], ["Received", received], ["Still needed", still], ["Donors", donors]] as const).map(([label, value]) => (
+            <div key={label} className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+              <dt className="text-xs font-semibold text-stone-500 dark:text-stone-400">{label}</dt>
+              <dd className="mt-1 font-serif text-2xl font-semibold text-stone-900 dark:text-stone-100">{value}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {/* Multi-segment progress + legend */}
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <div role="img" aria-label={`${received} received, ${pledged} pledged, ${still} still needed of ${needed} ${unit}`}
+            className="flex h-3 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-zinc-800">
+            <div className="h-full bg-ngo-700" style={{ width: pct(received) }} />
+            <div className="h-full bg-ngo-300 dark:bg-ngo-600" style={{ width: pct(pledged) }} />
+          </div>
+          <ul className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-xs text-stone-600 dark:text-stone-400">
+            <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-ngo-700" aria-hidden="true" />Received {received}</li>
+            <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-ngo-300 dark:bg-ngo-600" aria-hidden="true" />Pledged {pledged}</li>
+            <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full bg-stone-200 dark:bg-zinc-700" aria-hidden="true" />Still needed {still}</li>
+          </ul>
+        </div>
+
         <StatusBanner drive={drive} />
 
+        {attention.length > 0 && (
+          <section data-testid="needs-attention" aria-labelledby="attention-title" className="rounded-3xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/20">
+            <h2 id="attention-title" className="flex items-center gap-2 font-serif text-lg font-semibold text-amber-950 dark:text-amber-100">
+              <AlertCircle className="h-5 w-5" aria-hidden="true" /> Needs your attention
+            </h2>
+            <ul className="mt-3 grid gap-2 sm:grid-cols-3">
+              {attention.map((a) => (
+                <li key={a.key}>
+                  <Link href={a.href} className="flex min-h-[44px] items-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-stone-900 shadow-sm hover:bg-stone-50 dark:bg-zinc-900 dark:text-stone-100 dark:hover:bg-zinc-800">
+                    <a.icon className="h-4 w-4 text-amber-700 dark:text-amber-400" aria-hidden="true" />{a.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {offersError && (
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
+            {offersError} <button type="button" className="min-h-[44px] font-bold underline" onClick={() => void load()}>Retry</button>
+          </div>
+        )}
+
+        {/* Section links (every section stays on the page) */}
+        <nav aria-label="Drive sections" className="sticky top-0 z-20 -mx-4 overflow-x-auto bg-[var(--surface-cream,#faf8f5)]/95 px-4 py-2 backdrop-blur dark:bg-zinc-950/95 sm:mx-0">
+          <ul className="flex gap-2">
+            {SECTIONS.map(([key, label]) => (
+              <li key={key}>
+                <a href={`#${key}`} className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 text-sm font-semibold text-stone-800 hover:border-ngo-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200">{label}</a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         <div className="grid gap-6 lg:grid-cols-3">
-          <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:col-span-2" aria-labelledby="drive-details">
-            <h2 id="drive-details" className="mb-4 text-lg font-bold text-stone-900 dark:text-stone-100">Drive details</h2>
-            <div className="flex flex-col gap-5 sm:flex-row">
-              {drive.referencePhotoUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={drive.referencePhotoUrl} alt="Reference photo" className="h-32 w-full shrink-0 rounded-xl object-cover sm:w-40" />
-              )}
-              <dl className="grid flex-1 gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
-                {fields.map(([label, value]) => (
-                  <div key={label}>
+          <div className="min-w-0 space-y-6 lg:col-span-2">
+            <Panel id="overview" title="Drive details" icon={ClipboardList}>
+              <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2">
+                {details.map(([label, value]) => (
+                  <div key={label} className="min-w-0">
                     <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</dt>
                     <dd className="mt-0.5 break-words text-stone-800 dark:text-stone-200">{value || "—"}</dd>
                   </div>
                 ))}
               </dl>
-            </div>
-            {drive.details && <p className="mt-4 text-sm text-stone-700 dark:text-stone-300"><strong>Details:</strong> {drive.details}</p>}
-            <p className="mt-3 whitespace-pre-wrap text-sm text-stone-700 dark:text-stone-300">{drive.description}</p>
-          </section>
+              {drive.details && <p className="mt-4 break-words text-sm text-stone-700 dark:text-stone-300"><strong><UiText>Details:</UiText></strong> {drive.details}</p>}
+              {drive.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm text-stone-700 dark:text-stone-300">{drive.description}</p>}
+            </Panel>
 
-          <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900" aria-labelledby="drive-progress">
-            <h2 id="drive-progress" className="text-lg font-bold text-stone-900 dark:text-stone-100">Progress</h2>
-            <div className="mt-4">
-              <DriveQuantityBar needed={drive.quantityNeeded} received={drive.quantityReceived} pledged={drive.quantityPledged} unit={humanize(drive.unit)} />
-            </div>
-          </section>
-        </div>
+            <Panel id="offers" title="Offers" icon={Inbox} action={<Link href={activityHref("offers", drive.id)} className={linkCls}>Review offers</Link>}>
+              {offers.length === 0 ? (
+                <p className="text-sm text-stone-600 dark:text-stone-400">No offers yet. Donors see your drive once it&apos;s live.</p>
+              ) : (
+                <p className="text-sm text-stone-700 dark:text-stone-300">
+                  {offers.length} {offers.length === 1 ? "offer" : "offers"} in total · {toReview.length} waiting for your review.
+                </p>
+              )}
+            </Panel>
 
-        <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div role="tablist" aria-label="Drive management" className="mb-5 flex gap-5 overflow-x-auto border-b border-stone-200 dark:border-zinc-800">
-            {tabs.map(([key, label]) => (
-              <button key={key} role="tab" aria-selected={tab === key} onClick={() => setTab(key)}
-                className={`shrink-0 pb-2 text-sm font-bold ${tab === key ? "border-b-2 border-ngo-600 text-ngo-700 dark:text-ngo-300" : "text-stone-500 hover:text-stone-800 dark:hover:text-stone-200"}`}>
-                {label}
-              </button>
-            ))}
+            <Panel id="handovers" title="Handovers" icon={Handshake} action={<Link href={activityHref("handovers", drive.id)} className={linkCls}>All handovers</Link>}>
+              {handovers.length === 0 ? (
+                <p className="text-sm text-stone-600 dark:text-stone-400">No handovers yet. Accepted offers appear here.</p>
+              ) : (
+                <ul className="divide-y divide-stone-100 dark:divide-zinc-800">
+                  {handovers.map((o) => (
+                    <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 py-2">
+                      <span className="min-w-0 break-words text-sm text-stone-800 dark:text-stone-200">
+                        <strong>{o.donorDisplayName}</strong> · {o.quantity ?? 0} {unit} · {humanize(o.status)}
+                      </span>
+                      <Link href={`/ngo-drive-offers/${o.id}/handover`} className={linkCls}>Open handover</Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+
+            <Panel id="proof" title="Proof & report" icon={FileText}>
+              <p className="text-sm text-stone-700 dark:text-stone-300">
+                {proofDue ? "Distribute what you received, then upload photos and details of the distribution."
+                  : drive.status === "FULFILLED" ? "Your distribution proof is approved and visible to donors."
+                    : "After collection, you'll upload distribution photos here."}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {proofDue && <Link href={activityHref("proof", drive.id)} className={pillPrimary}><Camera className="h-4 w-4" aria-hidden="true" /> Upload proof</Link>}
+                <Link href={`/ngo/drives/${drive.id}/report`} data-testid="drive-report-link" className={pillGhost}><FileText className="h-4 w-4" aria-hidden="true" /> Drive report</Link>
+              </div>
+            </Panel>
           </div>
 
-          {offersError && (tab === "review" || tab === "handovers") && (
-            <div role="alert" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-              {offersError} <button type="button" className="font-bold underline" onClick={() => void load()}>Retry</button>
-            </div>
-          )}
-
-          {tab === "review" && (
-            pending.length === 0 ? <p className="text-sm text-stone-500 dark:text-stone-400">No offers waiting for your decision.</p> : (
-              <ul className="space-y-4">
-                {pending.map((offer) => (
-                  <li key={offer.id} className="flex flex-col justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/50 dark:bg-amber-950/20 sm:flex-row">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-stone-900 dark:text-stone-100">{offer.donorDisplayName || "Donor"}</h3>
-                      <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
-                        {offer.quantity} {humanize(drive.unit)} · {offer.condition || "Condition not given"} · {humanize(offer.handoverMethod) || "Handover to agree"}
-                      </p>
-                      {offer.notesForNgo && <p className="mt-2 rounded border border-amber-100 bg-white/60 p-2 text-xs text-stone-600 dark:border-amber-900/30 dark:bg-black/20 dark:text-stone-300">&ldquo;{offer.notesForNgo}&rdquo;</p>}
-                      {offer.media && offer.media.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {offer.media.filter((m) => m.mediaType !== "VIDEO").map((m) => (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img key={m.id ?? m.mediaUrl} src={m.mediaUrl} alt="Offered item" className="h-16 w-16 rounded-lg object-cover" />
-                          ))}
-                          {/* The donor's optional item video, once screened (short-lived URL). */}
-                          {offer.media.filter((m) => m.mediaType === "VIDEO").map((m) => m.playbackUrl ? (
-                            <video key={m.id} controls preload="metadata" src={m.playbackUrl} aria-label="Donor's item video"
-                              className="h-32 w-56 rounded-lg bg-black object-contain" />
-                          ) : (
-                            <span key={m.id} className="self-center text-xs text-stone-500">Video being checked</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 flex-row gap-2 sm:flex-col">
-                      <button disabled={busy === offer.id} onClick={() => void accept(offer)}
-                        className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg bg-ngo-700 px-4 text-sm font-bold text-white hover:bg-ngo-800 disabled:opacity-50 sm:flex-none">
-                        {busy === offer.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Accept
-                      </button>
-                      <button disabled={busy === offer.id} onClick={() => { setDeclining(offer); setDeclineReason(""); }}
-                        className="flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-lg bg-red-100 px-4 text-sm font-bold text-red-700 hover:bg-red-200 disabled:opacity-50 dark:bg-red-900/30 dark:text-red-300 sm:flex-none">
-                        <X className="h-4 w-4" /> Decline
-                      </button>
-                    </div>
-                  </li>
-                ))}
+          <aside className="min-w-0 space-y-6">
+            <Panel title="Handover at a glance">
+              <ul className="space-y-3 text-sm text-stone-700 dark:text-stone-300">
+                <li className="flex gap-2"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-ngo-700 dark:text-ngo-300" aria-hidden="true" />
+                  <span className="min-w-0 break-words">{[drive.locationArea, drive.locationCity].filter(Boolean).join(", ") || "—"}{drive.pickupRadiusKm ? ` · pickup within ${drive.pickupRadiusKm} km` : ""}</span></li>
+                <li className="flex gap-2"><CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-ngo-700 dark:text-ngo-300" aria-hidden="true" /><span className="min-w-0 break-words">{hours || "—"}</span></li>
+                <li className="flex gap-2"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-ngo-700 dark:text-ngo-300" aria-hidden="true" />
+                  <span className="min-w-0 break-words">{[drive.contactName, drive.contactPhone].filter(Boolean).join(" · ") || "—"}</span></li>
+                <li className="flex gap-2"><Users className="mt-0.5 h-4 w-4 shrink-0 text-ngo-700 dark:text-ngo-300" aria-hidden="true" />
+                  <span>{drive.beneficiaryCount} {drive.beneficiaryGroup ?? "people"}</span></li>
               </ul>
-            )
-          )}
-
-          {tab === "handovers" && (
-            handovers.length === 0 ? <p className="text-sm text-stone-500 dark:text-stone-400">No accepted offers yet.</p> : (
-              <ul className="space-y-3">
-                {handovers.map((offer) => (
-                  <li key={offer.id} className="flex flex-col justify-between gap-3 rounded-xl border border-stone-200 p-4 dark:border-zinc-800 sm:flex-row sm:items-center">
-                    <div>
-                      <h3 className="font-bold text-stone-900 dark:text-stone-100">{offer.donorDisplayName || "Donor"}</h3>
-                      <p className="text-sm text-stone-600 dark:text-stone-400">{offer.quantity} {humanize(drive.unit)} · {OFFER_STATUS[offer.status] ?? humanize(offer.status)}</p>
-                    </div>
-                    <Link href={`/ngo/drives/${drive.id}/offers/${offer.id}/handover`}
-                      className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-stone-100 px-4 text-sm font-bold text-stone-800 hover:bg-stone-200 dark:bg-zinc-800 dark:text-stone-100 dark:hover:bg-zinc-700">
-                      Open handover
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )
-          )}
-
-          {tab === "proof" && (
-            drive.status === "PROOF_SUBMITTED" ? (
-              <p className="rounded-xl bg-sky-50 p-4 text-sm font-semibold text-sky-900 dark:bg-sky-950/30 dark:text-sky-200">Proof submitted{drive.beneficiariesReached ? ` (${drive.beneficiariesReached} people reached)` : ""}. Our team is reviewing it.</p>
-            ) : drive.status === "FULFILLED" ? (
-              <p className="rounded-xl bg-ngo-50 p-4 text-sm font-semibold text-ngo-900 dark:bg-ngo-950/30 dark:text-ngo-100">
-                Proof approved. <Link href={`/drives/${drive.id}/proof`} className="underline">See the public impact report</Link>
-              </p>
-            ) : canUploadProof ? (
-              <form className="space-y-4" onSubmit={async (e) => {
-                e.preventDefault();
-                const form = e.currentTarget;
-                const files = Array.from((form.elements.namedItem("proofFiles") as HTMLInputElement).files ?? []);
-                const reached = Number((form.elements.namedItem("beneficiariesReached") as HTMLInputElement).value);
-                if (files.length < 1 || files.length > 10) { toast.error("Please upload between 1 and 10 photos."); return; }
-                if (!Number.isInteger(reached) || reached < 1) { toast.error("Enter how many people you reached (at least 1)."); return; }
-                setSaving(true);
-                try { await uploadDistributionProof(drive.id, files, reached); toast.success("Proof submitted. We'll review it soon."); await load(); }
-                catch (err) { toast.error(errorMessage(err, "We couldn't upload your proof.")); }
-                finally { setSaving(false); }
-              }}>
-                {drive.adminReason && (
-                  <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300">
-                    <strong>Proof needs another look:</strong> {drive.adminReason}
-                  </p>
-                )}
-                {drive.proofDueAt && <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Due by {serverDate(drive.proofDueAt).toLocaleString()}</p>}
-                <label className="block text-sm font-bold text-stone-800 dark:text-stone-200">Distribution photos (1–10)
-                  <input type="file" name="proofFiles" accept="image/*" multiple required className="mt-1 block w-full text-sm font-normal" />
-                </label>
-                <label className="block text-sm font-bold text-stone-800 dark:text-stone-200">People reached
-                  <input type="number" name="beneficiariesReached" min={1} defaultValue={drive.beneficiaryCount} required
-                    className="mt-1 block w-full max-w-xs rounded-lg border border-stone-300 bg-white p-2 font-normal dark:border-zinc-700 dark:bg-zinc-950" />
-                </label>
-                <Button type="submit" disabled={saving} className="bg-ngo-700 hover:bg-ngo-800">
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Submit proof
-                </Button>
-              </form>
-            ) : (
-              <p className="text-sm text-stone-500 dark:text-stone-400">You can upload distribution proof once collection is complete.</p>
-            )
-          )}
-
-          {tab === "close" && (
-            canClose ? (
-              <div>
-                <p className="mb-4 text-sm text-stone-600 dark:text-stone-400">
-                  Close the drive early if you have enough or can't store more. Donors can't offer new items; handovers already planned continue.
-                </p>
-                <Button variant="destructive" onClick={() => setCloseOpen(true)}>Close drive</Button>
-              </div>
-            ) : <p className="text-sm text-stone-500 dark:text-stone-400">Only a live or fully pledged drive can be closed.</p>
-          )}
-        </section>
+            </Panel>
+          </aside>
+        </div>
       </div>
 
-      <Dialog open={!!declining} onOpenChange={(o) => { if (!o) setDeclining(null); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Decline this offer?</DialogTitle>
-            <DialogDescription>The donor will see your reason. Their quantity goes back to the drive.</DialogDescription>
-          </DialogHeader>
-          <label className="block text-sm font-bold">Reason
-            <textarea value={declineReason} onChange={(e) => setDeclineReason(e.target.value)} rows={3} maxLength={500}
-              className="mt-1 block w-full rounded-lg border border-stone-300 p-2 font-normal dark:border-zinc-700 dark:bg-zinc-950" />
-          </label>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeclining(null)}>Cancel</Button>
-            <Button variant="destructive" disabled={!declineReason.trim() || busy !== null} onClick={() => void decline()}>Decline offer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Mobile: the most useful next action stays in reach */}
+      {primary && (
+        <div className="fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 p-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95 sm:hidden">
+          <Link href={primary.href} data-testid="sticky-primary-action" className={`${pillPrimary} w-full`}>{primary.label}</Link>
+        </div>
+      )}
 
       <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Close this drive?</DialogTitle>
-            <DialogDescription>Donors can't offer new items. Handovers already planned continue.</DialogDescription>
+            <DialogTitle><UiText>Close this drive?</UiText></DialogTitle>
+            <DialogDescription>Donors can&apos;t offer new items. Handovers already planned continue.</DialogDescription>
           </DialogHeader>
-          <label className="block text-sm font-bold">Reason for closing
-            <input value={closeReason} onChange={(e) => setCloseReason(e.target.value)} placeholder="e.g. We have enough"
+          {pending.length > 0 && (
+            <p role="alert" data-testid="close-blocked" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+              {df("offersWaitingReview", { count: pending.length })}{" "}
+              <Link href={`/dashboard/ngo?tab=activity&filter=offers&drive=${drive.id}`} className="font-bold underline"><UiText>Review offers</UiText></Link>
+            </p>
+          )}
+          <label className="block text-sm font-bold"><UiText>Reason for closing</UiText>
+            <input value={closeReason} onChange={(e) => setCloseReason(e.target.value)} placeholder={ui("e.g. We have enough")}
               className="mt-1 block w-full rounded-lg border border-stone-300 p-2 font-normal dark:border-zinc-700 dark:bg-zinc-950" />
           </label>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCloseOpen(false)}>Cancel</Button>
-            <Button variant="destructive" disabled={!closeReason.trim() || saving} onClick={async () => {
+            <Button variant="outline" onClick={() => setCloseOpen(false)}><UiText>Cancel</UiText></Button>
+            <Button variant="destructive" disabled={!closeReason.trim() || saving || pending.length > 0} onClick={async () => {
               setSaving(true);
-              try { await closeNgoDrive(drive.id, { reason: closeReason.trim() }); toast.success("Drive closed."); setCloseOpen(false); await load(); }
-              catch (e) { toast.error(errorMessage(e, "We couldn't close the drive.")); }
+              try { await closeNgoDrive(drive.id, { reason: closeReason.trim() }); toast.success(ui("Drive closed.")); setCloseOpen(false); await load(); }
+              catch (e) { toast.error(errorMessage(e, ui("We couldn't close the drive."))); }
               finally { setSaving(false); }
-            }}>Close drive</Button>
+            }}><UiText>Close drive</UiText></Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

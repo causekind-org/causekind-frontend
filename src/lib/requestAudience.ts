@@ -53,3 +53,25 @@ export function audienceFromUrlType(t: AudienceUrlType): RequestAudience {
 export function urlTypeFromAudience(a: RequestAudience): AudienceUrlType {
   return AUDIENCE_OPTIONS.find(o => o.value === a)?.urlType ?? "all";
 }
+
+/** `?type=` or `?source=` on the directory; ?source=ngo preselects NGOs. */
+export function readUrlAudience(searchParams?: URLSearchParams | string): AudienceUrlType {
+  let params: URLSearchParams;
+  if (typeof searchParams === "string") {
+    params = new URLSearchParams(searchParams);
+  } else if (searchParams instanceof URLSearchParams) {
+    params = searchParams;
+  } else if (typeof window !== "undefined") {
+    params = new URLSearchParams(window.location.search);
+  } else {
+    return "all";
+  }
+
+  const s = params.get("source");
+  if (s === "ngo") return "ngos";
+  if (s === "donee") return "people";
+  if (s === "everyone") return "all";
+  const t = params.get("type");
+  return t === "people" || t === "ngos" ? t : "all";
+}
+

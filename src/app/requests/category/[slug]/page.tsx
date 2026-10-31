@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { categoryBySlug, IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import CategoryPageClient from "./CategoryPageClient";
@@ -15,10 +16,11 @@ export function generateStaticParams() {
 // Metadata is built purely from the editorial registry. No request, donee or
 // location data goes anywhere near it — these pages are public and indexable.
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const mt = await getTranslations("requestsArea");
   const { slug } = await params;
   const cat = categoryBySlug(slug);
-  if (!cat) return { title: "Category not found — CauseKind" };
-  const title = `Donating ${cat.name} — CauseKind`;
+  if (!cat) return { title: mt("metaCategoryNotFound") };
+  const title = mt("metaCategoryTitle", { category: cat.name });
   return {
     title,
     description: cat.tagline,

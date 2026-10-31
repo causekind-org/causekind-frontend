@@ -1,8 +1,5 @@
 "use client";
-import { LandingText } from "@/components/LandingTranslation";
 
-
-import Link from "next/link";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import {
@@ -67,12 +64,15 @@ const TRUST_CARDS: TrustCardItem[] = [
 ];
 
 export function NgoTrustSection() {
-  const { isVerified, ngoName, isLoading, error } = useNgoStatus();
+  const { isVerified } = useNgoStatus();
   const [activeFlippedCardId, setActiveFlippedCardId] = useState<string | null>(null);
 
   const handleCardFlip = (cardId: string, willFlip: boolean) => {
     setActiveFlippedCardId(willFlip ? cardId : null);
   };
+
+  // Only the trust grid (before verification) is left in this section.
+  if (isVerified) return null;
 
   return (
     <section className="relative overflow-hidden py-16 sm:py-24 text-stone-900 dark:text-stone-100">
@@ -96,7 +96,7 @@ export function NgoTrustSection() {
             transition={{ duration: 0.55 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <NgoSectionLabel align="center"><LandingText>How verification works</LandingText></NgoSectionLabel>
+            <NgoSectionLabel align="center">How verification works</NgoSectionLabel>
 
             <h2
               className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-stone-900 dark:text-stone-50 leading-tight [text-wrap:balance]"
@@ -104,9 +104,9 @@ export function NgoTrustSection() {
                 fontFamily: "var(--font-source-serif-4), var(--font-lora), serif",
                 textWrap: "balance",
               }}
-            ><LandingText>
-              What we check</LandingText>{" "}
-              <span className="italic text-ngo-700 dark:text-ngo-300"><LandingText>at every step.</LandingText></span>
+            >
+              What we check{" "}
+              <span className="italic text-ngo-700 dark:text-ngo-300">at every step.</span>
             </h2>
           </motion.div>
         )}
@@ -137,7 +137,7 @@ export function NgoTrustSection() {
                       <div className="h-full rounded-2xl border border-ngo-100 dark:border-zinc-800 hover:border-ngo-300 dark:hover:border-ngo-700 bg-white dark:bg-zinc-900 p-4 shadow-xs transition-colors duration-200 flex flex-col items-center justify-center text-center">
                         {/* Step Number */}
                         <span className="text-2xs sm:text-xs font-mono font-bold tracking-widest text-ngo-600 dark:text-ngo-400 mb-1.5 select-none">
-                          <LandingText>{card.step}</LandingText>
+                          {card.step}
                         </span>
 
                         {/* Centered Icon */}
@@ -147,17 +147,17 @@ export function NgoTrustSection() {
 
                         {/* Title */}
                         <h3 className="text-xs sm:text-sm font-semibold text-stone-900 dark:text-stone-100 leading-snug">
-                          <LandingText>{card.title}</LandingText>
+                          {card.title}
                         </h3>
                       </div>
                     }
                     back={
                       <div className="h-full rounded-2xl bg-ngo-900 text-white p-3.5 sm:p-4 shadow-xs flex flex-col items-center justify-center text-center border border-ngo-800">
                         <span className="text-3xs sm:text-2xs font-bold text-ngo-300 uppercase tracking-wider mb-1.5">
-                          <LandingText>{card.title}</LandingText>
+                          {card.title}
                         </span>
                         <p className="text-2xs sm:text-xs leading-relaxed text-white text-center font-medium">
-                          <LandingText>{card.shortLine}</LandingText>
+                          {card.shortLine}
                         </p>
                       </div>
                     }
@@ -168,11 +168,6 @@ export function NgoTrustSection() {
           </div>
         )}
 
-        <div className="rounded-3xl border border-ngo-200 p-6 dark:border-zinc-700">
-          <h3 className="text-xl font-bold"><LandingText>Your organization’s verification</LandingText></h3>
-          <p className="mt-3 text-sm"><LandingText>{isLoading ? "Checking your application…" : error ? "We couldn’t check your application. Please retry from your profile." : isVerified ? `${ngoName} has an approved CauseKind application. Each new drive is reviewed separately.` : "Complete your application and email verification. Our team reviews the organization before you can start drives."}</LandingText></p>
-          <Link href="/profile/ngo-details" className="mt-4 inline-block text-sm font-semibold underline"><LandingText>View your application</LandingText></Link>
-        </div>
       </div>
     </section>
   );

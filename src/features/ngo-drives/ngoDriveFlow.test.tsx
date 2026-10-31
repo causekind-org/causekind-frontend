@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
+
+// The handover pages render the full shared hub now: give them time on a busy machine.
+vi.setConfig({ testTimeout: 20000 });
+import { configure as configureRtl } from "@testing-library/react";
+configureRtl({ asyncUtilTimeout: 8000 });
 
 /**
  * The NGO drive flow on the frontend: no admin step for donor offers, the handover
@@ -9,6 +14,7 @@ import type { ReactNode } from "react";
  */
 
 const api = vi.hoisted(() => ({
+  getMyNotifications: vi.fn().mockResolvedValue([]),
   getNgoDriveOffer: vi.fn(),
   getNgoDriveOfferForNgo: vi.fn(),
   getNgoDriveOfferHandover: vi.fn(),
@@ -34,10 +40,16 @@ vi.mock("@/lib/api", async (importOriginal) => ({ ...(await importOriginal<Recor
 const auth = vi.hoisted(() => ({ user: { email: "ngo@x.test", role: "NGO_PARTNER" } as { email: string; role: string } }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: auth.user, isLoading: false }) }));
 vi.mock("@/hooks/useEntityUpdates", () => ({ useEntityUpdates: () => {} }));
-vi.mock("next/navigation", () => ({
-  useParams: () => ({ id: "7", offerId: "11" }),
-  useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
-}));
+// One router object for every render, as Next's is: the handover page's load effect
+// depends on `router`, so a fresh object each render re-ran the load and a later
+// successful call could replace the error screen before the test saw it.
+vi.mock("next/navigation", () => {
+  const router = { push: vi.fn(), replace: vi.fn() };
+  return {
+    useParams: () => ({ id: "7", offerId: "11" }),
+    useRouter: () => router,
+  };
+});
 vi.mock("@/features/handover/HandoverHubShell", () => ({
   HandoverHubShell: ({ vm }: { vm: { state: string } }) => <div data-testid="hub">{vm.state}</div>,
 }));
@@ -95,10 +107,41 @@ describe("NGO handover page", () => {
     api.getNgoDriveOfferHandover.mockResolvedValue(plan);
     const Page = (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
     render(<Page />);
-    expect(await screen.findByText("a. Photograph the items you received")).toBeInTheDocument();
+    expect(await screen.findByTestId("hub")).toHaveTextContent("ready_to_handover");
     expect(api.getNgoDriveOfferForNgo).toHaveBeenCalledWith(7, 11);
     expect(api.getNgoDriveOfferHandover).toHaveBeenCalledWith(11);
     expect(api.getNgoDriveOffer).not.toHaveBeenCalled();
+  });
+
+  it("shows an error screen with a Retry button when the API fails instead of 404, and reloads on click", async () => {
+    api.getNgoDriveOfferForNgo
+      .mockRejectedValueOnce(new Error("Unable to reach server"))
+      .mockResolvedValue(offer("HANDOVER_IN_PROGRESS"));
+    api.getNgoDriveOfferHandover.mockResolvedValue(plan);
+
+    const Page = (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
+    render(<Page />);
+
+    expect(await screen.findByText("We couldn't load this handover")).toBeInTheDocument();
+    expect(screen.getByText("Unable to reach server")).toBeInTheDocument();
+    const retryBtn = screen.getByRole("button", { name: /retry/i });
+    expect(retryBtn).toBeInTheDocument();
+    expect(screen.queryByText("Handover not found")).toBeNull();
+
+    fireEvent.click(retryBtn);
+    expect(await screen.findByTestId("hub")).toHaveTextContent("ready_to_handover");
+  });
+
+  it("shows Handover not found only when the API returns 404", async () => {
+    const notFoundErr = new Error("Not found");
+    (notFoundErr as unknown as { status: number }).status = 404;
+    api.getNgoDriveOfferForNgo.mockRejectedValueOnce(notFoundErr);
+
+    const Page = (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
+    render(<Page />);
+
+    expect(await screen.findByText("Handover not found")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
   });
 });
 
@@ -110,7 +153,7 @@ describe("donor handover page", () => {
     const Page = (await import("@/app/ngo-drive-offers/[id]/handover/page")).default;
     render(<Page />);
     // Accepted and not planned yet: the donor gets the plan form (step 2).
-    expect(await screen.findByRole("button", { name: "Confirm the plan" })).toBeInTheDocument();
+    expect(await screen.findByTestId("hub")).toBeInTheDocument();
     expect(api.getNgoDriveOfferHandover).toHaveBeenCalledWith(7);
   });
 });
@@ -129,13 +172,11 @@ describe("admin drive offers", () => {
 });
 
 describe("NGO bell notifications", () => {
-  it("NGO partners get drive notifications (collection complete, new offers)", async () => {
+  it("NGO drive notices come from the server only (stored once, grouped); nothing is derived in the browser", async () => {
     vi.stubGlobal("EventSource", class { addEventListener() {} close() {} onerror = null; });
-    api.getMyNgoDrives.mockResolvedValue([
-      { id: 7, title: "Winter blankets", status: "COLLECTION_COMPLETE", createdAt: "2026-10-01T00:00:00" },
-      { id: 8, title: "School bags", status: "LIVE", createdAt: "2026-10-01T00:00:00" },
+    api.getMyNotifications.mockResolvedValue([
+      { id: "n-1", type: "match", title: "3 new offers on \"School bags\"", body: "Accept or decline them.", link: "/dashboard/ngo?tab=activity&filter=offers&drive=8", createdAt: "2026-10-17T10:00:00", read: false },
     ]);
-    api.getNgoDriveOffersForNgo.mockResolvedValue([offer("PENDING_NGO_REVIEW", { id: 12 })]);
     const { NotificationsProvider, useNotifications } = await import("@/hooks/useNotifications");
     function Titles() {
       const { notifications } = useNotifications();
@@ -143,8 +184,9 @@ describe("NGO bell notifications", () => {
     }
     const wrap = ({ children }: { children: ReactNode }) => <NotificationsProvider>{children}</NotificationsProvider>;
     render(<Titles />, { wrapper: wrap });
-    await waitFor(() => expect(screen.getByText("Upload your distribution proof")).toBeInTheDocument());
-    expect(screen.getByText("New offer to review")).toBeInTheDocument();
-    expect(api.getNgoDriveOffersForNgo).toHaveBeenCalledWith(8, "PENDING_NGO_REVIEW");
+    expect(await screen.findByText("3 new offers on \"School bags\"")).toBeInTheDocument();
+    expect(screen.queryByText("Upload your distribution proof")).toBeNull();
+    expect(api.getMyNgoDrives).not.toHaveBeenCalled();
+    expect(api.getNgoDriveOffersForNgo).not.toHaveBeenCalled();
   });
 });

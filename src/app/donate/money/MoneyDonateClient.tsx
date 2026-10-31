@@ -4,10 +4,13 @@ import { MoneyFlowStory } from "@/components/money-donation/MoneyFlowStory";
 import { MoneyDonationForm } from "@/components/money-donation/MoneyDonationForm";
 import { AboutSahas } from "@/components/money-donation/AboutSahas";
 import { ImpactCarousel } from "@/components/money-donation/ImpactCarousel";
+import { TrustCertificates } from "@/components/money-donation/TrustCertificates";
 
 import { Suspense } from "react";
 import { DonateScrollOnArrival } from "@/components/donate/DonateScrollOnArrival";
 
+
+import { TrustCredibility } from "@/components/money-donation/TrustCredibility";
 
 export default function MoneyDonateClient() {
   return (
@@ -30,14 +33,15 @@ export default function MoneyDonateClient() {
           WhatsApp exports), and at position two nearly every visitor now pays
           that cost rather than only those who scroll past the form. Compressing
           the files in public/videos is the fix, not moving the section. */}
-      {/* Owner, 2026-10-08: Hero, About Sahas, carousel, form, flow story —
-          one continuous block on the page background, no Trust section. */}
       {/* Owner, 2026-10-08: the impact carousel is the hero now (it carries the
           old hero's wording); About Sahas follows it. */}
       <ImpactCarousel />
       <AboutSahas />
+      {/* Owner, 2026-10-16: certificates only, back from the old Trust section. */}
+      <TrustCertificates />
       <MoneyDonationForm />
       <MoneyFlowStory />
+      <TrustCredibility />
     </div>
   );
 }

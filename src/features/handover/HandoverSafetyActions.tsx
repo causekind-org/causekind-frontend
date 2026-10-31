@@ -12,6 +12,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/lib/toast";
+import { useUiText } from "@/components/UiText";
+import { useCancellationCopy } from "@/lib/cancellationCopy";
 import {
   cancelMatch, getMatchCancellationOptions, getOfferCancellationOptions,
   reportPostDeliveryIssue, reportMatchIssue, confirmNoIssue,
@@ -74,6 +76,8 @@ export function HandoverSafetyActions({ vm, onChanged }: {
   onChanged: () => void;
 }) {
   const [option, setOption] = useState<CancellationOption | null>(null);
+  const ui = useUiText();
+  const copy = useCancellationCopy();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [issueOpen, setIssueOpen] = useState(false);
 
@@ -106,7 +110,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
       </h2>
       <p className="mt-1.5 max-w-prose text-sm text-stone-500 dark:text-stone-400">
         {disputeOnly
-          ? option?.blockedReason
+          ? (option ? copy.blockedReason(option) : null)
           : "You can step back from this, or tell us if something wasn't right. Either way the record stays."}
       </p>
 
@@ -119,7 +123,7 @@ export function HandoverSafetyActions({ vm, onChanged }: {
             className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-red-200 px-3.5 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950/30"
           >
             <ShieldAlert className="h-4 w-4" aria-hidden />
-            {option?.actionLabel ?? "Cancel"}
+            {(option ? copy.label(option) : null) ?? ui("Cancel")}
           </button>
         )}
         {showReportButton && (
@@ -194,6 +198,8 @@ export function CancelMatchDialog({ matchId, role, option, open, onOpenChange, o
   onCancelled: () => void;
 }) {
   const [reason, setReason] = useState<CancellationReason | "">("");
+  const ui = useUiText();
+  const copy = useCancellationCopy();
   const [details, setDetails] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -225,9 +231,9 @@ export function CancelMatchDialog({ matchId, role, option, open, onOpenChange, o
     <Dialog open={open} onOpenChange={(o) => { if (!busy) onOpenChange(o); }}>
       <DialogContent className={scope}>
         <DialogHeader>
-          <DialogTitle>{option.actionLabel ?? "Cancel this handover"}?</DialogTitle>
+          <DialogTitle>{copy.label(option) ?? ui("Cancel this handover")}?</DialogTitle>
           <DialogDescription>
-            {option.warning ?? "This handover will be cancelled and the item released."}
+            {copy.warning(option) ?? ui("This handover will be cancelled and the item released.")}
           </DialogDescription>
         </DialogHeader>
 

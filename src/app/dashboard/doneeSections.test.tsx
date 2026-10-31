@@ -22,7 +22,7 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: { email: "asha@donee.test", role: "DONEE" }, isLoading: false }),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
-vi.mock("next-intl", () => ({ useTranslations: () => (key: string) => key }));
+// next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/components/MyTasksCard", () => ({ MyTasksCard: () => null }));
 vi.mock("@/hooks/useDynamicTranslation", () => ({ TranslatedText: ({ text }: { text: string }) => <>{text}</> }));
@@ -95,7 +95,7 @@ describe("donee dashboard sections", () => {
     render(<DashboardPage />);
 
     await openTab(/Matches/);
-    expect(screen.getByRole("button", { name: "Accept Offer" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accept offer" })).toBeInTheDocument();
     // Only the open section is on the page.
     expect(screen.queryByText("Every need travels the same road: posted, verified, matched, received.")).toBeNull();
   });
@@ -105,7 +105,7 @@ describe("donee dashboard sections", () => {
 
     await openTab(/Your Requests/);
     expect(screen.getByText("4 / 10")).toBeInTheDocument();
-    expect(screen.queryByText("Donation Offers Received")).toBeNull();
+    expect(screen.queryByText("Donation offers")).toBeNull();
   });
 
   it("switching tabs shows only that section and remembers it in the URL", async () => {

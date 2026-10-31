@@ -112,6 +112,24 @@ const canUseRequestCache = () => typeof window !== "undefined";
 const IS_SERVER = typeof window === "undefined";
 const REQUEST_TIMEOUT_MS = IS_SERVER ? 8000 : 20000;
 
+/** The message shown instead of a raw "signal timed out" / "Failed to fetch". */
+export const SLOW_REQUEST_MESSAGE = "This is taking longer than usual. Please try again.";
+
+/** Our timeout fired, or the network dropped (fetch rejects with a TypeError). */
+export function isTimeoutOrNetworkError(err: unknown): boolean {
+  const name = (err as { name?: string } | null)?.name;
+  return name === "TimeoutError" || name === "AbortError" || err instanceof TypeError;
+}
+
+function slowRequestError(): ApiError {
+  return new ApiError(0, SLOW_REQUEST_MESSAGE, { code: "SLOW_REQUEST" });
+}
+
+/** Whether an error is the friendly "taking longer than usual" one (keep showing the old data + Try again). */
+export function isSlowRequestError(err: unknown): boolean {
+  return err instanceof ApiError && (err.data as { code?: string } | undefined)?.code === "SLOW_REQUEST";
+}
+
 /**
  * Reads a successful response's body, tolerating the several legitimate ways a
  * backend says "nothing to return".
@@ -176,7 +194,7 @@ async function request<T>(
 
     // Caller-supplied signals win: a component aborting on unmount must not be
     // overridden by the backstop.
-    const res = await fetch(`${BASE_URL}${path}`, {
+    const send = () => fetch(`${BASE_URL}${path}`, {
       // Without this, GET requests are subject to normal HTTP caching — a
       // browser (or an intermediary) serving a stale cached response for an
       // admin console is worse than a slower request, since it silently
@@ -187,6 +205,22 @@ async function request<T>(
       credentials: "include",
       signal: fetchOptions.signal ?? AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
+    let res: Response;
+    try {
+      res = await send();
+    } catch (err) {
+      // A caller's own abort (unmount) is not a failure to retry or report.
+      if (fetchOptions.signal?.aborted) throw err;
+      if (!isTimeoutOrNetworkError(err)) throw err;
+      // A GET is safe to repeat: one retry covers a cold start or a dropped connection.
+      if (!isGet) throw slowRequestError();
+      try {
+        res = await send();
+      } catch (retryErr) {
+        if (fetchOptions.signal?.aborted || !isTimeoutOrNetworkError(retryErr)) throw retryErr;
+        throw slowRequestError();
+      }
+    }
 
     if (!res.ok) {
       if (res.status === 401) {
@@ -229,7 +263,13 @@ async function request<T>(
       const plainText = Object.keys(body).length === 0 && raw.trim() && !raw.trim().startsWith("<")
         ? raw.trim().slice(0, 200)
         : null;
+      // ApiException bodies carry the real reasons in fieldErrors; their "message" is the
+      // code's generic text ("We couldn't read that request"), so the reasons come first.
+      const fieldMessages = Array.isArray(body?.fieldErrors)
+        ? (body.fieldErrors as { message?: string }[]).map(e => e?.message).filter(Boolean).join(" ")
+        : "";
       const msg =
+        (fieldMessages || null) ??
         body?.message ??
         body?.detail ??
         (Array.isArray(body?.errors) && body.errors.length > 0
@@ -272,7 +312,11 @@ async function request<T>(
 
   // Also invalidate after completion: reads triggered while a write was in
   // progress (including SSE refreshes) may still contain the pre-write state.
-  return isGet ? execute() : execute().finally(invalidateRequestCache);
+  return isGet ? execute() : execute().finally(() => {
+    invalidateRequestCache();
+    // Lets live counters (e.g. the admin fundraising sidebar) refresh after any change.
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("ck:data-changed"));
+  });
 }
 
 // ── Auth ──────────────────────────────────────────────────────────────────────
@@ -326,7 +370,75 @@ export type NgoSignupData = {
   city?: string;
   password: string;
   website?: string;
+  // PAN card feature: kept but not used yet; will be moved to another place later. The register page sends none of these.
+  legalStructure?: NgoLegalStructureValue;
+  /** YYYY-MM-DD */
+  dateOfFormation?: string;
+  organizationNameSource?: PanValueSource;
+  dateOfFormationSource?: PanValueSource;
+  panNumberSource?: PanValueSource;
+  /** City, state and country names, used to start the wizard's office address. */
+  locationText?: string;
 };
+
+// ── PAN card feature: kept but not used yet; will be moved to another place later.
+// Types and calls below are not used by any page; their backend endpoints are not registered.
+export type NgoLegalStructureValue = "trust" | "society" | "section8";
+/** "card": read from the PAN card and left as read; "typed": entered or changed by the user. */
+export type PanValueSource = "card" | "typed";
+
+export type PanCheckWarning = { code: string; severity: "WARNING" | "DANGER"; field: string; message: string };
+/** The backend's NgoPanCheck.Result: the PAN letter checks (warnings, never blocking). */
+export type PanCheckResult = {
+  panNumber: string | null; validFormat: boolean; holderLetter: string | null; holderType: string | null;
+  legalStructure: string | null; expectedHolderLetter: string | null; structureMatches: boolean | null;
+  personalPan: boolean; nameLetter: string | null; nameLetterMatches: boolean | null;
+  warnings: PanCheckWarning[];
+};
+
+export type PanCardReadResult = {
+  /** false when the reader could not run at all; the user types the details. */
+  available: boolean;
+  organizationName?: string | null; dateOfFormation?: string | null; panNumber?: string | null;
+  panCheck?: PanCheckResult;
+};
+
+async function errorMessage(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = await res.json();
+    if (typeof body?.message === "string" && body.message) return body.message;
+  } catch {}
+  return fallback;
+}
+
+/** NGO signup, before login: reads name, date of formation and PAN from the PAN card. Nothing is stored. */
+export async function readNgoPanCard(file: File, legalStructure?: string): Promise<PanCardReadResult> {
+  const fd = new FormData();
+  fd.append("file", file);
+  if (legalStructure) fd.append("legalStructure", legalStructure);
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-signup/read-pan-card`, { method: "POST", body: fd, credentials: "include" });
+  if (!res.ok) throw new Error(await errorMessage(res, "We couldn't read this card. Please type the details."));
+  return (await res.json()) as PanCardReadResult;
+}
+
+/** The shared PAN letter checks (backend NgoPanCheck), before login. */
+export function ngoPanCheck(data: { panNumber: string; legalStructure: string; organizationName: string }) {
+  return request<PanCheckResult>("/api/v1/ngo-signup/pan-check", { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Wizard: the same checks against the PAN this NGO gave at signup. */
+export function ngoWizardPanCheck(data: { legalStructure: string; organizationName: string }) {
+  return request<PanCheckResult>("/api/v1/ngo-registration/pan-check", { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Right after NGO signup: stores the PAN card through the NGO document upload and puts it in the wizard's PAN slot. */
+export async function uploadSignupPanCard(file: File): Promise<NgoDraftDto> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch(`${BASE_URL}/api/v1/ngo-registration/signup-pan-card`, { method: "POST", body: fd, credentials: "include" });
+  if (!res.ok) throw new Error(await errorMessage(res, "Your PAN card couldn't be saved. You can add it in the registration form."));
+  return (await res.json()) as NgoDraftDto;
+}
 
 export function registerNgo(data: NgoSignupData) {
   return request<{ token: null; email: string; role: string; userId: number; fullName?: string }>(
@@ -551,12 +663,22 @@ export function rejectCampaign(id: number, reason: string) {
 // ── Donations ─────────────────────────────────────────────────────────────────
 
 export type DonationOrder = {
+  panUploadToken?: string;
   donationId: number;
   razorpayOrderId: string;
   amountInPaise: number;
   currency: string;
   razorpayKeyId: string;
 };
+
+/** Starting a fundraiser donation returns no payment details; those come only from checkout (2026-10-30). */
+export type FundraiserDonationStart = { donationId: number; amountInPaise: number; currency: string };
+
+/** Fundraiser donation documents, from the server (2026-10-30). */
+export type DocumentPolicy = "CERTIFICATE_ONLY" | "RECEIPT_AND_CERTIFICATE";
+export type DocumentsStatus =
+  | "PENDING" | "ISSUED" | "PARTIAL" | "FAILED" | "UNCERTAIN" | "SUPPRESSED" | "GAVE_UP"
+  | "AWAITING_CAPTURE_TIME" | "CAPTURE_TIME_REVIEW" | "PAN_REVIEW";
 
 export type Donation = {
   id: number;
@@ -569,7 +691,24 @@ export type Donation = {
   status: string;
   createdAt: string;
   donorName?: string;
+  /** True when a super admin deleted the fundraiser; the donation and receipt remain. */
+  campaignRemoved?: boolean;
+  /** Fundraiser donations only; null for general donations and donations not covered by the launch. */
+  documentPolicy?: DocumentPolicy | null;
+  documentsStatus?: DocumentsStatus | null;
+  /** The signed-in donor can download it now. */
+  receiptAvailable?: boolean;
+  certificateAvailable?: boolean;
+  /** Whether the 80G option is offered for fundraiser donations (false until the CA confirms). */
+  taxReceiptOffered?: boolean;
 };
+
+/** Downloads a donation document for the signed-in donor (cookie auth, so fetched rather than linked). */
+export async function downloadDonationDocument(donationId: number, kind: "certificate" | "receipt"): Promise<Blob> {
+  const res = await fetch(`${BASE_URL}/api/v1/donations/${donationId}/${kind}.pdf`, { credentials: "include" });
+  if (!res.ok) throw new ApiError(res.status, "Couldn't download the document. Try again in a moment.", null);
+  return res.blob();
+}
 
 export function initiateDonation(campaignId: number, amount: number) {
   return request<DonationOrder>("/api/v1/donations", {
@@ -639,9 +778,10 @@ export function readPanCard(file: File) {
 }
 
 /** Attaches the PAN card photo to a trust donation once it exists (stored privately). */
-export function uploadTrustDonationPanPhoto(donationId: number, file: File) {
+export function uploadTrustDonationPanPhoto(donationId: number, file: File, uploadToken?: string) {
   const fd = new FormData();
   fd.append("file", file);
+  if (uploadToken) fd.append("uploadToken", uploadToken);
   return fetch(`${BASE_URL}/api/v1/donations/trust/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
     .then((res) => { if (!res.ok) throw new Error("PAN photo upload failed"); });
 }
@@ -663,7 +803,7 @@ export type PlatformTipOrder = {
   razorpayKeyId: string;
 };
 
-export type HandoverFeedbackContextType = "OFFER" | "MATCH";
+export type HandoverFeedbackContextType = "OFFER" | "MATCH" | "NGO_DRIVE_OFFER";
 
 export function initiatePlatformTip(
   amount: number,
@@ -682,6 +822,7 @@ export function submitHandoverFeedback(params: {
   rating: number;
   note?: string;
   tipId?: number;
+  submitterRole?: "DONOR" | "NGO";
 }) {
   return request<void>("/api/v1/handover-feedback", {
     method: "POST",
@@ -1759,6 +1900,8 @@ export type ItemMatch = {
   doneeConditionNotes: string | null;
   /** Where a courier delivers; null from a backend that predates it. See DeliveryAddress. */
   delivery: DeliveryAddress | null;
+  courierName?: string | null;
+  trackingNumber?: string | null;
 };
 
 export function donateToRequest(requestId: number, images: File[], description: string) {
@@ -1832,6 +1975,8 @@ export function saveMatchLogistics(id: number, data: {
   deliveryAddress?: string;
   allocatedQuantity?: number;
   notes?: string;
+  courierName?: string;
+  trackingNumber?: string;
 }) {
   return request<ItemMatch>(`/api/v1/matches/${id}/logistics`, {
     method: "POST",
@@ -2044,6 +2189,11 @@ export type CancellationOption = {
   late: boolean;
   warning: string | null;
   blockedReason: string | null;
+  /** Stable codes beside the English above (backend CancellationCopy); absent from older backends.
+   *  Render through useCancellationCopy(), never by matching the English. */
+  labelCode?: string | null;
+  warningCode?: string | null;
+  blockedReasonCode?: string | null;
 };
 
 export function getOfferCancellationOptions(offerId: number) {
@@ -2216,11 +2366,88 @@ export type PurchaseCommitmentDetails = {
   /** Serialized from a BigDecimal, so it arrives as a number. */
   estimatedCost: number | null;
   purchaseTimeline: string;
-  purchaseStatus: "INTENT_DECLARED" | "ORDER_PLACED" | "PROOF_UPLOADED" | "DELIVERED" | null;
+  purchaseStatus: PurchaseStatus | null;
   intendedStore: string | null;
   notes: string | null;
   createdAt: string;
+  /** Null on legacy commitments made before the 2026-10 rebuild. */
+  fulfilmentMethod: PurchaseFulfilmentMethod | null;
+  productUrl: string | null;
+  /** Set at donee acceptance; null before. */
+  purchaseDeadline: string | null;
+  acceptedAt: string | null;
 };
+
+export type PurchaseFulfilmentMethod = "BUY_AND_HAND_OVER" | "DIRECT_DELIVERY";
+
+export type PurchaseStatus =
+  | "INTENT_DECLARED" | "READY_TO_BUY" | "ORDER_PLACED" | "PROOF_UPLOADED" | "READY_FOR_HANDOVER"
+  | "SHIPPED" | "AWAITING_RECEIPT" | "PARTIALLY_RECEIVED" | "RECEIPT_CONFIRMED" | "ISSUE_RAISED"
+  | "CANCELLED" | "EXPIRED" | "DELIVERED";
+
+/**
+ * GET /api/v1/offers/{id}/purchase — role-filtered on the server. `address` is
+ * only present for the donee, an admin, or the donor after consent;
+ * `orderReference` never reaches the donee. Evidence URLs expire in 10 minutes.
+ */
+export type PurchaseView = {
+  offerId: number;
+  offerStatus?: string | null;
+  method: PurchaseFulfilmentMethod | null;
+  status: PurchaseStatus | null;
+  readyToBuy: boolean;
+  acceptedAt: string | null;
+  deadline: string | null;
+  acceptedQuantity: number | null;
+  orderedAt: string | null;
+  orderedQuantity: number | null;
+  receivedQuantity: number | null;
+  expectedDeliveryAt: string | null;
+  trackingUrl: string | null;
+  trackingReference: string | null;
+  address: {
+    address: string; contactName: string | null; contactPhone: string | null;
+    /** Optional map pin the recipient dropped; null when they skipped it. */
+    latitude: number | null; longitude: number | null;
+    consentVersion: string; consentedAt: string;
+  } | null;
+  retailer: string | null;
+  orderReference: string | null;
+  evidence: {
+    id: number; type: PurchaseProofType; url: string; uploadedAt: string;
+    screeningAvailable: boolean | null; prohibited: boolean | null;
+    /** Who uploaded it; the recipient never receives order confirmations or receipts. */
+    uploadedByRole: "DONOR" | "DONEE";
+  }[];
+  extensionRequestedUntil: string | null;
+  extensionDecidedAt: string | null;
+  issueWindowExpiresAt: string | null;
+  version: number | null;
+  /** Set while a reported delivery waits for the recipient; cleared once they respond. */
+  deliveryReportedAt: string | null;
+  deliveryReminderSentAt: string | null;
+  /** The recipient didn't respond in time and support is reviewing the delivery. */
+  deliveryEscalatedAt: string | null;
+  receivedCondition: string | null;
+  /** Support recorded receipt from the evidence (the recipient didn't respond). */
+  receiptRecordedBySupport: boolean;
+  issues: PurchaseIssueView[];
+  /** Why our team sent the item photo back; the donor (and admins) only. Cleared by a new upload. */
+  proofRejectionReason?: string | null;
+};
+
+export type PurchaseIssueView = {
+  id: number; type: string; description: string; affectedQuantity: number | null;
+  reportedByRole: "DONOR" | "DONEE"; createdAt: string;
+  response: string | null; respondedAt: string | null;
+  resolution: string | null; resolvedAt: string | null;
+};
+
+/** Donor uploads ITEM_PHOTO..DELIVERY_PROOF; the recipient uploads RECEIVED_PHOTO and ISSUE_EVIDENCE. */
+export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT" | "DELIVERY_PROOF" | "RECEIVED_PHOTO" | "ISSUE_EVIDENCE";
+export type PurchaseReceiptCondition = "GOOD" | "PARTIAL" | "DAMAGED" | "WRONG_ITEM";
+export type PurchaseIssueType = "ITEM_NOT_RECEIVED" | "ITEM_DAMAGED" | "WRONG_ITEM" | "QUANTITY_MISMATCH" | "OTHER";
+export const PURCHASE_CONSENT_VERSION = "purchase-delivery-v1";
 
 export type OfferAssessmentDetails = {
   modelVersion: string | null;
@@ -2340,6 +2567,20 @@ export function getMatchDeliveryAddressSuggestion(matchId: number) {
   return request<DeliveryAddressSuggestion>(`/api/v1/matches/${matchId}/handover/delivery-address/suggestion`);
 }
 
+export function updateMatchCourier(matchId: number, data: { courierName: string; trackingNumber?: string }) {
+  return request<ItemMatch>(`/api/v1/matches/${matchId}/handover/courier`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateOfferCourier(offerId: number, data: { courierName: string; trackingNumber?: string }) {
+  return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover/courier`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
 export type Certificate = {
   id: number;
   offerId: number | null;
@@ -2347,6 +2588,14 @@ export type Certificate = {
   certificateNumber: string;
   donorName: string;
   category: string;
+  /** NGO drive certificates: the item condition, separate from the category. */
+  condition?: string | null;
+  /** NGO drive certificates only: the receiving NGO's name. */
+  ngoName?: string | null;
+  /** NGO drive certificates only: the drive's title. */
+  driveTitle?: string | null;
+  /** Drive certificates only: readable unit, e.g. "pieces". */
+  quantityUnit?: string | null;
   quantityDelivered: number;
   handoverDate: string;
   qrCodeUrl: string | null;
@@ -2813,6 +3062,7 @@ export function doneeReviewOffer(
 export function saveFlowBCommitment(offerId: number, data: {
   itemName: string; proposedBrand?: string; proposedModel?: string;
   estimatedCost?: number; purchaseTimeline: string; intendedStore?: string; notes?: string;
+  fulfilmentMethod: PurchaseFulfilmentMethod; productUrl?: string;
 }) {
   return request<object>(`/api/v1/offers/${offerId}/flow-b/commitment`, {
     method: "POST",
@@ -2820,7 +3070,173 @@ export function saveFlowBCommitment(offerId: number, data: {
   });
 }
 
-export function uploadFlowBProof(offerId: number, proofType: string, file?: File,
+// ── Purchase lifecycle (2026-10 rebuild) ────────────────────────────────────
+// Participant actions on /api/v1/offers/{id}/purchase; the server checks the
+// actor, method and stage on every call, so the UI only decides what to show.
+
+/** "Fill from link": suggestions read from a product page. Nothing is saved. */
+export type ProductLinkPreview = {
+  found: boolean; productName: string | null; brand: string | null; model: string | null;
+  priceInr: number | null; retailer: string | null; source: "page" | "ai" | "page+ai" | "none";
+};
+
+export function previewProductLink(url: string) {
+  return request<ProductLinkPreview>(`/api/v1/purchase/product-preview`, {
+    method: "POST",
+    body: JSON.stringify({ url }),
+  });
+}
+
+export function getPurchase(offerId: number) {
+  return request<PurchaseView>(`/api/v1/offers/${offerId}/purchase`);
+}
+
+export function sharePurchaseAddress(offerId: number, address: {
+  address: string; contactName?: string; contactPhone?: string; latitude?: number; longitude?: number;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/delivery-address`, {
+    method: "POST",
+    body: JSON.stringify({ address, consent: true, consentVersion: PURCHASE_CONSENT_VERSION }),
+  });
+}
+
+export function revokePurchaseAddress(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/delivery-address`, { method: "DELETE" });
+}
+
+/** `expectedDeliveryAt` is a local ISO date-time without zone (Java LocalDateTime). */
+export function recordPurchaseOrder(offerId: number, data: {
+  idempotencyKey: string; retailer: string; reference?: string; quantity: number;
+  expectedDeliveryAt: string; prepaid: true;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/order`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function updatePurchaseShipment(offerId: number, data: {
+  trackingUrl?: string; reference?: string; expectedDeliveryAt: string; deliveredByRetailer: boolean;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/shipment`, { method: "PATCH", body: JSON.stringify(data) });
+}
+
+/**
+ * `cumulativeQuantity` counts good units received so far. For DAMAGED/WRONG_ITEM it
+ * may stay at the earlier count (0 if nothing usable came) and `affectedQuantity`
+ * covers the problem. `note` is required when closing the remainder.
+ */
+export function confirmPurchaseReceipt(offerId: number, data: {
+  cumulativeQuantity: number; condition: PurchaseReceiptCondition; closeRemainder: boolean;
+  affectedQuantity?: number; note?: string;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/receipt`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function confirmPurchaseNoIssue(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/confirm-no-issue`, { method: "POST" });
+}
+
+export function reportPurchaseIssue(offerId: number, data: { type: PurchaseIssueType; description: string; affectedQuantity?: number }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/issues`, { method: "POST", body: JSON.stringify(data) });
+}
+
+/** The participant who didn't report the open issue gives their side (once). */
+export function respondToPurchaseIssue(offerId: number, message: string) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/issues/response`, { method: "POST", body: JSON.stringify({ message }) });
+}
+
+/** Recipient evidence: a photo of what arrived, or evidence for a reported problem. Stored privately. */
+export function uploadPurchaseRecipientEvidence(offerId: number, proofType: "RECEIVED_PHOTO" | "ISSUE_EVIDENCE", file: File, notes?: string) {
+  const formData = new FormData();
+  formData.append("proofType", proofType);
+  formData.append("file", file);
+  if (notes) formData.append("notes", notes);
+  return fetch(`${BASE_URL}/api/v1/offers/${offerId}/purchase/evidence`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b?.message ?? "Upload failed"); }
+  });
+}
+
+export function requestPurchaseExtension(offerId: number, data: { requestedUntil: string; reason: string }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/extension`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function decidePurchaseExtension(offerId: number, data: { approve: boolean; reason: string }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/extension/decision`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function adminGetPurchase(offerId: number) {
+  return request<PurchaseView>(`/api/v1/admin/offers/${offerId}/purchase`);
+}
+
+/** `attention` lists only purchases waiting on an admin: problems, escalated deliveries, photos to review. */
+export function adminListPurchases(page = 0, attention = false) {
+  return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}${attention ? "&attention=true" : ""}`);
+}
+
+export function adminReviewPurchaseProof(offerId: number, data: { approve: boolean; reason: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/proof-review`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function adminResolvePurchaseIssue(offerId: number, data: { action: "RETRY_DELIVERY" | "CANCEL_REMAINDER"; reason: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
+}
+
+// ── Admin Issues section (read-only) ──────────────────────────────────────
+// Every problem report and support case in one list. Keys: pdi-<id> (offer or
+// purchase problem), doi-<id> (drive offer problem), case-<id> (match handover
+// problem, purchase follow-up, or support case).
+
+export type AdminIssueSource = "OFFER_HANDOVER" | "PURCHASE" | "PURCHASE_FOLLOW_UP" | "MATCH_HANDOVER" | "DRIVE_OFFER" | "SUPPORT";
+export type AdminIssuePerson = { userId: number | null; name: string | null; email: string | null; role: string | null };
+export type AdminIssueSummary = {
+  key: string; source: AdminIssueSource; title: string | null; issueType: string | null; description: string | null;
+  reportedBy: AdminIssuePerson | null; against: AdminIssuePerson | null; open: boolean;
+  caseNumber: string | null; caseStatus: string | null; casePriority: string | null;
+  entityType: string | null; entityId: number | null;
+  createdAt: string | null; resolvedAt: string | null; lastActivityAt: string | null;
+};
+export type AdminIssuePage = {
+  items: AdminIssueSummary[]; total: number; page: number; size: number;
+  openCount: number; openBySource: Partial<Record<AdminIssueSource, number>>;
+};
+export type AdminIssueDetail = {
+  summary: AdminIssueSummary;
+  affectedQuantity: number | null; response: string | null; respondedAt: string | null;
+  resolution: string | null; windowExpiresAt: string | null;
+  sections: { title: string; facts: { label: string; value: string }[] }[];
+  /** Private files come as 10-minute links; `url` is null when one couldn't be made. */
+  evidence: { label: string; url: string | null; uploadedBy: string | null; uploadedAt: string | null }[];
+  supportCase: {
+    id: number; caseNumber: string; subject: string | null; description: string | null; category: string | null;
+    status: string | null; priority: string | null; assignedTo: string | null; dueAt: string | null;
+    resolvedAt: string | null; resolutionSummary: string | null; linkedRecords: string[];
+  } | null;
+  timeline: { at: string | null; kind: "ISSUE" | "STATUS" | "CASE"; actor: string | null; text: string; internal: boolean }[];
+};
+
+export function adminListIssues(params: { status?: "open" | "resolved" | "all"; source?: AdminIssueSource | ""; q?: string; page?: number; size?: number } = {}) {
+  const qs = new URLSearchParams({ status: params.status ?? "open", page: String(params.page ?? 0), size: String(params.size ?? 25) });
+  if (params.source) qs.set("source", params.source);
+  if (params.q?.trim()) qs.set("q", params.q.trim());
+  return request<AdminIssuePage>(`/api/v1/admin/issues?${qs.toString()}`);
+}
+
+export function adminGetIssue(key: string) {
+  return request<AdminIssueDetail>(`/api/v1/admin/issues/${encodeURIComponent(key)}`);
+}
+
+/** Evidence-based fallback after escalation; the reason (≥20 chars) goes to the audit log. */
+export function adminPurchaseFallbackReceipt(offerId: number, data: { quantity: number; reason: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/fallback-receipt`, { method: "POST", body: JSON.stringify(data) });
+}
+
+export function adminProcessPurchaseDeadlines(offerId: number) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/process-deadlines`, { method: "POST" });
+}
+
+export function uploadFlowBProof(offerId: number, proofType: PurchaseProofType, file: File,
                                    trackingNumber?: string, notes?: string) {
   const formData = new FormData();
   formData.append("proofType", proofType);
@@ -2849,7 +3265,7 @@ export function scheduleHandover(offerId: number, data: {
   method: OfferHandoverMethod; scheduledDateTime: string; locationAddress?: string;
   locationLatitude?: number; locationLongitude?: number;
   transportArrangedBy?: string; transportCostBornBy?: string;
-  packagingResponsibility?: string; courierName?: string;
+  packagingResponsibility?: string; courierName?: string; trackingNumber?: string;
 }) {
   return request<HandoverRecord>(`/api/v1/offers/${offerId}/handover`, {
     method: "POST",
@@ -3235,6 +3651,38 @@ export function adminGetAllDonations() {
   return request<AdminDonation[]>("/api/v1/admin/donations");
 }
 
+/** Admin documents queue (2026-10-30): fundraiser donations whose documents need a person. */
+export type DocumentsQueueRow = {
+  id: number; fundraiser: string | null; donorName: string | null; donorEmail: string | null;
+  amount: number; createdAt: string; documentsStatus: DocumentsStatus; attempts: number | null;
+  capturedAtUtc: string | null; captureTimeSource: "WEBHOOK_EVENT" | "ADMIN_RECONCILED" | "LEGACY_PAYMENT_CREATED_AT" | null;
+  captureObservedAtUtc: string | null; captureTimeConflict: string | null;
+  certificateNumber: string | null; razorpayOrderId: string | null; razorpayPaymentId: string | null;
+  /** PAN review: declared vs read off the photo by the server. */
+  panDeclared: string | null; panRead: string | null; panNameRead: string | null;
+  panScreenStatus: "MATCH" | "MISMATCH" | "UNREADABLE" | "ERROR" | null;
+};
+
+/** Decide a held PAN: approve → 80G receipt; otherwise certificate only. Reason required; audited; queues only. */
+export function adminReviewPan(id: number, approve: boolean, reason: string) {
+  return request<void>(`/api/v1/admin/donations/${id}/pan-review`, { method: "POST", body: JSON.stringify({ approve, reason }) });
+}
+
+export function adminDocumentsQueue(statuses?: DocumentsStatus[]) {
+  const q = statuses?.length ? `?${statuses.map((s) => `status=${s}`).join("&")}` : "";
+  return request<DocumentsQueueRow[]>(`/api/v1/admin/donations/documents${q}`);
+}
+
+/** delivered=true only for UNCERTAIN; false queues another attempt. Reason required; audited. */
+export function adminReconcileDocuments(id: number, delivered: boolean, reason: string) {
+  return request<void>(`/api/v1/admin/donations/${id}/documents/reconcile?delivered=${delivered}&reason=${encodeURIComponent(reason)}`, { method: "POST" });
+}
+
+/** Capture time from an authoritative provider record; capturedAt is ISO with an offset. Audited; queues only. */
+export function adminReconcileCaptureTime(id: number, body: { capturedAt: string; reason: string; evidenceRef: string }) {
+  return request<void>(`/api/v1/admin/donations/${id}/capture-time`, { method: "POST", body: JSON.stringify(body) });
+}
+
 export function adminGetDonationStats() {
   return request<DonationStats>("/api/v1/admin/donations/stats");
 }
@@ -3316,6 +3764,10 @@ export type PostDeliveryIssue = {
   adminResolution: string | null;
   resolvedAt: string | null;
   createdAt: string;
+  /** A purchase delivery problem: resolved with redelivery or closing the remainder, never a bare note. */
+  purchase: boolean;
+  affectedQuantity: number | null;
+  counterpartyResponse: string | null;
 };
 
 export function superAdminListDisputes(status: "open" | "resolved" | "all") {
@@ -4556,12 +5008,27 @@ export interface UploadedFileDto {
   demo?: boolean;
 }
 
+/** One authorized representative card (step 3). `emailVerified` is filled by the server. */
+export interface NgoRepresentativeDto {
+  fullName?: string | null;
+  designation?: string | null;
+  mobileNumber?: string | null;
+  email?: string | null;
+  panNumber?: string | null;
+  idProof?: UploadedFileDto | null;
+  emailVerified?: boolean | null;
+}
+
 export interface NgoDraftDto {
   currentStep?: string;
   organizationName?: string;
   legalStructure?: string;
+  panNumber?: string;
   registrationNumber?: string;
   registeredOfficeAddress?: string;
+  organizationPhone?: string;
+  /** What the NGO does, how, and its causes (100-2000 characters). */
+  aboutUs?: string;
   yearOfEstablishment?: string;
   representativeName?: string;
   designation?: string;
@@ -4569,11 +5036,35 @@ export interface NgoDraftDto {
   officialEmail?: string;
   confirmationChecked?: boolean;
   authorizationLetter?: UploadedFileDto | null;
+  representatives?: NgoRepresentativeDto[];
   documents?: Record<string, UploadedFileDto | null>;
   logo?: UploadedFileDto | null;
   officePhoto?: UploadedFileDto | null;
   activityPhotos?: (UploadedFileDto | null)[];
   updatedAt?: string | null;
+}
+
+/** Shown for every refused NGO document upload (wrong type or too large). */
+export const NGO_DOCUMENT_RULE = "Upload a PDF, JPG or PNG up to 10 MB";
+/** Shown for every refused NGO photo upload. */
+export const NGO_PHOTO_RULE = "Upload a JPG, PNG or WebP photo up to 10 MB";
+
+/** The PAN letter checks for the PAN typed in step 1 (warnings only). */
+export function checkNgoPanLetters(data: { panNumber: string; legalStructure: string; organizationName: string }) {
+  return request<PanCheckResult>("/api/v1/ngo-registration/pan-letter-check", { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Sends a 6-digit code to a representative's email. `verified` is true when it was already verified. */
+export function sendNgoRepresentativeEmailCode(email: string, name: string) {
+  return request<{ sent: boolean; verified: boolean }>("/api/v1/ngo-registration/representative-email/send", {
+    method: "POST", body: JSON.stringify({ email, name }),
+  });
+}
+
+export function verifyNgoRepresentativeEmailCode(email: string, code: string) {
+  return request<{ verified: boolean }>("/api/v1/ngo-registration/representative-email/verify", {
+    method: "POST", body: JSON.stringify({ email, code }),
+  });
 }
 
 /**
@@ -4692,6 +5183,8 @@ export async function uploadNgoDocument(file: File, documentType: string, catego
       const body = await res.json();
       if (typeof body?.message === "string" && body.message) message = body.message;
     } catch {}
+    // Wrong type or too large: always the same plain rule.
+    if (res.status === 413 || res.status === 415) message = NGO_DOCUMENT_RULE;
     throw new Error(message);
   }
 
@@ -4714,7 +5207,7 @@ export async function uploadNgoPhoto(file: File, photoType: string): Promise<Ngo
   });
 
   if (!res.ok) {
-    let message = "Photo upload failed. Please check the image and try again.";
+    let message = res.status === 413 || res.status === 415 ? NGO_PHOTO_RULE : "Photo upload failed. Please check the image and try again.";
     try {
       const body = await res.json();
       if (typeof body?.message === "string" && body.message) message = body.message;
@@ -4733,8 +5226,11 @@ export async function uploadNgoPhoto(file: File, photoType: string): Promise<Ngo
 export function submitNgoApplication(payload: {
   organizationName: string;
   legalStructure: string;
+  panNumber: string;
   registrationNumber: string;
   registeredOfficeAddress: string;
+  organizationPhone?: string;
+  aboutUs?: string;
   yearOfEstablishment: string;
   representativeName: string;
   designation: string;
@@ -4742,6 +5238,7 @@ export function submitNgoApplication(payload: {
   officialEmail: string;
   confirmationChecked: boolean;
   authorizationLetter: UploadedFileDto | null;
+  representatives: NgoRepresentativeDto[];
   documents: Record<string, UploadedFileDto | null>;
   logo: UploadedFileDto | null;
   officePhoto: UploadedFileDto | null;
@@ -4787,6 +5284,20 @@ export async function resendNgoOtp(applicationId: string) {
 export type NgoApplicationStatusResponse = {
   applicationId: string;
   organizationName: string;
+  /** "Trust", "Society" or "Section 8 Company". */
+  legalStructure?: string | null;
+  /** Signed link to the logo, for /profile's About card. */
+  logoUrl?: string | null;
+  organizationPhone?: string | null;
+  /** About us; null on applications from before it existed. */
+  aboutUs?: string | null;
+  yearOfEstablishment?: string | null;
+  /** The first authorized representative (shown as founder / trustee). */
+  founderName?: string | null;
+  founderDesignation?: string | null;
+  /** The public page address, once approved. */
+  publicSlug?: string | null;
+  mobileNumber?: string | null;
   status: string;
   submittedAt: string | null;
   verifiedAt: string | null;
@@ -4795,6 +5306,20 @@ export type NgoApplicationStatusResponse = {
   needsInformationDetails: string | null;
   /** Per-item correction request (NEEDS_INFORMATION): wizard field key and the reviewer's note. */
   correctionItems?: NgoCorrectionItem[];
+  /** Correction round number (1 = first request). */
+  correctionRound?: number | null;
+  /** True once the NGO resubmitted after a correction request. */
+  resubmitted?: boolean | null;
+  /** The reviewer's overall message for the current correction round. */
+  overallNote?: string | null;
+  correctionHistory?: NgoCorrectionRound[] | null;
+};
+
+/** One "Request corrections" round and what the NGO changed in reply. */
+export type NgoCorrectionRound = {
+  roundNumber: number; overallNote?: string | null; flaggedItems?: NgoCorrectionItem[] | null;
+  status?: string | null; createdAt?: string | null; resubmittedAt?: string | null;
+  previousValues?: Record<string, string> | null; newValues?: Record<string, string> | null;
 };
 
 /** A wizard field or file a reviewer asked to fix, e.g. "registrationNumber" or "documents.trust-deed". */
@@ -4862,9 +5387,17 @@ export async function uploadNeedProfileDocument(docType: VerificationDocumentTyp
 // NGO staff review uses the same server capability as request review.
 export type NgoReviewApplication = NgoApplicationStatusResponse & {
   id: number; userId: number | null; legalStructure: string; registrationNumber: string;
-  registeredOfficeAddress: string; yearOfEstablishment: string; representativeName: string;
+  registeredOfficeAddress: string; organizationPhone?: string | null; yearOfEstablishment: string; representativeName: string;
   designation: string; mobileNumber: string; officialEmail: string; reviewedAt: string | null;
   aiScreeningVerdict: string | null; aiScreeningNotes: string | null;
+  /** The organization PAN typed in step 1 (null on applications from before the current wizard). */
+  panNumber?: string | null;
+};
+export type NgoReviewRepresentative = {
+  position: number; fullName: string; designation: string; mobileNumber: string; email: string;
+  emailVerified: boolean; emailVerifiedAt: string | null; panNumber: string | null;
+  panValidFormat: boolean | null; panPersonal: boolean | null;
+  idProofFileId: number | null; idProofField: string;
 };
 export type NgoReviewFile = {
   id: number; kind: "document" | "photo"; type: string; name: string;
@@ -4877,10 +5410,30 @@ export type NgoReviewDetail = {
   decisions: { id: number; fromStatus: string; toStatus: string; changedByEmail: string; note: string; changedAt: string }[];
   current: boolean;
   corrections?: { summary: string; items: NgoCorrectionItem[] } | null;
+  /** The PAN check box for the PAN typed in step 1 (null for older applications). */
+  panCheck?: {
+    check: PanCheckResult; organizationNameSource: string | null;
+    dateOfFormationSource: string | null; panNumberSource: string | null;
+  } | null;
+  /** False for applications submitted before the current wizard (no representatives). */
+  wizardV2?: boolean;
+  representatives?: NgoReviewRepresentative[];
+  /** Wizard keys ("documents.x") the current wizard requires / offers as optional. */
+  requiredDocuments?: string[];
+  optionalDocuments?: string[];
+  /** Every correction round, oldest first (absent on older servers). */
+  correctionHistory?: NgoCorrectionRound[] | null;
+  resubmitted?: boolean | null; correctionRound?: number | null;
+  previouslyFlaggedItems?: (NgoCorrectionItem & { label?: string })[] | null; previousOverallNote?: string | null;
+  /** The NGO's past activity, reviewed with the application (approval makes it live). */
+  pastActivities?: NgoActivity[] | null;
 };
-export function adminGetNgoApplications(status: string, page = 0) {
+/** {@code q}: optional search (org name, reference, email, phone, PAN, registration no., representative). */
+export function adminGetNgoApplications(status: string, page = 0, q = "") {
   const params = new URLSearchParams({ page: String(page) });
   if (status) params.set("status", status);
+  const query = q.trim().slice(0, 100);
+  if (query) params.set("q", query);
   return request<{ content: NgoReviewApplication[]; totalPages: number; totalElements: number }>(
     `/api/v1/admin/ngo-applications?${params}`);
 }
@@ -4908,6 +5461,14 @@ export type NgoOverview = {
   photosDueRequestName: string; verifiedDeliveries: number; handovers: NgoHandover[];
   /** One drive at a time: false while an earlier drive is not finished (proof approved). */
   canStartDrive?: boolean; blockingDriveTitle?: string; blockingDriveStatus?: string;
+  /** Drives waiting for distribution proof. proofDueAt is UTC without a zone. */
+  proofDueDrives?: { id: number; title: string; quantityReceived: number; proofDueAt?: string | null }[];
+  /** This NGO's own drives whose distribution proof an admin approved; photoUrls are signed for reading. */
+  successStories?: NgoSuccessStory[];
+};
+export type NgoSuccessStory = {
+  id: number; title: string; photoUrls: string[]; peopleReached?: number | null; quantityDistributed?: number | null;
+  distributedOn?: string | null; location?: string | null; note?: string | null;
 };
 export function getNgoOverview() {
   // Activity events must not reuse totals cached before the handover changed.
@@ -4927,26 +5488,72 @@ export async function uploadNgoHandoverProof(kind: NgoHandover["kind"], id: numb
 
 // ── NGO Drives ──────────────────────────────────────────────────────────────
 
+export type DrivePhotoItem = {
+  url: string;
+  storageKey?: string;
+  /** A short-lived link the browser can show (the bucket is private); never sent back as the url. */
+  previewUrl?: string;
+};
+
+/** Category-specific drive fields: Clothing sizing or Furniture dimensions. */
+export type DriveCategoryDetails = {
+  sizes?: string[];
+  fits?: string[];
+  /** Older single choice; read only. */
+  fit?: string;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+  weightKg?: number;
+  material?: string;
+  needsAssembly?: boolean;
+};
+
 export type CreateNgoDrivePayload = {
   driveType: "ITEMS";
   title: string;
+  tagline?: string;
   category: string;
   itemName: string;
   quantity: number;
   unit: "PIECES" | "SETS" | "PAIRS" | "KG" | "BOXES" | "PACKETS";
   condition: "NEW_ONLY" | "NEW_OR_GENTLY_USED" | "SEALED_ONLY" | "USED_WORKING" | "ANY_USABLE";
+  mustBeWorking?: boolean;
+  requireClean?: boolean;
   details: string;
+  photos?: DrivePhotoItem[];
   referencePhotoUrl?: string;
-  description: string;
+  whoFor?: string;
+  whyNow?: string;
+  whatChanges?: string;
+  /** Full drop-off address of the NGO (10-300 chars). */
+  dropOffAddress?: string;
+  description?: string;
+  locationArea: string;
+  locationCity: string;
   urgency: "NORMAL" | "HIGH" | "CRITICAL";
-  beneficiaryGroup: string;
+  /** Legacy single group; the wizard sends beneficiaryGroups. */
+  beneficiaryGroup?: string;
+  beneficiaryGroups: string[];
   beneficiaryCount: number;
+  beneficiaryDescription: string;
+  categoryDetails?: DriveCategoryDetails;
   neededBy: string;          // ISO date YYYY-MM-DD
   availableDays: ("MON"|"TUE"|"WED"|"THU"|"FRI"|"SAT"|"SUN")[];
   availableFrom: string;     // "HH:mm"
   availableTo: string;       // "HH:mm"
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH";
+  changemakerName: string;
+  changemakerRole: string;
+  changemakerPhotoUrl?: string;
+  changemakerPhotoKey?: string;
+  changemakerWhy: string;
   contactName: string;
   contactPhone: string;
+  /** Handover contacts, first = primary (up to 5); contactName/contactPhone carry the primary too. */
+  handoverContacts?: DriveHandoverContact[];
+  altContact?: string;
+  pastWorkUrl?: string;
   declarations: {
     accurate: boolean;
     usedOnlyForBeneficiaries: boolean;
@@ -4965,10 +5572,18 @@ export async function createNgoDrive(payload: CreateNgoDrivePayload): Promise<{ 
   });
 }
 
+export type NgoDrivePhotoItem = {
+  id?: number;
+  url: string;
+  storageKey?: string;
+  sortOrder?: number;
+};
+
 export type NgoDrive = {
   id: number;
   ngoUser: { id: number; fullName: string };
   title: string;
+  tagline?: string | null;
   category: string;
   itemName: string;
   quantityNeeded: number;
@@ -4976,20 +5591,63 @@ export type NgoDrive = {
   quantityReceived: number;
   unit: string;
   itemCondition: string;
+  mustBeWorking?: boolean;
+  requireClean?: boolean;
   description: string;
+  whoFor?: string | null;
+  whyNow?: string | null;
+  whatChanges?: string | null;
+  locationArea?: string | null;
+  locationCity?: string | null;
+  locationCountry?: string | null;
+  locationState?: string | null;
+  locationPincode?: string | null;
+  /** Full drop-off address; older drives omit it (use driveDropOffAddress). */
+  dropOffAddress?: string | null;
+  dropOffAddressDisplay?: string | null;
+  locationLatitude?: number | null;
+  locationLongitude?: number | null;
+  /** Pickup available within this distance (km); null on older drives. */
+  /** Optional distribution-proof details (sent with the proof). */
+  /** When collection completed (proof dates can't be before it). */
+  collectionCompletedAt?: string | null;
+  proofDistributedOn?: string | null;
+  proofLocation?: string | null;
+  proofQuantityDistributed?: number | null;
+  proofNote?: string | null;
+  proofConsentConfirmed?: boolean | null;
+  pickupRadiusKm?: number | null;
   urgency: string;
+  /** Display label of the groups ("Children, Women"). */
   beneficiaryGroup: string;
+  beneficiaryGroups?: string[];
+  categoryDetails?: DriveCategoryDetails | null;
   beneficiaryCount: number;
+  beneficiaryDescription?: string | null;
   neededBy: string; // ISO Date
   availableDays: string;
   availableFrom: string; // "HH:mm"
   availableTo: string;   // "HH:mm"
+  handoverMode?: string;
+  changemakerName?: string | null;
+  changemakerRole?: string | null;
+  changemakerPhotoUrl?: string | null;
+  changemakerPhotoKey?: string | null;
+  changemakerWhy?: string | null;
   contactName: string;
   contactPhone: string;
+  /** Handover contacts, first = primary; older drives: their single contact. */
+  handoverContacts?: DriveHandoverContact[] | null;
+  altContact?: string | null;
+  pastWorkUrl?: string | null;
   status: string;
   adminReason?: string;
   details?: string | null;
   referencePhotoUrl?: string | null;
+  referencePhotoKey?: string | null;
+  /** The separate drive cover photo, when the drive has one. */
+  coverPhotoUrl?: string | null;
+  photos?: NgoDrivePhotoItem[];
   createdAt: string;
   submittedAt?: string;
   reviewedAt?: string;
@@ -4998,12 +5656,252 @@ export type NgoDrive = {
   proofDueAt?: string | null;
   distributionProofSubmittedAt?: string | null;
   beneficiariesReached?: number | null;
+  donorCount?: number;
+  driveType?: string;
+  taxBenefit?: boolean;
 };
+
+export type PublicNgoTrackRecord = {
+  completedDrives: number;
+  itemsReceived: number;
+  drivesWithApprovedProof: number;
+};
+
+export type PublicNgoInfo = {
+  organizationName: string;
+  city?: string | null;
+  legalStructure?: string | null;
+  registrationNumber?: string | null;
+  yearOfEstablishment?: string | null;
+  registeredOfficeAddress?: string | null;
+  verifiedAt?: string | null;
+  website?: string | null;
+  trackRecord?: PublicNgoTrackRecord | null;
+  aboutUs?: string | null;
+  /** The first authorized representative, shown as founder / trustee. */
+  founderName?: string | null;
+  founderDesignation?: string | null;
+  /** The public page address, /ngos/{slug}. */
+  slug?: string | null;
+  /** Drop-off details for donors (optional; older servers omit them). */
+  dropOffAddress?: string | null;
+  handoverContactName?: string | null;
+  handoverContactPhone?: string | null;
+  availableDays?: string | string[] | null;
+  availableHours?: string | null;
+  /** Approved past activities, newest first. */
+  activities?: PublicNgoActivity[] | null;
+  pastActivities?: PublicNgoActivity[] | null;
+};
+
+/** The public NGO page, /ngos/{slug}. Name + designation only for representatives. */
+export type PublicNgoProfile = {
+  slug: string;
+  organizationName: string;
+  logoUrl?: string | null;
+  coverImageUrl?: string | null;
+  photoUrls?: string[];
+  verifiedAt?: string | null;
+  city?: string | null;
+  state?: string | null;
+  yearOfEstablishment?: string | null;
+  aboutUs?: string | null;
+  legalStructure?: string | null;
+  registrationNumber?: string | null;
+  registeredOfficeAddress?: string | null;
+  website?: string | null;
+  /** Up to 3 https links (the old website as the single link when none were added). */
+  links?: string[] | null;
+  organizationPhone?: string | null;
+  officialEmail?: string | null;
+  representatives?: { fullName: string; designation?: string | null }[];
+  /** Registration certificate, 12A, 80G: short-lived links. */
+  documents?: { label: string; url: string }[];
+  trackRecord?: PublicNgoTrackRecord | null;
+  activities?: PublicNgoActivity[];
+  pastActivities?: PublicNgoActivity[] | null;
+  liveDrives?: PublicNgoDrive[];
+};
+
+/** A 10-minute link to one of the signed-in NGO's own uploaded files (review step preview). */
+export function getNgoFileLink(kind: "document" | "photo", id: number) {
+  return request<{ url: string }>(`/api/v1/ngo-registration/files/${kind}/${id}/link`);
+}
+
+/**
+ * A preview of one of the NGO's own uploads as a blob: URL. The file comes through the
+ * API instead of a presigned S3 link, so the preview does not depend on the bucket's
+ * region, CORS or the site's CSP for the bucket host. The caller may revoke it.
+ */
+export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: number): Promise<string> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const response = await fetch(`${BASE_URL}/api/v1/ngo-registration/files/${kind}/${id}/content`, {
+    credentials: "include",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!response.ok) throw new ApiError(response.status, "This file can't be shown right now.", null);
+  return URL.createObjectURL(await response.blob());
+}
+
+/** One handover contact of a drive (phone +91XXXXXXXXXX). */
+export type DriveHandoverContact = { name: string; phone: string | null; role?: string | null };
+
+// ── The NGO editing its own public page ───────────────────────────────────────
+
+/** Verified fields: a change waits for an admin. Cosmetic fields save at once. */
+export type NgoProfileVerifiedField = "organizationName" | "panNumber" | "registrationNumber" | "officialEmail" | "registeredOfficeAddress" | "representatives";
+/** A representative in a change request: added/replaced people carry every wizard detail; name/role edits only those two. */
+export type NgoProfileRepresentative = {
+  fullName: string; designation?: string | null; mobileNumber?: string | null; email?: string | null;
+  panNumber?: string | null; idProofDocumentId?: number | null;
+};
+export type NgoProfileChangeRequest = {
+  id: number; field: NgoProfileVerifiedField; oldValue?: string | null; newValue: string; reason?: string | null;
+  status: "PENDING" | "APPROVED" | "REJECTED"; adminReason?: string | null; createdAt: string; decidedAt?: string | null;
+};
+export type NgoProfileManage = {
+  slug: string; organizationName: string; panNumber?: string | null; registrationNumber?: string | null; officialEmail?: string | null;
+  aboutUs?: string | null; organizationPhone?: string | null; registeredOfficeAddress?: string | null; links: string[];
+  representatives: NgoProfileRepresentative[];
+  photos: { id: number; type: "LOGO" | "COVER" | "OFFICE_PHOTO" | "ACTIVITY_PHOTO"; url: string }[];
+  requests: NgoProfileChangeRequest[];
+};
+export function getMyNgoProfileManage() {
+  return request<NgoProfileManage>("/api/v1/ngo/profile/manage");
+}
+export function updateNgoProfileCosmetic(body: { aboutUs?: string; organizationPhone?: string; registeredOfficeAddress?: string; links?: string[] }) {
+  return request<NgoProfileManage>("/api/v1/ngo/profile/cosmetic", { method: "PUT", body: JSON.stringify(body) });
+}
+export async function uploadNgoProfilePhoto(type: "cover" | "logo" | "office_photo", file: File): Promise<NgoProfileManage> {
+  const body = new FormData(); body.append("file", file);
+  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
+  const res = await fetch(`${BASE_URL}/api/v1/ngo/profile/photos?type=${type}`, {
+    method: "POST", body, credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!res.ok) {
+    const r = await res.json().catch(() => null);
+    throw new ApiError(res.status, r?.fieldErrors?.[0]?.message || r?.detail || "We couldn't upload the photo. Please try again.", r);
+  }
+  return (await res.json()) as NgoProfileManage;
+}
+export function removeNgoProfilePhoto(id: number) {
+  return request<NgoProfileManage>(`/api/v1/ngo/profile/photos/${id}`, { method: "DELETE" });
+}
+/** A live document on /profile; a replacement waits for review (pendingRequestId). expiresAt is set only when known. */
+export type NgoProfileDocument = {
+  id: number; type: string; category?: string | null; fileName?: string | null; mimeType?: string | null; uploadedAt?: string | null;
+  url?: string | null; expiresAt?: string | null; pendingRequestId?: number | null; pendingFileName?: string | null;
+};
+export function getMyNgoProfileDocuments() {
+  return request<NgoProfileDocument[]>("/api/v1/ngo/profile/documents");
+}
+export function requestNgoProfileChange(field: NgoProfileVerifiedField | `documents.${string}`, newValue: string, reason?: string) {
+  return request<NgoProfileChangeRequest>("/api/v1/ngo/profile/change-requests", { method: "POST", body: JSON.stringify({ field, newValue, reason }) });
+}
+export type AdminNgoProfileChange = {
+  request: NgoProfileChangeRequest; ngoUserId: number; organizationName: string; slug?: string | null;
+  /** Signed previews of the ID proofs in the old and new representatives (document id → link). */
+  idProofUrls?: Record<string, string> | null;
+};
+/** How many profile changes wait for review (the admin sidebar badge). */
+export function adminGetNgoProfileChangesCount() {
+  return request<{ pending: number }>("/api/v1/admin/ngo-profile-changes/count");
+}
+export function adminGetNgoProfileChanges(status = "PENDING", q = "") {
+  const qs = new URLSearchParams({ status, ...(q.trim() ? { q: q.trim() } : {}) });
+  return request<AdminNgoProfileChange[]>(`/api/v1/admin/ngo-profile-changes?${qs}`);
+}
+export function adminApproveNgoProfileChange(id: number) {
+  return request<NgoProfileChangeRequest>(`/api/v1/admin/ngo-profile-changes/${id}/approve`, { method: "POST" });
+}
+export function adminRejectNgoProfileChange(id: number, reason: string) {
+  return request<NgoProfileChangeRequest>(`/api/v1/admin/ngo-profile-changes/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) });
+}
+
+export function getPublicNgo(slug: string) {
+  return request<PublicNgoProfile>(`/api/v1/ngos/${encodeURIComponent(slug)}`);
+}
+
+export function getPublicNgoSlugs() {
+  return request<{ slugs: string[] }>("/api/v1/ngos");
+}
+
+/** An approved NGO edits its About us (100-2000 characters, or empty to clear). */
+export function updateNgoAboutUs(aboutUs: string) {
+  return request<{ aboutUs?: string }>("/api/v1/ngo/about-us", { method: "PUT", body: JSON.stringify({ aboutUs }) });
+}
+
+export type NgoActivityStatus = "PENDING" | "APPROVED" | "REJECTED";
+export type NgoActivityMedia = { id: number; mediaType: "IMAGE" | "VIDEO"; url: string | null; status: string };
+export type NgoActivity = {
+  id: number; title: string; activityDate: string; description?: string | null; consentGiven?: boolean;
+  status: NgoActivityStatus; rejectionReason?: string | null; sortOrder: number; media: NgoActivityMedia[];
+};
+export type NgoActivityInput = { title: string; activityDate: string; description?: string; consentGiven?: boolean };
+
+export function getMyNgoActivities() {
+  return request<NgoActivity[]>("/api/v1/ngo/activities");
+}
+export function createNgoActivity(body: NgoActivityInput) {
+  return request<NgoActivity>("/api/v1/ngo/activities", { method: "POST", body: JSON.stringify(body) });
+}
+export function updateNgoActivity(id: number, body: NgoActivityInput) {
+  return request<NgoActivity>(`/api/v1/ngo/activities/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+export function deleteNgoActivity(id: number) {
+  return request<void>(`/api/v1/ngo/activities/${id}`, { method: "DELETE" });
+}
+export function reorderNgoActivities(ids: number[]) {
+  return request<NgoActivity[]>("/api/v1/ngo/activities/order", { method: "PUT", body: JSON.stringify({ ids }) });
+}
+export async function uploadNgoActivityPhoto(id: number, file: File): Promise<NgoActivity> {
+  const form = new FormData();
+  form.append("file", file);
+  // Native fetch: request() would set a JSON content type.
+  const res = await fetch(`${BASE_URL}/api/v1/ngo/activities/${id}/photos`, { method: "POST", body: form, credentials: "include" });
+  if (!res.ok) {
+    let message = res.statusText;
+    try { const b = await res.json(); message = b?.fieldErrors?.[0]?.message || b?.detail || message; } catch { /* keep statusText */ }
+    throw new Error(message || "Upload failed");
+  }
+  return res.json();
+}
+export function removeNgoActivityMedia(id: number, mediaId: number) {
+  return request<NgoActivity>(`/api/v1/ngo/activities/${id}/media/${mediaId}`, { method: "DELETE" });
+}
+export function getNgoActivityVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/ngo/activities/video/capability");
+}
+export function createNgoActivityVideoSlot(id: number, contentLength: number, contentType?: string) {
+  const type = contentType ? `&contentType=${encodeURIComponent(contentType)}` : "";
+  return request<OfferVideoSlot>(`/api/v1/ngo/activities/${id}/video/slot?contentLength=${contentLength}${type}`, { method: "POST" });
+}
+export function finalizeNgoActivityVideo(id: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/ngo/activities/${id}/video/${mediaId}/finalize`, { method: "POST" });
+}
+export function getNgoActivityVideoStatus(id: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/ngo/activities/${id}/video/${mediaId}`);
+}
+export function deleteNgoActivityVideo(id: number, mediaId: number) {
+  return request<void>(`/api/v1/ngo/activities/${id}/video/${mediaId}`, { method: "DELETE" });
+}
+
+export type AdminNgoActivity = { activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
+export function getPendingNgoActivities() {
+  return request<AdminNgoActivity[]>("/api/v1/admin/ngo-activities");
+}
+export function approveNgoActivity(id: number) {
+  return request<NgoActivity>(`/api/v1/admin/ngo-activities/${id}/approve`, { method: "PATCH" });
+}
+export function rejectNgoActivity(id: number, reason: string) {
+  return request<NgoActivity>(`/api/v1/admin/ngo-activities/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
+}
 
 /** A LIVE drive as the public sees it (GET /api/v1/drives). */
 export type PublicNgoDrive = {
   id: number;
   title: string;
+  tagline?: string | null;
   category: string;
   itemName: string;
   quantityNeeded: number;
@@ -5015,21 +5913,65 @@ export type PublicNgoDrive = {
   conditionRule?: string | null;
   details?: string;
   referencePhotoUrl?: string | null;
+  photoUrls?: string[] | null;
   description?: string;
-  urgency: string;
+  whoFor?: string | null;
+  whyNow?: string | null;
+  whatChanges?: string | null;
+  mustBeWorking?: boolean | null;
+  requireClean?: boolean | null;
+  locationArea?: string | null;
+  locationCity?: string | null;
+  /** Pickup available within this distance (km); null on older drives. */
+  pickupRadiusKm?: number | null;
+  urgency?: string | null;
   beneficiaryGroup?: string;
+  beneficiaryGroups?: string[];
+  categoryDetails?: DriveCategoryDetails | null;
   beneficiaryCount?: number;
-  neededBy: string;
+  beneficiaryDescription?: string | null;
+  neededBy?: string | null;
   availableDays?: string[];
   availableFrom?: string;
   availableTo?: string;
+  handoverMode?: string | null;
+  changemakerName?: string | null;
+  changemakerRole?: string | null;
+  changemakerPhotoUrl?: string | null;
+  changemakerWhy?: string | null;
+  pastWorkUrl?: string | null;
   quantityPledged: number;
   quantityReceived: number;
-  stillNeeded: number;
+  stillNeeded?: number;
   status: string;
   ngoOrganizationName?: string | null;
   ngoCity?: string | null;
-  verified: boolean;
+  verified?: boolean;
+  ngo?: PublicNgoInfo | null;
+  /** Distinct donors whose offers the NGO accepted (or later). */
+  donorCount?: number;
+  driveType?: string;
+  taxBenefit?: boolean;
+  /** The drive's own cover photo. When present (even null) it replaces referencePhotoUrl on cards. */
+  coverPhotoUrl?: string | null;
+  /** The drive's pin, when the server shares it (used for the pickup-radius check). */
+  latitude?: number | null;
+  longitude?: number | null;
+  locationLatitude?: number | null;
+  locationLongitude?: number | null;
+  /** Approved NGO past activities, newest first (detail endpoint). */
+  pastActivities?: PublicNgoActivity[] | null;
+};
+
+/** One approved NGO past activity, as the public drive / NGO pages show it. */
+export type PublicNgoActivity = {
+  id: number;
+  title: string;
+  activityDate?: string | null;
+  description?: string | null;
+  status?: string | null;
+  coverPhotoUrl?: string | null;
+  media?: { mediaType?: string | null; url?: string | null }[] | null;
 };
 
 // ── Admin: NGO drives, drive offers, distribution proofs ────────────────────
@@ -5056,7 +5998,18 @@ export function adminRequestNgoDriveChanges(id: number, reason: string) {
 export function adminRejectNgoDrive(id: number, reason: string) {
   return request<NgoDrive>(`/api/v1/admin/ngo-drives/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
 }
-export type AdminProofDrive = NgoDrive & { distributionProofUrls?: string | null; distributionProofSubmittedAt?: string | null; beneficiariesReached?: number | null };
+export type AdminProofDrive = NgoDrive & {
+  distributionProofUrls?: string | null; distributionProofSubmittedAt?: string | null; beneficiariesReached?: number | null;
+  proofDistributedOn?: string | null; proofLocation?: string | null; proofQuantityDistributed?: number | null;
+  proofNote?: string | null; proofConsentConfirmed?: boolean | null; proofFacesBlurred?: boolean | null;
+  /** Signed photo links, when the server sends them as a list. */
+  proofPhotoUrls?: string[] | null;
+  collectionStartedAt?: string | null; collectionCompletedAt?: string | null; liveAt?: string | null;
+  proofRejectionReason?: string | null; previousRejectionReason?: string | null; previousProofRejectionReason?: string | null;
+  ngoName?: string | null;
+  donors?: NgoDriveReportDonor[] | null;
+  proofDonors?: Partial<NgoDriveReportDonor>[] | null;
+};
 export function adminGetNgoDriveProofs() {
   return request<AdminProofDrive[]>("/api/v1/admin/ngo-drives/proofs");
 }
@@ -5072,6 +6025,7 @@ export type AdminPendingDriveOffer = {
   driveUnit?: string; ngoName?: string; donorName?: string; donorCity?: string | null;
   quantity?: number; condition?: string; approximateAge?: string; knownDefects?: string;
   notesForNgo?: string; handoverMethod?: string;
+  sizeSpec?: string | null; ageRange?: string | null; confirmedWorking?: boolean | null; confirmedClean?: boolean | null;
 };
 export function adminGetPendingNgoDriveOffers() {
   return request<AdminPendingDriveOffer[]>("/api/v1/admin/ngo-drive-offers/pending");
@@ -5113,7 +6067,8 @@ export async function updateNgoDrive(id: number, payload: CreateNgoDrivePayload)
 }
 
 /** Uploads a drive's reference photo and returns its URL (never a data URL). */
-export async function uploadNgoDriveReferencePhoto(file: File): Promise<string> {
+/** Uploads a drive wizard photo: url is stored with the drive, previewUrl is for showing it now. */
+export async function uploadNgoDriveReferencePhoto(file: File): Promise<{ url: string; previewUrl: string }> {
   const body = new FormData(); body.append("file", file);
   const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const response = await fetch(`${BASE_URL}/api/v1/ngo-drives/uploads/reference-photo`, {
@@ -5124,8 +6079,27 @@ export async function uploadNgoDriveReferencePhoto(file: File): Promise<string> 
     const result = await response.json().catch(() => null);
     throw new ApiError(response.status, result?.fieldErrors?.[0]?.message || result?.detail || "We could not upload the photo. Please try again.", result);
   }
-  const { url } = await response.json() as { url: string };
-  return url;
+  const { url, previewUrl } = await response.json() as { url: string; previewUrl?: string };
+  return { url, previewUrl: previewUrl || url };
+}
+
+/** The wizard removed or replaced a photo: the server deletes it unless a drive still uses it. */
+export async function deleteUnusedNgoDrivePhoto(url: string): Promise<void> {
+  await request(`/api/v1/ngo-drives/uploads/reference-photo?url=${encodeURIComponent(url)}`, { method: "DELETE" });
+}
+
+/** The NGO's server-side drive wizard draft, or null when there is none. */
+export async function getNgoDriveDraft(): Promise<{ payload: Record<string, unknown>; updatedAt: string } | null> {
+  const r = await request<{ payload: Record<string, unknown>; updatedAt: string } | undefined>("/api/v1/ngo-drives/draft");
+  return r && r.payload ? r : null;
+}
+
+export async function saveNgoDriveDraft(payload: Record<string, unknown>): Promise<void> {
+  await request("/api/v1/ngo-drives/draft", { method: "PUT", body: JSON.stringify({ payload }) });
+}
+
+export async function deleteNgoDriveDraft(): Promise<void> {
+  await request("/api/v1/ngo-drives/draft", { method: "DELETE" });
 }
 
 export async function getNgoDrive(id: number): Promise<PublicNgoDrive> {
@@ -5146,22 +6120,54 @@ export async function getNgoDriveDetail(id: number): Promise<NgoDrive> {
 
 export type NgoDriveOfferResponse = {
   id: number;
+  /** UTC instant when the post-handover issue window closes (backend-computed; 3 days). Absent on older servers. */
+  issueWindowEndsAt?: string | null;
   driveId: number;
   donorDisplayName: string;
   status: string;
   quantity?: number;
+  /** Set when the NGO accepted part of the offer: what the donor first offered. */
+  offeredQuantity?: number | null;
   condition?: string;
   approximateAge?: string;
+  sizeSpec?: string | null;
+  ageRange?: string | null;
+  confirmedWorking?: boolean | null;
+  confirmedClean?: boolean | null;
   knownDefects?: string;
   notesForNgo?: string;
   handoverMethod?: string;
   pickupCity?: string;
   pickupLocality?: string;
   pickupPincode?: string;
+  /** Where the items are (step 1). The NGO sees only city, locality and distance. */
+  donorCity?: string | null;
+  donorLocality?: string | null;
+  donorPincode?: string | null;
+  donorLatitude?: number | null;
+  donorLongitude?: number | null;
+  /** Distance to the drive in km; null when the drive has no pickup radius. */
+  distanceKm?: number | null;
+  /** True when the items are outside the NGO's pickup radius: drop-off only. */
+  dropOffOnly?: boolean | null;
+  driveLocationArea?: string | null;
+  /** The drive's full drop-off address (optional; older servers/drives omit it). */
+  driveDropOffAddress?: string | null;
+  dropOffAddress?: string | null;
+  dropOffAddressDisplay?: string | null;
+  driveLocationPincode?: string | null;
+  driveNeededBy?: string | null;
+  driveLocationCity?: string | null;
+  pickupRadiusKm?: number | null;
   rejectionReason?: string;
   ngoDeclineReason?: string;
   /** Photos the NGO took of the items it received at the handover. */
   receiptPhotos?: string[];
+  /** The donor's handover photos, taken before showing the code. */
+  handoverPhotos?: string[];
+  /** Once the NGO received the items: when, and how many. */
+  receivedAt?: string | null;
+  receivedQuantity?: number | null;
   submittedAt?: string;
   driveTitle: string;
   ngoName: string;
@@ -5189,11 +6195,59 @@ export type NgoDriveOfferResponse = {
   handoverDetails?: {
     organizationName: string;
     registeredOfficeAddress?: string | null;
+    dropOffAddress?: string | null;
+    dropOffAddressDisplay?: string | null;
     contactName?: string | null;
     contactPhone?: string | null;
+    /** Every handover contact, first = primary; phones are null until the NGO allows calls. */
+    contacts?: DriveHandoverContact[] | null;
     availableDays?: string | null;
     availableHours?: string | null;
   };
+  ngoAllowsDonorCall?: boolean | null;
+  /** Issued once the handover completes. */
+  certificateIssued?: boolean | null;
+  certificateNumber?: string | null;
+  certificateIssuedAt?: string | null;
+  /** The drive's pin (for the pickup-radius check). */
+  driveLocationLatitude?: number | null;
+  driveLocationLongitude?: number | null;
+  /** Distribution proof on the offer itself, once approved (photo links freshly signed). */
+  proofPublished?: boolean | null;
+  proofQuantityDistributed?: number | null;
+  proofDistributedOn?: string | null;
+  proofLocation?: string | null;
+  proofNote?: string | null;
+  proofPhotoUrls?: string[] | null;
+  /** Distribution proof, once the admin approved it (optional fields). */
+  driveBeneficiariesReached?: number | null;
+  driveBeneficiaryGroup?: string | null;
+};
+
+export type DriveOfferLocation = {
+  country: string; state: string; city: string; locality: string; pincode: string;
+  latitude: number; longitude: number;
+};
+
+/** Saves where the items are; the server works out the distance and the pickup rule. */
+export async function saveNgoDriveOfferLocation(offerId: number, loc: DriveOfferLocation): Promise<NgoDriveOfferResponse> {
+  return request<NgoDriveOfferResponse>(`/api/v1/drive-offers/${offerId}/location`, { method: "PUT", body: JSON.stringify(loc) });
+}
+
+/** The donor's drive offers the NGO has accepted, not yet completed (Matches tab, NGO segment). */
+export function getMyAcceptedNgoDriveOffers() {
+  return request<NgoDriveOfferResponse[]>("/api/v1/drive-offers/mine/accepted");
+}
+
+/** Chat between a drive offer's donor and the drive's NGO; same message shape as the match chat. */
+export const driveOfferChat = {
+  messages: (offerId: number) => request<ChatMessage[]>(`/api/v1/drive-offers/${offerId}/chat/messages`),
+  since: (offerId: number, since: string) =>
+    request<ChatMessage[]>(`/api/v1/drive-offers/${offerId}/chat/messages/since?since=${encodeURIComponent(since)}`),
+  send: (offerId: number, content: string) =>
+    request<ChatMessage>(`/api/v1/drive-offers/${offerId}/chat/messages`, { method: "POST", body: JSON.stringify({ content }) }),
+  markRead: (offerId: number) => request<void>(`/api/v1/drive-offers/${offerId}/chat/messages/read`, { method: "POST" }),
+  unreadCount: (offerId: number) => request<{ count: number }>(`/api/v1/drive-offers/${offerId}/chat/messages/unread-count`),
 };
 
 export async function createNgoDriveOfferDraft(driveId: number): Promise<{ id: number }> {
@@ -5257,21 +6311,40 @@ export async function getNgoDriveOffersForNgo(driveId: number, status?: string):
   return await request<NgoDriveOfferResponse[]>(`/api/v1/ngo-drives/${driveId}/offers${query}`);
 }
 
-export async function reviewNgoDriveOffer(driveId: number, offerId: number, decision: "ACCEPT" | "DECLINE", reason?: string): Promise<NgoDriveOfferResponse> {
+export async function reviewNgoDriveOffer(driveId: number, offerId: number, decision: "ACCEPT" | "DECLINE", reason?: string, acceptedQuantity?: number): Promise<NgoDriveOfferResponse> {
   return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/review`, {
     method: "POST",
-    body: JSON.stringify({ decision, reason }),
+    // acceptedQuantity: accept only part of the offer; the rest goes back to the drive.
+    body: JSON.stringify({ decision, reason, ...(acceptedQuantity != null ? { acceptedQuantity: String(acceptedQuantity) } : {}) }),
   });
 }
 
-export async function releaseNgoDriveOffer(driveId: number, offerId: number): Promise<NgoDriveOfferResponse> {
+/** Accept or decline several offers on one drive at once (all or nothing). */
+export async function reviewNgoDriveOffersBulk(driveId: number, offerIds: number[], decision: "ACCEPT" | "DECLINE", reason?: string): Promise<NgoDriveOfferResponse[]> {
+  return await request<NgoDriveOfferResponse[]>(`/api/v1/ngo-drives/${driveId}/offers/review-bulk`, {
+    method: "POST",
+    body: JSON.stringify({ offerIds, decision, reason }),
+  });
+}
+
+export async function releaseNgoDriveOffer(driveId: number, offerId: number, reason?: string): Promise<NgoDriveOfferResponse> {
   return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/release`, {
+    method: "POST",
+    ...(reason ? { body: JSON.stringify({ reason }) } : {}),
+  });
+}
+
+export async function setNgoDriveOfferCallPermission(driveId: number, offerId: number, allowed: boolean): Promise<NgoDriveOfferResponse> {
+  return await request<NgoDriveOfferResponse>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/call-permission?allowed=${allowed}`, {
     method: "POST",
   });
 }
 
 export type NgoDriveOfferHandoverRecordResponse = {
   id: number;
+  /** The drive's drop-off address (stored, else locality + city + PIN). */
+  dropOffAddress?: string | null;
+  dropOffAddressDisplay?: string | null;
   offerId: number;
   method: string | null;
   scheduledDateTime: string | null;
@@ -5309,10 +6382,20 @@ export async function rescheduleNgoDriveOfferHandover(offerId: number, data: any
     body: JSON.stringify(data),
   });
 }
-export async function generateNgoDriveOfferHandoverOtp(offerId: number): Promise<{ otp: string }> {
-  return await request<{ otp: string }>(`/api/v1/drive-offers/${offerId}/generate-otp`, {
+/** The same code for 30 minutes; `renew` asks for a new one. Needs a donor handover photo first. */
+export async function generateNgoDriveOfferHandoverOtp(offerId: number, renew = false): Promise<{ otp: string }> {
+  return await request<{ otp: string }>(`/api/v1/drive-offers/${offerId}/generate-otp${renew ? "?renew=true" : ""}`, {
     method: "POST",
   });
+}
+
+/** The donor's handover photos (1 to 5), taken before showing the code. */
+export async function uploadNgoDriveHandoverPhotos(offerId: number, files: File[]): Promise<string[]> {
+  const formData = new FormData();
+  files.forEach((f) => formData.append("files", f));
+  const res = await fetch(`${BASE_URL}/api/v1/drive-offers/${offerId}/handover-photos`, { method: "POST", body: formData, credentials: "include" });
+  if (!res.ok) throw new Error((await res.text().catch(() => "")) || "Upload failed");
+  return await res.json();
 }
 export async function confirmNgoDriveOfferHandoverDonor(offerId: number, data: any): Promise<NgoDriveOfferHandoverRecordResponse> {
   return await request<NgoDriveOfferHandoverRecordResponse>(`/api/v1/drive-offers/${offerId}/confirm-handover`, {
@@ -5334,10 +6417,16 @@ export async function closeNgoDrive(driveId: number, data: { reason: string }): 
     body: JSON.stringify(data),
   });
 }
-export async function uploadDistributionProof(driveId: number, files: File[], beneficiariesReached: number): Promise<void> {
+export type DistributionProofDetails = {
+  distributedOn?: string; location?: string; quantityDistributed?: number; note?: string; consentConfirmed?: boolean;
+};
+
+export async function uploadDistributionProof(driveId: number, files: File[], beneficiariesReached: number, details: DistributionProofDetails = {}): Promise<void> {
   const formData = new FormData();
   files.forEach((f) => formData.append("files", f));
   formData.append("beneficiariesReached", String(beneficiariesReached));
+  // Optional details: only what the NGO filled in.
+  Object.entries(details).forEach(([k, v]) => { if (v !== undefined && v !== "") formData.append(k, String(v)); });
   const res = await fetch(`${BASE_URL}/api/v1/ngo-drives/${driveId}/distribution-proof`, {
     method: "POST",
     body: formData,
@@ -5375,6 +6464,20 @@ export function getNgoDriveOfferCertificate(offerId: number) {
   return request<Certificate>(`/api/v1/drive-offers/${offerId}/certificate`);
 }
 
+/** Downloads the server-rendered drive certificate PDF (donor only) as a file. */
+export async function downloadNgoDriveOfferCertificatePdf(offerId: number, certificateNumber?: string) {
+  const res = await fetch(`${BASE_URL}/api/v1/drive-offers/${offerId}/certificate/pdf`, { credentials: "include", cache: "no-store" });
+  if (!res.ok) throw new ApiError(res.status, "Couldn't download the certificate", {});
+  const url = URL.createObjectURL(await res.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `CauseKind-Certificate-${certificateNumber ?? offerId}.pdf`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 export type NgoDriveProofResponse = {
   id: number;
   driveId: number;
@@ -5385,8 +6488,588 @@ export type NgoDriveProofResponse = {
   beneficiariesReached?: number | null;
   ngoStatement: string | null;
   status: string;
+  /** Proof details (null on older proofs). */
+  distributedOn?: string | null;
+  location?: string | null;
+  ngoName?: string | null;
+  itemName?: string | null;
+  beneficiaryGroup?: string | null;
 };
+
+/** The NGO's own report for one of its drives: the proof plus the donors whose items were received (owner only). */
+export type NgoDriveReportDonor = {
+  offerId: number; donorName: string; quantity: number | null; offeredAt: string | null; receivedAt: string | null;
+  handoverMethod: string | null; handoverPhotos: string[];
+};
+export type NgoDriveReport = {
+  driveId: number; title: string; status: string; quantityNeeded: number; quantityReceived: number; unit: string | null;
+  itemName: string | null; beneficiaryCount: number | null; beneficiaryGroup: string | null;
+  proof: NgoDriveProofResponse | null; donors: NgoDriveReportDonor[]; totalDonors: number; totalReceived: number;
+};
+export async function getNgoDriveReport(driveId: number): Promise<NgoDriveReport> {
+  return await request<NgoDriveReport>(`/api/v1/ngo-drives/${driveId}/report`);
+}
 
 export async function getNgoDriveProof(driveId: number): Promise<NgoDriveProofResponse> {
   return await request<NgoDriveProofResponse>(`/api/v1/drives/${driveId}/proof`);
 }
+
+// ── Fundraising applications (Phase A, 2026-10-16) ──────────────────────────
+// Backend: FundraisingApplicationController / AdminFundraisingApplicationController.
+// Every call 404s while the backend's fundraising.enabled is false.
+
+export type FundraisingStatus =
+  | "DRAFT" | "SUBMITTED" | "IN_REVIEW" | "INFORMATION_REQUESTED" | "RESUBMITTED"
+  | "APPROVED" | "NOT_APPROVED" | "WITHDRAWN" | "EXPIRED";
+export type FundraisingCategory = "MEDICAL" | "EDUCATION" | "EMERGENCY_HOUSEHOLD" | "OTHER";
+export type FundraisingEvidenceType =
+  | "ORGANISER_ID" | "ADDRESS_PROOF" | "MEDICAL_REPORT" | "TREATMENT_ESTIMATE" | "ENROLMENT_PROOF"
+  | "FEE_STATEMENT" | "EVENT_EVIDENCE" | "CONSENT" | "RELATIONSHIP_PROOF" | "COST_PROOF" | "OTHER";
+/**
+ * One document requirement from the server (FundraisingEvidenceRules): met by any one of anyOf.
+ * MISSING: needed now. NEXT_SUBMISSION: needed before resubmitting (sent under the old rule).
+ * HISTORICAL: closed application, shown for reference.
+ */
+export type FundraisingEvidenceRequirement = {
+  key: string; anyOf: FundraisingEvidenceType[]; state: "MET" | "MISSING" | "NEXT_SUBMISSION" | "HISTORICAL";
+};
+export type FundraisingScope = "THIS_NEED" | "ACCOUNT";
+
+export type FundraisingCostItem = {
+  expense: string; amount: number | null; reference: string | null;
+  /** The COST_PROOF document attached to this row (applications only). */
+  evidenceId?: number | null;
+};
+export type FundraisingEvidence = {
+  id: number; type: FundraisingEvidenceType; fileName: string | null; fromProfile: boolean;
+  superseded: boolean; uploadedAt: string; viewUrl: string | null;
+};
+export type FundraisingInfoRequest = {
+  id: number; section: string; question: string; response: string | null; askedAt: string; respondedAt: string | null;
+};
+export type FundraisingApplication = {
+  id: number; reference: string; version: number; status: FundraisingStatus; category: FundraisingCategory | null;
+  forSelf: boolean; beneficiaryLegalName: string | null; beneficiaryDisplayName: string | null;
+  beneficiaryAgeRange: string | null; relationship: string | null; authorityExplanation: string | null;
+  whatHappened: string | null; urgency: string | null; requestedAmount: number | null; insuranceAmount: number | null;
+  ownContribution: number | null; grantsAmount: number | null; otherFundraisingAmount: number | null;
+  amountDifferenceReason: string | null; linkedItemRequestId: number | null;
+  costItems: FundraisingCostItem[]; totalCosts: number; outstandingGap: number;
+  declaredAccurate: boolean; declaredAuthority: boolean; declaredUseOfFunds: boolean; declaredVerificationConsent: boolean;
+  evidence: FundraisingEvidence[]; infoRequests: FundraisingInfoRequest[];
+  decisionScope: FundraisingScope | null; decisionConditions: string | null; decisionReason: string | null;
+  resubmissionAllowed: boolean | null; decidedAt: string | null; submittedAt: string | null;
+  createdAt: string; updatedAt: string; missing: string[];
+  /** Bank details for the payout; the account number comes back masked (last four only). */
+  payout: FundraisingPayout;
+  /** Document requirements for this category and "for someone else" answer, in order. */
+  requiredEvidence: FundraisingEvidenceRequirement[];
+};
+export type FundraisingPayout = { holderName: string | null; accountLast4: string | null; ifsc: string | null; bankBranch: string | null; upi: string | null };
+export type FundraisingSave = Partial<Omit<FundraisingApplication,
+  "id" | "reference" | "version" | "status" | "totalCosts" | "outstandingGap" | "evidence" | "infoRequests" |
+  "decisionScope" | "decisionConditions" | "decisionReason" | "resubmissionAllowed" | "decidedAt" | "submittedAt" |
+  "createdAt" | "updatedAt" | "missing" | "payout" | "requiredEvidence">> & {
+  payoutHolderName?: string; payoutAccountNumber?: string; payoutIfsc?: string; payoutBankBranch?: string; payoutUpi?: string;
+  /** Amount fields to empty (a null amount alone means "unchanged" on the server). */
+  clear?: string[];
+};
+export type FundraisingAdminApplication = {
+  application: FundraisingApplication; applicantId: number; applicantName: string; applicantEmail: string;
+  internalNote: string | null; decidedBy: string | null;
+  /** The fundraiser page written inside this application (single form, 2026-10-27); approving approves it too. */
+  pageCampaignId: number | null;
+};
+export type FundraisingQueueRow = {
+  id: number; reference: string; applicantName: string; forSelf: boolean; category: FundraisingCategory | null;
+  requestedAmount: number | null; submittedAt: string | null; status: FundraisingStatus; openQuestions: number;
+};
+
+const FR = "/api/v1/fundraising/applications";
+const FR_ADMIN = "/api/v1/admin/fundraising/applications";
+
+export const fundraising = {
+  categories: () => request<FundraisingCategory[]>(`${FR}/categories`),
+  mine: () => request<FundraisingApplication[]>(FR),
+  create: () => request<FundraisingApplication>(FR, { method: "POST" }),
+  get: (id: number) => request<FundraisingApplication>(`${FR}/${id}`),
+  save: (id: number, body: FundraisingSave) =>
+    request<FundraisingApplication>(`${FR}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  submit: (id: number) => request<FundraisingApplication>(`${FR}/${id}/submit`, { method: "POST" }),
+  withdraw: (id: number) => request<FundraisingApplication>(`${FR}/${id}/withdraw`, { method: "POST" }),
+  answer: (id: number, requestId: number, response: string) =>
+    request<FundraisingApplication>(`${FR}/${id}/info-requests/${requestId}`, { method: "PUT", body: JSON.stringify({ response }) }),
+  resubmit: (id: number) => request<FundraisingApplication>(`${FR}/${id}/resubmit`, { method: "POST" }),
+  removeEvidence: (id: number, evidenceId: number) =>
+    request<FundraisingApplication>(`${FR}/${id}/evidence/${evidenceId}`, { method: "DELETE" }),
+  useProfileDocument: (id: number, profileDocumentId: number, type: FundraisingEvidenceType) =>
+    request<FundraisingApplication>(`${FR}/${id}/evidence/from-profile/${profileDocumentId}?type=${type}`, { method: "POST" }),
+  /** Multipart, so it bypasses request() (which forces a JSON content type). */
+  async uploadEvidence(id: number, type: FundraisingEvidenceType, file: File, replacesId?: number) {
+    const fd = new FormData();
+    fd.append("type", type);
+    fd.append("file", file);
+    if (replacesId != null) fd.append("replacesId", String(replacesId));
+    const res = await fetch(`${BASE_URL}${FR}/${id}/evidence`, { method: "POST", credentials: "include", body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? "Upload failed. The file is still on your device — try again.", body);
+    }
+    invalidateRequestCache();
+    return (await res.json()) as FundraisingApplication;
+  },
+  admin: {
+    queue: (status?: FundraisingStatus) => request<FundraisingQueueRow[]>(status ? `${FR_ADMIN}?status=${status}` : FR_ADMIN),
+    get: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}`),
+    /** Full account number; every call is audited on the server. */
+    revealPayoutAccount: (id: number) => request<{ accountNumber: string }>(`${FR_ADMIN}/${id}/payout-account`),
+    startReview: (id: number) => request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/start-review`, { method: "POST" }),
+    requestInformation: (id: number, body: { expectedVersion: number; questions: { section: string; question: string }[]; internalNote?: string }) =>
+      request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/request-information`, { method: "POST", body: JSON.stringify(body) }),
+    approve: (id: number, body: { expectedVersion: number; scope: FundraisingScope; conditions?: string; reason: string; internalNote?: string }) =>
+      request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/approve`, { method: "POST", body: JSON.stringify(body) }),
+    notApprove: (id: number, body: { expectedVersion: number; reason: string; internalNote: string; resubmissionAllowed: boolean }) =>
+      request<FundraisingAdminApplication>(`${FR_ADMIN}/${id}/not-approve`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
+
+// ── Fundraising campaigns (Phase B, 2026-10-17) ─────────────────────────────
+// Backend: FundraisingCampaignController / AdminFundraisingCampaignController.
+
+export type CampaignFlowStatus =
+  | "DRAFT" | "PUBLICATION_REVIEW" | "CHANGES_REQUESTED" | "PUBLICATION_DECLINED"
+  | "APPROVED_SETUP_INCOMPLETE" | "APPROVED" | "CANCELLED" | "PENDING_APPROVAL" | "REJECTED" | "COLLECTIONS_CLOSED" | "PAUSED" | "OUTCOME_REPORTING";
+export type NameVisibility = "FULL" | "FIRST_NAME" | "HIDDEN";
+export type LocationVisibility = "CITY" | "STATE" | "HIDDEN";
+export type CampaignCostRow = { expense: string; amount: number | null; reference: string | null; approvedAmount: number | null; changed: boolean };
+export type FundraisingCampaign = {
+  id: number; version: number; status: CampaignFlowStatus; applicationId: number | null; applicationReference: string | null;
+  category: FundraisingCategory | null; title: string | null; story: string | null; beneficiaryDisplayName: string | null;
+  organiserName: string; city: string | null; state: string | null;
+  coverUrl: string | null; coverAltText: string | null; coverConsent: boolean;
+  targetAmount: number | null; approvedTarget: number | null; endDate: string | null;
+  costItems: CampaignCostRow[]; totalCosts: number; otherHelp: number; remainingGap: number;
+  changeReason: string | null; hasMaterialChanges: boolean;
+  beneficiaryNameVisibility: NameVisibility | null; organiserNameVisibility: NameVisibility | null;
+  locationVisibility: LocationVisibility | null;
+  /** Chosen under the current disclosure version — drives the "Show to donors" boxes. */
+  publicEvidenceIds: number[];
+  /** Chosen before versioned consent (2026-10-30); never public, never shown as checked. */
+  legacyPublicEvidenceIds: number[];
+  /** When each current-version selection was consented to. */
+  publicEvidenceConsents: { evidenceId: number; consentedAt: string | null; disclosureVersion: string }[];
+  disclosureVersion: string;
+  selectableEvidence: { evidenceId: number; type: string; fileName: string | null }[];
+  reviewerMessage: string | null; submittedAt: string | null; decidedAt: string | null;
+  paymentSetupComplete: boolean; missing: string[]; createdAt: string; updatedAt: string;
+};
+export type FundraisingCampaignSave = {
+  title?: string; story?: string; beneficiaryDisplayName?: string; coverAltText?: string; coverConsent?: boolean;
+  targetAmount?: number | null; endDate?: string | null; costItems?: FundraisingCostItem[]; changeReason?: string;
+  beneficiaryNameVisibility?: NameVisibility; organiserNameVisibility?: NameVisibility;
+  locationVisibility?: LocationVisibility; publicEvidenceIds?: number[];
+  /** Required with a non-empty publicEvidenceIds: the disclosure version the organiser saw. */
+  acknowledgedDisclosureVersion?: string;
+};
+export type FundraisingAdminCampaign = {
+  campaign: FundraisingCampaign; applicantName: string; applicantEmail: string; internalNote: string | null; decidedBy: string | null;
+  /** The donee's bank details from the application (masked), or null when none were given. */
+  payout: FundraisingPayout | null; applicationId: number | null;
+};
+export type FundraisingCampaignQueueRow = {
+  id: number; title: string | null; organiserName: string; category: FundraisingCategory | null;
+  targetAmount: number | null; submittedAt: string | null; status: CampaignFlowStatus; hasMaterialChanges: boolean;
+};
+
+const FC = "/api/v1/fundraising/campaigns";
+const FC_ADMIN = "/api/v1/admin/fundraising/campaigns";
+
+export const fundraisingCampaigns = {
+  mine: () => request<FundraisingCampaign[]>(FC),
+  fromApplication: (applicationId: number) => request<FundraisingCampaign>(`${FC}/from-application/${applicationId}`, { method: "POST" }),
+  get: (id: number) => request<FundraisingCampaign>(`${FC}/${id}`),
+  save: (id: number, body: FundraisingCampaignSave) => request<FundraisingCampaign>(`${FC}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  submit: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/submit`, { method: "POST" }),
+  cancel: (id: number) => request<FundraisingCampaign>(`${FC}/${id}/cancel`, { method: "POST" }),
+  /** One-time opt-in for older applications: show non-private documents to donors. */
+  showDocuments: (id: number, acknowledgedDisclosureVersion: string) =>
+    request<FundraisingCampaign>(`${FC}/${id}/show-documents`, { method: "POST", body: JSON.stringify({ acknowledgedDisclosureVersion }) }),
+  async uploadCover(id: number, file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${FC}/${id}/cover`, { method: "POST", credentials: "include", body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? "Upload failed. The photo is still on your device — try again.", body);
+    }
+    invalidateRequestCache();
+    return (await res.json()) as FundraisingCampaign;
+  },
+  admin: {
+    queue: (status?: CampaignFlowStatus) => request<FundraisingCampaignQueueRow[]>(status ? `${FC_ADMIN}?status=${status}` : FC_ADMIN),
+    get: (id: number) => request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}`),
+    requestChanges: (id: number, body: { expectedVersion: number; message: string; internalNote?: string }) =>
+      request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}/request-changes`, { method: "POST", body: JSON.stringify(body) }),
+    approve: (id: number, body: { expectedVersion: number; message?: string; internalNote: string }) =>
+      request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}/approve`, { method: "POST", body: JSON.stringify(body) }),
+    decline: (id: number, body: { expectedVersion: number; reason: string; internalNote: string }) =>
+      request<FundraisingAdminCampaign>(`${FC_ADMIN}/${id}/decline`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
+
+// ── Fundraisers: public pages and donations (Phase C1, 2026-10-19) ──────────
+
+export type FundraiserCard = {
+  id: number; title: string | null; coverUrl: string | null; coverAltText: string | null; category: FundraisingCategory | null;
+  organiser: string | null; location: string | null; raised: number; target: number | null; endDate: string | null; donationCount: number;
+};
+export type FundraiserDetail = {
+  card: FundraiserCard; story: string | null; beneficiary: string | null;
+  costs: { expense: string; amount: number | null }[]; totalCosts: number; otherHelp: number;
+  acceptingDonations: boolean; platformFeePercent: number; supporters: { name: string; at: string }[];
+  status: CampaignFlowStatus; updates: FundraiserUpdate[]; pauseNotice: string | null;
+  outcome: { moneyUsed: string | null; currentSituation: string | null; publishedAt: string | null; evidence: { label: string; explanation: string | null; url: string | null }[] } | null;
+  /** Every current document except identity and family ones; links are signed and expire after ~10 minutes. */
+  documents: { type: FundraisingEvidenceType; fileName: string | null; url: string }[];
+  /** Show the 80G section on the donate page (switch on and the Trust's 80G details configured). */
+  taxReceiptOffered?: boolean;
+};
+
+/** Fundraiser donation: the signed-in donor's PAN photo for an 80G receipt, before checkout. */
+export function uploadDonationPanPhoto(donationId: number, file: File) {
+  const fd = new FormData();
+  fd.append("file", file);
+  return fetch(`${BASE_URL}/api/v1/donations/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
+    .then((res) => {
+      // 409 with "already uploaded" means a retry after a successful upload: fine.
+      if (res.ok) return;
+      throw new ApiError(res.status, "The PAN photo didn't upload.", null);
+    });
+}
+
+export const fundraisers = {
+  live: (category?: FundraisingCategory) =>
+    request<FundraiserCard[]>(`/api/v1/fundraising/public/campaigns${category ? `?category=${category}` : ""}`, { silent401: true }),
+  detail: (id: number) => request<FundraiserDetail>(`/api/v1/fundraising/public/campaigns/${id}`, { silent401: true }),
+  /** Donor-only: asks Razorpay directly when the webhook is late (or never comes, e.g. localhost). */
+  checkDonation: (donationId: number) => request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
+  /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
+  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }) =>
+    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, ...(tax ?? {}) }) }),
+  /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
+  checkout: (donationId: number) => request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
+  setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>
+    request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${id}/payout-ready`, { method: "POST", body: JSON.stringify({ expectedVersion, ready }) }),
+};
+
+// ── Fundraiser management: overview, donations, updates, page changes, closure (Phase C2, 2026-10-19) ──
+
+export type ReviewItemStatus = "DRAFT" | "SUBMITTED" | "CHANGES_REQUESTED" | "APPROVED" | "DECLINED";
+export type FundraiserOverview = {
+  campaignId: number; status: CampaignFlowStatus; title: string | null; confirmedTotal: number; target: number | null;
+  confirmedCount: number; pendingCount: number; endDate: string | null; itemsInReview: number; acceptingDonations: boolean;
+};
+/** Organiser-safe: the donor's public name or "Anonymous" — never contact or payment details. */
+export type FundraiserDonationRow = { id: number; name: string; amount: number; at: string; status: "INITIATED" | "COMPLETED" | "FAILED" };
+export type FundraiserUpdate = {
+  id: number; version: number | null; campaignId: number; title: string | null; body: string | null; status: ReviewItemStatus;
+  reviewerMessage: string | null; submittedAt: string | null; decidedAt: string | null; createdAt: string;
+};
+export type FundraiserRevision = {
+  id: number; version: number; campaignId: number; title: string | null; story: string | null; targetAmount: number | null;
+  endDate: string | null; changeReason: string | null; material: boolean; status: ReviewItemStatus; reviewerMessage: string | null;
+  submittedAt: string | null; decidedAt: string | null; createdAt: string;
+  currentTitle: string | null; currentStory: string | null; currentTarget: number | null; currentEndDate: string | null; raised: number;
+};
+export type FundraiserClosure = {
+  id: number; version: number; campaignId: number; reason: string; status: ReviewItemStatus;
+  reviewerMessage: string | null; decidedAt: string | null; createdAt: string;
+};
+export type FundraiserRevisionInput = {
+  title?: string | null; story?: string | null; targetAmount?: number | null; endDate?: string | null;
+  changeReason?: string | null; expectedVersion?: number;
+};
+export type ReviewItemKind = "UPDATE" | "REVISION" | "CLOSURE" | "OUTCOME";
+export type ReviewItemRow = {
+  kind: ReviewItemKind; id: number; campaignId: number; campaignTitle: string | null; organiser: string;
+  material: boolean; submittedAt: string | null;
+};
+
+const FM = (id: number) => `/api/v1/fundraising/campaigns/${id}`;
+const FRI_ADMIN = "/api/v1/admin/fundraising/review-items";
+const REVIEW_PATH: Record<ReviewItemKind, string> = { UPDATE: "updates", REVISION: "revisions", CLOSURE: "closures", OUTCOME: "outcomes" };
+
+export const fundraisingManage = {
+  overview: (id: number) => request<FundraiserOverview>(`${FM(id)}/overview`),
+  donations: (id: number) => request<FundraiserDonationRow[]>(`${FM(id)}/donations`),
+  updates: (id: number) => request<FundraiserUpdate[]>(`${FM(id)}/updates`),
+  createUpdate: (id: number, body: { title: string; body: string }) =>
+    request<FundraiserUpdate>(`${FM(id)}/updates`, { method: "POST", body: JSON.stringify(body) }),
+  saveUpdate: (id: number, updateId: number, body: { title: string; body: string; expectedVersion?: number | null }) =>
+    request<FundraiserUpdate>(`${FM(id)}/updates/${updateId}`, { method: "PUT", body: JSON.stringify(body) }),
+  submitUpdate: (id: number, updateId: number) => request<FundraiserUpdate>(`${FM(id)}/updates/${updateId}/submit`, { method: "POST" }),
+  deleteUpdate: (id: number, updateId: number) => request<void>(`${FM(id)}/updates/${updateId}`, { method: "DELETE" }),
+  revisions: (id: number) => request<FundraiserRevision[]>(`${FM(id)}/revisions`),
+  createRevision: (id: number, body: FundraiserRevisionInput) =>
+    request<FundraiserRevision>(`${FM(id)}/revisions`, { method: "POST", body: JSON.stringify(body) }),
+  saveRevision: (id: number, revisionId: number, body: FundraiserRevisionInput) =>
+    request<FundraiserRevision>(`${FM(id)}/revisions/${revisionId}`, { method: "PUT", body: JSON.stringify(body) }),
+  submitRevision: (id: number, revisionId: number) => request<FundraiserRevision>(`${FM(id)}/revisions/${revisionId}/submit`, { method: "POST" }),
+  deleteRevision: (id: number, revisionId: number) => request<void>(`${FM(id)}/revisions/${revisionId}`, { method: "DELETE" }),
+  closures: (id: number) => request<FundraiserClosure[]>(`${FM(id)}/closures`),
+  requestClosure: (id: number, reason: string) =>
+    request<FundraiserClosure>(`${FM(id)}/closures`, { method: "POST", body: JSON.stringify({ reason }) }),
+  admin: {
+    queue: () => request<ReviewItemRow[]>(FRI_ADMIN),
+    update: (id: number) => request<FundraiserUpdate>(`${FRI_ADMIN}/updates/${id}`),
+    revision: (id: number) => request<FundraiserRevision>(`${FRI_ADMIN}/revisions/${id}`),
+    closure: (id: number) => request<FundraiserClosure>(`${FRI_ADMIN}/closures/${id}`),
+    decide: (kind: ReviewItemKind, id: number, decision: "APPROVED" | "CHANGES_REQUESTED" | "DECLINED", body: { expectedVersion: number | null; message?: string }) =>
+      request<unknown>(`${FRI_ADMIN}/${REVIEW_PATH[kind]}/${id}/${decision}`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
+
+// ── Admin donor details for one fundraiser (2026-10-19). Every view and export is audit-logged. ──
+
+export type AdminDonorRow = {
+  id: number; name: string | null; email: string | null; phone: string | null; anonymous: boolean; amount: number;
+  feePercent: number; fee: number; net: number; status: "INITIATED" | "COMPLETED" | "FAILED"; at: string;
+  razorpayOrderId: string | null; razorpayPaymentId: string | null;
+};
+export type AdminDonorReport = {
+  campaignId: number; title: string | null;
+  summary: { confirmedCount: number; gross: number; fee: number; netToTransfer: number };
+  rows: AdminDonorRow[];
+};
+
+export const fundraisingDonors = {
+  report: (campaignId: number) => request<AdminDonorReport>(`/api/v1/admin/fundraising/campaigns/${campaignId}/donations`),
+  /** Downloads the CSV through the browser; the export itself is audit-logged server-side. */
+  async downloadCsv(campaignId: number) {
+    const res = await fetch(`${BASE_URL}/api/v1/admin/fundraising/campaigns/${campaignId}/donations.csv`, { credentials: "include", cache: "no-store" });
+    if (!res.ok) throw new ApiError(res.status, "Couldn't export donations", {});
+    const url = URL.createObjectURL(await res.blob());
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `fundraiser-${campaignId}-donations.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  },
+};
+
+// ── Fundraiser reports, organiser inquiries, pause/restore (Phase C3, 2026-10-19) ──
+
+export type FundraisingReportReason = "UNTRUE" | "PRIVACY" | "DUPLICATE" | "OTHER";
+export type FundraisingReportStatus = "RECEIVED" | "UNDER_INVESTIGATION" | "RESPONSE_REQUESTED" | "DISMISSED" | "ACTION_TAKEN";
+/** Reporter view: status is only "Received" | "Under investigation" | "Closed". */
+export type MyFundraisingReport = { id: number; reference: string; campaignId: number; campaignTitle: string | null; status: string; createdAt: string };
+export type InquiryQuestion = { id: number; position: number; question: string; answer: string | null; hasEvidence: boolean; evidenceFileName: string | null };
+export type CampaignInquiry = {
+  id: number; version: number; status: "OPEN" | "ANSWERED" | "WITHDRAWN"; deadline: string | null; requestedBy: string | null;
+  questions: InquiryQuestion[]; answeredAt: string | null; createdAt: string;
+};
+export type OrganiserInquiryView = {
+  campaignStatus: CampaignFlowStatus; pauseNotice: string | null; pauseActions: string | null; pausedAt: string | null;
+  inquiry: CampaignInquiry | null;
+};
+export type ReportCaseRow = {
+  campaignId: number; title: string | null; organiser: string; campaignStatus: CampaignFlowStatus; openReports: number;
+  totalReports: number; responseRequested: boolean; responseReceived: boolean; latestAt: string;
+};
+export type AdminFundraisingReport = {
+  id: number; reference: string; reason: FundraisingReportReason; details: string; reporterName: string | null; reporterEmail: string | null;
+  hasEvidence: boolean; evidenceFileName: string | null; status: FundraisingReportStatus; adminNote: string | null;
+  decidedBy: string | null; decidedAt: string | null; createdAt: string;
+};
+export type ReportCase = {
+  campaignId: number; campaignVersion: number; title: string | null; organiser: string; campaignStatus: CampaignFlowStatus;
+  confirmed: number; pauseNotice: string | null; pauseActions: string | null; pauseReason: string | null; pausedBy: string | null;
+  pausedAt: string | null; reports: AdminFundraisingReport[]; inquiries: CampaignInquiry[];
+};
+
+const FRP = "/api/v1/fundraising";
+const FRP_ADMIN = "/api/v1/admin/fundraising/reports";
+
+async function multipart<T>(path: string, fd: FormData, fallback: string): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, { method: "POST", credentials: "include", body: fd });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new ApiError(res.status, body?.message ?? fallback, body);
+  }
+  invalidateRequestCache();
+  return (await res.json()) as T;
+}
+
+export const fundraisingReports = {
+  report(campaignId: number, reason: FundraisingReportReason, details: string, file?: File | null) {
+    const fd = new FormData();
+    fd.append("campaignId", String(campaignId));
+    fd.append("reason", reason);
+    fd.append("details", details);
+    if (file) fd.append("file", file);
+    return multipart<MyFundraisingReport>(`${FRP}/reports`, fd, "Your report wasn't sent. What you wrote is still here — try again.");
+  },
+  mine: () => request<MyFundraisingReport[]>(`${FRP}/reports/mine`),
+  inquiry: (campaignId: number) => request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry`),
+  saveAnswers: (campaignId: number, answers: { questionId: number; answer: string }[]) =>
+    request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/answers`, { method: "PUT", body: JSON.stringify({ answers }) }),
+  uploadEvidence(campaignId: number, questionId: number, file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    return multipart<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/questions/${questionId}/evidence`, fd, "Upload failed — try again.");
+  },
+  removeEvidence: (campaignId: number, questionId: number) =>
+    request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/questions/${questionId}/evidence`, { method: "DELETE" }),
+  submitAnswers: (campaignId: number) => request<OrganiserInquiryView>(`${FRP}/campaigns/${campaignId}/inquiry/submit`, { method: "POST" }),
+  admin: {
+    cases: (open = true) => request<ReportCaseRow[]>(`${FRP_ADMIN}?open=${open}`),
+    get: (campaignId: number) => request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}`),
+    reportEvidence: (reportId: number) => request<{ url: string }>(`${FRP_ADMIN}/${reportId}/evidence`),
+    answerEvidence: (campaignId: number, questionId: number) => request<{ url: string }>(`${FRP_ADMIN}/campaigns/${campaignId}/questions/${questionId}/evidence`),
+    dismiss: (reportId: number, expectedVersion: number | null, reason: string) =>
+      request<ReportCase>(`${FRP_ADMIN}/${reportId}/dismiss`, { method: "POST", body: JSON.stringify({ expectedVersion, reason }) }),
+    requestResponse: (campaignId: number, questions: string[], deadline: string | null) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/request-response`, { method: "POST", body: JSON.stringify({ questions, deadline }) }),
+    pause: (campaignId: number, body: { expectedVersion: number; publicNotice: string; organiserActions: string; internalReason: string }) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/pause`, { method: "POST", body: JSON.stringify(body) }),
+    restore: (campaignId: number, body: { expectedVersion: number; internalReason: string; message: string }) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/restore`, { method: "POST", body: JSON.stringify(body) }),
+    closeCollections: (campaignId: number, body: { expectedVersion: number; internalReason: string; message: string }) =>
+      request<ReportCase>(`${FRP_ADMIN}/campaigns/${campaignId}/close-collections`, { method: "POST", body: JSON.stringify(body) }),
+  },
+};
+
+// ── Fundraiser outcome reports and end of collections (Phase C4, 2026-10-19) ──
+
+export type OutcomeEvidence = { id: number; label: string; fileName: string | null; hasFile: boolean; explanation: string | null; publicVisible: boolean };
+export type FundraiserOutcome = {
+  id: number; version: number; campaignId: number; campaignTitle: string | null; moneyUsed: string | null; currentSituation: string | null;
+  status: ReviewItemStatus; reviewerMessage: string | null; evidence: OutcomeEvidence[];
+  submittedAt: string | null; decidedAt: string | null; createdAt: string;
+  confirmed: number; target: number | null; closedOn: string | null;
+};
+
+const FO = (id: number) => `/api/v1/fundraising/campaigns/${id}/outcome`;
+
+export const fundraisingOutcomes = {
+  /** Undefined when no outcome has been started. */
+  current: (campaignId: number) => request<FundraiserOutcome | undefined>(FO(campaignId)),
+  start: (campaignId: number) => request<FundraiserOutcome>(FO(campaignId), { method: "POST" }),
+  save: (campaignId: number, id: number, body: { moneyUsed: string; currentSituation: string; expectedVersion: number }) =>
+    request<FundraiserOutcome>(`${FO(campaignId)}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  async addEvidence(campaignId: number, id: number, label: string, explanation: string, publicVisible: boolean, file?: File | null) {
+    const fd = new FormData();
+    fd.append("label", label);
+    if (explanation) fd.append("explanation", explanation);
+    fd.append("publicVisible", String(publicVisible));
+    if (file) fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${FO(campaignId)}/${id}/evidence`, { method: "POST", credentials: "include", body: fd });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new ApiError(res.status, body?.message ?? "Couldn't add that — try again.", body);
+    }
+    invalidateRequestCache();
+    return (await res.json()) as FundraiserOutcome;
+  },
+  removeEvidence: (campaignId: number, id: number, evidenceId: number) =>
+    request<FundraiserOutcome>(`${FO(campaignId)}/${id}/evidence/${evidenceId}`, { method: "DELETE" }),
+  submit: (campaignId: number, id: number) => request<FundraiserOutcome>(`${FO(campaignId)}/${id}/submit`, { method: "POST" }),
+  admin: {
+    get: (id: number) => request<FundraiserOutcome>(`/api/v1/admin/fundraising/review-items/outcomes/${id}`),
+    evidence: (id: number, evidenceId: number) => request<{ url: string }>(`/api/v1/admin/fundraising/review-items/outcomes/${id}/evidence/${evidenceId}`),
+    closeNow: (campaignId: number, reason: string) =>
+      request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${campaignId}/close-now`, { method: "POST", body: JSON.stringify({ reason }) }),
+  },
+};
+
+// ── Super-admin Fundraisers control centre (2026-10-26) ─────────────────────
+// Backend: SuperAdminFundraisingController. Review decisions stay on the admin
+// clients above (fundraising.admin, fundraisingCampaigns.admin, fundraisingReports.admin,
+// fundraisingManage.admin). Every write here needs a reason and is audit-logged.
+
+export type SaFrActivity = {
+  id: number; actorEmail: string | null; action: string; entityType: string | null; entityId: number | null;
+  detail: string | null; reason: string | null; at: string;
+};
+export type SaFrOverview = {
+  totalRaised: number; platformFees: number; feePercent: number; successfulDonations: number; uniqueDonors: number;
+  liveCampaigns: number; endingThisWeek: number; campaignsByStatus: Partial<Record<CampaignFlowStatus, number>>;
+  applicationsToReview: number; campaignsAwaitingPublication: number; pausedCampaigns: number; openReportCases: number;
+  recentActivity: SaFrActivity[];
+};
+export type SaFrCampaignRow = {
+  id: number; title: string | null; doneeName: string | null; category: string | null; city: string | null; status: CampaignFlowStatus;
+  raised: number | null; target: number | null; donors: number; endDate: string | null; hidden: boolean; featured: boolean;
+  acceptingDonations: boolean; payoutReady: boolean; applicationId: number | null; createdAt: string | null; deleted: boolean;
+};
+export type SaFrCostLine = { expense: string; amount: number | null };
+export type SaFrCampaignDetail = {
+  admin: FundraisingAdminCampaign; version: number; applicationId: number | null; doneeName: string | null; doneeEmail: string | null;
+  hidden: boolean; featured: boolean; acceptingDonations: boolean; payoutReady: boolean;
+  money: { gross: number; fees: number; net: number; donations: number; donors: number };
+  costItems: SaFrCostLine[]; activity: SaFrActivity[]; deletedAt: string | null; deletedBy: string | null;
+};
+export type SaFrCampaignEdit = {
+  expectedVersion: number; title?: string; description?: string; category?: string; city?: string; state?: string;
+  targetAmount?: number; endDate?: string; costItems?: SaFrCostLine[]; reason: string; details?: string; notifyDonee?: boolean;
+};
+export type SaFrFlags = {
+  expectedVersion: number; hidden?: boolean; featured?: boolean; acceptingDonations?: boolean;
+  reason: string; details?: string; notifyDonee?: boolean;
+};
+export type SaFrApplicationRow = {
+  id: number; applicantName: string | null; applicantEmail: string | null; category: FundraisingCategory | null;
+  requestedAmount: number | null; status: FundraisingStatus; submittedAt: string | null; createdAt: string | null; campaignId: number | null;
+  deleted: boolean;
+};
+export type SaFrDonationRow = {
+  id: number; createdAt: string | null; donorName: string | null; donorEmail: string | null; donorMode: string | null; anonymous: boolean;
+  campaignId: number; campaignTitle: string | null; amount: number | null; fee: number | null; net: number | null;
+  status: "INITIATED" | "COMPLETED" | "FAILED"; razorpayOrderId: string | null; razorpayPaymentId: string | null; receiptNumber: string | null;
+};
+export type SaFrDonationPage = {
+  rows: SaFrDonationRow[]; total: number;
+  totals: { successfulAmount: number; successfulCount: number; pendingAmount: number; pendingCount: number; failedCount: number; fees: number };
+};
+export type SaFrDonationFilter = {
+  q?: string; status?: string; campaignId?: number; donorMode?: string; from?: string; to?: string; page?: number; size?: number;
+};
+export type SaFrSetting = { key: string; value: string; updatedBy: string | null; updatedAt: string | null };
+
+const SA_FR = "/api/v1/super-admin/fundraising";
+const qs = (o: Record<string, string | number | undefined | null>) => {
+  const p = new URLSearchParams();
+  for (const [k, v] of Object.entries(o)) if (v !== undefined && v !== null && v !== "") p.set(k, String(v));
+  const s = p.toString();
+  return s ? `?${s}` : "";
+};
+
+export const superAdminFundraising = {
+  overview: () => request<SaFrOverview>(`${SA_FR}/overview`),
+  campaigns: (f: { q?: string; status?: string; category?: string; flag?: string; sort?: string } = {}) =>
+    request<SaFrCampaignRow[]>(`${SA_FR}/campaigns${qs(f)}`),
+  campaign: (id: number) => request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}`),
+  edit: (id: number, body: SaFrCampaignEdit) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  flags: (id: number, body: SaFrFlags) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/flags`, { method: "POST", body: JSON.stringify(body) }),
+  message: (id: number, message: string) =>
+    request<void>(`${SA_FR}/campaigns/${id}/message`, { method: "POST", body: JSON.stringify({ message }) }),
+  applications: (f: { q?: string; status?: string; deleted?: boolean } = {}) =>
+    request<SaFrApplicationRow[]>(`${SA_FR}/applications${qs({ ...f, deleted: f.deleted ? "true" : undefined })}`),
+  deleteCampaign: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreCampaign: (id: number, body: { reason: string; details?: string }) =>
+    request<SaFrCampaignDetail>(`${SA_FR}/campaigns/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
+  deleteApplication: (id: number, body: { reason: string; details?: string; notifyUser?: boolean }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/delete`, { method: "POST", body: JSON.stringify(body) }),
+  restoreApplication: (id: number, body: { reason: string; details?: string }) =>
+    request<number[]>(`${SA_FR}/applications/${id}/restore`, { method: "POST", body: JSON.stringify(body) }),
+  overrideApplication: (id: number, body: { status: FundraisingStatus; reason: string; details?: string; notifyApplicant?: boolean }) =>
+    request<void>(`${SA_FR}/applications/${id}/status`, { method: "POST", body: JSON.stringify(body) }),
+  donations: (f: SaFrDonationFilter = {}) => request<SaFrDonationPage>(`${SA_FR}/donations${qs(f)}`),
+  donationsCsvUrl: (f: SaFrDonationFilter = {}) => `${BASE_URL}${SA_FR}/donations.csv${qs({ ...f, page: undefined, size: undefined })}`,
+  settings: () => request<SaFrSetting[]>(`${SA_FR}/settings`),
+  saveSettings: (values: Record<string, string>, reason: string) =>
+    request<SaFrSetting[]>(`${SA_FR}/settings`, { method: "PUT", body: JSON.stringify({ values, reason }) }),
+};

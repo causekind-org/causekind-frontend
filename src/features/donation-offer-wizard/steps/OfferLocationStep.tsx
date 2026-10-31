@@ -8,6 +8,8 @@ import { usePinAddress } from "@/hooks/usePinAddress";
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
 import type { OfferModel } from "../offerModel";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations } from "next-intl";
 // The map is only for donors who can't (or won't) share their device location.
 const LocationPinPicker = dynamic(() => import("@/components/LocationPinPicker"), {
   ssr: false,
@@ -56,6 +58,8 @@ export function OfferLocationStep({
   onDecline: () => void;
   onStatusChange: (status: OfferLocationStatus) => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const ui = useUiText();
   const pin = model.latitude != null && model.longitude != null ? { lat: model.latitude, lng: model.longitude } : null;
   const pinAddress = usePinAddress();
   const [locating, setLocating] = useState(false);
@@ -104,7 +108,7 @@ export function OfferLocationStep({
 
   function locateMe() {
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      setGpsError("This browser can't share your location. Find it on the map instead.");
+      setGpsError(ui("This browser can't share your location. Find it on the map instead."));
       setShowMap(true);
       return;
     }
@@ -116,8 +120,8 @@ export function OfferLocationStep({
         setLocating(false);
         setShowMap(true);
         setGpsError(err.code === err.PERMISSION_DENIED
-          ? "Location access is blocked. Allow it for this site, or find your location on the map below."
-          : "We couldn't find your location. Find it on the map below.");
+          ? ui("Location access is blocked. Allow it for this site, or find your location on the map below.")
+          : ui("We couldn't find your location. Find it on the map below."));
       },
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 60_000 },
     );
@@ -135,7 +139,7 @@ export function OfferLocationStep({
   useEffect(() => () => { statusRef.current({ busy: false, needsConsent: false, ready: false }); }, []);
 
   const radius = result?.radiusKm ?? 10;
-  const area = result?.area || "the recipient's area";
+  const area = result?.area || ui("the recipient's area");
   const mapKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const areaMap = outside && result?.approxLatitude != null && result.approxLongitude != null && mapKey
     ? `https://maps.googleapis.com/maps/api/staticmap?${new URLSearchParams({
@@ -147,8 +151,7 @@ export function OfferLocationStep({
   return (
     <div className="space-y-4">
       <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-300">
-        We use your location to check the donation radius: whether you are within <b>{radius} km</b> of the person
-        who needs this item. It also becomes the pickup area for your offer.
+        {wt.rich("locationRadiusIntro", { radius, b: (chunks) => <b>{chunks}</b> })}
       </p>
 
       <div data-field="latitude" tabIndex={-1} className="space-y-2 outline-none">
@@ -159,8 +162,8 @@ export function OfferLocationStep({
           className="flex min-h-[52px] w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-4 text-sm font-bold text-white transition-colors hover:bg-[var(--ck-role-hover)] disabled:opacity-70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         >
           {locating
-            ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Finding you…</>
-            : <><LocateFixed className="h-4 w-4" aria-hidden /> {pin ? "Use my current location again" : "Use my current location"}</>}
+            ? <><Loader2 className="h-4 w-4 animate-spin" aria-hidden /> <UiText>Finding you…</UiText></>
+            : <><LocateFixed className="h-4 w-4" aria-hidden /> {pin ? ui("Use my current location again") : ui("Use my current location")}</>}
         </button>
         {gpsError && <p role="alert" className="text-xs font-semibold text-amber-700 dark:text-amber-300">{gpsError}</p>}
         {errors.latitude && !pin && <p role="alert" className="text-xs font-semibold text-red-600 dark:text-red-400">{errors.latitude}</p>}
@@ -168,7 +171,7 @@ export function OfferLocationStep({
         {!showMap ? (
           <button type="button" onClick={() => setShowMap(true)}
             className="text-xs font-semibold text-stone-500 underline underline-offset-2 hover:text-stone-700 dark:text-stone-400">
-            Can&apos;t use your location? Find it on the map
+            <UiText>Can&apos;t use your location? Find it on the map</UiText>
           </button>
         ) : (
           <LocationPinPicker pin={pin} onPick={(lat, lng) => place(lat, lng)} tone="donor" showSearch height={240} />
@@ -180,16 +183,16 @@ export function OfferLocationStep({
         <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
           {pinAddress.running ? (
             <p className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Looking up your area…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> <UiText>Looking up your area…</UiText>
             </p>
           ) : model.pickupCity.trim() ? (
             <p className="flex items-start gap-1.5 text-sm text-stone-700 dark:text-stone-200">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[var(--ck-role-accent)]" aria-hidden />
-              <span><span className="text-stone-500 dark:text-stone-400">Pickup area: </span>
+              <span><span className="text-stone-500 dark:text-stone-400"><UiText>Pickup area:</UiText> </span>
                 <b>{[model.pickupLocality, model.pickupCity, model.pickupPincode].filter((x) => x.trim()).join(", ")}</b></span>
             </p>
           ) : (
-            <WizardField label="Your city" required error={errors.pickupCity} hint="We couldn't read it from your location.">
+            <WizardField label={ui("Your city")} required error={errors.pickupCity} hint={ui("We couldn't read it from your location.")}>
               {({ id, describedBy, invalid }) => (
                 <input id={id} name="pickupCity" value={model.pickupCity} className={controlClass}
                   aria-describedby={describedBy} aria-invalid={invalid}
@@ -204,39 +207,39 @@ export function OfferLocationStep({
       <div aria-live="polite">
         {check.kind === "checking" && (
           <p className="flex items-center gap-1.5 text-sm font-semibold text-stone-600 dark:text-stone-300">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> Checking the distance to the recipient…
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> <UiText>Checking the distance to the recipient…</UiText>
           </p>
         )}
         {check.kind === "failed" && (
           <p role="alert" className="flex flex-wrap items-center gap-2 text-sm font-semibold text-red-600 dark:text-red-400">
-            We couldn&apos;t check the distance.
-            {pin && <button type="button" className="underline" onClick={() => void runCheck(pin.lat, pin.lng)}>Try again</button>}
+            <UiText>We couldn&apos;t check the distance.</UiText>
+            {pin && <button type="button" className="underline" onClick={() => void runCheck(pin.lat, pin.lng)}><UiText>Try again</UiText></button>}
           </p>
         )}
         {result && !result.located && (
           <p className="rounded-xl border border-stone-200 bg-white p-3 text-sm text-stone-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300">
-            We couldn&apos;t work out the distance for this request, so you can go ahead.
+            <UiText>We couldn&apos;t work out the distance for this request, so you can go ahead.</UiText>
           </p>
         )}
         {result && result.located && result.withinRadius && (
           <p className="flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300">
             <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-            <span>You&apos;re about <b>{result.distanceKm} km</b> from the recipient{result.area ? <> ({result.area})</> : null}, within the {radius} km donation radius. Continue to offer your item.</span>
+            <span>{wt.rich("withinRadius", { distance: result.distanceKm ?? 0, area: result.area ? ` (${result.area})` : "", radius, b: (chunks) => <b>{chunks}</b> })}</span>
           </p>
         )}
         {outside && result && (
           <div className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-3 sm:p-4 dark:border-amber-900 dark:bg-amber-950/30">
             <p className="flex items-start gap-2 text-sm text-amber-900 dark:text-amber-200">
               <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-              <span>The recipient is in <b>{area}</b>, about <b>{result.distanceKm} km</b> from you. That is outside your {radius} km donation radius.</span>
+              <span>{wt.rich("outsideRadius", { area, distance: result.distanceKm ?? 0, radius, b: (chunks) => <b>{chunks}</b> })}</span>
             </p>
 
             {areaMap && !areaMapFailed && (
               <figure className="overflow-hidden rounded-lg border border-amber-200 dark:border-amber-900">
                 {/* eslint-disable-next-line @next/next/no-img-element -- external Static Maps image */}
-                <img src={areaMap} alt={`Map of ${area}`} className="h-36 w-full object-cover" onError={() => setAreaMapFailed(true)} />
+                <img src={areaMap} alt={wt("mapOf", { area })} className="h-36 w-full object-cover" onError={() => setAreaMapFailed(true)} />
                 <figcaption className="bg-white/70 px-3 py-1.5 text-2xs text-stone-500 dark:bg-zinc-900/70 dark:text-stone-400">
-                  Approximate area. The exact address is shared once the handover is arranged.
+                  <UiText>Approximate area. The exact address is shared once the handover is arranged.</UiText>
                 </figcaption>
               </figure>
             )}
@@ -244,25 +247,25 @@ export function OfferLocationStep({
             {model.donorDropOffAvailable ? (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white p-3 text-sm text-green-800 dark:bg-zinc-900 dark:text-green-300">
                 <span className="flex items-start gap-2"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                  You&apos;ve agreed to take the item to {area} if the recipient can&apos;t come to you.</span>
-                <button type="button" className="text-xs font-semibold text-stone-500 underline" onClick={() => onChange("donorDropOffAvailable", false)}>Change</button>
+                  {wt("agreedToTake", { area })}</span>
+                <button type="button" className="text-xs font-semibold text-stone-500 underline" onClick={() => onChange("donorDropOffAvailable", false)}><UiText>Change</UiText></button>
               </div>
             ) : (
               <div data-field="donorDropOffAvailable" tabIndex={-1} className="space-y-3 outline-none">
-                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">Do you want to donate outside your {radius} km area?</p>
+                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{wt("outsideQuestion", { radius })}</p>
                 <p className="flex items-start gap-2 rounded-lg bg-white p-3 text-xs leading-relaxed text-stone-700 dark:bg-zinc-900 dark:text-stone-300">
                   <Navigation className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[var(--ck-role-accent)]" aria-hidden />
-                  If you say yes, be ready to travel to {area} and hand the item over yourself if the recipient can&apos;t come to you.
+                  {wt("ifYesTravel", { area })}
                 </p>
                 {errors.donorDropOffAvailable && <p role="alert" className="text-xs font-semibold text-red-600 dark:text-red-400">{errors.donorDropOffAvailable}</p>}
                 <div className="flex flex-wrap gap-2">
                   <button type="button" onClick={() => onChange("donorDropOffAvailable", true)}
                     className="min-h-[44px] rounded-xl bg-[var(--ck-role-accent)] px-4 text-sm font-bold text-white hover:bg-[var(--ck-role-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]">
-                    Yes, I&apos;ll take it there
+                    <UiText>Yes, I&apos;ll take it there</UiText>
                   </button>
                   <button type="button" onClick={onDecline}
                     className="min-h-[44px] rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-700 hover:bg-stone-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-200">
-                    No, go back
+                    <UiText>No, go back</UiText>
                   </button>
                 </div>
               </div>

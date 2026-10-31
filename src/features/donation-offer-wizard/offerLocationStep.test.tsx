@@ -57,7 +57,7 @@ describe("offer step 1: check your location", () => {
 
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /yes, i'll take it there/i })); });
     expect(screen.getByTestId("dropoff").textContent).toBe("true");
-    expect(screen.getByText(/You've agreed to take the item to Kandivali East, Mumbai/)).toBeInTheDocument();
+    expect(screen.getByText(/You[’']ve agreed to take the item to Kandivali East, Mumbai/)).toBeInTheDocument();
   });
 
   it("outside 10 km: no takes the donor back", async () => {

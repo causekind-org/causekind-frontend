@@ -1,5 +1,6 @@
 "use client";
 
+import { SLOW_REQUEST_MESSAGE, isSlowRequestError } from "@/lib/api";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,7 +14,27 @@ import {
   fieldText,
 } from "@/features/ngo-registration/ngoRegistrationModel";
 
-export type NgoStatusType = "loading" | "incomplete" | "under_review" | "changes_requested" | "verified";
+export type NgoStatusType =
+  | "loading" | "incomplete" | "pending_otp" | "under_review" | "changes_requested" | "rejected" | "verified";
+
+/** Who is looking at the NGO area: only "ngo" viewers get NGO status, CTAs and API calls. */
+export type NgoViewer = "guest" | "ngo" | "other";
+
+const NGO_ROLES = ["NGO", "NGO_PARTNER"];
+
+/** Where a logged-out visitor's "apply" CTAs go. */
+export const NGO_LOGIN_HREF = "/login?next=/ngo";
+
+function toNgoStatus(raw: string | undefined): NgoStatusType {
+  switch (raw) {
+    case "APPROVED": return "verified";
+    case "NEEDS_INFORMATION": return "changes_requested";
+    case "REJECTED": return "rejected";
+    case "PENDING_VERIFICATION": return "pending_otp";
+    case "UNDER_REVIEW": return "under_review";
+    default: return "incomplete";
+  }
+}
 
 function parseFormState(raw: any): NGOFormState {
   if (!raw) return INITIAL_NGO_FORM;
@@ -21,6 +42,9 @@ function parseFormState(raw: any): NGOFormState {
     ...INITIAL_NGO_FORM,
     organizationName: fieldText(raw.organizationName),
     legalStructure: raw.legalStructure || "",
+    panNumber: fieldText(raw.panNumber),
+    organizationPhone: fieldText(raw.organizationPhone),
+    aboutUs: typeof raw.aboutUs === "string" ? raw.aboutUs : "",
     registrationNumber: fieldText(raw.registrationNumber),
     registeredOfficeAddress: fieldText(raw.registeredOfficeAddress),
     yearOfEstablishment: fieldText(raw.yearOfEstablishment),
@@ -65,8 +89,19 @@ export function triggerNgoLockedToast(
         }
         : undefined,
     });
+  } else if (status === "pending_otp") {
+    toast.info("Verify your email to send your application for review.", {
+      action: router
+        ? {
+          label: "Verify",
+          onClick: () => router.push("/profile/ngo-details"),
+        }
+        : undefined,
+    });
   } else if (status === "under_review") {
     toast.info("Your application is under review. We'll unlock this once you're approved.");
+  } else if (status === "rejected") {
+    toast.info("Your application was not approved. See your application for the reason.");
   } else if (status === "changes_requested") {
     toast.warning("A few documents need fixing. Fix now →", {
       action: router
@@ -94,6 +129,13 @@ export interface NgoStatusData {
   refresh: () => Promise<void>;
   overview: NgoOverview | null;
   status: NgoStatusType;
+  viewer: NgoViewer;
+  /** When CauseKind approved the NGO (ISO, UTC), if it has been. */
+  verifiedAt: string | null;
+  /** The reviewer's reason, for a rejected application. */
+  rejectionReason: string | null;
+  /** The overview counters failed to load: show "—", the status itself is unaffected. */
+  statsUnavailable: boolean;
   ngoName: string;
   stepNumber: number;
   totalSteps: number;
@@ -118,6 +160,9 @@ export interface NgoStatusData {
   isError: boolean;
 }
 
+/** A focus refresh within this long of the last load is skipped (no refetch storm when switching tabs). */
+export const FOCUS_REFRESH_MIN_MS = 30_000;
+
 export function useNgoStatus(): NgoStatusData {
   const { user, isLoading: authLoading } = useAuth();
   const userIdentifier = String(user?.id ?? user?.userId ?? user?.email ?? "anonymous");
@@ -125,52 +170,86 @@ export function useNgoStatus(): NgoStatusData {
   const [ngoName, setNgoName] = useState("Your Organization");
   const [progress, setProgress] = useState(() => calculateNgoProgress(INITIAL_NGO_FORM));
   const [overview, setOverview] = useState<NgoOverview | null>(null);
+  const [statsUnavailable, setStatsUnavailable] = useState(false);
+  const [verifiedAt, setVerifiedAt] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasShownWelcome, setHasShownWelcome] = useState(true);
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
+  /** Whose status is on screen: later refreshes for the same NGO keep it instead of blanking it. */
+  const loadedFor = useRef<string | null>(null);
+  // Depend on who the user is, not on the object: a new user object with the same
+  // identity (each re-render, e.g. the hero gallery's slideshow) must not restart the load.
+  const lastLoad = useRef(0);
+  const userRef = useRef(user);
+  userRef.current = user;
+  const userKey = user ? `${user.id}|${user.role}|${user.fullName ?? ""}` : "";
 
   const refresh = useCallback(async () => {
+    const user = userRef.current;
     const request = ++sequence.current;
     if (authLoading) return;
-    if (!user || !["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) {
+    if (!user || !NGO_ROLES.includes(user.role?.toUpperCase() || "")) {
       setStatus("incomplete"); setOverview(null); setLoading(false); setError(null); return;
     }
-    setLoading(true); setError(null);
+    // Only the first load for this account shows "loading". A background refresh (focus,
+    // live update, the profile name arriving) kept flipping isVerified off for ~2s, so every
+    // NGO page dropped to its locked/blank state and came back.
+    const id = String(user.id ?? user.email ?? "");
+    if (loadedFor.current !== id) setLoading(true);
     try {
-      const [application, draft, totals] = await Promise.all([getMyNgoApplication(), getNgoDraft(), getNgoOverview()]);
+      // The status comes from the application alone: a failed overview only blanks the counters.
+      const totalsRequest = getNgoOverview().then(
+        (totals) => ({ totals, failed: false }),
+        () => ({ totals: null as NgoOverview | null, failed: true }),
+      );
+      // Only the application decides the status: a failed draft (progress display) or overview
+      // (counters) must not turn the dashboard into "Something went wrong".
+      const draftRequest = getNgoDraft().catch(() => null);
+      const [application, draft, { totals, failed }] = await Promise.all([getMyNgoApplication(), draftRequest, totalsRequest]);
       if (request !== sequence.current) return;
-      const raw = application?.status;
-      setStatus(raw === "APPROVED" ? "verified"
-        : raw === "REJECTED" || raw === "NEEDS_INFORMATION" ? "changes_requested"
-        : raw === "UNDER_REVIEW" || raw === "PENDING_VERIFICATION" ? "under_review" : "incomplete");
+      setStatus(toNgoStatus(application?.status));
+      setVerifiedAt(application?.verifiedAt ?? null);
+      setRejectionReason(application?.status === "REJECTED" ? application.rejectionReason ?? null : null);
+      setStatsUnavailable(failed);
       setNgoName(application?.organizationName || draft?.organizationName || user?.fullName || "Your Organization");
       const form = parseFormState(draft || application);
       setProgress(calculateNgoProgress(form));
       setDocuments(form.documents || {});
       setOverview(totals);
+      setError(null);
+      loadedFor.current = id;
     } catch (e) {
       if (request === sequence.current) {
-        setError(e instanceof Error ? e.message : "We could not load your NGO activity. Please retry.");
-        setOverview(null);
-        setStatus("incomplete"); // Cached approval is never a permission fallback.
+        setError(isSlowRequestError(e) ? SLOW_REQUEST_MESSAGE
+          : e instanceof Error && e.message ? e.message : "We could not load your NGO activity. Please retry.");
+        // A failed background refresh keeps what is on screen; only a first load has nothing to keep.
+        if (loadedFor.current !== id) {
+          setOverview(null);
+          setStatus("incomplete"); // Cached approval is never a permission fallback.
+        }
       }
     } finally { if (request === sequence.current) setLoading(false); }
-  }, [user, authLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- userKey stands for user
+  }, [userKey, authLoading]);
 
   useEffect(() => {
     void refresh();
-    const reload = () => { void refresh(); };
+    lastLoad.current = Date.now();
+    const reload = () => { lastLoad.current = Date.now(); void refresh(); };
+    // Tabbing back in refreshes at most every 30 s, not on every focus.
+    const onFocus = () => { if (Date.now() - lastLoad.current >= FOCUS_REFRESH_MIN_MS) reload(); };
     let timer: ReturnType<typeof setTimeout> | undefined;
     const activity = () => { clearTimeout(timer); timer = setTimeout(reload, 400); };
-    window.addEventListener("focus", reload);
+    window.addEventListener("focus", onFocus);
     window.addEventListener("ngo-application-submitted", reload);
     window.addEventListener("ngo-activity-updated", reload);
     window.addEventListener("ck-entity-update", activity);
     return () => {
       ++sequence.current; clearTimeout(timer);
-      window.removeEventListener("focus", reload);
+      window.removeEventListener("focus", onFocus);
       window.removeEventListener("ngo-application-submitted", reload);
       window.removeEventListener("ngo-activity-updated", reload);
       window.removeEventListener("ck-entity-update", activity);
@@ -186,7 +265,9 @@ export function useNgoStatus(): NgoStatusData {
     setHasShownWelcome(true);
   }, [userIdentifier]);
 
-  const isVerified = !isLoading && !error && status === "verified";
+  // A failed first load sets the status to "incomplete" itself; a failed background refresh keeps
+  // the verified status (and the data) on screen next to the error, instead of locking every page.
+  const isVerified = !isLoading && status === "verified";
   const isPhotosDue = (overview?.photosDue ?? 0) > 0;
   const canStartDrive = overview?.canStartDrive !== false;
   const blockingDriveTitle = overview?.blockingDriveTitle ?? "";
@@ -197,10 +278,13 @@ export function useNgoStatus(): NgoStatusData {
     ? "Available once CauseKind verifies your NGO."
     : isPhotosDue ? `Upload handover photos for ${overview?.photosDueRequestName} before starting another drive.`
     : driveLockReason);
+  const viewer: NgoViewer = !user ? "guest" : NGO_ROLES.includes(user.role?.toUpperCase() || "") ? "ngo" : "other";
   return {
     isLoading: isLoading || authLoading, error, refresh, overview, status, ngoName,
+    viewer, verifiedAt, rejectionReason, statsUnavailable,
     stepNumber: progress.completedCount, totalSteps: 6, nextIncompleteStep: progress.nextIncompleteStep,
-    wizardHref: progress.nextIncompleteStep ? `/profile/ngo-details?step=${progress.nextIncompleteStep}` : "/profile/ngo-details",
+    wizardHref: viewer === "guest" ? NGO_LOGIN_HREF
+      : progress.nextIncompleteStep ? `/profile/ngo-details?step=${progress.nextIncompleteStep}` : "/profile/ngo-details",
     activeRequests: overview?.activeRequests ?? 0, itemsPledged: overview?.itemsPledged ?? 0,
     dropoffsToConfirm: overview?.dropoffsToConfirm ?? 0, photosDue: overview?.photosDue ?? 0,
     photosDueRequestName: overview?.photosDueRequestName ?? "", isVerified, isPhotosDue,

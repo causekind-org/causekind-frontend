@@ -148,22 +148,33 @@ export function CertificateCard({ title, description, icon, benefits, documentUr
           </ul>
         </div>
 
-        {/* View All Button - Festive Saffron Outline Treatment */}
-        <button 
-          type="button" 
-          onClick={() => {
-            if (totalPages > 0) {
-              setLightboxPage(0);
-              setLightboxOpen(true);
-            } else {
-              window.open(documentUrl, '_blank');
-            }
-          }}
-          className="w-full py-3 rounded-xl border border-amber-400/80 text-amber-950 dark:text-amber-100 hover:bg-gradient-to-r hover:from-[#ea580c] hover:to-[#d97706] hover:text-white hover:border-amber-500 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer font-bold text-sm shadow-xs mt-auto"
-        >
-          <Eye className="w-4 h-4" />
-          View All
-        </button>
+        {/* View All & PDF Buttons */}
+        <div className="flex items-center gap-2 mt-auto">
+          <button 
+            type="button" 
+            onClick={() => {
+              if (totalPages > 0) {
+                setLightboxPage(0);
+                setLightboxOpen(true);
+              } else {
+                window.open(documentUrl, '_blank');
+              }
+            }}
+            className="flex-1 py-3 rounded-xl border border-amber-400/80 text-amber-950 dark:text-amber-100 hover:bg-gradient-to-r hover:from-[#ea580c] hover:to-[#d97706] hover:text-white hover:border-amber-500 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer font-bold text-sm shadow-xs"
+          >
+            <Eye className="w-4 h-4" />
+            View All
+          </button>
+          <a
+            href={documentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="py-3 px-3.5 rounded-xl border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-300 hover:text-amber-600 dark:hover:text-amber-400 hover:border-amber-400 transition-all duration-200 flex items-center justify-center font-bold text-xs shadow-xs"
+            title="Open official PDF in new tab"
+          >
+            PDF ↗
+          </a>
+        </div>
       </motion.div>
 
       {/* Document Preview Modal */}
@@ -185,16 +196,26 @@ export function CertificateCard({ title, description, icon, benefits, documentUr
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-white/10">
                 <h3 className="font-bold text-lg text-foreground">Document Preview</h3>
-                <button
-                  type="button"
-                  aria-label="Close certificate preview"
-                  onClick={() => setLightboxOpen(false)}
-                  className="p-2 text-stone-400 dark:text-stone-500 hover:text-stone-800 hover:bg-stone-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={documentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/10 text-amber-800 dark:text-amber-200 hover:bg-amber-500/20 border border-amber-300/50 transition-colors"
+                  >
+                    Open Official PDF ↗
+                  </a>
+                  <button
+                    type="button"
+                    aria-label="Close certificate preview"
+                    onClick={() => setLightboxOpen(false)}
+                    className="p-2 text-stone-400 dark:text-stone-500 hover:text-stone-800 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
 
               {/* Scrollable Content Area */}

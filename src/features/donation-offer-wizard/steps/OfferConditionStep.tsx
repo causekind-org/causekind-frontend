@@ -5,6 +5,8 @@ import { ConditionalField, WizardField, controlClass } from "@/features/wizard-k
 import type { CompatibilityCheck } from "@/lib/api";
 import { OFFER_CONDITIONS, type OfferModel } from "../offerModel";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useOfferCopy } from "../offerCopy";
 export type CompatState =
   | { kind: "incomplete" }
   | { kind: "saving" }
@@ -31,9 +33,11 @@ export function OfferConditionStep({
   /** Only for NGO drives: the drive's rule in plain words. */
   conditionHint?: string;
 }) {
+  const tr = useOfferCopy();
+  const ui = useUiText();
   return (
     <div className="space-y-3">
-      <WizardField label="Condition" required error={errors.condition} hint={conditionHint}>
+      <WizardField label={ui("Condition")} required error={errors.condition} hint={conditionHint}>
         {({ id, describedBy, invalid }) => (
           <select
             id={id} name="condition" value={model.condition}
@@ -41,8 +45,8 @@ export function OfferConditionStep({
             aria-describedby={describedBy} aria-invalid={invalid}
             className={controlClass}
           >
-            <option value="">Select…</option>
-            {conditions.map(c => <option key={c} value={c}>{c}</option>)}
+            <option value=""><UiText>Select…</UiText></option>
+            {conditions.map(c => <option key={c} value={c}>{tr(c)}</option>)}
           </select>
         )}
       </WizardField>
@@ -55,15 +59,15 @@ export function OfferConditionStep({
           className="h-5 w-5 shrink-0 accent-[var(--ck-role-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
         />
         <span className="text-sm font-bold text-stone-800 dark:text-stone-100">
-          This item has known defects
+          <UiText>This item has known defects</UiText>
         </span>
       </label>
 
       <ConditionalField show={model.hasKnownDefects}>
         <WizardField
-          label="What should the recipient know?"
+          label={ui("What should the recipient know?")}
           required
-          hint="Scratches, a worn part, something that only half works — say it plainly."
+          hint={ui("Scratches, a worn part, something that only half works — say it plainly.")}
           error={errors.knownDefects}
         >
           {({ id, describedBy, invalid }) => (
@@ -82,26 +86,26 @@ export function OfferConditionStep({
           the real decision belongs to the donee and the admin, and a preview
           that quietly became a gate would be a new business rule. */}
       <div aria-live="polite" className="rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-2xs font-black uppercase tracking-wider text-stone-400">Fit with this request</p>
+        <p className="text-2xs font-black uppercase tracking-wider text-stone-400"><UiText>Fit with this request</UiText></p>
 
         {compat.kind === "incomplete" && (
           <p className="mt-1 text-2xs text-stone-500 dark:text-stone-400">
-            Add a quantity and condition and we&apos;ll check how well this matches.
+            <UiText>Add a quantity and condition and we&apos;ll check how well this matches.</UiText>
           </p>
         )}
         {compat.kind === "saving" && (
           <p className="mt-1 flex items-center gap-2 text-2xs text-stone-500 dark:text-stone-400">
-            <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Saving your answers…
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> <UiText>Saving your answers…</UiText>
           </p>
         )}
         {compat.kind === "checking" && (
           <p className="mt-1 flex items-center gap-2 text-2xs text-stone-500 dark:text-stone-400">
-            <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> Checking the fit…
+            <Loader2 className="h-3 w-3 animate-spin" aria-hidden /> <UiText>Checking the fit…</UiText>
           </p>
         )}
         {compat.kind === "unavailable" && (
           <p className="mt-1 text-2xs text-stone-500 dark:text-stone-400">
-            We couldn&apos;t check the fit just now. You can still continue.
+            <UiText>We couldn&apos;t check the fit just now. You can still continue.</UiText>
           </p>
         )}
         {compat.kind === "result" && (
@@ -110,9 +114,9 @@ export function OfferConditionStep({
               compat.check.indicator === "STRONG_MATCH" ? "text-green-700 dark:text-green-400"
                 : compat.check.indicator === "NOT_ELIGIBLE" ? "text-red-700 dark:text-red-400"
                 : "text-amber-700 dark:text-amber-400"}`}>
-              {compat.check.indicator === "STRONG_MATCH" ? "Strong match"
-                : compat.check.indicator === "NOT_ELIGIBLE" ? "This may not match the request"
-                : "Possible match"}
+              {compat.check.indicator === "STRONG_MATCH" ? ui("Strong match")
+                : compat.check.indicator === "NOT_ELIGIBLE" ? ui("This may not match the request")
+                : ui("Possible match")}
             </p>
             {compat.check.explanation && (
               <p className="mt-0.5 text-2xs text-stone-600 dark:text-stone-300">{compat.check.explanation}</p>

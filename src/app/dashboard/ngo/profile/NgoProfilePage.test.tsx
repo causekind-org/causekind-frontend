@@ -18,6 +18,9 @@ vi.mock("next/navigation", () => ({
   redirect: (url: string) => mockRedirect(url),
 }));
 
+// The approved NGO's About / past-activity sections have their own tests.
+vi.mock("@/features/ngo-profile/PastActivity", () => ({ PastActivitySection: () => null }));
+vi.mock("@/features/ngo-profile/NgoAboutSection", () => ({ NgoAboutSection: () => null }));
 vi.mock("@/lib/api", () => ({
   getProfile: vi.fn(),
   updateProfile: vi.fn(),
@@ -361,10 +364,9 @@ describe("NgoProfileView (Consolidated at /profile)", () => {
       expect(screen.getByText(/State \/ Province/i)).toBeInTheDocument();
       expect(screen.getAllByText(/City/i).length).toBeGreaterThanOrEqual(1);
 
-      // GPS Coordinates section
-      expect(screen.getByText(/GPS Location/i)).toBeInTheDocument();
-      expect(screen.getByText(/Location saved/i)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Use GPS/i })).toBeInTheDocument();
+      // GPS Coordinates section is removed for NGO accounts
+      expect(screen.queryByText(/GPS Location/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Use GPS/i })).not.toBeInTheDocument();
 
       // 2. CRITICAL FIELD-MAPPING CHECK:
       // Edit the Organization Name input in modal

@@ -62,12 +62,20 @@ import { cardVariants } from "@/features/wizard-kit/wizardMotion";
 import type { SaveStatus } from "@/features/wizard-kit/types";
 import { DoneeReviewStep } from "@/features/donee-request-wizard/steps/DoneeReviewStep";
 
+import { UiText, useUiText } from "@/components/UiText";
+import { useTranslations , useLocale } from "next-intl";
+import { useDocumentScreeningCopy } from "@/features/wizard-kit/documentScreeningCopy";
+import { useDoneeStepCopy } from "@/features/donee-request-wizard/doneeStepCopy";
 // ── Constants ────────────────────────────────────────────────────────────────
-const URGENCIES = [
-  { value: "NORMAL", label: "Normal" },
-  { value: "HIGH", label: "High" },
-  { value: "CRITICAL", label: "Critical" },
+/** Display copy for URGENCIES, translated (was a module constant). */
+function useUrgenciesCopy() {
+  const ui = useUiText();
+  return [
+  { value: "NORMAL", label: ui("Normal") },
+  { value: "HIGH", label: ui("High") },
+  { value: "CRITICAL", label: ui("Critical") },
 ];
+}
 const EMERGENCY_NATURES = ["FLOOD", "FIRE", "EARTHQUAKE", "ACCIDENT", "EVICTION", "OTHER"];
 const HOUSING_TYPES = ["OWNED", "RENTED", "SHELTER", "TEMPORARY"];
 
@@ -104,49 +112,61 @@ function mapCategoryToTier(category: string, isEmergency: boolean): Tier {
   return map[category.toLowerCase()] ?? "TIER_2_MODERATE";
 }
 
-const TIER_LABELS: Record<Tier, string> = {
-  TIER_1_BASIC: "Tier 1 — Basic Need",
-  TIER_2_MODERATE: "Tier 2 — Moderate Need",
-  TIER_3_HIGH_VALUE: "Tier 3 — High-Value Need",
-  TIER_4_EMERGENCY: "Tier 4 — Emergency",
+/** Display copy for TIER_LABELS, translated (was a module constant). */
+function useTierLabelsCopy(): Record<Tier, string> {
+  const ui = useUiText();
+  return {
+  TIER_1_BASIC: ui("Tier 1 — Basic Need"),
+  TIER_2_MODERATE: ui("Tier 2 — Moderate Need"),
+  TIER_3_HIGH_VALUE: ui("Tier 3 — High-Value Need"),
+  TIER_4_EMERGENCY: ui("Tier 4 — Emergency"),
 };
+}
 
-const TIER_TAT: Record<Tier, string> = {
-  TIER_1_BASIC: "Reviewed within 24 hours",
-  TIER_2_MODERATE: "Reviewed within 48 hours",
-  TIER_3_HIGH_VALUE: "Reviewed within 72 hours",
-  TIER_4_EMERGENCY: "Fast-tracked — reviewed within 4 hours",
+/** Display copy for TIER_TAT, translated (was a module constant). */
+function useTierTatCopy(): Record<Tier, string> {
+  const ui = useUiText();
+  return {
+  TIER_1_BASIC: ui("Reviewed within 24 hours"),
+  TIER_2_MODERATE: ui("Reviewed within 48 hours"),
+  TIER_3_HIGH_VALUE: ui("Reviewed within 72 hours"),
+  TIER_4_EMERGENCY: ui("Fast-tracked — reviewed within 4 hours"),
 };
+}
 
 // Mirrors backend TierService.requiredDocuments() — flat list, no "one-of" alternatives.
-const REQUIRED_DOCS: Record<Tier, { type: VerificationDocumentType; label: string }[]> = {
+/** Display copy for REQUIRED_DOCS, translated (was a module constant). */
+function useRequiredDocsCopy(): Record<Tier, { type: VerificationDocumentType; label: string }[]> {
+  const ui = useUiText();
+  return {
   TIER_1_BASIC: [
-    { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
-    { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
-    { type: "SELFIE_WITH_ID", label: "A clear photo of yourself" },
+    { type: "RESIDENCE_PROOF", label: ui("Residence proof (any document showing your address)") },
+    { type: "GOVT_ID_ANY", label: ui("Government ID proof (Aadhaar, PAN, Voter ID, or similar)") },
+    { type: "SELFIE_WITH_ID", label: ui("A clear photo of yourself") },
   ],
   TIER_2_MODERATE: [
-    { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
-    { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
-    { type: "SELFIE_WITH_ID", label: "A clear photo of yourself" },
-    { type: "PROOF_OF_NEED", label: "Proof of need (school/hospital/doctor letter)" },
-    { type: "BPL_CARD", label: "BPL card" },
+    { type: "RESIDENCE_PROOF", label: ui("Residence proof (any document showing your address)") },
+    { type: "GOVT_ID_ANY", label: ui("Government ID proof (Aadhaar, PAN, Voter ID, or similar)") },
+    { type: "SELFIE_WITH_ID", label: ui("A clear photo of yourself") },
+    { type: "PROOF_OF_NEED", label: ui("Proof of need (school/hospital/doctor letter)") },
+    { type: "BPL_CARD", label: ui("BPL card") },
   ],
   TIER_3_HIGH_VALUE: [
-    { type: "RESIDENCE_PROOF", label: "Residence proof (any document showing your address)" },
-    { type: "GOVT_ID_ANY", label: "Government ID proof (Aadhaar, PAN, Voter ID, or similar)" },
-    { type: "SELFIE_WITH_ID", label: "A clear photo of yourself" },
-    { type: "PROOF_OF_NEED", label: "Primary proof of need (hospital discharge / prescription)" },
-    { type: "BPL_CARD", label: "BPL card" },
-    { type: "REFERENCE_LETTER", label: "Third-party reference letter (NGO/Sarpanch/social worker)" },
-    { type: "SITUATION_PHOTO", label: "Situation photo (home/patient/damage)" },
+    { type: "RESIDENCE_PROOF", label: ui("Residence proof (any document showing your address)") },
+    { type: "GOVT_ID_ANY", label: ui("Government ID proof (Aadhaar, PAN, Voter ID, or similar)") },
+    { type: "SELFIE_WITH_ID", label: ui("A clear photo of yourself") },
+    { type: "PROOF_OF_NEED", label: ui("Primary proof of need (hospital discharge / prescription)") },
+    { type: "BPL_CARD", label: ui("BPL card") },
+    { type: "REFERENCE_LETTER", label: ui("Third-party reference letter (NGO/Sarpanch/social worker)") },
+    { type: "SITUATION_PHOTO", label: ui("Situation photo (home/patient/damage)") },
   ],
   TIER_4_EMERGENCY: [
-    { type: "GOVT_ID_ANY", label: "Any government photo ID" },
-    { type: "EMERGENCY_PROOF", label: "Emergency proof (FIR / news article / relief letter)" },
-    { type: "SCENE_SELFIE", label: "Selfie at the affected location" },
+    { type: "GOVT_ID_ANY", label: ui("Any government photo ID") },
+    { type: "EMERGENCY_PROOF", label: ui("Emergency proof (FIR / news article / relief letter)") },
+    { type: "SCENE_SELFIE", label: ui("Selfie at the affected location") },
   ],
 };
+}
 
 // Only these actually block submission — everything else in REQUIRED_DOCS above
 // is shown as a helpful (optional) upload but isn't mandatory. Tier 4 Emergency
@@ -196,14 +216,18 @@ type DocScreening = {
   documentTypeGuess: string | null;
 };
 
-const DECLARATIONS = [
-  "The information I have provided in this request is true and accurate to the best of my knowledge.",
-  "I understand my residence proof and government ID are used only for admin verification and are never shown to donors or other users.",
-  "I have not already received this same item from CauseKind within the last 60 days, and I have not submitted this same request elsewhere.",
-  "I understand that providing false information may result in my request being rejected and my account being restricted.",
-  "I consent to CauseKind contacting any reference or alternate contact I provide, to verify this request.",
-  "I understand CauseKind may place this request on hold or ask for more information before approving it.",
+/** Display copy for DECLARATIONS, translated (was a module constant). */
+function useDeclarationsCopy() {
+  const ui = useUiText();
+  return [
+  ui("The information I have provided in this request is true and accurate to the best of my knowledge."),
+  ui("I understand my residence proof and government ID are used only for admin verification and are never shown to donors or other users."),
+  ui("I have not already received this same item from CauseKind within the last 60 days, and I have not submitted this same request elsewhere."),
+  ui("I understand that providing false information may result in my request being rejected and my account being restricted."),
+  ui("I consent to CauseKind contacting any reference or alternate contact I provide, to verify this request."),
+  ui("I understand CauseKind may place this request on hold or ask for more information before approving it."),
 ];
+}
 
 // Step labels, intros and order now live in
 // features/donee-request-wizard/doneeRequestModel.ts, keyed by semantic id, so
@@ -242,6 +266,10 @@ function DocSlot({
   complete: boolean; allowCamera?: boolean; accept?: string;
   onUpload: (file: File) => void; onRemove: () => void;
 }) {
+  const wt = useTranslations("wizardFlow");
+  const docCopy = useDocumentScreeningCopy();
+  const locale = useLocale();
+  const ui = useUiText();
   const ref = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const invalid = screening?.status === "invalid";
@@ -286,14 +314,14 @@ function DocSlot({
   // "Take photo" only on a genuinely empty slot; anything the donee needs to
   // redo — a rejection, an unscreened legacy photo, or an accepted one they want
   // to change — reads as "Retake photo".
-  const cameraActionLabel = doc || invalid || needsRescreen ? "Retake photo" : "Take photo";
+  const cameraActionLabel = doc || invalid || needsRescreen ? ui("Retake photo") : ui("Take photo");
   // The picker is the escape hatch when the camera path is what's failing, so it
   // keeps a plain, always-available label and is never gated by screening state.
   const pickerActionLabel = allowCamera
-    ? "Choose photo"
-    : invalid || needsRescreen ? "Re-upload"
-      : unavailable ? "Try again"
-        : uploaded ? "Replace" : "Upload";
+    ? ui("Choose photo")
+    : invalid || needsRescreen ? ui("Re-upload")
+      : unavailable ? ui("Try again")
+        : uploaded ? ui("Replace") : ui("Upload");
 
   return (
     <div className={`flex items-center gap-3 rounded-xl sm:rounded-2xl border-2 p-3.5 transition-all ${borderClass}`}>
@@ -318,15 +346,15 @@ function DocSlot({
           {label}
           {required
             ? <span className="text-[var(--ck-role-accent)] ml-0.5">*</span>
-            : <span className="ml-1.5 text-3xs font-bold uppercase tracking-wide text-stone-400">(optional)</span>}
+            : <span className="ml-1.5 text-3xs font-bold uppercase tracking-wide text-stone-400"><UiText>(optional)</UiText></span>}
         </span>
         {checking ? (
           <p className="text-xs text-stone-400 mt-0.5">
-            {uploadScreened ? "Checking face visibility and photo safety…" : "Checking with AI…"}
+            {uploadScreened ? ui("Checking face visibility and photo safety…") : ui("Checking with AI…")}
           </p>
         ) : invalid ? (
           <p className="text-xs text-red-600 dark:text-red-400 font-semibold mt-0.5">
-            {screening?.code ? documentScreeningCopy(screening.code) : (screening?.reason ?? "This doesn't look valid — please re-upload.")}
+            {screening?.code ? docCopy(screening.code) : (screening?.reason ?? ui("This doesn't look valid — please re-upload."))}
           </p>
         ) : unavailable ? (
           // Previously gated on `uploadScreened`, which is only true for the
@@ -336,25 +364,25 @@ function DocSlot({
           // document type and shows what the server actually said.
           <>
             <p className="text-xs text-slate-600 dark:text-slate-300 font-semibold mt-0.5">
-              Couldn&apos;t check this automatically — an admin will review it.
+              <UiText>Couldn&apos;t check this automatically — an admin will review it.</UiText>
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               {screening?.code
-                ? documentScreeningCopy(screening.code)
-                : "You can try again, or leave it — it won't block your request."}
+                ? docCopy(screening.code)
+                : ui("You can try again, or leave it — it won't block your request.")}
             </p>
           </>
         ) : needsRescreen ? (
           <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold mt-0.5">
-            This photo was uploaded before we started checking photos. Please re-upload it so we can check it.
+            <UiText>This photo was uploaded before we started checking photos. Please re-upload it so we can check it.</UiText>
           </p>
         ) : uploaded && doc ? (
           <p className="text-xs text-green-700 dark:text-green-400 mt-0.5">
-            Uploaded {serverDate(doc.uploadedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}
+            {wt("uploadedAt", { date: serverDate(doc.uploadedAt).toLocaleDateString(locale, { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) })}
             {screening?.status === "valid" && (
               uploadScreened
-                ? " · Photo accepted"
-                : screening.documentTypeGuess ? ` · AI verified — ${screening.documentTypeGuess}` : " · AI verified"
+                ? wt("photoAccepted")
+                : screening.documentTypeGuess ? wt("aiVerifiedAs", { type: screening.documentTypeGuess }) : wt("aiVerified")
             )}
           </p>
         ) : null}
@@ -380,7 +408,7 @@ function DocSlot({
         )}
         {allowCamera && (
           <button type="button" onClick={() => setCameraOpen(true)} disabled={uploading}
-            aria-label={`${cameraActionLabel} for ${label}`}
+            aria-label={wt("actionFor", { action: cameraActionLabel, label })}
             className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-50 transition-colors
               whitespace-nowrap inline-flex items-center justify-center gap-1.5 ${actionBorderClass}`}>
             <Camera className="w-3.5 h-3.5" />
@@ -388,7 +416,7 @@ function DocSlot({
           </button>
         )}
         <button type="button" onClick={() => ref.current?.click()} disabled={uploading}
-          aria-label={`${pickerActionLabel} for ${label}`}
+          aria-label={wt("actionFor", { action: pickerActionLabel, label })}
           className={`text-xs font-bold px-3 py-1.5 rounded-lg border disabled:opacity-50 transition-colors
             whitespace-nowrap ${allowCamera ? "inline-flex items-center justify-center gap-1.5" : ""} ${actionBorderClass}`}>
           {/* With two buttons there's no way to tell which one started the
@@ -416,6 +444,15 @@ export default function NewRequestPage() {
 const REUSABLE_PROFILE_DOCS: VerificationDocumentType[] = ["GOVT_ID_ANY","RESIDENCE_PROOF","SELFIE_WITH_ID","RATION_CARD","VOTER_ID","BPL_CARD","INCOME_CERT","BANK_PASSBOOK"];
 
 function NewRequestForm() {
+  const wt = useTranslations("wizardFlow");
+  const docCopy = useDocumentScreeningCopy();
+  const stepCopy = useDoneeStepCopy();
+  const DECLARATIONS = useDeclarationsCopy();
+  const REQUIRED_DOCS = useRequiredDocsCopy();
+  const TIER_TAT = useTierTatCopy();
+  const TIER_LABELS = useTierLabelsCopy();
+  const URGENCIES = useUrgenciesCopy();
+  const ui = useUiText();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -531,7 +568,7 @@ function NewRequestForm() {
       digitsOnly(userPhone).endsWith(refPhone));
   const refComplete = refPhone.length === (PHONE_LENGTHS[refDialCountry] ?? -1);
   const refLiveError = isSelfReference
-    ? "Reference number cannot be your own phone number — give an independent reference"
+    ? ui("Reference number cannot be your own phone number — give an independent reference")
     : "";
 
   // Keep verification.referrerContact in sync in full international format
@@ -657,7 +694,7 @@ function NewRequestForm() {
     getProfile()
       .then((p) => {
         if (p.role !== "DONEE" && p.role !== "ADMIN") {
-          toast.error("Access denied. Only Beneficiaries (Donees) can post needs.");
+          toast.error(ui("Access denied. Only Beneficiaries (Donees) can post needs."));
           router.push("/dashboard");
         }
         setUserPhone(p.phone ?? "");
@@ -806,7 +843,7 @@ function NewRequestForm() {
   }), [title, category, quantity, urgency, pincode, description, gpsCoords, isEmergency, emergencyNature, incidentDate, cityValue, cityFreeText, stateIso, countryIso, showCityFreeText, locality]);
 
   async function ensureDraft(): Promise<number> {
-    if (!profileGateUnsupported && !needProfile?.complete) throw new Error("Complete your Donee profile before starting a request");
+    if (!profileGateUnsupported && !needProfile?.complete) throw new Error(ui("Complete your Donee profile before starting a request"));
     if (draftId) return draftId;
     const d = await createItemRequestDraft();
     setDraftId(d.id);
@@ -818,29 +855,29 @@ function NewRequestForm() {
   function validateStep(s: DoneeRequestStep): boolean {
     const e: Record<string, string> = {};
     if (s === "need-details") {
-      if (!title.trim()) e.title = "Title is required";
-      if (!category) e.category = "Category is required";
-      if (!quantity || quantity < 1) e.quantity = "Quantity must be at least 1";
-      if (!description || description.length < 30) e.description = `Describe your need in at least 30 characters (currently ${description.length})`;
-      if (isEmergency && !emergencyNature) e.emergencyNature = "Select the nature of the emergency";
+      if (!title.trim()) e.title = ui("Title is required");
+      if (!category) e.category = ui("Category is required");
+      if (!quantity || quantity < 1) e.quantity = ui("Quantity must be at least 1");
+      if (!description || description.length < 30) e.description = wt("describeMin", { count: description.length });
+      if (isEmergency && !emergencyNature) e.emergencyNature = ui("Select the nature of the emergency");
     }
     if (s === "location") {
       // The whole location is required, not only the pin: a spot the lookup
       // could not describe leaves blanks that the donee fills in.
       const city = showCityFreeText ? cityFreeText : cityValue;
-      if (!countryIso) e.countryIso = "Choose a country";
-      if (!stateIso && !noStateOptions) e.stateIso = "Choose a state";
-      if (!city.trim()) e.city = "City is required";
+      if (!countryIso) e.countryIso = ui("Choose a country");
+      if (!stateIso && !noStateOptions) e.stateIso = ui("Choose a state");
+      if (!city.trim()) e.city = ui("City is required");
       const pin = pincode.trim();
-      if (!pin) e.pincode = countryIso === "IN" ? "Enter the PIN code" : "Enter the postal code";
+      if (!pin) e.pincode = countryIso === "IN" ? ui("Enter the PIN code") : ui("Enter the postal code");
       else if (countryIso === "IN" ? !/^\d{6}$/.test(pin) : !/^[A-Za-z0-9 -]{3,10}$/.test(pin)) {
-        e.pincode = countryIso === "IN" ? "PIN code must be 6 digits" : "Enter a valid postal code";
+        e.pincode = countryIso === "IN" ? ui("PIN code must be 6 digits") : ui("Enter a valid postal code");
       }
       if (!gpsCoords) e.gps = mapDown
-        ? "We couldn't place this address — check the city and PIN code."
-        : "Place the pin — search, use your current location, or tap the map";
+        ? ui("We couldn't place this address — check the city and PIN code.")
+        : ui("Place the pin — search, use your current location, or tap the map");
     }
-    if (s === "household-situation" && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = "Describe the person you are requesting for";
+    if (s === "household-situation" && verification.requestingForSomeoneElse && !verification.beneficiaryDetails?.trim()) e.beneficiaryDetails = ui("Describe the person you are requesting for");
     if (s === "household-situation") {
       const missing = MANDATORY_DOC_TYPES[tier].filter((t) => !REUSABLE_PROFILE_DOCS.includes(t) && !isDocComplete(t));
       if (missing.length > 0) {
@@ -848,12 +885,12 @@ function NewRequestForm() {
         // is baffling when the donee can plainly see a photo sitting there.
         const photoPending = missing.includes("SELFIE_WITH_ID") && uploadedDocs.has("SELFIE_WITH_ID");
         e.documents = photoPending && missing.length === 1
-          ? "Your photo hasn't passed our photo check yet — please re-upload a clear photo of yourself"
-          : `${missing.length} required document(s) still missing`;
+          ? ui("Your photo hasn't passed our photo check yet — please re-upload a clear photo of yourself")
+          : wt("docsMissing", { count: missing.length });
       }
     }
     if (s === "declarations") {
-      if (!declarations.every(Boolean)) e.declarations = "All declarations must be accepted";
+      if (!declarations.every(Boolean)) e.declarations = ui("All declarations must be accepted");
     }
     setFieldErrors(e);
     return Object.keys(e).length === 0;
@@ -868,7 +905,7 @@ function NewRequestForm() {
   async function settleLocationThen(then: "next" | "exit") {
     setCheckingLocation(true);
     try {
-      if (!(await flushLocation())) { toast.error("Please fix the highlighted fields"); return; }
+      if (!(await flushLocation())) { toast.error(ui("Please fix the highlighted fields")); return; }
       setProceedAfterFlush(then);
     } finally {
       setCheckingLocation(false);
@@ -892,7 +929,7 @@ function NewRequestForm() {
 
   async function proceedNext() {
     if (step === "household-situation" && docsBusy) return;
-    if (!validateStep(step)) { toast.error("Please fix the highlighted fields"); return; }
+    if (!validateStep(step)) { toast.error(ui("Please fix the highlighted fields")); return; }
     setSaving(true);
     setSaveStatus("saving");
     try {
@@ -909,7 +946,7 @@ function NewRequestForm() {
       window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
     } catch (e) {
       setSaveStatus("error");
-      toast.error(e instanceof Error ? e.message : "Could not save — please try again");
+      toast.error(e instanceof Error ? e.message : ui("Could not save — please try again"));
     } finally {
       setSaving(false);
     }
@@ -947,7 +984,7 @@ function NewRequestForm() {
       router.push("/dashboard");
     } catch (e) {
       setSaveStatus("error");
-      toast.error(e instanceof Error ? e.message : "Could not save your draft — please try again");
+      toast.error(e instanceof Error ? e.message : ui("Could not save your draft — please try again"));
     } finally {
       setSavingExit(false);
     }
@@ -1004,9 +1041,9 @@ function NewRequestForm() {
         // A stored photo has already passed screening server-side — the backend
         // refuses to persist a failing one, so there is nothing left to check.
         setDocScreening((prev) => new Map(prev).set(docType, { status: "valid", reason: null, code: "DOC_LOOKS_VALID", documentTypeGuess: null }));
-        toast.success("Photo accepted");
+        toast.success(ui("Photo accepted"));
       } else {
-        toast.success("Document uploaded");
+        toast.success(ui("Document uploaded"));
         if (AI_SCREENED_DOC_TYPES.includes(docType)) screenDocument(docType, doc.url, doc.id);
       }
     } catch (e) {
@@ -1032,10 +1069,10 @@ function NewRequestForm() {
           documentTypeGuess: null,
         }));
         toast.error(err.retryable
-          ? "We couldn't check your photo just now — please try again in a moment"
-          : "Photo not accepted — see the note below");
+          ? ui("We couldn't check your photo just now — please try again in a moment")
+          : ui("Photo not accepted — see the note below"));
       } else {
-        toast.error("Upload failed — please try again");
+        toast.error(ui("Upload failed — please try again"));
       }
     } finally {
       setUploadingDoc(null);
@@ -1049,9 +1086,9 @@ function NewRequestForm() {
       await deleteVerificationDocument(draftId, doc.id);
       setUploadedDocs((prev) => { const next = new Map(prev); next.delete(docType); return next; });
       setDocScreening((prev) => { const next = new Map(prev); next.delete(docType); return next; });
-      toast.success("Document removed");
+      toast.success(ui("Document removed"));
     } catch {
-      toast.error("Couldn't remove document — please try again");
+      toast.error(ui("Couldn't remove document — please try again"));
     }
   }
 
@@ -1103,12 +1140,12 @@ function NewRequestForm() {
       // The toast said the same thing as the inline line and then appended the
       // model's sentence, so a donee could be shown two different descriptions
       // of one document. Both now come from the same code.
-      toast.error(documentScreeningCopy(code));
+      toast.error(docCopy(code));
     }
   }
 
   async function handleSubmit() {
-    if (!validateStep("declarations")) { toast.error("Please fix the highlighted fields"); return; }
+    if (!validateStep("declarations")) { toast.error(ui("Please fix the highlighted fields")); return; }
     if (!draftId) return;
     setSubmitting(true);
     try {
@@ -1119,7 +1156,7 @@ function NewRequestForm() {
       try {
         await setDoneePhotoConsent(draftId, photoConsent);
       } catch {
-        if (photoConsent) toast.error("Couldn't save your photo-sharing choice — your photo stays private for now");
+        if (photoConsent) toast.error(ui("Couldn't save your photo-sharing choice — your photo stays private for now"));
       }
       await submitItemRequestDraft(draftId);
       // Latches the nav button into its confirmed state for the moment before
@@ -1127,62 +1164,62 @@ function NewRequestForm() {
       // spinner blinking out.
       setSubmitted(true);
       trackRequestItem();
-      toast.success("Your request has been submitted for verification!");
+      toast.success(ui("Your request has been submitted for verification!"));
       router.push("/dashboard");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Submission failed. Please try again.");
+      toast.error(e instanceof Error ? e.message : ui("Submission failed. Please try again."));
     } finally {
       setSubmitting(false);
     }
   }
 
   if (authLoading || !user) return null;
-  if (["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return <p role="status" className="p-8">Opening your organization’s request form…</p>;
+  if (["NGO", "NGO_PARTNER"].includes(user.role?.toUpperCase() || "")) return <p role="status" className="p-8"><UiText>Opening your organization’s request form…</UiText></p>;
 
-  if (!profileGateUnsupported && !needProfile?.complete) return <div className="mx-auto max-w-xl px-5 py-16"><h1 className="text-2xl font-bold text-[#1e3a60] dark:text-blue-200">{profileError ? "Could not check your profile" : !needProfile ? "Checking your profile…" : "Complete your profile first"}</h1><p className="mt-3 text-sm text-slate-500">{profileError || "Save your household details and identity documents once in your profile. You can then request items without entering them again."}</p>{needProfile && <Link href={profileLink} className="mt-6 inline-flex rounded-lg bg-[#1e3a60] px-5 py-3 text-sm font-bold text-white">Complete profile →</Link>}{profileError && <button onClick={() => window.location.reload()} className="mt-5 underline">Retry</button>}</div>;
+  if (!profileGateUnsupported && !needProfile?.complete) return <div className="mx-auto max-w-xl px-5 py-16"><h1 className="text-2xl font-bold text-[#1e3a60] dark:text-blue-200">{profileError ? ui("Could not check your profile") : !needProfile ? ui("Checking your profile…") : ui("Complete your profile first")}</h1><p className="mt-3 text-sm text-slate-500">{profileError || ui("Save your household details and identity documents once in your profile. You can then request items without entering them again.")}</p>{needProfile && <Link href={profileLink} className="mt-6 inline-flex rounded-lg bg-[#1e3a60] px-5 py-3 text-sm font-bold text-white"><UiText>Complete profile →</UiText></Link>}{profileError && <button onClick={() => window.location.reload()} className="mt-5 underline"><UiText>Retry</UiText></button>}</div>;
 
   // ── Step 1: Need Details ─────────────────────────────────────────────────
   const step1 = (
     <div className="space-y-6">
       <div className="rounded-xl border border-blue-100 bg-[#eef4fc] p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-800/60">
         <p className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">
-          <span className="size-2.5 rounded-full bg-[#1e3a60] dark:bg-blue-200" aria-hidden /> Before you start
+          <span className="size-2.5 rounded-full bg-[#1e3a60] dark:bg-blue-200" aria-hidden /> <UiText>Before you start</UiText>
         </p>
         <p className="mt-1.5 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-          Your household information and identity documents are saved in your profile. New requests use a copy of those details.{" "}
-          Documents remain private to our admin team.
+          <UiText>Your household information and identity documents are saved in your profile. New requests use a copy of those details.</UiText>{" "}
+          <UiText>Documents remain private to our admin team.</UiText>
         </p>
         <p className="mt-1.5 text-xs leading-relaxed text-stone-500 dark:text-stone-400">
-          You can save and come back — nothing is submitted until you finish.
+          <UiText>You can save and come back — nothing is submitted until you finish.</UiText>
         </p>
       </div>
       <div className="grid items-start gap-5 md:grid-cols-2">
         <div className="min-w-0 space-y-5">
           <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="request-parameters-heading">
-            <h3 id="request-parameters-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">1. Request Parameters</h3>
-            <WizardField label="What do you need?" required error={fieldErrors.title}>
+            <h3 id="request-parameters-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200"><UiText>1. Request Parameters</UiText></h3>
+            <WizardField label={ui("What do you need?")} required error={fieldErrors.title}>
         {({ id, describedBy, invalid }) => (
           <Input id={id} name="title" aria-describedby={describedBy} aria-invalid={invalid}
-            placeholder="e.g. Wheelchair for elderly family member" value={title} onChange={(e) => setTitle(e.target.value)}
+            placeholder={ui("e.g. Wheelchair for elderly family member")} value={title} onChange={(e) => setTitle(e.target.value)}
             className={invalid ? "border-[var(--ck-role-accent)]" : ""} />
         )}
       </WizardField>
 
       <div className="grid grid-cols-2 gap-4 sm:gap-5">
-        <WizardField label="Category" required error={fieldErrors.category}>
+        <WizardField label={ui("Category")} required error={fieldErrors.category}>
           {({ id, describedBy, invalid }) => (
             <Select value={category} onValueChange={setCategory}>
               {/* data-field on the trigger, not the Root: the trigger is the
                   focusable node, and Radix's Root renders nothing focusable. */}
               <SelectTrigger id={id} data-field="category" aria-describedby={describedBy} aria-invalid={invalid}
                 className={`h-11 ${invalid ? "border-[var(--ck-role-accent)]" : ""}`}>
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder={ui("Select category")} />
               </SelectTrigger>
               <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
             </Select>
           )}
         </WizardField>
-        <WizardField label="Quantity" required error={fieldErrors.quantity}>
+        <WizardField label={ui("Quantity")} required error={fieldErrors.quantity}>
           {({ id, describedBy, invalid }) => (
             <Input id={id} name="quantity" type="number" min={1} aria-describedby={describedBy} aria-invalid={invalid}
               value={quantity} onChange={(e) => setQuantity(e.target.value === "" ? "" : Number(e.target.value))} className="h-11" />
@@ -1191,12 +1228,12 @@ function NewRequestForm() {
       </div>
           </section>
           <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-labelledby="impact-story-heading">
-            <h3 id="impact-story-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">2. Impact Story</h3>
-            <WizardField label="Describe your need" required error={fieldErrors.description}
-        hint={`${description.length}/2000 — be specific: who it's for, why, and any relevant context`}>
+            <h3 id="impact-story-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200"><UiText>2. Impact Story</UiText></h3>
+            <WizardField label={ui("Describe your need")} required error={fieldErrors.description}
+        hint={wt("descriptionHint", { count: description.length })}>
         {({ id, describedBy, invalid }) => (
           <Textarea id={id} name="description" rows={7} aria-describedby={describedBy} aria-invalid={invalid}
-            placeholder="e.g. My father is 68 and cannot walk unassisted after a stroke last month. A wheelchair would let him move around the house safely."
+            placeholder={ui("e.g. My father is 68 and cannot walk unassisted after a stroke last month. A wheelchair would let him move around the house safely.")}
               value={description} onChange={(e) => setDescription(e.target.value)} maxLength={2000}
               className={`placeholder:text-xs ${invalid ? "border-[var(--ck-role-accent)]" : ""}`} />
         )}
@@ -1205,9 +1242,9 @@ function NewRequestForm() {
         </div>
         <div className="min-w-0 space-y-5">
           <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900 space-y-4" aria-labelledby="urgency-heading">
-            <h3 id="urgency-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200">3. Urgency Classification</h3>
+            <h3 id="urgency-heading" className="mb-4 text-[11px] font-bold uppercase tracking-wide text-[#1e3a60] dark:text-blue-200"><UiText>3. Urgency Classification</UiText></h3>
             <fieldset className="space-y-1">
-        <legend className="text-xs font-bold text-stone-700 dark:text-stone-200">Urgency Level</legend>
+        <legend className="text-xs font-bold text-stone-700 dark:text-stone-200"><UiText>Urgency Level</UiText></legend>
         <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-800">
           {URGENCIES.map((u) => (
             <button key={u.value} type="button" onClick={() => setUrgency(u.value)}
@@ -1225,7 +1262,7 @@ function NewRequestForm() {
           <Shield className="w-4 h-4 text-[#1e3a60] dark:text-blue-200 mt-0.5 shrink-0" />
           <div>
             <p className="text-xs font-bold text-[#1e3a60] dark:text-blue-200">{TIER_LABELS[tier]}</p>
-            <p className="text-xs text-stone-500 mt-0.5">{TIER_TAT[tier]} — your saved profile documents are included automatically. Any evidence specific to this need comes next.</p>
+            <p className="text-xs text-stone-500 mt-0.5">{wt("tierTatProfileDocs", { tat: TIER_TAT[tier] })}</p>
           </div>
         </div>
       )}
@@ -1233,22 +1270,22 @@ function NewRequestForm() {
         <label className="flex items-center gap-3 cursor-pointer">
           <input type="checkbox" checked={isEmergency} onChange={(e) => setIsEmergency(e.target.checked)} className="size-4 shrink-0 accent-red-600" />
           <span className="text-xs font-medium text-red-700 dark:text-red-300 flex items-center gap-1.5">
-            <AlertTriangle className="w-4 h-4 text-red-500" /> This is an emergency (flood, fire, accident, displacement)
+            <AlertTriangle className="w-4 h-4 text-red-500" /> <UiText>This is an emergency (flood, fire, accident, displacement)</UiText>
           </span>
         </label>
         {isEmergency && (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 pt-1">
-            <WizardField label="Nature of emergency" required error={fieldErrors.emergencyNature}>
+            <WizardField label={ui("Nature of emergency")} required error={fieldErrors.emergencyNature}>
               {({ id, describedBy, invalid }) => (
                 <Select value={emergencyNature} onValueChange={setEmergencyNature}>
                   <SelectTrigger id={id} data-field="emergencyNature" aria-describedby={describedBy} aria-invalid={invalid} className="h-11">
-                    <SelectValue placeholder="Select" />
+                    <SelectValue placeholder={ui("Select")} />
                   </SelectTrigger>
                   <SelectContent>{EMERGENCY_NATURES.map((n) => <SelectItem key={n} value={n}>{n.charAt(0) + n.slice(1).toLowerCase()}</SelectItem>)}</SelectContent>
                 </Select>
               )}
             </WizardField>
-            <WizardField label="Date of incident">
+            <WizardField label={ui("Date of incident")}>
               {({ id, describedBy }) => (
                 <Input id={id} name="incidentDate" type="date" aria-describedby={describedBy}
                   value={incidentDate} onChange={(e) => setIncidentDate(e.target.value)}
@@ -1268,7 +1305,7 @@ function NewRequestForm() {
   // Search, "Use my current location" and the map all move the pin and fill
   // the fields (handlePin); typing the address moves the pin (typedAddress).
   const stepLocation = (
-    <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-label="Location details">
+    <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-label={ui("Location details")}>
       <div className="space-y-4">
         {/* `data-field="gps"` is the error summary's target: the map has no input
             to focus, so this wrapper is the landing point. */}
@@ -1281,43 +1318,43 @@ function NewRequestForm() {
           />
           {pinAddress.running && (
             <p role="status" className="flex items-center gap-1.5 text-xs font-semibold text-stone-600 dark:text-stone-300">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> Looking up the address…
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> <UiText>Looking up the address…</UiText>
             </p>
           )}
           {pinAddress.error && !pinAddress.running && (
             <p role="alert" className="rounded-xl border border-amber-300 bg-amber-50 p-2.5 text-xs font-semibold text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">{pinAddress.error}</p>
           )}
           {fieldErrors.gps && <p id="gps-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.gps}</p>}
-          {typedFailed && !fieldErrors.gps && !pinAddress.error && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">We couldn&apos;t place this address. Drop the pin on the map to continue.</p>}
+          {typedFailed && !fieldErrors.gps && !pinAddress.error && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold"><UiText>We couldn&apos;t place this address. Drop the pin on the map to continue.</UiText></p>}
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <label htmlFor="country" className="text-xs font-bold text-stone-700 dark:text-stone-200">Country<span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> (required)</span></label>
+            <label htmlFor="country" className="text-xs font-bold text-stone-700 dark:text-stone-200"><UiText>Country</UiText><span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> <UiText>(required)</UiText></span></label>
             <div data-field="countryIso" tabIndex={-1} className="outline-none">
             <SearchableSelect id="country" options={countryOptions} value={countryIso}
               onChange={(iso) => { setCountryIso(iso); setStateIso(""); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); typedAddress(); }}
-              placeholder="Select country" searchPlaceholder="Search…" />
+              placeholder={ui("Select country")} searchPlaceholder="Search…" />
             </div>
             {fieldErrors.countryIso && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.countryIso}</p>}
           </div>
           <div className="space-y-1">
-            <label htmlFor="state" className="text-xs font-bold text-stone-700 dark:text-stone-200">State<span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> (required)</span></label>
-            {noStateOptions ? <p className="text-xs text-stone-400 italic py-2">No states listed</p> : (
+            <label htmlFor="state" className="text-xs font-bold text-stone-700 dark:text-stone-200"><UiText>State</UiText><span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> <UiText>(required)</UiText></span></label>
+            {noStateOptions ? <p className="text-xs text-stone-400 italic py-2"><UiText>No states listed</UiText></p> : (
               <div data-field="stateIso" tabIndex={-1} className="outline-none">
               <SearchableSelect id="state" options={stateOptions} value={stateIso}
                 onChange={(iso) => { setStateIso(iso); setCityValue(""); setCityFreeText(""); setForceFreeTextCity(false); typedAddress(); }}
-                placeholder="Select state" disabled={!countryIso} searchPlaceholder="Search…" />
+                placeholder={ui("Select state")} disabled={!countryIso} searchPlaceholder="Search…" />
               </div>
             )}
             {fieldErrors.stateIso && <p role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.stateIso}</p>}
           </div>
           <div className="space-y-1">
-            <label htmlFor="city" className="text-xs font-bold text-stone-700 dark:text-stone-200">City<span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> (required)</span></label>
+            <label htmlFor="city" className="text-xs font-bold text-stone-700 dark:text-stone-200"><UiText>City</UiText><span className="ml-0.5 text-[var(--ck-role-accent)]" aria-hidden>*</span><span className="sr-only"> <UiText>(required)</UiText></span></label>
             {/* Both branches carry data-field="city": which one renders depends
                 on whether the country has a city list, and the summary link has
                 to work either way. */}
             {showCityFreeText ? (
-              <Input id="city" placeholder="Enter city" data-field="city" value={cityFreeText}
+              <Input id="city" placeholder={ui("Enter city")} data-field="city" value={cityFreeText}
                 aria-describedby={fieldErrors.city ? "city-error" : undefined}
                 aria-invalid={!!fieldErrors.city}
                 onChange={(e) => { setCityFreeText(e.target.value); typedAddress(); }}
@@ -1329,18 +1366,18 @@ function NewRequestForm() {
               // work, and it stays out of the Tab order.
               <div data-field="city" tabIndex={-1} className="outline-none">
                 <SearchableSelect id="city" options={cityOptions} value={cityValue} onChange={(v) => { setCityValue(v); typedAddress(); }}
-                  placeholder="Select city" disabled={!stateIso && !noStateOptions} searchPlaceholder="Search…" />
+                  placeholder={ui("Select city")} disabled={!stateIso && !noStateOptions} searchPlaceholder="Search…" />
               </div>
             )}
             {fieldErrors.city && <p id="city-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.city}</p>}
           </div>
-          <WizardField label="Locality" hint="Optional — area or neighbourhood">
+          <WizardField label={ui("Locality")} hint={ui("Optional — area or neighbourhood")}>
             {({ id, describedBy }) => (
-              <Input id={id} name="locality" aria-describedby={describedBy} placeholder="e.g. Kandivali East"
+              <Input id={id} name="locality" aria-describedby={describedBy} placeholder={ui("e.g. Kandivali East")}
                 value={locality} onChange={(e) => setLocality(e.target.value)} maxLength={80} className="h-11 w-full" />
             )}
           </WizardField>
-          <WizardField label="PIN Code" required error={fieldErrors.pincode}>
+          <WizardField label={ui("PIN Code")} required error={fieldErrors.pincode}>
             {({ id, describedBy, invalid }) => (
               <Input id={id} name="pincode" aria-describedby={describedBy} aria-invalid={invalid} placeholder="e.g. 411001"
                 value={pincode} onChange={(e) => { setPincode(e.target.value); typedAddress(); }} maxLength={10} className="h-11 w-full" />
@@ -1355,13 +1392,13 @@ function NewRequestForm() {
 
   const step2 = (
     <div className="space-y-5">
-      <fieldset className="space-y-3"><legend className="text-sm font-bold">Who is this request for?</legend><div className="flex flex-wrap gap-4">{[{value:false,label:"Myself"},{value:true,label:"Someone else"}].map(o => <label key={o.label} className="flex items-center gap-2 text-sm"><input type="radio" name="beneficiary" checked={Boolean(verification.requestingForSomeoneElse) === o.value} onChange={() => setVerification(v => ({...v, requestingForSomeoneElse:o.value, beneficiaryDetails:"",reasonCannotBuy:"",detailedStory:""}))} />{o.label}</label>)}</div></fieldset>
+      <fieldset className="space-y-3"><legend className="text-sm font-bold"><UiText>Who is this request for?</UiText></legend><div className="flex flex-wrap gap-4">{[{value:false,label:ui("Myself")},{value:true,label:ui("Someone else")}].map(o => <label key={o.label} className="flex items-center gap-2 text-sm"><input type="radio" name="beneficiary" checked={Boolean(verification.requestingForSomeoneElse) === o.value} onChange={() => setVerification(v => ({...v, requestingForSomeoneElse:o.value, beneficiaryDetails:"",reasonCannotBuy:"",detailedStory:""}))} />{o.label}</label>)}</div></fieldset>
       {verification.requestingForSomeoneElse && <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
-        <WizardField label="Who is this item for, and what is their situation?" required error={fieldErrors.beneficiaryDetails}>{({id,describedBy,invalid}) => <Textarea id={id} name="beneficiaryDetails" aria-describedby={describedBy} aria-invalid={invalid} value={verification.beneficiaryDetails || ""} maxLength={500} onChange={e => setV("beneficiaryDetails",e.target.value)} />}</WizardField>
-        <WizardField label="Why can they not buy this item?">{({id}) => <Textarea id={id} value={verification.reasonCannotBuy || ""} maxLength={10000} onChange={e => setV("reasonCannotBuy",e.target.value)} />}</WizardField>
-        <WizardField label="Additional details about this person's need">{({id}) => <Textarea id={id} value={verification.detailedStory || ""} maxLength={10000} onChange={e => setV("detailedStory",e.target.value)} />}</WizardField>
+        <WizardField label={ui("Who is this item for, and what is their situation?")} required error={fieldErrors.beneficiaryDetails}>{({id,describedBy,invalid}) => <Textarea id={id} name="beneficiaryDetails" aria-describedby={describedBy} aria-invalid={invalid} value={verification.beneficiaryDetails || ""} maxLength={500} onChange={e => setV("beneficiaryDetails",e.target.value)} />}</WizardField>
+        <WizardField label={ui("Why can they not buy this item?")}>{({id}) => <Textarea id={id} value={verification.reasonCannotBuy || ""} maxLength={10000} onChange={e => setV("reasonCannotBuy",e.target.value)} />}</WizardField>
+        <WizardField label={ui("Additional details about this person's need")}>{({id}) => <Textarea id={id} value={verification.detailedStory || ""} maxLength={10000} onChange={e => setV("detailedStory",e.target.value)} />}</WizardField>
       </div>}
-      {isEmergency && <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:bg-slate-900"><h3 className="font-bold">This emergency</h3><WizardField label="People affected">{({id}) => <Input id={id} type="number" min={1} value={verification.peopleAffected ?? ""} onChange={e => setV("peopleAffected",Number(e.target.value))} />}</WizardField><WizardField label="What was lost or damaged?">{({id}) => <Textarea id={id} value={verification.lostDamagedDescription || ""} onChange={e => setV("lostDamagedDescription",e.target.value)} />}</WizardField><WizardField label="Priority items needed">{({id}) => <Textarea id={id} value={verification.priorityItems || ""} onChange={e => setV("priorityItems",e.target.value)} />}</WizardField></div>}
+      {isEmergency && <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:bg-slate-900"><h3 className="font-bold"><UiText>This emergency</UiText></h3><WizardField label={ui("People affected")}>{({id}) => <Input id={id} type="number" min={1} value={verification.peopleAffected ?? ""} onChange={e => setV("peopleAffected",Number(e.target.value))} />}</WizardField><WizardField label={ui("What was lost or damaged?")}>{({id}) => <Textarea id={id} value={verification.lostDamagedDescription || ""} onChange={e => setV("lostDamagedDescription",e.target.value)} />}</WizardField><WizardField label={ui("Priority items needed")}>{({id}) => <Textarea id={id} value={verification.priorityItems || ""} onChange={e => setV("priorityItems",e.target.value)} />}</WizardField></div>}
     </div>
   );
 
@@ -1376,12 +1413,12 @@ function NewRequestForm() {
    */
   const step3 = (
     <section className="mt-5 space-y-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
-      <h3 className="font-bold">Supporting evidence for this request</h3>
-      <p className="text-sm text-slate-500">Your identity documents will be included from your profile. Add evidence specific to this need below.</p>
+      <h3 className="font-bold"><UiText>Supporting evidence for this request</UiText></h3>
+      <p className="text-sm text-slate-500"><UiText>Your identity documents will be included from your profile. Add evidence specific to this need below.</UiText></p>
       {REQUIRED_DOCS[tier].filter(d => !REUSABLE_PROFILE_DOCS.includes(d.type)).map(d => (
         <DocSlot key={d.type} label={d.label} required={MANDATORY_DOC_TYPES[tier].includes(d.type)} doc={uploadedDocs.get(d.type)} uploading={uploadingDoc === d.type} screening={docScreening.get(d.type)} complete={isDocComplete(d.type)} onUpload={file => void handleDocUpload(d.type, file)} onRemove={() => void handleDocRemove(d.type)} />
       ))}
-      {REQUIRED_DOCS[tier].every(d => REUSABLE_PROFILE_DOCS.includes(d.type)) && <p className="text-sm">No additional documents are required for this need.</p>}
+      {REQUIRED_DOCS[tier].every(d => REUSABLE_PROFILE_DOCS.includes(d.type)) && <p className="text-sm"><UiText>No additional documents are required for this need.</UiText></p>}
     </section>
   );
 
@@ -1430,7 +1467,7 @@ function NewRequestForm() {
       </div>
       <button type="button" onClick={() => setDeclarations(new Array(DECLARATIONS.length).fill(true))}
         className="text-xs font-black text-[#1e3a60] hover:text-[var(--ck-role-accent)] underline underline-offset-2 transition-colors">
-        Accept all declarations at once →
+        <UiText>Accept all declarations at once →</UiText>
       </button>
       {fieldErrors.declarations && <p role="alert" className="text-sm text-[var(--ck-role-accent)] font-bold">{fieldErrors.declarations}</p>}
 
@@ -1446,24 +1483,24 @@ function NewRequestForm() {
         </div>
         <div className="select-none">
           <span className="text-sm font-semibold text-stone-700 dark:text-stone-300">
-            Show my photo to donors <span className="ml-1.5 text-3xs font-bold uppercase tracking-wide text-stone-400">(optional)</span>
+            <UiText>Show my photo to donors</UiText> <span className="ml-1.5 text-3xs font-bold uppercase tracking-wide text-stone-400"><UiText>(optional)</UiText></span>
           </span>
           <p className="text-xs text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
-            Signed-in donors viewing your approved request will see the profile photo you uploaded. Your residence and
+            <UiText>Signed-in donors viewing your approved request will see the profile photo you uploaded. Your residence and
             government ID proofs are never shown. You can change this at any time, and your request is treated exactly
-            the same either way.
+            the same either way.</UiText>
           </p>
         </div>
       </label>
 
       <div className="rounded-xl sm:rounded-2xl bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 p-3 sm:p-4 space-y-2">
-        <p className="text-xs font-black text-stone-600 dark:text-stone-300 uppercase tracking-widest">What happens next</p>
+        <p className="text-xs font-black text-stone-600 dark:text-stone-300 uppercase tracking-widest"><UiText>What happens next</UiText></p>
         {[
-          `Our team verifies your request (${TIER_TAT[tier].toLowerCase()})`,
-          "We first search for a matching donor in our private inventory — quietly, before publishing anything",
-          "If a match exists, we ask that donor to confirm availability before you're told anything",
-          "If no private match exists, your (already verified) request is published so donors can offer to help",
-          "Handover is verified via OTP — then your donation certificate is issued",
+          wt("teamVerifies", { tat: TIER_TAT[tier].toLowerCase() }),
+          ui("We first search for a matching donor in our private inventory — quietly, before publishing anything"),
+          ui("If a match exists, we ask that donor to confirm availability before you're told anything"),
+          ui("If no private match exists, your (already verified) request is published so donors can offer to help"),
+          ui("Handover is verified via OTP — then your donation certificate is issued"),
         ].map((s, i) => (
           <div key={i} className="flex items-start gap-2 text-xs text-stone-500">
             <span className="font-black text-[var(--ck-role-accent)] shrink-0">{i + 1}.</span>
@@ -1485,16 +1522,16 @@ function NewRequestForm() {
         <div className="relative z-10 flex flex-col h-full p-5 sm:p-8 xl:p-10">
           <div className="mb-8">
             <span className="inline-flex items-center gap-1.5 text-3xs font-black uppercase tracking-widest text-[var(--ck-role-highlight)] bg-[var(--ck-role-accent)]/25 border border-[var(--ck-role-accent)]/40 rounded-full px-3.5 py-1.5">
-              <Shield className="w-3 h-3" /> Verified Support
+              <Shield className="w-3 h-3" /> <UiText>Verified Support</UiText>
             </span>
           </div>
           <div className="mb-10">
             <h1 className="text-white text-2xl sm:text-4xl xl:text-5xl font-black leading-none tracking-tight mb-3" style={{ fontFamily: "serif" }}>
-              Request<br />
-              <span style={{ background: "linear-gradient(90deg, var(--ck-role-secondary), var(--ck-role-highlight))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Support</span>
+              <UiText>Request</UiText><br />
+              <span style={{ background: "linear-gradient(90deg, var(--ck-role-secondary), var(--ck-role-highlight))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}><UiText>Support</UiText></span>
             </h1>
             <p className="text-stone-400 text-sm leading-relaxed">
-              Tell us what you need. We verify your request privately, then look for a matching donor before anyone else ever hears about it.
+              <UiText>Tell us what you need. We verify your request privately, then look for a matching donor before anyone else ever hears about it.</UiText>
             </p>
           </div>
 
@@ -1505,18 +1542,18 @@ function NewRequestForm() {
             <WizardProgressRail
               current={step}
               steps={DONEE_REQUEST_STEPS}
-              labels={STEP_LABELS}
+              labels={stepCopy.labels}
               availability={availability}
               onJump={s => goToStep(s, -1)}
-              navLabel="Request progress"
+              navLabel={ui("Request progress")}
             />
           </div>
 
           <div className="space-y-2.5 mt-auto">
             {[
-              { icon: Shield, title: "Privacy First", desc: "Your need stays private unless it must go public" },
-              { icon: Lock, title: "Documents Secured", desc: "Admin-only, never shown to other users" },
-              { icon: Award, title: "Donation Certificate", desc: "Official record once fulfilled" },
+              { icon: Shield, title: ui("Privacy First"), desc: ui("Your need stays private unless it must go public") },
+              { icon: Lock, title: ui("Documents Secured"), desc: ui("Admin-only, never shown to other users") },
+              { icon: Award, title: ui("Donation Certificate"), desc: ui("Official record once fulfilled") },
             ].map((b) => {
               const Icon = b.icon;
               return (
@@ -1546,17 +1583,17 @@ function NewRequestForm() {
               onClick={() => void handleSaveExit()}
               className="flex min-h-[44px] items-center gap-1 text-sm font-medium text-stone-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
             >
-              <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> Save &amp; exit
+              <ChevronLeft className="h-4 w-4 rtl:rotate-180" aria-hidden /> <UiText>Save &amp; exit</UiText>
             </button>
             <DraftSaveStatus status={saveStatus} onRetry={() => void retrySave()} />
           </div>
           <WizardProgressBar
             current={step}
             steps={DONEE_REQUEST_STEPS}
-            labels={STEP_LABELS}
+            labels={stepCopy.labels}
             availability={availability}
             onJump={s => goToStep(s, -1)}
-            navLabel="Request progress"
+            navLabel={ui("Request progress")}
           />
         </div>
 
@@ -1564,7 +1601,7 @@ function NewRequestForm() {
 
           <div className="mb-4 hidden items-center justify-between lg:flex">
             <p className="text-2xs font-bold uppercase tracking-wider text-stone-400">
-              Step {stepNumber(step)} of {DONEE_REQUEST_STEPS.length}
+              {wt("stepOf", { n: stepNumber(step), total: DONEE_REQUEST_STEPS.length })}
             </p>
             <DraftSaveStatus status={saveStatus} onRetry={() => void retrySave()} />
           </div>
@@ -1573,9 +1610,9 @@ function NewRequestForm() {
             <div className="mb-6 rounded-xl sm:rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20 p-3 sm:p-4 flex items-start gap-3">
               <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
               <div className="min-w-0">
-                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">You&apos;re fixing a rejected request</p>
+                <p className="text-sm font-bold text-amber-800 dark:text-amber-300"><UiText>You&apos;re fixing a rejected request</UiText></p>
                 <p className="text-xs text-stone-600 dark:text-stone-400 mt-1 leading-relaxed whitespace-pre-line">{rejectionNote}</p>
-                <p className="text-2xs text-stone-400 mt-1.5">We&apos;ve brought you to the step that needs attention — everything else is already filled. Use Back to review other steps, then resubmit.</p>
+                <p className="text-2xs text-stone-400 mt-1.5"><UiText>We&apos;ve brought you to the step that needs attention — everything else is already filled. Use Back to review other steps, then resubmit.</UiText></p>
               </div>
             </div>
           )}
@@ -1605,10 +1642,10 @@ function NewRequestForm() {
                     className="text-lg font-bold text-stone-900 outline-none sm:text-xl dark:text-stone-100"
                     style={step === "household-situation" ? undefined : { fontFamily: "var(--font-source-serif-4), serif" }}
                   >
-                    {step === "household-situation" ? "Request context & evidence" : STEP_LABELS[step]}
+                    {step === "household-situation" ? ui("Request context & evidence") : stepCopy.labels[step]}
                     {step === "household-situation" && <span className="ml-3 inline-flex rounded-full border border-blue-100 bg-blue-50 px-2 py-1 align-middle text-[10px] font-semibold text-[#1e3a60] dark:border-slate-700 dark:bg-slate-800 dark:text-blue-200">{TIER_LABELS[tier]}</span>}
                   </h2>
-                  <p className="mb-6 mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{step === "household-situation" ? `Step ${stepNumber(step)} of ${DONEE_REQUEST_STEPS.length} · Only details about this request` : STEP_INTROS[step]}</p>
+                  <p className="mb-6 mt-2 text-xs leading-relaxed text-stone-500 dark:text-stone-400">{step === "household-situation" ? wt("stepOfOnlyRequest", { n: stepNumber(step), total: DONEE_REQUEST_STEPS.length }) : stepCopy.intros[step]}</p>
 
                   <div className="mb-3 empty:hidden">
                     <StepErrorSummary
@@ -1655,17 +1692,17 @@ function NewRequestForm() {
           <div className="mx-auto w-full max-w-[1040px] px-4 sm:px-8 lg:px-10 pb-6">
             <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
               <button type="button" onClick={() => void retrySave()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                {saveStatus === "saving" ? "Saving…" : "Save Draft"}
+                {saveStatus === "saving" ? ui("Saving…") : ui("Save Draft")}
               </button>
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-[#1e3a60] px-5 text-xs font-bold text-white transition-colors hover:bg-[#2d5a96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50">{saving ? "Saving…" : "Continue to Step 2 →"}</button>
+              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-[#1e3a60] px-5 text-xs font-bold text-white transition-colors hover:bg-[#2d5a96] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50">{saving ? ui("Saving…") : ui("Continue to Step 2 →")}</button>
             </div>
           </div>
         ) : step === "location" || step === "household-situation" ? (
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10">
-            <button type="button" onClick={handleBack} disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back to Step {stepNumber(step) - 1}</button>
+            <button type="button" onClick={handleBack} disabled={saving} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />{wt("backToStep", { n: stepNumber(step) - 1 })}</button>
             <div className="flex flex-wrap gap-2">
 
-              <button type="button" onClick={() => void handleNext()} disabled={saving || checkingLocation || locationBusy || (step === "household-situation" && docsBusy) || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{checkingLocation || locationBusy ? "Checking location…" : step === "household-situation" && docsBusy ? "Checking document…" : saving ? "Saving…" : "Save & Continue"}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => void handleNext()} disabled={saving || checkingLocation || locationBusy || (step === "household-situation" && docsBusy) || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d5a96] disabled:opacity-50 bg-[#1e3a60] text-white hover:bg-[#2d5a96]">{checkingLocation || locationBusy ? ui("Checking location…") : step === "household-situation" && docsBusy ? ui("Checking document…") : saving ? ui("Saving…") : ui("Save & Continue")}<ArrowRight className="size-4" aria-hidden /></button>
             </div>
           </div>
         ) : <WizardNavigation
@@ -1673,7 +1710,7 @@ function NewRequestForm() {
           onBack={handleBack}
           onContinue={() => void (isLast ? handleSubmit() : handleNext())}
           onSaveExit={() => void handleSaveExit()}
-          continueLabel={isLast ? "Submit for verification" : "Continue"}
+          continueLabel={isLast ? ui("Submit for verification") : ui("Continue")}
           isLast={isLast}
           submitting={submitting}
           submitted={submitted}

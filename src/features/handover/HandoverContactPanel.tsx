@@ -19,20 +19,29 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
   vm: HandoverViewModel;
   onTogglePermission?: (next: boolean) => Promise<void>;
 }) {
+  const isNgoDrive = vm.flow === "NGO_OFFER";
   const donor = vm.role === "DONOR";
-  const label = donor ? `Call ${vm.counterpart.name ?? "the recipient"}` : `Call ${vm.counterpart.name ?? "the donor"}`;
+  const label = donor
+    ? `Call ${vm.counterpart.name ?? (isNgoDrive ? "the NGO" : "the recipient")}`
+    : `Call ${vm.counterpart.name ?? "the donor"}`;
+
+  const lockedMessage = isNgoDrive
+    ? (donor
+        ? "The NGO hasn't turned on calls yet. Use the chat for now — they'll see it straight away."
+        : "Their number isn't available yet.")
+    : (donor
+        ? "Their number isn't available yet."
+        : "The donor hasn't turned on calls yet. Use the chat for now — they'll see it straight away.");
+
+  const showToggle = isNgoDrive
+    ? (!donor && Boolean(onTogglePermission) && !vm.closed)
+    : (donor && Boolean(onTogglePermission) && !vm.closed);
 
   return (
     <Panel title="Contact">
       <div className="space-y-3">
-        <CallAction
-          phone={vm.counterpart.phone}
-          label={label}
-          lockedMessage={donor
-            ? "Their number isn't available yet."
-            : "The donor hasn't turned on calls yet. Use the chat for now — they'll see it straight away."}
-        />
-        {donor && onTogglePermission && !vm.closed && (
+        <HandoverContactsCall contacts={vm.counterpart.contacts} phone={vm.counterpart.phone} label={label} lockedMessage={lockedMessage} />
+        {showToggle && onTogglePermission && (
           <CallPermissionToggle allowed={vm.donorAllowsDoneeCall} onToggle={onTogglePermission} />
         )}
       </div>
@@ -40,7 +49,41 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
   );
 }
 
-function CallAction({ phone, label, lockedMessage }: {
+/**
+ * Who handles the handover (NGO drives can list up to 5 people, first = primary) and the Call
+ * button: it dials the primary, or whoever is picked when there are several. Phones are only
+ * there once calls are allowed; names and roles always show.
+ */
+export function HandoverContactsCall({ contacts, phone, label, lockedMessage }: {
+  contacts?: { name: string; phone: string | null; role?: string | null }[] | null;
+  phone: string | null; label: string; lockedMessage: string;
+}) {
+  const [picked, setPicked] = useState(0);
+  const list = contacts ?? [];
+  if (list.length <= 1) return <CallAction phone={(list[0]?.phone ?? phone)?.replace(/[^\d+]/g, "") || null} label={label} lockedMessage={lockedMessage} />;
+  const who = list[Math.min(picked, list.length - 1)];
+  return (
+    <div className="space-y-2" data-testid="handover-contacts">
+      <ul className="space-y-1 text-sm text-stone-700 dark:text-stone-300">
+        {list.map((c, i) => (
+          <li key={`${c.name}-${i}`}>{c.name}{c.role ? ` · ${c.role}` : ""}{i === 0 && <span className="ml-1.5 text-2xs font-bold text-emerald-700">Primary</span>}</li>
+        ))}
+      </ul>
+      {list.some((c) => c.phone) && (
+        <label className="block text-xs font-semibold text-stone-600 dark:text-stone-300">
+          Who to call
+          <select aria-label="Who to call" value={picked} onChange={(e) => setPicked(Number(e.target.value))}
+            className="mt-1 block w-full min-h-[40px] rounded-lg border border-stone-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900">
+            {list.map((c, i) => <option key={i} value={i}>{c.name}{c.role ? ` (${c.role})` : ""}{i === 0 ? " · primary" : ""}</option>)}
+          </select>
+        </label>
+      )}
+      <CallAction phone={who.phone?.replace(/[^\d+]/g, "") || null} label={`Call ${who.name}`} lockedMessage={lockedMessage} />
+    </div>
+  );
+}
+
+export function CallAction({ phone, label, lockedMessage }: {
   phone: string | null; label: string; lockedMessage: string;
 }) {
   if (phone) {

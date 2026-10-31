@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
-import { usePinAddress } from "@/hooks/usePinAddress";
+import { useLocationPinHandlers } from "@/hooks/useLocationPinHandlers";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
@@ -456,59 +456,16 @@ export function ItemListingWizard({
    * the lookup has nothing for is left as the donor typed it. `onlyEmpty` is
    * for pins we placed ourselves (the profile location), which never overwrite.
    */
-  const pinAddress = usePinAddress();
-  const { lookup: lookupPin, geocodeTyped } = pinAddress;
-  const lookup = { running: pinAddress.running, error: pinAddress.error, whenIdle: pinAddress.whenIdle };
-  const handlePin = useCallback((lat: number, lng: number, opts?: { onlyEmpty?: boolean }) => {
-    const placed = { ...modelRef.current, latitude: lat, longitude: lng };
-    modelRef.current = placed;
-    setModel(placed);
-    queueSave(placed);
-    setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
-    lookupPin(lat, lng, found => {
-      const prev = modelRef.current;
-      const next = { ...prev };
-      const fields = {
-        countryIso: found.countryIso, stateIso: found.stateIso, city: found.city,
-        locality: found.locality, pincode: found.pincode,
-      } as const;
-      (Object.keys(fields) as (keyof typeof fields)[]).forEach(k => {
-        const v = fields[k];
-        // Filling the blanks of a resumed draft: never touch what is there.
-        if (opts?.onlyEmpty) { if (v && !String(prev[k] ?? "").trim()) next[k] = v; return; }
-        // A new spot: a field the lookup could not find is cleared, never left
-        // describing the previous spot.
-        next[k] = v ?? "";
-      });
-      modelRef.current = next;
-      setModel(next);
-      queueSave(next);
-    }, () => {
-      // Nothing found at the new spot: the old address no longer applies.
-      if (opts?.onlyEmpty) return;
-      const next = { ...modelRef.current, countryIso: "", stateIso: "", city: "", locality: "", pincode: "" };
-      modelRef.current = next;
-      setModel(next);
-      queueSave(next);
-    });
-  }, [queueSave, lookupPin]);
-
-  /**
-   * The donor typed an address: move the pin to it. Only with no map does an
-   * address that can't be placed fall back to the profile location; with a map
-   * the pin stays where it is and the donor places it.
-   */
-  const handleGeocodeTyped = useCallback(async (q: { postalcode: string; city: string; state: string; countryCode: string }, useProfileFallback: boolean) => {
-    const coords = await geocodeTyped(q, useProfileFallback ? profileCenter : null);
-    if (!coords) return false;
-    const next = { ...modelRef.current, latitude: coords.lat, longitude: coords.lng };
-    modelRef.current = next;
+  const commitLocation = useCallback((next: WizardModel) => {
     setModel(next);
     queueSave(next);
+  }, [queueSave]);
+  const clearPinError = useCallback(() => {
     setErrors(e => (e.latitude || e.longitude ? { ...e, latitude: "", longitude: "" } : e));
-    return true;
-  }, [geocodeTyped, profileCenter, queueSave]);
-
+  }, []);
+  const { lookup, handlePin, handleGeocodeTyped } = useLocationPinHandlers({
+    modelRef, commit: commitLocation, clearPinError, profileCenter,
+  });
 
   // ── Navigation ────────────────────────────────────────────────────────────
   const focusField = useCallback((field: string) => {
@@ -791,7 +748,7 @@ export function ItemListingWizard({
                   {step === "location" && (
                     <LocationStep
                       model={model} errors={errors} lookup={lookup} profileCenter={profileCenter}
-                      onChange={setField} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped} controlRef={locationRef}
+                      onChange={(k, v) => setField(k, v as WizardModel[typeof k])} onPin={handlePin} onGeocodeTyped={handleGeocodeTyped} controlRef={locationRef}
                       onBusyChange={setLocationBusy}
                     />
                   )}
