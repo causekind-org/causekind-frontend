@@ -73,18 +73,60 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
         });
       }
 
-      // HTTP(S) only — the backend rejects anything else, and a javascript:
-      // link must never become something the donee can click.
       const url = v.productUrl.trim();
-      if (url !== "") {
+      if (!url) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["productUrl"],
+          message: "Please enter the product link.",
+        });
+      } else {
         let ok = false;
-        try { const u = new URL(url); ok = (u.protocol === "http:" || u.protocol === "https:") && !!u.hostname && !u.username; } catch { ok = false; }
+        try {
+          const u = new URL(url);
+          ok = (u.protocol === "http:" || u.protocol === "https:") && !!u.hostname && !u.username;
+        } catch {
+          ok = false;
+        }
         if (!ok) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom, path: ["productUrl"],
-            message: "Paste a full web link starting with https://, or leave it blank.",
+            message: "Paste a valid link starting with https://",
           });
         }
+      }
+
+      if (!v.proposedBrand.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["proposedBrand"],
+          message: "Please enter the brand.",
+        });
+      }
+
+      if (!v.proposedModel.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["proposedModel"],
+          message: "Please enter the model or variant.",
+        });
+      }
+
+      const cost = v.estimatedCost.trim();
+      if (!cost) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["estimatedCost"],
+          message: "Please enter the estimated cost in rupees.",
+        });
+      } else if (!(Number(cost) > 0)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["estimatedCost"],
+          message: "Enter a valid amount in rupees.",
+        });
+      }
+
+      if (!v.intendedStore.trim()) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["intendedStore"],
+          message: v.fulfilmentMethod === "DIRECT_DELIVERY" ? "Please enter the retailer." : "Please enter the store or shop.",
+        });
       }
 
       if (!v.purchaseTimeline) {
@@ -96,16 +138,6 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["purchaseTimeline"],
           message: "Choose one of the options.",
-        });
-      }
-
-      // Guards the value, not the donor's estimate. Absent is fine; a cost that
-      // is not a number would reach the backend as NaN.
-      const cost = v.estimatedCost.trim();
-      if (cost !== "" && !(Number(cost) > 0)) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom, path: ["estimatedCost"],
-          message: "Enter the amount in rupees, or leave it blank.",
         });
       }
     }

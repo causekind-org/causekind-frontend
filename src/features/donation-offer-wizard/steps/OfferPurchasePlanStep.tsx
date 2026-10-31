@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Handshake, Loader2, ShieldCheck, Truck, Wand2 } from "lucide-react";
 import { WizardField, controlClass } from "@/features/wizard-kit/WizardField";
 import { previewProductLink } from "@/lib/api";
@@ -44,6 +44,18 @@ export function OfferPurchasePlanStep({
 }) {
   const direct = model.fulfilmentMethod === "DIRECT_DELIVERY";
   const [fill, setFill] = useState<{ kind: "idle" | "loading" } | { kind: "filled" | "empty"; message: string }>({ kind: "idle" });
+
+  useEffect(() => {
+    const url = model.productUrl.trim();
+    if (!url || !isSafeWebLink(url)) return;
+    if (model.proposedBrand.trim() && model.proposedModel.trim() && model.estimatedCost.trim() && model.intendedStore.trim()) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      void fillFromLink();
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [model.productUrl]);
 
   /**
    * Reads the pasted product page on the server and fills only the fields the
@@ -148,7 +160,7 @@ export function OfferPurchasePlanStep({
         </p>
       </div>
 
-      <WizardField label="Product link" hint="Optional — the exact listing you plan to buy" error={errors.productUrl}>
+      <WizardField label="Product link" required hint="The exact listing you plan to buy" error={errors.productUrl}>
         {({ id, describedBy, invalid }) => (
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
@@ -177,32 +189,32 @@ export function OfferPurchasePlanStep({
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <WizardField label="Brand" hint="Optional" error={errors.proposedBrand}>
+        <WizardField label="Brand" required error={errors.proposedBrand}>
           {({ id, describedBy, invalid }) => (
             <input
               type="text" id={id} name="proposedBrand" maxLength={100}
               value={model.proposedBrand}
               onChange={e => onChange("proposedBrand", e.target.value)}
               aria-describedby={describedBy} aria-invalid={invalid}
-              className={controlClass} placeholder="Not decided yet is fine"
+              className={controlClass} placeholder="Brand name"
             />
           )}
         </WizardField>
-        <WizardField label="Model or variant" hint="Optional" error={errors.proposedModel}>
+        <WizardField label="Model or variant" required error={errors.proposedModel}>
           {({ id, describedBy, invalid }) => (
             <input
               type="text" id={id} name="proposedModel" maxLength={100}
               value={model.proposedModel}
               onChange={e => onChange("proposedModel", e.target.value)}
               aria-describedby={describedBy} aria-invalid={invalid}
-              className={controlClass} placeholder="Not decided yet is fine"
+              className={controlClass} placeholder="Model or variant"
             />
           )}
         </WizardField>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <WizardField label="Estimated cost" hint="Optional — in rupees" error={errors.estimatedCost}>
+        <WizardField label="Estimated cost" required hint="In rupees" error={errors.estimatedCost}>
           {({ id, describedBy, invalid }) => (
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-stone-400">₹</span>
@@ -216,7 +228,7 @@ export function OfferPurchasePlanStep({
             </div>
           )}
         </WizardField>
-        <WizardField label={direct ? "Retailer" : "Store"} hint="Optional" error={errors.intendedStore}>
+        <WizardField label={direct ? "Retailer" : "Store"} required error={errors.intendedStore}>
           {({ id, describedBy, invalid }) => (
             <input
               type="text" id={id} name="intendedStore" maxLength={200}
