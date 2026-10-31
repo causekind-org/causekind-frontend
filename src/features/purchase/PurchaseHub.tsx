@@ -829,7 +829,7 @@ function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, a
 
 function ShipmentPanel({ view, busy, onSubmit }: {
   view: PurchaseView; busy: string | null;
-  onSubmit: (d: { trackingUrl?: string; reference?: string; expectedDeliveryAt?: string; deliveredByRetailer: boolean }) => Promise<boolean>;
+  onSubmit: (d: { trackingUrl?: string; reference?: string; expectedDeliveryAt: string; deliveredByRetailer: boolean }) => Promise<boolean>;
 }) {
   const [delivered, setDelivered] = useState(!!view.deliveryReportedAt);
   return (

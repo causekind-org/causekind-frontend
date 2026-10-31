@@ -64,6 +64,8 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
+import { DiwaliMobileLayer, DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
+import { DiwaliCampaigns } from "@/components/home/DiwaliCampaigns";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
@@ -279,6 +281,7 @@ export default function HomeClient({
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
       <div aria-hidden className="ck-home-grain" />
+      <DiwaliMobileLayer />
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -296,7 +299,11 @@ export default function HomeClient({
           <DashedJourneyRoad />
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
-      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} destinationRef={afterFilmRef} /> : <HeroComponent />}
+      {/* Phones: live fundraisers follow the hero and leave with it, then the film. */}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><DiwaliCampaigns /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><DiwaliCampaigns /></>}
+
+      <DiwaliSeam kind="edge" from="film" to="crimson" />
+      <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit). Also the film's skip target. */}
       <section id="who-we-are" ref={afterFilmRef} tabIndex={-1} aria-label={whoWeAreLabel} className="outline-none">
@@ -308,6 +315,8 @@ export default function HomeClient({
         </div>
       </section>
 
+      <DiwaliSeam kind="diya" diyas={3} />
+      <DiwaliSeam kind="line" />
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
@@ -316,6 +325,7 @@ export default function HomeClient({
       </div>
       {!isRoleHome && (
         <div className="lg:hidden">
+          <DiwaliSeam kind="edge" to="butter" lanterns="both" />
           <HowItWorksSection />
         </div>
       )}
@@ -534,6 +544,7 @@ export default function HomeClient({
         )}
 
         {/* SECTION 6 — LIVE NEEDS */}
+        {showLiveNeeds && (isRoleHome ? <DiwaliSeam kind="line" /> : <DiwaliSeam kind="edge" from="butter" lanterns="right" />)}
         {showLiveNeeds && (
           <div className="space-y-8">
             <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
@@ -542,16 +553,19 @@ export default function HomeClient({
         )}
 
         {/* SECTION 5 — CAN I TRUST YOU */}
+        <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
         <div className="-mx-5">
           <TrustSafetySection variant="mobile" seamless={isDoneeHome} />
         </div>
 
         {/* FOUNDER'S NOTE */}
+        <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
         <div className="-mx-5">
           <FoundersNoteSection variant="mobile" seamless={isDoneeHome} />
         </div>
 
-        <div className="-mx-5">
+        <DiwaliSeam kind="edge" from="butter" />
+        <div className="-mx-5" data-dw-panel>
           <GoogleReviewsSection />
         </div>
 
@@ -633,11 +647,14 @@ export default function HomeClient({
         </div>
 
         {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
+        {!isRoleHome && <DiwaliSeam kind="arch-swell" to="crimson" lanterns="both" />}
         {!isRoleHome && (
           <div className="-mx-5">
             {!isRestoring && <FinalCtaComponent variant="mobile" card={!isGuest} />}
           </div>
         )}
+        <DiwaliSeam kind="edge" from={isRoleHome ? "cream" : "crimson"} to="night" />
+        <DiwaliSeam kind="diya" from="night" to="night" diyas={5} />
 
       </div>
     </div>

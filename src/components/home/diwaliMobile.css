@@ -1,0 +1,389 @@
+/* ── Diwali on phones, home page only ─────────────────────────────────────────
+   Every rule but the first sits below 768px and is scoped to the home page, so
+   desktop, tablet and other routes are untouched and no image here downloads on
+   them. Sections sit on warm cream and butter, joined by varied DiwaliSeams.
+   Unlayered, so it outranks the Tailwind utilities on the shared markup. */
+.ck-dw-layer,
+.ck-dw-seam,
+.ck-dw-campaigns { display: none; }
+
+@media (max-width: 767.98px) {
+  body:has(.ck-home-page) {
+    --dw-maroon: #720d2d;
+    --dw-burgundy: #8e123c;
+    --dw-night: #3a0716;
+    --dw-saffron: #f4a340;
+    --dw-gold: #d9a441;
+    --dw-white: #fffaf1;
+    --dw-peach: #f9dfc0;
+    --dw-cream: #fff6e3;
+    --dw-butter: #fbe8c2;
+    --dw-card: #fffdf7;
+    --dw-crimson: #a31a44;
+    --dw-film: #faf8f5;
+    --dw-heading: #720d2d;
+    --dw-line: rgb(217 164 65 / 0.6);
+
+    --ck-home-accent: #8e123c;
+    --ck-home-ink: #720d2d;
+    --ck-home-hover: #720d2d;
+    --ck-home-deep: #3a0716;
+    --ck-home-highlight: #f4a340;
+    --ck-home-soft: #f9dfc0;
+    --ck-home-surface: #fff6e3;
+    --ck-home-shadow-rgb: 114, 13, 45;
+    --ck-role-accent: #8e123c;
+    --ck-role-hover: #720d2d;
+    --ck-role-highlight: #f4a340;
+  }
+  .dark body:has(.ck-home-page) {
+    --dw-cream: #220d14;
+    --dw-butter: #2c1219;
+    --dw-card: #2d131c;
+    --dw-heading: #f9dfc0;
+    --dw-film: #0e0c0a;
+    --ck-home-ink: #f4a340;
+    --ck-home-surface: #2d131c;
+    --ck-home-soft: #4a1c2a;
+  }
+
+  /* Over the hero the header is clear: the dark wordmark was lost on the video. */
+  body:has(.ck-home-page) header[data-home-hero="top"] .ck-mobile-header > a {
+    padding: 0.2rem 0.7rem;
+    border-radius: 999px;
+    background: var(--dw-white);
+    box-shadow: 0 0 0 1px var(--dw-gold), 0 4px 18px rgb(244 163 64 / 0.3);
+  }
+
+  /* ── Hero ── */
+  .ck-showcase-hero.ck-hero-diwali { background: var(--dw-night); }
+  .ck-diwali-media::after { background: linear-gradient(to bottom, transparent, var(--dw-night)); }
+  .ck-hero-diwali .ck-mobile-hero-badge {
+    color: var(--dw-peach);
+    border-color: var(--dw-gold);
+    background: rgb(114 13 45 / 0.72);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-headline {
+    font-family: var(--font-source-serif-4), Georgia, serif;
+    font-weight: 700;
+    font-size: clamp(1.8rem, 8.2vw, 2.6rem);
+    line-height: 1.1;
+    letter-spacing: -0.015em;
+    color: var(--dw-white);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-headline-accent {
+    color: var(--dw-saffron);
+    font-style: italic;
+    font-weight: 600;
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-actions[data-guest="true"] .ck-hero-primary-cta {
+    background: var(--dw-saffron);
+    color: var(--dw-night);
+    box-shadow: 0 6px 22px rgb(244 163 64 / 0.32);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-actions:not([data-guest]) .ck-hero-primary-cta {
+    background: var(--dw-saffron);
+    color: var(--dw-night);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-secondary-cta {
+    border-color: var(--dw-gold);
+    box-shadow: inset 0 0 0 1px var(--dw-gold);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-donate-cta {
+    --ck-donate-acc: var(--dw-burgundy);
+    --ck-donate-hov: var(--dw-maroon);
+    --ck-donate-hi: var(--dw-saffron);
+  }
+
+  .ck-dw-layer {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 30;
+    width: 100%;
+    height: 72svh;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ck-dw-layer[data-paused] * { animation-play-state: paused; }
+  .ck-dw-lights,
+  .ck-dw-lights::after {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 46px;
+    background: url("/images/diwali/fairy-lights.svg") left top / 104px 37px repeat-x;
+  }
+  .ck-dw-lights::after {
+    content: "";
+    inset: 0;
+    background-image: url("/images/diwali/fairy-lights-glow.svg");
+    animation: ck-dw-glow 2.2s ease-in-out infinite alternate;
+  }
+  .ck-dw-lantern {
+    position: absolute;
+    top: 0;
+    width: 44px;
+    height: 110px;
+    background: url("/images/diwali/lantern.svg") center top / contain no-repeat;
+    transform-origin: 50% 0;
+    animation: ck-dw-sway 4.6s ease-in-out infinite alternate;
+  }
+  .ck-dw-lantern-left { left: 8px; }
+  .ck-dw-lantern-right { right: 68px; height: 92px; width: 37px; animation-duration: 5.7s; animation-delay: -2s; }
+  .ck-dw-spark {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    background: url("/images/diwali/spark.svg") center / contain no-repeat;
+    animation: ck-dw-twinkle 3.4s ease-in-out infinite;
+  }
+
+  /* ── Warm grounds, and the sections flush on them ── */
+  .ck-home-page,
+  .ck-home-page > .lg\:hidden { background-color: var(--dw-cream); }
+  .ck-home-page > .lg\:hidden > .ck-dw-seam { margin-inline: -1.25rem; }
+  .ck-home-page :is(#about-causekind, #where-support-goes, #live-needs-section, section[aria-labelledby="credits-heading"], [data-dw-panel] > section) { background-color: var(--dw-cream); }
+  .ck-home-page :is(#how-it-works, #trust, #founders-note) { background-color: var(--dw-butter); }
+  .ck-home-page #live-needs-section { width: auto; margin-inline: -1.25rem; padding-inline: 1.25rem; }
+  .ck-home-page :is(#about-causekind, #where-support-goes, #how-it-works, #trust, #founders-note, #live-needs-section) { padding-bottom: 1.5rem !important; }
+  .ck-home-page :is(#about-causekind, #how-it-works, #live-needs-section, #trust, #founders-note) :is(h2, h2 *):not([class*="text-[var(--ck-home"]) { color: var(--dw-heading); }
+  .ck-home-page #where-support-goes h2 :is(em, i) { color: var(--dw-burgundy); }
+
+  /* The orange still hardcoded in the sections' classes and role tabs. */
+  .ck-home-page [class*="text-[#B5480F]"] { color: var(--ck-home-ink); }
+  .ck-home-page [class*="bg-[#B5480F]"]:not([class*="bg-[#B5480F]/"]),
+  .ck-home-page [style*="background-color: rgb(181, 72, 15)"] { background-color: var(--dw-burgundy) !important; }
+  .ck-home-page [class*="border-[#B5480F]"] { border-color: var(--dw-burgundy); }
+  .ck-home-page [style*="--role:#B5480F"] { --role: var(--dw-burgundy); }
+
+  .ck-home-page #live-needs-section [role="region"] > *,
+  .ck-home-page #live-needs-section .ck-live-needs-footer-gap {
+    background-color: var(--dw-card);
+    border: 1px solid var(--dw-line);
+    box-shadow: 0 12px 28px -20px rgb(114 13 45 / 0.45);
+  }
+  .ck-home-page #live-needs-section [role="region"] h3 { color: var(--dw-heading); }
+
+  /* ── Seams ── */
+  .ck-dw-seam { display: block; position: relative; --dw-from: var(--dw-cream); --dw-to: var(--dw-cream); background: var(--dw-from); }
+  .ck-dw-seam[data-from="film"] { --dw-from: var(--dw-film); }
+  .ck-dw-seam[data-from="butter"] { --dw-from: var(--dw-butter); }
+  .ck-dw-seam[data-from="crimson"] { --dw-from: var(--dw-crimson); }
+  .ck-dw-seam[data-to="butter"] { --dw-to: var(--dw-butter); }
+  .ck-dw-seam[data-to="crimson"] { --dw-to: var(--dw-crimson); }
+  .ck-dw-seam[data-to="night"] { --dw-to: var(--dw-night); }
+  .ck-dw-seam::before,
+  .ck-dw-seam::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+
+  /* Thin gold scallop on one ground. */
+  .ck-dw-seam-line { height: 16px; margin-block: 0.5rem; }
+  .ck-dw-seam-line::before { background: url("/images/diwali/scallop-line.svg") left center / 22px 16px round no-repeat; background-repeat: round no-repeat; }
+  .ck-dw-seam-line::after { content: none; }
+
+  /* Small scallops where one ground meets the next. */
+  .ck-dw-seam-edge { height: 12px; }
+  .ck-dw-seam-edge::before {
+    background: var(--dw-to);
+    -webkit-mask: url("/images/diwali/scallop-mask.svg") left top / 22px 12px round no-repeat;
+    mask: url("/images/diwali/scallop-mask.svg") left top / 22px 12px round no-repeat;
+    -webkit-mask-repeat: round no-repeat;
+    mask-repeat: round no-repeat;
+  }
+  .ck-dw-seam-edge::after { background: url("/images/diwali/scallop-edge.svg") left top / 22px 12px; background-repeat: round no-repeat; }
+
+  /* One lamp, nothing else. */
+  .ck-dw-seam-diya { display: flex; justify-content: center; align-items: flex-end; gap: 1.1rem; padding-block: 2rem 0.5rem; }
+  .ck-dw-seam-diya .ck-dw-diya { width: 30px; height: 16px; }
+  .ck-dw-seam-diya .ck-dw-diya::after { width: 10px; height: 17px; margin-left: -5px; }
+  .ck-dw-seam-diya .ck-dw-diya:nth-child(odd) { transform: translateY(-1px); }
+  .ck-dw-seam-diya .ck-dw-diya:nth-child(3n + 2) { width: 44px; height: 23px; }
+  .ck-dw-seam-diya .ck-dw-diya:nth-child(3n + 2)::after { width: 13px; height: 22px; margin-left: -6.5px; animation-delay: -0.6s; }
+  .ck-dw-seam-diya .ck-dw-diya:nth-child(3)::after { animation-delay: -1.1s; }
+  .ck-dw-seam[data-from="night"] { --dw-from: var(--dw-night); }
+
+  /* Round paper lanterns, hung in the empty corners. */
+  .ck-dw-seam { z-index: 5; }
+  .ck-dw-hang {
+    position: absolute;
+    top: 100%;
+    z-index: 5;
+    width: 34px;
+    height: 68px;
+    background: url("/images/diwali/lantern-round.svg") center top / contain no-repeat;
+    transform-origin: 50% 0;
+    animation: ck-dw-sway 4.4s ease-in-out infinite alternate;
+    pointer-events: none;
+  }
+  .ck-dw-hang-left { left: 12px; animation-delay: -1.7s; }
+  .ck-dw-hang-right { right: 12px; height: 80px; width: 40px; }
+  .ck-dw-seam-arch-bulbs .ck-dw-hang,
+  .ck-dw-seam-arch-step .ck-dw-hang,
+  .ck-dw-seam-arch-swell .ck-dw-hang { top: 0; height: 60px; width: 30px; }
+  /* Inside the arch, like the bells in a mandir: each cord starts on its outline.
+     The percentages are points on the curve, so they hold at every width. */
+  .ck-dw-seam-arch-step .ck-dw-hang { top: 57%; }
+  .ck-dw-seam-arch-step .ck-dw-hang-left { left: calc(15% - 15px); }
+  .ck-dw-seam-arch-step .ck-dw-hang-right { right: calc(15% - 15px); }
+  .ck-dw-seam-arch-swell .ck-dw-hang { top: 47%; }
+  .ck-dw-seam-arch-swell .ck-dw-hang-left { left: calc(13.2% - 15px); }
+  .ck-dw-seam-arch-swell .ck-dw-hang-right { right: calc(13.2% - 15px); }
+  .ck-dw-seam-edge .ck-dw-hang { width: 20px; height: 40px; }
+  .ck-dw-seam-edge .ck-dw-hang-left { left: 4px; }
+  .ck-dw-seam-edge .ck-dw-hang-right { right: 4px; }
+  .ck-dw-campaigns > .ck-dw-hang { top: 0; }
+  .ck-dw-seam-diya::before,
+  .ck-dw-seam-diya::after { content: none; }
+
+  /* Marquee arch, bulbs alternating: where the film hands back to the page. */
+  .ck-dw-seam-arch-bulbs { aspect-ratio: 390 / 110; }
+  .ck-dw-seam-arch-bulbs::before {
+    background: var(--dw-to);
+    -webkit-mask: url("/images/diwali/arch-bulbs-mask.svg") center / 100% 100% no-repeat;
+    mask: url("/images/diwali/arch-bulbs-mask.svg") center / 100% 100% no-repeat;
+  }
+  .ck-dw-seam-arch-bulbs::after {
+    background:
+      url("/images/diwali/arch-bulbs-b.svg") center / 100% 100% no-repeat,
+      url("/images/diwali/arch-bulbs-a.svg") center / 100% 100% no-repeat;
+  }
+
+  /* Stepped mandir arch, double gold line. */
+  .ck-dw-seam-arch-step { aspect-ratio: 390 / 104; margin-bottom: -1px; }
+  .ck-dw-seam-arch-step::before {
+    background: var(--dw-to);
+    -webkit-mask: url("/images/diwali/arch-step-mask.svg") center / 100% 100% no-repeat;
+    mask: url("/images/diwali/arch-step-mask.svg") center / 100% 100% no-repeat;
+  }
+  .ck-dw-seam-arch-step::after { background: url("/images/diwali/arch-step-line.svg") center / 100% 100% no-repeat; }
+
+  /* A long swell rising to a lit diya, into the crimson. */
+  .ck-dw-seam-arch-swell { aspect-ratio: 390 / 84; margin-top: 1.5rem; margin-bottom: -1px; }
+  .ck-dw-seam-arch-swell::before {
+    background: var(--dw-to);
+    -webkit-mask: url("/images/diwali/arch-swell-mask.svg") center / 100% 100% no-repeat;
+    mask: url("/images/diwali/arch-swell-mask.svg") center / 100% 100% no-repeat;
+  }
+  .ck-dw-seam-arch-swell::after { background: url("/images/diwali/arch-swell-line.svg") center / 100% 100% no-repeat; }
+  .ck-dw-seam-arch-swell .ck-dw-diya { position: absolute; z-index: 1; left: 50%; top: -14px; margin-left: -22px; }
+
+  .ck-dw-diya {
+    position: relative;
+    display: block;
+    width: 44px;
+    height: 23px;
+    background: url("/images/diwali/diya.svg") center bottom / contain no-repeat;
+  }
+  .ck-dw-diya::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 40%;
+    width: 70px;
+    height: 70px;
+    margin: 0 0 -22px -35px;
+    background: radial-gradient(closest-side, rgb(255 196 92 / 0.45), transparent);
+  }
+  .ck-dw-diya::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    bottom: 62%;
+    width: 13px;
+    height: 22px;
+    margin-left: -6.5px;
+    background: url("/images/diwali/flame.svg") center / contain no-repeat;
+    transform-origin: 50% 100%;
+    animation: ck-dw-flicker 1.7s ease-in-out infinite alternate;
+  }
+
+  /* ── Final CTA ── */
+  .ck-home-page #join { background-color: var(--dw-crimson); padding-bottom: 1.5rem !important; }
+  .ck-home-page #join .grid > :first-child :is(h1, h2, h3) { color: var(--dw-white); }
+  .ck-home-page #join .grid > :first-child :is(h1, h2, h3) span { color: #ffd27a; }
+  .ck-home-page #join .grid > :first-child :is(p, li, span):not(h2 span, button *, a *) { color: #fff0d8; }
+  .ck-home-page #join #join-paths-label { color: #fff0d8; }
+  .ck-home-page #join [class*="border-dashed"],
+  .ck-home-page #join [class*="border-dashed"] p { color: #fff0d8; }
+  .ck-home-page #join .grid > :first-child svg:not(button *, a *) { color: #ffd27a; }
+  .ck-home-page #join .grid a { border-color: var(--dw-gold); }
+  .ck-home-page #join [class*="bg-[#1C1410]"] { background-color: var(--dw-burgundy); border-color: var(--dw-gold); }
+
+  /* ── Header and footer ── */
+  body:has(.ck-home-page) header:has(.ck-mobile-header):not([data-home-hero="top"]) { border-bottom: 1px solid var(--dw-line); }
+  body:has(.ck-home-page) #footer { background-color: var(--dw-night); border-top: 0; }
+  body:has(.ck-home-page) #footer .ck-donate-cta { --ck-donate-acc: var(--dw-saffron); --ck-donate-hov: var(--dw-gold); --ck-donate-on: var(--dw-night); color: var(--dw-night); }
+
+  /* ── Fundraisers: light, plain cards, straight after the hero ── */
+  .ck-dw-campaigns { display: block; position: relative; padding: 1.5rem 0 2.25rem; background: var(--dw-butter); color: #2a1208; }
+  .ck-dw-campaigns::before,
+  .ck-dw-campaigns::after { content: ""; position: absolute; inset: -12px 0 auto; height: 12px; }
+  .ck-dw-campaigns::before {
+    background: var(--dw-butter);
+    -webkit-mask: url("/images/diwali/scallop-mask.svg") left top / 22px 12px round no-repeat;
+    mask: url("/images/diwali/scallop-mask.svg") left top / 22px 12px round no-repeat;
+    -webkit-mask-repeat: round no-repeat;
+    mask-repeat: round no-repeat;
+  }
+  .ck-dw-campaigns::after { background: url("/images/diwali/scallop-edge.svg") left top / 22px 12px; background-repeat: round no-repeat; }
+  .ck-dw-c-head { padding: 1rem 1.25rem 1.1rem; }
+  .ck-dw-c-eyebrow { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dw-burgundy); }
+  .ck-dw-c-title { margin-top: 0.4rem; font-family: var(--font-source-serif-4), Georgia, serif; font-size: clamp(1.8rem, 8.2vw, 2.5rem); font-weight: 700; line-height: 1.08; letter-spacing: -0.015em; color: var(--dw-heading); }
+  .ck-dw-c-title em { color: #b5480f; font-weight: 600; }
+  .ck-dw-c-sub { margin-top: 0.6rem; max-width: 34ch; font-size: 0.9rem; line-height: 1.5; color: #5d4030; }
+  .ck-dw-c-row { display: flex; gap: 0.875rem; overflow-x: auto; padding: 0.25rem 1.25rem 1rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1.25rem; scrollbar-width: none; }
+  .ck-dw-c-row::-webkit-scrollbar { display: none; }
+  .ck-dw-card { flex: 0 0 min(78vw, 300px); scroll-snap-align: start; display: flex; flex-direction: column; overflow: hidden; border-radius: 1.25rem; background: var(--dw-card); color: #2a1208; text-decoration: none; box-shadow: 0 14px 30px -20px rgb(114 13 45 / 0.55); transition: transform 0.2s ease; }
+  .ck-dw-card:only-child { flex-basis: 100%; }
+  .ck-dw-card:active { transform: scale(0.98); }
+  .ck-dw-c-photo { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9; background: var(--dw-cream); }
+  .ck-dw-c-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ck-dw-c-photo .ck-dw-diya { margin-top: 1rem; }
+  .ck-dw-c-body { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; padding: 0.875rem 0.95rem 1rem; }
+  .dark .ck-dw-card, .dark .ck-dw-campaigns { color: var(--dw-peach); }
+  .dark .ck-dw-c-sub { color: var(--dw-peach); }
+  .dark .ck-dw-c-title em { color: var(--dw-saffron); }
+  .ck-dw-c-chip { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dw-burgundy); }
+  .dark .ck-dw-c-chip, .dark .ck-dw-c-eyebrow { color: var(--dw-saffron); }
+  .ck-dw-c-name { font-family: var(--font-source-serif-4), Georgia, serif; font-size: 1.1rem; font-weight: 700; line-height: 1.25; color: var(--dw-heading); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ck-dw-c-by { font-size: 0.78rem; opacity: 0.75; }
+  .ck-dw-c-bar { display: block; height: 7px; margin-top: 0.15rem; border-radius: 99px; background: var(--dw-peach); overflow: hidden; }
+  .ck-dw-c-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--dw-burgundy); }
+  .ck-dw-c-sums { font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+  .ck-dw-c-sums strong { color: var(--dw-heading); font-size: 0.98rem; }
+  .ck-dw-c-cta { display: flex; align-items: center; justify-content: center; min-height: 2.75rem; margin-top: 0.3rem; border-radius: 0.75rem; background: var(--dw-burgundy); color: var(--dw-white); font-size: 0.86rem; font-weight: 800; }
+  .ck-dw-card.is-skeleton { min-height: 22rem; opacity: 0.55; pointer-events: none; }
+  .ck-dw-c-all { display: inline-flex; align-items: center; min-height: 2.75rem; margin: 0 1.25rem; padding-inline: 1.1rem; border: 1px solid var(--dw-burgundy); border-radius: 999px; font-size: 0.85rem; font-weight: 700; color: var(--dw-heading); }
+  .ck-dw-c-empty .ck-dw-c-name { -webkit-line-clamp: unset; }
+
+  .dark body:has(.ck-home-page) header[data-home-hero="top"] .ck-mobile-header > a { background: var(--dw-night); }
+  .dark .ck-home-page #about-causekind a { color: var(--dw-white); }
+  .dark .ck-home-page #about-causekind p span { color: var(--dw-saffron); }
+
+  /* The campaigns add their height to the hero's lead-in, which Chapter 1 takes
+     out of its track: this gives the film that scroll back. */
+  @media (orientation: portrait) and (prefers-reduced-motion: no-preference) {
+    .ck-home-page [class*="track1"] {
+      height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 100) + calc(var(--ck-svh, 1svh) * 60) + calc(var(--ck-svh, 1svh) * 660));
+    }
+  }
+}
+
+@keyframes ck-dw-sway { from { transform: rotate(-3.5deg); } to { transform: rotate(3.5deg); } }
+@keyframes ck-dw-flicker {
+  0% { transform: scale(1, 1); }
+  40% { transform: scale(0.92, 1.08) rotate(-2deg); }
+  70% { transform: scale(1.05, 0.95) rotate(2deg); }
+  100% { transform: scale(0.96, 1.05); }
+}
+@keyframes ck-dw-glow { from { opacity: 0.45; } to { opacity: 1; } }
+@keyframes ck-dw-twinkle { 0%, 100% { opacity: 0.15; transform: scale(0.7); } 50% { opacity: 0.9; transform: scale(1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-dw-lantern,
+  .ck-dw-spark,
+  .ck-dw-lights::after,
+  .ck-dw-diya::after,
+  .ck-dw-hang { animation: none; }
+  .ck-dw-spark { opacity: 0.6; }
+}

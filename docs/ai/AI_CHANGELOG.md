@@ -314,3 +314,28 @@ Pre-existing state recorded by the audit (uncommitted on branch
 
 ### Status
 - Verified hydrated (use http://localhost:3000 — Next 16 dev blocks 127.0.0.1, so pages load un-hydrated there) at 1440x900 and 390x844: PC shows the redesign's About / How it works / Founder / Final CTA; phone shows this branch's; Google reviews on both; no page errors. Type-check clean.
+
+## 2026-10-31 — Diwali on phones: hero, fundraisers after it, arch frames between sections (< 768 only)
+
+### Files Changed
+- `src/components/home/diwaliMobile.css` (new) — all phone styling, below 768px and scoped to the home page.
+- `src/components/home/DiwaliMobileLayer.tsx` (new) — hero lights, lanterns, sparks; `DiwaliSeam` (wave, three diyas, mahal dome) between sections.
+- `src/components/home/DiwaliCampaigns.tsx` (new) — live fundraisers from `fundraisers.live()`, with an empty state; never fetched on wider screens.
+- `src/app/HomeClient.tsx` — mounts the above. `public/images/diwali/*` — SVG assets.
+
+### Important Decisions
+- Order on phones: hero, fundraisers, film. The fundraisers sit in HeroFilm's `hero` slot so they leave with the hero as the film's lead-in; film code unchanged. `.track1` gains 100svh in portrait to give back the scroll.
+- `diwaliassets/` is untracked and unused by the page now; illustrations cut from it were removed at the user's request.
+
+### Known Issues
+- The fundraising backend returns 404 locally, so real cards were not seen; layout was tested with a browser-only stub. Live cards also need `NEXT_PUBLIC_FUNDRAISING_ENABLED` for their links to work.
+
+## 2026-10-31 — Diwali on phones: lighter, varied section joins
+
+- Fundraisers moved to a light butter ground with plain rounded cards. Dark maroon ground and the repeated dome/three-diya seam removed.
+- `DiwaliSeam` now takes a `kind`: `line`, `edge`, `diya`, `arch-bulbs`, `arch-step`, `arch-swell`. Each arch is used once; Reviews to Credits has no separator.
+- `diwaliassets/` now holds three WhatsApp reference images; the earlier sheets are gone from that folder.
+
+## 2026-10-31 — Diwali on phones: more lanterns and diyas
+
+- Round paper lanterns (`lantern-round.svg`) hang from selected seams and the fundraisers; `DiwaliSeam` gains `lanterns` and `diyas`. Three-lamp clusters added after About and before the Founder note, five above the footer.
