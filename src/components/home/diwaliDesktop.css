@@ -165,7 +165,8 @@
   .ck-guest-desktop #how-it-works [style*="background-color: rgb(181, 72, 15)"] { background-color: var(--dw-burgundy) !important; }
   .ck-guest-desktop [class*="border-[#B5480F]"] { border-color: var(--dw-burgundy); }
 
-  .ck-guest-desktop #how-it-works a[href*="register"] { background-color: var(--dw-burgundy) !important; }
+  .ck-guest-desktop #how-it-works a[href*="register"],
+  .ck-guest-desktop #how-it-works a[href*="register"] > :first-child { background-color: var(--dw-burgundy) !important; }
 
   /* The About statement panel: maroon, gold-edged. */
   .ck-guest-desktop #about-causekind [class*="bg-[var(--ck-role-accent"][class*="rounded-[28px]"] {
