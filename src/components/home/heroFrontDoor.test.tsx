@@ -148,13 +148,6 @@ describe("hero", () => {
     expect(container.querySelectorAll("h1")).toHaveLength(1);
   });
 
-  it("hangs all 20 lanterns as a decorative layer", () => {
-    const { container } = render(<HeroSection />);
-    const layer = container.querySelector(".ck-diwali-hanging");
-    expect(layer).toHaveAttribute("aria-hidden", "true");
-    expect(layer?.children).toHaveLength(20);
-  });
-
   it("opens the verified public board without requiring a category choice", () => {
     // The category strip is a shortcut, not a gate.
     render(<HeroSection />);

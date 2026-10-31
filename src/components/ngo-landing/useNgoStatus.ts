@@ -154,8 +154,6 @@ export interface NgoStatusData {
   canStartDrive: boolean;
   blockingDriveTitle: string;
   driveLockReason: string;
-  hasShownWelcome: boolean;
-  markWelcomeShown: () => void;
   documents: Record<string, any>;
   isError: boolean;
 }
@@ -175,7 +173,6 @@ export function useNgoStatus(): NgoStatusData {
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasShownWelcome, setHasShownWelcome] = useState(true);
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
   /** Whose status is on screen: later refreshes for the same NGO keep it instead of blanking it. */
@@ -256,15 +253,6 @@ export function useNgoStatus(): NgoStatusData {
     };
   }, [refresh]);
 
-  useEffect(() => {
-    try { setHasShownWelcome(!!localStorage.getItem(`ngo-verified-welcome-shown-${userIdentifier}`)); }
-    catch { setHasShownWelcome(true); }
-  }, [userIdentifier]);
-  const markWelcomeShown = useCallback(() => {
-    try { localStorage.setItem(`ngo-verified-welcome-shown-${userIdentifier}`, "true"); } catch {}
-    setHasShownWelcome(true);
-  }, [userIdentifier]);
-
   // A failed first load sets the status to "incomplete" itself; a failed background refresh keeps
   // the verified status (and the data) on screen next to the error, instead of locking every page.
   const isVerified = !isLoading && status === "verified";
@@ -288,7 +276,7 @@ export function useNgoStatus(): NgoStatusData {
     activeRequests: overview?.activeRequests ?? 0, itemsPledged: overview?.itemsPledged ?? 0,
     dropoffsToConfirm: overview?.dropoffsToConfirm ?? 0, photosDue: overview?.photosDue ?? 0,
     photosDueRequestName: overview?.photosDueRequestName ?? "", isVerified, isPhotosDue,
-    canPostRequest, lockReason, canStartDrive, blockingDriveTitle, driveLockReason, hasShownWelcome, markWelcomeShown,
+    canPostRequest, lockReason, canStartDrive, blockingDriveTitle, driveLockReason,
     documents, isError: !!error,
   };
 }

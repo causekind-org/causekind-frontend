@@ -43,9 +43,9 @@
 /*
  * The mandala, behind everything, desktop only. The blend sits on the layer
  * itself: a z-index on it or a parent would make a stacking context and multiply
- * would no longer reach the cream. The file's mandala is 84% of its height, so a
- * frame height of max(130.6cqh, 78.4cqw) makes the circle 1.1x the larger of the
- * section's height and 60% of its width.
+ * would no longer reach the cream. The file's mandala spans 85.7% of its height at
+ * its widest petals, so a frame height of 101.5% of the section's shorter side makes
+ * the whole circle 87% of that side, with a 6.5% margin around it.
  */
 .mandala {
   display: none;
@@ -69,7 +69,7 @@
     position: absolute;
     top: 50%;
     left: 50%;
-    height: max(130.6cqh, 78.4cqw);
+    height: calc(min(100cqh, 100cqw) * 1.015);
     aspect-ratio: 16 / 9;
     transform: translate(-50%, -50%);
     /* Ends just past the mandala, so no edge of the frame is ever visible. */

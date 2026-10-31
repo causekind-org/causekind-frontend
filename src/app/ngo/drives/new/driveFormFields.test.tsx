@@ -103,12 +103,16 @@ describe("drive form fields", { timeout: 20000 }, () => {
 
   it("an older drive without details must add them before continuing", async () => {
     await openForm({ details: null });
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));
+    expect(screen.getByRole("button", { name: /Continue to Step 3/ })).toHaveAttribute("aria-disabled", "true");
+    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ })); // not clickable: stays on this step
+    expect(screen.getByRole("textbox", { name: /^Details/ })).not.toHaveAttribute("aria-invalid", "true"); // nothing red before the field is left
+    fireEvent.blur(screen.getByRole("textbox", { name: /^Details/ }));
     expect((await screen.findAllByText("Add the details donors need")).length).toBeGreaterThan(0);
     expect(screen.getByRole("textbox", { name: /^Details/ })).toHaveAttribute("aria-invalid", "true");
     expect(screen.queryByRole("spinbutton", { name: /How many people will benefit/ })).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByRole("textbox", { name: /^Details/ }), { target: { value: "Warm blankets, any colour." } });
+    expect(screen.getByRole("button", { name: /Continue to Step 3/ })).toHaveAttribute("aria-disabled", "false");
     fireEvent.click(screen.getByRole("button", { name: /Continue to Step 3/ }));
     expect(await screen.findByRole("spinbutton", { name: /How many people will benefit/ })).toBeInTheDocument();
   });

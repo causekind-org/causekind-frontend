@@ -5100,7 +5100,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   object-fit: cover;
 }
 
-.ck-diwali-hanging { display: none; }
 
 @media (max-width: 767px), (min-width: 1024px) {
   .ck-hero-diwali .ck-hero-photo-shell { display: none; }
@@ -5202,41 +5201,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
     .ck-hero-diwali .ck-hero-actions { width: 100%; flex-wrap: wrap; }
   }
 
-  /* The hanging lanterns: from the hero's left edge to 1rem short of the rangoli's
-     ring, which starts 0.94 of the row from the hero's right. The composition is
-     1195 wide, its longest lantern ends at 288 and its sprites at 308. The copy
-     starts 1rem below that lantern. */
-  .ck-hero-diwali {
-    --ck-diwali-hanging-w: calc(100vw - var(--ck-diwali-h) * 0.94 - 1rem);
-  }
-  .ck-showcase-hero.ck-hero-diwali .ck-hero-copy { padding-top: calc(var(--ck-diwali-hanging-w) * 288 / 1195 + 1rem); }
-  .ck-diwali-hanging {
-    display: block;
-    position: absolute;
-    top: 0;
-    left: calc(-1 * var(--ck-hero-side-gutter, 0px));
-    z-index: 1;
-    width: var(--ck-diwali-hanging-w);
-    height: calc(var(--ck-diwali-hanging-w) * 308 / 1195);
-    pointer-events: none;
-  }
-  .ck-diwali-hanging-sprite {
-    position: absolute;
-    top: 0;
-    background-image: url("/images/diwali-lanterns-atlas.webp");
-    background-repeat: no-repeat;
-    animation: ck-diwali-lantern-sway var(--ck-lantern-sway) ease-in-out var(--ck-lantern-sway-delay) infinite alternate;
-  }
-  /* A second copy over the first: solid pixels stay as they are, only the
-     semi-transparent halo brightens and dims, so just the glow flickers. */
-  .ck-diwali-hanging-sprite::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: inherit;
-    animation: ck-diwali-lantern-flicker var(--ck-lantern-flicker) ease-in-out var(--ck-lantern-flicker-delay) infinite alternate;
-  }
-
   /* Gentle entrance: each block rises in, 80ms apart. */
   .ck-hero-diwali :is(.ck-hero-eyebrow, .ck-hero-headline, .ck-hero-subtext, .ck-hero-actions, .ck-hero-category-rail, .ck-hero-trust-rail) {
     animation: ck-diwali-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -5247,21 +5211,11 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   .ck-hero-diwali .ck-hero-category-rail { animation-delay: 320ms; }
   .ck-hero-diwali .ck-hero-trust-rail { animation-delay: 400ms; }
 }
-@keyframes ck-diwali-lantern-sway {
-  from { transform: rotate(-2deg); }
-  to { transform: rotate(2deg); }
-}
-@keyframes ck-diwali-lantern-flicker {
-  from { opacity: 0.2; }
-  to { opacity: 0.6; }
-}
 @keyframes ck-diwali-rise {
   from { opacity: 0; transform: translate3d(0, 12px, 0); }
   to { opacity: 1; transform: none; }
 }
 @media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
-  .ck-diwali-hanging-sprite { animation: none; }
-  .ck-diwali-hanging-sprite::after { animation: none; opacity: 0.4; }
   .ck-hero-diwali :is(.ck-hero-eyebrow, .ck-hero-headline, .ck-hero-subtext, .ck-hero-actions, .ck-hero-category-rail, .ck-hero-trust-rail) {
     animation: none;
   }

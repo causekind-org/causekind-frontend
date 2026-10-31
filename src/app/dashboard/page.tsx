@@ -3,8 +3,8 @@
 import { driveOfferDonated } from "@/features/ngo-drives/driveCertificate";
 import { imageUrlsOf, resolveMediaUrl } from "@/lib/mediaUrl";
 import { serverDate } from "@/lib/serverTime";
-import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "@/components/AppLink";
 import { WithdrawFlowButton } from "@/components/matches/WithdrawFlowButton";
 import { NewRequestLink } from "@/components/NewRequestLink";
@@ -1772,7 +1772,7 @@ function DonorHistoryCard({
  * photo, ISSUE_WINDOW_OPEN): "Donated · certificate issued" + Certificate, and "Proof pending" until
  * the NGO's distribution proof is approved; then the same entry shows the proof. One entry per offer.
  */
-type DriveDoneLabels = { ngoDrive: string; certificateIssued: string; distributed: (d: AcceptedDriveOffer) => string | null };
+type DriveDoneLabels = { ngoDrive: string; certificateIssued: string; proofPublished: string; distributed: (d: AcceptedDriveOffer) => string | null };
 function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
   const d = o as unknown as AcceptedDriveOffer & NgoDriveOfferCert & { closedAt?: string | null; createdAt?: string | null; submittedAt?: string | null; receivedAt?: string | null };
   // The offer carries its own proof once published (freshly signed photos); older servers only flag FULFILLED.
@@ -1782,7 +1782,7 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
   const when = d.receivedAt ?? d.closedAt ?? d.createdAt ?? d.submittedAt ?? null;
   const photos = imageUrlsOf(o.media as never);
   // TODO later: admin issue ruling + revoke
-  const tag = labels.certificateIssued;
+  const tag = published ? labels.proofPublished : labels.certificateIssued;
   return {
     key: `d${o.id}`,
     at: Date.parse(when ?? "") || 0,
@@ -1795,7 +1795,7 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
           href={`/certificate?offerId=${o.id}&type=ngo_drive`} />
         {published && d.proofPublished ? (
           <DriveProofCard proof={{
-            ngoName: null, beneficiariesReached: d.driveBeneficiariesReached ?? null, beneficiaryGroup: d.driveBeneficiaryGroup ?? null,
+            ngoName: d.ngoName ?? null, beneficiariesReached: d.driveBeneficiariesReached ?? null, beneficiaryGroup: d.driveBeneficiaryGroup ?? null,
             quantityDistributed: d.proofQuantityDistributed ?? null, itemName: d.driveItemName ?? null, distributedOn: d.proofDistributedOn ?? null,
             location: d.proofLocation ?? null, ngoStatement: d.proofNote ?? null,
             media: proofPhotos.map(u => ({ mediaUrl: u, mediaType: "IMAGE" })),
@@ -1817,7 +1817,9 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
  * The donor's History card: ONE newest-first list of everything that has ended,
  * with comprehensive details on quantities, retailer, recipient, certificates and proofs.
  */
-function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onChanged }: {
+function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onChanged, focusOfferId }: {
+  /** Deep link (/dashboard?tab=history&offer=<id>): scroll to this offer's entry and highlight it briefly. */
+  focusOfferId?: number | null;
   offers: DonationOffer[];
   fulfilledItems: ItemListing[];
   matches: ItemMatch[];
@@ -1838,6 +1840,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     const driveLabels: DriveDoneLabels = {
       ngoDrive: ui("NGO drive"),
       certificateIssued: ui("Donated · certificate issued"),
+      proofPublished: ui("Donated · proof published"),
       distributed: (d) => distributedLine(d, (k, v) => dt(k, v), ui("people in need")),
     };
 
@@ -2022,6 +2025,24 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     { key: "closed", label: ui("Closed / Cancelled"), count: entries.filter(e => !e.isCompleted).length },
   ];
 
+  const [highlightKey, setHighlightKey] = useState<string | null>(null);
+  const focusedOffer = useRef<number | null>(null);
+  const focusKey = focusOfferId != null && entries.some(e => e.key === `d${focusOfferId}`) ? `d${focusOfferId}`
+    : focusOfferId != null && entries.some(e => e.key === `c${focusOfferId}`) ? `c${focusOfferId}`
+    : focusOfferId != null && entries.some(e => e.key === `o${focusOfferId}`) ? `o${focusOfferId}`
+    : null;
+  useEffect(() => {
+    // Offers load after the first paint: acts as soon as the entry exists, once per link.
+    if (!focusKey || focusedOffer.current === focusOfferId) return;
+    focusedOffer.current = focusOfferId ?? null;
+    setQuery("");
+    setFilter("all");
+    setHighlightKey(focusKey);
+    const raf = requestAnimationFrame(() => document.getElementById(`history-entry-${focusKey}`)?.scrollIntoView?.({ behavior: "smooth", block: "center" }));
+    const timer = setTimeout(() => setHighlightKey(null), 3000);
+    return () => { cancelAnimationFrame(raf); clearTimeout(timer); };
+  }, [focusKey, focusOfferId]);
+
   return (
     <Card className="relative bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-[var(--ck-role-accent)]" />
@@ -2063,34 +2084,40 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
             <button type="button" onClick={() => { setQuery(""); setFilter("all"); }} className="font-semibold text-[var(--ck-role-accent)] hover:underline"><UiText>Clear filters</UiText></button>
           </p>
         ) : (
-          filtered.map(e =>
-            "node" in e && e.node ? (
-              <div key={e.key}>{e.node}</div>
-            ) : (
-              <DonorHistoryCard
-                key={e.key}
-                title={e.title!}
-                tag={e.tag}
-                statusLabel={e.statusLabel!}
-                statusTone={e.statusTone!}
-                isCompleted={e.isCompleted}
-                category={e.category}
-                doneeName={e.doneeName}
-                city={e.city}
-                methodLabel={e.methodLabel}
-                quantitySummary={e.quantitySummary}
-                retailer={e.retailer}
-                brandModel={e.brandModel}
-                productUrl={e.productUrl}
-                rejectionReason={e.rejectionReason}
-                dateLabel={e.dateLabel!}
-                certificateHref={e.certificateHref}
-                hubHref={e.hubHref}
-                photos={e.photos}
-                thumb={e.thumb}
-              />
-            )
-          )
+          filtered.map(e => (
+            <div
+              key={e.key}
+              id={`history-entry-${e.key}`}
+              data-highlighted={highlightKey === e.key ? "true" : undefined}
+              className={`rounded-xl transition-shadow duration-500 ${highlightKey === e.key ? "ring-2 ring-[var(--ck-role-accent)] ring-offset-2 dark:ring-offset-zinc-900" : ""}`}
+            >
+              {"node" in e && e.node ? (
+                e.node
+              ) : (
+                <DonorHistoryCard
+                  title={e.title!}
+                  tag={e.tag}
+                  statusLabel={e.statusLabel!}
+                  statusTone={e.statusTone!}
+                  isCompleted={e.isCompleted}
+                  category={e.category}
+                  doneeName={e.doneeName}
+                  city={e.city}
+                  methodLabel={e.methodLabel}
+                  quantitySummary={e.quantitySummary}
+                  retailer={e.retailer}
+                  brandModel={e.brandModel}
+                  productUrl={e.productUrl}
+                  rejectionReason={e.rejectionReason}
+                  dateLabel={e.dateLabel!}
+                  certificateHref={e.certificateHref}
+                  hubHref={e.hubHref}
+                  photos={e.photos}
+                  thumb={e.thumb}
+                />
+              )}
+            </div>
+          ))
         )}
       </CardContent>
     </Card>
@@ -3586,6 +3613,14 @@ export default function DashboardPage() {
     if (isDonorSection(fromHash)) setChosenDonorSection(fromHash);
   }, []);
 
+  // /dashboard?tab=history&offer=<id> (the "Your donation was distributed" notice), also while already here.
+  const linkParams = useSearchParams();
+  const linkTab = linkParams?.get("tab") ?? null;
+  const linkOffer = Number(linkParams?.get("offer")) || null;
+  useEffect(() => {
+    if (linkTab === "history") { setActiveTab("donor"); setChosenDonorSection("offers"); }
+  }, [linkTab, linkOffer]);
+
   function selectDonorSection(next: DonorSection) {
     setChosenDonorSection(next);
     // Replace, not push: switching tabs shouldn't fill the back button's history.
@@ -3881,6 +3916,7 @@ export default function DashboardPage() {
                     matches={donorMatches}
                     pastMatches={pastDonorMatches}
                     onChanged={handleOfferCancelled}
+                    focusOfferId={linkTab === "history" ? linkOffer : null}
                   />
                 </TabsContent>
 
