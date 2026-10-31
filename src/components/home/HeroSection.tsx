@@ -13,7 +13,6 @@ import { ArrowRight, Heart, MapPin, UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { CategoryStrip } from "@/components/home/CategoryStrip";
-import { DiwaliHangingLanterns } from "@/components/home/DiwaliHangingLanterns";
 import { TrustBand } from "@/components/home/TrustBand";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavratriCampaign } from "@/hooks/useNavratriCampaign";
@@ -551,7 +550,7 @@ export function HeroSection() {
               </div>
             </div>
 
-            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <><DiwaliMedia /><DiwaliHangingLanterns /><div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
+            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <><DiwaliMedia /><div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
                 <source media="(max-width: 767px), (min-width: 1024px)" srcSet={BLANK_PIXEL} />

@@ -218,7 +218,7 @@ describe("drive wizard", () => {
     const to = await screen.findByDisplayValue("17:00");
     fireEvent.change(to, { target: { value: "09:00" } });
     expect(screen.getByText("End time must be after start time")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Save & Continue/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Save & Continue/ })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("strips digits from the role as it is typed", async () => {

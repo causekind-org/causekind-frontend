@@ -24,7 +24,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: { email: "ravi@donor.test", role: "DONOR" }, isLoading: false }),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+const nav = vi.hoisted(() => ({ search: "" }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), useSearchParams: () => new URLSearchParams(nav.search) }));
 // next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/components/MyTasksCard", () => ({ MyTasksCard: () => null }));
@@ -452,6 +453,37 @@ describe("History: an NGO drive offer from handover to proof", () => {
     expect(await screen.findAllByTestId("history-drive-offer-7")).toHaveLength(1);
     expect(screen.getByText("The NGO has distributed your 10 jackets. This drive reached 50 people (elderly).")).toBeInTheDocument();
     expect(screen.queryByTestId("history-proof-pending")).toBeNull();
+  });
+
+  describe("proof published in History", () => {
+  const proof = { driveStatus: "FULFILLED", proofPublished: true, driveBeneficiariesReached: 50, proofQuantityDistributed: 10, proofDistributedOn: "2026-10-20",
+    proofLocation: "Pune", proofNote: "Handed out at the shelter", proofPhotoUrls: ["https://s.test/p1.jpg"] };
+
+  it("shows the proof block on the one entry, tagged proof published", async () => {
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "COMPLETED", proof)]);
+    await openHistory();
+    const entry = await screen.findByTestId("history-drive-offer-7");
+    expect(screen.getAllByTestId("history-drive-offer-7")).toHaveLength(1);
+    expect(entry).toHaveTextContent("Donated · proof published");
+    expect(entry).toHaveTextContent("Pune");
+    expect(entry).toHaveTextContent("Handed out at the shelter");
+    expect(within(entry).getAllByRole("button", { name: /photo/i }).length).toBeGreaterThan(0);
+  });
+
+  it("deep link opens History, scrolls to the entry and highlights it", async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    nav.search = "tab=history&offer=7";
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "COMPLETED", proof)]);
+    try {
+      render(<DashboardPage />);
+      await screen.findByTestId("history-drive-offer-7");
+      await waitFor(() => expect(document.getElementById("history-entry-d7")).toHaveAttribute("data-highlighted", "true"));
+      await waitFor(() => expect(scroll).toHaveBeenCalled());
+    } finally {
+      nav.search = "";
+    }
+  });
   });
 });
 

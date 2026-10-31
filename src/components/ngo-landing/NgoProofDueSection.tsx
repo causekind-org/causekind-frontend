@@ -38,11 +38,11 @@ export function NgoProofDueSection({ status }: { status: Pick<NgoStatusData, "is
         {failed ? (
           <p className="ngo-card text-sm text-stone-600 dark:text-stone-300" data-testid="ngo-proof-due-unavailable">We couldn&apos;t check proof due right now. Please refresh in a moment.</p>
         ) : drives && drives.length === 0 ? (
-          <div className="ngo-card flex flex-row items-center gap-4" data-testid="ngo-proof-due-empty">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#2F8F5B]/15 text-[#2F8F5B]"><CheckCircle2 className="h-6 w-6" aria-hidden /></span>
-            <div>
+          <div className="ngo-card" data-testid="ngo-proof-due-empty">
+            <div className="flex w-full flex-col items-center gap-3 text-center">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#2F8F5B]/15 text-[#2F8F5B]"><CheckCircle2 className="h-6 w-6" aria-hidden /></span>
               <h3 className="ngo-heading text-xl text-stone-900 dark:text-stone-100">All caught up: no proof due</h3>
-              <p className="text-sm text-stone-600 dark:text-stone-300">When a drive receives items, it shows here until you share distribution proof.</p>
+              <p className="max-w-md text-sm text-stone-600 dark:text-stone-300">When a drive receives items, it shows here until you share distribution proof.</p>
             </div>
           </div>
         ) : !drives ? (

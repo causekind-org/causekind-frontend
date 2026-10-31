@@ -3,7 +3,6 @@
 import { Suspense, lazy } from "react";
 import Link from "next/link";
 import { useNgoStatus } from "./useNgoStatus";
-import { NgoVerifiedWelcomeModal } from "./NgoVerifiedBadgeMoment";
 import "./ngo-redesign.css";
 
 const PostApprovalLanding = lazy(() => import("./PostApprovalLanding"));
@@ -30,7 +29,6 @@ function NgoLandingViewContent() {
 
   return (
     <div className="ck-ngo-landing-page ngo-theme-wrapper min-h-screen transition-colors duration-300">
-      <NgoVerifiedWelcomeModal />
 
       {error ? (
         <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center" role="alert">

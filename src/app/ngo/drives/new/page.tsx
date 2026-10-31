@@ -853,7 +853,8 @@ const [altContact, setAltContact] = useState("");
     }
   }
 
-  function validateStep(s: NgoDriveStep): boolean {
+  /** Everything still wrong on a step (pure: nothing is shown until a field is left or Next runs). */
+  function stepErrors(s: NgoDriveStep): Record<string, string> {
     const e: Record<string, string> = {};
     if (s === "drive-location") {
       if (!driveLoc.countryIso) e.countryIso = ui("Choose the country");
@@ -923,9 +924,54 @@ const [altContact, setAltContact] = useState("");
         if (!/^https?:\/\/.+/i.test(pastWorkUrl.trim())) e.pastWorkUrl = ui("Past work link must be a valid http or https URL");
       }
     }
+    return e;
+  }
+
+  function validateStep(s: NgoDriveStep): boolean {
+    const e = stepErrors(s);
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   }
+
+  // The step's button stays grey until this is empty. Errors appear per field: when it is left, then follow its value.
+  const liveErrors = stepErrors(step);
+  const liveErrorsKey = JSON.stringify(liveErrors);
+  const leftFields = useRef(new Set<string>());
+  useEffect(() => { leftFields.current.clear(); }, [step]);
+  useEffect(() => {
+    const live = JSON.parse(liveErrorsKey) as Record<string, string>;
+    setFieldErrors((prev) => {
+      let next = prev;
+      for (const k of new Set([...leftFields.current, ...Object.keys(prev).filter((x) => prev[x])])) {
+        if (!leftFields.current.has(k) && !(k in live) && !isLiveField.current.has(k)) continue;
+        const v = live[k] ?? "";
+        if ((prev[k] ?? "") !== v) next = { ...next, [k]: v };
+      }
+      return next;
+    });
+    Object.keys(live).forEach((k) => isLiveField.current.add(k));
+  }, [liveErrorsKey]);
+  // Keys this form validates itself (a server-sent error on any other key stays until the next submit).
+  const isLiveField = useRef(new Set<string>());
+
+  function handleFieldLeft(ev: React.FocusEvent<HTMLElement>) {
+    const t = ev.target as HTMLInputElement;
+    const key = t.name || t.id;
+    if (!key) return;
+    leftFields.current.add(key);
+    const message = liveErrors[key];
+    setFieldErrors((prev) => ((prev[key] ?? "") === (message ?? "") ? prev : { ...prev, [key]: message ?? "" }));
+  }
+
+  const stepIsValid = Object.keys(liveErrors).length === 0;
+  const allStepsValid = NGO_DRIVE_STEPS.filter((s) => !editParam || s !== "drive-location").every((s) => Object.keys(stepErrors(s)).length === 0);
+  const incompleteHint = (
+    <p id="step-incomplete-hint" data-testid="step-incomplete-hint" className="basis-full text-right text-2xs text-slate-500 dark:text-slate-400">
+      <UiText>Complete the required fields to continue.</UiText> {Object.values(liveErrors)[0] ?? ""}
+    </p>
+  );
+  const GREEN = "bg-ngo-700 text-white hover:bg-ngo-800";
+  const GREY = "cursor-not-allowed bg-slate-300 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300";
 
   async function handleNext() {
     if (step === "drive-location" && locationStepRef.current && !(await locationStepRef.current.flush())) return;
@@ -2120,7 +2166,7 @@ const [altContact, setAltContact] = useState("");
 
           <StepCardStack depth={ngoStepIndex(step as NgoDriveStep)}>
             <AnimatePresence mode="wait" initial={false} custom={direction}>
-              <motion.section key={step} custom={direction} variants={cardVariants(reduced)} initial="enter" animate="center" exit="exit" className="ck-wizard-step-card rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <motion.section onBlur={handleFieldLeft} key={step} custom={direction} variants={cardVariants(reduced)} initial="enter" animate="center" exit="exit" className="ck-wizard-step-card rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="ck-wizard-step-card-content outline-none" tabIndex={-1}>
                   <h2 ref={headingRef} className="text-lg font-bold text-stone-900 sm:text-xl dark:text-stone-100" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
                     {STEP_LABELS[step as NgoDriveStep]}
@@ -2179,14 +2225,16 @@ const [altContact, setAltContact] = useState("");
               <button type="button" onClick={() => void saveDraft()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {saveStatus === "saving" ? ui("Saving…") : ui("Save Draft")}
               </button>
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-ngo-700 px-5 text-xs font-bold text-white transition-colors hover:bg-ngo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed">{df("continueToStep", { n: step === "drive-location" ? 2 : 3 })} →</button>
+              <button type="button" onClick={() => { if (stepIsValid) void handleNext(); }} aria-disabled={!stepIsValid} aria-describedby={stepIsValid ? undefined : "step-incomplete-hint"} disabled={submitting || saveStatus === "saving"} className={`min-h-11 rounded-lg px-5 text-xs font-bold transition-colors ${stepIsValid ? GREEN : GREY} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed`}>{df("continueToStep", { n: step === "drive-location" ? 2 : 3 })} →</button>
+              {!stepIsValid && incompleteHint}
             </div>
           </div>
         ) : step === "beneficiaries-handover" ? (
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
             <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden /><UiText>Back to Step 2</UiText></button>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving" || Boolean(hoursProblem)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{saveStatus === "saving" ? ui("Saving…") : ui("Save & Continue")}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => { if (stepIsValid) void handleNext(); }} aria-disabled={!stepIsValid} aria-describedby={stepIsValid ? undefined : "step-incomplete-hint"} disabled={submitting || saveStatus === "saving"} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed ${stepIsValid ? GREEN : GREY}`}>{saveStatus === "saving" ? ui("Saving…") : ui("Save & Continue")}<ArrowRight className="size-4" aria-hidden /></button>
+              {!stepIsValid && incompleteHint}
             </div>
           </div>
         ) : (
@@ -2198,7 +2246,7 @@ const [altContact, setAltContact] = useState("");
                  <UiText>Preview donor page</UiText>
                </button>
                <button type="button" onClick={() => void handleSaveExit()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><UiText>Save & exit</UiText></button>
-               <button type="button" onClick={() => void handleSubmit()} disabled={submitting || !allDeclarationsChecked} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{submitting ? ui("Submitting…") : ui("Submit for verification")}</button>
+               <button type="button" onClick={() => { if (allDeclarationsChecked && allStepsValid) void handleSubmit(); }} aria-disabled={!(allDeclarationsChecked && allStepsValid)} disabled={submitting} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed ${allDeclarationsChecked && allStepsValid ? GREEN : GREY}`}>{submitting ? ui("Submitting…") : ui("Submit for verification")}</button>
              </div>
           </div>
         )}
