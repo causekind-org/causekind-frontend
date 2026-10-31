@@ -49,12 +49,13 @@
     --ck-home-soft: #4a1c2a;
   }
 
-  /* Over the hero the header is clear: the dark wordmark was lost on the video. */
-  body:has(.ck-home-page) header[data-home-hero="top"] .ck-mobile-header > a {
-    padding: 0.2rem 0.7rem;
-    border-radius: 999px;
-    background: var(--dw-white);
-    box-shadow: 0 0 0 1px var(--dw-gold), 0 4px 18px rgb(244 163 64 / 0.3);
+  /* Over the hero the logo sits directly on the video, so the wordmark goes light. */
+  body:has(.ck-home-page) header[data-home-hero="top"] .ck-dlogo-cause {
+    color: var(--dw-white);
+    text-shadow: 0 1px 4px rgb(0 0 0 / 0.6);
+  }
+  body:has(.ck-home-page) header[data-home-hero="top"] .ck-mobile-header .ck-logo-kind-shimmer {
+    background-image: linear-gradient(90deg, #f4a340 0%, #f4a340 25%, #fff3c4 52%, #f4a340 75%, #f4a340 100%);
   }
 
   /* ── Hero ── */
@@ -383,7 +384,6 @@
 }
 
 @media (max-width: 767.98px) {
-  .dark body:has(.ck-home-page) header[data-home-hero="top"] .ck-mobile-header > a { background: var(--dw-night); }
   .dark .ck-home-page #about-causekind a { color: var(--dw-white); }
   .dark .ck-home-page #about-causekind p span { color: var(--dw-saffron); }
 

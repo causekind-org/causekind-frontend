@@ -9,6 +9,7 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
 import Link from "@/components/AppLink";
+import { DiwaliLogo } from "@/components/brand/DiwaliLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
@@ -74,6 +75,17 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
+
+  // The diya sits with the heart, so the Diwali logo keeps its icon on mobile
+  // too, whatever `hideIcon` asked for.
+  if (!rakshaBandhan) {
+    return (
+      <span className="flex items-center" aria-label="CauseKind">
+        <DiwaliLogo />
+      </span>
+    );
+  }
+
   return (
     <motion.span
       className={`font-extrabold tracking-tight ${sizes[size]} flex items-center gap-2`}
