@@ -287,7 +287,7 @@
   .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-hang { top: 71%; width: 44px; height: 88px; }
   .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-hang-left { left: calc(5% - 19px); }
   .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-hang-right { right: calc(5% - 19px); }
-  .ck-dw-web .ck-dw-campaigns > .ck-dw-hang { top: 0; right: 4%; width: 50px; height: 130px; background-image: url("/images/diwali/lantern-oval.webp"); }
+  .ck-dw-web .ck-dw-campaigns > .ck-dw-hang { top: 0; right: 0.25rem; width: 44px; height: 116px; background-image: url("/images/diwali/lantern-oval.webp"); }
 
   /* The lanterns from the asset sheet; each seam names its own. */
   .ck-dw-web .ck-dw-hang-web { display: block; }

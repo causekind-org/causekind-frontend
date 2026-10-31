@@ -377,3 +377,7 @@ Pre-existing state recorded by the audit (uncommitted on branch
 ## 2026-10-31 — Fundraisers: gliding row
 
 - `DiwaliCampaigns`: when the cards do not all fit, the row loops continuously by scrolling itself, pausing on hover, focus and touch, and after an arrow press. A second run of cards is `aria-hidden` and out of the tab order. Fits on screen, a single card, or reduced motion: no motion. The API returns every live fundraiser; staging had one on this date.
+
+## 2026-10-31 — Fundraiser cards: constant shape
+
+- Photo fills a fixed frame whatever its size; chip, title and organiser keep fixed rows, Donate sits at the foot.

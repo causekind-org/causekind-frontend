@@ -43,7 +43,7 @@ function Card({ card, copy = false }: { card: FundraiserCard; copy?: boolean }) 
           {card.location && <> · <TranslatedText text={card.location} /></>}
         </span>
         <span className="ck-dw-c-name">{card.title && <TranslatedText text={card.title} />}</span>
-        {card.organiser && <span className="ck-dw-c-by"><LandingText>By </LandingText>{card.organiser}</span>}
+        <span className="ck-dw-c-by">{card.organiser && <><LandingText>By </LandingText>{card.organiser}</>}</span>
         <span className="ck-dw-c-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
           <span style={{ width: `${pct}%` }} />
         </span>

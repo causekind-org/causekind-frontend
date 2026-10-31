@@ -455,3 +455,18 @@
   .ck-dw-lotus { width: 78px; height: 50px; background: url("/images/diwali/lotus-pink.webp") center bottom / contain no-repeat; }
   .ck-dw-lotus-gold { width: 50px; height: 36px; background-image: url("/images/diwali/lotus-gold.webp"); opacity: 0.9; }
 }
+
+/* Every fundraiser card the same shape, whatever its photo's size: the photo fills
+   a fixed frame, and each line of text keeps its row, with Donate at the foot. */
+@media (max-width: 767.98px), (min-width: 1024px) {
+  .ck-dw-c-row { align-items: stretch; }
+  .ck-dw-c-photo { overflow: hidden; }
+  .ck-dw-c-photo img { position: absolute; inset: 0; object-position: center 30%; }
+  .ck-dw-c-chip,
+  .ck-dw-c-by { min-height: 1.5em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .ck-dw-c-chip,
+  .ck-dw-c-by { flex: none; display: block; }
+  .ck-dw-c-name { flex: none; min-height: 2.5em; }
+  .ck-dw-c-empty .ck-dw-c-name { min-height: 0; }
+  .ck-dw-c-cta { margin-top: auto; }
+}
