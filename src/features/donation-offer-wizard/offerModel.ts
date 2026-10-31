@@ -439,7 +439,17 @@ export function firstIncompleteOfferStep(
   if (opts?.location && (model.latitude == null || model.longitude == null || !model.pickupCity.trim())) return "location";
 
   if (purchase) {
-    if (!model.fulfilmentMethod || !model.purchaseTimeline) return "purchasePlan";
+    if (
+      !model.fulfilmentMethod ||
+      !model.purchaseTimeline ||
+      !model.productUrl.trim() ||
+      !model.proposedBrand.trim() ||
+      !model.proposedModel.trim() ||
+      !model.estimatedCost.trim() ||
+      !model.intendedStore.trim()
+    ) {
+      return "purchasePlan";
+    }
   } else if (uploadedOfferPhotos(model.photos).length < MIN_OFFER_PHOTOS) {
     return "photos";
   }

@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 import { HeroSection } from "@/components/home/HeroSection";
+import { DiwaliCampaigns } from "@/components/home/DiwaliCampaigns";
+import { DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
@@ -40,20 +42,34 @@ export function RoleHome({
   return (
     <div className={`ck-role-desktop-${role} relative z-10 w-full`}>
       <HeroSection />
+      <DiwaliCampaigns />
+      <DiwaliSeam kind="edge" from="butter" to="crimson" />
+      <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
       {/* The main page's About (flip cards), in the default donor colours. */}
       <WhoAreWeDesktop />
+      <DiwaliSeam kind="diya" diyas={3} />
+      <DiwaliSeam kind="line" />
       <SupportGallery />
+      <DiwaliSeam kind="line" webLanterns="right" art="oval" />
       <div className="ck-home-paper relative z-10">
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
       </div>
       <div className="ck-home-paper relative z-10">
         <NgoDrivesSection />
       </div>
+      <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
       <TrustSafetySection variant="desktop" />
+      <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
+      <DiwaliSeam kind="line" from="butter" webLanterns="both" art="kandil" />
       <FoundersNoteSection variant="desktop" />
-      <GoogleReviewsSection />
+      <DiwaliSeam kind="edge" from="butter" />
+      <div data-dw-panel>
+        <GoogleReviewsSection />
+      </div>
       <DonorTwoDoors />
       <CreditsSection />
+      <DiwaliSeam kind="edge" to="night" />
+      <DiwaliSeam kind="lotus" from="night" to="night" />
     </div>
   );
 }
@@ -69,24 +85,37 @@ function DoneeHome({ hero }: { hero?: React.ReactNode }) {
   return (
     <div className="ck-role-desktop-donee relative z-10 w-full">
       {hero ?? <HeroSection />}
+      <DiwaliSeam kind="edge" from="night" to="crimson" />
+      <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
       <WhoAreWeDesktop variant="donee" />
+      <DiwaliSeam kind="edge" to="butter" />
       <HowReceivingWorksSection />
+      <DiwaliSeam kind="edge" from="butter" />
       <MyRequestsSection />
+      <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
       <div className="hidden lg:block">
         <TrustSafetySection variant="desktop" tone="donee" seamless />
       </div>
       <div className="lg:hidden">
         <TrustSafetySection variant="mobile" tone="donee" seamless />
       </div>
+      <DiwaliSeam kind="edge" from="butter" />
       <HandoverTipsSection />
+      <DiwaliSeam kind="edge" to="butter" />
+      <DiwaliSeam kind="line" from="butter" webLanterns="both" art="kandil" />
       <div className="hidden lg:block">
         <FoundersNoteSection variant="desktop" tone="donee" seamless />
       </div>
       <div className="lg:hidden">
         <FoundersNoteSection variant="mobile" tone="donee" seamless />
       </div>
-      <GoogleReviewsSection />
+      <DiwaliSeam kind="edge" from="butter" />
+      <div data-dw-panel>
+        <GoogleReviewsSection />
+      </div>
       <CreditsSection variant="donee" />
+      <DiwaliSeam kind="edge" to="night" />
+      <DiwaliSeam kind="lotus" from="night" to="night" />
     </div>
   );
 }

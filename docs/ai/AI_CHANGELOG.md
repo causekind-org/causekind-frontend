@@ -314,3 +314,70 @@ Pre-existing state recorded by the audit (uncommitted on branch
 
 ### Status
 - Verified hydrated (use http://localhost:3000 — Next 16 dev blocks 127.0.0.1, so pages load un-hydrated there) at 1440x900 and 390x844: PC shows the redesign's About / How it works / Founder / Final CTA; phone shows this branch's; Google reviews on both; no page errors. Type-check clean.
+
+## 2026-10-31 — Diwali on phones: hero, fundraisers after it, arch frames between sections (< 768 only)
+
+### Files Changed
+- `src/components/home/diwaliMobile.css` (new) — all phone styling, below 768px and scoped to the home page.
+- `src/components/home/DiwaliMobileLayer.tsx` (new) — hero lights, lanterns, sparks; `DiwaliSeam` (wave, three diyas, mahal dome) between sections.
+- `src/components/home/DiwaliCampaigns.tsx` (new) — live fundraisers from `fundraisers.live()`, with an empty state; never fetched on wider screens.
+- `src/app/HomeClient.tsx` — mounts the above. `public/images/diwali/*` — SVG assets.
+
+### Important Decisions
+- Order on phones: hero, fundraisers, film. The fundraisers sit in HeroFilm's `hero` slot so they leave with the hero as the film's lead-in; film code unchanged. `.track1` gains 100svh in portrait to give back the scroll.
+- `diwaliassets/` is untracked and unused by the page now; illustrations cut from it were removed at the user's request.
+
+### Known Issues
+- The fundraising backend returns 404 locally, so real cards were not seen; layout was tested with a browser-only stub. Live cards also need `NEXT_PUBLIC_FUNDRAISING_ENABLED` for their links to work.
+
+## 2026-10-31 — Diwali on phones: lighter, varied section joins
+
+- Fundraisers moved to a light butter ground with plain rounded cards. Dark maroon ground and the repeated dome/three-diya seam removed.
+- `DiwaliSeam` now takes a `kind`: `line`, `edge`, `diya`, `arch-bulbs`, `arch-step`, `arch-swell`. Each arch is used once; Reviews to Credits has no separator.
+- `diwaliassets/` now holds three WhatsApp reference images; the earlier sheets are gone from that folder.
+
+## 2026-10-31 — Diwali on phones: more lanterns and diyas
+
+- Round paper lanterns (`lantern-round.svg`) hang from selected seams and the fundraisers; `DiwaliSeam` gains `lanterns` and `diyas`. Three-lamp clusters added after About and before the Founder note, five above the footer.
+
+## 2026-10-31 — Fundraisers on phones: arrows
+
+- `DiwaliCampaigns` gains previous/next arrows over the swipe row. On the last card, or when only one fundraiser is live, next links to `/fundraisers`.
+
+## 2026-10-31 — Fundraisers on phones: pager
+
+- Overlay arrows replaced by the Live needs pager (outlined arrows and dots below the row). Next no longer links away; "See all fundraisers" stays as the route to the full list.
+
+## 2026-10-31 — Diwali on desktop (>= 1024, guest home)
+
+- `src/components/home/diwaliDesktop.css` (new) carries the phone design to wide screens: night hero with the rangoli in a gold ring, lights and lanterns, butter fundraisers beside a left heading and pager, cream and butter grounds, wide arches (`public/images/diwali/wide-*`), crimson final CTA, night footer.
+- `HomeClient.tsx` adds seams to the desktop tree. Order is now hero, fundraisers, film on desktop too; `.track1` gains 80svh in landscape.
+- `diwaliMobile.css`: seam, lamp and fundraiser basics now also apply from 1024px, same rules in the same order. Tablets and signed-in donor and donee desktop homes unchanged.
+
+## 2026-10-31 — Diwali on desktop: light hero and asset-sheet lanterns
+
+- Hero ground light on desktop (night stays in dark mode). `--dw-hero*` tokens in `diwaliDesktop.css`.
+- Five lanterns cut from `diwaliassets/66fa2c8b-...png` to `public/images/diwali/lantern-{kandil,brass,brass2,hex,oval}.webp`; used on desktop only. `DiwaliSeam` gains `webLanterns` and `art`. Phones keep `lantern-round.svg`.
+
+## 2026-10-31 — Diwali on desktop: corrections
+
+- Hero back to the night ground. `DashedJourneyRoad` no longer rendered on the page (file kept): its marker showed through the seams.
+- Lanterns off Where does my support go, How it works, Reviews and Credits. Footer diyas replaced by lotuses (`lotus-pink.webp`, `lotus-gold.webp`, cut from the asset sheet).
+- How it works and Trust use maroon on every tab on desktop. Sign up and footer Donate are soft gold; Log in is a maroon outline. Line seams use height, not margin.
+
+## 2026-10-31 — Diwali when signed in
+
+- Desktop: `RoleHome` had no `--dw-*` tokens, so the hero's text and buttons were invisible. `.ck-dw-web` now scopes the desktop theme on guest, donor and donee homes; `RoleHome` has seams and, for donors, the fundraisers. The donee home takes the festival palette on desktop.
+- Phone and desktop: `DiwaliCampaigns` renders nothing for a donee. Phone: hero lantern moves clear of the header bell when signed in.
+
+## 2026-10-31 — Diwali on phones: asset-sheet lanterns and lotus footer
+
+- Phones use the desktop lanterns and lotuses, in the same sections as desktop: off How it works, added at the Founder's note. `lantern.svg` and `lantern-round.svg` removed.
+
+## 2026-10-31 — Fundraisers: gliding row
+
+- `DiwaliCampaigns`: when the cards do not all fit, the row loops continuously by scrolling itself, pausing on hover, focus and touch, and after an arrow press. A second run of cards is `aria-hidden` and out of the tab order. Fits on screen, a single card, or reduced motion: no motion. The API returns every live fundraiser; staging had one on this date.
+
+## 2026-10-31 — Fundraiser cards: constant shape
+
+- Photo fills a fixed frame whatever its size; chip, title and organiser keep fixed rows, Donate sits at the foot.

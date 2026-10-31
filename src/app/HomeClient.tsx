@@ -64,6 +64,8 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
+import { DiwaliMobileLayer, DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
+import { DiwaliCampaigns } from "@/components/home/DiwaliCampaigns";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
@@ -77,7 +79,6 @@ import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
 import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
-import { DashedJourneyRoad } from "@/components/home/DashedJourneyRoad";
 import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
@@ -279,6 +280,7 @@ export default function HomeClient({
   return (
     <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
       <div aria-hidden className="ck-home-grain" />
+      <DiwaliMobileLayer />
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -291,12 +293,14 @@ export default function HomeClient({
       <SmoothScroll />
       {/* SHARED / GUEST DESKTOP TREE */}
       {showGuestDesktopTree && (
-        <div className="ck-guest-desktop">
-          {/* Continuous dashed road across whole desktop page */}
-          <DashedJourneyRoad />
+        <div className="ck-guest-desktop ck-dw-web">
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
-      {FEATURES.cinematicLanding ? <HeroFilm hero={<HeroComponent />} destinationRef={afterFilmRef} /> : <HeroComponent />}
+      {/* Live fundraisers follow the hero and leave with it, then the film. */}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><DiwaliCampaigns /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><DiwaliCampaigns /></>}
+
+      <DiwaliSeam kind="edge" from="film" to="crimson" />
+      <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
 
       {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit). Also the film's skip target. */}
       <section id="who-we-are" ref={afterFilmRef} tabIndex={-1} aria-label={whoWeAreLabel} className="outline-none">
@@ -308,14 +312,18 @@ export default function HomeClient({
         </div>
       </section>
 
+      <DiwaliSeam kind="diya" diyas={3} />
+      <DiwaliSeam kind="line" />
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
       <div className="hidden lg:block">
+        <DiwaliSeam kind="edge" to="butter" />
         <HowItWorksDesktop />
       </div>
       {!isRoleHome && (
         <div className="lg:hidden">
+          <DiwaliSeam kind="edge" to="butter" />
           <HowItWorksSection />
         </div>
       )}
@@ -323,6 +331,7 @@ export default function HomeClient({
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       {showLiveNeeds && (
         <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
+          <DiwaliSeam kind="edge" from="butter" lanterns="right" art="oval" />
           <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
           <NgoDrivesSection />
         </div>
@@ -330,15 +339,19 @@ export default function HomeClient({
 
       {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
       <div className="hidden lg:block">
+        <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
         <TrustSafetySection variant="desktop" />
       </div>
 
       {/* FOUNDER'S NOTE (Desktop) */}
       <div className="hidden lg:block">
+        <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
+        <DiwaliSeam kind="line" from="butter" webLanterns="both" art="kandil" />
         <FoundersNoteSection variant="desktop" />
       </div>
 
-      <div className="hidden lg:block">
+      <div className="hidden lg:block" data-dw-panel>
+        <DiwaliSeam kind="edge" from="butter" />
         <GoogleReviewsSection />
       </div>
 
@@ -461,14 +474,17 @@ export default function HomeClient({
         <CreditsSection />
 
         {/* SECTION 9 — FINAL CTA */}
+        <DiwaliSeam kind="arch-swell" to="crimson" lanterns="both" />
         {!isRestoring && <FinalCtaComponent variant="desktop" card={!isGuest} />}
+        <DiwaliSeam kind="edge" from="crimson" to="night" />
+        <DiwaliSeam kind="lotus" from="night" to="night" />
       </div>
       </div>
       )}
 
       {/* ROLE HOME FOR DESKTOP */}
       {isDonorOrDonee && !isRestoring && isDesktop && (
-        <div className="max-lg:hidden w-full">
+        <div className="ck-dw-web max-lg:hidden w-full">
           <RoleHome 
             role={roleStr?.toLowerCase() as "donor" | "donee"} 
             initialPublicRequests={initialPublicRequests} 
@@ -534,6 +550,7 @@ export default function HomeClient({
         )}
 
         {/* SECTION 6 — LIVE NEEDS */}
+        {showLiveNeeds && (isRoleHome ? <DiwaliSeam kind="line" lanterns="right" art="oval" /> : <DiwaliSeam kind="edge" from="butter" lanterns="right" art="oval" />)}
         {showLiveNeeds && (
           <div className="space-y-8">
             <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
@@ -542,16 +559,20 @@ export default function HomeClient({
         )}
 
         {/* SECTION 5 — CAN I TRUST YOU */}
+        <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
         <div className="-mx-5">
           <TrustSafetySection variant="mobile" seamless={isDoneeHome} />
         </div>
 
         {/* FOUNDER'S NOTE */}
+        <DiwaliSeam kind="line" from="butter" lanterns="both" art="kandil" />
+        <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
         <div className="-mx-5">
           <FoundersNoteSection variant="mobile" seamless={isDoneeHome} />
         </div>
 
-        <div className="-mx-5">
+        <DiwaliSeam kind="edge" from="butter" />
+        <div className="-mx-5" data-dw-panel>
           <GoogleReviewsSection />
         </div>
 
@@ -633,11 +654,14 @@ export default function HomeClient({
         </div>
 
         {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
+        {!isRoleHome && <DiwaliSeam kind="arch-swell" to="crimson" lanterns="both" />}
         {!isRoleHome && (
           <div className="-mx-5">
             {!isRestoring && <FinalCtaComponent variant="mobile" card={!isGuest} />}
           </div>
         )}
+        <DiwaliSeam kind="edge" from={isRoleHome ? "cream" : "crimson"} to="night" />
+        <DiwaliSeam kind="lotus" from="night" to="night" />
 
       </div>
     </div>

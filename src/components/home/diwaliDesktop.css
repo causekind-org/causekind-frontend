@@ -1,0 +1,397 @@
+/* ── Diwali on desktop, every home page tree ──────────────────────────────────
+   The phone design (diwaliMobile.css) carried to wide screens: the same grounds,
+   seams and lamps, with arches redrawn wide. Everything sits at 1024px and up and
+   under .ck-dw-web (guest, donor and donee homes), so phones, tablets, the NGO
+   home and other routes are untouched. Unlayered, so it outranks the Tailwind utilities. */
+@media (min-width: 1024px) {
+  body:has(.ck-dw-web) {
+    --dw-maroon: #720d2d;
+    --dw-burgundy: #8e123c;
+    --dw-night: #3a0716;
+    --dw-saffron: #f4a340;
+    --dw-gold: #d9a441;
+    --dw-white: #fffaf1;
+    --dw-peach: #f9dfc0;
+    --dw-cream: #fff6e3;
+    --dw-butter: #fbe8c2;
+    --dw-card: #fffdf7;
+    --dw-crimson: #a31a44;
+    --dw-film: #faf8f5;
+    --dw-heading: #720d2d;
+    --dw-line: rgb(217 164 65 / 0.6);
+    --dw-hero: #3a0716;
+    --dw-hero-ink: #fffaf1;
+    --dw-hero-accent: #f4a340;
+    --dw-hero-text: rgb(255 250 241 / 0.82);
+    --dw-hero-chip: rgb(114 13 45 / 0.72);
+    --dw-hero-chip-ink: #f9dfc0;
+    --dw-gold-soft: #f2c66d;
+
+    --ck-home-accent: #8e123c;
+    --ck-home-ink: #720d2d;
+    --ck-home-hover: #720d2d;
+    --ck-home-deep: #3a0716;
+    --ck-home-highlight: #f4a340;
+    --ck-home-soft: #f9dfc0;
+    --ck-home-surface: #fff6e3;
+    --ck-home-shadow-rgb: 114, 13, 45;
+    --ck-role-accent: #8e123c;
+    --ck-role-hover: #720d2d;
+    --ck-role-highlight: #f4a340;
+  }
+  .dark body:has(.ck-dw-web) {
+    --dw-cream: #220d14;
+    --dw-butter: #2c1219;
+    --dw-card: #2d131c;
+    --dw-heading: #f9dfc0;
+    --dw-film: #0e0c0a;
+    --ck-home-ink: #f4a340;
+    --ck-home-surface: #2d131c;
+    --ck-home-soft: #4a1c2a;
+  }
+
+  /* The donee home's blue gives way to the festival palette for the season. */
+  .ck-dw-web [data-ck-role-theme="donee"] {
+    --ck-role-accent: #8e123c;
+    --ck-role-hover: #720d2d;
+    --ck-role-deep: #3a0716;
+    --ck-role-highlight: #f4a340;
+    --ck-role-soft: #fbe8c2;
+    --ck-role-border: rgb(217 164 65 / 0.6);
+    --ck-role-shadow-rgb: 114, 13, 45;
+    --ck-home-accent: #8e123c;
+    --ck-home-ink: #720d2d;
+    --ck-home-hover: #720d2d;
+    --ck-home-soft: #f9dfc0;
+    --ck-home-surface: #fff6e3;
+    --ck-home-shadow-rgb: 114, 13, 45;
+  }
+
+  /* ── Hero: the night ground, the rangoli in a gold ring ── */
+  .ck-showcase-hero.ck-hero-diwali { background: var(--dw-hero); }
+  .ck-hero-diwali .ck-lead-hero-stage,
+  .dark .ck-hero-diwali .ck-lead-hero-stage { background: transparent; }
+  .ck-hero-diwali .ck-diwali-box {
+    mask-image: radial-gradient(circle calc(var(--ck-diwali-h) * 16 / 9 * 0.35) at 84.7% 47.3%, #000 98%, transparent 100%);
+    mask-composite: add;
+  }
+  .ck-hero-diwali .ck-diwali-media::after {
+    content: "";
+    position: absolute;
+    top: calc(var(--ck-diwali-h) * -0.149);
+    right: calc(var(--ck-diwali-h) * -0.35);
+    width: calc(var(--ck-diwali-h) * 1.244);
+    height: calc(var(--ck-diwali-h) * 1.244);
+    border: 2px solid var(--dw-gold);
+    border-radius: 50%;
+    box-shadow: 0 0 0 10px rgb(217 164 65 / 0.12), 0 0 90px rgb(244 163 64 / 0.4);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-eyebrow {
+    color: var(--dw-hero-chip-ink);
+    background: var(--dw-hero-chip);
+    --tw-ring-color: var(--dw-gold);
+    box-shadow: 0 0 0 1px var(--dw-gold);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-headline {
+    font-family: var(--font-source-serif-4), Georgia, serif;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: var(--dw-hero-ink);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-headline-accent {
+    color: var(--dw-hero-accent);
+    font-style: italic;
+    font-weight: 600;
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-subtext { color: var(--dw-hero-text); }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-primary-cta {
+    background: var(--dw-gold-soft);
+    color: var(--dw-night);
+    box-shadow: 0 10px 28px rgb(242 198 109 / 0.28);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-primary-cta:hover { background: #f6d48a; }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-secondary-cta {
+    color: var(--dw-hero-ink);
+    box-shadow: inset 0 0 0 1.5px var(--dw-gold);
+  }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-secondary-cta:hover { background: rgb(217 164 65 / 0.14); }
+  .ck-showcase-hero.ck-hero-diwali .ck-hero-donate-cta {
+    --ck-donate-acc: var(--dw-burgundy);
+    --ck-donate-hov: var(--dw-maroon);
+    --ck-donate-hi: var(--dw-saffron);
+  }
+
+  /* The trust band sits on the night ground, below the category strip. */
+  .ck-hero-diwali .ck-hero-trust-rail :is(p, h3, span, strong) { color: var(--dw-white); }
+  .ck-hero-diwali .ck-hero-trust-rail :is(p, span):not(:first-child) { color: var(--dw-peach); }
+  .ck-hero-diwali .ck-hero-trust-rail svg { color: var(--dw-maroon); }
+
+  /* Lights, lanterns and sparks over the hero. */
+  .ck-home-page:has(.ck-dw-web) .ck-dw-layer {
+    display: block;
+    position: absolute;
+    /* The hero runs up under the sticky header; the strings start at its edge. */
+    top: max(var(--ck-nav-h, 0px), 5.5rem);
+    left: 0;
+    z-index: 30;
+    width: 100%;
+    height: 72svh;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .ck-dw-layer[data-paused] * { animation-play-state: paused; }
+  .ck-dw-lights,
+  .ck-dw-lights::after {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 64px;
+    background: url("/images/diwali/fairy-lights.svg") left top / 156px 55px repeat-x;
+  }
+  .ck-dw-lights::after {
+    content: "";
+    inset: 0;
+    background-image: url("/images/diwali/fairy-lights-glow.svg");
+    animation: ck-dw-glow 2.2s ease-in-out infinite alternate;
+  }
+  .ck-dw-lantern,
+  .ck-dw-lantern-d {
+    display: block;
+    position: absolute;
+    top: 0;
+    width: 56px;
+    height: 140px;
+    background: url("/images/diwali/lantern-hex.webp") center top / contain no-repeat;
+    transform-origin: 50% 0;
+    animation: ck-dw-sway 4.6s ease-in-out infinite alternate;
+  }
+  .ck-dw-lantern-left { left: 3%; width: 66px; height: 160px; }
+  .ck-dw-lantern-right { left: 38%; width: 58px; height: 140px; animation-duration: 5.7s; animation-delay: -2s; }
+  .ck-dw-lantern-d { left: 21%; width: 58px; height: 140px; animation-duration: 5.1s; animation-delay: -3.3s; }
+  .ck-dw-spark {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    background: url("/images/diwali/spark.svg") center / contain no-repeat;
+    animation: ck-dw-twinkle 3.4s ease-in-out infinite;
+  }
+
+  /* ── Grounds ── */
+  .ck-home-page:has(.ck-dw-web),
+  .ck-dw-web .ck-home-paper { background-color: var(--dw-cream); }
+  .ck-dw-web :is(#about-causekind, #where-support-goes, #live-needs-section, section[aria-labelledby="credits-heading"], [data-dw-panel] > section) { background-color: var(--dw-cream); }
+  .ck-dw-web :is(#how-it-works, #how-receiving-works, #trust, #founders-note) { background-color: var(--dw-butter); }
+  .ck-dw-web :is(#my-requests, #handover-tips, section[aria-labelledby="donor-two-doors-title"]) { background-color: var(--dw-cream); }
+  .ck-dw-web :is(#about-causekind, #trust, #join) { min-height: 0; }
+  .ck-dw-web #about-causekind { padding-block: 1rem 4rem; }
+  .ck-dw-web #trust { padding-block: 1rem 4.5rem; }
+  .ck-dw-web .ck-home-paper > .ck-dw-seam + * { margin-top: 0; }
+  .ck-dw-web :is(#about-causekind, #how-it-works, #live-needs-section, #trust, #founders-note, [data-dw-panel] > section) :is(h2, h2 *):not([class*="text-[var(--ck-home"], [class*="bg-[var(--ck-role"] *) { color: var(--dw-heading); }
+  .ck-dw-web #where-support-goes h2 :is(em, i) { color: var(--dw-burgundy); }
+
+  /* The orange hardcoded in the sections' classes and role tabs. */
+  .ck-dw-web [class*="text-[#B5480F]"] { color: var(--ck-home-ink); }
+  .ck-dw-web [class*="bg-[#B5480F]"]:not([class*="bg-[#B5480F]/"]),
+  .ck-dw-web [style*="background-color: rgb(181, 72, 15)"],
+  .ck-dw-web #how-it-works [style*="background-color: rgb(181, 72, 15)"] { background-color: var(--dw-burgundy) !important; }
+  .ck-dw-web [class*="border-[#B5480F]"] { border-color: var(--dw-burgundy); }
+
+  /* The steps and trust sections carry one colour on every tab, not a role colour each. */
+  .ck-dw-web #how-it-works {
+    --role-color: var(--dw-burgundy) !important;
+    --role-hover: var(--dw-maroon) !important;
+    --role-bg-soft: var(--dw-peach) !important;
+    --role-border: var(--dw-line) !important;
+  }
+  .ck-dw-web :is(#how-it-works, #trust) [style*="background-color: rgb(181, 72, 15)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style*="background-color: rgb(30, 58, 96)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style*="background-color: rgb(31, 107, 63)"] { background-color: var(--dw-burgundy) !important; }
+  .ck-dw-web :is(#how-it-works, #trust) [style*="background-color: rgb(251, 237, 227)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style*="background-color: rgb(235, 242, 250)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style*="background-color: rgb(229, 241, 233)"] { background-color: #fbe8c2 !important; }
+  .ck-dw-web :is(#how-it-works, #trust) [style^="color: rgb(181, 72, 15)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style*="; color: rgb(181, 72, 15)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style^="color: rgb(30, 58, 96)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style*="; color: rgb(30, 58, 96)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style^="color: rgb(31, 107, 63)"],
+  .ck-dw-web :is(#how-it-works, #trust) [style*="; color: rgb(31, 107, 63)"] { color: var(--dw-maroon) !important; }
+  .ck-dw-web :is(#how-it-works, #trust) :is([class*="text-[#1e3a60]"], [class*="text-[#1E3A60]"], [class*="text-[#1F6B3F]"]) { color: var(--dw-maroon); }
+  .ck-dw-web #how-it-works a[href*="register"],
+  .ck-dw-web #how-it-works a[href*="register"] > :first-child { background-color: var(--dw-burgundy) !important; }
+  .ck-dw-web #how-it-works [role="tab"] { color: inherit; }
+  .ck-dw-web #how-it-works [role="tab"][aria-selected="true"] { color: var(--dw-white); }
+
+  /* The About statement panel: maroon, gold-edged. */
+  .ck-dw-web #about-causekind [class*="bg-[var(--ck-role-accent"][class*="rounded-[28px]"] {
+    box-shadow: 0 0 0 1px var(--dw-gold), 0 0 0 7px rgb(217 164 65 / 0.14), 0 30px 60px -36px rgb(114 13 45 / 0.7);
+  }
+
+  /* Cards share one warm edge. */
+  .ck-dw-web #live-needs-section [role="region"] > *,
+  .ck-dw-web #live-needs-section .ck-live-needs-footer-gap {
+    background-color: var(--dw-card);
+    border: 1px solid var(--dw-line);
+    box-shadow: 0 16px 34px -24px rgb(114 13 45 / 0.5);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .ck-dw-web #live-needs-section [role="region"] > *:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 40px -22px rgb(114 13 45 / 0.6);
+  }
+  .ck-dw-web #live-needs-section [role="region"] h3 { color: var(--dw-heading); }
+
+  /* ── Seams, wide ── */
+  /* Height, not margin: a margin showed the page's cream either side of the wave. */
+  .ck-dw-web .ck-dw-seam-line { height: 44px; margin-block: 0; }
+  .ck-dw-web .ck-dw-seam-line::before { background-size: 28px 20px; }
+  .ck-dw-web .ck-dw-seam-edge { height: 15px; }
+  .ck-dw-web .ck-dw-seam-edge::before { -webkit-mask-size: 28px 15px; mask-size: 28px 15px; }
+  .ck-dw-web .ck-dw-seam-edge::after { background-size: 28px 15px; }
+  .ck-dw-web .ck-dw-seam-arch-bulbs { aspect-ratio: 1440 / 150; }
+  .ck-dw-web .ck-dw-seam-arch-bulbs::before {
+    -webkit-mask-image: url("/images/diwali/wide-bulbs-mask.svg");
+    mask-image: url("/images/diwali/wide-bulbs-mask.svg");
+  }
+  .ck-dw-web .ck-dw-seam-arch-bulbs::after { background: url("/images/diwali/wide-bulbs.svg") center / 100% 100% no-repeat; }
+  .ck-dw-web .ck-dw-seam-arch-step { aspect-ratio: 1440 / 130; }
+  .ck-dw-web .ck-dw-seam-arch-step::before {
+    -webkit-mask-image: url("/images/diwali/wide-step-mask.svg");
+    mask-image: url("/images/diwali/wide-step-mask.svg");
+  }
+  .ck-dw-web .ck-dw-seam-arch-step::after { background-image: url("/images/diwali/wide-step-line.svg"); }
+  .ck-dw-web .ck-dw-seam-arch-swell { aspect-ratio: 1440 / 110; margin-top: 2.5rem; }
+  .ck-dw-web .ck-dw-seam-arch-swell::before {
+    -webkit-mask-image: url("/images/diwali/wide-swell-mask.svg");
+    mask-image: url("/images/diwali/wide-swell-mask.svg");
+  }
+  .ck-dw-web .ck-dw-seam-arch-swell::after { background-image: url("/images/diwali/wide-swell-line.svg"); }
+  .ck-dw-web .ck-dw-seam-diya { gap: 1.75rem; padding-block: 2.75rem 0.75rem; }
+  .ck-dw-web .ck-dw-seam-diya .ck-dw-diya { width: 40px; height: 21px; }
+  .ck-dw-web .ck-dw-seam-diya .ck-dw-diya::after { width: 13px; height: 22px; margin-left: -6.5px; }
+  .ck-dw-web .ck-dw-seam-diya .ck-dw-diya:nth-child(3n + 2) { width: 58px; height: 30px; }
+  .ck-dw-web .ck-dw-seam-diya .ck-dw-diya:nth-child(3n + 2)::after { width: 17px; height: 29px; margin-left: -8.5px; }
+  .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-diya { top: -24px; margin-left: -29px; width: 58px; height: 30px; }
+  .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-diya::after { width: 17px; height: 29px; margin-left: -8.5px; }
+
+  /* Lanterns: bigger, further in, and tied to each arch's outline. */
+  .ck-dw-web .ck-dw-hang { width: 52px; height: 104px; }
+  .ck-dw-web .ck-dw-hang-left { left: 5%; }
+  .ck-dw-web .ck-dw-hang-right { right: 5%; }
+  .ck-dw-web .ck-dw-seam-edge .ck-dw-hang { width: 40px; height: 80px; }
+  .ck-dw-web .ck-dw-seam-edge .ck-dw-hang-left { left: 3%; }
+  .ck-dw-web .ck-dw-seam-edge .ck-dw-hang-right { right: 3%; }
+  .ck-dw-web .ck-dw-seam-arch-bulbs .ck-dw-hang { top: 0; width: 44px; height: 88px; }
+  .ck-dw-web .ck-dw-seam-arch-bulbs .ck-dw-hang-right { right: 12%; }
+  .ck-dw-web .ck-dw-seam-arch-step .ck-dw-hang { top: 57%; width: 44px; height: 88px; }
+  .ck-dw-web .ck-dw-seam-arch-step .ck-dw-hang-left { left: calc(14% - 22px); }
+  .ck-dw-web .ck-dw-seam-arch-step .ck-dw-hang-right { right: calc(14% - 22px); }
+  .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-hang { top: 71%; width: 44px; height: 88px; }
+  .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-hang-left { left: calc(5% - 19px); }
+  .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-hang-right { right: calc(5% - 19px); }
+  .ck-dw-web .ck-dw-campaigns > .ck-dw-hang { top: 0; right: 0.25rem; width: 44px; height: 116px; background-image: url("/images/diwali/lantern-oval.webp"); }
+
+  /* The lanterns from the asset sheet; each seam names its own. */
+  .ck-dw-web .ck-dw-hang-web { display: block; }
+  .ck-dw-web .ck-dw-seam .ck-dw-hang { background-image: url("/images/diwali/lantern-brass.webp"); }
+  .ck-dw-web .ck-dw-seam .ck-dw-hang-right { background-image: url("/images/diwali/lantern-brass2.webp"); }
+  .ck-dw-web .ck-dw-seam[data-art="kandil"] .ck-dw-hang { background-image: url("/images/diwali/lantern-kandil.webp"); }
+  .ck-dw-web .ck-dw-seam[data-art="oval"] .ck-dw-hang { background-image: url("/images/diwali/lantern-oval.webp"); }
+  .ck-dw-web .ck-dw-seam-line .ck-dw-hang { top: 45%; width: 44px; height: 130px; }
+  .ck-dw-web .ck-dw-seam-edge .ck-dw-hang { top: 40%; width: 44px; height: 130px; }
+  .ck-dw-web .ck-dw-seam-arch-bulbs .ck-dw-hang { width: 44px; height: 150px; }
+  .ck-dw-web :is(.ck-dw-seam-arch-step, .ck-dw-seam-arch-swell) .ck-dw-hang { width: 38px; height: 134px; }
+  /* The call to action runs close to the edges until there is more room. */
+  @media (max-width: 1279px) {
+    .ck-dw-web .ck-dw-seam-arch-swell .ck-dw-hang { display: none; }
+  }
+  .ck-dw-web .ck-dw-seam-edge .ck-dw-hang-right,
+  .ck-dw-web .ck-dw-seam-line .ck-dw-hang-right { animation-delay: -2.6s; }
+
+  /* ── Fundraisers: heading and pager on the left, the cards beside them ── */
+  .ck-dw-web .ck-dw-campaigns {
+    display: grid;
+    grid-template-columns: minmax(18rem, 25rem) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: clamp(2rem, 4vw, 4.5rem);
+    align-items: start;
+    padding: clamp(3.5rem, 7vh, 5.5rem) max(clamp(2rem, 4vw, 5.5rem), calc((100vw - 1500px) / 2)) clamp(3.5rem, 7vh, 5.5rem);
+  }
+  .ck-dw-web .ck-dw-campaigns::before,
+  .ck-dw-web .ck-dw-campaigns::after { inset: -15px 0 auto; height: 15px; -webkit-mask-size: 28px 15px; mask-size: 28px 15px; background-size: 28px 15px; }
+  .ck-dw-web .ck-dw-c-head { grid-area: 1 / 1; padding: 0; }
+  .ck-dw-web .ck-dw-c-title { font-size: clamp(2.5rem, 3.6vw, 3.6rem); }
+  .ck-dw-web .ck-dw-c-sub { font-size: 1.02rem; }
+  .ck-dw-web .ck-dw-c-row { grid-area: 1 / 2 / 4 / 3; gap: 1.25rem; padding: 0.5rem 0.25rem 1.5rem; scroll-padding-inline: 0.25rem; }
+  .ck-dw-web .ck-dw-c-pager { grid-area: 2 / 1; justify-content: flex-start; margin: 1.5rem 0 1.25rem; }
+  .ck-dw-web .ck-dw-c-arrow { transition: background-color 0.2s ease, color 0.2s ease; }
+  .ck-dw-web .ck-dw-c-arrow:not(:disabled):hover { background: var(--dw-burgundy); border-color: var(--dw-burgundy); color: var(--dw-white); }
+  .ck-dw-web .ck-dw-c-all { grid-area: 3 / 1; align-self: start; margin: 0; transition: background-color 0.2s ease; }
+  .ck-dw-web .ck-dw-c-all:hover { background: rgb(142 18 60 / 0.08); }
+  .ck-dw-web .ck-dw-card { flex-basis: clamp(17.5rem, 22vw, 21rem); transition: transform 0.25s ease, box-shadow 0.25s ease; }
+  .ck-dw-web .ck-dw-card:hover { transform: translateY(-5px); box-shadow: 0 26px 44px -24px rgb(114 13 45 / 0.6); }
+  .ck-dw-web .ck-dw-card:hover .ck-dw-c-cta { background: var(--dw-maroon); }
+  /* A lone fundraiser reads across, photo beside its details. */
+  .ck-dw-web .ck-dw-card:only-child { flex: 1 1 100%; flex-direction: row; max-width: 52rem; min-height: 20rem; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-photo { flex: 0 0 52%; aspect-ratio: auto; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-photo img { position: absolute; inset: 0; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-body { justify-content: center; gap: 0.7rem; padding: 1.75rem; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-name { font-size: 1.45rem; }
+
+  /* ── Final CTA ── */
+  .ck-dw-web #join { background-color: var(--dw-crimson); padding-block: 2rem 4rem; }
+  .ck-dw-web #join .grid > :first-child :is(h1, h2, h3) { color: var(--dw-white); }
+  .ck-dw-web #join .grid > :first-child :is(h1, h2, h3) span { color: #ffd27a; }
+  .ck-dw-web #join .grid > :first-child :is(p, li, span):not(h2 span, button *, a *) { color: #fff0d8; }
+  .ck-dw-web #join #join-paths-label { color: #fff0d8; }
+  .ck-dw-web #join [class*="border-dashed"],
+  .ck-dw-web #join [class*="border-dashed"] p { color: #fff0d8; }
+  .ck-dw-web #join .grid > :first-child svg:not(button *, a *) { color: #ffd27a; }
+  .ck-dw-web #join .grid a { border-color: var(--dw-gold); }
+  .ck-dw-web #join [class*="bg-[#1C1410]"] { background-color: var(--dw-burgundy); border-color: var(--dw-gold); }
+
+  /* ── Header and footer ── */
+  body:has(.ck-dw-web) header:has(.ck-mobile-header) { background: var(--dw-white); backdrop-filter: none; border-bottom: 1px solid var(--dw-line); }
+  .dark body:has(.ck-dw-web) header:has(.ck-mobile-header) { background: #14090c; }
+  body:has(.ck-dw-web) #footer { background-color: var(--dw-night); border-top: 0; }
+  /* Log in: the outlined partner of the filled Donate beside it. */
+  body:has(.ck-dw-web) header .specular-button {
+    --sb-tint-opacity: 0 !important;
+    --sb-text-color: var(--dw-maroon) !important;
+    box-shadow: inset 0 0 0 1.5px var(--dw-burgundy);
+  }
+  body:has(.ck-dw-web) header .specular-button:hover { --sb-tint: var(--dw-burgundy) !important; --sb-tint-opacity: 1 !important; --sb-text-color: var(--dw-white) !important; }
+  .dark body:has(.ck-dw-web) header .specular-button { --sb-text-color: var(--dw-peach) !important; box-shadow: inset 0 0 0 1.5px var(--dw-gold); }
+
+  /* Footer: lotuses over the night. */
+  .ck-dw-web .ck-dw-seam-lotus { display: flex; justify-content: center; align-items: flex-end; gap: 1.75rem; padding-block: 2.5rem 0.25rem; }
+  .ck-dw-web .ck-dw-seam-lotus::before,
+  .ck-dw-web .ck-dw-seam-lotus::after { content: none; }
+  .ck-dw-lotus { width: 104px; height: 66px; background: url("/images/diwali/lotus-pink.webp") center bottom / contain no-repeat; }
+  .ck-dw-lotus-gold { width: 68px; height: 50px; background-image: url("/images/diwali/lotus-gold.webp"); opacity: 0.9; }
+
+  /* The fundraisers join the hero's lead-in, which Chapter 1 takes out of its
+     track: this gives the film that scroll back. */
+  @media (orientation: landscape) and (prefers-reduced-motion: no-preference) {
+    .ck-dw-web [class*="track1"] {
+      height: calc(max(calc(var(--ck-svh, 1svh) * 100), 560px) + calc(var(--ck-svh, 1svh) * 100) + calc(var(--ck-svh, 1svh) * 60) + calc(var(--ck-svh, 1svh) * 800));
+    }
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  .ck-dw-lantern,
+  .ck-dw-lantern-d,
+  .ck-dw-spark,
+  .ck-dw-lights::after,
+  .ck-dw-diya::after,
+  .ck-dw-hang { animation: none; }
+  .ck-dw-spark { opacity: 0.6; }
+}
+
+/* The footer's Donate sets its colours with Tailwind `!` utilities. A layered
+   !important outranks an unlayered one, so this answers from the same layer. */
+@layer utilities {
+  @media (min-width: 1024px) {
+    body:has(.ck-dw-web) #footer a.ck-donate-cta { background-color: var(--dw-gold-soft) !important; color: var(--dw-night) !important; }
+    body:has(.ck-dw-web) #footer a.ck-donate-cta:hover { background-color: #f6d48a !important; }
+  }
+}

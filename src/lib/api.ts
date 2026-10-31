@@ -3111,6 +3111,7 @@ export function revokePurchaseAddress(offerId: number) {
 export function recordPurchaseOrder(offerId: number, data: {
   idempotencyKey: string; retailer: string; reference?: string; quantity: number;
   expectedDeliveryAt: string; prepaid: true;
+  trackingUrl?: string; trackingReference?: string;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/order`, { method: "POST", body: JSON.stringify(data) });
 }
@@ -3239,20 +3240,46 @@ export function adminProcessPurchaseDeadlines(offerId: number) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/process-deadlines`, { method: "POST" });
 }
 
+export interface ExtractedProofData {
+  retailer?: string | null;
+  orderNumber?: string | null;
+  expectedDeliveryDate?: string | null;
+  quantity?: number | null;
+  totalAmountInr?: number | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  isDelivered?: boolean | null;
+}
+
+export interface FlowBProofUploadResponse {
+  id: number;
+  proofType: PurchaseProofType;
+  proofUrl?: string;
+  trackingNumber?: string;
+  notes?: string;
+  uploadedAt: string;
+  extracted?: ExtractedProofData;
+}
+
 export function uploadFlowBProof(offerId: number, proofType: PurchaseProofType, file: File,
-                                   trackingNumber?: string, notes?: string) {
+                                   trackingNumber?: string, notes?: string,
+                                   extra?: { retailer?: string; orderNumber?: string; expectedDeliveryDate?: string; trackingUrl?: string }): Promise<FlowBProofUploadResponse> {
   const formData = new FormData();
   formData.append("proofType", proofType);
   if (file) formData.append("file", file);
   if (trackingNumber) formData.append("trackingNumber", trackingNumber);
   if (notes) formData.append("notes", notes);
+  if (extra?.retailer) formData.append("retailer", extra.retailer);
+  if (extra?.orderNumber) formData.append("orderNumber", extra.orderNumber);
+  if (extra?.expectedDeliveryDate) formData.append("expectedDeliveryDate", extra.expectedDeliveryDate);
+  if (extra?.trackingUrl) formData.append("trackingUrl", extra.trackingUrl);
   return fetch(`${BASE_URL}/api/v1/offers/${offerId}/flow-b/proof`, {
     method: "POST",
     credentials: "include",
     body: formData,
   }).then(async (res) => {
     if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b?.message ?? "Upload failed"); }
-    return res.json();
+    return res.json() as Promise<FlowBProofUploadResponse>;
   });
 }
 
