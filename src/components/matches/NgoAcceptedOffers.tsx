@@ -22,6 +22,7 @@ export type AcceptedDriveOffer = {
   driveId?: number | null;
   driveTitle?: string | null;
   ngoName?: string | null;
+  assignedPerson?: { name: string } | null;
   driveItemName?: string | null;
   quantity?: number | null;
   driveUnit?: string | null;
@@ -125,6 +126,7 @@ export function NgoAcceptedOffersList({ offers }: { offers: AcceptedDriveOffer[]
             <div className="min-w-0">
               <p className="font-semibold text-stone-900 dark:text-stone-100">{o.driveTitle ?? ui("NGO drive")}</p>
               {o.ngoName && <p className="text-xs text-stone-500 dark:text-stone-400">{o.ngoName}</p>}
+              {o.assignedPerson && <p data-testid="pickup-by" className="text-xs font-semibold text-stone-700 dark:text-stone-200">{ui("Pickup by")} {o.assignedPerson.name}</p>}
               <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
                 {o.quantity ?? ""} {o.driveUnit ? o.driveUnit.replaceAll("_", " ").toLowerCase() : ""}{o.driveItemName ? ` · ${o.driveItemName}` : ""}
               </p>

@@ -315,8 +315,12 @@ export function adaptNgoOffer(
     imageUrl: offer.media?.[0]?.mediaUrl ?? null,
     transactionCode: `CK-ND${String(offer.id).padStart(5, "0")}`,
     counterpart: role === "DONOR"
-      ? { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null, contacts: offer.handoverDetails?.contacts ?? undefined }
+      ? (offer.assignedPerson
+          ? { name: offer.assignedPerson.name, phone: offer.assignedPerson.phone ?? null, chatName: `${offer.ngoName} & ${offer.assignedPerson.name}` }
+          : { name: offer.ngoName, phone: offer.handoverDetails?.contactPhone ?? null, contacts: offer.handoverDetails?.contacts ?? undefined })
       : { name: offer.donorDisplayName, phone: null },
+    awaitingPickupPerson: role === "DONOR" && handover?.method === "PICKUP" && !offer.assignedPerson
+      && (offer.status === "HANDOVER_IN_PROGRESS" || offer.status === "HANDOVER_AT_RISK"),
     donorAllowsDoneeCall: offer.ngoAllowsDonorCall === true,
     schedule: handover
       ? {

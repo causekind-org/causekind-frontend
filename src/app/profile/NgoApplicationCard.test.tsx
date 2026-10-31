@@ -8,7 +8,10 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: 
 // The approved NGO's About / past-activity sections have their own tests.
 vi.mock("@/features/ngo-profile/PastActivity", () => ({ PastActivitySection: () => null }));
 vi.mock("@/features/ngo-profile/NgoAboutSection", () => ({ NgoAboutSection: () => null }));
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  isSlowRequestError: vi.fn().mockReturnValue(false),
+  getMyNgoProfileDocuments: vi.fn().mockResolvedValue([]),
   getProfile: vi.fn(), updateProfile: vi.fn(), updateLocation: vi.fn(), getMyNgoApplication: vi.fn(),
   getNgoDraft: vi.fn(), submitNgoApplication: vi.fn(), saveNgoDraft: vi.fn(),
 }));

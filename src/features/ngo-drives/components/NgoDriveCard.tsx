@@ -6,7 +6,7 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { MapPin, BadgeCheck, Users, Package, Award, ArrowRight, CalendarDays } from "lucide-react";
+import { MapPin, BadgeCheck, Users, Package, Award, ArrowRight, CalendarDays, Lock } from "lucide-react";
 import type { PublicNgoDrive, NgoDriveOfferResponse } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
@@ -42,7 +42,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
   const ui = useUiText();
   const df = useTranslations("driveFlow");
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   // A cover that fails to load (expired link, missing file) falls back to the category icon.
   const [coverFailed, setCoverFailed] = useState(false);
 
@@ -76,7 +76,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
   const isDoneeOrNgo = roleUpper === "DONEE" || roleUpper === "NGO" || roleUpper === "NGO_PARTNER";
 
   // Button text and target
-  let ctaLabel = ui("View drive & give");
+  let ctaLabel = ui("Give to this drive");
   let ctaHref = `/drives/${drive.id}`;
   let ctaDisabled = false;
 
@@ -84,7 +84,7 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
     ctaLabel = ui("View drive");
     ctaHref = `/drives/${drive.id}`;
   } else if (state.kind === "login" || state.kind === "give") {
-    ctaLabel = ui("View drive & give");
+    ctaLabel = ui("Give to this drive");
     ctaHref = `/drives/${drive.id}`;
   } else if (state.kind === "continue") {
     ctaLabel = ui("Continue offer");
@@ -98,7 +98,9 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
     ctaHref = `/drives/${drive.id}`;
   }
 
-  const isDefaultTarget = !ctaDisabled && ctaHref === `/drives/${drive.id}`;
+  // A guest (known once auth has settled): the same locked button as the donee-request cards.
+  const guestLocked = !user && !authLoading && !ctaDisabled;
+  const isDefaultTarget = !guestLocked && !ctaDisabled && ctaHref === `/drives/${drive.id}`;
 
   return (
     <article
@@ -310,7 +312,17 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
 
           {/* CTA Button */}
           <div className="mt-auto pt-4">
-            {ctaDisabled ? (
+            {guestLocked ? (
+              <Link
+                href={`/login?next=/drives/${drive.id}`}
+                data-testid="drive-cta-button"
+                className="relative z-10 flex w-full items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
+              >
+                <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" aria-hidden="true" />
+                <span>{ui("Log in to give to this drive")}</span>
+                <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" aria-hidden="true" />
+              </Link>
+            ) : ctaDisabled ? (
               <button
                 type="button"
                 disabled

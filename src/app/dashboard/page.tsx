@@ -19,7 +19,7 @@ import {
   reopenItemRequest, cancelItemRequest, deleteItemRequestDraft, hideWithdrawnRequest,
   getOfferCancellationOptions, type CancellationOption,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer,
-  getMyNgoDriveOffers, cancelNgoDriveOffer, type NgoDriveOfferResponse
+  getMyNgoDriveOffers, cancelNgoDriveOffer, invalidateRequestCache, type NgoDriveOfferResponse
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
@@ -2759,6 +2759,7 @@ export default function DashboardPage() {
 
   // NGO_DRIVE_OFFER / NGO_DRIVE: a drive handover completing updates Matches > NGO, History and the stats live.
   useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER", "NGO_DRIVE_OFFER", "NGO_DRIVE"], () => {
+    invalidateRequestCache();
     refreshListings();
     refreshMatches();
     getMyItemRequests().then(setItemRequests).catch(() => {});

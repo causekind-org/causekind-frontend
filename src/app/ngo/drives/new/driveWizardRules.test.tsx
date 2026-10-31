@@ -171,6 +171,31 @@ describe("drive wizard", () => {
     expect(screen.queryByTestId("extra-contact")).toBeNull();
   });
 
+  it("contacts: a new person needs an email, an old drive under 3 isn't blocked, and a drive at 3 can't drop below", async () => {
+    mockSearch = "edit=42&step=beneficiaries";
+    api.getNgoDriveDetail.mockResolvedValue(drive());
+    const { unmount } = render(<NgoDrivePage />);
+    fireEvent.click(await screen.findByRole("button", { name: /Add another person/ }));
+    expect(screen.queryByTestId("contacts-minimum")).toBeNull();
+    fireEvent.change(screen.getByLabelText("Contact 2 name"), { target: { value: "Asha" } });
+    fireEvent.change(screen.getByLabelText("Contact 2 phone"), { target: { value: "8123456789" } });
+    const next = screen.getByRole("button", { name: /Save & Continue/ });
+    expect(next).toHaveAttribute("aria-disabled", "true");
+    fireEvent.change(screen.getByLabelText("Contact 2 email"), { target: { value: "asha@x.test" } });
+    await waitFor(() => expect(screen.queryByText("Enter this person's email")).toBeNull());
+    unmount();
+
+    api.getNgoDriveDetail.mockResolvedValue(drive({ handoverContacts: [
+      { name: "Rahul", phone: "+919876543210", role: null, email: "r@x.test" },
+      { name: "Asha", phone: "+918123456789", role: null, email: "a@x.test" },
+      { name: "Ravi", phone: "+917123456789", role: null, email: "v@x.test" }] }));
+    render(<NgoDrivePage />);
+    expect(await screen.findByLabelText("Contact 3 email")).toHaveValue("v@x.test");
+    expect(screen.queryByTestId("contacts-minimum")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Remove contact 3" }));
+    expect(await screen.findByTestId("contacts-minimum")).toHaveTextContent("Add at least 3 different people");
+  });
+
   it("hides Clothing sizing and Furniture dimensions for other categories", async () => {
     mockSearch = "edit=42&step=details";
     api.getNgoDriveDetail.mockResolvedValue(drive({ category: "Electronics", categoryDetails: null, requireClean: false }));

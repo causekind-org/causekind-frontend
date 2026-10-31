@@ -34,6 +34,8 @@ type RequestOptions = RequestInit & {
   /** If true, a 401 response throws but does NOT redirect to login.
    *  Use for background/optional fetches where one 401 shouldn't kill the whole session. */
   silent401?: boolean;
+  /** Public data a write can't change: a write elsewhere on the page must not restart this GET. */
+  ignoreWrites?: boolean;
 };
 
 export class ApiError extends Error {
@@ -57,7 +59,8 @@ export type ApiConflictError = ApiError & { dependents?: SuperAdminDependent[]; 
 const inFlightGetRequests = new Map<string, Promise<any>>();
 const getCacheMap = new Map<string, { data: any; timestamp: number }>();
 let requestCacheGeneration = 0;
-function invalidateRequestCache() {
+/** Also for a live update: the short GET cache must not answer with what the server just said changed. */
+export function invalidateRequestCache() {
   requestCacheGeneration += 1;
   getCacheMap.clear();
   inFlightGetRequests.clear();
@@ -181,7 +184,7 @@ async function request<T>(
   }
 
   const generation = requestCacheGeneration;
-  const { silent401, ...fetchOptions } = options;
+  const { silent401, ignoreWrites, ...fetchOptions } = options;
 
   const execute = async (): Promise<T> => {
     const headers: Record<string, string> = {
@@ -289,7 +292,7 @@ async function request<T>(
     // browser error with no useful meaning, which is exactly what an admin saw on
     // the Re-run AI button. Check for a body before trying to parse one.
     const data = (await readJsonBody(res)) as T;
-    if (isGet && canUseRequestCache() && generation !== requestCacheGeneration) {
+    if (isGet && !ignoreWrites && canUseRequestCache() && generation !== requestCacheGeneration) {
       // Existing callers must not paint a stale response over the fresh status.
       return request<T>(path, options);
     }
@@ -5744,7 +5747,7 @@ export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: numbe
 }
 
 /** One handover contact of a drive (phone +91XXXXXXXXXX). */
-export type DriveHandoverContact = { name: string; phone: string | null; role?: string | null };
+export type DriveHandoverContact = { name: string; phone: string | null; role?: string | null; email?: string | null };
 
 // ── The NGO editing its own public page ───────────────────────────────────────
 
@@ -6055,7 +6058,7 @@ export function adminRejectNgoDriveOffer(id: number, reason: string) {
 /** LIVE drives only; the backend filters by status itself and accepts just `category`. */
 export async function getNgoDrives(category?: string): Promise<PublicNgoDrive[]> {
   const query = category ? `?category=${encodeURIComponent(category)}` : "";
-  return await request<PublicNgoDrive[]>(`/api/v1/drives${query}`);
+  return await request<PublicNgoDrive[]>(`/api/v1/drives${query}`, { silent401: true, ignoreWrites: true });
 }
 
 /** Edits a drive in PENDING_REVIEW or CHANGES_REQUESTED; the backend puts it back to PENDING_REVIEW. */
@@ -6205,6 +6208,10 @@ export type NgoDriveOfferResponse = {
     availableHours?: string | null;
   };
   ngoAllowsDonorCall?: boolean | null;
+  /** The donor lets the assigned pickup person see their phone. */
+  donorAllowsVolunteerCall?: boolean | null;
+  /** Who collects this pickup; phone only when the NGO allows calls. */
+  assignedPerson?: { name: string; role?: string | null; phone?: string | null } | null;
   /** Issued once the handover completes. */
   certificateIssued?: boolean | null;
   certificateNumber?: string | null;
@@ -6360,6 +6367,9 @@ export type NgoDriveOfferHandoverRecordResponse = {
   rescheduleReason: string | null;
   atRisk: boolean;
   confirmation: {
+    /** A volunteer's name, or "the NGO". */
+    codeConfirmedBy?: string | null;
+    photoAddedBy?: string | null;
     deliveryOtp: string | null;
     otpVerified: boolean;
     otpVerifiedAt: string | null;
@@ -7073,3 +7083,78 @@ export const superAdminFundraising = {
   saveSettings: (values: Record<string, string>, reason: string) =>
     request<SaFrSetting[]>(`${SA_FR}/settings`, { method: "PUT", body: JSON.stringify({ values, reason }) }),
 };
+
+/** The person an NGO assigned to a drive pickup. */
+export type VolunteerAssignment = {
+  id: number; name: string; phone: string; email: string; role?: string | null;
+  status: "ACTIVE" | "REVOKED" | "COMPLETED"; emailStatus: "PENDING" | "SENT" | "FAILED"; expiresAt: string;
+};
+export type VolunteerAssignOptions = { canAssign: boolean; assignment: VolunteerAssignment | null; contacts: DriveHandoverContact[] };
+export type VolunteerAssignRequest = { contactIndex: number; email?: string } | { newPerson: DriveHandoverContact };
+
+export async function getVolunteerAssignOptions(driveId: number, offerId: number): Promise<VolunteerAssignOptions> {
+  return await request<VolunteerAssignOptions>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer`);
+}
+
+export async function assignVolunteer(driveId: number, offerId: number, body: VolunteerAssignRequest): Promise<VolunteerAssignment> {
+  return await request<VolunteerAssignment>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer`, { method: "POST", body: JSON.stringify(body) });
+}
+
+/** Issues a new link (the old one stops working) and emails it; the link comes back for "Copy link". */
+export async function resendVolunteerLink(driveId: number, offerId: number): Promise<{ assignment: VolunteerAssignment; link: string }> {
+  return await request<{ assignment: VolunteerAssignment; link: string }>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer/resend-link`, { method: "POST" });
+}
+
+export async function unassignVolunteer(driveId: number, offerId: number): Promise<void> {
+  await request<void>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer`, { method: "DELETE" });
+}
+
+/** One pickup, as its assigned volunteer sees it. */
+export type VolunteerHandoverView = {
+  volunteerName: string; ngoName: string; driveTitle: string; donorFirstName: string; donorPhone: string | null;
+  itemName: string; quantity: number; donorNotes: string | null; pickupAt: string; address: string; directionsUrl: string;
+  codeConfirmed: boolean; codeConfirmedByNgo: boolean; confirmedQuantity: number; photoAdded: boolean;
+  completed: boolean; photoUrls: string[]; linkExpiresAt: string;
+};
+export type VolunteerChatMessage = { id: number; mine: boolean; senderName: string; content: string; sentAt: string };
+
+/**
+ * The volunteer page has no login: its token goes in a header, and no cookie, cache or
+ * session-refresh logic from request() applies (a 401 here means a dead link, not a lost session).
+ */
+async function volunteerRequest<T>(token: string, path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${BASE_URL}/api/v1/volunteer-handover${path}`, {
+    ...init, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer",
+    headers: { ...(init.body instanceof FormData || !init.body ? {} : { "Content-Type": "application/json" }), ...init.headers, "X-Handover-Token": token },
+  });
+  const raw = await res.text();
+  let body: Record<string, unknown> = {};
+  try { body = raw ? JSON.parse(raw) as Record<string, unknown> : {}; } catch { /* not JSON */ }
+  if (!res.ok) {
+    const fields = Array.isArray(body.fieldErrors) ? (body.fieldErrors as { message?: string }[]).map((e) => e?.message).filter(Boolean).join(" ") : "";
+    throw new ApiError(res.status, String(fields || body.detail || "Something went wrong. Please try again."), body);
+  }
+  return body as T;
+}
+
+export const volunteerHandover = {
+  details: (token: string) => volunteerRequest<VolunteerHandoverView>(token, ""),
+  confirmCode: (token: string, otp: string, quantity: number) =>
+    volunteerRequest<VolunteerHandoverView>(token, "/confirm-code", { method: "POST", body: JSON.stringify({ otp, quantity }) }),
+  addPhoto: (token: string, file: File) => {
+    const form = new FormData();
+    form.append("files", file);
+    return volunteerRequest<void>(token, "/photo", { method: "POST", body: form });
+  },
+  chat: async (token: string) => {
+    const res = await fetch(`${BASE_URL}/api/v1/volunteer-handover/chat`, { credentials: "omit", cache: "no-store", headers: { "X-Handover-Token": token } });
+    if (!res.ok) throw new ApiError(res.status, "We couldn't load the chat.", {});
+    return await res.json() as VolunteerChatMessage[];
+  },
+  sendChat: (token: string, content: string) =>
+    volunteerRequest<VolunteerChatMessage>(token, "/chat", { method: "POST", body: JSON.stringify({ content }) }),
+};
+
+export async function setVolunteerCallPermission(offerId: number, allowed: boolean): Promise<void> {
+  await request<void>(`/api/v1/drive-offers/${offerId}/volunteer-call-permission`, { method: "PUT", body: JSON.stringify({ allowed }) });
+}

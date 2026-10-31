@@ -49,6 +49,7 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
 import { DeferredOverlays } from "@/components/DeferredOverlays";
+import { HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
 import { DonateChoice } from "@/components/donate/DonateChoice";
 import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
 import { MatchActionDock } from "@/components/matches/MatchActionDock";
@@ -166,9 +167,11 @@ export default async function RootLayout({
         {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
             banner coming back — see the TESTING_BYPASS note in each
             component. Remove this comment once the banner is restored. */}
-        <MetaPixel />
-        <ClarityAnalytics />
-        <GoogleTagManagerGated />
+        <HiddenOnVolunteerPage>
+          <MetaPixel />
+          <ClarityAnalytics />
+          <GoogleTagManagerGated />
+        </HiddenOnVolunteerPage>
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>
             <AuthProvider>
@@ -184,8 +187,10 @@ export default async function RootLayout({
                 </Suspense>
                 <FilmViewObserver />
                 <RoleThemeBridge />
-                <SuperAdminRedirect />
-                <AdminRedirect />
+                <HiddenOnVolunteerPage>
+                  <SuperAdminRedirect />
+                  <AdminRedirect />
+                </HiddenOnVolunteerPage>
                 {/* Site-wide click spark. The colour follows the signed-in
                     role — canvas painting can't read a CSS custom property per
                     frame, so RoleClickSpark resolves it from the same palette
@@ -197,12 +202,12 @@ export default async function RootLayout({
                   duration={400}
                 >
                   <ScrollProgress />
-                  <SiteHeader />
+                  <HiddenOnVolunteerPage><SiteHeader /></HiddenOnVolunteerPage>
                   <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
-                  <SiteFooter />
+                  <HiddenOnVolunteerPage><SiteFooter /></HiddenOnVolunteerPage>
                   {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
-                  <MobileBottomNav />
-                  <FloatingSupportButton />
+                  <HiddenOnVolunteerPage><MobileBottomNav /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><FloatingSupportButton /></HiddenOnVolunteerPage>
                   {/* Site-wide bottom fade — hidden on /admin & /super-admin. */}
                   <SiteBottomBlur />
                   {/* top-center: bottom-left sat on the admin sidebar's Sign Out and the
@@ -217,17 +222,17 @@ export default async function RootLayout({
                     duration={4500}
                     style={{ zIndex: 2147483647 }}
                   />
-                  <DeferredOverlays />
+                  <HiddenOnVolunteerPage><DeferredOverlays /></HiddenOnVolunteerPage>
                   {/* Every Donate button opens this In-Kind / Money choice. */}
-                  <DonateChoice />
-                  <StartDriveChoice />
+                  <HiddenOnVolunteerPage><DonateChoice /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><StartDriveChoice /></HiddenOnVolunteerPage>
                   {/* Guests' and donors' next step after "Donate items". */}
-                  <DonateItemsChoiceModal />
+                  <HiddenOnVolunteerPage><DonateItemsChoiceModal /></HiddenOnVolunteerPage>
                   {/* Donor-only: a waiting match, once, until answered or closed. */}
-                  <MatchActionDock />
+                  <HiddenOnVolunteerPage><MatchActionDock /></HiddenOnVolunteerPage>
                   {/* NGO and donor drive notices: unread ones, one at a time. */}
-                  <DriveNotificationDock />
-                  <CompletionCelebrationWatcher />
+                  <HiddenOnVolunteerPage><DriveNotificationDock /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><CompletionCelebrationWatcher /></HiddenOnVolunteerPage>
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
-  getNgoDriveOffer, getNgoDriveOfferForNgo, getNgoDriveOfferHandover,
+  getNgoDriveOffer, getNgoDriveOfferForNgo, getNgoDriveOfferHandover, invalidateRequestCache,
   type NgoDriveOfferResponse, type NgoDriveOfferHandoverRecordResponse,
 } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
@@ -45,7 +45,7 @@ export function DriveHandoverPage({ role, offerId, driveId }: { role: DriveHando
     if (!user) { router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`); return; }
     void load();
   }, [authLoading, user, router, load]);
-  useEntityUpdates(["NGO_DRIVE_OFFER", "NGO_DRIVE"], () => { void load(); });
+  useEntityUpdates(["NGO_DRIVE_OFFER", "NGO_DRIVE"], () => { invalidateRequestCache(); void load(); });
 
   useEffect(() => {
     if (!offer || !NGO_DRIVE_OFFER_DONE.has(offer.status) || !offerId) return;

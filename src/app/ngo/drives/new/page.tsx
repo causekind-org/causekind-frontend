@@ -365,7 +365,10 @@ function NewNgoDriveForm() {
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   // More handover contacts after the primary (contactName/contactPhone): up to 5 people in all.
-  const [extraContacts, setExtraContacts] = useState<{ name: string; phone: string; role: string }[]>([]);
+  const [contactEmail, setContactEmail] = useState("");
+  const [extraContacts, setExtraContacts] = useState<{ name: string; phone: string; role: string; email: string }[]>([]);
+  // An edited drive's people: they keep their stored email, and an older drive under 3 isn't blocked.
+  const [storedPhones, setStoredPhones] = useState<string[]>([]);
   // Country code for the contact phone; India by default. Never prefilled from the account.
 const [altContact, setAltContact] = useState("");
   const [pastWorkUrl, setPastWorkUrl] = useState("");
@@ -492,7 +495,11 @@ const [altContact, setAltContact] = useState("");
       setContactName(d.contactName || "");
       setContactPhone(fromStoredPhone(d.contactPhone).digits);
       // Older drives have only their single contact.
-      setExtraContacts((d.handoverContacts ?? []).slice(1).map((c) => ({ name: c.name ?? "", phone: fromStoredPhone(c.phone ?? "").digits, role: c.role ?? "" })));
+      setContactEmail(d.handoverContacts?.[0]?.email ?? "");
+      setExtraContacts((d.handoverContacts ?? []).slice(1).map((c) => ({ name: c.name ?? "", phone: fromStoredPhone(c.phone ?? "").digits, role: c.role ?? "", email: c.email ?? "" })));
+      setStoredPhones(d.handoverContacts?.length
+        ? d.handoverContacts.map((c) => fromStoredPhone(c.phone ?? "").digits)
+        : d.contactPhone ? [fromStoredPhone(d.contactPhone).digits] : []);
       setAltContact(d.altContact || "");
       setPastWorkUrl(d.pastWorkUrl || "");
 
@@ -573,7 +580,8 @@ const [altContact, setAltContact] = useState("");
         // Contact
         setContactName(p.contactName || "");
         setContactPhone(fromStoredPhone(p.contactPhone).digits);
-        setExtraContacts(Array.isArray(p.extraContacts) ? p.extraContacts.slice(0, 4) : []);
+        setContactEmail(p.contactEmail || "");
+        setExtraContacts(Array.isArray(p.extraContacts) ? p.extraContacts.slice(0, 4).map((c: { name?: string; phone?: string; role?: string; email?: string }) => ({ name: c.name ?? "", phone: c.phone ?? "", role: c.role ?? "", email: c.email ?? "" })) : []);
         setAltContact(p.altContact || "");
         setPastWorkUrl(p.pastWorkUrl || "");
 
@@ -641,7 +649,7 @@ const [altContact, setAltContact] = useState("");
         beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
         neededBy, availableDays, availableFrom, availableTo, handoverMode,
         changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-        contactName, contactPhone: contactPhone.trim() ? `+91${contactPhone.trim()}` : "", extraContacts, altContact, pastWorkUrl,
+        contactName, contactPhone: contactPhone.trim() ? `+91${contactPhone.trim()}` : "", contactEmail, extraContacts, altContact, pastWorkUrl,
         declarations: { accurate: declAccurate, usedOnlyForBeneficiaries: declUsedOnly, proofWithin48h: declProof, facesWithConsent: declFaces, notDuplicate: declNotDuplicate, falseInfoConsequences: declFalseInfo, contactConsent: declContact }
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(saveObj));
@@ -662,7 +670,7 @@ const [altContact, setAltContact] = useState("");
     beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
     neededBy, availableDays, availableFrom, availableTo, handoverMode,
     changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-    contactName, contactPhone, extraContacts, altContact, pastWorkUrl,
+    contactName, contactPhone, contactEmail, extraContacts, altContact, pastWorkUrl,
     declAccurate, declUsedOnly, declProof, declFaces, declNotDuplicate, declFalseInfo, declContact, DRAFT_KEY
   ]);
 
@@ -914,7 +922,14 @@ const [altContact, setAltContact] = useState("");
         if (c.name.trim().length < 2) e[`extraContacts.${i}.name`] = "Enter this person's name";
         if (!/^[6-9]\d{9}$/.test(c.phone.trim())) e[`extraContacts.${i}.phone`] = "Enter a 10-digit mobile number starting with 6, 7, 8 or 9";
         if (c.role.trim() && otherTextError(c.role)) e[`extraContacts.${i}.role`] = "Role: 2–60 letters (spaces and . , - & allowed)";
+        const emailProblem = contactEmailError(c.email, c.phone);
+        if (emailProblem) e[`extraContacts.${i}.email`] = emailProblem;
       });
+      { const emailProblem = contactEmailError(contactEmail, contactPhone);
+        if (emailProblem) e.contactEmail = emailProblem; }
+      { const required = editId === null ? MIN_HANDOVER_CONTACTS : Math.min(MIN_HANDOVER_CONTACTS, storedPhones.length);
+        const people = new Set([contactPhone, ...extraContacts.map((c) => c.phone)].map((p) => p.trim()).filter(Boolean)).size;
+        if (people < required) e.handoverContacts = `Add at least ${required} different people`; }
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
@@ -925,6 +940,13 @@ const [altContact, setAltContact] = useState("");
       }
     }
     return e;
+  }
+
+  /** Email is needed for anyone new; someone already on the drive keeps what is stored. */
+  function contactEmailError(email: string, phone: string): string | null {
+    const value = email.trim();
+    if (value) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 255 ? null : "Enter a valid email address";
+    return storedPhones.includes(phone.trim()) ? null : "Enter this person's email";
   }
 
   function validateStep(s: NgoDriveStep): boolean {
@@ -1061,8 +1083,8 @@ const [altContact, setAltContact] = useState("");
         contactPhone: `+91${contactPhone.trim()}`,
         // Every handover contact, first = primary (the one the Call button uses).
         handoverContacts: [
-          { name: contactName.trim(), phone: `+91${contactPhone.trim()}`, role: null },
-          ...extraContacts.map((c) => ({ name: c.name.trim(), phone: `+91${c.phone.trim()}`, role: c.role.trim() || null })),
+          { name: contactName.trim(), phone: `+91${contactPhone.trim()}`, role: null, email: contactEmail.trim() || undefined },
+          ...extraContacts.map((c) => ({ name: c.name.trim(), phone: `+91${c.phone.trim()}`, role: c.role.trim() || null, email: c.email.trim() || undefined })),
         ],
         altContact: altContact.trim() || undefined,
         pastWorkUrl: pastWorkUrl.trim() || undefined,
@@ -1788,6 +1810,12 @@ const [altContact, setAltContact] = useState("");
             )}
           </WizardField>
 
+          <WizardField label={ui("Email")} required={!storedPhones.includes(contactPhone.trim())} error={fieldErrors.contactEmail} hint={ui("We send the pickup link here if this person is assigned")}>
+            {({ id, describedBy, invalid }) => (
+              <Input id={id} name="contactEmail" type="email" placeholder={ui("name@example.org")} value={contactEmail} onChange={e => setContactEmail(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+            )}
+          </WizardField>
+
           {/* More people who handle pickup and drop-off; the first contact above is the primary. */}
           {extraContacts.map((c, i) => (
             <div key={i} data-testid="extra-contact" className="space-y-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
@@ -1808,12 +1836,16 @@ const [altContact, setAltContact] = useState("");
               <Input aria-label={`Contact ${i + 2} role`} name={`extraContacts.${i}.role`} placeholder={ui("Role (optional)")} maxLength={60} value={c.role}
                 onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, role: e.target.value.replace(/[^A-Za-z .,&-]/g, "") } : x)))} className="h-11" />
               {fieldErrors[`extraContacts.${i}.role`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.role`]}</p>}
+              <Input aria-label={`Contact ${i + 2} email`} name={`extraContacts.${i}.email`} type="email" placeholder={ui("Email")} value={c.email}
+                onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)))} className="h-11" />
+              {fieldErrors[`extraContacts.${i}.email`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.email`]}</p>}
             </div>
           ))}
           {extraContacts.length < 4 && (
-            <button type="button" onClick={() => setExtraContacts((prev) => [...prev, { name: "", phone: "", role: "" }])}
+            <button type="button" onClick={() => setExtraContacts((prev) => [...prev, { name: "", phone: "", role: "", email: "" }])}
               className="text-xs font-bold text-ngo-700 hover:underline dark:text-ngo-300">+ {ui("Add another person")}</button>
           )}
+          {liveErrors.handoverContacts && <p data-testid="contacts-minimum" className="text-xs text-amber-700 dark:text-amber-300">{liveErrors.handoverContacts}</p>}
 
           <WizardField label={ui("Alternate contact (phone or email)")} error={fieldErrors.altContact} hint={ui("Optional: phone or email")}>
             {({ id, describedBy, invalid }) => (
@@ -1971,9 +2003,9 @@ const [altContact, setAltContact] = useState("");
             <span className="text-stone-500">Handover contact</span>
             <span className="font-medium text-right text-stone-900 dark:text-stone-100">
               {contactName}<br />
-              <span className="text-stone-400 text-xs">+91 {contactPhone}</span>
+              <span className="text-stone-400 text-xs">+91 {contactPhone}{contactEmail.trim() ? ` · ${contactEmail.trim()}` : ""}</span>
               {extraContacts.map((c, i) => (
-                <span key={i} className="block text-stone-500 text-xs">{c.name}{c.role ? ` (${c.role})` : ""} · +91 {c.phone}</span>
+                <span key={i} className="block text-stone-500 text-xs">{c.name}{c.role ? ` (${c.role})` : ""} · +91 {c.phone}{c.email.trim() ? ` · ${c.email.trim()}` : ""}</span>
               ))}
               {altContact && <span className="block text-stone-400 text-xs">Alt: {altContact}</span>}
             </span>
@@ -2326,6 +2358,8 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
     return this.props.children;
   }
 }
+
+const MIN_HANDOVER_CONTACTS = 3;
 
 export default function NgoRequestCreationPage() {
   return (

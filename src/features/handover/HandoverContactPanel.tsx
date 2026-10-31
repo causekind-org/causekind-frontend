@@ -21,6 +21,8 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
 }) {
   const isNgoDrive = vm.flow === "NGO_OFFER";
   const donor = vm.role === "DONOR";
+  // The pickup card says the NGO will assign someone; "calls aren't on" would only confuse.
+  if (vm.awaitingPickupPerson) return null;
   const label = donor
     ? `Call ${vm.counterpart.name ?? (isNgoDrive ? "the NGO" : "the recipient")}`
     : `Call ${vm.counterpart.name ?? "the donor"}`;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NgoDrivesSection } from "./NgoDrivesSection";
+import { DRIVES_LOAD_TIMEOUT_MS, NgoDrivesSection } from "./NgoDrivesSection";
 import type { PublicNgoDrive } from "@/lib/api";
 
 const mockGetNgoDrives = vi.fn();
@@ -178,17 +178,58 @@ describe("NgoDrivesSection", () => {
     expect(screen.queryByText("View drive & give")).toBeNull();
   });
 
-  it("shows 'View drive & give' linking to /drives/{id} for guest or donor accounts", async () => {
-    mockUser = null; // Guest
+  it("guest (no auth) loads the cards, each with the locked login button", async () => {
+    mockUser = null;
     render(<NgoDrivesSection />);
+    const links = await screen.findAllByRole("link", { name: /Log in to give to this drive/i });
+    expect(links.map((l) => l.getAttribute("href")).sort()).toEqual(["/login?next=/drives/1", "/login?next=/drives/2", "/login?next=/drives/3"]);
+  });
 
-    const defaultLinks = await screen.findAllByRole("link", { name: /View drive & give/i });
-    expect(defaultLinks.length).toBe(3);
-    const hrefs = defaultLinks.map((l) => l.getAttribute("href"));
-    expect(hrefs).toContain("/drives/1");
-    expect(hrefs).toContain("/drives/2");
-    expect(hrefs).toContain("/drives/3");
+  it("a donor sees Give to this drive", async () => {
+    mockUser = { role: "ROLE_DONOR", id: 501 };
+    render(<NgoDrivesSection />);
+    const gives = await screen.findAllByRole("link", { name: /Give to this drive/i });
+    expect(gives.length).toBeGreaterThan(0);
+    gives.forEach((l) => expect(l.getAttribute("href")).toMatch(/^\/drives\/\d+$/));
+    expect(screen.queryByRole("link", { name: /Log in to give/i })).toBeNull();
+  });
+
+  it("an NGO sees View drive", async () => {
+    mockUser = { role: "NGO_PARTNER", id: 6 };
+    render(<NgoDrivesSection />);
+    expect(await screen.findAllByRole("link", { name: /^View drive$/i })).toHaveLength(3);
     expect(screen.queryByText("Give to this drive")).toBeNull();
+  });
+
+  it("remount after an aborted first request loads the cards", async () => {
+    let abort: (e: unknown) => void = () => {};
+    mockGetNgoDrives.mockReturnValueOnce(new Promise((_, rej) => { abort = rej; }));
+    const first = render(<NgoDrivesSection />);
+    first.unmount();
+    abort(new DOMException("aborted", "AbortError"));
+    render(<NgoDrivesSection />);
+    expect(await screen.findByText("Primary School Uniforms")).toBeInTheDocument();
+    expect(screen.queryByTestId("ngo-drives-error")).toBeNull();
+  });
+
+  it("a failed call shows Retry, and Retry loads the cards", async () => {
+    mockGetNgoDrives.mockRejectedValueOnce(new Error("down"));
+    render(<NgoDrivesSection />);
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("Primary School Uniforms")).toBeInTheDocument();
+    expect(screen.queryByTestId("ngo-drives-error")).toBeNull();
+  });
+
+  it("a call that never answers gives way to Retry after the timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      mockGetNgoDrives.mockReturnValueOnce(new Promise(() => {}));
+      render(<NgoDrivesSection />);
+      await act(async () => { vi.advanceTimersByTime(DRIVES_LOAD_TIMEOUT_MS); });
+      expect(screen.getByTestId("ngo-drives-error")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("shows no days-left line and hides donorCount when 0", async () => {

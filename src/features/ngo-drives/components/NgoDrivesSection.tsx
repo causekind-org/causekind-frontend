@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { getNgoDrives, type PublicNgoDrive } from "@/lib/api";
 import { NgoDriveCard, NgoDriveCardSkeleton } from "./NgoDriveCard";
@@ -13,6 +13,8 @@ import { UiText, useUiText } from "@/components/UiText";
 import { useTranslations } from "next-intl";
 import { useCategoryLabel } from "@/lib/categoryLabel";
 const DRIVES_SHOWN = 3;
+/** The skeletons give way to an error + Retry after this long; a late answer still fills the cards. */
+export const DRIVES_LOAD_TIMEOUT_MS = 10_000;
 
 export type NgoDrivesSectionProps = {
   /** Optional pre-fetched drives */
@@ -26,30 +28,40 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
   const categoryLabel = useCategoryLabel();
   const [drives, setDrives] = useState<PublicNgoDrive[]>(initialDrives ?? []);
   const [loading, setLoading] = useState<boolean>(!initialDrives);
+  const [failed, setFailed] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
+  // Only the latest attempt of the mounted section may touch state.
+  const attempt = useRef(0);
+
+  const load = useCallback(() => {
+    const mine = ++attempt.current;
+    setLoading(true);
+    setFailed(false);
+    const fail = () => {
+      if (attempt.current !== mine) return;
+      setFailed(true);
+      setLoading(false);
+    };
+    const timer = setTimeout(fail, DRIVES_LOAD_TIMEOUT_MS);
+    getNgoDrives()
+      .then((rows) => {
+        if (attempt.current !== mine) return;
+        // LIVE drives only
+        setDrives((rows ?? []).filter((d) => (d.status ?? "").toUpperCase() === "LIVE"));
+        setFailed(false);
+        setLoading(false);
+      })
+      .catch(fail)
+      .finally(() => clearTimeout(timer));
+  }, []);
 
   useEffect(() => {
     if (initialDrives) return;
-    let active = true;
-    getNgoDrives()
-      .then((rows) => {
-        if (active) {
-          // LIVE drives only
-          const liveRows = (rows ?? []).filter((d) => (d.status ?? "").toUpperCase() === "LIVE");
-          setDrives(liveRows);
-        }
-      })
-      .catch(() => {
-        // Silently tolerate backend error on landing page
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
+    load();
     return () => {
-      active = false;
+      attempt.current += 1;
     };
-  }, [initialDrives]);
+  }, [initialDrives, load]);
 
   // Compute category counts from all live drives
   const categoryCounts = useMemo(() => {
@@ -72,7 +84,7 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
   }, [drives, selectedCategory]);
 
   // If there are zero live drives at all, hide the whole section (no empty box or orphan header on landing)
-  if (!loading && drives.length === 0) {
+  if (!loading && !failed && drives.length === 0) {
     return null;
   }
 
@@ -119,6 +131,13 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
             {[0, 1, 2].map((n) => (
               <NgoDriveCardSkeleton key={n} />
             ))}
+          </div>
+        ) : failed && drives.length === 0 ? (
+          <div role="alert" data-testid="ngo-drives-error" className="mx-auto flex max-w-2xl flex-col items-center gap-3 rounded-2xl border border-dashed border-stone-300 bg-white/60 px-6 py-10 text-center dark:border-zinc-700 dark:bg-zinc-900/50">
+            <p className="text-sm font-bold text-stone-700 dark:text-stone-200"><UiText>We couldn't load the drives.</UiText></p>
+            <button type="button" onClick={load} className="inline-flex min-h-11 items-center rounded-xl bg-emerald-700 px-5 text-xs font-extrabold uppercase tracking-wider text-white hover:bg-emerald-800">
+              <UiText>Retry</UiText>
+            </button>
           </div>
         ) : visibleDrives.length === 0 ? (
           <div
