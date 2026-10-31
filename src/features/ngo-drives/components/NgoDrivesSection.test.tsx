@@ -116,14 +116,20 @@ describe("NgoDrivesSection", () => {
     expect(seeAllLink).toHaveAttribute("href", "/requests?type=ngos");
   });
 
-  it("0 live drives: keeps the title and trust card, with the calm empty card", async () => {
+  it("0 live drives: mirrors the Live board's empty state, with chips and banner kept", async () => {
     mockGetNgoDrives.mockResolvedValue([]);
     render(<NgoDrivesSection />);
-    expect(await screen.findByTestId("ngo-drives-empty")).toHaveTextContent("No live drives right now. Verified NGOs post their needs here, check back soon.");
+    const empty = await screen.findByTestId("ngo-drives-empty");
+    expect(empty).toHaveTextContent("No open drives in All right now");
+    expect(empty).toHaveTextContent("Check back soon: verified NGOs add new drives regularly.");
+    expect(empty.className).toContain("border-dashed");
+    expect(empty.querySelector("svg")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /Browse donee needs/ })).toBeNull();
     expect(screen.getByRole("heading", { name: /Drives by/ })).toBeInTheDocument();
-    expect(screen.getByText("Every NGO is verified")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Browse donee needs/ })).toHaveAttribute("href", "/requests");
-    expect(screen.queryByRole("group", { name: /Filter NGO drives/ })).toBeNull();
+    expect(screen.getByRole("button", { name: /All Categories/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Education/ })).toBeDisabled();
+    expect(screen.getByText("Want to see every drive?")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /SEE ALL DRIVES/ })).toHaveAttribute("href", "/requests?type=ngos");
   });
 
   describe("below 768px", () => {

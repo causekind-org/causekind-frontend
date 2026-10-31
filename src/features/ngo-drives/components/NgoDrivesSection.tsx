@@ -128,21 +128,29 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
         />
 
         {/* ── Category Filter Pills Row ── */}
-        {!noLiveDrives && <CategoryChipsRow
+        <CategoryChipsRow
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           categoryCounts={categoryCounts}
           disableEmpty
           groupAriaLabel={ui("Filter NGO drives by category")}
-        />}
+        />
 
         {/* ── Cards Grid / Loading / Empty State ── */}
         {noLiveDrives ? (
-          <div data-testid="ngo-drives-empty" className="mx-auto flex max-w-2xl flex-col items-center gap-3 rounded-2xl border border-stone-200 bg-white/70 px-6 py-10 text-center dark:border-zinc-800 dark:bg-zinc-900/60">
-            <p className="text-sm font-semibold text-stone-700 dark:text-stone-200"><UiText>No live drives right now. Verified NGOs post their needs here, check back soon.</UiText></p>
-            <Link href="/requests" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[var(--ck-home-ink,#b04a15)] hover:underline dark:text-[var(--ck-home-ink,#e07b3a)]">
-              <UiText>Browse donee needs</UiText> <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
+          <div
+            data-testid="ngo-drives-empty"
+            className="mx-auto flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-stone-300 dark:border-zinc-700 bg-white/60 dark:bg-zinc-900/50 px-6 py-10 text-center max-w-2xl"
+          >
+            <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400 dark:text-stone-500">
+              <Sparkles className="w-6 h-6" aria-hidden="true" />
+            </div>
+            <p className="text-sm sm:text-base font-bold text-stone-700 dark:text-stone-200">
+              <UiText>No open drives in</UiText> {selectedCategory} <UiText>right now</UiText>
+            </p>
+            <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 max-w-sm">
+              <UiText>Check back soon: verified NGOs add new drives regularly.</UiText>
+            </p>
           </div>
         ) : loading ? (
           <div className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3">
@@ -230,12 +238,12 @@ export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSec
         )}
 
         {/* ── Bottom Banner ── */}
-        {!noLiveDrives && <LiveBoardBanner
+        <LiveBoardBanner
           heading={isMobile ? ui("Want to help an NGO?") : ui("Want to see every drive?")}
           subtext={isMobile ? "Browse drives near you and give the exact items they need." : "Browse every drive by a verified NGO and give the items they need."}
           buttonLabel={ui("SEE ALL DRIVES")}
           buttonHref="/requests?type=ngos"
-        />}
+        />
       </div>
     </section>
     </>
