@@ -4037,6 +4037,66 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   .ck-rb-wordmark-static { display: block; }
 }
 
+/* Diwali logo. One 5.1s cycle per firecracker, offset by --ck-dlogo-delay so they
+   take turns: a rocket climbs for the first 16%, then the sparks fly. */
+.ck-dlogo-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: ck-dlogo-flicker 1.3s ease-in-out infinite;
+}
+.ck-dlogo-glow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ck-dlogo-glow 1.3s ease-in-out infinite;
+}
+.ck-dlogo-burst { width: 0; height: 0; }
+.ck-dlogo-rocket {
+  position: absolute;
+  left: -0.6px;
+  width: 1.2px;
+  height: 5px;
+  border-radius: 1px;
+  opacity: 0;
+  animation: ck-dlogo-rocket 5.1s ease-out var(--ck-dlogo-delay) infinite;
+}
+.ck-dlogo-spark {
+  position: absolute;
+  left: -2.5px;
+  top: -0.6px;
+  width: 5px;
+  height: 1.3px;
+  border-radius: 1px;
+  opacity: 0;
+  animation: ck-dlogo-spark 5.1s cubic-bezier(0.16, 1, 0.3, 1) var(--ck-dlogo-delay) infinite;
+}
+
+@keyframes ck-dlogo-flicker {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  30%      { transform: scale(0.93, 1.08) skewX(-3deg); }
+  60%      { transform: scale(1.04, 0.95) skewX(2deg); }
+}
+@keyframes ck-dlogo-glow {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  40%      { opacity: 1; transform: scale(1.1); }
+}
+@keyframes ck-dlogo-rocket {
+  0%        { opacity: 0; transform: translateY(20px); }
+  3%        { opacity: 1; }
+  15%       { opacity: 1; transform: translateY(0); }
+  17%, 100% { opacity: 0; transform: translateY(0); }
+}
+@keyframes ck-dlogo-spark {
+  0%, 15%   { opacity: 0; transform: rotate(var(--ck-dlogo-angle)) translateX(0); }
+  17%       { opacity: 1; transform: rotate(var(--ck-dlogo-angle)) translateX(0); }
+  32%       { opacity: 1; }
+  44%, 100% { opacity: 0; transform: rotate(var(--ck-dlogo-angle)) translateX(var(--ck-dlogo-reach)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-dlogo-flame, .ck-dlogo-glow { animation: none; }
+  .ck-dlogo-burst { display: none; }
+}
+
 /* Landing-page accents inherit the signed-in recipient palette. Fallbacks in
    shared sections preserve their public appearance outside this page. Tokens
    live on html while home is mounted so the header and portalled dialogs inherit. */
