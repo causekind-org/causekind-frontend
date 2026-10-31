@@ -423,9 +423,9 @@
 /* The lanterns from the asset sheet, the same ones as desktop, and the footer's
    lotuses. Heights are set per place; width follows each lantern's shape. */
 @media (max-width: 767.98px) {
-  .ck-dw-lantern { background-image: url("/images/diwali/lantern-kandil.webp"); }
-  .ck-dw-lantern-left { width: 30px; height: 100px; }
-  .ck-dw-lantern-right { width: 24px; height: 92px; background-image: url("/images/diwali/lantern-brass2.webp"); }
+  .ck-dw-lantern { background-image: url("/images/diwali/lantern-hex.webp"); }
+  .ck-dw-lantern-left { width: 36px; height: 88px; }
+  .ck-dw-lantern-right { width: 32px; height: 78px; }
   .ck-dw-seam .ck-dw-hang { background-image: url("/images/diwali/lantern-brass.webp"); }
   .ck-dw-seam .ck-dw-hang-right { background-image: url("/images/diwali/lantern-brass2.webp"); }
   .ck-dw-seam[data-art="kandil"] .ck-dw-hang { background-image: url("/images/diwali/lantern-kandil.webp"); }

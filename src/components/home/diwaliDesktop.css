@@ -160,13 +160,13 @@
     top: 0;
     width: 56px;
     height: 140px;
-    background: url("/images/diwali/lantern-kandil.webp") center top / contain no-repeat;
+    background: url("/images/diwali/lantern-hex.webp") center top / contain no-repeat;
     transform-origin: 50% 0;
     animation: ck-dw-sway 4.6s ease-in-out infinite alternate;
   }
-  .ck-dw-lantern-left { left: 3%; width: 60px; height: 200px; }
-  .ck-dw-lantern-right { left: 38%; width: 50px; height: 190px; background-image: url("/images/diwali/lantern-brass2.webp"); animation-duration: 5.7s; animation-delay: -2s; }
-  .ck-dw-lantern-d { left: 21%; width: 58px; height: 140px; background-image: url("/images/diwali/lantern-hex.webp"); animation-duration: 5.1s; animation-delay: -3.3s; }
+  .ck-dw-lantern-left { left: 3%; width: 66px; height: 160px; }
+  .ck-dw-lantern-right { left: 38%; width: 58px; height: 140px; animation-duration: 5.7s; animation-delay: -2s; }
+  .ck-dw-lantern-d { left: 21%; width: 58px; height: 140px; animation-duration: 5.1s; animation-delay: -3.3s; }
   .ck-dw-spark {
     position: absolute;
     width: 11px;
