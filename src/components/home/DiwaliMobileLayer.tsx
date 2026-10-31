@@ -3,13 +3,14 @@
 import { useEffect, useRef } from "react";
 
 import "./diwaliMobile.css";
+import "./diwaliDesktop.css";
 
 const SPARKS = [14, 33, 49, 67, 84];
 
 /**
- * The string lights, swinging lanterns and sparks over the phone hero, decorative. The
- * layer is display:none from 768px and its images are only named inside a
- * max-width rule, so desktop requests nothing. Loops pause once it is off screen.
+ * The string lights, swinging lanterns and sparks over the hero, decorative. The
+ * layer is display:none on tablets and its images are only named inside width
+ * rules, so they request nothing. Loops pause once it is off screen.
  */
 export function DiwaliMobileLayer() {
   const ref = useRef<HTMLDivElement>(null);
@@ -29,6 +30,7 @@ export function DiwaliMobileLayer() {
       <span className="ck-dw-lights" />
       <span className="ck-dw-lantern ck-dw-lantern-left" />
       <span className="ck-dw-lantern ck-dw-lantern-right" />
+      <span className="ck-dw-lantern-d" />
       {SPARKS.map((left, index) => (
         <span
           key={left}

@@ -347,3 +347,9 @@ Pre-existing state recorded by the audit (uncommitted on branch
 ## 2026-10-31 — Fundraisers on phones: pager
 
 - Overlay arrows replaced by the Live needs pager (outlined arrows and dots below the row). Next no longer links away; "See all fundraisers" stays as the route to the full list.
+
+## 2026-10-31 — Diwali on desktop (>= 1024, guest home)
+
+- `src/components/home/diwaliDesktop.css` (new) carries the phone design to wide screens: night hero with the rangoli in a gold ring, lights and lanterns, butter fundraisers beside a left heading and pager, cream and butter grounds, wide arches (`public/images/diwali/wide-*`), crimson final CTA, night footer.
+- `HomeClient.tsx` adds seams to the desktop tree. Order is now hero, fundraisers, film on desktop too; `.track1` gains 80svh in landscape.
+- `diwaliMobile.css`: seam, lamp and fundraiser basics now also apply from 1024px, same rules in the same order. Tablets and signed-in donor and donee desktop homes unchanged.

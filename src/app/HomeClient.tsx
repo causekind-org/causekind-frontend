@@ -299,7 +299,7 @@ export default function HomeClient({
           <DashedJourneyRoad />
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
-      {/* Phones: live fundraisers follow the hero and leave with it, then the film. */}
+      {/* Live fundraisers follow the hero and leave with it, then the film. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><DiwaliCampaigns /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><DiwaliCampaigns /></>}
 
       <DiwaliSeam kind="edge" from="film" to="crimson" />
@@ -321,6 +321,7 @@ export default function HomeClient({
 
       {/* SECTION 3 — HOW DO WE WORK */}
       <div className="hidden lg:block">
+        <DiwaliSeam kind="edge" to="butter" lanterns="both" />
         <HowItWorksDesktop />
       </div>
       {!isRoleHome && (
@@ -333,6 +334,7 @@ export default function HomeClient({
       {/* SECTION 6 — LIVE NEEDS (Desktop) */}
       {showLiveNeeds && (
         <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
+          <DiwaliSeam kind="edge" from="butter" lanterns="right" />
           <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
           <NgoDrivesSection />
         </div>
@@ -340,15 +342,18 @@ export default function HomeClient({
 
       {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
       <div className="hidden lg:block">
+        <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
         <TrustSafetySection variant="desktop" />
       </div>
 
       {/* FOUNDER'S NOTE (Desktop) */}
       <div className="hidden lg:block">
+        <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
         <FoundersNoteSection variant="desktop" />
       </div>
 
-      <div className="hidden lg:block">
+      <div className="hidden lg:block" data-dw-panel>
+        <DiwaliSeam kind="edge" from="butter" />
         <GoogleReviewsSection />
       </div>
 
@@ -471,7 +476,10 @@ export default function HomeClient({
         <CreditsSection />
 
         {/* SECTION 9 — FINAL CTA */}
+        <DiwaliSeam kind="arch-swell" to="crimson" lanterns="both" />
         {!isRestoring && <FinalCtaComponent variant="desktop" card={!isGuest} />}
+        <DiwaliSeam kind="edge" from="crimson" to="night" />
+        <DiwaliSeam kind="diya" from="night" to="night" diyas={5} />
       </div>
       </div>
       )}

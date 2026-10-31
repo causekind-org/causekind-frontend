@@ -10,7 +10,7 @@ import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { fundraisers, type FundraiserCard, type FundraisingCategory } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
 
-const PHONE_QUERY = "(max-width: 767.98px)";
+const SHOWN_QUERY = "(max-width: 767.98px), (min-width: 1024px)";
 
 const CATEGORY: Record<FundraisingCategory, string> = {
   MEDICAL: "Medical",
@@ -51,10 +51,10 @@ function Card({ card }: { card: FundraiserCard }) {
 }
 
 /**
- * Live fundraisers straight after the hero, phones only. Real cards from the public
+ * Live fundraisers straight after the hero, on phones and desktop. Real cards from the public
  * endpoint; while there are none (or the service is off) an empty card says so and
  * points to item giving, the same wording as /fundraisers. Nothing is fetched on
- * wider screens. Its height feeds the film's lead-in, so triggers re-measure on load.
+ * tablets. Its height feeds the film's lead-in, so triggers re-measure on load.
  */
 export function DiwaliCampaigns() {
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
@@ -83,7 +83,7 @@ export function DiwaliCampaigns() {
   };
 
   useEffect(() => {
-    if (!window.matchMedia(PHONE_QUERY).matches) return;
+    if (!window.matchMedia(SHOWN_QUERY).matches) return;
     let live = true;
     fundraisers.live().catch(() => [] as FundraiserCard[]).then((next) => {
       if (live) setCards(next);

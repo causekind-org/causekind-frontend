@@ -4,6 +4,7 @@
    them. Sections sit on warm cream and butter, joined by varied DiwaliSeams.
    Unlayered, so it outranks the Tailwind utilities on the shared markup. */
 .ck-dw-layer,
+.ck-dw-lantern-d,
 .ck-dw-seam,
 .ck-dw-campaigns { display: none; }
 
@@ -165,6 +166,9 @@
   }
   .ck-home-page #live-needs-section [role="region"] h3 { color: var(--dw-heading); }
 
+}
+
+@media (max-width: 767.98px), (min-width: 1024px) {
   /* ── Seams ── */
   .ck-dw-seam { display: block; position: relative; --dw-from: var(--dw-cream); --dw-to: var(--dw-cream); background: var(--dw-from); }
   .ck-dw-seam[data-from="film"] { --dw-from: var(--dw-film); }
@@ -297,6 +301,9 @@
     animation: ck-dw-flicker 1.7s ease-in-out infinite alternate;
   }
 
+}
+
+@media (max-width: 767.98px) {
   /* ── Final CTA ── */
   .ck-home-page #join { background-color: var(--dw-crimson); padding-bottom: 1.5rem !important; }
   .ck-home-page #join .grid > :first-child :is(h1, h2, h3) { color: var(--dw-white); }
@@ -314,6 +321,9 @@
   body:has(.ck-home-page) #footer { background-color: var(--dw-night); border-top: 0; }
   body:has(.ck-home-page) #footer .ck-donate-cta { --ck-donate-acc: var(--dw-saffron); --ck-donate-hov: var(--dw-gold); --ck-donate-on: var(--dw-night); color: var(--dw-night); }
 
+}
+
+@media (max-width: 767.98px), (min-width: 1024px) {
   /* ── Fundraisers: light, plain cards, straight after the hero ── */
   .ck-dw-campaigns { display: block; position: relative; padding: 1.5rem 0 2.25rem; background: var(--dw-butter); color: #2a1208; }
   .ck-dw-campaigns::before,
@@ -363,6 +373,9 @@
   .ck-dw-c-all { display: flex; width: fit-content; align-items: center; min-height: 2.75rem; margin: 0 auto; padding-inline: 1.1rem; border: 1px solid var(--dw-burgundy); border-radius: 999px; font-size: 0.85rem; font-weight: 700; color: var(--dw-heading); }
   .ck-dw-c-empty .ck-dw-c-name { -webkit-line-clamp: unset; }
 
+}
+
+@media (max-width: 767.98px) {
   .dark body:has(.ck-home-page) header[data-home-hero="top"] .ck-mobile-header > a { background: var(--dw-night); }
   .dark .ck-home-page #about-causekind a { color: var(--dw-white); }
   .dark .ck-home-page #about-causekind p span { color: var(--dw-saffron); }
