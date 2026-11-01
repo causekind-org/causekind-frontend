@@ -3,13 +3,14 @@
 import { ChangeStatusNote, OwnerEditButton, OwnerEditDialog, useNgoPageOwner, type OwnerEditKind } from "./NgoProfileOwnerEdit";
 import type { NgoProfileManage } from "@/lib/api";
 import { PastWorkSection } from "@/features/ngo-drives/components/PastWorkSection";
+import { PastActivityEditDialog } from "@/features/ngo-profile/PastActivity";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   AlertCircle, Building2, Calendar, ChevronLeft, ChevronRight, FileText, Globe, Hash, Mail, MapPin,
-  Package, Phone, Scale, UserRound,
+  Package, Pencil, Phone, Scale, UserRound,
 } from "lucide-react";
-import { getPublicNgo, type PublicNgoProfile } from "@/lib/api";
+import { getMyNgoActivities, getPublicNgo, type NgoActivity, type PublicNgoProfile } from "@/lib/api";
 import { PageSkeleton } from "@/components/skeletons";
 import { FilePreviewDialog } from "@/components/FilePreviewDialog";
 import { BackButton, DRIVES_SECTION_HREF } from "@/components/BackButton";
@@ -96,7 +97,7 @@ export function NgoHeroBanner({
 
   return (
     <div
-      className="relative h-44 w-full overflow-hidden bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800 sm:h-56 lg:h-64"
+      className="relative w-full overflow-hidden bg-stone-200 dark:bg-zinc-900"
       data-testid="ngo-hero-banner"
     >
       {showCover ? (
@@ -104,7 +105,7 @@ export function NgoHeroBanner({
         <img
           src={coverImageUrl!}
           alt={`${orgName} cover banner`}
-          className="h-full w-full object-cover"
+          className="block h-auto max-h-[37.5vw] w-full object-cover object-center max-sm:max-h-[56.25vw]"
           onLoad={(e) => {
             const { naturalWidth, naturalHeight } = e.currentTarget;
             if (naturalWidth > 0 && naturalHeight > 0 && !isBannerDimensions(naturalWidth, naturalHeight)) {
@@ -121,20 +122,17 @@ export function NgoHeroBanner({
           <img
             src={DEFAULT_BANNER}
             alt="CauseKind verified NGO distribution drive"
-            className="h-full w-full object-cover"
+            className="block h-auto max-h-[37.5vw] w-full object-cover object-center max-sm:max-h-[56.25vw]"
             onError={() => setDefaultFailed(true)}
             data-testid="ngo-default-banner"
           />
         </picture>
       ) : (
         <div
-          className="h-full w-full bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800"
+          className="aspect-[16/6] w-full bg-gradient-to-br from-emerald-950 via-emerald-900 to-emerald-800"
           data-testid="ngo-gradient-fallback"
         />
       )}
-
-      {/* Dark gradient overlay so the title, badges, and quick-stats remain completely readable */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-emerald-950/95 via-emerald-900/50 to-black/30" />
     </div>
   );
 }
@@ -157,6 +155,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
   // The NGO's own page: Edit buttons on every card (never for donors; the server decides ownership).
   const { manage, setManage } = useNgoPageOwner(slug);
   const [editing, setEditing] = useState<OwnerEditKind | null>(null);
+  const [editingActivity, setEditingActivity] = useState<NgoActivity | null>(null);
   const onOwnerSaved = (m: NgoProfileManage, publicChanged: boolean) => {
     setManage(m);
     // Cosmetic changes show at once: reload what donors see. A verified-field request changes nothing public yet.
@@ -181,14 +180,16 @@ export function NgoPublicPage({ slug }: { slug: string }) {
       {manage && <OwnerEditDialog kind={editing} manage={manage} onSaved={onOwnerSaved} onClose={() => setEditing(null)} />}
 
       {/* ── Hero ── */}
-      <section className="bg-gradient-to-br from-emerald-900 to-emerald-800 text-white">
-        <div className="mx-auto max-w-6xl px-4 pt-3 sm:px-6"><BackButton onDark /></div>
-        <NgoHeroBanner
-          coverImageUrl={ngo.coverImageUrl}
-          orgName={ngo.organizationName}
-        />
-        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:py-8">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-end -mt-16 sm:-mt-20">
+      <section className="border-b border-stone-200 bg-white text-stone-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-stone-100">
+        <div className="relative">
+          <NgoHeroBanner
+            coverImageUrl={ngo.coverImageUrl}
+            orgName={ngo.organizationName}
+          />
+          <div data-testid="ngo-hero-back" className="absolute left-3 top-3 z-10 rounded-full bg-black/55 px-2 text-white backdrop-blur-sm sm:left-5 sm:top-4"><BackButton onDark /></div>
+        </div>
+        <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
             <SafeImg src={ngo.logoUrl} alt={`${ngo.organizationName} logo`}
               className="relative h-24 w-24 shrink-0 rounded-2xl border-4 border-white bg-white object-cover shadow-lg dark:border-zinc-900"
               fallback={
@@ -199,23 +200,23 @@ export function NgoPublicPage({ slug }: { slug: string }) {
             <div className="min-w-0 flex-1">
               <h1 className="text-3xl font-black leading-tight sm:text-4xl">{ngo.organizationName}</h1>
               {manage && <div className="mt-2">{edit("photos", "cover, logo and photos")}</div>}
-              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-600 bg-emerald-950/40 px-3 py-1 text-xs font-bold tracking-wide">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" aria-hidden />
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-600 bg-emerald-50 px-3 py-1 text-xs font-bold tracking-wide text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
                 Verified by CauseKind{ngo.verifiedAt ? ` on ${formatDdMmYyyy(ngo.verifiedAt)}` : ""}
               </p>
-              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-emerald-50/90">
+              <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600 dark:text-stone-300">
                 {place && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" aria-hidden />{place}</span>}
                 {ngo.yearOfEstablishment && <span className="inline-flex items-center gap-1"><Calendar className="h-4 w-4" aria-hidden />Formed in {ngo.yearOfEstablishment}</span>}
               </p>
             </div>
             {tr && (
               <dl className="grid grid-cols-2 gap-3 sm:w-72" data-testid="ngo-quick-stats">
-                <div className="rounded-xl bg-white/10 p-3 backdrop-blur">
-                  <dt className="text-2xs font-bold uppercase tracking-wider text-emerald-100/80">Drives completed</dt>
+                <div className="rounded-xl bg-stone-100 p-3 dark:bg-zinc-800">
+                  <dt className="text-2xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Drives completed</dt>
                   <dd className="mt-1 text-2xl font-black">{tr.completedDrives ?? 0}</dd>
                 </div>
-                <div className="rounded-xl bg-white/10 p-3 backdrop-blur">
-                  <dt className="text-2xs font-bold uppercase tracking-wider text-emerald-100/80">Items received</dt>
+                <div className="rounded-xl bg-stone-100 p-3 dark:bg-zinc-800">
+                  <dt className="text-2xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Items received</dt>
                   <dd className="mt-1 text-2xl font-black">{tr.itemsReceived ?? 0}</dd>
                 </div>
               </dl>
@@ -280,7 +281,16 @@ export function NgoPublicPage({ slug }: { slug: string }) {
               </ul>
             </Card>
           )}
-          <PastWorkSection title="Past activity" ngoName={ngo.organizationName} activities={ngo.activities ?? ngo.pastActivities} />
+          <PastWorkSection title="Past activity" ngoName={ngo.organizationName} activities={ngo.activities ?? ngo.pastActivities}
+            actions={manage ? (a) => (
+              <button type="button" aria-label={`Edit ${a.title}`} onClick={() => { void getMyNgoActivities().then((list) => setEditingActivity(list.find((x) => x.id === a.id) ?? null)); }}
+                className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-stone-600 hover:text-emerald-700 dark:text-stone-300">
+                <Pencil className="h-3.5 w-3.5" aria-hidden /> Edit
+              </button>
+            ) : undefined} />
+          {editingActivity && (
+            <PastActivityEditDialog activity={editingActivity} onClose={() => setEditingActivity(null)} onSaved={() => setEditingActivity(null)} />
+          )}
 
           {(ngo.liveDrives?.length ?? 0) > 0 && (
             <Card title="Live drives">
@@ -292,14 +302,8 @@ export function NgoPublicPage({ slug }: { slug: string }) {
         </div>
 
         <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start" data-testid="ngo-summary">
-          <Card title="Organization details" action={manage ? (
-            <div className="flex flex-col items-end gap-1.5">
-              <OwnerEditButton label="legal details" onClick={() => setEditing("identity")} />
-              <button type="button" onClick={() => setEditing("contact")} className="text-xs font-bold text-emerald-800 underline">Edit phone / address</button>
-              <button type="button" onClick={() => setEditing("links")} className="text-xs font-bold text-emerald-800 underline">Edit links</button>
-            </div>
-          ) : null}>
-            <ChangeStatusNote manage={manage} fields={["organizationName", "panNumber", "registrationNumber", "officialEmail", "registeredOfficeAddress"]} />
+          <Card title="Organization details" action={edit("details", "organization details")}>
+            <ChangeStatusNote manage={manage} fields={["officialEmail"]} />
             <dl className="grid gap-4">
               <Detail icon={Scale} label="Legal structure">{ngo.legalStructure ? formatLegalStructure(ngo.legalStructure) : null}</Detail>
               <Detail icon={Hash} label="Registration number">{ngo.registrationNumber}</Detail>

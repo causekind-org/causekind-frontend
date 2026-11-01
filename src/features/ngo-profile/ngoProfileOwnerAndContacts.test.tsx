@@ -77,23 +77,30 @@ describe("the NGO editing its own public page", () => {
 
   it("a verified field becomes a change request, and donors keep seeing the current value", async () => {
     auth.user = { id: 1, email: "info@hope.test", role: "NGO_PARTNER" };
-    api.requestNgoProfileChange.mockResolvedValue({ id: 3, field: "organizationName", status: "PENDING" });
+    api.requestNgoProfileChange.mockResolvedValue({ id: 3, field: "officialEmail", status: "PENDING" });
     api.getMyNgoProfileManage
       .mockResolvedValueOnce(manage)
-      .mockResolvedValue({ ...manage, requests: [{ id: 3, field: "organizationName", newValue: "Hope Foundation", status: "PENDING", createdAt: "2026-10-29T10:00:00" }] });
+      .mockResolvedValue({ ...manage, requests: [{ id: 3, field: "officialEmail", newValue: "new@hope.test", status: "PENDING", createdAt: "2026-10-29T10:00:00" }] });
     render(<NgoPublicPage slug="hope" />);
-    fireEvent.click(await screen.findByRole("button", { name: "Edit legal details" }));
-    fireEvent.change(screen.getByLabelText("Legal name"), { target: { value: "Hope Foundation" } });
-    fireEvent.click(within(screen.getByLabelText("Legal name").parentElement!).getByRole("button", { name: "Send for review" }));
-    await waitFor(() => expect(api.requestNgoProfileChange).toHaveBeenCalledWith("organizationName", "Hope Foundation", undefined));
-    expect(await screen.findByText(/keeps the current value/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "Edit organization details" }));
+    expect(screen.queryByRole("button", { name: /Edit phone/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Edit links/ })).toBeNull();
+    const readOnly = screen.getByTestId("details-readonly");
+    expect(readOnly).toHaveTextContent("Legal name");
+    expect(readOnly).toHaveTextContent("PAN");
+    expect(readOnly).toHaveTextContent("Registration number");
+    expect(within(readOnly).queryByRole("textbox")).toBeNull();
+    fireEvent.change(screen.getByLabelText(/Official email/), { target: { value: "new@hope.test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect(api.requestNgoProfileChange).toHaveBeenCalledWith("officialEmail", "new@hope.test"));
+    expect(await screen.findByText(/after our team reviews/)).toBeInTheDocument();
     // Nothing donors see changes until approval: the public page is not reloaded (only the first load).
     expect(api.getPublicNgo).toHaveBeenCalledTimes(1);
   });
 
   it("the card shows the reason when a change was not approved", async () => {
     auth.user = { id: 1, email: "info@hope.test", role: "NGO_PARTNER" };
-    api.getMyNgoProfileManage.mockResolvedValue({ ...manage, requests: [{ id: 4, field: "panNumber", newValue: "ABCPK1234Q", status: "REJECTED", adminReason: "PAN card does not match", createdAt: "2026-10-29T10:00:00" }] });
+    api.getMyNgoProfileManage.mockResolvedValue({ ...manage, requests: [{ id: 4, field: "officialEmail", newValue: "x@hope.test", status: "REJECTED", adminReason: "PAN card does not match", createdAt: "2026-10-29T10:00:00" }] });
     render(<NgoPublicPage slug="hope" />);
     expect(await screen.findByTestId("change-rejected")).toHaveTextContent("PAN card does not match");
   });
@@ -129,17 +136,14 @@ describe("verified details need the wizard's fields", () => {
     expect(sent[1]).toEqual({ fullName: "Ravi Rao", designation: "Director", mobileNumber: "9812345678", email: "ravi@hope.test", panNumber: "ABCPR1234K", idProofDocumentId: 77 });
   });
 
-  it("the phone saves at once; the registered address goes for review", async () => {
+  it("the phone saves at once from the one Save", async () => {
     api.updateNgoProfileCosmetic.mockResolvedValue(manage);
-    api.requestNgoProfileChange.mockResolvedValue({ id: 6, field: "registeredOfficeAddress", status: "PENDING" });
     render(<NgoPublicPage slug="hope" />);
-    fireEvent.click(await screen.findByRole("button", { name: "Edit phone / address" }));
-    fireEvent.change(screen.getByLabelText(/Contact phone/), { target: { value: "+919811112222" } });
+    fireEvent.click(await screen.findByRole("button", { name: "Edit organization details" }));
+    fireEvent.change(screen.getByLabelText(/Organization phone/), { target: { value: "+919811112222" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(api.updateNgoProfileCosmetic).toHaveBeenCalledWith({ organizationPhone: "+919811112222" }));
-    fireEvent.change(screen.getByLabelText(/Registered office address/), { target: { value: "99 New Road, Pune 411002" } });
-    fireEvent.click(screen.getByRole("button", { name: "Send address for review" }));
-    await waitFor(() => expect(api.requestNgoProfileChange).toHaveBeenCalledWith("registeredOfficeAddress", "99 New Road, Pune 411002", undefined));
+    expect(api.requestNgoProfileChange).not.toHaveBeenCalled();
   });
 });
 

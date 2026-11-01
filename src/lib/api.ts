@@ -5812,6 +5812,7 @@ export async function uploadNgoProfilePhoto(type: "cover" | "logo" | "office_pho
     const r = await res.json().catch(() => null);
     throw new ApiError(res.status, r?.fieldErrors?.[0]?.message || r?.detail || "We couldn't upload the photo. Please try again.", r);
   }
+  invalidateRequestCache();
   return (await res.json()) as NgoProfileManage;
 }
 export function removeNgoProfilePhoto(id: number) {
@@ -5894,7 +5895,11 @@ export async function uploadNgoActivityPhoto(id: number, file: File): Promise<Ng
     try { const b = await res.json(); message = b?.fieldErrors?.[0]?.message || b?.detail || message; } catch { /* keep statusText */ }
     throw new Error(message || "Upload failed");
   }
+  invalidateRequestCache();
   return res.json();
+}
+export function dismissNgoActivityEditNote(id: number) {
+  return request<NgoActivity>(`/api/v1/ngo/activities/${id}/edit-note`, { method: "DELETE" });
 }
 export function removeNgoActivityMedia(id: number, mediaId: number) {
   return request<NgoActivity>(`/api/v1/ngo/activities/${id}/media/${mediaId}`, { method: "DELETE" });
@@ -5916,7 +5921,7 @@ export function deleteNgoActivityVideo(id: number, mediaId: number) {
   return request<void>(`/api/v1/ngo/activities/${id}/video/${mediaId}`, { method: "DELETE" });
 }
 
-export type AdminNgoActivity = { activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
+export type AdminNgoActivity = { applicationUnderReview?: boolean; editOfLive?: boolean; activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
 export function getPendingNgoActivities() {
   return request<AdminNgoActivity[]>("/api/v1/admin/ngo-activities");
 }

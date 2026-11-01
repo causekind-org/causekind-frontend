@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, Pencil, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -13,6 +13,7 @@ import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherS
 import { DESIGNATIONS, isOtherChoice, otherTextError, mobileError } from "@/features/ngo-registration/ngoRegistrationModel";
 import { compressImageIfNeeded } from "@/lib/imageCompression";
 import { FilePreviewDialog } from "@/components/FilePreviewDialog";
+import { toast } from "@/lib/toast";
 
 /**
  * The NGO's own view of its public page: whether the viewer owns this page (the server decides:
@@ -59,11 +60,8 @@ export function ChangeStatusNote({ manage, fields }: { manage: NgoProfileManage 
   );
 }
 
-export type OwnerEditKind = "photos" | "about" | "contact" | "links" | "identity" | "representatives";
+export type OwnerEditKind = "photos" | "about" | "details" | "representatives";
 
-const VERIFIED_LABELS: Record<Exclude<NgoProfileVerifiedField, "representatives" | "registeredOfficeAddress">, string> = {
-  organizationName: "Legal name", panNumber: "PAN", registrationNumber: "Registration number", officialEmail: "Official email",
-};
 const input = "w-full min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
 
 /**
@@ -80,12 +78,7 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
   const [busy, setBusy] = useState(false);
   const [about, setAbout] = useState(manage.aboutUs ?? "");
   const [phone, setPhone] = useState(manage.organizationPhone ?? "");
-  const [address, setAddress] = useState(manage.registeredOfficeAddress ?? "");
-  const [links, setLinks] = useState<string[]>(manage.links.length ? manage.links : [""]);
-  const [identity, setIdentity] = useState<Record<string, string>>({
-    organizationName: manage.organizationName ?? "", panNumber: manage.panNumber ?? "",
-    registrationNumber: manage.registrationNumber ?? "", officialEmail: manage.officialEmail ?? "",
-  });
+  const [officialEmail, setOfficialEmail] = useState(manage.officialEmail ?? "");
   // existing: a person already on the page (name/role edits only, unless "replace"); new or replaced people need every detail.
   type RepRow = { fullName: string; designation: string; existing: boolean; replace: boolean; mobileNumber: string; email: string; panNumber: string; idProof: { documentId: number; name: string } | null };
   const blankRep = (existing: boolean): Omit<RepRow, "fullName" | "designation"> => ({ existing, replace: false, mobileNumber: "", email: "", panNumber: "", idProof: null });
@@ -95,6 +88,16 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
   const [uploadingRep, setUploadingRep] = useState<number | null>(null);
   const [reason, setReason] = useState("");
   const [preview, setPreview] = useState<number | null>(null);
+  // The photos card stages everything; "Save changes" commits it.
+  type PhotoType = "cover" | "logo" | "office_photo";
+  type StagedPhoto = { key: number; type: PhotoType; file: File; url: string };
+  const [staged, setStaged] = useState<StagedPhoto[]>([]);
+  const [removedIds, setRemovedIds] = useState<number[]>([]);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const stagedKey = useRef(0);
+  const dirty = staged.length > 0 || removedIds.length > 0;
+  const resetStaged = () => { staged.forEach((p) => URL.revokeObjectURL(p.url)); setStaged([]); setRemovedIds([]); setConfirmDiscard(false); };
+  const requestClose = () => { if (kind === "photos" && dirty) setConfirmDiscard(true); else onClose(); };
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadType = useRef<"cover" | "logo" | "office_photo">("office_photo");
 
@@ -119,25 +122,26 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
       if (t.length < 100 || t.length > 2000) return setError("Write 100 to 2000 characters about your NGO.");
       return run(() => updateNgoProfileCosmetic({ aboutUs: t }), "Saved. It now shows on your page.");
     }
-    if (kind === "contact") {
-      const err = mobileError(phone);
-      if (err) return setError(err);
-      return run(() => updateNgoProfileCosmetic({ organizationPhone: phone.trim() }), "Saved. It now shows on your page.");
-    }
-    if (kind === "links") {
-      const list = links.map((l) => l.trim()).filter(Boolean);
-      if (list.some((l) => !/^https:\/\/\S+$/.test(l))) return setError("Each link must start with https://");
-      return run(() => updateNgoProfileCosmetic({ links: list }), "Saved. It now shows on your page.");
-    }
   }
 
-  async function sendIdentity(field: Exclude<NgoProfileVerifiedField, "representatives">) {
-    const value = field === "registeredOfficeAddress" ? address.trim() : identity[field];
-    if (field === "registeredOfficeAddress" && (value.length < 10 || value.length > 300)) return setError("Enter the full address (10 to 300 characters).");
+  // One Save for the card: the phone saves at once; a new official email goes to review.
+  async function saveDetails() {
+    const nextPhone = phone.trim();
+    const nextEmail = officialEmail.trim();
+    const phoneChanged = nextPhone !== (manage.organizationPhone ?? "");
+    const emailChanged = nextEmail !== (manage.officialEmail ?? "");
+    if (!phoneChanged && !emailChanged) return setNote("Nothing to save.");
+    if (phoneChanged) { const err = mobileError(nextPhone); if (err) return setError(err); }
+    if (emailChanged && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nextEmail)) return setError("Enter a valid email address.");
     await run(async () => {
-      await requestNgoProfileChange(field, value, reason.trim() || undefined);
-      return getMyNgoProfileManage();
-    }, "Sent for review. Your page keeps the current value until it's approved.", false);
+      let m: NgoProfileManage | undefined;
+      if (phoneChanged) m = await updateNgoProfileCosmetic({ organizationPhone: nextPhone });
+      if (emailChanged) {
+        await requestNgoProfileChange("officialEmail", nextEmail);
+        m = await getMyNgoProfileManage();
+      }
+      return m;
+    }, emailChanged ? "Saved. The new email goes live after our team reviews it." : "Saved. It now shows on your page.", phoneChanged);
   }
 
   const needsDetails = (r: RepRow) => !r.existing || r.replace;
@@ -175,27 +179,53 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
     }
   }
 
-  async function upload(file: File | undefined) {
+  function stage(file: File | undefined) {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) return setError(`${file.name} is larger than 5 MB.`);
-    await run(async () => uploadNgoProfilePhoto(uploadType.current, await compressImageIfNeeded(file)), "Photo saved.");
+    setError(""); setNote("");
+    const type = uploadType.current;
+    const replaces = replaceId.current;
+    replaceId.current = null;
+    if (replaces != null) setRemovedIds((p) => [...p, replaces]);
+    const entry = { key: ++stagedKey.current, type, file, url: URL.createObjectURL(file) };
+    // One cover and one logo: a new one replaces a staged one.
+    setStaged((p) => [...p.filter((x) => type === "office_photo" || x.type !== type), entry]);
   }
 
-  const pick = (t: "cover" | "logo" | "office_photo") => { uploadType.current = t; fileInput.current?.click(); };
-  const byType = (t: string) => manage.photos.filter((p) => p.type === t);
+  async function savePhotos() {
+    setBusy(true); setError("");
+    try {
+      let m: NgoProfileManage = manage;
+      for (const id of removedIds) m = await removeNgoProfilePhoto(id);
+      for (const p of staged) m = await uploadNgoProfilePhoto(p.type, await compressImageIfNeeded(p.file));
+      onSaved(m, true);
+      resetStaged();
+      toast.success("Photos saved.");
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error && e.message ? e.message : "We couldn't save the photos. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const replaceId = useRef<number | null>(null);
+  const pick = (t: PhotoType, replaces: number | null = null) => { uploadType.current = t; replaceId.current = replaces; fileInput.current?.click(); };
+  const byType = (t: string) => manage.photos.filter((p) => p.type === t && !removedIds.includes(p.id));
   const titled: Record<OwnerEditKind, string> = {
-    photos: "Cover, logo and photos", about: "About us", contact: "Contact phone and address", links: "Links",
-    identity: "Legal details", representatives: "Representatives / trustees",
+    photos: "Cover, logo and photos", about: "About us", details: "Organization details", representatives: "Representatives / trustees",
   };
-  const verified = kind === "identity" || kind === "representatives";
+  const verified = kind === "representatives";
   const previewFiles = manage.photos.map((p) => ({ name: p.type.replace("_", " ").toLowerCase(), url: p.url, mimeType: "image/jpeg" }));
 
   return (
-    <Dialog open={kind != null} onOpenChange={(o) => { if (!o) onClose(); }}>
+    <Dialog open={kind != null} onOpenChange={(o) => { if (!o) requestClose(); }}>
       <DialogContent data-ck-role-theme="ngo" className="block max-h-[90vh] max-w-lg overflow-y-auto p-6">
         {kind && <DialogTitle className="text-lg font-bold text-stone-900 dark:text-stone-100">Edit {titled[kind].toLowerCase()}</DialogTitle>}
         <DialogDescription className="mt-1 text-xs text-stone-500">
           {verified ? "Verified details change only after our team reviews them. Until then donors see the current value."
+            : kind === "photos" ? "Nothing changes on your page until you save."
+            : kind === "details" ? "The phone saves right away; a new official email goes to our team for review."
             : "Changes show on your page right away."}
         </DialogDescription>
 
@@ -205,12 +235,18 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
               {(["COVER", "LOGO"] as const).map((t) => {
                 const p = byType(t)[0];
                 const label = t === "COVER" ? "Cover photo" : "Logo";
-                return p ? (
+                const type = t === "COVER" ? "cover" : "logo";
+                const fresh = staged.find((x) => x.type === type);
+                return fresh ? (
+                  <UploadedFilePreview key={t} file={{ name: fresh.file.name, mimeType: fresh.file.type, size: fresh.file.size }} kind="photo" label={label}
+                    localBlobUrl={fresh.url} onPreview={() => {}} onReplace={() => pick(type)}
+                    onRemove={() => setStaged((x) => x.filter((y) => y.key !== fresh.key))} disabled={busy} />
+                ) : p ? (
                   <UploadedFilePreview key={t} file={{ name: label, photoId: p.id, s3Url: p.url, mimeType: "image/jpeg" }} kind="photo" label={label}
                     localBlobUrl={p.url} onPreview={() => setPreview(manage.photos.indexOf(p))}
-                    onReplace={() => pick(t === "COVER" ? "cover" : "logo")} onRemove={() => run(() => removeNgoProfilePhoto(p.id), "Removed.")} disabled={busy} />
+                    onReplace={() => pick(type)} onRemove={() => setRemovedIds((x) => [...x, p.id])} disabled={busy} />
                 ) : (
-                  <button key={t} type="button" onClick={() => pick(t === "COVER" ? "cover" : "logo")} className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-300 text-xs font-semibold">
+                  <button key={t} type="button" onClick={() => pick(type)} className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-300 text-xs font-semibold">
                     <Plus className="h-4 w-4" aria-hidden /> Add {label.toLowerCase()}
                   </button>
                 );
@@ -219,13 +255,18 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
               {byType("OFFICE_PHOTO").map((p, i) => (
                 <UploadedFilePreview key={p.id} file={{ name: `Photo ${i + 1}`, photoId: p.id, s3Url: p.url, mimeType: "image/jpeg" }} kind="photo"
                   label={`Organisation photo ${i + 1}`} localBlobUrl={p.url} onPreview={() => setPreview(manage.photos.indexOf(p))}
-                  onReplace={() => pick("office_photo")} onRemove={() => run(() => removeNgoProfilePhoto(p.id), "Removed.")} disabled={busy} />
+                  onReplace={() => pick("office_photo", p.id)} onRemove={() => setRemovedIds((x) => [...x, p.id])} disabled={busy} />
+              ))}
+              {staged.filter((x) => x.type === "office_photo").map((x) => (
+                <UploadedFilePreview key={x.key} file={{ name: x.file.name, mimeType: x.file.type, size: x.file.size }} kind="photo" label="New organisation photo"
+                  localBlobUrl={x.url} onPreview={() => {}} onReplace={() => { setStaged((p) => p.filter((y) => y.key !== x.key)); pick("office_photo"); }}
+                  onRemove={() => setStaged((p) => p.filter((y) => y.key !== x.key))} disabled={busy} />
               ))}
               <button type="button" onClick={() => pick("office_photo")} className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-stone-300 text-xs font-semibold">
                 <Plus className="h-4 w-4" aria-hidden /> Add organisation photo
               </button>
               <input ref={fileInput} type="file" accept="image/jpeg, image/png, image/webp" className="hidden" data-testid="owner-photo-input"
-                onChange={(e) => { void upload(e.target.files?.[0]); e.target.value = ""; }} />
+                onChange={(e) => { stage(e.target.files?.[0]); e.target.value = ""; }} />
             </>
           )}
 
@@ -237,57 +278,27 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
             </div>
           )}
 
-          {kind === "contact" && (
-            <>
-              <div className="space-y-1">
-                <label htmlFor="owner-phone" className="text-xs font-bold">Contact phone (+91)</label>
-                <input id="owner-phone" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={input} />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="owner-address" className="text-xs font-bold">Registered office address <span className="font-normal text-stone-400">(changes after review)</span></label>
-                <textarea id="owner-address" rows={3} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} className={`${input} py-2`}
-                  disabled={manage.requests.some((r) => r.field === "registeredOfficeAddress" && r.status === "PENDING")} />
-                <ChangeStatusNote manage={manage} fields={["registeredOfficeAddress"]} />
-                <button type="button" disabled={busy || manage.requests.some((r) => r.field === "registeredOfficeAddress" && r.status === "PENDING")}
-                  onClick={() => void sendIdentity("registeredOfficeAddress")}
-                  className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Send address for review</button>
-              </div>
-            </>
-          )}
-
-          {kind === "links" && (
-            <>
-              {links.map((l, i) => (
-                <div key={i} className="flex gap-2">
-                  <input aria-label={`Link ${i + 1}`} value={l} placeholder="https://" onChange={(e) => setLinks((p) => p.map((x, j) => (j === i ? e.target.value : x)))} className={input} />
-                  <button type="button" aria-label={`Remove link ${i + 1}`} onClick={() => setLinks((p) => p.filter((_, j) => j !== i))} className="shrink-0 px-2 text-stone-500 hover:text-red-600">
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                  </button>
-                </div>
-              ))}
-              {links.length < 3 && (
-                <button type="button" onClick={() => setLinks((p) => [...p, ""])} className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800">
-                  <Plus className="h-3.5 w-3.5" aria-hidden /> Add link
-                </button>
-              )}
-            </>
-          )}
-
-          {kind === "identity" && (Object.keys(VERIFIED_LABELS) as (keyof typeof VERIFIED_LABELS)[]).map((f) => {
-            const pending = manage.requests.some((r) => r.field === f && r.status === "PENDING");
+          {kind === "details" && (() => {
+            const emailPending = manage.requests.some((r) => r.field === "officialEmail" && r.status === "PENDING");
             return (
-              <div key={f} className="space-y-1">
-                <label htmlFor={`owner-${f}`} className="text-xs font-bold">{VERIFIED_LABELS[f]}</label>
-                <div className="flex gap-2">
-                  <input id={`owner-${f}`} value={identity[f]} disabled={pending} onChange={(e) => setIdentity((p) => ({ ...p, [f]: e.target.value }))} className={input} />
-                  <button type="button" disabled={busy || pending} onClick={() => void sendIdentity(f)}
-                    className="shrink-0 rounded-lg bg-emerald-700 px-3 text-xs font-bold text-white disabled:opacity-50">
-                    {pending ? "Pending review" : "Send for review"}
-                  </button>
+              <>
+                <dl data-testid="details-readonly" className="grid gap-2 rounded-lg bg-stone-50 p-3 text-sm dark:bg-zinc-800/60">
+                  {[["Legal name", manage.organizationName], ["PAN", manage.panNumber], ["Registration number", manage.registrationNumber]].map(([label, value]) => (
+                    <div key={label}><dt className="text-3xs font-bold uppercase text-stone-500">{label}</dt><dd className="font-semibold">{value || "—"}</dd></div>
+                  ))}
+                </dl>
+                <div className="space-y-1">
+                  <label htmlFor="owner-phone" className="text-xs font-bold">Organization phone (+91)</label>
+                  <input id="owner-phone" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={input} />
                 </div>
-              </div>
+                <div className="space-y-1">
+                  <label htmlFor="owner-officialEmail" className="text-xs font-bold">Official email <span className="font-normal text-stone-400">(changes after review)</span></label>
+                  <input id="owner-officialEmail" type="email" value={officialEmail} disabled={emailPending} onChange={(e) => setOfficialEmail(e.target.value)} className={input} />
+                  <ChangeStatusNote manage={manage} fields={["officialEmail"]} />
+                </div>
+              </>
             );
-          })}
+          })()}
 
           {kind === "representatives" && (
             <>
@@ -356,9 +367,28 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
 
         {error && <p role="alert" className="mt-3 text-xs font-semibold text-red-600">{error}</p>}
         {note && <p role="status" className="mt-3 text-xs font-semibold text-emerald-700">{note}</p>}
+        {confirmDiscard && (
+          <div role="alertdialog" aria-label="Discard changes?" className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
+            Discard changes?
+            <span className="flex gap-2">
+              <button type="button" onClick={() => setConfirmDiscard(false)} className="min-h-[36px] rounded-lg border border-stone-300 bg-white px-3">Keep editing</button>
+              <button type="button" onClick={() => { resetStaged(); onClose(); }} className="min-h-[36px] rounded-lg bg-red-600 px-3 text-white">Discard</button>
+            </span>
+          </div>
+        )}
         <div className="mt-5 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="min-h-[40px] rounded-lg border border-stone-300 px-4 text-xs font-semibold">Close</button>
-          {(kind === "about" || kind === "contact" || kind === "links") && (
+          <button type="button" onClick={requestClose} className="min-h-[40px] rounded-lg border border-stone-300 px-4 text-xs font-semibold">Close</button>
+          {kind === "photos" && (
+            <button type="button" disabled={busy || !dirty} onClick={() => void savePhotos()} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white disabled:opacity-60">
+              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Save changes
+            </button>
+          )}
+          {kind === "details" && (
+            <button type="button" disabled={busy} onClick={() => void saveDetails()} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white disabled:opacity-60">
+              {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Save
+            </button>
+          )}
+          {kind === "about" && (
             <button type="button" disabled={busy} onClick={() => void saveCosmetic()} className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-emerald-700 px-4 text-xs font-bold text-white disabled:opacity-60">
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} Save
             </button>

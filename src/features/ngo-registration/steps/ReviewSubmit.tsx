@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
 import { getMyNgoActivities, getNgoFilePreviewUrl, type NgoActivity } from "@/lib/api";
 import { formatActivityDate } from "@/features/ngo-profile/PastActivity";
+import { ActivityDetailDialog, ActivityLightbox } from "@/features/ngo-drives/components/PastWorkSection";
 import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
 import {
   PAN_DOC,
@@ -48,6 +49,9 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
   // Every uploaded file on this page, in page order, for the preview popup.
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [activities, setActivities] = useState<NgoActivity[]>([]);
+  const [openActivity, setOpenActivity] = useState<NgoActivity | null>(null);
+  const [activityPhoto, setActivityPhoto] = useState<{ photos: string[]; start: number; title: string } | null>(null);
+  const activityPhotos = (a: NgoActivity) => a.media.filter((m) => m.mediaType === "IMAGE" && m.url).map((m) => m.url!);
   useEffect(() => {
     let live = true;
     Promise.resolve(getMyNgoActivities()).then((list) => { if (live) setActivities(list ?? []); }).catch(() => {});
@@ -372,14 +376,16 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                   {activities.map((a) => (
                     <li key={a.id} data-testid="review-activity" className="min-w-0">
                       <p className="flex flex-wrap items-center gap-2 font-bold text-stone-800 dark:text-stone-200">
-                        <span className="min-w-0 break-words">{a.title}</span>
+                        <button type="button" onClick={() => setOpenActivity(a)} className="min-w-0 break-words text-left hover:underline">{a.title}</button>
                         {a.status === "PENDING" && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Under review</span>}
                       </p>
                       <p className="text-3xs text-stone-500 dark:text-stone-400">Activity date: {formatActivityDate(a.activityDate)}</p>
                       <div className="mt-1 flex flex-wrap gap-1.5">
                         {a.media.filter((m) => m.mediaType === "IMAGE" && m.url).map((m) => (
-                          // eslint-disable-next-line @next/next/no-img-element -- signed photo link
-                          <img key={m.id} src={m.url!} alt="" className="size-12 rounded-md object-cover" />
+                          <button key={m.id} type="button" onClick={() => setOpenActivity(a)} aria-label={`Open ${a.title}`} className="size-12 overflow-hidden rounded-md">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- signed photo link */}
+                            <img src={m.url!} alt="" className="h-full w-full object-cover" />
+                          </button>
                         ))}
                       </div>
                     </li>
@@ -394,6 +400,12 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             </div>
           </div>
         </section>
+
+        {openActivity && (
+          <ActivityDetailDialog a={openActivity as never} photos={activityPhotos(openActivity)} onClose={() => setOpenActivity(null)}
+            onPhoto={(i) => { setActivityPhoto({ photos: activityPhotos(openActivity), start: i, title: openActivity.title }); setOpenActivity(null); }} />
+        )}
+        {activityPhoto && <ActivityLightbox {...activityPhoto} onClose={() => setActivityPhoto(null)} />}
 
         {/* Confirmation Checkbox */}
         <div className="rounded-xl border border-ngo-300/40 bg-ngo-50/60 dark:bg-ngo-950/20 p-4 space-y-2">

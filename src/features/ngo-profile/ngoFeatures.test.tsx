@@ -135,7 +135,7 @@ describe("3. About the NGO card and public page", () => {
     // Documents open in the preview popup (no download link).
     fireEvent.click(screen.getByRole("button", { name: /80G certificate/ }));
     expect(await screen.findByTestId("file-preview")).toBeInTheDocument();
-    expect(screen.getAllByTestId("past-work-item")).toHaveLength(1);
+    expect(screen.getAllByTestId("activity-slide", { })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "View photos of Meal drive", hidden: true })).toBeInTheDocument();
   });
 
