@@ -56,7 +56,7 @@ describe("Assigning a pickup person", () => {
     fireEvent.change(screen.getByLabelText("New person phone"), { target: { value: "9123456789" } });
     fireEvent.click(confirm);
     await waitFor(() => expect(assignVolunteer).toHaveBeenCalledWith(3, 7, {
-      newPerson: { name: "Asha", phone: "+919123456789", email: "asha@x.test", role: null } }));
+      newPerson: { name: "Asha", phone: "+919123456789", email: "asha@x.test" } }));
   });
 
   it("opens the sheet from the popup's link", async () => {

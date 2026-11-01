@@ -52,10 +52,10 @@ describe("1. driveOfferAge utilities", () => {
 });
 
 describe("2. REQUIRE_CLEAN_CATEGORIES", () => {
-  it("includes clothing, household and furniture but excludes electronics", () => {
+  it("includes clothing only: household and furniture carry no condition checkbox", () => {
     expect(REQUIRE_CLEAN_CATEGORIES).toContain("Clothing");
-    expect(REQUIRE_CLEAN_CATEGORIES).toContain("Household");
-    expect(REQUIRE_CLEAN_CATEGORIES).toContain("Furniture");
+    expect(REQUIRE_CLEAN_CATEGORIES).not.toContain("Household");
+    expect(REQUIRE_CLEAN_CATEGORIES).not.toContain("Furniture");
     expect(REQUIRE_CLEAN_CATEGORIES).not.toContain("Electronics");
     expect(REQUIRE_CLEAN_CATEGORIES).not.toContain("Books");
   });

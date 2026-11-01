@@ -254,23 +254,37 @@ describe("NgoDetailsPage (/profile/ngo-details)", () => {
     expect(screen.queryByText(/Step 3 of 6/)).not.toBeInTheDocument();
   }, 20000);
 
-  it("prefers the URL step over the draft's saved step, and otherwise resumes the draft and writes it to the URL", async () => {
+  const stepFile = (id: number) => ({ name: `f${id}.pdf`, documentId: id, photoId: id, s3Url: `https://x.test/${id}`, mimeType: "application/pdf", size: 10 });
+  const firstThreeStepsDone = () => ({
+    currentStep: "authorized-rep", organizationName: "Smile Foundation", legalStructure: "trust", panNumber: "ABCTK1234Q",
+    registrationNumber: "REG/1", officialEmail: "info@smile.test", organizationPhone: "+919811111111", aboutUs: "We run a community kitchen. ".repeat(6),
+    yearOfEstablishment: "2005", registeredOfficeAddress: "12 Shanti Nagar, Pune",
+    documents: { pan: stepFile(1), "trust-reg-cert": stepFile(2), "trust-deed": stepFile(3), "bank-proof": stepFile(4), "cert-12a": stepFile(5) },
+    authorizationLetter: stepFile(6),
+    representatives: [{ fullName: "Asha Rao", designation: "Trustee", mobileNumber: "+919822222222", mobile: "+919822222222", email: "asha@smile.test", emailVerified: true, panNumber: "ABCPK1234Q", idProof: stepFile(7) }],
+  });
+
+  it("?step=org-photos opens step 4 when steps 1 to 3 are complete", async () => {
     signInAsNgo();
     window.scrollTo = vi.fn();
     vi.mocked(getMyNgoApplication).mockResolvedValue(null);
-    vi.mocked(getNgoDraft).mockResolvedValue({ currentStep: "org-photos", organizationName: "Smile Foundation" });
-
-    mockStepParam = "authorized-rep";
-    const first = render(<NgoDetailsPage />);
-    await stepHeading(3);
-    first.unmount();
-
-    mockStepParam = null;
-    window.history.replaceState(null, "", "/profile/ngo-details");
+    vi.mocked(getNgoDraft).mockResolvedValue(firstThreeStepsDone());
+    mockStepParam = "org-photos";
     render(<NgoDetailsPage />);
     await stepHeading(4);
-    // The URL is synced in an effect after the step renders.
-    await waitFor(() => expect(window.location.search).toBe("?step=org-photos"));
+  }, 20000);
+
+  it("?step=org-photos opens step 2 while step 2 is incomplete", async () => {
+    signInAsNgo();
+    window.scrollTo = vi.fn();
+    vi.mocked(getMyNgoApplication).mockResolvedValue(null);
+    const draft = firstThreeStepsDone();
+    delete (draft.documents as Record<string, unknown>)["trust-deed"];
+    vi.mocked(getNgoDraft).mockResolvedValue(draft);
+    mockStepParam = "org-photos";
+    render(<NgoDetailsPage />);
+    await stepHeading(2);
+    await waitFor(() => expect(screen.queryByText(/Step 4 of 6/)).toBeNull());
   }, 20000);
 
   it("ignores a ?step= that names no step or the email step", async () => {

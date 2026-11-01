@@ -12,6 +12,7 @@ const api = vi.hoisted(() => ({
   updateNgoDrive: vi.fn(),
   createNgoDrive: vi.fn(),
   getNgoDriveDraft: vi.fn(),
+  getNgoDrivePhotoPreviews: vi.fn(),
   saveNgoDriveDraft: vi.fn(),
   deleteNgoDriveDraft: vi.fn(),
   deleteUnusedNgoDrivePhoto: vi.fn(),
@@ -130,7 +131,7 @@ describe("drive wizard", () => {
     await waitFor(() => expect(api.updateNgoDrive).toHaveBeenCalled());
     const payload = api.updateNgoDrive.mock.calls[0][1];
     expect(payload.requireClean).toBe(true);
-    expect(payload.categoryDetails).toEqual({ sizes: ["M", "KIDS_3_5"], fits: ["MEN", "WOMEN"] });
+    expect(payload.categoryDetails).toEqual({ sizesNeeded: "M, 3–5 yrs", clothesFor: "Men, Women" }); // old chips, joined
     expect(payload.beneficiaryGroups).toEqual(["Elderly", "Women"]);
     expect(payload.handoverMode).toBe("BOTH");
     expect(payload.contactPhone).toBe("+919876543210");
@@ -141,12 +142,12 @@ describe("drive wizard", () => {
     api.getNgoDriveDetail.mockResolvedValue(drive({ handoverContacts: [
       { name: "Rahul", phone: "+919876543210", role: null }, { name: "Asha", phone: "+918123456789", role: "Volunteer lead" }] }));
     const { unmount } = render(<NgoDrivePage />);
-    expect(await screen.findByText(/Asha \(Volunteer lead\) · \+91 8123456789/)).toBeInTheDocument();
+    expect(await screen.findByText(/Asha · \+91 8123456789/)).toBeInTheDocument();
     fireEvent.click(screen.getByText("Tick all declarations"));
     fireEvent.click(screen.getByRole("button", { name: "Submit for verification" }));
     await waitFor(() => expect(api.updateNgoDrive).toHaveBeenCalled());
     expect(api.updateNgoDrive.mock.calls[0][1].handoverContacts).toEqual([
-      { name: "Rahul", phone: "+919876543210", role: null }, { name: "Asha", phone: "+918123456789", role: "Volunteer lead" }]);
+      { name: "Rahul", phone: "+919876543210" }, { name: "Asha", phone: "+918123456789" }]);
     unmount();
 
     api.updateNgoDrive.mockClear();
@@ -155,7 +156,7 @@ describe("drive wizard", () => {
     fireEvent.click(await screen.findByText("Tick all declarations"));
     fireEvent.click(screen.getByRole("button", { name: "Submit for verification" }));
     await waitFor(() => expect(api.updateNgoDrive).toHaveBeenCalled());
-    expect(api.updateNgoDrive.mock.calls[0][1].handoverContacts).toEqual([{ name: "Rahul", phone: "+919876543210", role: null }]);
+    expect(api.updateNgoDrive.mock.calls[0][1].handoverContacts).toEqual([{ name: "Rahul", phone: "+919876543210" }]);
   });
 
   it("adds, validates and removes another handover person", async () => {
@@ -207,6 +208,65 @@ describe("drive wizard", () => {
     expect(screen.queryByText("Items must be washed and clean")).not.toBeInTheDocument();
   });
 
+  it.each(["Household", "Furniture"])("%s has neither condition checkbox", async (category) => {
+    mockSearch = "edit=42&step=details";
+    api.getNgoDriveDetail.mockResolvedValue(drive({ category, categoryDetails: null, requireClean: true, mustBeWorking: true }));
+    render(<NgoDrivePage />);
+    await waitFor(() => expect(screen.getByDisplayValue("Winter clothes for the shelter")).toBeInTheDocument());
+    expect(screen.queryByText("Items must be in working order")).toBeNull();
+    expect(screen.queryByText("Items must be washed and clean")).toBeNull();
+  });
+
+  it("Clothing sizing is two required text fields; old free text and chip data both show", async () => {
+    expect(categoryDetailRows("Clothing", { sizesNeeded: "S, M", clothesFor: "Boys 6–12 yrs" })).toEqual([{ label: "Sizes", value: "S, M" }, { label: "For", value: "Boys 6–12 yrs" }]);
+    mockSearch = "edit=42&step=details";
+    api.getNgoDriveDetail.mockResolvedValue(drive());
+    render(<NgoDrivePage />);
+    expect(await screen.findByLabelText(/Sizes needed/)).toHaveValue("M, 3–5 yrs");
+    expect(screen.getByLabelText(/Who are the clothes for/)).toHaveValue("Men, Women");
+    fireEvent.change(screen.getByLabelText(/Sizes needed/), { target: { value: "S" } });
+    fireEvent.blur(screen.getByLabelText(/Sizes needed/));
+    expect(await screen.findAllByText("Sizes needed must be 2-120 characters")).not.toHaveLength(0);
+  });
+
+  it("contacts have no Role field, and Save contacts validates, saves and confirms", async () => {
+    mockSearch = "edit=42&step=beneficiaries";
+    api.getNgoDriveDetail.mockResolvedValue(drive());
+    render(<NgoDrivePage />);
+    fireEvent.click(await screen.findByRole("button", { name: /Add (another )?(contact|person)/i }));
+    expect(screen.queryByLabelText("Contact 2 role")).toBeNull();
+    expect(await screen.findByTestId("contacts-unsaved")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Save contacts" }));
+    expect((await screen.findAllByText("Enter this person's name")).length).toBeGreaterThan(0);
+    fireEvent.change(screen.getByLabelText("Contact 2 name"), { target: { value: "Asha" } });
+    fireEvent.change(screen.getByLabelText("Contact 2 phone"), { target: { value: "8123456789" } });
+    fireEvent.change(screen.getByLabelText("Contact 2 email"), { target: { value: "asha@x.test" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save contacts" }));
+    expect(await screen.findByText("Saved, applied when you submit the changes")).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByTestId("contacts-unsaved")).toBeNull());
+  });
+
+  it("a browser draft's stale signed links are never rendered: fresh ones come from the server", async () => {
+    mockSearch = "type=items&step=review";
+    api.getNgoDrivePhotoPreviews.mockResolvedValue({ "https://b.test/p.jpg": "https://b.test/p.jpg?fresh=1" });
+    localStorage.setItem("ngo-drive-draft-7", JSON.stringify({ savedAt: 5, title: "Local draft title",
+      photos: [{ url: "https://b.test/p.jpg?X-Amz-Signature=old", previewUrl: "https://b.test/p.jpg?X-Amz-Signature=old" }] }));
+    render(<NgoDrivePage />);
+    expect(await screen.findByAltText("Thumbnail 1")).toHaveAttribute("src", "https://b.test/p.jpg?fresh=1");
+    expect(api.getNgoDrivePhotoPreviews).toHaveBeenCalledWith(["https://b.test/p.jpg"]);
+    localStorage.clear();
+  });
+
+  it("the Review thumbnails use the signed preview link and open the shared preview", async () => {
+    mockSearch = "edit=42&step=review";
+    api.getNgoDriveDetail.mockResolvedValue(drive({ photos: [{ url: "https://signed.test/p.jpg?sig=1", storageKey: "k", sortOrder: 0 }] }));
+    render(<NgoDrivePage />);
+    const thumb = await screen.findByAltText("Thumbnail 1");
+    expect(thumb).toHaveAttribute("src", "https://signed.test/p.jpg?sig=1");
+    fireEvent.click(screen.getByRole("button", { name: "Preview photo 1" }));
+    expect(await screen.findByTestId("file-preview")).toBeInTheDocument();
+  });
+
   it("shows Furniture dimensions for Furniture", async () => {
     mockSearch = "edit=42&step=details";
     api.getNgoDriveDetail.mockResolvedValue(drive({ category: "Furniture", categoryDetails: { lengthCm: 120, breadthCm: 60, heightCm: 75 } }));
@@ -231,7 +291,12 @@ describe("drive wizard", () => {
 
   it("Back on the first step leaves to the NGO dashboard", async () => {
     render(<NgoDrivePage />);
-    expect(screen.getByText("What kind of drive?")).toBeInTheDocument();
+    expect(screen.queryByText("What kind of drive?")).toBeNull();
+    expect(screen.queryByText(/Money drive/)).toBeNull();
+    // One heading, no number prefix, no duplicate pair.
+    expect(screen.getAllByRole("heading", { name: "Where is this drive?" })).toHaveLength(1);
+    expect(screen.getAllByText("Donors near this place will see that you can pick up their items.")).toHaveLength(1);
+    expect(screen.queryByText(/^\d Where is this drive\?/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Back" }));
     expect(mockPush).toHaveBeenCalledWith("/dashboard/ngo");
   });

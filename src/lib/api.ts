@@ -5527,6 +5527,9 @@ export type DrivePhotoItem = {
 
 /** Category-specific drive fields: Clothing sizing or Furniture dimensions. */
 export type DriveCategoryDetails = {
+  /** Clothing, free text. */
+  sizesNeeded?: string;
+  clothesFor?: string;
   sizes?: string[];
   fits?: string[];
   /** Older single choice; read only. */
@@ -5774,7 +5777,7 @@ export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: numbe
 }
 
 /** One handover contact of a drive (phone +91XXXXXXXXXX). */
-export type DriveHandoverContact = { name: string; phone: string | null; role?: string | null; email?: string | null };
+export type DriveHandoverContact = { name: string; phone: string | null; email?: string | null };
 
 // ── The NGO editing its own public page ───────────────────────────────────────
 
@@ -6124,6 +6127,11 @@ export async function deleteUnusedNgoDrivePhoto(url: string): Promise<void> {
 }
 
 /** The NGO's server-side drive wizard draft, or null when there is none. */
+/** Fresh preview links, by plain url, for this NGO's own drive uploads. */
+export function getNgoDrivePhotoPreviews(urls: string[]) {
+  return request<Record<string, string>>("/api/v1/ngo-drives/uploads/previews", { method: "POST", body: JSON.stringify({ urls }) });
+}
+
 export async function getNgoDriveDraft(): Promise<{ payload: Record<string, unknown>; updatedAt: string } | null> {
   const r = await request<{ payload: Record<string, unknown>; updatedAt: string } | undefined>("/api/v1/ngo-drives/draft");
   return r && r.payload ? r : null;

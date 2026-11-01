@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Loader2, UserRound } from "lucide-react";
 import {
@@ -35,11 +35,21 @@ export function VolunteerAssignPanel({ offer, handover, onChanged }: {
   const [copied, setCopied] = useState(false);
   const refreshKey = `${handover?.scheduledDateTime}|${handover?.confirmation?.otpVerified}|${offer.status}`;
 
+  // Requests can answer after the panel has gone (or after a newer load): those answers are dropped.
+  const mounted = useRef(true);
+  const latestLoad = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
   const load = useCallback(async () => {
+    const mine = ++latestLoad.current;
     try {
-      setOptions(await getVolunteerAssignOptions(offer.driveId, offer.id));
+      const next = await getVolunteerAssignOptions(offer.driveId, offer.id);
+      if (mounted.current && mine === latestLoad.current) setOptions(next);
     } catch (e) {
-      setError(message(e, "We couldn't load the pickup person."));
+      if (mounted.current && mine === latestLoad.current) setError(message(e, "We couldn't load the pickup person."));
     }
   }, [offer.driveId, offer.id]);
 
@@ -61,19 +71,20 @@ export function VolunteerAssignPanel({ offer, handover, onChanged }: {
     try {
       await action();
       await load();
-      onChanged();
+      if (mounted.current) onChanged();
     } catch (e) {
-      setError(message(e, fallback));
+      if (mounted.current) setError(message(e, fallback));
     } finally {
-      setBusy(false);
+      if (mounted.current) setBusy(false);
     }
   };
 
   const newLink = (copy: boolean) => run(async () => {
     const r = await resendVolunteerLink(offer.driveId, offer.id);
+    if (!mounted.current) return;
     setLink(r.link);
     if (copy) {
-      await navigator.clipboard?.writeText(r.link).then(() => setCopied(true)).catch(() => setCopied(false));
+      await navigator.clipboard?.writeText(r.link).then(() => { if (mounted.current) setCopied(true); }).catch(() => { if (mounted.current) setCopied(false); });
     }
   }, "We couldn't create a new link.");
 
@@ -117,7 +128,7 @@ export function VolunteerAssignPanel({ offer, handover, onChanged }: {
             setLink(null);
             void run(async () => {
               await assignVolunteer(offer.driveId, offer.id, body);
-              setSheetOpen(false);
+              if (mounted.current) setSheetOpen(false);
             }, "We couldn't assign this person.");
           }} error={error} />
       )}
@@ -149,7 +160,7 @@ function AssignSheet({ options, busy, error, onClose, onConfirm }: {
 }) {
   const [choice, setChoice] = useState<number | "new" | null>(options.contacts.length === 0 ? "new" : null);
   const [extraEmail, setExtraEmail] = useState("");
-  const [person, setPerson] = useState({ name: "", phone: "", email: "", role: "" });
+  const [person, setPerson] = useState({ name: "", phone: "", email: "" });
 
   const chosen = typeof choice === "number" ? options.contacts[choice] : null;
   const needsEmail = chosen != null && !chosen.email;
@@ -159,7 +170,7 @@ function AssignSheet({ options, busy, error, onClose, onConfirm }: {
 
   const confirm = () => {
     if (choice === "new") {
-      onConfirm({ newPerson: { name: person.name.trim(), phone: `+91${person.phone}`, email: person.email.trim(), role: person.role.trim() || null } });
+      onConfirm({ newPerson: { name: person.name.trim(), phone: `+91${person.phone}`, email: person.email.trim() } });
     } else if (typeof choice === "number") {
       onConfirm(needsEmail ? { contactIndex: choice, email: extraEmail.trim() } : { contactIndex: choice });
     }
@@ -175,7 +186,7 @@ function AssignSheet({ options, busy, error, onClose, onConfirm }: {
             <label key={i} className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-700">
               <input type="radio" name="assign-person" checked={choice === i} onChange={() => setChoice(i)} className="mt-1" />
               <span className="min-w-0 break-words">
-                <span className="font-semibold">{c.name}</span>{c.role ? ` (${c.role})` : ""}
+                <span className="font-semibold">{c.name}</span>
                 <span className="block text-xs text-stone-600 dark:text-stone-300">{c.phone}</span>
               </span>
             </label>
@@ -198,8 +209,6 @@ function AssignSheet({ options, busy, error, onClose, onConfirm }: {
                 onChange={(e) => setPerson({ ...person, phone: e.target.value.replace(/\D/g, "") })} className="h-11" />
             </div>
             <Input aria-label="New person email" type="email" placeholder="Email" value={person.email} onChange={(e) => setPerson({ ...person, email: e.target.value })} className="h-11" />
-            <Input aria-label="New person role" placeholder="Role (optional)" maxLength={60} value={person.role}
-              onChange={(e) => setPerson({ ...person, role: e.target.value.replace(/[^A-Za-z .,&-]/g, "") })} className="h-11" />
           </div>
         )}
         {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
