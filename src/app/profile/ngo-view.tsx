@@ -664,7 +664,7 @@ export function NgoProfileView() {
   }
 
   return (
-    <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen pb-28">
+    <div className="[overflow-wrap:anywhere] bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen pb-28">
       {/* ── Top Header Band: Forest Green gradient ── */}
       <div
         className="relative overflow-hidden text-white"

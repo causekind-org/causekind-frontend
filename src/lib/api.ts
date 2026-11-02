@@ -1,4 +1,5 @@
 import { filterVisibleListings, hideListingLocally } from "./listingActions";
+import { errorIdOf, toastErrorId } from "./errorId";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -253,7 +254,12 @@ async function request<T>(
         if (typeof body?.code === "string") (err as unknown as ApiConflictError).code = body.code;
         throw err;
       }
-      if (res.status === 500) throw new ApiError(500, "Something went wrong on our end. Please try again.");
+      if (res.status === 500) {
+        const body500 = await res.json().catch(() => ({}));
+        const errorId500 = errorIdOf({ data: body500 });
+        if (errorId500 && !isGet) toastErrorId(errorId500);
+        throw new ApiError(500, "Something went wrong on our end. Please try again.", body500);
+      }
       // Errors don't always arrive as JSON — a proxy or gateway can return plain
       // text or HTML. Read once as text, then parse only if it actually is JSON,
       // so a non-JSON error still yields something readable instead of a blank
@@ -283,6 +289,8 @@ async function request<T>(
         (body?.title !== "Bad Request" ? body?.title : null) ??
         plainText ??
         `Something went wrong (${res.status})`;
+      const errorId = errorIdOf({ data: body });
+      if (errorId && !isGet) toastErrorId(errorId);
       throw new ApiError(res.status, String(msg), body);
     }
 

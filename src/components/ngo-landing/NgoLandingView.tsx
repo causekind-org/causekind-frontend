@@ -3,6 +3,7 @@
 import { Suspense, lazy } from "react";
 import Link from "next/link";
 import { useNgoStatus } from "./useNgoStatus";
+import { ErrorIdNote } from "@/components/ErrorIdNote";
 import "./ngo-redesign.css";
 
 const PostApprovalLanding = lazy(() => import("./PostApprovalLanding"));
@@ -10,7 +11,7 @@ const PreApprovalLanding = lazy(() => import("./PreApprovalLanding"));
 
 function NgoLandingViewContent() {
   const status = useNgoStatus();
-  const { isVerified, isLoading, error, refresh, viewer } = status;
+  const { isVerified, isLoading, error, errorId, refresh, viewer } = status;
 
   // Donors and donees get no NGO status, CTAs or NGO API calls (useNgoStatus skips them).
   if (viewer === "other" && !isLoading) {
@@ -33,6 +34,7 @@ function NgoLandingViewContent() {
       {error ? (
         <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center" role="alert">
           <p className="text-red-600 dark:text-red-400 font-semibold mb-4">{error}</p>
+          <div className="mb-4"><ErrorIdNote id={errorId} /></div>
           <button
             onClick={() => refresh()}
             className="px-5 py-2.5 rounded-full bg-[#1E6B4F] text-white font-medium hover:bg-[#16533D] transition-colors"

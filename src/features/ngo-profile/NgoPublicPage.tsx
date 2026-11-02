@@ -46,7 +46,7 @@ function SafeImg({ src, alt, className, fallback }: { src?: string | null; alt: 
 
 function Card({ title, children, className = "", action }: { title: string; children: React.ReactNode; className?: string; action?: React.ReactNode }) {
   return (
-    <section className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6 ${className}`}>
+    <section className={`min-w-0 [overflow-wrap:anywhere] rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6 ${className}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">{title}</h2>
         {action}

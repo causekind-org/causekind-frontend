@@ -56,7 +56,7 @@ export function AboutNgoContent({ ngo, emptyAboutUs }: { ngo: AboutNgo; emptyAbo
         </dl>
       )}
       {ngo.aboutUs?.trim()
-        ? <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">{ngo.aboutUs}</p>
+        ? <p className="[overflow-wrap:anywhere] whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">{ngo.aboutUs}</p>
         : emptyAboutUs ?? null}
       {ngo.slug && (
         <Link href={`/ngos/${ngo.slug}`}

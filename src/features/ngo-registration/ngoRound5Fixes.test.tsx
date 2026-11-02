@@ -15,6 +15,17 @@ vi.mock("@/lib/api", async (orig) => ({ ...(await orig<typeof import("@/lib/api"
 
 beforeEach(() => vi.clearAllMocks());
 
+describe("Review & Submit long text", () => {
+  it("About us wraps an unbroken string inside its card", async () => {
+    vi.mocked(getMyNgoActivities).mockResolvedValue([] as never);
+    const long = "x".repeat(600);
+    render(<ReviewSubmit data={{ ...INITIAL_NGO_FORM, aboutUs: long }} onChange={() => {}} onBack={() => {}} onEditStep={() => {}} onSubmit={() => {}} />);
+    const dd = await screen.findByText(long);
+    expect(dd.className).toContain("[overflow-wrap:anywhere]");
+    expect(dd.className).toContain("whitespace-pre-line");
+  });
+});
+
 describe("NGO toast", () => {
   it("has one action, in the NGO palette", () => {
     triggerNgoLockedToast("incomplete", false, "", { push: vi.fn() } as never);

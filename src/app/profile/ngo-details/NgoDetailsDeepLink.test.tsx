@@ -66,6 +66,26 @@ beforeEach(() => {
   vi.mocked(getNgoFilePreviewUrl).mockRejectedValue(new Error("unavailable"));
 });
 
+describe("the wrong-PAN correction", () => {
+  it("opens the wizard in correction mode: PAN on step 1 with the admin's note, value kept to edit", async () => {
+    correctionsFor("panNumber");
+    render(<NgoDetailsPage />);
+    const pan = (await screen.findByLabelText(/PAN Number/)) as HTMLInputElement;
+    expect(pan.value).toBe("AAATH1234K");
+    expect(pan.closest("div")).toHaveTextContent("Admin says fix this");
+    expect(screen.queryByText(/restore your application/)).toBeNull();
+  });
+
+  it("a failed load shows the restore screen with the server's error id", async () => {
+    vi.mocked(getMyNgoApplication).mockRejectedValue(
+      Object.assign(new Error("Something went wrong on our end. Please try again."), { data: { errorId: "abc-123" } }));
+    vi.mocked(getNgoDraft).mockResolvedValue(null as never);
+    render(<NgoDetailsPage />);
+    expect(await screen.findByTestId("error-id")).toHaveTextContent("Error ID: abc-123");
+    expect(screen.getByRole("button", { name: "Copy" })).toBeInTheDocument();
+  });
+});
+
 describe("correction deep link /profile/ngo-details?step=…&fix=…", () => {
   it.each([
     ["officePhoto", 4],

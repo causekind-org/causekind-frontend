@@ -147,25 +147,25 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Name</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.organizationName || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Legal Structure</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {legalStructureLabel(data.legalStructure) || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">PAN Number</dt>
-              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {normalizePan(data.panNumber ?? "") || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">{PAN_DOC.label}</dt>
-              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
+              <dd className="[overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
                 {fileChip("pan", data.documents[PAN_DOC.id])}
               </dd>
             </div>
@@ -173,7 +173,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
               <dt className="text-stone-400 text-3xs uppercase font-semibold">
                 {getRegistrationCertificateDoc(data.legalStructure)?.label ?? "Registration certificate"}
               </dt>
-              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
+              <dd className="[overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
                 {(() => {
                   const cert = getRegistrationCertificateDoc(data.legalStructure);
                   return cert ? fileChip(`doc-${cert.id}`, data.documents[cert.id]) : "Not uploaded";
@@ -182,37 +182,37 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Registration Number</dt>
-              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.registrationNumber || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Year of Establishment</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.yearOfEstablishment || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Registered Office Address</dt>
-              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5">
                 {data.registeredOfficeAddress || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Email Address</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.officialEmail || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Phone Number</dt>
-              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.organizationPhone || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">About us</dt>
-              <dd className="mt-0.5 whitespace-pre-line text-stone-800 dark:text-stone-200">
+              <dd className="[overflow-wrap:anywhere] mt-0.5 whitespace-pre-line text-stone-800 dark:text-stone-200">
                 {data.aboutUs?.trim() || "—"}
               </dd>
             </div>
@@ -298,11 +298,11 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                 <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2.5 text-xs sm:grid-cols-2">
                   <div>
                     <dt className="text-3xs font-semibold uppercase text-stone-400">Mobile</dt>
-                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">{card.mobileNumber || "—"}</dd>
+                    <dd className="[overflow-wrap:anywhere] mt-0.5 font-mono text-stone-800 dark:text-stone-200">{card.mobileNumber || "—"}</dd>
                   </div>
                   <div className="min-w-0">
                     <dt className="text-3xs font-semibold uppercase text-stone-400">Email</dt>
-                    <dd className="mt-0.5 break-all text-stone-800 dark:text-stone-200">
+                    <dd className="[overflow-wrap:anywhere] mt-0.5 break-all text-stone-800 dark:text-stone-200">
                       {card.email || "—"}{" "}
                       {card.emailVerified ? (
                         <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
@@ -313,7 +313,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                   </div>
                   <div>
                     <dt className="text-3xs font-semibold uppercase text-stone-400">PAN</dt>
-                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">
+                    <dd className="[overflow-wrap:anywhere] mt-0.5 font-mono text-stone-800 dark:text-stone-200">
                       {normalizePan(card.panNumber) || (
                         <button
                           type="button"
@@ -327,7 +327,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                   </div>
                   <div className="min-w-0">
                     <dt className="text-3xs font-semibold uppercase text-stone-400">ID proof</dt>
-                    <dd className="mt-0.5">{fileChip(`rep-${i}`, card.idProof)}</dd>
+                    <dd className="[overflow-wrap:anywhere] mt-0.5">{fileChip(`rep-${i}`, card.idProof)}</dd>
                   </div>
                 </dl>
               </li>

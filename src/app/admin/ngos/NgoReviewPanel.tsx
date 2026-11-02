@@ -366,7 +366,7 @@ export function NgoReviewPanel({
             </dl>
             <section aria-label="About us" className="mt-5 text-sm">
               <h3 className="text-stone-500">About us</h3>
-              <p data-testid="admin-about-us" className="mt-1 whitespace-pre-line break-words">
+              <p data-testid="admin-about-us" className="mt-1 whitespace-pre-line break-words [overflow-wrap:anywhere]">
                 {(detail.application as { aboutUs?: string | null }).aboutUs || "Not provided"}
               </p>
             </section>

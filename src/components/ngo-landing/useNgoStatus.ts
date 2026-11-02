@@ -4,6 +4,7 @@ import { NGO_TOAST_STYLE } from "./ngoToastStyle";
 import { SLOW_REQUEST_MESSAGE, isSlowRequestError } from "@/lib/api";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { errorIdOf } from "@/lib/errorId";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview, type NgoOverview } from "@/lib/api";
 import {
@@ -132,6 +133,8 @@ export function triggerNgoLockedToast(
 export interface NgoStatusData {
   isLoading: boolean;
   error: string | null;
+  /** The server's id for a failed load, to quote to support. */
+  errorId?: string | null;
   refresh: () => Promise<void>;
   overview: NgoOverview | null;
   status: NgoStatusType;
@@ -179,6 +182,7 @@ export function useNgoStatus(): NgoStatusData {
   const [rejectionReason, setRejectionReason] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [errorId, setErrorId] = useState<string | null>(null);
   const [documents, setDocuments] = useState<Record<string, any>>({});
   const sequence = useRef(0);
   /** Whose status is on screen: later refreshes for the same NGO keep it instead of blanking it. */
@@ -223,9 +227,11 @@ export function useNgoStatus(): NgoStatusData {
       setDocuments(form.documents || {});
       setOverview(totals);
       setError(null);
+      setErrorId(null);
       loadedFor.current = id;
     } catch (e) {
       if (request === sequence.current) {
+        setErrorId(errorIdOf(e));
         setError(isSlowRequestError(e) ? SLOW_REQUEST_MESSAGE
           : e instanceof Error && e.message ? e.message : "We could not load your NGO activity. Please retry.");
         // A failed background refresh keeps what is on screen; only a first load has nothing to keep.
@@ -274,7 +280,7 @@ export function useNgoStatus(): NgoStatusData {
     : driveLockReason);
   const viewer: NgoViewer = !user ? "guest" : NGO_ROLES.includes(user.role?.toUpperCase() || "") ? "ngo" : "other";
   return {
-    isLoading: isLoading || authLoading, error, refresh, overview, status, ngoName,
+    isLoading: isLoading || authLoading, error, errorId, refresh, overview, status, ngoName,
     viewer, verifiedAt, rejectionReason, statsUnavailable,
     stepNumber: progress.completedCount, totalSteps: 6, nextIncompleteStep: progress.nextIncompleteStep,
     wizardHref: viewer === "guest" ? NGO_LOGIN_HREF
