@@ -22,7 +22,7 @@ describe("NGO back navigation (item 3)", () => {
   });
 
   it("the drive page no longer goes back through history", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/ngo/drives/[id]/page.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/[locale]/ngo/drives/[id]/page.tsx"), "utf8");
     expect(src).not.toMatch(/router\.back\(\)/);
   });
 });
@@ -41,7 +41,7 @@ describe("Wizard bottom bar on phones (item 4)", () => {
   });
 
   it("Start a drive marks its action rows too", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/ngo/drives/new/page.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/[locale]/ngo/drives/new/page.tsx"), "utf8");
     expect(src.match(/data-ck-wizard="actions"/g)).toHaveLength(3);
     expect(src).toContain("useFocusAboveBar()");
   });

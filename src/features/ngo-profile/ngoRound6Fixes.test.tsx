@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { PastActivityForm } from "@/features/ngo-profile/PastActivity";
-import { NgoActivityModerationPanel } from "@/app/admin/ngos/NgoActivityModerationPanel";
-import { supersededBy } from "@/app/admin/ngos/NgoReviewPanel";
+import { NgoActivityModerationPanel } from "@/app/[locale]/admin/ngos/NgoActivityModerationPanel";
+import { supersededBy } from "@/app/[locale]/admin/ngos/NgoReviewPanel";
 import { createNgoActivity, getPendingNgoActivities } from "@/lib/api";
 
 vi.mock("@/lib/api", async (orig) => ({
