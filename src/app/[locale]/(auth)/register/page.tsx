@@ -17,7 +17,7 @@ import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useLocations } from "@/hooks/useLocations";
-import { resolveLocationFromGPS } from "@/app/actions/locations";
+import { resolveLocationFromGPS } from "@/app/[locale]/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 import { Reveal } from "@/components/Reveal";

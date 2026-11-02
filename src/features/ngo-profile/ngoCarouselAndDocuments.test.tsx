@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { PHOTO_ROTATE_MS } from "./ActivityHeroCarousel";
 import { PastWorkSection } from "@/features/ngo-drives/components/PastWorkSection";
 import { NgoDocumentsSection, expiryStatus } from "./NgoDocumentsSection";
-import { NgoProfileChangesPanel } from "@/app/admin/ngos/NgoProfileChangesPanel";
+import { NgoProfileChangesPanel } from "@/app/[locale]/admin/ngos/NgoProfileChangesPanel";
 import {
   adminApproveNgoProfileChange, adminGetNgoProfileChanges, getMyNgoProfileDocuments, requestNgoProfileChange, uploadNgoDocument,
 } from "@/lib/api";

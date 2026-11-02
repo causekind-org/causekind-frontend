@@ -2,7 +2,7 @@ import Link from "@/components/AppLink";
 import { BeamDivider } from "@/components/about/BeamDivider";
 import Image from "next/image";
 import { ArrowLeft, Heart, Shield, Milestone, Compass, CheckCircle2, ArrowRight } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { AboutCtaCard } from "@/components/AboutCtaCard";
 import { Reveal } from "@/components/Reveal";
@@ -14,7 +14,10 @@ export const metadata = {
   alternates: { canonical: "/about" },
 };
 
-export default async function AboutPage() {
+type LocaleParams = { params: Promise<{ locale: string }> };
+
+export default async function AboutPage({ params }: LocaleParams) {
+  setRequestLocale((await params).locale);
   const t = await getTranslations("about");
 
   const schemaData = {

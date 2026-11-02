@@ -8,7 +8,9 @@ import { RouteProgressBar } from "@/components/RouteProgressBar";
 import { FilmViewObserver } from "@/components/FilmViewObserver";
 import "@/styles.css";
 import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
+import { getMessages, setRequestLocale } from "next-intl/server";
+import { notFound } from "next/navigation";
+import { locales } from "@/i18n/config";
 import { TranslationAttribution } from "@/components/TranslationAttribution";
 import { AutoPageTranslator } from "@/components/AutoPageTranslator";
 import { getInterfaceCatalogue } from "@/lib/translation/messages";
@@ -118,13 +120,24 @@ export const metadata: Metadata = {
   icons: { icon: "/logo-filled.webp" },
 };
 
+// English is built ahead of time; every other language is built on its first
+// visit and then cached like any other page.
+export function generateStaticParams() {
+  return [{ locale: "en" }];
+}
+
 export default async function RootLayout({
   children,
+  params,
 }: {
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }) {
+  const { locale } = await params;
+  if (!locales.includes(locale as (typeof locales)[number])) notFound();
+  // Lets next-intl read the locale without request headers, so pages stay static.
+  setRequestLocale(locale);
   const messages = await getMessages();
-  const locale = await getLocale();
   const catalogue = await getInterfaceCatalogue(isTranslationLocale(locale) ? locale : "en");
 
   return (
@@ -203,7 +216,10 @@ export default async function RootLayout({
                 >
                   <ScrollProgress />
                   <HiddenOnVolunteerPage><SiteHeader /></HiddenOnVolunteerPage>
-                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad">{children}</main>
+                  {/* Pages are prerendered now, so a page that reads useSearchParams
+                      without its own boundary would fail the build. This
+                      catches those; only that page renders in the browser. */}
+                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad"><Suspense fallback={null}>{children}</Suspense></main>
                   <HiddenOnVolunteerPage><SiteFooter /></HiddenOnVolunteerPage>
                   {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <HiddenOnVolunteerPage><MobileBottomNav /></HiddenOnVolunteerPage>

@@ -1,6 +1,6 @@
 import { serverDate } from "@/lib/serverTime";
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ArrowLeft, Building2, CalendarDays, MapPin, Package, UserRound } from "lucide-react";
@@ -12,7 +12,7 @@ import RetryButton from "./RetryButton";
 
 import { UiText, useUiText } from "@/components/UiText";
 type Props = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
   searchParams: Promise<{ from?: string | string[] }>;
 };
 
@@ -52,7 +52,8 @@ function backHref(raw: string | string[] | undefined): string {
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { id, locale } = await params;
+  setRequestLocale(locale);
   const res = await load(id);
   const mt = await getTranslations("requestsArea");
   if (res.kind !== "ok") return { title: mt("metaRequestTitle"), robots: { index: false } };
@@ -64,7 +65,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function RequestDetailPage({ params, searchParams }: Props) {
-  const [{ id }, { from }] = await Promise.all([params, searchParams]);
+  const [{ id, locale }, { from }] = await Promise.all([params, searchParams]);
+  setRequestLocale(locale);
   const res = await load(id);
   const back = backHref(from);
 

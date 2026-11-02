@@ -12,7 +12,7 @@ vi.mock("next/navigation", () => ({
 // Real English messages (loaded inside the hoisted factory), so a missing key
 // surfaces as a raw dotted path instead of passing silently.
 vi.mock("next-intl", async () => {
-  const en = (await import("../../../../messages/en.json")).default as Record<string, unknown>;
+  const en = (await import("../../../../../messages/en.json")).default as Record<string, unknown>;
   return {
     useTranslations: (ns: string) => (key: string) => {
       const node = ns.split(".").reduce<Record<string, unknown> | undefined>((o, k) => o?.[k] as Record<string, unknown> | undefined, en);

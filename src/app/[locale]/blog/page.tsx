@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import BlogIndexClient from "./BlogIndexClient";
 
+// The listing reads ?category= with useSearchParams. Rendered per request so
+// search engines still get the posts in the HTML.
+export const dynamic = "force-dynamic";
+
 /**
  * Server wrapper around the client listing UI, so the blog index can carry its
  * own title, description and canonical rather than inheriting the root

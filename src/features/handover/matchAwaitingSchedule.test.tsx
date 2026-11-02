@@ -1,7 +1,7 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import MatchHandoverHubPage from "@/app/matches/[id]/handover/page";
+import MatchHandoverHubPage from "@/app/[locale]/matches/[id]/handover/page";
 import { resolveHandoverState, resolveRole } from "./model";
 import { adaptMatch } from "./adapters";
 import type { ItemMatch } from "@/lib/api";

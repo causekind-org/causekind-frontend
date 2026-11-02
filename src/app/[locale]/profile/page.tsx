@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
 import { useLocations } from "@/hooks/useLocations";
-import { getDialCodes } from "@/app/actions/locations";
+import { getDialCodes } from "@/app/[locale]/actions/locations";
 import {
   getProfile,
   updateProfile,

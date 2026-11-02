@@ -8,7 +8,7 @@ import { CategoryDropdown } from "@/components/blog/CategoryDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { SubscribeForm } from "@/components/SubscribeForm";
-import { blogPosts, insiderTips } from "../../data/blogData";
+import { blogPosts, insiderTips } from "../../../data/blogData";
 import { getBlogTranslation, getInsiderTipTranslation, preloadBlogTranslations } from "@/data/blogTranslations";
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";

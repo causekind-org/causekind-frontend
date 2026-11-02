@@ -17,7 +17,7 @@ import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
 import { Search, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { blogPosts } from "../../../data/blogData";
+import { blogPosts } from "../../../../data/blogData";
 
 
 

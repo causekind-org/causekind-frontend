@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen } from "@testing-library/react";
 
-import enMessages from "../../messages/en.json";
+import enMessages from "../../../messages/en.json";
 
 // HomeClient renders the whole landing tree; under parallel load a render can pass 5 s.
 vi.setConfig({ testTimeout: 20000 });

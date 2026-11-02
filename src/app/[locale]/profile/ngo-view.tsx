@@ -11,7 +11,7 @@ import { toast } from "@/lib/toast";
 import { useAuth } from "@/hooks/useAuth";
 import { IS_NGO_DEMO_MODE } from "@/features/ngo-registration/ngoRegistrationModel";
 import { useLocations } from "@/hooks/useLocations";
-import { getDialCodes } from "@/app/actions/locations";
+import { getDialCodes } from "@/app/[locale]/actions/locations";
 import { PHONE_LENGTHS, getDialCode } from "@/lib/phone";
 import { SearchableSelect } from "@/components/profile/SearchableSelect";
 import { AvatarUpload } from "@/components/profile/AvatarUpload";

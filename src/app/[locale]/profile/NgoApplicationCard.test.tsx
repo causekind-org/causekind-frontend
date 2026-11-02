@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, within, act } from "@testing-library/react";
-import { NgoProfileView, applicationSteps } from "@/app/profile/ngo-view";
+import { NgoProfileView, applicationSteps } from "@/app/[locale]/profile/ngo-view";
 import { useAuth } from "@/hooks/useAuth";
 import { getProfile, getMyNgoApplication, getNgoDraft } from "@/lib/api";
 
@@ -19,7 +19,7 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: vi.fn() }));
 vi.mock("@/hooks/useLocations", () => ({
   useLocations: () => ({ countries: [{ value: "IN", label: "India" }], states: [], cities: [], dialCodes: [{ value: "IN", label: "India (+91)", phonecode: "91" }] }),
 }));
-vi.mock("@/app/actions/locations", () => ({
+vi.mock("@/app/[locale]/actions/locations", () => ({
   resolveLocationFromGPS: vi.fn().mockResolvedValue({}),
   getDialCodes: vi.fn().mockResolvedValue([{ value: "IN", label: "India (+91)", phonecode: "91" }]),
 }));

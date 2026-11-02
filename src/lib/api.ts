@@ -203,7 +203,10 @@ async function request<T>(
       // browser (or an intermediary) serving a stale cached response for an
       // admin console is worse than a slower request, since it silently
       // hides new rows instead of erroring.
-      cache: "no-store",
+      // On the server (page renders) there is no session, so a GET is public
+      // data: cache it for a minute so pages can be prerendered and reused.
+      // "no-store" here made every page that fetches render per visit.
+      ...(isGet && typeof window === "undefined" ? { next: { revalidate: 60 } } : { cache: "no-store" as const }),
       ...fetchOptions,
       headers,
       credentials: "include",

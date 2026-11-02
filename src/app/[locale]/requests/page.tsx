@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getTranslations } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPublicItemRequests } from "@/lib/api";
 import RequestsClient from "./RequestsClient";
 
@@ -8,7 +8,10 @@ import RequestsClient from "./RequestsClient";
 // layout's site-wide title and description. The canonical is relative and
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
-export async function generateMetadata(): Promise<Metadata> {
+type LocaleParams = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
+  setRequestLocale((await params).locale);
   const mt = await getTranslations("requestsArea");
   return {
     title: mt("metaListTitle"),
@@ -45,7 +48,8 @@ export const revalidate = 60;
  * path it had before: mount, fetch, render. A dead backend must not blank a page
  * that also serves signed-in donors and donees.
  */
-export default async function Page() {
+export default async function Page({ params }: LocaleParams) {
+  setRequestLocale((await params).locale);
   const initialPublicRequests = await getPublicItemRequests().catch((error: unknown) => {
     if (process.env.NODE_ENV !== "production") {
       console.warn("[requests] getPublicItemRequests failed; the client will retry:", error);

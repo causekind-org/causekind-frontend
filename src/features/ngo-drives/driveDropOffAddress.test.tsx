@@ -51,7 +51,7 @@ beforeEach(() => vi.clearAllMocks());
 
 describe("drive form: full drop-off address", () => {
   const renderForm = async () => {
-    const Page = (await import("@/app/ngo/drives/new/page")).default;
+    const Page = (await import("@/app/[locale]/ngo/drives/new/page")).default;
     render(<Page />);
     return screen.findByLabelText(/Full address of the NGO \/ drop-off point/);
   };

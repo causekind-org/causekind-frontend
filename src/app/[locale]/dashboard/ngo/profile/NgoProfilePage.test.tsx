@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import NgoProfilePage from "./page";
-import { NgoProfileView } from "@/app/profile/ngo-view";
+import { NgoProfileView } from "@/app/[locale]/profile/ngo-view";
 import { useAuth } from "@/hooks/useAuth";
 import { getProfile, updateProfile, updateLocation, getMyNgoApplication, getNgoDraft, saveNgoDraft } from "@/lib/api";
 import { redirect } from "next/navigation";
@@ -56,7 +56,7 @@ vi.mock("@/hooks/useLocations", () => ({
   }),
 }));
 
-vi.mock("@/app/actions/locations", () => ({
+vi.mock("@/app/[locale]/actions/locations", () => ({
   resolveLocationFromGPS: vi.fn().mockResolvedValue({ stateIso: "MH", cityValue: "Mumbai" }),
   getDialCodes: vi.fn().mockResolvedValue([{ value: "IN", label: "India (+91)", phonecode: "91" }]),
 }));
