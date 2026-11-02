@@ -48,6 +48,8 @@ describe("the fundraisers row", () => {
     const { container } = render(<HomeFundraisers />);
     expect(await screen.findByText("No fundraisers yet")).toBeInTheDocument();
     expect(container.querySelector(".ck-dw-campaigns > .ck-dw-hang")).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Light a diya for someone's need" })).toBeInTheDocument();
+    expect(screen.queryByText(/a reason to smile again/)).toBeNull();
     expect(container.querySelector(".ck-dw-diya")).not.toBeNull();
   });
 

@@ -10,7 +10,7 @@ import type { DonationOffer, PurchaseView } from "@/lib/api";
  */
 
 vi.mock("@/features/handover/HandoverMapPinField", () => ({ HandoverMapPinField: () => <div /> }));
-vi.mock("@/app/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
+vi.mock("@/app/[locale]/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 const api = vi.hoisted(() => ({
   confirmPurchaseReceipt: vi.fn(() => Promise.resolve()),

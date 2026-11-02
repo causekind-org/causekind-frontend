@@ -34,11 +34,11 @@ import { NgoAboutSection } from "./NgoAboutSection";
 import { AboutNgoContent } from "@/features/ngo-drives/components/AboutNgoCard";
 import { isBannerDimensions, NgoHeroBanner, NgoPublicPage } from "./NgoPublicPage";
 import { PastActivityCard, PastActivityForm } from "./PastActivity";
-import { NgoActivityModerationPanel } from "@/app/admin/ngos/NgoActivityModerationPanel";
+import { NgoActivityModerationPanel } from "@/app/[locale]/admin/ngos/NgoActivityModerationPanel";
 import { MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers } from "@/components/matches/NgoAcceptedOffers";
 import MatchChatWindow from "@/components/MatchChatWindow";
 import { DriveOfferChatPanel } from "@/features/ngo-drives/components/DriveOfferChatPanel";
-import { FaqPageClient } from "@/app/faq/FaqPageClient";
+import { FaqPageClient } from "@/app/[locale]/faq/FaqPageClient";
 import { NGO_DRIVE_FAQ_KEYS } from "@/features/ngo-drives/ngoDriveFaq";
 
 const ABOUT = "We collect school bags and books for children in rural Pune and run weekend reading classes for them.";
@@ -374,7 +374,7 @@ describe("7. FAQ", () => {
 
 describe("8. Tick all declarations", () => {
   it("comes after the last declaration and before the submit hint", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/ngo/drives/new/page.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/[locale]/ngo/drives/new/page.tsx"), "utf8");
     const list = src.indexOf("{DECLARATIONS.map(d => (");
     const tickAll = src.search(/>(<UiText>)?Tick all declarations(<\/UiText>)?<\/span>/);
     const hint = src.indexOf("Tick all declarations to submit.");

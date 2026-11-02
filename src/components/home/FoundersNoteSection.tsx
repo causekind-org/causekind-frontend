@@ -185,7 +185,7 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
                 <span className={fm.sig}>
                   {FOUNDER.signature ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <LandingAttributes><img src={FOUNDER.signature} alt="" aria-hidden className={fm.sigImg} /></LandingAttributes>
+                    <LandingAttributes><img src={FOUNDER.signature} alt="" aria-hidden loading="lazy" className={fm.sigImg} /></LandingAttributes>
                   ) : (
                     <span aria-hidden="true">{FOUNDER.name}</span>
                   )}

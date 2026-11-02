@@ -105,7 +105,7 @@ describe("NGO handover page", () => {
   it("loads the offer through the NGO endpoint, the plan from the server, and asks for receipt photos", async () => {
     api.getNgoDriveOfferForNgo.mockResolvedValue(offer("HANDOVER_IN_PROGRESS"));
     api.getNgoDriveOfferHandover.mockResolvedValue(plan);
-    const Page = (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
+    const Page = (await import("@/app/[locale]/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
     render(<Page />);
     expect(await screen.findByTestId("hub")).toHaveTextContent("ready_to_handover");
     expect(api.getNgoDriveOfferForNgo).toHaveBeenCalledWith(7, 11);
@@ -119,7 +119,7 @@ describe("NGO handover page", () => {
       .mockResolvedValue(offer("HANDOVER_IN_PROGRESS"));
     api.getNgoDriveOfferHandover.mockResolvedValue(plan);
 
-    const Page = (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
+    const Page = (await import("@/app/[locale]/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
     render(<Page />);
 
     expect(await screen.findByText("We couldn't load this handover")).toBeInTheDocument();
@@ -137,7 +137,7 @@ describe("NGO handover page", () => {
     (notFoundErr as unknown as { status: number }).status = 404;
     api.getNgoDriveOfferForNgo.mockRejectedValueOnce(notFoundErr);
 
-    const Page = (await import("@/app/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
+    const Page = (await import("@/app/[locale]/ngo/drives/[id]/offers/[offerId]/handover/page")).default;
     render(<Page />);
 
     expect(await screen.findByText("Handover not found")).toBeInTheDocument();
@@ -150,7 +150,7 @@ describe("donor handover page", () => {
     auth.user = { email: "donor@x.test", role: "DONOR" };
     api.getNgoDriveOffer.mockResolvedValue(offer("NGO_ACCEPTED"));
     api.getNgoDriveOfferHandover.mockResolvedValue(null);
-    const Page = (await import("@/app/ngo-drive-offers/[id]/handover/page")).default;
+    const Page = (await import("@/app/[locale]/ngo-drive-offers/[id]/handover/page")).default;
     render(<Page />);
     // Accepted and not planned yet: the donor gets the plan form (step 2).
     expect(await screen.findByTestId("hub")).toBeInTheDocument();
@@ -161,7 +161,7 @@ describe("donor handover page", () => {
 describe("admin drive offers", () => {
   it("is monitor only: no approve or reject controls", async () => {
     api.adminGetNgoDriveOffers.mockResolvedValue([{ id: 3, status: "PENDING_ADMIN_APPROVAL", driveId: 7, driveTitle: "Winter blankets" }]);
-    const { NgoDriveOffersPanel } = await import("@/app/admin/ngo-drives/NgoDriveAdminPanels");
+    const { NgoDriveOffersPanel } = await import("@/app/[locale]/admin/ngo-drives/NgoDriveAdminPanels");
     render(<NgoDriveOffersPanel />);
     expect(await screen.findByText(/Winter blankets/)).toBeInTheDocument();
     expect(screen.getByText(/Read only/)).toBeInTheDocument();

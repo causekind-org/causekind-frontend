@@ -29,7 +29,7 @@ describe("home drive sections", () => {
   });
 
   it("NGO drives come right after the donee board, for guests and donors only", () => {
-    const home = readFileSync(resolve(__dirname, "../../app/HomeClient.tsx"), "utf8");
+    const home = readFileSync(resolve(__dirname, "../../app/[locale]/HomeClient.tsx"), "utf8");
     expect(home).toContain('const showNgoDrives = !user || roleStr === "DONOR";');
     expect(home.match(/<LiveNeedsComponent [^\n]*\/>\s*\{showNgoDrives && <NgoDrivesSection \/>\}/g)).toHaveLength(2);
     const role = readFileSync(resolve(__dirname, "RoleHome.tsx"), "utf8");

@@ -4,7 +4,7 @@ import { OfferLocationGate, offerLocationKey, readPassedOfferLocation } from "./
 
 const api = vi.hoisted(() => ({ checkDonorDistance: vi.fn() }));
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>()), ...api }));
-vi.mock("@/app/actions/locations", () => ({
+vi.mock("@/app/[locale]/actions/locations", () => ({
   detectLocationFromServer: vi.fn(async () => ({ ok: true, address: { country_code: "in", state: "Maharashtra", city: "Mumbai", suburb: "Andheri East", postcode: "400069" } })),
   resolveLocationFromGPS: vi.fn(async () => ({ stateIso: "MH", cityValue: "Mumbai" })),
   geocodeAddressFromServer: vi.fn(),

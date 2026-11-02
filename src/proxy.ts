@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { stagingGate } from "./stagingGate";
+import { defaultLocale, locales, type Locale } from "./i18n/config";
 
 /**
  * Marks requests from known internal/office IPs so client trackers (Meta
@@ -25,11 +26,28 @@ function getClientIp(request: NextRequest): string | null {
   return request.headers.get("x-real-ip");
 }
 
+/**
+ * Serves each page from its locale's copy under src/app/[locale] without the
+ * locale ever showing in the URL: /about is /en/about or /hi/about inside.
+ * Each copy is cached on its own, so pages no longer render per request just
+ * to find out the visitor's language.
+ */
+function localeResponse(request: NextRequest): NextResponse {
+  const { pathname } = request.nextUrl;
+  // API routes and public files (anything with an extension) are not pages.
+  if (pathname.startsWith("/api/") || /\.[^/]+$/.test(pathname)) return NextResponse.next();
+  const cookie = request.cookies.get("ck_locale")?.value;
+  const locale = locales.includes(cookie as Locale) ? cookie : defaultLocale;
+  const url = request.nextUrl.clone();
+  url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
+  return NextResponse.rewrite(url);
+}
+
 export async function proxy(request: NextRequest) {
   const gated = await stagingGate(request, getClientIp(request));
   if (gated) return gated;
 
-  const response = NextResponse.next();
+  const response = localeResponse(request);
 
   if (INTERNAL_IPS.length === 0) return response;
 

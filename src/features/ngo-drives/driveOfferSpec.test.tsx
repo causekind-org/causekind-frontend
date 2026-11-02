@@ -12,7 +12,7 @@ import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferRev
 import { emptyOfferModel, type OfferModel } from "@/features/donation-offer-wizard/offerModel";
 import { serializeDriveOffer, driveOfferModelFrom } from "./driveOfferSerializer";
 import { offerAsksClean, offerAsksWorking } from "./driveCategoryDetails";
-import { REQUIRE_CLEAN_CATEGORIES } from "@/app/ngo/drives/new/page";
+import { REQUIRE_CLEAN_CATEGORIES } from "@/app/[locale]/ngo/drives/new/page";
 
 vi.mock("next-intl", () => ({
   useLocale: () => "en",

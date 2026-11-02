@@ -6,7 +6,7 @@ import { HandoverScheduleSummary } from "./HandoverScheduleSummary";
 import type { HandoverViewModel } from "./model";
 
 const geo = vi.hoisted(() => ({ reverse: vi.fn(), forward: vi.fn() }));
-vi.mock("@/app/actions/locations", () => ({
+vi.mock("@/app/[locale]/actions/locations", () => ({
   detectLocationFromServer: geo.reverse,
   geocodeFreeTextFromServer: geo.forward,
 }));

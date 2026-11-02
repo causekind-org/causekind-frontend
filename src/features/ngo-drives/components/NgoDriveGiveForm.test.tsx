@@ -27,7 +27,7 @@ const api = vi.hoisted(() => ({
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>()), ...api }));
 vi.mock("@/features/wizard-kit/videoPreflight", () => ({ videoPreflight: vi.fn().mockResolvedValue({ ok: true }) }));
 vi.mock("@/lib/imageCompression", () => ({ compressDisplayPhoto: vi.fn(async (f: File) => f) }));
-vi.mock("@/app/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
+vi.mock("@/app/[locale]/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
 // next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), loading: vi.fn(() => "t"), dismiss: vi.fn() }) }));
 

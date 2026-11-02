@@ -5,6 +5,18 @@ import { DRIVES_LOAD_TIMEOUT_MS, NgoDrivesSection } from "./NgoDrivesSection";
 import type { PublicNgoDrive } from "@/lib/api";
 
 const mockGetNgoDrives = vi.fn();
+// The section is NGO-gated (off in production); these cases describe it switched on.
+const featureState = vi.hoisted(() => ({ ngo: true }));
+vi.mock("@/lib/features", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/features")>();
+  return {
+    ...actual,
+    FEATURES: new Proxy(actual.FEATURES, {
+      get: (target, key) => (key === "ngoRegistration" ? featureState.ngo : target[key as keyof typeof target]),
+    }),
+  };
+});
+
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -277,5 +289,17 @@ describe("NgoDrivesSection", () => {
 
     // Cards no longer show the days-left line.
     expect(screen.queryByText("Ends today")).toBeNull();
+  });
+});
+
+describe("NgoDrivesSection in production", () => {
+  afterEach(() => {
+    featureState.ngo = true;
+  });
+
+  it("renders nothing while the NGO feature is off", () => {
+    featureState.ngo = false;
+    const { container } = render(<NgoDrivesSection initialDrives={[]} />);
+    expect(container.innerHTML).toBe("");
   });
 });
