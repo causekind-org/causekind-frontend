@@ -10,6 +10,7 @@ import { DriveOfferDetailsStep as OfferDetailsStep } from "@/features/ngo-drives
 import { OfferReviewStep } from "@/features/donation-offer-wizard/steps/OfferReviewStep";
 import { emptyOfferModel, type OfferModel } from "@/features/donation-offer-wizard/offerModel";
 import { serializeDriveOffer, driveOfferModelFrom } from "./driveOfferSerializer";
+import { offerAsksClean, offerAsksWorking } from "./driveCategoryDetails";
 import { REQUIRE_CLEAN_CATEGORIES } from "@/app/ngo/drives/new/page";
 
 vi.mock("next-intl", () => ({
@@ -242,5 +243,25 @@ describe("6. DriveHandover item details display", () => {
     expect(screen.getByText("Tested and works")).toBeInTheDocument();
     expect(screen.getByText("Washed and clean")).toBeInTheDocument();
     expect(screen.queryByText(/✓/)).not.toBeInTheDocument();
+  });
+});
+
+describe("the item checkboxes follow the drive's category", () => {
+  it("clothing always asks clean, electronics always asks working, others ask nothing", () => {
+    expect(offerAsksClean("Clothing")).toBe(true);
+    expect(offerAsksWorking("Clothing")).toBe(false);
+    expect(offerAsksWorking("Electronics")).toBe(true);
+    expect(offerAsksClean("Electronics")).toBe(false);
+    for (const c of ["Household", "Furniture", "Books", null]) {
+      expect(offerAsksClean(c)).toBe(false);
+      expect(offerAsksWorking(c)).toBe(false);
+    }
+  });
+
+  it("a confirmation not asked for is not sent", () => {
+    const model = driveOfferModelFrom({ confirmedClean: true, confirmedWorking: true } as never);
+    const patch = serializeDriveOffer(model, { asksWorking: false, asksClean: false });
+    expect(patch).not.toHaveProperty("confirmedWorking");
+    expect(patch).not.toHaveProperty("confirmedClean");
   });
 });

@@ -61,6 +61,7 @@ export function driveOfferErrors(e: unknown, fallback: string): { fields: Record
 import {
   driveOfferModelFrom, driveOfferSnapshotKey, driveOfferMaterialDigest, serializeDriveOffer, DRIVE_OFFER_DECLARATION_GROUPS,
 } from "../driveOfferSerializer";
+import { offerAsksClean, offerAsksWorking } from "../driveCategoryDetails";
 import { mapLegacyAgeToAgeRange } from "../driveOfferAge";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -183,7 +184,7 @@ function useStepCopy(): { labels: Record<OfferStep, string>; intros: Record<Offe
  */
 export function NgoDriveOfferWizard({
   offerId, driveId: propDriveId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
-  driveUnit, acceptedConditions, driveCategory: propDriveCategory, mustBeWorking: propMustBeWorking, requireClean: propRequireClean,
+  driveUnit, acceptedConditions, driveCategory: propDriveCategory, 
   drivePin = null, drivePickupRadiusKm = null, driveDropOffAddress = null, onDeclineOutside = () => window.location.assign("/"),
 }: {
   /** "No" to giving from outside the pickup radius: leaves for the home page. */
@@ -228,8 +229,8 @@ export function NgoDriveOfferWizard({
   const isRtl = locale === "ar" || locale === "ur";
   const driveId = propDriveId ?? offer?.driveId;
   const driveCategory = propDriveCategory ?? (offer as any)?.driveCategory ?? (offer as any)?.category ?? null;
-  const mustBeWorking = Boolean(propMustBeWorking ?? (offer as any)?.mustBeWorking ?? (offer as any)?.driveMustBeWorking);
-  const requireClean = Boolean(propRequireClean ?? (offer as any)?.requireClean ?? (offer as any)?.driveRequireClean);
+  const mustBeWorking = offerAsksWorking(driveCategory);
+  const requireClean = offerAsksClean(driveCategory);
 
   const showSpecNotes = needsSpecNotes((offer as any)?.flowType);
   const serializerOpts = useMemo(
@@ -297,7 +298,7 @@ export function NgoDriveOfferWizard({
   const updateDraft = useCallback(
     async (id: number, m: OfferModel) => {
       try {
-        const res = await updateNgoDriveOfferItem(id, serializeDriveOffer(m, serializerOpts));
+        const res = await updateNgoDriveOfferItem(id, serializeDriveOffer(m, { ...serializerOpts, asksWorking: mustBeWorking, asksClean: requireClean }));
         lastSaveErrorRef.current = null;
         return res;
       } catch (e) {

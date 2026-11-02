@@ -27,7 +27,7 @@ export type DriveOfferPatch = {
   // chooses drop-off or NGO pickup, and the pickup address, on the handover page.
 };
 
-export function serializeDriveOffer(model: OfferModel, opts: { maxQuantity?: number | null }): DriveOfferPatch {
+export function serializeDriveOffer(model: OfferModel, opts: { maxQuantity?: number | null; asksWorking?: boolean; asksClean?: boolean }): DriveOfferPatch {
   const qty = Number(model.quantity);
   const withinNeed = opts.maxQuantity == null || opts.maxQuantity <= 0 || qty <= opts.maxQuantity;
   return {
@@ -38,8 +38,9 @@ export function serializeDriveOffer(model: OfferModel, opts: { maxQuantity?: num
     approximateAge: formatAgeRange(model.ageRange) || model.approximateAge.trim(),
     sizeSpec: model.sizeSpec?.trim() || undefined,
     ageRange: model.ageRange || undefined,
-    confirmedWorking: model.confirmedWorking,
-    confirmedClean: model.confirmedClean,
+    // Not asked for this category: not sent.
+    ...(opts.asksWorking === false ? {} : { confirmedWorking: model.confirmedWorking }),
+    ...(opts.asksClean === false ? {} : { confirmedClean: model.confirmedClean }),
     // "None" when the donor says there are no defects (same rule as donation offers).
     knownDefects: model.hasKnownDefects ? model.knownDefects.trim() : "None",
     notesForNgo: [model.accessoriesIncluded.trim(), model.specNotes.trim()].filter(Boolean).join("\n"),

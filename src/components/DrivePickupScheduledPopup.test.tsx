@@ -26,6 +26,16 @@ describe("Donor scheduled a pickup popup", () => {
     await waitFor(() => expect(markNotificationRead).toHaveBeenCalledWith("n-1"));
   });
 
+  it("lays the details out with the primary and Later buttons", async () => {
+    vi.mocked(getMyNotifications).mockResolvedValue([{ ...note, body: "Asha · 5 Blankets · 5 Nov 2026, 10:00 AM IST · Andheri, Mumbai" }] as never);
+    render(<DrivePickupScheduledPopup />);
+    const row = await screen.findByTestId("pickup-scheduled-row");
+    for (const part of ["Asha", "5 Blankets", "5 Nov 2026, 10:00 AM IST", "Andheri, Mumbai"]) expect(row).toHaveTextContent(part);
+    expect(row).not.toHaveTextContent("·");
+    expect(screen.getByRole("link", { name: "Assign a person" }).className).toContain("w-full");
+    expect(screen.getByRole("button", { name: "Later" })).toBeInTheDocument();
+  });
+
   it("appears once per offer, even if the same notice comes back live", async () => {
     vi.mocked(getMyNotifications).mockResolvedValue([note] as never);
     render(<DrivePickupScheduledPopup />);

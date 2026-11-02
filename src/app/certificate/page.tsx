@@ -20,6 +20,7 @@ const playfair = Playfair_Display({ subsets: ["latin"] });
 
 /** The certificate's layout width; smaller screens scale it down. */
 const CERT_WIDTH = 960;
+const CERT_HEIGHT = CERT_WIDTH * 1000 / 1414;
 
 export default function CertificatePage() {
   const searchParams = useSearchParams();
@@ -53,6 +54,18 @@ export default function CertificatePage() {
     const fit = () => setCardScale(Math.min(1, el.clientWidth / CERT_WIDTH));
     fit();
     const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
+  // A drive certificate grows with a long title: the frame follows the card's real height.
+  const [cardHeight, setCardHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const el = printRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setCardHeight(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   });
@@ -240,23 +253,25 @@ export default function CertificatePage() {
       <div
         ref={frameRef}
         className="mx-auto cert-print-frame"
-        style={{ width: "100%", maxWidth: `${CERT_WIDTH}px`, height: `${(CERT_WIDTH * 1000 / 1414) * cardScale}px` }}
+        style={{ width: "100%", maxWidth: `${CERT_WIDTH}px`, height: `${(isDrive && cardHeight ? cardHeight : CERT_HEIGHT) * cardScale}px` }}
       >
       <div
         ref={printRef}
         className="cert-print-card"
         style={{
           width: `${CERT_WIDTH}px`,
-          aspectRatio: "1414 / 1000",
+          ...(isDrive ? { minHeight: `${CERT_HEIGHT}px` } : { aspectRatio: "1414 / 1000" }),
           transform: cardScale < 1 ? `scale(${cardScale})` : undefined,
           transformOrigin: "top left",
           visibility: cardReady ? "visible" : "hidden",
         }}
       >
         <div
+          data-testid="cert-body"
           style={{
             width: "100%",
-            height: "100%",
+            // A drive certificate keeps everything inside the frame (inset 22-27px) and grows to fit.
+            ...(isDrive ? { minHeight: `${CERT_HEIGHT}px` } : { height: "100%" }),
             backgroundColor: "#f5f0e8",
             backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
             position: "relative",
@@ -264,7 +279,7 @@ export default function CertificatePage() {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            padding: "40px",
+            padding: isDrive ? "48px 72px" : "40px",
             fontFamily: playfair.style.fontFamily,
             boxSizing: "border-box",
             boxShadow: "0 8px 40px rgba(0,0,0,0.15)",

@@ -178,30 +178,33 @@ function AssignSheet({ options, busy, error, onClose, onConfirm }: {
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent data-testid="assign-sheet" className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-md space-y-3 overflow-y-auto rounded-2xl">
-        <DialogTitle>Assign a person</DialogTitle>
-        <DialogDescription>They get an email with the pickup details and a private link.</DialogDescription>
-        <div role="radiogroup" aria-label="Person" className="space-y-2">
+      <DialogContent data-testid="assign-sheet" data-ck-role-theme="ngo"
+        className="max-h-[90dvh] w-[calc(100vw-2rem)] max-w-md overflow-y-auto rounded-2xl bg-white p-6 dark:bg-zinc-900 max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none">
+        <DialogTitle className="pr-8 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">Assign a person</DialogTitle>
+        <DialogDescription className="mt-1 text-sm text-stone-600 dark:text-stone-300">They get an email with the pickup details and a private link.</DialogDescription>
+        <div role="radiogroup" aria-label="Person" className="mt-4 space-y-2">
           {options.contacts.map((c, i) => (
-            <label key={i} className="flex min-h-11 cursor-pointer items-start gap-3 rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-700">
-              <input type="radio" name="assign-person" checked={choice === i} onChange={() => setChoice(i)} className="mt-1" />
-              <span className="min-w-0 break-words">
-                <span className="font-semibold">{c.name}</span>
+            <label key={i} data-testid="assign-contact" data-selected={choice === i ? "true" : undefined}
+              className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm ${choice === i ? "border-ngo-700 bg-ngo-50 ring-1 ring-ngo-700 dark:bg-ngo-900/30" : "border-stone-200 hover:border-ngo-600 dark:border-zinc-700"}`}>
+              <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ngo-100 font-bold text-ngo-800 dark:bg-ngo-900/50 dark:text-ngo-200">{c.name.trim().charAt(0).toUpperCase()}</span>
+              <span className="min-w-0 flex-1 break-words">
+                <span className="font-semibold text-stone-900 dark:text-stone-100">{c.name}</span>
                 <span className="block text-xs text-stone-600 dark:text-stone-300">{c.phone}</span>
               </span>
+              <input type="radio" name="assign-person" checked={choice === i} onChange={() => setChoice(i)} className="size-4 shrink-0 accent-[var(--ck-color-ngo-700,#1e6b4a)]" />
             </label>
           ))}
-          <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 text-sm font-semibold dark:border-zinc-700">
-            <input type="radio" name="assign-person" checked={choice === "new"} onChange={() => setChoice("new")} />
-            + Add new person
+          <label data-testid="assign-add-new" className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed p-3 text-sm font-semibold ${choice === "new" ? "border-ngo-700 bg-ngo-50 text-ngo-800 dark:bg-ngo-900/30 dark:text-ngo-200" : "border-stone-300 text-stone-700 hover:border-ngo-600 dark:border-zinc-600 dark:text-stone-200"}`}>
+            <span className="flex-1">+ Add new person</span>
+            <input type="radio" name="assign-person" checked={choice === "new"} onChange={() => setChoice("new")} className="size-4 shrink-0 accent-[var(--ck-color-ngo-700,#1e6b4a)]" />
           </label>
         </div>
         {needsEmail && (
           <Input aria-label="Email for this person" type="email" placeholder="Email for this person" value={extraEmail}
-            onChange={(e) => setExtraEmail(e.target.value)} className="h-11" />
+            onChange={(e) => setExtraEmail(e.target.value)} className="mt-3 h-11" />
         )}
         {choice === "new" && (
-          <div className="space-y-2">
+          <div className="mt-3 space-y-2">
             <Input aria-label="New person name" placeholder="Name" maxLength={100} value={person.name} onChange={(e) => setPerson({ ...person, name: e.target.value })} className="h-11" />
             <div className="flex gap-2">
               <span aria-hidden className="flex h-11 shrink-0 items-center rounded-md border border-input px-3 text-sm">+91</span>
@@ -211,10 +214,10 @@ function AssignSheet({ options, busy, error, onClose, onConfirm }: {
             <Input aria-label="New person email" type="email" placeholder="Email" value={person.email} onChange={(e) => setPerson({ ...person, email: e.target.value })} className="h-11" />
           </div>
         )}
-        {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <button type="button" onClick={onClose} className={secondary}>Cancel</button>
-          <button type="button" disabled={!valid || busy} onClick={confirm} className={primary}>
+          <button type="button" disabled={!valid || busy} onClick={confirm} className={`${buttonBase} bg-ngo-700 text-white hover:bg-ngo-800`}>
             {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}Confirm
           </button>
         </div>

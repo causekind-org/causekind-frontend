@@ -27,6 +27,10 @@ export function showsRequireClean(category: string): boolean {
 const sizeLabel = (id: string) => CLOTHING_SIZES.find(s => s.id === id)?.label ?? id;
 const fitLabel = (id: string) => CLOTHING_FITS.find(f => f.id === id)?.label ?? id;
 
+/** A donor always confirms "washed and clean" for Clothing and "working order" for Electronics, and nothing elsewhere. */
+export const offerAsksClean = (category: string | null | undefined) => category === "Clothing";
+export const offerAsksWorking = (category: string | null | undefined) => category === "Electronics";
+
 /** Free text; older drives chose chips, joined here so they still read and can be edited. */
 export function clothingSizesText(d: DriveCategoryDetails): string {
   return d.sizesNeeded ?? (d.sizes ?? []).map(sizeLabel).join(", ");

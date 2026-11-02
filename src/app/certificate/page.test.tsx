@@ -40,6 +40,27 @@ describe("certificate page", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it("drive certificate: a 120-character title shows whole, the card grows, logo and footer sit inside the frame", async () => {
+    search = "offerId=7&type=ngo_drive";
+    const title = "T".repeat(10) + " " + "Winter blankets for shelters ".repeat(4).trim().slice(0, 109);
+    getDrive.mockResolvedValue({ ...base, ngoName: "Hope", driveTitle: title });
+    render(<CertificatePage />);
+    const cell = await screen.findByText(title);
+    expect(cell.textContent).toBe(title);
+    expect(cell.style.overflowWrap).toBe("anywhere");
+    expect(cell.style.textOverflow).toBe("");
+    const body = screen.getByTestId("cert-body");
+    expect(body.style.padding).toBe("48px 72px");
+    expect(body.style.height).toBe("");
+    expect(body.style.minHeight).not.toBe("");
+    expect(body.parentElement!.style.aspectRatio).toBe("");
+    // In the padded flow, not absolutely placed over the border.
+    for (const el of [screen.getByAltText("CauseKind").parentElement!, screen.getByText("www.causekind.com"), screen.getByText(/digitally issued/)]) {
+      expect(body.contains(el)).toBe(true);
+      expect(el.style.position).toBe("");
+    }
+  });
+
   it("drive certificate: NGO and Drive rows right after the donor, no Condition", async () => {
     search = "offerId=7&type=ngo_drive";
     const longTitle = "Winter blankets for the night shelters of the old city ".repeat(3).trim();
