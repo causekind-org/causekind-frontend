@@ -7,15 +7,16 @@ import { Star, ExternalLink } from "lucide-react";
 import { getReviews, GoogleReviewsData, GoogleReview, SAMPLE_REVIEWS } from "@/data/googleReviews";
 import { isPlaceholderPreviewHost } from "@/lib/placeholderPreview";
 
-export function GoogleReviewsSection() {
-  const [data, setData] = useState<GoogleReviewsData | null>(null);
+export function GoogleReviewsSection({ initial = null }: { initial?: GoogleReviewsData | null }) {
+  const [data, setData] = useState<GoogleReviewsData | null>(initial);
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
   const [expandedCount, setExpandedCount] = useState(0);
   
   useEffect(() => {
     let mounted = true;
     const controller = new AbortController();
-    getReviews(controller.signal).then((res) => {
+    // Already in the page when the home page render fetched them.
+    if (!initial) getReviews(controller.signal).then((res) => {
       // Staging/dev only: fall back to sample reviews when the live Google API is not configured
       if (mounted) setData(res ?? (isPlaceholderPreviewHost() ? SAMPLE_REVIEWS : null));
     });
@@ -33,7 +34,7 @@ export function GoogleReviewsSection() {
       controller.abort();
       mql.removeEventListener('change', handler);
     };
-  }, []);
+  }, [initial]);
 
   if (!data) return null;
 

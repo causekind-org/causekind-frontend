@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
+import { loadGoogleReviews } from "@/lib/googleReviewsServer";
 
 // Self-referencing canonical on the apex route. Resolves against metadataBase
 // in src/app/layout.tsx, so it emits https://www.causekind.com — the host the
@@ -48,11 +49,13 @@ export default async function HomePage() {
   // logged-out visitor and the campaign would silently render nothing. The
   // public endpoint is permitAll and its projection carries everything these
   // surfaces need: title, category, city, createdAt and the donee's first name.
-  const [campaigns, stats, activity, publicRequests] = await Promise.all([
+  const [campaigns, stats, activity, publicRequests, reviews] = await Promise.all([
     getCampaigns().catch(emptyOnError("getCampaigns", [])),
     getPlatformStats().catch(emptyOnError("getPlatformStats", null)),
     getRecentActivity().catch(emptyOnError("getRecentActivity", [])),
-    getPublicItemRequests().catch(emptyOnError("getPublicItemRequests", []))
+    getPublicItemRequests().catch(emptyOnError("getPublicItemRequests", [])),
+    // In the HTML, so browsers skip a separate /api/google-reviews request.
+    loadGoogleReviews().then((result) => ("data" in result ? result.data : null)),
   ]);
 
   const schemaData = {
@@ -102,6 +105,7 @@ export default async function HomePage() {
         initialActivity={activity}
         initialItemRequests={[]}
         initialPublicRequests={publicRequests}
+        initialReviews={reviews}
       />
     </>
   );

@@ -74,6 +74,7 @@ import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
 import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
+import type { GoogleReviewsData } from "@/data/googleReviews";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { CreditsSection } from "@/components/home/CreditsSection";
 import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
@@ -124,6 +125,7 @@ export default function HomeClient({
   initialItemRequests,
   initialPublicRequests = [],
   fulfilledNeeds = [],
+  initialReviews = null,
 }: {
   initialCampaigns: Campaign[];
   initialStats: PlatformStats | null;
@@ -138,6 +140,8 @@ export default function HomeClient({
    */
   initialPublicRequests?: PublicItemRequest[];
   fulfilledNeeds?: FulfilledNeedSummary[];
+  /** Google reviews from the server render; null fetches them in the browser. */
+  initialReviews?: GoogleReviewsData | null;
 }) {
   const t = useTranslations("landing");
   const tCommon = useTranslations("common");
@@ -358,7 +362,7 @@ export default function HomeClient({
 
       <div className="hidden lg:block" data-dw-panel>
         <DiwaliSeam kind="edge" from="butter" />
-        <GoogleReviewsSection />
+        <GoogleReviewsSection initial={initialReviews} />
       </div>
 
       <div className="ck-home-paper hidden lg:block relative z-10">
@@ -579,7 +583,7 @@ export default function HomeClient({
 
         <DiwaliSeam kind="edge" from="butter" />
         <div className="-mx-5" data-dw-panel>
-          <GoogleReviewsSection />
+          <GoogleReviewsSection initial={initialReviews} />
         </div>
 
         {/* Mobile Campaigns horizontal scroll */}
