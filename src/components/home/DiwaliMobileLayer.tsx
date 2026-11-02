@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 
+import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
+
 import "./diwaliMobile.css";
 import "./diwaliDesktop.css";
 
@@ -13,6 +15,7 @@ const SPARKS = [14, 33, 49, 67, 84];
  * rules, so they request nothing. Loops pause once it is off screen.
  */
 export function DiwaliMobileLayer() {
+  const diwali = useDiwaliCampaign();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -23,7 +26,9 @@ export function DiwaliMobileLayer() {
     });
     io.observe(layer);
     return () => io.disconnect();
-  }, []);
+  }, [diwali]);
+
+  if (!diwali) return null;
 
   return (
     <div ref={ref} className="ck-dw-layer" aria-hidden>
@@ -70,6 +75,8 @@ export function DiwaliSeam({
   /** Lamps in a `diya` seam. */
   diyas?: 1 | 3 | 5;
 }) {
+  if (!useDiwaliCampaign()) return null;
+
   return (
     <div className={`ck-dw-seam ck-dw-seam-${kind}`} data-from={from} data-to={to} data-art={art} aria-hidden>
       {kind === "diya" && Array.from({ length: diyas }, (_, index) => <span key={index} className="ck-dw-diya" />)}

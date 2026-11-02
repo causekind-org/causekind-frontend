@@ -65,7 +65,8 @@ import { toast } from "@/lib/toast";
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
 import { DiwaliMobileLayer, DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
-import { DiwaliCampaigns } from "@/components/home/DiwaliCampaigns";
+import { HomeFundraisers } from "@/components/home/HomeFundraisers";
+import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
@@ -273,6 +274,9 @@ export default function HomeClient({
   // region around both "Who we are" variants (handoffs/Landing Film Skip Plan.md).
   const afterFilmRef = useRef<HTMLElement>(null);
   const whoWeAreLabel = useLandingTranslation("Who we are");
+  // Every Diwali page rule in diwaliMobile/diwaliDesktop.css hangs off this
+  // class, so the whole festive layer leaves at 13 Nov 00:00 IST in one place.
+  const diwali = useDiwaliCampaign();
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -280,7 +284,7 @@ export default function HomeClient({
   }
 
   return (
-    <div className="ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300">
+    <div className={`ck-home-page${diwali ? " ck-diwali" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
       <div aria-hidden className="ck-home-grain" />
       <DiwaliMobileLayer />
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
@@ -299,7 +303,7 @@ export default function HomeClient({
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {/* Live fundraisers follow the hero and leave with it, then the film. */}
-      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><DiwaliCampaigns /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><DiwaliCampaigns /></>}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeFundraisers /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeFundraisers /></>}
 
       <DiwaliSeam kind="edge" from="film" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />

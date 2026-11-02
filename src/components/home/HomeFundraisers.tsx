@@ -7,9 +7,12 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "@/components/AppLink";
 import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
 import { useAuth } from "@/hooks/useAuth";
+import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { fundraisers, type FundraiserCard, type FundraisingCategory } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
+
+import "./homeFundraisers.css";
 
 const SHOWN_QUERY = "(max-width: 767.98px), (min-width: 1024px)";
 /** How fast the row glides, in pixels per millisecond. */
@@ -25,7 +28,7 @@ const CATEGORY: Record<FundraisingCategory, string> = {
 };
 
 /** `copy` is the looping row's second run of cards: seen, but not read out or tabbed to. */
-function Card({ card, copy = false }: { card: FundraiserCard; copy?: boolean }) {
+function Card({ card, copy = false, diwali }: { card: FundraiserCard; copy?: boolean; diwali: boolean }) {
   const pct = card.target ? Math.min(100, Math.round((card.raised / card.target) * 100)) : 0;
   return (
     <Link href={`/fundraisers/${card.id}`} className="ck-dw-card" aria-hidden={copy || undefined} tabIndex={copy ? -1 : undefined}>
@@ -34,7 +37,7 @@ function Card({ card, copy = false }: { card: FundraiserCard; copy?: boolean }) 
           // eslint-disable-next-line @next/next/no-img-element
           <img src={card.coverUrl} alt={card.coverAltText ?? ""} loading="lazy" />
         ) : (
-          <span className="ck-dw-diya" />
+          diwali && <span className="ck-dw-diya" />
         )}
       </span>
       <span className="ck-dw-c-body">
@@ -61,9 +64,14 @@ function Card({ card, copy = false }: { card: FundraiserCard; copy?: boolean }) 
  * endpoint; while there are none (or the service is off) an empty card says so and
  * points to item giving, the same wording as /fundraisers. Nothing is fetched on
  * tablets. Its height feeds the film's lead-in, so triggers re-measure on load.
+ *
+ * <p>Permanent. Until 13 Nov 00:00 IST it also wears the Diwali dress (lantern,
+ * diya, scalloped edge and colours, from diwaliMobile/diwaliDesktop.css); after
+ * that homeFundraisers.css gives it the everyday CauseKind colours.
  */
-export function DiwaliCampaigns() {
+export function HomeFundraisers() {
   const { user } = useAuth();
+  const diwali = useDiwaliCampaign();
   // The fundraisers are for givers; a donee is shown no one else's needs.
   const isDonee = user?.role?.replace(/^ROLE_/, "") === "DONEE";
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
@@ -196,13 +204,13 @@ export function DiwaliCampaigns() {
 
   return (
     <section className="ck-dw-campaigns" aria-labelledby="ck-dw-campaigns-title">
-      <span className="ck-dw-hang ck-dw-hang-right" aria-hidden />
+      {diwali && <span className="ck-dw-hang ck-dw-hang-right" aria-hidden />}
       <div className="ck-dw-c-head">
         <p className="ck-dw-c-eyebrow"><LandingText>Fundraisers</LandingText></p>
         <h2 id="ck-dw-campaigns-title" className="ck-dw-c-title">
-          <LandingText>Light a diya</LandingText> <em><LandingText>for someone&apos;s need</LandingText></em>
+          <LandingText>Give someone</LandingText> <em><LandingText>a reason to smile again</LandingText></em>
         </h2>
-        <p className="ck-dw-c-sub"><LandingText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</LandingText></p>
+        <p className="ck-dw-c-sub"><LandingText>Don&apos;t let their hope go quiet. Every fundraiser here was reviewed by our team before it went public.</LandingText></p>
       </div>
 
       <div
@@ -224,12 +232,12 @@ export function DiwaliCampaigns() {
           <div className="ck-dw-card is-skeleton" aria-hidden><span className="ck-dw-c-photo" /><span className="ck-dw-c-body" /></div>
         ) : cards.length > 0 ? (
           <>
-            {cards.map((card) => <Card key={card.id} card={card} />)}
-            {looping && cards.map((card) => <Card key={`copy-${card.id}`} card={card} copy />)}
+            {cards.map((card) => <Card key={card.id} card={card} diwali={diwali} />)}
+            {looping && cards.map((card) => <Card key={`copy-${card.id}`} card={card} copy diwali={diwali} />)}
           </>
         ) : (
           <Link href="/requests" className="ck-dw-card ck-dw-c-empty">
-            <span className="ck-dw-c-photo"><span className="ck-dw-diya" /></span>
+            <span className="ck-dw-c-photo">{diwali && <span className="ck-dw-diya" />}</span>
             <span className="ck-dw-c-body">
               <span className="ck-dw-c-name"><LandingText>No fundraisers yet</LandingText></span>
               <span className="ck-dw-c-by"><LandingText>There are no live fundraisers right now. You can still donate items.</LandingText></span>
