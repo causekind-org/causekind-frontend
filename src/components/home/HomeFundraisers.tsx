@@ -11,6 +11,7 @@ import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { fundraisers, type FundraiserCard, type FundraisingCategory } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
+import { DONATE_HREF } from "@/lib/donateScroll";
 
 import "./homeFundraisers.css";
 
@@ -62,7 +63,7 @@ function Card({ card, copy = false, diwali }: { card: FundraiserCard; copy?: boo
 /**
  * Live fundraisers straight after the hero, on phones and desktop. Real cards from the public
  * endpoint; while there are none (or the service is off) an empty card says so and
- * points to item giving, the same wording as /fundraisers. Nothing is fetched on
+ * points to a money donation instead. Nothing is fetched on
  * tablets. Its height feeds the film's lead-in, so triggers re-measure on load.
  *
  * <p>Permanent. Until 13 Nov 00:00 IST it also wears the Diwali dress (lantern,
@@ -236,12 +237,12 @@ export function HomeFundraisers() {
             {looping && cards.map((card) => <Card key={`copy-${card.id}`} card={card} copy diwali={diwali} />)}
           </>
         ) : (
-          <Link href="/requests" className="ck-dw-card ck-dw-c-empty">
+          <Link href={DONATE_HREF} className="ck-dw-card ck-dw-c-empty">
             <span className="ck-dw-c-photo">{diwali && <span className="ck-dw-diya" />}</span>
             <span className="ck-dw-c-body">
               <span className="ck-dw-c-name"><LandingText>No fundraisers yet</LandingText></span>
-              <span className="ck-dw-c-by"><LandingText>There are no live fundraisers right now. You can still donate items.</LandingText></span>
-              <span className="ck-dw-c-cta"><LandingText>Donate items</LandingText></span>
+              <span className="ck-dw-c-by"><LandingText>There are no live fundraisers right now. You can still give money to help people in need.</LandingText></span>
+              <span className="ck-dw-c-cta"><LandingText>Donate money</LandingText></span>
             </span>
           </Link>
         )}

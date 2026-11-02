@@ -478,5 +478,9 @@
   .ck-dw-c-by { flex: none; display: block; }
   .ck-dw-c-name { flex: none; min-height: 2.5em; }
   .ck-dw-c-empty .ck-dw-c-name { min-height: 0; }
+  /* The empty card's message is a sentence, not a byline: let it wrap, or its
+     width pushes the lone card past the row and the edge is clipped. */
+  .ck-dw-c-empty .ck-dw-c-by { white-space: normal; overflow: visible; }
+  .ck-dw-c-body { min-width: 0; }
   .ck-dw-c-cta { margin-top: auto; }
 }
