@@ -66,8 +66,8 @@ function Card({ card, copy = false, diwali }: { card: FundraiserCard; copy?: boo
  * points to a money donation instead. Nothing is fetched on
  * tablets. Its height feeds the film's lead-in, so triggers re-measure on load.
  *
- * <p>Permanent. Until 13 Nov 00:00 IST it also wears the Diwali dress (lantern,
- * diya, scalloped edge and colours, from diwaliMobile/diwaliDesktop.css); after
+ * <p>Permanent. Until 13 Nov 00:00 IST it also wears the Diwali dress (the
+ * "Light a diya" headline, lantern, diya, scalloped edge and colours, from diwaliMobile/diwaliDesktop.css); after
  * that homeFundraisers.css gives it the everyday CauseKind colours.
  */
 export function HomeFundraisers() {
@@ -209,9 +209,19 @@ export function HomeFundraisers() {
       <div className="ck-dw-c-head">
         <p className="ck-dw-c-eyebrow"><LandingText>Fundraisers</LandingText></p>
         <h2 id="ck-dw-campaigns-title" className="ck-dw-c-title">
-          <LandingText>Give someone</LandingText> <em><LandingText>a reason to smile again</LandingText></em>
+          {diwali ? (
+            <><LandingText>Light a diya</LandingText> <em><LandingText>for someone&apos;s need</LandingText></em></>
+          ) : (
+            <><LandingText>Give someone</LandingText> <em><LandingText>a reason to smile again</LandingText></em></>
+          )}
         </h2>
-        <p className="ck-dw-c-sub"><LandingText>Don&apos;t let their hope go quiet. Every fundraiser here was reviewed by our team before it went public.</LandingText></p>
+        <p className="ck-dw-c-sub">
+          {diwali ? (
+            <LandingText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</LandingText>
+          ) : (
+            <LandingText>Don&apos;t let their hope go quiet. Every fundraiser here was reviewed by our team before it went public.</LandingText>
+          )}
+        </p>
       </div>
 
       <div
