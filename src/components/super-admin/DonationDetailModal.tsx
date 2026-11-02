@@ -174,7 +174,13 @@ function GuestPanReveal({ donationId, t }: { donationId: number; t: SaTheme }) {
           ) : revealed.field === "PAN_PHOTO" ? (
             // eslint-disable-next-line @next/next/no-img-element -- a
             // short-lived presigned S3 URL from the backend, not a static asset.
-            <img src={revealed.value} alt="PAN card" className="max-h-56 rounded-lg" />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- short-lived presigned S3 URL */}
+              <img src={revealed.value} alt="PAN card" className="max-h-56 rounded-lg" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+              {/* Fundraiser PANs may be a PDF since 2026-11-02; the <img> hides itself and this link opens it. */}
+              <a href={revealed.value} target="_blank" rel="noreferrer" className="text-xs underline">Open PAN file (photo or PDF)</a>
+            </>
+
           ) : (
             <p className="break-all font-mono text-sm">{revealed.value}</p>
           )}

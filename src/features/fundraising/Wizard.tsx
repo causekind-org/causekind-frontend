@@ -63,6 +63,8 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
   const [app, setApp] = useState(initial);
   const [step, setStep] = useState(0);
   const [consentTried, setConsentTried] = useState(false);
+  // Set when a "Still needed" button on the review step sent the donee here; shows "Back to review".
+  const [fixing, setFixing] = useState(false);
   const [save, setSave] = useState<SaveState>("saved");
   const pending = useRef<FundraisingSave>({});
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -113,6 +115,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
   async function go(to: number) {
     await flush();
     await draft.flush();
+    if (to === 7) setFixing(false);
     setStep(to);
     window.scrollTo({ top: 0 });
   }
@@ -133,7 +136,13 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
         </div>
       </header>
       <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
-        <Stepper current={step} />
+        <Stepper current={step} onPick={(i) => { if (i !== step) void go(i); }} />
+        {fixing && step < 7 && (
+          <div style={{ maxWidth: 860, display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 10, background: "#eaf0f8", color: "#1e3a60", flexWrap: "wrap" }}>
+            <p className={s.small}><UiText>Add what&apos;s missing here, then go straight back to check and submit.</UiText></p>
+            <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void go(7)}><UiText>Back to review</UiText> →</button>
+          </div>
+        )}
         {save === "error" && (
           <div role="alert" style={{ maxWidth: 860, display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 16px", borderRadius: 10, background: "#fbeaea", color: "#6f1414", flexWrap: "wrap" }}>
             <Icon name="alert" />
@@ -152,7 +161,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
             void go(step + 1);
           }} />} />}
         {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
-        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} onSubmitted={onLeftDraft} page={draft.page} reloadPage={draft.reload} />}
+        {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} fix={(to) => { setFixing(true); void go(to); }} onSubmitted={onLeftDraft} page={draft.page} reloadPage={draft.reload} />}
       </main>
     </>
   );
@@ -629,8 +638,10 @@ function BankDetails({ app, set, onBack, onNext }: { app: FundraisingApplication
   );
 }
 
-function Review({ app, set, flush, goTo, onSubmitted, page, reloadPage }: {
+function Review({ app, set, flush, goTo, fix, onSubmitted, page, reloadPage }: {
   app: FundraisingApplication; set: SetFn; flush: () => Promise<boolean>; goTo: (step: number) => void;
+  /** Opens a step from a "Still needed" button, with a way straight back here. */
+  fix: (step: number) => void;
   onSubmitted: (a: FundraisingApplication) => void; page: FundraisingCampaign | null;
   reloadPage: () => void;
 }) {
@@ -656,9 +667,24 @@ function Review({ app, set, flush, goTo, onSubmitted, page, reloadPage }: {
     </label>
   );
 
-  const stillNeeded = [...app.missing, ...pageGaps(page, {
-    title: ui("page title"), story: ui("your story"), cover: ui("cover photo"), consent: ui("cover photo permission"),
-  })];
+  const gapLabels = { title: ui("page title"), story: ui("your story"), cover: ui("cover photo"), consent: ui("cover photo permission") };
+  const stillNeeded = [...app.missing, ...pageGaps(page, gapLabels)];
+  // Where each "Still needed" item is fixed. Keys are FundraisingApplicationService.missing()'s fixed strings;
+  // an unknown item stays plain text.
+  const fixAt: Record<string, number | "confirm"> = {
+    "beneficiary name": 1, "relationship": 1, "authority to organise": 1,
+    "category": 2, "category not open yet": 2, "what happened": 2, "amount to raise": 2,
+    "your ID": 3, "their consent": 3, "proof of relationship": 3, "proof you know them": 3, "medical report": 3,
+    "treatment estimate": 3, "admission or enrolment letter": 3, "fee demand": 3, "proof of what happened": 3,
+    "cost proof": 3, "a supporting document": 3,
+    [gapLabels.title]: 4, [gapLabels.cover]: 4, [gapLabels.consent]: 4, [gapLabels.story]: 5,
+    "account holder name": 6, "bank account number": 6, "IFSC code": 6,
+    "accuracy declaration": "confirm", "authority declaration": "confirm", "use-of-funds declaration": "confirm", "verification consent": "confirm",
+  };
+  const openFix = (to: number | "confirm") => {
+    if (to === "confirm") document.getElementById("confirm")?.scrollIntoView({ behavior: "smooth", block: "center" });
+    else fix(to);
+  };
 
   async function submit() {
     setSubmitting(true); setError(null);
@@ -688,7 +714,7 @@ function Review({ app, set, flush, goTo, onSubmitted, page, reloadPage }: {
         {sec(ui("Your story", "wizard step"), 5, <p className={s.small} style={{ whiteSpace: "pre-line" }}>{page?.story ? (page.story.length > 280 ? page.story.slice(0, 280) + "…" : page.story) : "—"}</p>)}
       </div>
       {page && <DocumentVisibility page={page} evidence={app.evidence} />}
-      <fieldset className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
+      <fieldset id="confirm" className={s.card} style={{ maxWidth: 860, padding: "20px 22px", margin: 0 }}>
         <legend style={{ fontWeight: 700, fontSize: 16, padding: "0 6px" }}><UiText>Please confirm</UiText></legend>
         {/* One click ticks every declaration shown (owner, 2026-10-30); each stays individually untickable. */}
         <div style={{ paddingBottom: 10 }}>
@@ -705,7 +731,15 @@ function Review({ app, set, flush, goTo, onSubmitted, page, reloadPage }: {
       </fieldset>
       {stillNeeded.length > 0 && (
         <div role="status" style={{ maxWidth: 860, padding: "14px 16px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000" }} className={s.small}>
-          <strong><UiText>Still needed:</UiText></strong> {stillNeeded.join(", ")}.
+          <strong><UiText>Still needed before you can submit:</UiText></strong>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+            {stillNeeded.map((item) => {
+              const to = fixAt[item];
+              return to == null
+                ? <span key={item} style={{ alignSelf: "center" }}>{item}</span>
+                : <button key={item} type="button" className={`${s.btn} ${s.bs}`} onClick={() => openFix(to)}>{item} →</button>;
+            })}
+          </div>
         </div>
       )}
       {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}

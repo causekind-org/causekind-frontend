@@ -139,14 +139,14 @@ export default function FundraiserPage() {
         </article>
 
         <aside className={s.card} style={{ padding: 24, display: "flex", flexDirection: "column", gap: 14 }} aria-label={ui("Donate")}>
-          <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : d.status === "PAUSED" ? s.cW : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? ui("Live", "campaign status") : d.status === "PAUSED" ? ui("Paused", "campaign status") : d.outcome ? ui("Outcome published", "campaign status") : ui("Collections closed", "campaign status")}</span>
+          <span className={`${s.chip} ${d.acceptingDonations ? s.cOk : d.status === "PAUSED" ? s.cW : s.cM}`} style={{ alignSelf: "flex-start" }}>{d.acceptingDonations ? ui("Live", "campaign status") : d.status === "PAUSED" ? ui("Paused", "campaign status") : d.outcome ? ui("Outcome published", "campaign status") : d.remaining === 0 ? ui("Target reached", "campaign status") : ui("Collections closed", "campaign status")}</span>
           {d.status === "PAUSED" && <p className={s.small} role="status" style={{ padding: "10px 12px", borderRadius: 8, background: "#fdf3e1" }}>{d.pauseNotice || ui("Donations are paused while we review some information.")}</p>}
           <p className={s.tabular}><strong style={{ fontSize: 30 }}>{formatINR(c.raised)}</strong><br /><span className={s.muted}>{t("confirmedOfTarget", { target: formatINR(c.target) })}</span></p>
           <div className={s.prog} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={t("pctOfTarget", { pct })}><span style={{ width: `${pct}%` }} /></div>
           <p className={`${s.small} ${s.muted}`}>{t("donationCount", { count: c.donationCount })}{c.endDate ? ` · ${t("endsOnLower", { date: fmt.date(c.endDate) })}` : ""}</p>
           {d.acceptingDonations
             ? <Link href={`/fundraisers/${c.id}/donate`} className={`${s.btn} ${s.bp}`} style={{ minHeight: 52, fontSize: 17 }}><UiText>Donate</UiText></Link>
-            : <div aria-disabled="true" className={s.btn} style={{ background: "#e3ddd6", color: "#4a3f37" }}>{d.status === "PAUSED" ? ui("Donations paused") : ui("No longer accepting donations")}</div>}
+            : <div aria-disabled="true" className={s.btn} style={{ background: "#e3ddd6", color: "#4a3f37" }}>{d.status === "PAUSED" ? ui("Donations paused") : d.remaining === 0 ? ui("Target reached — thank you") : ui("No longer accepting donations")}</div>}
           <button type="button" className={`${s.btn} ${s.bs}`} onClick={share}>{copied ? ui("Link copied") : ui("Share")}</button>
           <div className={s.small} style={{ padding: "12px 14px", border: "1px dashed #cfc3b6", borderRadius: 10 }}>
             <strong><UiText>Where your money goes</UiText></strong><br />

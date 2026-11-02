@@ -83,6 +83,8 @@
 .stOn { border-color: var(--fr-donee); color: var(--fr-donee); }
 .stOn b { background: var(--fr-donee); color: #fff; }
 .stDone b { background: #e6f2ea; color: #1d5b3a; }
+.stBtn { font-family: inherit; cursor: pointer; }
+.stBtn:hover { border-color: var(--fr-donee); }
 
 /* Dashboard rows (F01) */
 .row { display: flex; align-items: center; gap: 16px; padding: 18px 20px; border-top: 1px solid var(--fr-line-soft); flex-wrap: wrap; }
