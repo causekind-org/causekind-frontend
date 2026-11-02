@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowRight, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { getNgoDrives, type PublicNgoDrive } from "@/lib/api";
 import { NgoDriveCard, NgoDriveCardSkeleton } from "./NgoDriveCard";
+import { FEATURES } from "@/lib/features";
 import { sortNgoDrives } from "../ngoDriveFilters";
 import { DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { LiveBoardHeader } from "@/components/home/LiveBoardHeader";
@@ -24,7 +25,17 @@ export type NgoDrivesSectionProps = {
   className?: string;
 };
 
-export function NgoDrivesSection({ initialDrives, className = "" }: NgoDrivesSectionProps) {
+/**
+ * NGO drives are part of the NGO feature, which is on hold in production: the
+ * section renders only where NEXT_PUBLIC_NGO_ENABLED="true" (staging). Gated here
+ * rather than at each call site, so no home layout can show it by accident.
+ */
+export function NgoDrivesSection(props: NgoDrivesSectionProps) {
+  if (!FEATURES.ngoRegistration) return null;
+  return <NgoDrivesBoard {...props} />;
+}
+
+function NgoDrivesBoard({ initialDrives, className = "" }: NgoDrivesSectionProps) {
   const ui = useUiText();
   const df = useTranslations("driveFlow");
   const categoryLabel = useCategoryLabel();
