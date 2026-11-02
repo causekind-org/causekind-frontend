@@ -49,6 +49,29 @@ export default function AdminCampaignReviewPage() {
       {error && <div role="alert" style={{ padding: "10px 28px", background: "#fbeaea" }} className={a.err}>{error} <button type="button" className={`${a.btn} ${a.bs}`} onClick={() => { setError(null); load(); }}>Refresh</button></div>}
 
       <main data-fr-grid="two" style={{ padding: "20px 28px 48px", display: "grid", gridTemplateColumns: "minmax(0,1fr) 340px", gap: 18, alignItems: "start" }}>
+        {/* Launch prerequisites first, full width, above everything else (owner, 2026-11-02). */}
+          <section className={`${a.card} ${a.pane}`} aria-labelledby="pre" style={{ gridColumn: "1 / -1" }}>
+            <h2 id="pre" className={a.h}>Launch prerequisites</h2>
+            {/* Bank details first, the tick right under them: read, then confirm (owner, 2026-10-31). */}
+            {data.applicationId != null && <PayoutDetails applicationId={data.applicationId} payout={data.payout} organiserName={data.applicantName} />}
+            {c.status !== "APPROVED" && c.status !== "CANCELLED" && c.status !== "PUBLICATION_DECLINED" && (
+              <PayoutToggle id={c.id} version={c.version} ready={c.paymentSetupComplete} hasDetails={!!data.payout} onDone={setData} onError={setError} />
+            )}
+            <p className={a.small}><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Application approved</p>
+            <p className={a.small}>{data.payout
+              ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Donee has given bank details</>
+              : <><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Donee has given bank details</>}</p>
+            <p className={a.small}>{c.paymentSetupComplete
+              ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Bank details checked</>
+              : <><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Bank details checked</>}</p>
+            <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>
+              {c.status === "APPROVED" ? <>This campaign is <strong>Live</strong> and taking donations.</>
+                : c.paymentSetupComplete ? <>Approving now makes it <strong>Live</strong>.</>
+                : <>Approving now results in <strong>Approved — setup incomplete</strong>. It goes live once the bank details are checked.</>}
+            </p>
+            <p className={`${a.small} ${a.muted}`}>Bank details are stored encrypted and shown only to admins.</p>
+            {(c.status === "APPROVED" || c.status === "PAUSED") && <CloseNow id={c.id} onDone={setData} />}
+          </section>
         <div style={{ display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <section className={a.card} style={{ overflowX: "auto" }} aria-labelledby="cmp">
             <div className={a.pane} style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
@@ -88,28 +111,6 @@ export default function AdminCampaignReviewPage() {
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <section className={`${a.card} ${a.pane}`} aria-labelledby="pre">
-            <h2 id="pre" className={a.h}>Launch prerequisites</h2>
-            {/* The one action here, first in the panel (owner, 2026-10-28). */}
-            {c.status !== "APPROVED" && c.status !== "CANCELLED" && c.status !== "PUBLICATION_DECLINED" && (
-              <PayoutToggle id={c.id} version={c.version} ready={c.paymentSetupComplete} hasDetails={!!data.payout} onDone={setData} onError={setError} />
-            )}
-            <p className={a.small}><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Application approved</p>
-            <p className={a.small}>{data.payout
-              ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Donee has given bank details</>
-              : <><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Donee has given bank details</>}</p>
-            <p className={a.small}>{c.paymentSetupComplete
-              ? <><span style={{ color: "#1d5b3a", fontWeight: 700 }}>Met</span> · Bank details checked</>
-              : <><span style={{ color: "#5c4f45", fontWeight: 700 }}>Not met</span> · Bank details checked</>}</p>
-            {data.applicationId != null && <PayoutDetails applicationId={data.applicationId} payout={data.payout} organiserName={data.applicantName} />}
-            <p className={a.small} style={{ padding: "10px 12px", borderRadius: 8, background: "#efebe6" }}>
-              {c.status === "APPROVED" ? <>This campaign is <strong>Live</strong> and taking donations.</>
-                : c.paymentSetupComplete ? <>Approving now makes it <strong>Live</strong>.</>
-                : <>Approving now results in <strong>Approved — setup incomplete</strong>. It goes live once the bank details are checked.</>}
-            </p>
-            <p className={`${a.small} ${a.muted}`}>Bank details are stored encrypted and shown only to admins.</p>
-            {(c.status === "APPROVED" || c.status === "PAUSED") && <CloseNow id={c.id} onDone={setData} />}
-          </section>
           <section className={`${a.card} ${a.pane}`} aria-labelledby="dr">
             <h2 id="dr" className={a.h}>Decision record</h2>
             {c.decidedAt ? <p className={a.small}>{data.decidedBy} · {formatDate(c.decidedAt)}<br />{c.reviewerMessage}</p> : <p className={`${a.small} ${a.muted}`}>No decision yet.</p>}

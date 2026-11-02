@@ -98,22 +98,24 @@ export function SaveIndicator({ state }: { state: SaveState }) {
 
 export const WIZARD_STEPS = ["About you", "Who needs help", "The need", "Evidence", "Review"] as const;
 
-export function Stepper({ current }: { current: number }) {
+/** With `onPick`, every pill is a button that opens its step (owner, 2026-10-31). */
+export function Stepper({ current, onPick }: { current: number; onPick?: (step: number) => void }) {
   const ui = useUiText();
   const labels = useFundraisingLabels();
   return (
     <nav aria-label={ui("Application steps")}>
       <ol className={s.steps}>
-        {labels.wizardSteps.map((label, i) => (
-          <li
-            key={label}
-            className={`${s.st} ${i === current ? s.stOn : ""} ${i < current ? s.stDone : ""}`}
-            aria-current={i === current ? "step" : undefined}
-          >
-            <b>{i < current ? "✓" : i + 1}</b>
-            {label}
-          </li>
-        ))}
+        {labels.wizardSteps.map((label, i) => {
+          const cls = `${s.st} ${i === current ? s.stOn : ""} ${i < current ? s.stDone : ""}`;
+          const body = <><b>{i < current ? "✓" : i + 1}</b>{label}</>;
+          return onPick ? (
+            <li key={label}>
+              <button type="button" className={`${cls} ${s.stBtn}`} aria-current={i === current ? "step" : undefined} onClick={() => onPick(i)}>{body}</button>
+            </li>
+          ) : (
+            <li key={label} className={cls} aria-current={i === current ? "step" : undefined}>{body}</li>
+          );
+        })}
       </ol>
     </nav>
   );

@@ -6303,6 +6303,8 @@ export type FundraiserDetail = {
   documents: { type: FundraisingEvidenceType; fileName: string | null; url: string }[];
   /** Show the 80G section on the donate page (switch on and the Trust's 80G details configured). */
   taxReceiptOffered?: boolean;
+  /** Most a donor can give now (target minus confirmed total); 0 = target reached; null = no target. */
+  remaining?: number | null;
 };
 
 /** Fundraiser donation: the signed-in donor's PAN photo for an 80G receipt, before checkout. */
@@ -6310,10 +6312,12 @@ export function uploadDonationPanPhoto(donationId: number, file: File) {
   const fd = new FormData();
   fd.append("file", file);
   return fetch(`${BASE_URL}/api/v1/donations/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
-    .then((res) => {
+    .then(async (res) => {
       // 409 with "already uploaded" means a retry after a successful upload: fine.
       if (res.ok) return;
-      throw new ApiError(res.status, "The PAN photo didn't upload.", null);
+      // Keep the server's reason (file type, size, sign-in…) so the donor sees why.
+      const body = await res.json().catch(() => null);
+      throw new ApiError(res.status, body?.detail || body?.message || body?.fieldErrors?.[0]?.message || "The PAN photo didn't upload.", body);
     });
 }
 
