@@ -114,4 +114,18 @@ describe("applicationSteps", () => {
     expect(steps[0].body).toMatch(/verify your email/i);
     expect(steps).toHaveLength(3);
   });
+
+});
+
+describe("/profile long typed text", { timeout: 20000 }, () => {
+  it("wraps a 300-character organisation name", async () => {
+    const long = "w".repeat(300);
+    vi.mocked(getProfile).mockResolvedValue({
+      id: 101, email: "contact@smilefoundation.org", fullName: long, organizationName: long,
+      role: "NGO_PARTNER", phone: "+919876543210", city: "Mumbai", latitude: null, longitude: null,
+    } as never);
+    await renderCard("UNDER_REVIEW", { organizationName: long });
+    const heading = screen.getAllByText(long).find(n => n.classList.contains("ck-user-text"));
+    expect(heading).toBeDefined();
+  });
 });

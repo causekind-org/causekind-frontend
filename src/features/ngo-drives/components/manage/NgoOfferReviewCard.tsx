@@ -31,14 +31,14 @@ export function NgoOfferReviewCard({ offer, unit, stillNeeded, label, select, ac
         {select}
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-bold text-stone-900 dark:text-stone-100">{offer.donorDisplayName || ui("Donor")}</h3>
+            <h3 className="ck-user-text font-bold text-stone-900 dark:text-stone-100">{offer.donorDisplayName || ui("Donor")}</h3>
             {offer.distanceKm != null && <span className="text-xs text-stone-500 dark:text-stone-400">{df("kmAway", { km: offer.distanceKm.toFixed(1) })}</span>}
             {label && <span className="rounded-full bg-stone-200 px-2 py-0.5 text-xs font-bold text-stone-700 dark:bg-zinc-800 dark:text-stone-200">{label}</span>}
           </div>
           <p className="mt-1 text-sm font-semibold text-ngo-800 dark:text-ngo-200" data-testid="offer-vs-need">
             {df("offerQty", { qty: offer.quantity ?? "", unit: u })}{stillNeeded != null ? ` · ${df("driveStillNeeds", { count: Math.max(0, stillNeeded) })}` : ""}
           </p>
-          <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">
+          <p className="ck-user-text mt-1 text-sm text-stone-700 dark:text-stone-300">
             {dc(offer.condition) || ui("Condition not given")}
             {age ? ` · ${df("ageIs", { age })}` : ""}
             {offer.sizeSpec ? ` · ${df("sizeIs", { size: offer.sizeSpec })}` : ""}
@@ -49,7 +49,7 @@ export function NgoOfferReviewCard({ offer, unit, stillNeeded, label, select, ac
               {offer.confirmedClean && <span className="inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" /><UiText>Washed and clean</UiText></span>}
             </div>
           )}
-          {offer.notesForNgo && <p className="mt-2 rounded border border-amber-100 bg-white/60 p-2 text-xs text-stone-600 dark:border-amber-900/30 dark:bg-black/20 dark:text-stone-300">&ldquo;{offer.notesForNgo}&rdquo;</p>}
+          {offer.notesForNgo && <p data-testid="offer-note" className="ck-user-text mt-2 rounded border border-amber-100 bg-white/60 p-2 text-xs text-stone-600 dark:border-amber-900/30 dark:bg-black/20 dark:text-stone-300">&ldquo;{offer.notesForNgo}&rdquo;</p>}
           {offer.media && offer.media.length > 0 && (
             <div className="mt-2 flex flex-wrap gap-2">
               {offer.media.filter((m) => m.mediaType !== "VIDEO").map((m) => (

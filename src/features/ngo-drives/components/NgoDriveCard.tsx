@@ -217,14 +217,14 @@ export function NgoDriveCard({ drive, className = "", offers = [] }: NgoDriveCar
           </p>
 
           {/* Title (max 2 lines with ellipsis) */}
-          <h3 className="mt-1 line-clamp-2 font-serif text-lg font-semibold leading-snug text-stone-900 transition-colors group-hover:text-emerald-700 dark:text-stone-100 dark:group-hover:text-emerald-400">
+          <h3 className="mt-1 line-clamp-2 font-serif text-lg font-semibold leading-snug text-stone-900 transition-colors group-hover:text-emerald-700 dark:text-stone-100 dark:group-hover:text-emerald-400 ck-user-text">
             {drive.title}
           </h3>
 
           {/* Item */}
           {drive.itemName && (
             <p className="mt-1 text-xs text-stone-600 dark:text-stone-400">
-              Item: <span className="font-semibold text-stone-800 dark:text-stone-200">{drive.itemName}</span>
+              Item: <span className="font-semibold text-stone-800 dark:text-stone-200 ck-user-text">{drive.itemName}</span>
             </p>
           )}
 

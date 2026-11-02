@@ -203,13 +203,13 @@ export function PastActivityCard({ activity, onDelete, onEdit, onDismissNote }: 
         </div>
       )}
       <div className="flex items-start justify-between gap-2">
-        <h4 className="font-serif text-base font-bold text-stone-900 dark:text-stone-100">{activity.title}</h4>
+        <h4 className="font-serif text-base font-bold text-stone-900 dark:text-stone-100 ck-user-text">{activity.title}</h4>
         {activity.status === "PENDING" && (
           <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Under review</span>
         )}
       </div>
       <p className="mt-0.5 text-xs text-stone-500 dark:text-stone-400">Activity date: {formatActivityDate(activity.activityDate)}</p>
-      {activity.description && <p className="mt-2 line-clamp-4 whitespace-pre-wrap break-words text-sm text-stone-700 dark:text-stone-300">{activity.description}</p>}
+      {activity.description && <p className="mt-2 line-clamp-4 whitespace-pre-wrap break-words text-sm text-stone-700 dark:text-stone-300 ck-user-text">{activity.description}</p>}
       {activity.description && (activity.description.length > 220 || activity.description.split("\n").length > 4) && (
         <button type="button" onClick={() => setDetail(true)} aria-haspopup="dialog" aria-label={`Read more about ${activity.title}`}
           className="mt-1 min-h-11 text-sm font-bold text-emerald-700 hover:underline dark:text-emerald-400">Read more</button>

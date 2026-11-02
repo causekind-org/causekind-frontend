@@ -150,14 +150,14 @@ export function NgoAboutSection({
                 <Link
                   href={`/ngos/${ngo.slug}`}
                   data-testid="about-ngo-name"
-                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 hover:text-ngo-700 dark:hover:text-ngo-300 transition-colors break-words [overflow-wrap:anywhere] min-w-0"
+                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 hover:text-ngo-700 dark:hover:text-ngo-300 transition-colors break-words [overflow-wrap:anywhere] min-w-0 ck-user-text"
                 >
                   {ngo.organizationName}
                 </Link>
               ) : (
                 <h3
                   data-testid="about-ngo-name"
-                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 break-words [overflow-wrap:anywhere] min-w-0"
+                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 break-words [overflow-wrap:anywhere] min-w-0 ck-user-text"
                 >
                   {ngo.organizationName}
                 </h3>
@@ -183,7 +183,7 @@ export function NgoAboutSection({
                     <p className="text-3xs font-black uppercase tracking-wider text-stone-400 dark:text-stone-500">
                       {ngo.founderDesignation ? ngo.founderDesignation : "Founder / Trustee"}
                     </p>
-                    <p className="mt-0.5 text-sm font-bold text-stone-800 dark:text-stone-200 break-words [overflow-wrap:anywhere]">
+                    <p className="mt-0.5 text-sm font-bold text-stone-800 dark:text-stone-200 break-words [overflow-wrap:anywhere] ck-user-text">
                       {ngo.founderName}
                     </p>
                   </div>

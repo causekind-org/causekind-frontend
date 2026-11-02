@@ -1,5 +1,6 @@
 "use client";
 
+import { EXTERNAL_LINK_REL, linkDomain, safeExternalUrl } from "@/lib/externalLink";
 import { ChangeStatusNote, OwnerEditButton, OwnerEditDialog, useNgoPageOwner, type OwnerEditKind } from "./NgoProfileOwnerEdit";
 import type { NgoProfileManage } from "@/lib/api";
 import { PastWorkSection } from "@/features/ngo-drives/components/PastWorkSection";
@@ -48,7 +49,7 @@ function Card({ title, children, className = "", action }: { title: string; chil
   return (
     <section className={`min-w-0 [overflow-wrap:anywhere] rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 sm:p-6 ${className}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
-        <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100">{title}</h2>
+        <h2 className="text-lg font-bold text-stone-900 dark:text-stone-100 ck-user-text">{title}</h2>
         {action}
       </div>
       {children}
@@ -65,7 +66,7 @@ function Detail({ icon: Icon, label, children }: { icon: React.ElementType; labe
       </span>
       <div className="min-w-0">
         <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">{label}</dt>
-        <dd className="mt-0.5 break-words text-sm font-semibold text-stone-800 dark:text-stone-200">{children}</dd>
+        <dd className="mt-0.5 ck-user-text text-sm font-semibold text-stone-800 dark:text-stone-200">{children}</dd>
       </div>
     </div>
   );
@@ -171,7 +172,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
   const tr = ngo.trackRecord;
   // Up to 3 links (older pages: the website as the single link).
   const links = (ngo.links?.length ? ngo.links : ngo.website ? [ngo.website] : [])
-    .map((l) => (l.startsWith("http") ? l : `https://${l}`));
+    .map((l) => safeExternalUrl(l)).filter((l): l is string => Boolean(l));
 
   return (
     <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
@@ -198,14 +199,14 @@ export function NgoPublicPage({ slug }: { slug: string }) {
                 </div>
               } />
             <div className="min-w-0 flex-1">
-              <h1 className="text-3xl font-black leading-tight sm:text-4xl">{ngo.organizationName}</h1>
+              <h1 className="text-3xl font-black leading-tight sm:text-4xl ck-user-text">{ngo.organizationName}</h1>
               {manage && <div className="mt-2">{edit("photos", "cover, logo and photos")}</div>}
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-600 bg-emerald-50 px-3 py-1 text-xs font-bold tracking-wide text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden />
                 Verified by CauseKind{ngo.verifiedAt ? ` on ${formatDdMmYyyy(ngo.verifiedAt)}` : ""}
               </p>
               <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600 dark:text-stone-300">
-                {place && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" aria-hidden />{place}</span>}
+                {place && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4 ck-user-text" aria-hidden />{place}</span>}
                 {ngo.yearOfEstablishment && <span className="inline-flex items-center gap-1"><Calendar className="h-4 w-4" aria-hidden />Formed in {ngo.yearOfEstablishment}</span>}
               </p>
             </div>
@@ -226,11 +227,11 @@ export function NgoPublicPage({ slug }: { slug: string }) {
       </section>
 
       <div className="mx-auto mt-6 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-3">
-        <div className="space-y-6 lg:col-span-2">
+        <div className="min-w-0 space-y-6 lg:col-span-2">
           {(ngo.aboutUs || manage) && (
             <Card title="About us" action={edit("about", "about us")}>
               {ngo.aboutUs
-                ? <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">{ngo.aboutUs}</p>
+                ? <p className="whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300 ck-user-text">{ngo.aboutUs}</p>
                 : <p className="text-sm text-stone-500">Tell donors what your NGO does.</p>}
             </Card>
           )}
@@ -274,7 +275,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
                     </span>
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-stone-900 dark:text-stone-100">{r.fullName}</p>
-                      {r.designation && <p className="text-xs text-stone-500 dark:text-stone-400">{r.designation}</p>}
+                      {r.designation && <p className="text-xs text-stone-500 dark:text-stone-400 ck-user-text">{r.designation}</p>}
                     </div>
                   </li>
                 ))}
@@ -301,7 +302,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
           )}
         </div>
 
-        <aside className="space-y-6 lg:sticky lg:top-20 lg:self-start" data-testid="ngo-summary">
+        <aside className="min-w-0 space-y-6 lg:sticky lg:top-20 lg:self-start" data-testid="ngo-summary">
           <Card title="Organization details" action={edit("details", "organization details")}>
             <ChangeStatusNote manage={manage} fields={["officialEmail"]} />
             <dl className="grid gap-4">
@@ -312,7 +313,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
               <Detail icon={Globe} label={links.length > 1 ? "Links" : "Website"}>{links.length > 0 && (
                 <span className="flex flex-col gap-1" data-testid="ngo-links">
                   {links.map((l) => (
-                    <a key={l} href={l} target="_blank" rel="noopener noreferrer" className="break-all text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{l.replace(/^https?:\/\//, "")}</a>
+                    <a key={l} href={l} target="_blank" rel={EXTERNAL_LINK_REL} className="ck-user-text text-emerald-800 underline underline-offset-2 dark:text-emerald-300">{linkDomain(l)}</a>
                   ))}
                 </span>
               )}</Detail>

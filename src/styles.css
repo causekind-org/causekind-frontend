@@ -5308,3 +5308,11 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
 main:focus:not(:focus-visible) {
   outline: none;
 }
+
+/* Anything a person typed: long unbroken text wraps inside its card. */
+.ck-user-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-line;
+  min-width: 0;
+}

@@ -27,9 +27,9 @@ export function AboutNgoContent({ ngo, emptyAboutUs }: { ngo: AboutNgo; emptyAbo
       {/* The NGO's name in the accent colour, so it reads apart from the card heading. */}
       {ngo.slug ? (
         <Link href={`/ngos/${ngo.slug}`} data-testid="about-ngo-name"
-          className="block text-lg font-extrabold text-ngo-700 underline-offset-4 hover:underline dark:text-ngo-300">{ngo.organizationName}</Link>
+          className="block text-lg font-extrabold text-ngo-700 underline-offset-4 hover:underline dark:text-ngo-300 ck-user-text">{ngo.organizationName}</Link>
       ) : (
-        <h3 data-testid="about-ngo-name" className="text-lg font-extrabold text-ngo-700 dark:text-ngo-300">{ngo.organizationName}</h3>
+        <h3 data-testid="about-ngo-name" className="text-lg font-extrabold text-ngo-700 dark:text-ngo-300 ck-user-text">{ngo.organizationName}</h3>
       )}
       {ngo.verified && (
         <p className="inline-flex items-center gap-2 text-xs font-bold text-ngo-800 dark:text-ngo-300">
@@ -44,7 +44,7 @@ export function AboutNgoContent({ ngo, emptyAboutUs }: { ngo: AboutNgo; emptyAbo
               <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                 {ngo.founderDesignation ? ngo.founderDesignation : ui("Founder / trustee")}
               </dt>
-              <dd className="mt-0.5 text-sm font-semibold text-stone-800 dark:text-stone-200">{ngo.founderName}</dd>
+              <dd className="mt-0.5 text-sm font-semibold text-stone-800 dark:text-stone-200 ck-user-text">{ngo.founderName}</dd>
             </div>
           )}
           {ngo.yearOfEstablishment && (
@@ -56,7 +56,7 @@ export function AboutNgoContent({ ngo, emptyAboutUs }: { ngo: AboutNgo; emptyAbo
         </dl>
       )}
       {ngo.aboutUs?.trim()
-        ? <p className="[overflow-wrap:anywhere] whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300">{ngo.aboutUs}</p>
+        ? <p className="[overflow-wrap:anywhere] whitespace-pre-line text-sm leading-relaxed text-stone-700 dark:text-stone-300 ck-user-text">{ngo.aboutUs}</p>
         : emptyAboutUs ?? null}
       {ngo.slug && (
         <Link href={`/ngos/${ngo.slug}`}

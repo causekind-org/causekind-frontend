@@ -56,7 +56,7 @@ export function OfferReviewStep({
   return (
     <div className="space-y-3">
       {requestTitle && (
-        <p className="rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-2xs text-stone-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-stone-300">
+        <p className="ck-user-text rounded-xl border border-stone-200 bg-stone-50 p-2.5 text-2xs text-stone-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-stone-300">
           {wt.rich("offeringTowards", { title: requestTitle ?? "", strong: (chunks) => <strong className="font-bold text-stone-800 dark:text-stone-100">{chunks}</strong> })}
         </p>
       )}

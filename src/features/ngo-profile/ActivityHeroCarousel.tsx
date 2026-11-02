@@ -96,7 +96,7 @@ export function ActivityHeroCarousel({ activities, label, chip, actions, notice 
         </div>
         <div className="p-4">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="min-w-0 break-words font-serif text-lg font-semibold leading-snug text-stone-900 dark:text-stone-100">{a.title}</h3>
+            <h3 className="min-w-0 break-words font-serif text-lg font-semibold leading-snug text-stone-900 dark:text-stone-100 ck-user-text">{a.title}</h3>
             {chip?.(a)}
           </div>
           {a.activityDate && (
@@ -104,7 +104,7 @@ export function ActivityHeroCarousel({ activities, label, chip, actions, notice 
               <CalendarDays className="size-3.5" aria-hidden /> Activity date: {formatActivityDate(a.activityDate)}
             </p>
           )}
-          {a.description && <p data-testid="past-work-text" className="mt-2 line-clamp-3 whitespace-pre-line break-words text-sm text-stone-700 dark:text-stone-300">{a.description}</p>}
+          {a.description && <p data-testid="past-work-text" className="mt-2 line-clamp-3 whitespace-pre-line break-words text-sm text-stone-700 dark:text-stone-300 ck-user-text">{a.description}</p>}
           {notice?.(a)}
           <div className="mt-1 flex flex-wrap items-center justify-between gap-2">
             <button type="button" onClick={() => setDetail(true)} aria-haspopup="dialog" aria-label={`Read more about ${a.title}`}

@@ -147,7 +147,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Name</dt>
-              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="ck-user-text [overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.organizationName || "—"}
               </dd>
             </div>
@@ -194,7 +194,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Registered Office Address</dt>
-              <dd className="[overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5">
+              <dd className="ck-user-text [overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5">
                 {data.registeredOfficeAddress || "—"}
               </dd>
             </div>
@@ -293,8 +293,8 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           <ul className="grid gap-3 lg:grid-cols-2">
             {(data.representatives ?? []).map((card, i) => ({ card, i })).filter(({ card, i }) => i === 0 || !isRepresentativeEmpty(card)).map(({ card, i }) => (
               <li key={i} data-testid="review-representative" className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{card.fullName || "—"}</p>
-                <p className="text-xs text-stone-500 dark:text-stone-400">{card.designation || "—"}{i === 0 ? " · Main contact" : ""}</p>
+                <p className="ck-user-text text-sm font-bold text-stone-900 dark:text-stone-100">{card.fullName || "—"}</p>
+                <p className="ck-user-text text-xs text-stone-500 dark:text-stone-400">{card.designation || "—"}{i === 0 ? " · Main contact" : ""}</p>
                 <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2.5 text-xs sm:grid-cols-2">
                   <div>
                     <dt className="text-3xs font-semibold uppercase text-stone-400">Mobile</dt>
@@ -376,7 +376,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                   {activities.map((a) => (
                     <li key={a.id} data-testid="review-activity" className="min-w-0">
                       <p className="flex flex-wrap items-center gap-2 font-bold text-stone-800 dark:text-stone-200">
-                        <button type="button" onClick={() => setOpenActivity(a)} className="min-w-0 break-words text-left hover:underline">{a.title}</button>
+                        <button type="button" onClick={() => setOpenActivity(a)} className="min-w-0 break-words text-left hover:underline ck-user-text">{a.title}</button>
                         {a.status === "PENDING" && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Under review</span>}
                       </p>
                       <p className="text-3xs text-stone-500 dark:text-stone-400">Activity date: {formatActivityDate(a.activityDate)}</p>
@@ -447,7 +447,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           {resubmission.changes.length === 0
             ? <p className="mt-1 text-stone-500">Nothing yet. Fix the items our team flagged.</p>
             : <ul className="mt-2 space-y-1">{resubmission.changes.map((c) => (
-                <li key={c.key}><span className="font-semibold">{c.label}:</span> <span className="break-words">{c.value}</span></li>
+                <li key={c.key}><span className="font-semibold">{c.label}:</span> <span className="break-words ck-user-text">{c.value}</span></li>
               ))}</ul>}
           {resubmission.remaining > 0 && (
             <p role="alert" className="mt-2 font-semibold text-amber-800 dark:text-amber-300">

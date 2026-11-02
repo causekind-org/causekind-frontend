@@ -86,7 +86,7 @@ export function YourDrivesTab({ drives, offers, loading, error, onRetry, startDr
                       {STATUS_LABEL[drive.status] ? dc(STATUS_LABEL[drive.status]) : humanize(drive.status)}
                     </Badge>
                   </div>
-                  <h3 className="mb-1 text-lg font-bold text-stone-900 dark:text-stone-100">{drive.title}</h3>
+                  <h3 className="mb-1 text-lg font-bold text-stone-900 dark:text-stone-100 ck-user-text">{drive.title}</h3>
                   <p className="mb-3 text-sm font-medium text-stone-600 dark:text-stone-400">{df("qtyUnitOfItem", { qty: drive.quantityNeeded, unit, item: drive.itemName ?? "" })}</p>
                   <div className="mb-4 flex flex-wrap gap-4 text-xs text-stone-500 dark:text-stone-400">
                     <span className="flex items-center gap-1.5"><Heart className="h-3.5 w-3.5" /> {df("forGroup", { count: drive.beneficiaryCount ?? 0, group: drive.beneficiaryGroup ?? "" })}</span>

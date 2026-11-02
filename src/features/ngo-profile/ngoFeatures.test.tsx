@@ -382,4 +382,24 @@ describe("8. Tick all declarations", () => {
     expect(tickAll).toBeGreaterThan(list);
     expect(hint).toBeGreaterThan(tickAll);
   });
+
+});
+
+describe("long typed text and links on the NGO page", () => {
+  it("wraps a 300-character word and normalises links", async () => {
+    const long = "y".repeat(300);
+    api.getPublicNgo.mockResolvedValue({
+      slug: "hope-trust", organizationName: "Hope Trust", verified: true, aboutUs: long, registeredOfficeAddress: long,
+      links: ["www.x.com", "javascript:alert(1)"], representatives: [], documents: [], activities: [], liveDrives: [],
+    });
+    render(<NgoPublicPage slug="hope-trust" />);
+    const nodes = await screen.findAllByText(long);
+    expect(nodes.length).toBeGreaterThan(1);
+    for (const node of nodes) expect(node).toHaveClass("ck-user-text");
+    const links = within(screen.getByTestId("ngo-links")).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "https://www.x.com");
+    expect(links[0]).toHaveAttribute("rel", "noopener noreferrer nofollow");
+    expect(links[0]).toHaveTextContent(/^x\.com$/);
+  });
 });

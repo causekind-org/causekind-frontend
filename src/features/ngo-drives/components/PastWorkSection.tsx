@@ -66,7 +66,7 @@ export function ActivityDetailDialog({ a, photos, onClose, onPhoto }: { a: Publi
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
       <DialogContent data-testid="past-work-detail" className="max-h-[85dvh] max-w-2xl max-sm:left-0 max-sm:top-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none">
         <div className="shrink-0 border-b border-stone-200 px-5 py-4 pr-12 dark:border-zinc-800">
-          <DialogTitle className="break-words font-serif text-xl font-semibold text-stone-900 dark:text-stone-100">{a.title}</DialogTitle>
+          <DialogTitle className="break-words font-serif text-xl font-semibold text-stone-900 dark:text-stone-100 ck-user-text">{a.title}</DialogTitle>
           {a.activityDate && (
             <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
               <CalendarDays className="size-3.5" aria-hidden="true" /> Activity date: {formatActivityDate(a.activityDate)}
@@ -85,7 +85,7 @@ export function ActivityDetailDialog({ a, photos, onClose, onPhoto }: { a: Publi
               ))}
             </div>
           )}
-          {a.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-stone-700 dark:text-stone-300">{a.description}</p>}
+          {a.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-stone-700 dark:text-stone-300 ck-user-text">{a.description}</p>}
         </div>
       </DialogContent>
     </Dialog>

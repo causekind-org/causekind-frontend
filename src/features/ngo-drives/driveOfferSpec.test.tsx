@@ -1,3 +1,4 @@
+import { NgoOfferReviewCard } from "@/features/ngo-drives/components/manage/NgoOfferReviewCard";
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import React from "react";
@@ -263,5 +264,24 @@ describe("the item checkboxes follow the drive's category", () => {
     const patch = serializeDriveOffer(model, { asksWorking: false, asksClean: false });
     expect(patch).not.toHaveProperty("confirmedWorking");
     expect(patch).not.toHaveProperty("confirmedClean");
+  });
+});
+
+describe("long typed offer text wraps", () => {
+  const long = "q".repeat(300);
+
+  it("in the donor's review step", () => {
+    const model: OfferModel = { ...emptyOfferModel, quantity: "3", condition: "Gently Used", sizeSpec: long, accessoriesIncluded: long, hasKnownDefects: true, knownDefects: long };
+    render(<OfferReviewStep model={model} errors={{}} requestTitle={null} compat={null} declarationsInvalidated={false} onEdit={vi.fn()} onChange={vi.fn()} driveDetails />);
+    const nodes = screen.getAllByText(long);
+    expect(nodes).toHaveLength(3);
+    for (const node of nodes) expect(node).toHaveClass("ck-user-text");
+  });
+
+  it("on the NGO's offer card", () => {
+    const offer = { id: 1, quantity: 1, condition: "Gently Used", sizeSpec: long, notesForNgo: long, media: [] } as never;
+    render(<ul><NgoOfferReviewCard offer={offer} /></ul>);
+    expect(screen.getByTestId("offer-note")).toHaveClass("ck-user-text");
+    expect(screen.getByText(new RegExp(long))).toBeInTheDocument();
   });
 });

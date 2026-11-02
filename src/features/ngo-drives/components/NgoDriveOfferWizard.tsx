@@ -802,7 +802,7 @@ export function NgoDriveOfferWizard({
                   <p className="flex items-center gap-1.5 text-2xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
                     <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> <UiText>Our team asked for more information</UiText>
                   </p>
-                  <p className="mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
+                  <p className="ck-user-text mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
                 </div>
               )}
 
@@ -1011,7 +1011,7 @@ export function NgoDriveOfferWizard({
                 : `You are ${locResult?.distanceKm != null ? formatKm(locResult.distanceKm) : "?"} km away, outside this NGO's pickup radius of ${offer?.pickupRadiusKm ?? "?"} km. You will need to drop the items off at the NGO's address yourself. The NGO will not pick them up.`}
             </p>
             {driveDropOffAddress && (
-              <p className="mt-2 break-words text-sm text-stone-700 dark:text-stone-300"><span className="font-semibold">Drop-off address:</span> {driveDropOffAddress}</p>
+              <p className="ck-user-text mt-2 text-sm text-stone-700 dark:text-stone-300"><span className="font-semibold">Drop-off address:</span> {driveDropOffAddress}</p>
             )}
             <p className="mt-2 text-sm font-semibold text-stone-700 dark:text-stone-300">You&apos;ll need to drop the items at this address yourself.</p>
             <p className="mt-3 text-sm font-bold text-stone-900 dark:text-stone-100">Do you still want to give to this drive?</p>

@@ -628,7 +628,7 @@ export function DriveHandover({
                     {offer.handoverDetails?.registeredOfficeAddress && !handover && (
                       <p className="flex items-start gap-1.5 text-stone-600 dark:text-stone-400">
                         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden="true" />
-                        <span>{offer.handoverDetails.registeredOfficeAddress}</span>
+                        <span className="ck-user-text">{offer.handoverDetails.registeredOfficeAddress}</span>
                       </p>
                     )}
                     {!offer.handoverDetails?.contactName && !offer.handoverDetails?.registeredOfficeAddress && (
@@ -678,7 +678,7 @@ export function DriveHandover({
                 )}
                 {offer.sizeSpec && (
                   <p className="text-xs text-stone-600 dark:text-stone-400">
-                    Size / spec: <span className="font-medium text-stone-800 dark:text-stone-200">{offer.sizeSpec}</span>
+                    Size / spec: <span className="ck-user-text font-medium text-stone-800 dark:text-stone-200">{offer.sizeSpec}</span>
                   </p>
                 )}
                 {(offer.confirmedWorking || offer.confirmedClean) && (
@@ -698,7 +698,7 @@ export function DriveHandover({
                   </div>
                 )}
                 {offer.notesForNgo && (
-                  <p className="mt-2 rounded bg-stone-50 p-2 text-xs italic text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
+                  <p className="ck-user-text mt-2 rounded bg-stone-50 p-2 text-xs italic text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
                     &ldquo;{offer.notesForNgo}&rdquo;
                   </p>
                 )}

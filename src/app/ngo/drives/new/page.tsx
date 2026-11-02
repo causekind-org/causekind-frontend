@@ -1,5 +1,6 @@
 "use client";
 
+import { EXTERNAL_LINK_REL, linkDomain, safeExternalUrl } from "@/lib/externalLink";
 import { openDatePicker } from "@/lib/openDatePicker";
 import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherSpecifyField";
 import { otherTextError } from "@/features/ngo-registration/ngoRegistrationModel";
@@ -962,7 +963,7 @@ const [altContact, setAltContact] = useState("");
         if (!isEmail && !isPhone) e.altContact = ui("Alternate contact must be a valid email or 10-digit phone");
       }
       if (pastWorkUrl.trim()) {
-        if (!/^https?:\/\/.+/i.test(pastWorkUrl.trim())) e.pastWorkUrl = ui("Past work link must be a valid http or https URL");
+        if (!safeExternalUrl(pastWorkUrl)) e.pastWorkUrl = ui("Enter a website address, like www.ourngo.org");
       }
     }
     return e;
@@ -1131,7 +1132,7 @@ const [altContact, setAltContact] = useState("");
           ...extraContacts.map((c) => ({ name: c.name.trim(), phone: `+91${c.phone.trim()}`, email: c.email.trim() || undefined })),
         ],
         altContact: altContact.trim() || undefined,
-        pastWorkUrl: pastWorkUrl.trim() || undefined,
+        pastWorkUrl: safeExternalUrl(pastWorkUrl) || undefined,
         declarationsVersion: "v2",
         declarations: {
           accurate: declAccurate,
@@ -1229,7 +1230,7 @@ const [altContact, setAltContact] = useState("");
         <button type="button" onClick={() => router.push("/dashboard/ngo")} className="mb-6 inline-flex min-h-11 items-center gap-2 self-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
         <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2"><UiText>One drive at a time</UiText></h1>
-        <p className="text-stone-500 mb-6 max-w-md">{driveLockReason}</p>
+        <p className="text-stone-500 mb-6 max-w-md ck-user-text">{driveLockReason}</p>
         <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
           <UiText>Go to dashboard</UiText>
         </Link>
@@ -1380,7 +1381,7 @@ const [altContact, setAltContact] = useState("");
           {legacyDescription && (
             <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
               <p className="font-semibold mb-1"><UiText>Previous description (rewrite into the three sections below):</UiText></p>
-              <p className="whitespace-pre-wrap">{legacyDescription}</p>
+              <p className="whitespace-pre-wrap ck-user-text">{legacyDescription}</p>
             </div>
           )}
 
@@ -1858,7 +1859,7 @@ const [altContact, setAltContact] = useState("");
 
           <WizardField label={ui("Past work link")} error={fieldErrors.pastWorkUrl} hint={ui("Optional: Website, Instagram page or earlier drive photos")}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="pastWorkUrl" type="url" placeholder={ui("https://instagram.com/our_ngo or https://ourngo.org")} value={pastWorkUrl} onChange={e => setPastWorkUrl(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="pastWorkUrl" type="text" inputMode="url" placeholder={ui("https://instagram.com/our_ngo or https://ourngo.org")} value={pastWorkUrl} onChange={e => setPastWorkUrl(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -1925,13 +1926,13 @@ const [altContact, setAltContact] = useState("");
           {categoryDetailRows(category, categoryDetailsPayload()).map(r => (
             <div key={r.label} className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-category-detail">
               <span className="text-stone-500">{r.label}</span>
-              <span className="font-medium text-right text-stone-900 dark:text-stone-100">{r.value}</span>
+              <span className="font-medium text-right text-stone-900 dark:text-stone-100 ck-user-text">{r.value}</span>
             </div>
           ))}
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500"><UiText>Drive location</UiText></span>
-            <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
+            <span className="ck-user-text font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
               {[driveLoc.locality, driveLoc.city, driveLoc.stateIso, driveLoc.pincode].filter(Boolean).join(", ") || `${locationArea}, ${locationCity}`}
             </span>
           </div>
@@ -1946,8 +1947,8 @@ const [altContact, setAltContact] = useState("");
           <div className="pb-2 border-b border-stone-100 dark:border-slate-800 space-y-1.5">
             <span className="text-stone-500 block"><UiText>Drive story</UiText></span>
             <div className="text-xs space-y-1 pl-2 border-l-2 border-ngo-600/40 text-stone-700 dark:text-stone-300">
-              <p><strong className="text-stone-900 dark:text-stone-100"><UiText>Who for:</UiText></strong> {whoFor}</p>
-              <p><strong className="text-stone-900 dark:text-stone-100"><UiText>Why now:</UiText></strong> {whyNow}</p>
+              <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Who for:</UiText></strong> {whoFor}</p>
+              <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Why now:</UiText></strong> {whyNow}</p>
               <p><strong className="text-stone-900 dark:text-stone-100"><UiText>What changes:</UiText></strong> {whatChanges}</p>
             </div>
           </div>
@@ -1956,7 +1957,7 @@ const [altContact, setAltContact] = useState("");
             <span className="text-stone-500"><UiText>People who will benefit</UiText></span>
             <span className="font-medium text-right max-w-[240px] text-stone-900 dark:text-stone-100">
               {beneficiaryCount} {beneficiaryGroups.join(", ")}
-              {beneficiaryDescription && <span className="block text-xs font-normal text-stone-500">{beneficiaryDescription}</span>}
+              {beneficiaryDescription && <span className="block text-xs font-normal text-stone-500 ck-user-text">{beneficiaryDescription}</span>}
             </span>
           </div>
 
@@ -1999,19 +2000,19 @@ const [altContact, setAltContact] = useState("");
                 <img src={changemakerPreviewUrl || changemakerPhotoUrl} alt={changemakerName} className="w-10 h-10 rounded-full object-cover border border-stone-200" />
               )}
               <div>
-                <p className="font-semibold text-stone-900 dark:text-stone-100">{changemakerName} <span className="text-xs font-normal text-stone-500">({changemakerRole})</span></p>
-                <p className="text-xs text-stone-600 dark:text-stone-400 italic">&ldquo;{changemakerWhy}&rdquo;</p>
+                <p className="font-semibold text-stone-900 dark:text-stone-100 ck-user-text">{changemakerName} <span className="text-xs font-normal text-stone-500">({changemakerRole})</span></p>
+                <p className="ck-user-text text-xs text-stone-600 dark:text-stone-400 italic">&ldquo;{changemakerWhy}&rdquo;</p>
               </div>
             </div>
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Handover contact</span>
-            <span className="font-medium text-right text-stone-900 dark:text-stone-100">
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100 ck-user-text">
               {contactName}<br />
               <span className="text-stone-400 text-xs">+91 {contactPhone}{contactEmail.trim() ? ` · ${contactEmail.trim()}` : ""}</span>
               {extraContacts.map((c, i) => (
-                <span key={i} className="block text-stone-500 text-xs">{c.name} · +91 {c.phone}{c.email.trim() ? ` · ${c.email.trim()}` : ""}</span>
+                <span key={i} className="block text-stone-500 text-xs ck-user-text">{c.name} · +91 {c.phone}{c.email.trim() ? ` · ${c.email.trim()}` : ""}</span>
               ))}
               {altContact && <span className="block text-stone-400 text-xs">Alt: {altContact}</span>}
             </span>
@@ -2240,7 +2241,7 @@ const [altContact, setAltContact] = useState("");
                         className={`min-h-11 w-full rounded-lg border bg-white px-3 py-2 text-sm text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:bg-slate-900 dark:text-stone-100 ${fieldErrors.dropOffAddress ? "border-red-500 dark:border-red-500" : "border-slate-200 dark:border-slate-700"}`}
                       />
                       {fieldErrors.dropOffAddress ? (
-                        <p id="dropOffAddress-error" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.dropOffAddress}</p>
+                        <p id="dropOffAddress-error" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400 ck-user-text">{fieldErrors.dropOffAddress}</p>
                       ) : (
                         <p id="dropOffAddress-hint" className="mt-1 text-xs text-stone-500 dark:text-stone-400">Donors who drop off items come here. {dropOffAddress.trim().length}/300</p>
                       )}

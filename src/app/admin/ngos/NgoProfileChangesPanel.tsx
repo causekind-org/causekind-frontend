@@ -28,7 +28,7 @@ function ShowValue({ field, value, idProofUrls }: { field: string; value?: strin
     <ul className="space-y-1.5">
       {reps.map((r, i) => (
         <li key={i} data-testid="admin-rep">
-          <span className="font-semibold">{r.fullName}</span>{r.designation ? ` (${r.designation})` : ""}
+          <span className="font-semibold ck-user-text">{r.fullName}</span>{r.designation ? ` (${r.designation})` : ""}
           {(r.mobileNumber || r.email || r.panNumber) && (
             <span className="block text-xs text-stone-600">{[r.mobileNumber, r.email, r.panNumber && `PAN ${r.panNumber}`].filter(Boolean).join(" · ")}</span>
           )}
@@ -90,11 +90,11 @@ export function NgoProfileChangesPanel({ onChange }: { onChange?: () => void } =
           <ul className="mt-4 space-y-3">
             {items.map(({ request: r, organizationName, slug, idProofUrls }) => (
               <li key={r.id} data-testid="admin-profile-change" className="rounded-lg border border-stone-200 p-4 dark:border-zinc-700">
-                <p className="text-sm font-bold">{organizationName}{slug && <a href={`/ngos/${slug}`} className="ml-2 text-xs font-semibold text-emerald-700 underline">public page</a>}</p>
+                <p className="text-sm font-bold ck-user-text">{organizationName}{slug && <a href={`/ngos/${slug}`} className="ml-2 text-xs font-semibold text-emerald-700 underline">public page</a>}</p>
                 <p className="mt-1 text-xs font-bold uppercase tracking-wide text-stone-500">{FIELD_LABELS[r.field] ?? (r.field.startsWith("documents.") ? `Document: ${documentLabel(r.field.slice(10))}` : r.field)}</p>
                 <dl className="mt-2 grid gap-2 text-sm sm:grid-cols-2">
-                  <div><dt className="text-xs text-stone-500">Current</dt><dd><ShowValue field={r.field} value={r.oldValue} idProofUrls={idProofUrls} /></dd></div>
-                  <div><dt className="text-xs text-stone-500">Requested</dt><dd><ShowValue field={r.field} value={r.newValue} idProofUrls={idProofUrls} /></dd></div>
+                  <div><dt className="text-xs text-stone-500">Current</dt><dd className="ck-user-text"><ShowValue field={r.field} value={r.oldValue} idProofUrls={idProofUrls} /></dd></div>
+                  <div><dt className="text-xs text-stone-500">Requested</dt><dd className="ck-user-text"><ShowValue field={r.field} value={r.newValue} idProofUrls={idProofUrls} /></dd></div>
                 </dl>
                 {r.reason && <p className="mt-2 text-xs text-stone-600">NGO&apos;s reason: {r.reason}</p>}
                 {r.status === "REJECTED" && r.adminReason && <p className="mt-2 text-xs text-red-600">Not approved: {r.adminReason}</p>}

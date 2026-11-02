@@ -366,7 +366,7 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
         </div>
 
         {error && <p role="alert" className="mt-3 text-xs font-semibold text-red-600">{error}</p>}
-        {note && <p role="status" className="mt-3 text-xs font-semibold text-emerald-700">{note}</p>}
+        {note && <p role="status" className="mt-3 text-xs font-semibold text-emerald-700 ck-user-text">{note}</p>}
         {confirmDiscard && (
           <div role="alertdialog" aria-label="Discard changes?" className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
             Discard changes?

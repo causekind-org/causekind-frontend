@@ -264,4 +264,40 @@ describe("RegisterPage - Lightweight NGO Signup", () => {
     await fillAndSubmit();
     await waitFor(() => expect(document.getElementById("email-feedback")?.textContent).toContain("This email is already registered"), { timeout: 8000 });
   }, 15000);
+
+  async function fillNgoForm(user: ReturnType<typeof userEvent.setup>) {
+    render(<RegisterPage />);
+    await user.click(screen.getByRole("button", { name: /^NGO/i }));
+    await user.type(screen.getByLabelText(/Organization Name \*/i), "Helping Hands Trust");
+    await user.type(screen.getByLabelText(/Official Email Address \*/i), "contact@helpinghands.org");
+    await user.type(screen.getByLabelText(/Phone/i), "9876543210");
+    await user.type(screen.getByLabelText(/PAN Number \*/i), "AABCT1234C");
+    await user.type(screen.getByLabelText(/^Password/i), "Password@123");
+    const cityInput = await screen.findByPlaceholderText("Enter city");
+    fireEvent.change(cityInput, { target: { value: "Mumbai" } });
+    fireEvent.blur(cityInput);
+  }
+
+  it("an invalid website shows its field error and blocks only until fixed", async () => {
+    vi.mocked(registerNgo).mockClear();
+    const user = userEvent.setup();
+    await fillNgoForm(user);
+    const site = screen.getByLabelText(/Website \/ Social Link/i);
+    fireEvent.change(site, { target: { value: "javascript:alert(1)" } });
+    await user.click(screen.getByRole("button", { name: /Create NGO Account/i }));
+    expect(await screen.findByText("Enter a website like www.example.org")).toBeInTheDocument();
+    expect(registerNgo).not.toHaveBeenCalled();
+    fireEvent.change(site, { target: { value: "www.example.org" } });
+    expect(screen.queryByText("Enter a website like www.example.org")).toBeNull();
+    await user.click(screen.getByRole("button", { name: /Create NGO Account/i }));
+    await waitFor(() => expect(registerNgo).toHaveBeenCalledWith(expect.objectContaining({ website: "https://www.example.org" })), { timeout: 8000 });
+  }, 20000);
+
+  it("a blank website submits", async () => {
+    vi.mocked(registerNgo).mockClear();
+    const user = userEvent.setup();
+    await fillNgoForm(user);
+    await user.click(screen.getByRole("button", { name: /Create NGO Account/i }));
+    await waitFor(() => expect(registerNgo).toHaveBeenCalledWith(expect.objectContaining({ website: undefined })), { timeout: 8000 });
+  }, 20000);
 });

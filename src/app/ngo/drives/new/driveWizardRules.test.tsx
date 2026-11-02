@@ -347,4 +347,12 @@ describe("drive wizard", () => {
     fireEvent.click(within(cover).getByRole("button", { name: /Yes, remove/ }));
     expect(api.deleteUnusedNgoDrivePhoto).toHaveBeenCalledWith("https://bucket/ngo-drives/7/photos/cover.jpg?X-Amz-Signature=x");
   });
+
+  it("the Review step wraps a 300-character word", async () => {
+    const long = "z".repeat(300);
+    mockSearch = "edit=42&step=review";
+    api.getNgoDriveDetail.mockResolvedValue(drive({ categoryDetails: { sizesNeeded: long, clothesFor: "Men" } }));
+    render(<NgoDrivePage />);
+    expect(await screen.findByText(long)).toHaveClass("ck-user-text");
+  });
 });
