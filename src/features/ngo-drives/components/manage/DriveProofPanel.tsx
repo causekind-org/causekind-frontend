@@ -1,6 +1,7 @@
 "use client";
 
 import { openDatePicker } from "@/lib/openDatePicker";
+import { LimitCounter, overLimit, TEXT_LIMITS } from "@/components/TextLimit";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ImagePlus, Loader2, X } from "lucide-react";
@@ -57,6 +58,7 @@ export function validateProof(f: ProofForm, drive: Pick<NgoDrive, "quantityRecei
   else if (min && f.distributedOn < min) e.distributedOn = t("dateMin", { min });
   if (!f.location.trim()) e.location = t("locationRequired");
   if (!f.note.trim()) e.note = t("noteRequired");
+  else if (f.note.length > 1000) e.note = `The note can be at most 1000 characters (${f.note.length - 1000} over).`;
   if (!f.consent) e.consent = t("consentRequired");
   return e;
 }
@@ -211,7 +213,8 @@ export function DriveProofPanel({ drive, onSubmitted }: { drive: NgoDrive; onSub
 
       <Group title={ui("Your note")}>
         <Field label={ui("Short note")} error={errors.note} touched={!!touched.note}>
-          <textarea name="note" rows={3} maxLength={1000} placeholder={ui("What happened on the day, who received the items")} value={form.note} onChange={(e) => set("note", e.target.value)} className={`${input} ${touched.note && errors.note ? bad : ok}`} />
+          <textarea name="note" rows={3} placeholder={ui("What happened on the day, who received the items")} value={form.note} onChange={(e) => set("note", e.target.value)} className={`${input} ${(touched.note && errors.note) || overLimit(form.note, TEXT_LIMITS.proofNote) ? bad : ok}`} />
+          <LimitCounter id="proof-note-count" value={form.note} max={TEXT_LIMITS.proofNote} />
         </Field>
         <label className="flex items-start gap-2 text-sm text-stone-800 dark:text-stone-200">
           <input type="checkbox" name="consentConfirmed" checked={form.consent} onChange={(e) => set("consent", e.target.checked)} className="mt-0.5 h-4 w-4 accent-ngo-700" />

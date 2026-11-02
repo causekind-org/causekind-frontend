@@ -329,39 +329,6 @@ export function DriveDetailView({
                 </div>
               </div>
 
-              {/* Thumbnail Strip with Scroll-Snap */}
-              <div
-                className="flex gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-zinc-700"
-                style={{ scrollSnapType: "x mandatory" }}
-                role="tablist"
-                aria-label={ui("Photo thumbnails")}
-              >
-                {photos.map((url, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    role="tab"
-                    aria-selected={activePhotoIdx === idx}
-                    aria-label={df("viewPhotoN", { n: idx + 1 })}
-                    onClick={() => setActivePhotoIdx(idx)}
-                    style={{ scrollSnapAlign: "start" }}
-                    className={`relative aspect-video h-16 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                      activePhotoIdx === idx
-                        ? "border-emerald-600 ring-2 ring-emerald-600/30"
-                        : "border-stone-200 opacity-70 hover:opacity-100 dark:border-zinc-800"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      src={url}
-                      alt={`Thumbnail ${idx + 1}`}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 

@@ -30,6 +30,7 @@ import { NgoReviewPanel } from "../ngos/NgoReviewPanel";
 import { NgoActivityModerationPanel } from "../ngos/NgoActivityModerationPanel";
 import { NgoProfileChangesPanel } from "../ngos/NgoProfileChangesPanel";
 import { getPendingNgoActivities } from "@/lib/api";
+import { writeUrlParams } from "@/components/admin/adminUrlState";
 import { NgoDriveReviewPanel, NgoDriveOffersPanel, NgoDriveProofsPanel } from "../ngo-drives/NgoDriveAdminPanels";
 import { VerificationQueuePanel } from "../verifications/VerificationQueuePanel";
 import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
@@ -280,6 +281,13 @@ export default function AdminDashboardPage() {
   const [driveOffersPending, setDriveOffersPending] = useState(0);
   const [driveProofsPending, setDriveProofsPending] = useState(0);
   const [activitiesPending, setActivitiesPending] = useState(0);
+  /** A tab click: each tab has its own search, so ?q= (and an open item) never carries into the next tab. */
+  const selectTab = useCallback((key: TabKey) => {
+    setTab(current => {
+      if (current !== key) writeUrlParams({ q: null, app: null, status: null });
+      return key;
+    });
+  }, []);
   const [profileChangesPending, setProfileChangesPending] = useState(0);
   const loadDriveCounts = useCallback(() => {
     adminGetNgoDrives("PENDING_REVIEW").then(r => setDrivesPending(r.length)).catch(() => setDrivesPending(0));
@@ -720,7 +728,7 @@ export default function AdminDashboardPage() {
           {TABS.map(({ key, label, count, icon: Icon, color }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => selectTab(key)}
               className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
                 tab === key
                   ? "border-[#b04a15]/40"
@@ -760,7 +768,7 @@ export default function AdminDashboardPage() {
                   {NGO_TABS.map(({ key, label, count, icon: Icon, color }) => (
                     <button
                       key={key}
-                      onClick={() => setTab(key)}
+                      onClick={() => selectTab(key)}
                       aria-current={tab === key ? "page" : undefined}
                       className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all border ${
                         tab === key ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
@@ -785,7 +793,7 @@ export default function AdminDashboardPage() {
           {showIssues && (
             <div className="pt-2">
               <button
-                onClick={() => { setTab("issues"); setIssueDeepLink(null); }}
+                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
                 aria-current={tab === "issues" ? "page" : undefined}
                 className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
                   tab === "issues" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
@@ -813,7 +821,7 @@ export default function AdminDashboardPage() {
           {REPORTS.map(({ key, label, icon: Icon, color }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => selectTab(key)}
               aria-current={tab === key ? "page" : undefined}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
                 tab === key
@@ -915,7 +923,7 @@ export default function AdminDashboardPage() {
               <button
                 key={key}
                 data-active={tab === key || undefined}
-                onClick={() => setTab(key)}
+                onClick={() => selectTab(key)}
                 aria-current={tab === key ? "page" : undefined}
                 className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   tab === key
@@ -931,7 +939,7 @@ export default function AdminDashboardPage() {
             {showIssues && (
               <button
                 data-active={tab === "issues" || undefined}
-                onClick={() => { setTab("issues"); setIssueDeepLink(null); }}
+                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
                 aria-current={tab === "issues" ? "page" : undefined}
                 className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   tab === "issues" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
@@ -961,7 +969,7 @@ export default function AdminDashboardPage() {
                   <button
                     key={key}
                     data-active={tab === key || undefined}
-                    onClick={() => setTab(key)}
+                    onClick={() => selectTab(key)}
                     aria-current={tab === key ? "page" : undefined}
                     className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       tab === key ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
@@ -984,7 +992,7 @@ export default function AdminDashboardPage() {
               <button
                 key={key}
                 data-active={tab === key || undefined}
-                onClick={() => setTab(key)}
+                onClick={() => selectTab(key)}
                 aria-current={tab === key ? "page" : undefined}
                 className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                   tab === key
@@ -1015,7 +1023,7 @@ export default function AdminDashboardPage() {
           {/* ── NGO APPLICATIONS TAB — /admin/ngos redirects here. Approving
                  creates the NGO profile, which unlocks requests and drives. ── */}
           {tab === "ngo-applications" && <NgoReviewPanel initialApplicationId={ngoDeepLink} onDecision={loadNgoCount} />}
-          {tab === "ngo-activities" && <NgoActivityModerationPanel onChange={loadDriveCounts} />}
+          {tab === "ngo-activities" && <NgoActivityModerationPanel onChange={loadDriveCounts} onCount={setActivitiesPending} />}
           {tab === "ngo-profile-changes" && <NgoProfileChangesPanel onChange={loadDriveCounts} />}
 
           {/* ── NGO DRIVE QUEUES ── */}

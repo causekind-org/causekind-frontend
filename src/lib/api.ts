@@ -5622,6 +5622,8 @@ export type NgoDrivePhotoItem = {
 
 export type NgoDrive = {
   id: number;
+  /** NGO's own drive page: offers counted for the donor count (one donor can have several). */
+  offerCount?: number | null;
   ngoUser: { id: number; fullName: string };
   title: string;
   tagline?: string | null;

@@ -75,6 +75,15 @@ export default function DriveDetailPage() {
     if (!authLoading) void loadOffers();
   }, [authLoading, loadOffers]);
 
+  // Live updates only reach the NGO and that offer's donor; every other viewer reloads the
+  // numbers when they come back to the tab, so progress never stays stale.
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState === "visible") void loadDrive(); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
+  }, [loadDrive]);
+
   useEntityUpdates(["NGO_DRIVE", "NGO_DRIVE_OFFER"], () => {
     void loadDrive();
     void loadOffers();

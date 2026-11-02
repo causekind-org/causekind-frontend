@@ -7,8 +7,13 @@ import { AdminSearchBox, NoSearchResults, matchesQuery } from "@/components/admi
 import { readUrlParam, writeUrlParams } from "@/components/admin/adminUrlState";
 
 /** NGO past-activity entries waiting for review: approve, or reject with a reason. */
-export function NgoActivityModerationPanel({ onChange }: { onChange?: () => void } = {}) {
+export function NgoActivityModerationPanel({ onChange, onCount }: {
+  onChange?: () => void;
+  /** The tab count: the length of the list shown here (one query for both). */
+  onCount?: (n: number) => void;
+} = {}) {
   const [items, setItems] = useState<AdminNgoActivity[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [query, setQuery] = useState(() => readUrlParam("q").trim().slice(0, 100));
@@ -16,8 +21,11 @@ export function NgoActivityModerationPanel({ onChange }: { onChange?: () => void
   useEffect(() => () => writeUrlParams({ q: null }), []);
 
   const load = useCallback(async () => {
-    try { setItems(await getPendingNgoActivities()); } catch { setItems([]); toast.error("Couldn't load past activity to review."); }
-  }, []);
+    setLoadFailed(false);
+    setItems(prev => (prev && prev.length ? prev : null));
+    try { const list = await getPendingNgoActivities(); setItems(list); onCount?.(list.length); }
+    catch { setItems([]); setLoadFailed(true); toast.error("Couldn't load past activity to review."); }
+  }, [onCount]);
   useEffect(() => { void load(); }, [load]);
 
   async function decide(id: number, approve: boolean) {
@@ -26,7 +34,7 @@ export function NgoActivityModerationPanel({ onChange }: { onChange?: () => void
     setBusy(id);
     try {
       if (approve) await approveNgoActivity(id); else await rejectNgoActivity(id, reason);
-      setItems(list => (list ?? []).filter(x => x.activity.id !== id));
+      setItems(list => { const next = (list ?? []).filter(x => x.activity.id !== id); onCount?.(next.length); return next; });
       onChange?.();
       toast.success(approve ? "Approved. It now shows on the NGO's page." : "Sent back to the NGO.");
     } catch {
@@ -42,6 +50,7 @@ export function NgoActivityModerationPanel({ onChange }: { onChange?: () => void
       <h2 className="text-lg font-bold">Past activity to review</h2>
       <div className="mt-3"><AdminSearchBox value={query} onChange={setQuery} label="Search past activity" placeholder="Search NGO name or activity title" /></div>
       {items === null ? <p role="status" className="mt-2 text-sm">Loading…</p>
+        : loadFailed ? <p role="alert" className="mt-2 text-sm text-red-600">Couldn&apos;t load past activity to review. <button type="button" className="underline" onClick={() => void load()}>Retry</button></p>
         : items.length === 0 ? <p className="mt-2 text-sm text-stone-500">Nothing waiting.</p>
         : shown.length === 0 ? <div className="mt-3"><NoSearchResults query={query} onClear={() => setQuery("")} /></div> : (
         <ul className="mt-3 space-y-4">

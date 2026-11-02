@@ -45,7 +45,7 @@ import {
   Award, HandCoins, Loader2, Package, PackageCheck, Pencil, Plus, ShieldCheck, X, Check,
   User, MapPin, Calendar, CircleDot, EyeOff, Info, ExternalLink, RefreshCw,
   Phone, Mail, Handshake, CheckCircle2, Heart, AlertTriangle, ThumbsUp, ThumbsDown, Truck,
-  ChevronDown, History, MessageCircle, Trash2, Search, CheckCircle, ChevronRight, Layers, ShoppingBag
+  ChevronDown, History, MessageCircle, BadgeCheck, Trash2, Search, CheckCircle, ChevronRight, Layers, ShoppingBag
 } from "lucide-react";
 import { deliveriesForRequest, totalReceived, type Delivery } from "@/features/fulfilment-history/deliveries";
 import { DeliveryDetailsDialog } from "@/features/fulfilment-history/DeliveryDetailsDialog";
@@ -1781,6 +1781,7 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
   const proofPhotos = (d.proofPhotoUrls ?? []).map(u => resolveMediaUrl(u)).filter((u): u is string => !!u);
   const when = d.receivedAt ?? d.closedAt ?? d.createdAt ?? d.submittedAt ?? null;
   const photos = imageUrlsOf(o.media as never);
+  const qty = (d as unknown as { quantity?: number | null }).quantity ?? o.itemDetails?.quantity ?? null;
   // TODO later: admin issue ruling + revoke
   const tag = published ? labels.proofPublished : labels.certificateIssued;
   return {
@@ -1789,6 +1790,13 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
     text: [o.requestTitle, o.requestCity, "donated ngo drive certificate", distributed, "issued"].join(" "),
     node: (
       <div className="space-y-2" data-testid={`history-drive-offer-${o.id}`}>
+        <div data-testid="history-drive-meta" className="flex flex-wrap items-center gap-x-2 gap-y-1 text-2xs text-stone-600 dark:text-stone-300">
+          <span data-testid="history-ngo-drive-tag" className="rounded-full bg-emerald-100 px-2 py-0.5 font-bold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">{labels.ngoDrive}</span>
+          {d.ngoName && <span className="inline-flex items-center gap-1 font-semibold">{d.ngoName}
+            <BadgeCheck data-testid="history-ngo-verified" className="h-3.5 w-3.5 text-emerald-600" aria-label="Verified NGO" /></span>}
+          {o.requestTitle && <span data-testid="history-drive-title" className="[overflow-wrap:anywhere]">{o.requestTitle}</span>}
+          {qty != null && <span data-testid="history-drive-qty">{qty} given</span>}
+          {when && <span data-testid="history-drive-date">Handed over {doneDate(when)}</span>}        </div>
         <DoneRow title={o.requestTitle ?? labels.ngoDrive} tag={tag}
           sub={distributed ?? [doneDate(when), o.requestCity].filter(Boolean).join(" · ")}
           thumb={photos[0] ?? null} photos={photos}
@@ -1804,7 +1812,7 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
           <DriveProofCardLoader driveId={d.driveId} />
         ) : (
           <p data-testid="history-proof-pending" className="text-2xs text-stone-500 dark:text-stone-400">
-            Proof pending: the NGO will share photos and details after it distributes the items.{" "}
+            Proof pending: the NGO will share photos after distribution.{" "}
             <Link href={`/ngo-drive-offers/${o.id}/handover`} className="font-semibold text-emerald-700 hover:underline dark:text-emerald-400">Open handover</Link>
           </p>
         )}
@@ -1834,6 +1842,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
   const dc = useDashCopy();
 
   const [filter, setFilter] = useState<"all" | "completed" | "closed">("all");
+  const [kind, setKind] = useState<"all" | "donee" | "drive">("all");
   const [query, setQuery] = useState("");
 
   const entries = useMemo(() => {
@@ -1852,6 +1861,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
           const entry = driveDoneEntry(o, driveLabels);
           return {
             ...entry,
+            kind: "drive" as const,
             isCompleted: true,
             statusTone: "completed" as const,
           };
@@ -1866,6 +1876,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
           : `${receivedQty} item${receivedQty === 1 ? "" : "s"} delivered & confirmed`;
 
         return {
+          kind: "donee" as const,
           key: `o${o.id}`,
           at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
           isCompleted: true,
@@ -1899,6 +1910,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       const deliveredQty = match?.doneeConfirmedQty ?? match?.allocatedQuantity ?? item.quantity ?? 1;
 
       return {
+        kind: "donee" as const,
         key: `l${item.id}`,
         at: Date.parse(when ?? "") || 0,
         isCompleted: true,
@@ -1932,6 +1944,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       .map(o => {
         if (isDriveOffer(o)) {
           return {
+            kind: "drive" as const,
             key: `c${o.id}`,
             at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
             isCompleted: false,
@@ -1947,6 +1960,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         const offeredQty = o.itemDetails?.quantity ?? o.requestQuantity ?? 1;
 
         return {
+          kind: "donee" as const,
           key: `c${o.id}`,
           at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
           isCompleted: false,
@@ -1982,6 +1996,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         const quantitySummary = confirmedQty ? `${confirmedQty} delivered to ${m.doneeName ?? "recipient"}` : m.allocatedQuantity ? `${m.allocatedQuantity} matched` : null;
 
         return {
+          kind: "donee" as const,
           key: `m${m.id}`,
           at: matchEndedAt(m),
           isCompleted: isReceived,
@@ -2014,6 +2029,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
   const filtered = entries.filter(e => {
     const matchesFilter = filter === "all" ? true : filter === "completed" ? e.isCompleted : !e.isCompleted;
     if (!matchesFilter) return false;
+    if (kind !== "all" && e.kind !== kind) return false;
     if (words.length === 0) return true;
     const t = e.text.toLowerCase();
     return words.every(w => t.includes(w));
@@ -2023,6 +2039,12 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     { key: "all", label: ui("All"), count: entries.length },
     { key: "completed", label: ui("Completed"), count: entries.filter(e => e.isCompleted).length },
     { key: "closed", label: ui("Closed / Cancelled"), count: entries.filter(e => !e.isCompleted).length },
+  ];
+
+  const kindOptions: FilterOption<"all" | "donee" | "drive">[] = [
+    { key: "all", label: ui("All"), count: entries.length },
+    { key: "donee", label: ui("Donee"), count: entries.filter(e => e.kind === "donee").length },
+    { key: "drive", label: ui("NGO drives"), count: entries.filter(e => e.kind === "drive").length },
   ];
 
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
@@ -2037,6 +2059,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     focusedOffer.current = focusOfferId ?? null;
     setQuery("");
     setFilter("all");
+    setKind("all");
     setHighlightKey(focusKey);
     const raf = requestAnimationFrame(() => document.getElementById(`history-entry-${focusKey}`)?.scrollIntoView?.({ behavior: "smooth", block: "center" }));
     const timer = setTimeout(() => setHighlightKey(null), 3000);
@@ -2074,6 +2097,16 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
             idPrefix="donor-history-filter"
           />
         )}
+        {entries.length > 0 && (
+          <DashboardFilterChips
+            label={ui("Show donee or NGO drive donations")}
+            options={kindOptions}
+            value={kind}
+            onChange={setKind}
+            tone="donor"
+            idPrefix="donor-history-kind"
+          />
+        )}
       </CardHeader>
       <CardContent className="space-y-3 pt-3 sm:pt-4">
         {entries.length === 0 ? (
@@ -2081,7 +2114,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         ) : filtered.length === 0 ? (
           <p className="py-6 text-center text-sm text-stone-500">
             {dt("nothingMatches", { query: query.trim() || filter })}{" "}
-            <button type="button" onClick={() => { setQuery(""); setFilter("all"); }} className="font-semibold text-[var(--ck-role-accent)] hover:underline"><UiText>Clear filters</UiText></button>
+            <button type="button" onClick={() => { setQuery(""); setFilter("all"); setKind("all"); }} className="font-semibold text-[var(--ck-role-accent)] hover:underline"><UiText>Clear filters</UiText></button>
           </p>
         ) : (
           filtered.map(e => (

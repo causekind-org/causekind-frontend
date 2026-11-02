@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import DriveDetailPage from "./page";
 import { DriveDetailView } from "@/features/ngo-drives/components/DriveDetailView";
 import type { PublicNgoDrive } from "@/lib/api";
@@ -187,7 +187,8 @@ describe("DriveDetailPage", () => {
     expect(screen.queryByText("Legal structure")).not.toBeInTheDocument(); // removed from the About the NGO card
     expect(screen.getByText("2015")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "ruraleducation.org" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /view past work/i })).toHaveAttribute("href", "https://example.com/sunita-impact");
+    const pastWork = screen.getByText("Past work").closest("div")!;
+    expect(within(pastWork).getByRole("link", { name: "example.com" })).toHaveAttribute("href", "https://example.com/sunita-impact");
 
     // 8. Track record
     expect(screen.getByText("Track Record on CauseKind")).toBeInTheDocument();
@@ -253,6 +254,26 @@ describe("DriveDetailPage", () => {
     expect(screen.queryByText("+91-9876543210")).toBeNull();
     expect(screen.queryByText("alt@secret.org")).toBeNull();
     expect(screen.queryByText("Internal review note")).toBeNull();
+  });
+
+  it("gallery: main image with arrows and the 1 / 2 counter, no thumbnail strip", () => {
+    const testDrive = { id: 0, title: "Desks", category: "Furniture", itemName: "Desks", quantityNeeded: 10, unit: "PIECES",
+      neededBy: "2025-06-01", quantityPledged: 0, quantityReceived: 0, stillNeeded: 10, status: "LIVE",
+      ngoOrganizationName: "Preview Foundation", verified: true,
+      photoUrls: ["https://s.test/a.jpg", "https://s.test/b.jpg"] } as unknown as PublicNgoDrive;
+    render(<DriveDetailView drive={testDrive} mode="preview" />);
+    expect(screen.getByText("1 / 2")).toBeInTheDocument();
+    expect(screen.queryByRole("tablist", { name: "Photo thumbnails" })).toBeNull();
+    expect(screen.queryByAltText("Thumbnail 1")).toBeNull();
+  });
+
+  it("reloads the drive numbers when the donor comes back to the tab", async () => {
+    mockGetNgoDrive.mockResolvedValue({ id: 1, title: "Blankets", itemName: "Blankets", quantityNeeded: 150, quantityPledged: 0,
+      quantityReceived: 50, stillNeeded: 100, status: "LIVE", ngoOrganizationName: "Hope", verified: true, donorCount: 1 });
+    render(<DriveDetailPage />);
+    await waitFor(() => expect(mockGetNgoDrive).toHaveBeenCalledTimes(1));
+    window.dispatchEvent(new Event("focus"));
+    await waitFor(() => expect(mockGetNgoDrive).toHaveBeenCalledTimes(2));
   });
 
   it("preview mode renders preview banner and disables CTA button", () => {

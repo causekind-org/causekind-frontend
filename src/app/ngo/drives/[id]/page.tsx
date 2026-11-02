@@ -4,6 +4,7 @@ import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ngoDriveBackHref } from "@/features/ngo-drives/ngoBackLinks";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import {
@@ -149,16 +150,11 @@ export default function NgoDriveManagePage() {
   }, [authLoading, user, router, load]);
   useEntityUpdates(["NGO_DRIVE", "NGO_DRIVE_OFFER"], () => { void load(); });
 
-  // "Back to dashboard" returns to the tab the NGO came from: ?from=<tab>, else browser history.
+  // "Back to dashboard" always goes to the dashboard (the tab in ?from=), never history:
+  // history could lead back into a handover page and loop.
   const from = searchParams?.get("from") ?? null;
-  const backHref = from && /^[a-z-]+$/i.test(from) ? `/dashboard/ngo?tab=${from}` : "/dashboard/ngo";
-  const goBack = (e: React.MouseEvent) => {
-    if (from) return;
-    if (typeof document !== "undefined" && document.referrer.includes("/dashboard/ngo") && window.history.length > 1) {
-      e.preventDefault();
-      router.back();
-    }
-  };
+  const backHref = ngoDriveBackHref(from);
+  const goBack = (_e: React.MouseEvent) => {};
 
   if (authLoading || loading) return <PageSkeleton><div className="h-96" /></PageSkeleton>;
   if (loadError?.notFound) return <DriveNotFound backHref="/dashboard/ngo" backLabel={ui("Back to dashboard")} />;
@@ -180,6 +176,7 @@ export default function NgoDriveManagePage() {
   const pledged = Math.max(0, drive.quantityPledged ?? 0);
   const still = Math.max(0, needed - received - pledged);
   const donors = drive.donorCount ?? new Set(offers.filter((o) => COUNTED.has(o.status)).map((o) => o.donorDisplayName)).size;
+  const offerCount = drive.offerCount ?? offers.filter((o) => COUNTED.has(o.status)).length;
   const pct = (n: number) => `${needed ? Math.min(100, (n / needed) * 100) : 0}%`;
   const daysLeft = formatDaysLeft(drive.neededBy);
   const statusLabel = DRIVE_STATUS_LABEL[drive.status] ?? humanize(drive.status);
@@ -267,7 +264,7 @@ export default function NgoDriveManagePage() {
       <div className="mx-auto mt-6 max-w-6xl space-y-6 px-4 sm:px-6">
         {/* KPI strip */}
         <dl data-testid="drive-kpis" className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {([["Needed", needed], ["Pledged", pledged], ["Received", received], ["Still needed", still], ["Donors", donors]] as const).map(([label, value]) => (
+          {([["Needed", needed], ["Pledged", pledged], ["Received", received], ["Still needed", still], ["Donors", donors], ["Offers", offerCount]] as const).map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <dt className="text-xs font-semibold text-stone-500 dark:text-stone-400">{label}</dt>
               <dd className="mt-1 font-serif text-2xl font-semibold text-stone-900 dark:text-stone-100 ck-user-text">{value}</dd>

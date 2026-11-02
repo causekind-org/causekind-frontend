@@ -41,6 +41,10 @@ export const APPLICATION_STATUS_OPTIONS: { value: string; label: string }[] = [
 const isDesktop = () => typeof window !== "undefined" && typeof window.matchMedia === "function"
   && window.matchMedia("(min-width: 1024px)").matches;
 const DISCARD_PROMPT = "Discard your unsaved decision?";
+/** The NGO's latest application id when this one is an older submission (none when it is the latest). */
+export const supersededBy = (d: { current?: boolean; application: { applicationId: string }; submissions?: { applicationId: string }[] } | null) =>
+  d && !d.current && d.submissions?.length && d.submissions[0].applicationId !== d.application.applicationId
+    ? d.submissions[0].applicationId : null;
 const isResubmitted = (app: unknown) => !!(app as { resubmitted?: boolean | null } | null)?.resubmitted;
 const STEP1_DOCUMENTS = ["documents.pan", "documents.trust-reg-cert", "documents.society-reg-cert", "documents.coi"];
 
@@ -124,13 +128,20 @@ export function NgoReviewPanel({
   // This panel's URL state goes when the dashboard switches tab.
   useEffect(() => () => writeUrlParams({ status: null, q: null, app: null }), []);
 
-  const open = useCallback(async (id: string) => {
+  /** `toLatest`: a link to an older submission (?app=<old id>) opens that NGO's latest one instead. */
+  const open = useCallback(async (id: string, toLatest = false) => {
     const request = ++selection.current;
     setOpening(true); setDetail(null); setLinks({}); setLinkErrors({}); setEnlarged(null); retried.current = new Set();
     setReason(""); setFlagged({}); setError(""); setErrorItems([]); setNotice("");
     setDecision("NEEDS_INFORMATION");
     try {
-      const result = await adminGetNgoApplication(id);
+      let result = await adminGetNgoApplication(id);
+      const latest = supersededBy(result);
+      if (toLatest && latest && request === selection.current) {
+        writeUrlParams({ app: latest }, "replace");
+        setSelectedId(latest);
+        result = await adminGetNgoApplication(latest);
+      }
       if (request === selection.current) setDetail(result);
     } catch (e) { if (request === selection.current) setError(message(e)); }
     finally { if (request === selection.current) setOpening(false); }
@@ -161,7 +172,7 @@ export function NgoReviewPanel({
 
   useEffect(() => {
     const id = initialApplicationId || readUrlParam("app");
-    if (id) { setSelectedId(id); writeUrlParams({ app: id }); void open(id); }
+    if (id) { setSelectedId(id); writeUrlParams({ app: id }); void open(id, true); }
   }, [initialApplicationId, open]);
 
   // Escape closes the open application (the enlarged image first); browser Back closes it too.
@@ -349,7 +360,9 @@ export function NgoReviewPanel({
           <div className="p-5 sm:p-7">
           {opening ? <p role="status">Loading application…</p> : !detail ? <p className="text-sm text-stone-500">Select an application to review its details.</p> : <>
             <h2 className="text-2xl font-bold ck-user-text">{detail.application.organizationName}</h2>
-            <p className="mt-1 text-sm capitalize">{label(detail.application.status)}{!detail.current && " · Historical submission"}
+            <p className="mt-1 text-sm capitalize">{label(detail.application.status)}{!detail.current && (supersededBy(detail)
+                ? <span data-testid="superseded-by"> · Superseded by <span className="break-all font-mono normal-case">{supersededBy(detail)}</span></span>
+                : " · Historical submission")}
               {detail.application.status === "UNDER_REVIEW" && (isResubmitted(detail.application) || !!detail.resubmitted) && <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold normal-case text-sky-800 dark:bg-sky-900/50 dark:text-sky-200">Resubmitted</span>}
             </p>
             <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">

@@ -3,6 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { pressProps } from "@/features/wizard-kit/wizardMotion";
+import { useFocusAboveBar } from "@/features/wizard-kit/useFocusAboveBar";
 
 import { UiText, useUiText } from "@/components/UiText";
 /**
@@ -58,6 +59,7 @@ export function WizardNavigation({
 }) {
   const ui = useUiText();
   const reduced = !!useReducedMotion();
+  useFocusAboveBar();
 
   const compact = variant === "floating";
 
@@ -160,6 +162,7 @@ export function WizardNavigation({
 
   return (
     <div
+      data-ck-wizard="bar"
       className={`sticky z-40 isolate border-t border-stone-200 bg-[#faf8f5]/95 backdrop-blur
                  pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] dark:border-zinc-800 dark:bg-zinc-950/95
                  ${avoidBottomChrome ? "bottom-[var(--ck-bottom-chrome)] lg:bottom-0" : "bottom-0"}`}

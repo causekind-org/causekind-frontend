@@ -1,5 +1,6 @@
 "use client";
 
+import { useFocusAboveBar } from "@/features/wizard-kit/useFocusAboveBar";
 import { EXTERNAL_LINK_REL, linkDomain, safeExternalUrl } from "@/lib/externalLink";
 import { openDatePicker } from "@/lib/openDatePicker";
 import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherSpecifyField";
@@ -240,6 +241,7 @@ function NewNgoDriveForm() {
   const { labels: STEP_LABELS, intros: STEP_INTROS } = useNgoDriveStepCopy();
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  useFocusAboveBar();
   const searchParams = useSearchParams();
   // "Edit & resubmit" from /ngo/drives/[id]: same form, pre-filled, saved with PUT.
   const editParam = searchParams?.get("edit");
@@ -1374,7 +1376,7 @@ const [altContact, setAltContact] = useState("");
           
           <WizardField label={ui("Details")} required error={fieldErrors.details} hint={df("detailsHint", { count: details.length, max: DETAILS_MAX })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="details" rows={3} maxLength={DETAILS_MAX} value={details} onChange={e => setDetails(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="details" rows={3} value={details} onChange={e => setDetails(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid || details.length > DETAILS_MAX ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
@@ -1387,19 +1389,19 @@ const [altContact, setAltContact] = useState("");
 
           <WizardField label={ui("Who is this for?")} required error={fieldErrors.whoFor} hint={df("whoForHint", { count: whoFor.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="whoFor" rows={3} maxLength={300} placeholder={ui("e.g. 50 children residing in our rural learning center...")} value={whoFor} onChange={e => setWhoFor(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="whoFor" rows={3} placeholder={ui("e.g. 50 children residing in our rural learning center...")} value={whoFor} onChange={e => setWhoFor(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid || whoFor.length > 300 ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
           <WizardField label={ui("Why now?")} required error={fieldErrors.whyNow} hint={df("whyNowHint", { count: whyNow.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="whyNow" rows={3} maxLength={300} placeholder={ui("e.g. The monsoon season has started and leaky roofs damaged the previous stock...")} value={whyNow} onChange={e => setWhyNow(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="whyNow" rows={3} placeholder={ui("e.g. The monsoon season has started and leaky roofs damaged the previous stock...")} value={whyNow} onChange={e => setWhyNow(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid || whyNow.length > 300 ? "border-red-500" : ""}`} />
             )}
           </WizardField>
 
           <WizardField label={ui("What will change after donors give?")} required error={fieldErrors.whatChanges} hint={df("whatChangesHint", { count: whatChanges.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="whatChanges" rows={3} maxLength={300} placeholder={ui("e.g. Students will attend school daily without falling sick...")} value={whatChanges} onChange={e => setWhatChanges(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="whatChanges" rows={3} placeholder={ui("e.g. Students will attend school daily without falling sick...")} value={whatChanges} onChange={e => setWhatChanges(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid || whatChanges.length > 300 ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -1717,7 +1719,7 @@ const [altContact, setAltContact] = useState("");
 
           <WizardField label={ui("Why you do this work")} required error={fieldErrors.changemakerWhy} hint={df("twoToThreeLines", { count: changemakerWhy.length })}>
             {({ id, describedBy, invalid }) => (
-              <Textarea id={id} name="changemakerWhy" rows={3} maxLength={300} placeholder={ui("e.g. Having grown up in this community, ensuring every child has school supplies has been my personal calling for 6 years.")} value={changemakerWhy} onChange={e => setChangemakerWhy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid ? "border-red-500" : ""}`} />
+              <Textarea id={id} name="changemakerWhy" rows={3} placeholder={ui("e.g. Having grown up in this community, ensuring every child has school supplies has been my personal calling for 6 years.")} value={changemakerWhy} onChange={e => setChangemakerWhy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border ${invalid || changemakerWhy.length > 300 ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -2258,7 +2260,7 @@ const [altContact, setAltContact] = useState("");
 
         {/* BOTTOM ACTION BUTTONS */}
         {step === "drive-location" || step === "drive-details" ? (
-          <div className="mx-auto w-full max-w-[1040px] px-4 sm:px-8 lg:px-10 pb-6 mt-auto">
+          <div data-ck-wizard="actions" className="mx-auto w-full max-w-[1040px] px-4 sm:px-8 lg:px-10 pb-6 mt-auto">
             <div className="flex items-center justify-between gap-4 border-t border-slate-200 pt-5 dark:border-slate-800">
               <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />{step === "drive-details" ? "Back to Step 1" : "Back"}</button>
               <button type="button" onClick={() => void saveDraft()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
@@ -2269,7 +2271,7 @@ const [altContact, setAltContact] = useState("");
             </div>
           </div>
         ) : step === "beneficiaries-handover" ? (
-          <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
+          <div data-ck-wizard="actions" className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
             <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden /><UiText>Back to Step 2</UiText></button>
             <div className="flex flex-wrap gap-2">
               <button type="button" onClick={() => { if (stepIsValid) void handleNext(); }} aria-disabled={!stepIsValid} aria-describedby={stepIsValid ? undefined : "step-incomplete-hint"} disabled={submitting || saveStatus === "saving"} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed ${stepIsValid ? GREEN : GREY}`}>{saveStatus === "saving" ? ui("Saving…") : ui("Save & Continue")}<ArrowRight className="size-4" aria-hidden /></button>
@@ -2277,7 +2279,7 @@ const [altContact, setAltContact] = useState("");
             </div>
           </div>
         ) : (
-          <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
+          <div data-ck-wizard="actions" className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
              <button type="button" onClick={handleBack} disabled={submitting} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden /><UiText>Back</UiText></button>
              <div className="flex flex-wrap gap-2">
                <button type="button" onClick={() => setShowPreviewModal(true)} disabled={submitting} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import DashboardPage from "./page";
 
@@ -445,6 +445,28 @@ describe("History: an NGO drive offer from handover to proof", () => {
     expect(entry).toHaveTextContent("Donated · certificate issued");
     expect(within(entry).getByRole("link", { name: /Certificate/ })).toHaveAttribute("href", "/certificate?offerId=7&type=ngo_drive");
     expect(within(entry).getByTestId("history-proof-pending")).toBeInTheDocument();
+  });
+
+  it("NGO drive entry fields, and All / Donee / NGO drives chips with counts", async () => {
+    mocks.driveOffers.mockResolvedValue([driveOffer(7, "ISSUE_WINDOW_OPEN", { requestTitle: "Winter jackets drive", receivedAt: iso(DAY) })]);
+    await openHistory();
+    const entry = await screen.findByTestId("history-drive-offer-7");
+    expect(within(entry).getByTestId("history-ngo-drive-tag")).toHaveTextContent("NGO drive");
+    expect(entry).toHaveTextContent("Hope Trust");
+    expect(within(entry).getByTestId("history-ngo-verified")).toBeInTheDocument();
+    expect(within(entry).getByTestId("history-drive-title")).toHaveTextContent("Winter jackets drive");
+    expect(within(entry).getByTestId("history-drive-qty")).toHaveTextContent("10 given");
+    expect(within(entry).getByTestId("history-drive-date")).toHaveTextContent(/Handed over/);
+    expect(within(entry).getByRole("link", { name: /Certificate/ })).toHaveAttribute("href", "/certificate?offerId=7&type=ngo_drive");
+    expect(within(entry).getByTestId("history-proof-pending")).toHaveTextContent("Proof pending: the NGO will share photos after distribution.");
+
+    const kinds = screen.getByRole("group", { name: "Show donee or NGO drive donations" });
+    expect(within(kinds).getByRole("button", { name: /NGO drives/ })).toHaveTextContent("1");
+    expect(within(kinds).getByRole("button", { name: /Donee/ })).toHaveTextContent("0");
+    fireEvent.click(within(kinds).getByRole("button", { name: /Donee/ }));
+    expect(screen.queryByTestId("history-drive-offer-7")).toBeNull();
+    fireEvent.click(within(kinds).getByRole("button", { name: /NGO drives/ }));
+    expect(await screen.findByTestId("history-drive-offer-7")).toBeInTheDocument();
   });
 
   it("proof published: the same single entry shows the distribution line, no duplicate", async () => {
