@@ -61,6 +61,13 @@ describe("the fundraisers row", () => {
     expect(container.querySelector(".ck-dw-hang")).toBeNull();
     expect(container.querySelector(".ck-dw-diya")).toBeNull();
   });
+
+  it("points the empty card to a money donation", async () => {
+    render(<HomeFundraisers />);
+    const card = (await screen.findByText("No fundraisers yet")).closest("a");
+    expect(card).toHaveAttribute("href", expect.stringContaining("/donate/money"));
+    expect(card).toHaveTextContent("Donate money");
+  });
 });
 
 describe("the Diwali page styles", () => {
