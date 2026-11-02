@@ -127,7 +127,7 @@
   .ck-hero-diwali .ck-hero-trust-rail svg { color: var(--dw-maroon); }
 
   /* Lights, lanterns and sparks over the hero. */
-  .ck-home-page.ck-diwali:has(.ck-diwali .ck-dw-web) .ck-dw-layer {
+  .ck-home-page.ck-diwali:has(.ck-dw-web) .ck-dw-layer {
     display: block;
     position: absolute;
     /* The hero runs up under the sticky header; the strings start at its edge. */
@@ -176,7 +176,7 @@
   }
 
   /* ── Grounds ── */
-  .ck-home-page.ck-diwali:has(.ck-diwali .ck-dw-web),
+  .ck-home-page.ck-diwali:has(.ck-dw-web),
   .ck-diwali .ck-dw-web .ck-home-paper { background-color: var(--dw-cream); }
   .ck-diwali .ck-dw-web :is(#about-causekind, #where-support-goes, #live-needs-section, #ngo-drives-section, section[aria-labelledby="credits-heading"], [data-dw-panel] > section) { background-color: var(--dw-cream); }
   .ck-diwali .ck-dw-web :is(#how-it-works, #how-receiving-works, #trust, #founders-note) { background-color: var(--dw-butter); }
