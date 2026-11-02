@@ -72,7 +72,7 @@ describe("the Diwali page styles", () => {
       // another one inside — that never matches (it hid the desktop hero lights).
       expect(css.match(/\.ck-diwali:has\([^)]*\.ck-diwali/g), file).toBeNull();
       // The fundraisers row is permanent, so only its own rules skip the gate.
-      const ungated = css.split("\n").filter((line) => /(?<!ck-diwali )\.ck-dw-web/.test(line));
+      const ungated = css.split("\n").filter((line) => /(?<!ck-diwali |\.ck-diwali:has\()\.ck-dw-web/.test(line));
       expect(ungated.every((line) => /ck-dw-(campaigns|c-|card)/.test(line) && !/ck-dw-hang/.test(line)), file).toBe(true);
     }
   });
