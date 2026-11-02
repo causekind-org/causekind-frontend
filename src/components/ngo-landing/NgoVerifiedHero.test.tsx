@@ -53,21 +53,12 @@ describe("verified NGO hero (points 4 and 6)", () => {
   });
 });
 
-describe("verified notification card (point 7)", () => {
-  it("is short: title with the dot on one line and one line of body", async () => {
-    localStorage.removeItem("ngo-verified-welcome-shown-101");
+describe("verified toast", () => {
+  it("is gone: no \"You can now start drives\" corner card on the approved landing", async () => {
     vi.mocked(getMyNgoApplication).mockResolvedValue({ status: "APPROVED", organizationName: "Hope Foundation" } as never);
     render(<NgoLandingView />);
-
-    const title = await screen.findByText("You're verified");
-    const line = title.parentElement!;
-    expect(line.querySelector("span.rounded-full")).not.toBeNull(); // the dot sits inside the title line
-    expect(line.className).toContain("flex");
-    expect(line.className).toContain("items-center");
-    const card = line.closest('[role="status"]')!;
-    expect(card).toHaveTextContent("You're verified");
-    expect(card).toHaveTextContent("You can now start drives.");
-    expect(card.textContent).not.toMatch(/Partner status verified|10 km|certificates/);
-    expect(screen.getByRole("button", { name: /Close verified welcome notification/i })).toBeInTheDocument();
+    await screen.findAllByText(/verified/i);
+    expect(screen.queryByText("You can now start drives.")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Close verified welcome notification/i })).toBeNull();
   });
 });

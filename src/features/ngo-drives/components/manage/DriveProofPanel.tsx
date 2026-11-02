@@ -1,5 +1,6 @@
 "use client";
 
+import { openDatePicker } from "@/lib/openDatePicker";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CheckCircle2, ImagePlus, Loader2, X } from "lucide-react";
@@ -200,7 +201,7 @@ export function DriveProofPanel({ drive, onSubmitted }: { drive: NgoDrive; onSub
             <input type="number" name="quantityDistributed" required step={1} inputMode="numeric" min={1} max={Math.max(1, drive.quantityReceived ?? 0)} value={form.quantity} onChange={(e) => set("quantity", e.target.value)} className={`${input} ${touched.quantity && errors.quantity ? bad : ok}`} />
           </Field>
           <Field label={ui("Date of distribution")} error={errors.distributedOn} touched={!!touched.distributedOn}>
-            <input type="date" name="distributedOn" min={minDistributionDate(drive)} value={form.distributedOn} onChange={(e) => set("distributedOn", e.target.value)} className={`${input} ${touched.distributedOn && errors.distributedOn ? bad : ok}`} />
+            <input type="date" name="distributedOn" onClick={openDatePicker} min={minDistributionDate(drive)} value={form.distributedOn} onChange={(e) => set("distributedOn", e.target.value)} className={`${input} ${touched.distributedOn && errors.distributedOn ? bad : ok}`} />
           </Field>
           <Field label={ui("Location")} error={errors.location} touched={!!touched.location}>
             <input type="text" name="location" maxLength={255} placeholder={ui("e.g. Shivajinagar community hall")} value={form.location} onChange={(e) => set("location", e.target.value)} className={`${input} ${touched.location && errors.location ? bad : ok}`} />

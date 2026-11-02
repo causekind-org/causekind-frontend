@@ -93,6 +93,8 @@ export type HandoverParticipant = {
   phone: string | null;
   /** NGO drives: every handover contact, first = primary (phones null until calls are allowed). */
   contacts?: { name: string; phone: string | null; role?: string | null }[];
+  /** Who the chat is with, when that isn't simply the name above. */
+  chatName?: string;
 };
 
 export type HandoverViewModel = {
@@ -108,6 +110,8 @@ export type HandoverViewModel = {
   transactionCode: string;
   parentId?: number; // Used for NGO Drives to pass driveId
   counterpart: HandoverParticipant;
+  /** NGO drive pickup with nobody assigned yet: there is no one to contact. */
+  awaitingPickupPerson?: boolean;
   /** Donor-side switch letting the donee call them. Reversible at any time. */
   donorAllowsDoneeCall: boolean;
   schedule: HandoverSchedule | null;

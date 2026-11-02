@@ -1,0 +1,227 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Loader2, UserRound } from "lucide-react";
+import {
+  assignVolunteer, getVolunteerAssignOptions, resendVolunteerLink, unassignVolunteer,
+  type NgoDriveOfferHandoverRecordResponse, type NgoDriveOfferResponse, type VolunteerAssignOptions, type VolunteerAssignRequest,
+} from "@/lib/api";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MOBILE = /^[6-9]\d{9}$/;
+const buttonBase = "inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold disabled:opacity-50";
+const primary = `${buttonBase} bg-[var(--handover-accent)] text-[var(--handover-on-accent)]`;
+const secondary = `${buttonBase} border border-stone-300 dark:border-zinc-700`;
+
+const message = (e: unknown, fallback: string) => (e instanceof Error && e.message ? e.message : fallback);
+
+/** The NGO chooses who collects a pickup, and manages that person's link. */
+export function VolunteerAssignPanel({ offer, handover, onChanged }: {
+  offer: NgoDriveOfferResponse;
+  handover: NgoDriveOfferHandoverRecordResponse | null;
+  onChanged: () => void;
+}) {
+  const wantsAssign = useSearchParams().get("assign") === "1";
+  const [options, setOptions] = useState<VolunteerAssignOptions | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [autoOpened, setAutoOpened] = useState(false);
+  const [confirmingUnassign, setConfirmingUnassign] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const refreshKey = `${handover?.scheduledDateTime}|${handover?.confirmation?.otpVerified}|${offer.status}`;
+
+  // Requests can answer after the panel has gone (or after a newer load): those answers are dropped.
+  const mounted = useRef(true);
+  const latestLoad = useRef(0);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
+
+  const load = useCallback(async () => {
+    const mine = ++latestLoad.current;
+    try {
+      const next = await getVolunteerAssignOptions(offer.driveId, offer.id);
+      if (mounted.current && mine === latestLoad.current) setOptions(next);
+    } catch (e) {
+      if (mounted.current && mine === latestLoad.current) setError(message(e, "We couldn't load the pickup person."));
+    }
+  }, [offer.driveId, offer.id]);
+
+  useEffect(() => { void load(); }, [load, refreshKey]);
+  useEffect(() => {
+    if (wantsAssign && !autoOpened && options?.canAssign && !options.assignment) {
+      setAutoOpened(true);
+      setSheetOpen(true);
+    }
+  }, [wantsAssign, autoOpened, options]);
+
+  if (!options) return error ? <p role="alert" className="text-sm text-red-600">{error}</p> : null;
+  const { assignment, canAssign } = options;
+  if (!assignment && !canAssign) return null;
+
+  const run = async (action: () => Promise<void>, fallback: string) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+      await load();
+      if (mounted.current) onChanged();
+    } catch (e) {
+      if (mounted.current) setError(message(e, fallback));
+    } finally {
+      if (mounted.current) setBusy(false);
+    }
+  };
+
+  const newLink = (copy: boolean) => run(async () => {
+    const r = await resendVolunteerLink(offer.driveId, offer.id);
+    if (!mounted.current) return;
+    setLink(r.link);
+    if (copy) {
+      await navigator.clipboard?.writeText(r.link).then(() => { if (mounted.current) setCopied(true); }).catch(() => { if (mounted.current) setCopied(false); });
+    }
+  }, "We couldn't create a new link.");
+
+  return (
+    <section data-testid="volunteer-panel" className="mb-4 space-y-3 rounded-xl border border-stone-200 p-4 dark:border-zinc-700">
+      <h3 className="flex items-center gap-2 text-sm font-bold text-stone-900 dark:text-stone-100">
+        <UserRound className="size-4" aria-hidden /> Pickup person
+      </h3>
+      {assignment ? (
+        <>
+          <div className="text-sm text-stone-800 dark:text-stone-200">
+            <p className="font-semibold">{assignment.name}{assignment.role ? ` (${assignment.role})` : ""}</p>
+            <p className="break-words text-xs text-stone-600 dark:text-stone-300">{assignment.phone} · {assignment.email}</p>
+            <p data-testid="volunteer-email-status" className={`mt-1 text-xs font-semibold ${assignment.emailStatus === "FAILED" ? "text-red-600" : "text-stone-600 dark:text-stone-300"}`}>
+              {assignment.emailStatus === "FAILED" ? "Email failed" : assignment.emailStatus === "SENT" ? "Email sent" : "Sending email…"}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {assignment.emailStatus === "FAILED" && (
+              <button type="button" disabled={busy} onClick={() => void newLink(true)} className={primary}>Copy link</button>
+            )}
+            <button type="button" disabled={busy} onClick={() => void newLink(false)} className={secondary}>Resend link</button>
+            {canAssign && <button type="button" disabled={busy} onClick={() => setSheetOpen(true)} className={secondary}>Reassign</button>}
+            {canAssign && <button type="button" disabled={busy} onClick={() => setConfirmingUnassign(true)} className={secondary}>Unassign</button>}
+          </div>
+          {link && (
+            <div className="space-y-1">
+              <p className="text-xs text-stone-600 dark:text-stone-300">{copied ? "New link copied. The old one has stopped working." : "New link. The old one has stopped working."}</p>
+              <Input readOnly aria-label="Pickup link" value={link} onFocus={(e) => e.target.select()} className="h-11" />
+            </div>
+          )}
+        </>
+      ) : (
+        <button type="button" onClick={() => setSheetOpen(true)} className={primary}>Assign a person</button>
+      )}
+      {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
+
+      {sheetOpen && (
+        <AssignSheet options={options} busy={busy} onClose={() => setSheetOpen(false)}
+          onConfirm={(body) => {
+            setLink(null);
+            void run(async () => {
+              await assignVolunteer(offer.driveId, offer.id, body);
+              if (mounted.current) setSheetOpen(false);
+            }, "We couldn't assign this person.");
+          }} error={error} />
+      )}
+
+      <Dialog open={confirmingUnassign} onOpenChange={setConfirmingUnassign}>
+        <DialogContent className="w-[calc(100vw-2rem)] max-w-sm rounded-2xl">
+          <DialogTitle>Unassign {assignment?.name}?</DialogTitle>
+          <DialogDescription>Their link stops working and they get an email saying so.</DialogDescription>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button type="button" onClick={() => setConfirmingUnassign(false)} className={secondary}>Keep</button>
+            <button type="button" disabled={busy} className={primary} onClick={() => {
+              setConfirmingUnassign(false);
+              setLink(null);
+              void run(() => unassignVolunteer(offer.driveId, offer.id), "We couldn't unassign this person.");
+            }}>Confirm unassign</button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </section>
+  );
+}
+
+function AssignSheet({ options, busy, error, onClose, onConfirm }: {
+  options: VolunteerAssignOptions;
+  busy: boolean;
+  error: string | null;
+  onClose: () => void;
+  onConfirm: (body: VolunteerAssignRequest) => void;
+}) {
+  const [choice, setChoice] = useState<number | "new" | null>(options.contacts.length === 0 ? "new" : null);
+  const [extraEmail, setExtraEmail] = useState("");
+  const [person, setPerson] = useState({ name: "", phone: "", email: "" });
+
+  const chosen = typeof choice === "number" ? options.contacts[choice] : null;
+  const needsEmail = chosen != null && !chosen.email;
+  const valid = choice === "new"
+    ? person.name.trim().length >= 2 && MOBILE.test(person.phone) && EMAIL.test(person.email.trim())
+    : chosen != null && (!needsEmail || EMAIL.test(extraEmail.trim()));
+
+  const confirm = () => {
+    if (choice === "new") {
+      onConfirm({ newPerson: { name: person.name.trim(), phone: `+91${person.phone}`, email: person.email.trim() } });
+    } else if (typeof choice === "number") {
+      onConfirm(needsEmail ? { contactIndex: choice, email: extraEmail.trim() } : { contactIndex: choice });
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent data-testid="assign-sheet" data-ck-role-theme="ngo"
+        className="max-h-[90dvh] w-[calc(100vw-2rem)] max-w-md overflow-y-auto rounded-2xl bg-white p-6 dark:bg-zinc-900 max-sm:bottom-0 max-sm:left-0 max-sm:top-auto max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-b-none">
+        <DialogTitle className="pr-8 font-serif text-xl font-bold text-stone-900 dark:text-stone-100">Assign a person</DialogTitle>
+        <DialogDescription className="mt-1 text-sm text-stone-600 dark:text-stone-300">They get an email with the pickup details and a private link.</DialogDescription>
+        <div role="radiogroup" aria-label="Person" className="mt-4 space-y-2">
+          {options.contacts.map((c, i) => (
+            <label key={i} data-testid="assign-contact" data-selected={choice === i ? "true" : undefined}
+              className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm ${choice === i ? "border-ngo-700 bg-ngo-50 ring-1 ring-ngo-700 dark:bg-ngo-900/30" : "border-stone-200 hover:border-ngo-600 dark:border-zinc-700"}`}>
+              <span aria-hidden className="flex size-10 shrink-0 items-center justify-center rounded-full bg-ngo-100 font-bold text-ngo-800 dark:bg-ngo-900/50 dark:text-ngo-200">{c.name.trim().charAt(0).toUpperCase()}</span>
+              <span className="min-w-0 flex-1 break-words">
+                <span className="font-semibold text-stone-900 dark:text-stone-100">{c.name}</span>
+                <span className="block text-xs text-stone-600 dark:text-stone-300">{c.phone}</span>
+              </span>
+              <input type="radio" name="assign-person" checked={choice === i} onChange={() => setChoice(i)} className="size-4 shrink-0 accent-[var(--ck-color-ngo-700,#1e6b4a)]" />
+            </label>
+          ))}
+          <label data-testid="assign-add-new" className={`flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed p-3 text-sm font-semibold ${choice === "new" ? "border-ngo-700 bg-ngo-50 text-ngo-800 dark:bg-ngo-900/30 dark:text-ngo-200" : "border-stone-300 text-stone-700 hover:border-ngo-600 dark:border-zinc-600 dark:text-stone-200"}`}>
+            <span className="flex-1">+ Add new person</span>
+            <input type="radio" name="assign-person" checked={choice === "new"} onChange={() => setChoice("new")} className="size-4 shrink-0 accent-[var(--ck-color-ngo-700,#1e6b4a)]" />
+          </label>
+        </div>
+        {needsEmail && (
+          <Input aria-label="Email for this person" type="email" placeholder="Email for this person" value={extraEmail}
+            onChange={(e) => setExtraEmail(e.target.value)} className="mt-3 h-11" />
+        )}
+        {choice === "new" && (
+          <div className="mt-3 space-y-2">
+            <Input aria-label="New person name" placeholder="Name" maxLength={100} value={person.name} onChange={(e) => setPerson({ ...person, name: e.target.value })} className="h-11" />
+            <div className="flex gap-2">
+              <span aria-hidden className="flex h-11 shrink-0 items-center rounded-md border border-input px-3 text-sm">+91</span>
+              <Input aria-label="New person phone" type="tel" inputMode="numeric" maxLength={10} placeholder="Mobile number" value={person.phone}
+                onChange={(e) => setPerson({ ...person, phone: e.target.value.replace(/\D/g, "") })} className="h-11" />
+            </div>
+            <Input aria-label="New person email" type="email" placeholder="Email" value={person.email} onChange={(e) => setPerson({ ...person, email: e.target.value })} className="h-11" />
+          </div>
+        )}
+        {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <button type="button" onClick={onClose} className={secondary}>Cancel</button>
+          <button type="button" disabled={!valid || busy} onClick={confirm} className={`${buttonBase} bg-ngo-700 text-white hover:bg-ngo-800`}>
+            {busy && <Loader2 className="size-4 animate-spin" aria-hidden />}Confirm
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

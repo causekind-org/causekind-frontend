@@ -21,6 +21,8 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
 }) {
   const isNgoDrive = vm.flow === "NGO_OFFER";
   const donor = vm.role === "DONOR";
+  // The pickup card says the NGO will assign someone; "calls aren't on" would only confuse.
+  if (vm.awaitingPickupPerson) return null;
   const label = donor
     ? `Call ${vm.counterpart.name ?? (isNgoDrive ? "the NGO" : "the recipient")}`
     : `Call ${vm.counterpart.name ?? "the donor"}`;
@@ -66,7 +68,7 @@ export function HandoverContactsCall({ contacts, phone, label, lockedMessage }: 
     <div className="space-y-2" data-testid="handover-contacts">
       <ul className="space-y-1 text-sm text-stone-700 dark:text-stone-300">
         {list.map((c, i) => (
-          <li key={`${c.name}-${i}`}>{c.name}{c.role ? ` · ${c.role}` : ""}{i === 0 && <span className="ml-1.5 text-2xs font-bold text-emerald-700">Primary</span>}</li>
+          <li key={`${c.name}-${i}`}>{c.name}{i === 0 && <span className="ml-1.5 text-2xs font-bold text-emerald-700">Primary</span>}</li>
         ))}
       </ul>
       {list.some((c) => c.phone) && (
@@ -74,7 +76,7 @@ export function HandoverContactsCall({ contacts, phone, label, lockedMessage }: 
           Who to call
           <select aria-label="Who to call" value={picked} onChange={(e) => setPicked(Number(e.target.value))}
             className="mt-1 block w-full min-h-[40px] rounded-lg border border-stone-300 bg-white px-2 text-sm dark:border-zinc-700 dark:bg-zinc-900">
-            {list.map((c, i) => <option key={i} value={i}>{c.name}{c.role ? ` (${c.role})` : ""}{i === 0 ? " · primary" : ""}</option>)}
+            {list.map((c, i) => <option key={i} value={i}>{c.name}{i === 0 ? " · primary" : ""}</option>)}
           </select>
         </label>
       )}

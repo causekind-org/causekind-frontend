@@ -15,7 +15,7 @@ function counterpartLabel(vm: HandoverViewModel): { name: string; role: string }
   const role = vm.flow === "NGO_OFFER"
     ? (vm.role === "DONOR" ? "NGO" : "Donor")
     : (vm.role === "DONOR" ? "Recipient" : "Donor");
-  return { name: vm.counterpart.name?.trim() || `the ${role.toLowerCase()}`, role };
+  return { name: vm.counterpart.chatName ?? (vm.counterpart.name?.trim() || `the ${role.toLowerCase()}`), role };
 }
 
 const EMPTY_TEXT = "No messages yet. Say hello and agree the details of the handover here.";

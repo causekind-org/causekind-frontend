@@ -61,12 +61,12 @@ describe("/ngo/drives/new status gate", () => {
 
     mockUseNgoStatus.mockReturnValue(status({ isVerified: true }));
     rerender(<NgoRequestCreationPage />);
-    expect(screen.getByText("What kind of drive?")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Where is this drive?" })).toBeInTheDocument();
 
     // A later refresh (window focus, live update) reports loading again: stay put.
     mockUseNgoStatus.mockReturnValue(status({ isLoading: true }));
     rerender(<NgoRequestCreationPage />);
-    expect(screen.getByText("What kind of drive?")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Where is this drive?" })).toBeInTheDocument();
     expect(mockReplace).not.toHaveBeenCalled();
   });
 

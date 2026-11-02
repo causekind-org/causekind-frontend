@@ -62,7 +62,7 @@ describe("drive form: full drop-off address", () => {
     expect(box).toHaveAttribute("maxLength", "300");
     expect(screen.getByTestId("gps-fields").compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.change(box, { target: { value: "short" } });
-    fireEvent.click(screen.getByRole("button", { name: /Continue to Step 2/ }));
+    fireEvent.blur(box);
     expect(await screen.findByText("Enter the full address in 10 to 300 characters", { selector: "#dropOffAddress-error" })).toBeInTheDocument();
     expect(box).toHaveAttribute("aria-invalid", "true");
   });

@@ -1,4 +1,5 @@
 import { filterVisibleListings, hideListingLocally } from "./listingActions";
+import { errorIdOf, toastErrorId } from "./errorId";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -34,6 +35,8 @@ type RequestOptions = RequestInit & {
   /** If true, a 401 response throws but does NOT redirect to login.
    *  Use for background/optional fetches where one 401 shouldn't kill the whole session. */
   silent401?: boolean;
+  /** Public data a write can't change: a write elsewhere on the page must not restart this GET. */
+  ignoreWrites?: boolean;
 };
 
 export class ApiError extends Error {
@@ -57,7 +60,8 @@ export type ApiConflictError = ApiError & { dependents?: SuperAdminDependent[]; 
 const inFlightGetRequests = new Map<string, Promise<any>>();
 const getCacheMap = new Map<string, { data: any; timestamp: number }>();
 let requestCacheGeneration = 0;
-function invalidateRequestCache() {
+/** Also for a live update: the short GET cache must not answer with what the server just said changed. */
+export function invalidateRequestCache() {
   requestCacheGeneration += 1;
   getCacheMap.clear();
   inFlightGetRequests.clear();
@@ -181,7 +185,7 @@ async function request<T>(
   }
 
   const generation = requestCacheGeneration;
-  const { silent401, ...fetchOptions } = options;
+  const { silent401, ignoreWrites, ...fetchOptions } = options;
 
   const execute = async (): Promise<T> => {
     const headers: Record<string, string> = {
@@ -250,7 +254,12 @@ async function request<T>(
         if (typeof body?.code === "string") (err as unknown as ApiConflictError).code = body.code;
         throw err;
       }
-      if (res.status === 500) throw new ApiError(500, "Something went wrong on our end. Please try again.");
+      if (res.status === 500) {
+        const body500 = await res.json().catch(() => ({}));
+        const errorId500 = errorIdOf({ data: body500 });
+        if (errorId500 && !isGet) toastErrorId(errorId500);
+        throw new ApiError(500, "Something went wrong on our end. Please try again.", body500);
+      }
       // Errors don't always arrive as JSON — a proxy or gateway can return plain
       // text or HTML. Read once as text, then parse only if it actually is JSON,
       // so a non-JSON error still yields something readable instead of a blank
@@ -280,6 +289,8 @@ async function request<T>(
         (body?.title !== "Bad Request" ? body?.title : null) ??
         plainText ??
         `Something went wrong (${res.status})`;
+      const errorId = errorIdOf({ data: body });
+      if (errorId && !isGet) toastErrorId(errorId);
       throw new ApiError(res.status, String(msg), body);
     }
 
@@ -289,7 +300,7 @@ async function request<T>(
     // browser error with no useful meaning, which is exactly what an admin saw on
     // the Re-run AI button. Check for a body before trying to parse one.
     const data = (await readJsonBody(res)) as T;
-    if (isGet && canUseRequestCache() && generation !== requestCacheGeneration) {
+    if (isGet && !ignoreWrites && canUseRequestCache() && generation !== requestCacheGeneration) {
       // Existing callers must not paint a stale response over the fresh status.
       return request<T>(path, options);
     }
@@ -3108,6 +3119,7 @@ export function revokePurchaseAddress(offerId: number) {
 export function recordPurchaseOrder(offerId: number, data: {
   idempotencyKey: string; retailer: string; reference?: string; quantity: number;
   expectedDeliveryAt: string; prepaid: true;
+  trackingUrl?: string; trackingReference?: string;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/order`, { method: "POST", body: JSON.stringify(data) });
 }
@@ -3236,20 +3248,46 @@ export function adminProcessPurchaseDeadlines(offerId: number) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/process-deadlines`, { method: "POST" });
 }
 
+export interface ExtractedProofData {
+  retailer?: string | null;
+  orderNumber?: string | null;
+  expectedDeliveryDate?: string | null;
+  quantity?: number | null;
+  totalAmountInr?: number | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  isDelivered?: boolean | null;
+}
+
+export interface FlowBProofUploadResponse {
+  id: number;
+  proofType: PurchaseProofType;
+  proofUrl?: string;
+  trackingNumber?: string;
+  notes?: string;
+  uploadedAt: string;
+  extracted?: ExtractedProofData;
+}
+
 export function uploadFlowBProof(offerId: number, proofType: PurchaseProofType, file: File,
-                                   trackingNumber?: string, notes?: string) {
+                                   trackingNumber?: string, notes?: string,
+                                   extra?: { retailer?: string; orderNumber?: string; expectedDeliveryDate?: string; trackingUrl?: string }): Promise<FlowBProofUploadResponse> {
   const formData = new FormData();
   formData.append("proofType", proofType);
   if (file) formData.append("file", file);
   if (trackingNumber) formData.append("trackingNumber", trackingNumber);
   if (notes) formData.append("notes", notes);
+  if (extra?.retailer) formData.append("retailer", extra.retailer);
+  if (extra?.orderNumber) formData.append("orderNumber", extra.orderNumber);
+  if (extra?.expectedDeliveryDate) formData.append("expectedDeliveryDate", extra.expectedDeliveryDate);
+  if (extra?.trackingUrl) formData.append("trackingUrl", extra.trackingUrl);
   return fetch(`${BASE_URL}/api/v1/offers/${offerId}/flow-b/proof`, {
     method: "POST",
     credentials: "include",
     body: formData,
   }).then(async (res) => {
     if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b?.message ?? "Upload failed"); }
-    return res.json();
+    return res.json() as Promise<FlowBProofUploadResponse>;
   });
 }
 
@@ -5497,6 +5535,9 @@ export type DrivePhotoItem = {
 
 /** Category-specific drive fields: Clothing sizing or Furniture dimensions. */
 export type DriveCategoryDetails = {
+  /** Clothing, free text. */
+  sizesNeeded?: string;
+  clothesFor?: string;
   sizes?: string[];
   fits?: string[];
   /** Older single choice; read only. */
@@ -5744,7 +5785,7 @@ export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: numbe
 }
 
 /** One handover contact of a drive (phone +91XXXXXXXXXX). */
-export type DriveHandoverContact = { name: string; phone: string | null; role?: string | null };
+export type DriveHandoverContact = { name: string; phone: string | null; email?: string | null };
 
 // ── The NGO editing its own public page ───────────────────────────────────────
 
@@ -5782,6 +5823,7 @@ export async function uploadNgoProfilePhoto(type: "cover" | "logo" | "office_pho
     const r = await res.json().catch(() => null);
     throw new ApiError(res.status, r?.fieldErrors?.[0]?.message || r?.detail || "We couldn't upload the photo. Please try again.", r);
   }
+  invalidateRequestCache();
   return (await res.json()) as NgoProfileManage;
 }
 export function removeNgoProfilePhoto(id: number) {
@@ -5864,7 +5906,11 @@ export async function uploadNgoActivityPhoto(id: number, file: File): Promise<Ng
     try { const b = await res.json(); message = b?.fieldErrors?.[0]?.message || b?.detail || message; } catch { /* keep statusText */ }
     throw new Error(message || "Upload failed");
   }
+  invalidateRequestCache();
   return res.json();
+}
+export function dismissNgoActivityEditNote(id: number) {
+  return request<NgoActivity>(`/api/v1/ngo/activities/${id}/edit-note`, { method: "DELETE" });
 }
 export function removeNgoActivityMedia(id: number, mediaId: number) {
   return request<NgoActivity>(`/api/v1/ngo/activities/${id}/media/${mediaId}`, { method: "DELETE" });
@@ -5886,7 +5932,7 @@ export function deleteNgoActivityVideo(id: number, mediaId: number) {
   return request<void>(`/api/v1/ngo/activities/${id}/video/${mediaId}`, { method: "DELETE" });
 }
 
-export type AdminNgoActivity = { activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
+export type AdminNgoActivity = { applicationUnderReview?: boolean; editOfLive?: boolean; activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
 export function getPendingNgoActivities() {
   return request<AdminNgoActivity[]>("/api/v1/admin/ngo-activities");
 }
@@ -6055,7 +6101,7 @@ export function adminRejectNgoDriveOffer(id: number, reason: string) {
 /** LIVE drives only; the backend filters by status itself and accepts just `category`. */
 export async function getNgoDrives(category?: string): Promise<PublicNgoDrive[]> {
   const query = category ? `?category=${encodeURIComponent(category)}` : "";
-  return await request<PublicNgoDrive[]>(`/api/v1/drives${query}`);
+  return await request<PublicNgoDrive[]>(`/api/v1/drives${query}`, { silent401: true, ignoreWrites: true });
 }
 
 /** Edits a drive in PENDING_REVIEW or CHANGES_REQUESTED; the backend puts it back to PENDING_REVIEW. */
@@ -6089,6 +6135,11 @@ export async function deleteUnusedNgoDrivePhoto(url: string): Promise<void> {
 }
 
 /** The NGO's server-side drive wizard draft, or null when there is none. */
+/** Fresh preview links, by plain url, for this NGO's own drive uploads. */
+export function getNgoDrivePhotoPreviews(urls: string[]) {
+  return request<Record<string, string>>("/api/v1/ngo-drives/uploads/previews", { method: "POST", body: JSON.stringify({ urls }) });
+}
+
 export async function getNgoDriveDraft(): Promise<{ payload: Record<string, unknown>; updatedAt: string } | null> {
   const r = await request<{ payload: Record<string, unknown>; updatedAt: string } | undefined>("/api/v1/ngo-drives/draft");
   return r && r.payload ? r : null;
@@ -6205,6 +6256,10 @@ export type NgoDriveOfferResponse = {
     availableHours?: string | null;
   };
   ngoAllowsDonorCall?: boolean | null;
+  /** The donor lets the assigned pickup person see their phone. */
+  donorAllowsVolunteerCall?: boolean | null;
+  /** Who collects this pickup; phone only when the NGO allows calls. */
+  assignedPerson?: { name: string; role?: string | null; phone?: string | null } | null;
   /** Issued once the handover completes. */
   certificateIssued?: boolean | null;
   certificateNumber?: string | null;
@@ -6360,6 +6415,9 @@ export type NgoDriveOfferHandoverRecordResponse = {
   rescheduleReason: string | null;
   atRisk: boolean;
   confirmation: {
+    /** A volunteer's name, or "the NGO". */
+    codeConfirmedBy?: string | null;
+    photoAddedBy?: string | null;
     deliveryOtp: string | null;
     otpVerified: boolean;
     otpVerifiedAt: string | null;
@@ -6733,6 +6791,8 @@ export type FundraiserDetail = {
   documents: { type: FundraisingEvidenceType; fileName: string | null; url: string }[];
   /** Show the 80G section on the donate page (switch on and the Trust's 80G details configured). */
   taxReceiptOffered?: boolean;
+  /** Most a donor can give now (target minus confirmed total); 0 = target reached; null = no target. */
+  remaining?: number | null;
 };
 
 /** Fundraiser donation: the signed-in donor's PAN photo for an 80G receipt, before checkout. */
@@ -6740,10 +6800,12 @@ export function uploadDonationPanPhoto(donationId: number, file: File) {
   const fd = new FormData();
   fd.append("file", file);
   return fetch(`${BASE_URL}/api/v1/donations/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
-    .then((res) => {
+    .then(async (res) => {
       // 409 with "already uploaded" means a retry after a successful upload: fine.
       if (res.ok) return;
-      throw new ApiError(res.status, "The PAN photo didn't upload.", null);
+      // Keep the server's reason (file type, size, sign-in…) so the donor sees why.
+      const body = await res.json().catch(() => null);
+      throw new ApiError(res.status, body?.detail || body?.message || body?.fieldErrors?.[0]?.message || "The PAN photo didn't upload.", body);
     });
 }
 
@@ -7073,3 +7135,78 @@ export const superAdminFundraising = {
   saveSettings: (values: Record<string, string>, reason: string) =>
     request<SaFrSetting[]>(`${SA_FR}/settings`, { method: "PUT", body: JSON.stringify({ values, reason }) }),
 };
+
+/** The person an NGO assigned to a drive pickup. */
+export type VolunteerAssignment = {
+  id: number; name: string; phone: string; email: string; role?: string | null;
+  status: "ACTIVE" | "REVOKED" | "COMPLETED"; emailStatus: "PENDING" | "SENT" | "FAILED"; expiresAt: string;
+};
+export type VolunteerAssignOptions = { canAssign: boolean; assignment: VolunteerAssignment | null; contacts: DriveHandoverContact[] };
+export type VolunteerAssignRequest = { contactIndex: number; email?: string } | { newPerson: DriveHandoverContact };
+
+export async function getVolunteerAssignOptions(driveId: number, offerId: number): Promise<VolunteerAssignOptions> {
+  return await request<VolunteerAssignOptions>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer`);
+}
+
+export async function assignVolunteer(driveId: number, offerId: number, body: VolunteerAssignRequest): Promise<VolunteerAssignment> {
+  return await request<VolunteerAssignment>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer`, { method: "POST", body: JSON.stringify(body) });
+}
+
+/** Issues a new link (the old one stops working) and emails it; the link comes back for "Copy link". */
+export async function resendVolunteerLink(driveId: number, offerId: number): Promise<{ assignment: VolunteerAssignment; link: string }> {
+  return await request<{ assignment: VolunteerAssignment; link: string }>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer/resend-link`, { method: "POST" });
+}
+
+export async function unassignVolunteer(driveId: number, offerId: number): Promise<void> {
+  await request<void>(`/api/v1/ngo-drives/${driveId}/offers/${offerId}/volunteer`, { method: "DELETE" });
+}
+
+/** One pickup, as its assigned volunteer sees it. */
+export type VolunteerHandoverView = {
+  volunteerName: string; ngoName: string; driveTitle: string; donorFirstName: string; donorPhone: string | null;
+  itemName: string; quantity: number; donorNotes: string | null; pickupAt: string; address: string; directionsUrl: string;
+  codeConfirmed: boolean; codeConfirmedByNgo: boolean; confirmedQuantity: number; photoAdded: boolean;
+  completed: boolean; photoUrls: string[]; linkExpiresAt: string;
+};
+export type VolunteerChatMessage = { id: number; mine: boolean; senderName: string; content: string; sentAt: string };
+
+/**
+ * The volunteer page has no login: its token goes in a header, and no cookie, cache or
+ * session-refresh logic from request() applies (a 401 here means a dead link, not a lost session).
+ */
+async function volunteerRequest<T>(token: string, path: string, init: RequestInit = {}): Promise<T> {
+  const res = await fetch(`${BASE_URL}/api/v1/volunteer-handover${path}`, {
+    ...init, credentials: "omit", cache: "no-store", referrerPolicy: "no-referrer",
+    headers: { ...(init.body instanceof FormData || !init.body ? {} : { "Content-Type": "application/json" }), ...init.headers, "X-Handover-Token": token },
+  });
+  const raw = await res.text();
+  let body: Record<string, unknown> = {};
+  try { body = raw ? JSON.parse(raw) as Record<string, unknown> : {}; } catch { /* not JSON */ }
+  if (!res.ok) {
+    const fields = Array.isArray(body.fieldErrors) ? (body.fieldErrors as { message?: string }[]).map((e) => e?.message).filter(Boolean).join(" ") : "";
+    throw new ApiError(res.status, String(fields || body.detail || "Something went wrong. Please try again."), body);
+  }
+  return body as T;
+}
+
+export const volunteerHandover = {
+  details: (token: string) => volunteerRequest<VolunteerHandoverView>(token, ""),
+  confirmCode: (token: string, otp: string, quantity: number) =>
+    volunteerRequest<VolunteerHandoverView>(token, "/confirm-code", { method: "POST", body: JSON.stringify({ otp, quantity }) }),
+  addPhoto: (token: string, file: File) => {
+    const form = new FormData();
+    form.append("files", file);
+    return volunteerRequest<void>(token, "/photo", { method: "POST", body: form });
+  },
+  chat: async (token: string) => {
+    const res = await fetch(`${BASE_URL}/api/v1/volunteer-handover/chat`, { credentials: "omit", cache: "no-store", headers: { "X-Handover-Token": token } });
+    if (!res.ok) throw new ApiError(res.status, "We couldn't load the chat.", {});
+    return await res.json() as VolunteerChatMessage[];
+  },
+  sendChat: (token: string, content: string) =>
+    volunteerRequest<VolunteerChatMessage>(token, "/chat", { method: "POST", body: JSON.stringify({ content }) }),
+};
+
+export async function setVolunteerCallPermission(offerId: number, allowed: boolean): Promise<void> {
+  await request<void>(`/api/v1/drive-offers/${offerId}/volunteer-call-permission`, { method: "PUT", body: JSON.stringify({ allowed }) });
+}

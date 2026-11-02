@@ -30,13 +30,13 @@ import { driveOfferModelFrom, serializeDriveOffer } from "../driveOfferSerialize
 // No handover method or pickup address: the four-step form leaves those to the handover page.
 export const WIZARD_ITEM_DETAILS = {
   quantity: 3, condition: "Like New", approximateAge: "1-2 years", ageRange: "Y1_2",
-  sizeSpec: undefined, confirmedWorking: false, confirmedClean: false,
+  sizeSpec: undefined,
   knownDefects: "None", notesForNgo: "Washed and folded",
   matchesRequirements: true,
 };
 const DTO_KEYS = [
   "quantity", "condition", "approximateAge", "ageRange", "sizeSpec",
-  "confirmedWorking", "confirmedClean", "knownDefects", "notesForNgo", "matchesRequirements"
+  "knownDefects", "notesForNgo", "matchesRequirements"
 ].sort();
 
 const draftOffer = {
@@ -172,7 +172,7 @@ describe("drive offer mapping", () => {
     expect(model).toMatchObject({ quantity: "3", condition: "Like New", approximateAge: "1-2 years", ageRange: "Y1_2", hasKnownDefects: false,
       accessoriesIncluded: "Washed and folded" });
     expect(model.photos).toHaveLength(2);
-    expect(serializeDriveOffer({ ...model, declarationsConfirmed: true }, { maxQuantity: 50 })).toEqual(WIZARD_ITEM_DETAILS);
+    expect(serializeDriveOffer({ ...model, declarationsConfirmed: true }, { maxQuantity: 50, asksWorking: false, asksClean: false })).toEqual(WIZARD_ITEM_DETAILS);
   });
 
   it("sends no handover method or pickup address, even for an older NGO_PICKUP draft (chosen on the handover page)", () => {

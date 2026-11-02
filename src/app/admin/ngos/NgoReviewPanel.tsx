@@ -312,14 +312,14 @@ export function NgoReviewPanel({
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
       <div className={selectedId ? "grid gap-6 lg:grid-cols-[320px_1fr] lg:items-start" : ""}>
         <section aria-label="Current applications"
-          className={selectedId ? "space-y-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1" : "space-y-3"}>
+          className={selectedId ? "min-w-0 space-y-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1" : "space-y-3"}>
           {loading ? <p role="status">Loading applications…</p> : !error && applications.length === 0
             ? (query ? <NoSearchResults query={query} onClear={() => changeQuery("")} /> : <p className="text-sm text-stone-500">No applications in this status.</p>) : null}
           <div data-testid="application-cards" className={selectedId ? "space-y-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
           {applications.map(app => <button key={app.applicationId} disabled={busy} onClick={() => select(app.applicationId)}
             aria-pressed={selectedId === app.applicationId}
             className={`w-full rounded-xl border bg-white p-4 text-left disabled:opacity-50 dark:bg-zinc-900 ${selectedId === app.applicationId ? "border-ngo-700 ring-1 ring-ngo-700" : "border-stone-200 dark:border-zinc-700"}`}>
-            <span className="block font-semibold">{app.organizationName}</span>
+            <span className="block font-semibold ck-user-text">{app.organizationName}</span>
             <span className="mt-1 block break-all text-xs text-stone-500">{app.applicationId}</span>
             <span className="mt-2 block text-sm capitalize">{label(app.status)}
               {app.status === "UNDER_REVIEW" && isResubmitted(app) && <span data-testid="resubmitted-badge" className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold normal-case text-sky-800 dark:bg-sky-900/50 dark:text-sky-200">Resubmitted</span>}
@@ -348,7 +348,7 @@ export function NgoReviewPanel({
           </div>
           <div className="p-5 sm:p-7">
           {opening ? <p role="status">Loading application…</p> : !detail ? <p className="text-sm text-stone-500">Select an application to review its details.</p> : <>
-            <h2 className="text-2xl font-bold">{detail.application.organizationName}</h2>
+            <h2 className="text-2xl font-bold ck-user-text">{detail.application.organizationName}</h2>
             <p className="mt-1 text-sm capitalize">{label(detail.application.status)}{!detail.current && " · Historical submission"}
               {detail.application.status === "UNDER_REVIEW" && (isResubmitted(detail.application) || !!detail.resubmitted) && <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold normal-case text-sky-800 dark:bg-sky-900/50 dark:text-sky-200">Resubmitted</span>}
             </p>
@@ -362,11 +362,11 @@ export function NgoReviewPanel({
                 "Organization phone": detail.application.organizationPhone || detail.application.mobileNumber,
                 "Phone": detail.application.mobileNumber, "Official email (account)": detail.application.officialEmail,
                 "Account email verified": detail.application.verifiedAt ? serverDate(detail.application.verifiedAt).toLocaleString() : "Pending",
-              }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
+              }).map(([name, value]) => <div key={name}><dt className="text-stone-500 ck-user-text">{name}</dt><dd className="mt-1 break-words">{value || "Not provided"}</dd></div>)}
             </dl>
             <section aria-label="About us" className="mt-5 text-sm">
               <h3 className="text-stone-500">About us</h3>
-              <p data-testid="admin-about-us" className="mt-1 whitespace-pre-line break-words">
+              <p data-testid="admin-about-us" className="ck-user-text mt-1 whitespace-pre-line break-words [overflow-wrap:anywhere]">
                 {(detail.application as { aboutUs?: string | null }).aboutUs || "Not provided"}
               </p>
             </section>
@@ -391,8 +391,8 @@ export function NgoReviewPanel({
                   {detail.representatives!.map(r => {
                     const idProof = detail.files.find(f => f.field === r.idProofField);
                     return <li key={r.position} data-testid="representative" className="rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-700">
-                      <p className="font-semibold">{r.position + 1}. {r.fullName}</p>
-                      <p className="text-stone-600 dark:text-stone-300">{r.designation}</p>
+                      <p className="ck-user-text font-semibold">{r.position + 1}. {r.fullName}</p>
+                      <p className="text-stone-600 dark:text-stone-300 ck-user-text">{r.designation}</p>
                       <p className="mt-1 font-mono text-xs">{r.mobileNumber}</p>
                       <p className="mt-1 break-all text-xs">{r.email}{" "}
                         {r.emailVerified
@@ -413,7 +413,7 @@ export function NgoReviewPanel({
             {detail.corrections && detail.corrections.items.length > 0 && (
               <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/40 dark:text-amber-100">
                 <h3 className="font-bold">Corrections requested</h3>
-                {detail.corrections.summary && <p className="mt-1 whitespace-pre-wrap">{detail.corrections.summary}</p>}
+                {detail.corrections.summary && <p className="mt-1 whitespace-pre-wrap ck-user-text">{detail.corrections.summary}</p>}
                 <ul className="mt-2 list-disc space-y-0.5 pl-5">
                   {detail.corrections.items.map(item => <li key={item.field}><span className="font-semibold">{correctionFieldLabel(item.field)}</span>: {item.note}</li>)}
                 </ul>
@@ -448,7 +448,7 @@ export function NgoReviewPanel({
                   )
                 ) : null}
                 <p className={`${isImage(file) ? "mt-2 " : ""}break-words font-semibold`}>{file.field ? correctionFieldLabel(file.field) : label(file.type)}</p>
-                <p className="break-words text-xs">{name}{file.moderationVerdict ? ` · ${file.moderationVerdict}` : ""}</p>
+                <p className="break-words text-xs ck-user-text">{name}{file.moderationVerdict ? ` · ${file.moderationVerdict}` : ""}</p>
                 {requirement && <p className={`mt-1 text-xs font-semibold ${requirement === "Required" ? "text-stone-600" : "text-emerald-700 dark:text-emerald-300"}`}>{requirement}</p>}
                 {!file.ownershipRecorded && <p className="mt-1 text-amber-700">Historical ownership is unverified. Request a fresh upload before approval.</p>}
                 <div className="mt-2 flex flex-wrap gap-4">
@@ -485,7 +485,7 @@ export function NgoReviewPanel({
                           <input type="checkbox" className="mt-0.5 h-4 w-4" checked={on} disabled={busy}
                             onChange={e => toggleFlag(item.key, e.target.checked)} />
                           <span className="min-w-0">
-                            <span className="block font-semibold">{item.name}</span>
+                            <span className="block font-semibold ck-user-text">{item.name}</span>
                             <span className="block break-words text-xs text-stone-500">{item.value || "Not provided"}</span>
                           </span>
                         </label>
@@ -507,7 +507,7 @@ export function NgoReviewPanel({
                 disabled={busy || (decision === "NEEDS_INFORMATION" && !correctionsReady)}>{busy ? "Saving decision…" : "Save decision"}</button>
             </form>}
             {detail.decisions.length > 0 && <div className="mt-6"><h3 className="font-bold">Decision history</h3><ul className="mt-2 space-y-3 text-sm">
-              {detail.decisions.map(entry => <li key={entry.id}><p>{label(entry.fromStatus)} → {label(entry.toStatus)} · {entry.changedByEmail}</p><p className="whitespace-pre-wrap">{entry.note}</p><p className="text-xs text-stone-500">{serverDate(entry.changedAt).toLocaleString()}</p></li>)}
+              {detail.decisions.map(entry => <li key={entry.id}><p>{label(entry.fromStatus)} → {label(entry.toStatus)} · {entry.changedByEmail}</p><p className="whitespace-pre-wrap ck-user-text">{entry.note}</p><p className="text-xs text-stone-500">{serverDate(entry.changedAt).toLocaleString()}</p></li>)}
             </ul></div>}
             {detail.submissions.length > 1 && <div className="mt-6"><h3 className="font-bold">Submission history</h3><ul className="mt-2 space-y-2 text-sm">
               {detail.submissions.map(app => <li key={app.applicationId}><button className="break-all text-left underline" disabled={busy} onClick={() => void open(app.applicationId)}>{app.applicationId} · {label(app.status)}</button></li>)}
@@ -560,14 +560,14 @@ function ResubmissionSection({ detail }: { detail: NgoReviewDetail }) {
           ))}
         </ul>
       </>}
-      {last?.overallNote && !fromHistory && <p className="mt-2 whitespace-pre-wrap">Earlier note: {last.overallNote}</p>}
+      {last?.overallNote && !fromHistory && <p className="ck-user-text mt-2 whitespace-pre-wrap">Earlier note: {last.overallNote}</p>}
       {rounds.length > 0 && <h3 className={`${last ? "mt-4 " : ""}font-bold`}>Correction rounds</h3>}
       <ol className="mt-2 space-y-2">
         {rounds.map(r => (
           <li key={r.roundNumber} data-testid="correction-round">
             <p className="font-semibold">Round {r.roundNumber}{r.status ? ` · ${label(r.status)}` : ""}</p>
             {r.createdAt && <p className="text-xs text-stone-500">Requested {formatIST(r.createdAt)}{r.resubmittedAt ? ` · Resubmitted ${formatIST(r.resubmittedAt)}` : ""}</p>}
-            {r.overallNote && <p className="whitespace-pre-wrap">{r.overallNote}</p>}
+            {r.overallNote && <p className="whitespace-pre-wrap ck-user-text">{r.overallNote}</p>}
             {(r.flaggedItems?.length ?? 0) > 0 && <ul className="mt-1 list-disc pl-5">{r.flaggedItems!.map(i => <li key={i.field}><span className="font-semibold">{correctionFieldLabel(i.field)}</span>: {i.note}</li>)}</ul>}
           </li>
         ))}

@@ -43,26 +43,24 @@ describe("NgoDriveCard", () => {
     mockUser = null;
   });
 
-  it("links the default card button to /drives/{id} with label 'View drive & give' (guest)", () => {
+  it("guest: a locked 'Log in to give to this drive' button with the right next link", () => {
     mockUser = null; // Guest
     render(<NgoDriveCard drive={TEST_DRIVE} />);
 
     const cta = screen.getByTestId("drive-cta-button");
-    expect(cta).toHaveTextContent("View drive & give");
-    expect(cta).toHaveAttribute("href", "/drives/42");
-
-    // Has only one link target on the card
-    const allLinks = screen.getAllByRole("link");
-    expect(allLinks).toHaveLength(1);
-    expect(allLinks[0]).toHaveAttribute("href", "/drives/42");
+    expect(cta).toHaveTextContent("Log in to give to this drive");
+    expect(cta).toHaveAttribute("href", "/login?next=/drives/42");
+    expect(cta.querySelector("svg.lucide-lock")).not.toBeNull();
+    expect(cta.className).toContain("w-full");
+    expect(cta.className).toContain("rounded-full");
   });
 
-  it("links the default card button to /drives/{id} with label 'View drive & give' (logged-in donor with no offer)", () => {
+  it("links the default card button to /drives/{id} with label 'Give to this drive' (logged-in donor with no offer)", () => {
     mockUser = { role: "ROLE_DONOR", id: 101 };
     render(<NgoDriveCard drive={TEST_DRIVE} offers={[]} />);
 
     const cta = screen.getByTestId("drive-cta-button");
-    expect(cta).toHaveTextContent("View drive & give");
+    expect(cta).toHaveTextContent("Give to this drive");
     expect(cta).toHaveAttribute("href", "/drives/42");
 
     // Only one link target on the card for default state

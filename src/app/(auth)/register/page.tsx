@@ -1,5 +1,6 @@
 "use client";
 
+import { safeExternalUrl } from "@/lib/externalLink";
 import { useEffect, useRef, useState } from "react";
 import { FEATURES } from "@/lib/features";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -261,6 +262,7 @@ function RegisterContent() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [ngoPan, setNgoPan] = useState("");
   const [ngoWebsite, setNgoWebsite] = useState("");
+  const [ngoWebsiteError, setNgoWebsiteError] = useState("");
 
   const [countryIso, setCountryIso] = useState("");
   const [stateIso, setStateIso] = useState("");
@@ -552,6 +554,13 @@ function RegisterContent() {
       el?.scrollIntoView?.({ behavior: reducedMotion ? "auto" : "smooth", block: "center" });
       return;
     }
+    // Optional: blank is fine, anything typed must be a real website address.
+    const websiteUrl = form.role === "NGO_PARTNER" && ngoWebsite.trim() ? safeExternalUrl(ngoWebsite) : null;
+    if (form.role === "NGO_PARTNER" && ngoWebsite.trim() && !websiteUrl) {
+      setNgoWebsiteError("Enter a website like www.example.org");
+      document.getElementById("website")?.focus();
+      return;
+    }
     setFormError(null);
 
     const dialCode = getDialCode(dialCountry, dialCodeOptions);
@@ -569,7 +578,7 @@ function RegisterContent() {
           country: countryIso,
           state: stateIso,
           city: cityStr,
-          website: ngoWebsite.trim() || undefined,
+          website: websiteUrl || undefined,
         }).catch((err: unknown) => {
           if (err instanceof ApiError && err.status === 404) {
              throw new Error("GOOGLE_NGO_404");
@@ -598,7 +607,7 @@ function RegisterContent() {
           state: stateIso,
           city: cityStr,
           password: form.password,
-          website: ngoWebsite.trim() || undefined,
+          website: websiteUrl || undefined,
         });
         setUser({ id: res.userId, userId: res.userId, email: res.email, role: res.role, fullName: res.fullName, phone: fullPhone });
         trackCompleteRegistration({ method: "ngo" });
@@ -1105,12 +1114,16 @@ function RegisterContent() {
               </label>
               <input
                 id="website"
-                type="url"
+                type="text"
+                inputMode="url"
                 placeholder="Enter your website or social media link"
                 value={ngoWebsite}
-                onChange={e => setNgoWebsite(e.target.value)}
+                aria-invalid={Boolean(ngoWebsiteError)}
+                aria-describedby={ngoWebsiteError ? "website-error" : undefined}
+                onChange={e => { setNgoWebsite(e.target.value); setNgoWebsiteError(""); }}
                 className="w-full rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 px-3.5 py-2.5 sm:px-4 sm:py-3 text-base text-stone-900 dark:text-stone-100 placeholder:text-stone-400 focus:outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent-20)] transition"
               />
+              {ngoWebsiteError && <p id="website-error" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{ngoWebsiteError}</p>}
             </div>
           </Reveal>
         )}

@@ -143,9 +143,13 @@ export function purchaseNextAction(stage: PurchaseStage, role: PurchaseRole, vie
         return donor
           ? "The handover is confirmed. The donation completes when the recipient's issue window closes."
           : "Thanks for confirming the handover. If everything is fine, close the issue window on the handover page — or report a problem there.";
-      return donor
-        ? "The recipient confirmed receipt. The donation completes when the issue window closes."
-        : "Thanks for confirming. If everything is fine you can close the issue window now.";
+      if (donor) {
+        const hasDeliveryProof = view.evidence.some(e => e.type === "DELIVERY_PROOF");
+        return hasDeliveryProof
+          ? "The recipient confirmed receipt and your delivery proof is on file. The donation completes when the issue window closes."
+          : "The recipient confirmed receipt. To finish the transaction and receive your certificate, please upload proof of the delivered item.";
+      }
+      return "Thanks for confirming. If everything is fine you can close the issue window now.";
     case "COMPLETED":
       return donor ? "This donation is complete. Your certificate is ready." : "This donation is complete. Thank you for confirming.";
     case "CLOSED":

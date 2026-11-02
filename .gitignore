@@ -58,3 +58,6 @@ Dev Log/
 # Playwright/Chrome profile directories left behind by QA runs.
 # 77 MB of Crashpad dumps, GPU caches and leveldb — test artifacts, not source.
 .qa-alpha-cutout/
+
+# Local Diwali reference image mockups
+diwaliassets/

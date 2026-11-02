@@ -48,8 +48,6 @@ describe("NgoRequestsDropdown", () => {
       isPhotosDue: false,
       canPostRequest: false, canStartDrive: true, blockingDriveTitle: "", driveLockReason: "",
       lockReason: "Available once CauseKind verifies your NGO.",
-      hasShownWelcome: true,
-      markWelcomeShown: vi.fn(),
       isError: false, viewer: "ngo", verifiedAt: null, rejectionReason: null, statsUnavailable: false,
     });
 
@@ -91,8 +89,6 @@ describe("NgoRequestsDropdown", () => {
       isPhotosDue: false,
       canPostRequest: true, canStartDrive: true, blockingDriveTitle: "", driveLockReason: "",
       lockReason: "",
-      hasShownWelcome: true,
-      markWelcomeShown: vi.fn(),
       isError: false, viewer: "ngo", verifiedAt: null, rejectionReason: null, statsUnavailable: false,
     });
 

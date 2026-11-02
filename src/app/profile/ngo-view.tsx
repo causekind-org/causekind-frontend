@@ -664,7 +664,7 @@ export function NgoProfileView() {
   }
 
   return (
-    <div className="bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen pb-28">
+    <div className="[overflow-wrap:anywhere] bg-[#F7F0E8] dark:bg-zinc-950 min-h-screen pb-28">
       {/* ── Top Header Band: Forest Green gradient ── */}
       <div
         className="relative overflow-hidden text-white"
@@ -683,7 +683,7 @@ export function NgoProfileView() {
         />
 
         <div className="relative z-10 mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-14 pb-2 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6 sm:gap-10 lg:gap-16 items-center">
-          <div>
+          <div className="min-w-0">
             <NgoMemberPass
               name={displayName}
               role="NGO_PARTNER"
@@ -703,7 +703,7 @@ export function NgoProfileView() {
               CAUSEKIND NGO PARTNER
             </p>
             <h1
-              className="mt-1.5 sm:mt-2 text-2xl sm:text-4xl md:text-5xl leading-[1.05] break-words [overflow-wrap:anywhere] min-w-0"
+              className="mt-1.5 sm:mt-2 text-2xl sm:text-4xl md:text-5xl leading-[1.05] break-words [overflow-wrap:anywhere] min-w-0 ck-user-text"
               style={{
                 fontFamily: "var(--font-lora), serif",
                 fontStyle: "italic",
@@ -756,7 +756,7 @@ export function NgoProfileView() {
                   }`}
                 >
                   <p
-                    className="text-2xl sm:text-4xl md:text-5xl tabular-nums leading-none text-white"
+                    className="text-2xl sm:text-4xl md:text-5xl tabular-nums leading-none text-white ck-user-text"
                     style={{ fontFamily: "var(--font-source-serif-4), serif" }}
                   >
                     {stat.value}
@@ -856,7 +856,7 @@ export function NgoProfileView() {
 
               <div>
                 <span className="text-3xs uppercase font-bold text-stone-400 block">Organization</span>
-                <span className="font-bold text-stone-800 dark:text-stone-200 text-sm truncate block mt-1">
+                <span className="ck-user-text font-bold text-stone-800 dark:text-stone-200 text-sm truncate block mt-1">
                   {application.organizationName || displayName}
                 </span>
               </div>
@@ -949,7 +949,7 @@ export function NgoProfileView() {
         {/* 2-Column Grid: Your Journey (left) & Milestones (right) with equal 16px mobile gutters */}
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-4 sm:gap-6 items-stretch min-w-0">
           {/* Your Journey: a chronicle of real events */}
-          <section data-tour="story" className="rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0 flex flex-col justify-between">
+          <section data-tour="story" className="min-w-0 rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0 flex flex-col justify-between">
             <div>
               <div className="border-b border-[#EADBCE]/80 dark:border-emerald-950/60 pb-3">
                 <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight">
@@ -1000,7 +1000,7 @@ export function NgoProfileView() {
                       </span>
                       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 min-w-0">
                         <p
-                          className="font-serif text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug break-words [overflow-wrap:anywhere] min-w-0"
+                          className="font-serif text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 leading-snug break-words [overflow-wrap:anywhere] min-w-0 ck-user-text"
                         >
                           {ev.title}
                         </p>
@@ -1027,7 +1027,7 @@ export function NgoProfileView() {
           </section>
 
           {/* Milestones: Earned by doing, never bought */}
-          <aside data-tour="milestones" className="rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0 flex flex-col justify-between">
+          <aside data-tour="milestones" className="min-w-0 rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0 flex flex-col justify-between">
             <div>
               <div className="border-b border-[#EADBCE]/80 dark:border-emerald-950/60 pb-3">
                 <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight">
@@ -1344,7 +1344,7 @@ function NgoMemberPass({
         </div>
 
         <p
-          className="relative mt-5 sm:mt-7 text-xl sm:text-2xl text-white leading-tight break-words"
+          className="relative mt-5 sm:mt-7 text-xl sm:text-2xl text-white leading-tight break-words ck-user-text"
           style={{
             fontFamily: "var(--font-lora), serif",
             fontStyle: "italic",

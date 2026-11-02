@@ -279,4 +279,19 @@ describe("DriveDetailPage", () => {
     expect(ctaButton).toBeDisabled();
     expect(screen.getByText(/Preview only — donations are disabled until published/)).toBeInTheDocument();
   });
+
+  it("wraps a 300-character word and opens typed links safely", () => {
+    const long = "x".repeat(300);
+    render(<DriveDetailView mode="preview" drive={{
+      id: 1, title: long, category: "Clothing", description: long, quantityNeeded: 10, quantityPledged: 0, quantityReceived: 0, stillNeeded: 10,
+      status: "LIVE", ngoOrganizationName: "Preview Foundation", verified: true, pastWorkUrl: "javascript:alert(1)",
+      ngo: { organizationName: "Preview Foundation", website: "www.varunngo.com" },
+    } as unknown as PublicNgoDrive} />);
+    for (const node of screen.getAllByText(long)) expect(node).toHaveClass("ck-user-text");
+    const site = screen.getByRole("link", { name: "varunngo.com" });
+    expect(site).toHaveAttribute("href", "https://www.varunngo.com");
+    expect(site).toHaveAttribute("target", "_blank");
+    expect(site).toHaveAttribute("rel", "noopener noreferrer nofollow");
+    expect(screen.queryByText("Past work")).toBeNull();
+  });
 });

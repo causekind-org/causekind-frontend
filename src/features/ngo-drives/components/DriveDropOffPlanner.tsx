@@ -1,5 +1,6 @@
 "use client";
 
+import { openDatePicker } from "@/lib/openDatePicker";
 import { useEffect, useState } from "react";
 import { Check, Copy, Loader2, MapPin, Phone } from "lucide-react";
 import { getNgoDrive, scheduleNgoDriveOfferHandover, type NgoDriveOfferResponse } from "@/lib/api";
@@ -100,7 +101,7 @@ export function DriveDropOffPlanner({ offer, onDone }: { offer: NgoDriveOfferRes
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-semibold text-stone-800 dark:text-stone-200">Date
-            <input type="date" data-testid="drive-dropoff-date" value={date} min={today} max={neededBy ? neededBy.slice(0, 10) : undefined}
+            <input type="date" data-testid="drive-dropoff-date" onClick={openDatePicker} value={date} min={today} max={neededBy ? neededBy.slice(0, 10) : undefined}
               onChange={e => { setDate(e.target.value); setTouched(true); }} aria-invalid={showProblem}
               aria-describedby={showProblem ? "drive-dropoff-problem" : undefined} className={input(showProblem)} />
           </label>

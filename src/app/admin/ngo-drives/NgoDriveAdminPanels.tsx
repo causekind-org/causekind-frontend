@@ -1,4 +1,5 @@
 "use client";
+import { EXTERNAL_LINK_REL, linkDomain, safeExternalUrl } from "@/lib/externalLink";
 import { driveDropOffAddress } from "@/features/ngo-drives/driveFormatters";
 
 import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
@@ -148,21 +149,21 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
       <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-        <section aria-label="Drives" className="space-y-3">
+        <section aria-label="Drives" className="min-w-0 space-y-3">
           {loading ? <p role="status">Loading drives…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No drives in this status.</p>
             : shownDrives.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
           {shownDrives.map(drive => (
             <button key={drive.id} onClick={() => void open(drive.id)}
               className={`w-full rounded-xl border bg-white p-4 text-left dark:bg-zinc-900 ${d?.id === drive.id ? "border-ngo-700 ring-1 ring-ngo-700" : "border-stone-200 dark:border-zinc-700"}`}>
-              <span className="block font-semibold">{drive.title}</span>
-              <span className="mt-1 block text-xs text-stone-500">{drive.ngoUser?.fullName}</span>
+              <span className="block font-semibold ck-user-text">{drive.title}</span>
+              <span className="mt-1 block text-xs text-stone-500 ck-user-text">{drive.ngoUser?.fullName}</span>
               <span className="mt-2 block text-sm capitalize">{label(drive.status)}</span>
             </button>
           ))}
         </section>
-        <section aria-label="Drive details" className={card}>
+        <section aria-label="Drive details" className={`min-w-0 ${card}`}>
           {!d ? <p className="text-sm text-stone-500">Select a drive to review it.</p> : <>
-            <h2 className="text-2xl font-bold">{d.title}</h2>
+            <h2 className="text-2xl font-bold ck-user-text">{d.title}</h2>
             {d.tagline && <p className="mt-1 text-sm italic text-stone-500">{d.tagline}</p>}
             <p className="mt-1 text-sm capitalize">{label(d.status)}</p>
             {ngo && (
@@ -203,28 +204,28 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
                 Hours: `${(d.availableFrom || "").slice(0, 5)} – ${(d.availableTo || "").slice(0, 5)}`,
                 Contact: `${d.contactName} · ${d.contactPhone}`,
                 "Alt contact": d.altContact,
-                "Past work": d.pastWorkUrl,
-              }).filter(([, v]) => v).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 break-words">{value}</dd></div>)}
+                "Past work": safeExternalUrl(d.pastWorkUrl) && <a href={safeExternalUrl(d.pastWorkUrl)!} target="_blank" rel={EXTERNAL_LINK_REL} className="ck-user-text underline">{linkDomain(safeExternalUrl(d.pastWorkUrl)!)}</a>,
+              }).filter(([, v]) => v).map(([name, value]) => <div key={name}><dt className="text-stone-500 ck-user-text">{name}</dt><dd className="mt-1 break-words ck-user-text">{value}</dd></div>)}
             </dl>
             {d.whoFor || d.whyNow || d.whatChanges ? (
               <div className="mt-5 space-y-2 text-sm border-t border-stone-100 pt-4 dark:border-zinc-800">
                 <p className="text-stone-500 font-semibold">Drive Story</p>
                 {d.whoFor && <div><span className="text-xs text-stone-500 font-medium">Who is this for:</span><p className="whitespace-pre-wrap">{d.whoFor}</p></div>}
-                {d.whyNow && <div><span className="text-xs text-stone-500 font-medium">Why now:</span><p className="whitespace-pre-wrap">{d.whyNow}</p></div>}
+                {d.whyNow && <div><span className="text-xs text-stone-500 font-medium">Why now:</span><p className="whitespace-pre-wrap ck-user-text">{d.whyNow}</p></div>}
                 {d.whatChanges && <div><span className="text-xs text-stone-500 font-medium">What will change:</span><p className="whitespace-pre-wrap">{d.whatChanges}</p></div>}
               </div>
             ) : (
-              <div className="mt-5 text-sm"><p className="text-stone-500">Why it&apos;s needed</p><p className="mt-1 whitespace-pre-wrap">{d.description}</p></div>
+              <div className="mt-5 text-sm"><p className="text-stone-500">Why it&apos;s needed</p><p className="mt-1 whitespace-pre-wrap ck-user-text">{d.description}</p></div>
             )}
-            {d.details && <div className="mt-4 text-sm"><p className="text-stone-500">Details</p><p className="mt-1 whitespace-pre-wrap">{d.details}</p></div>}
+            {d.details && <div className="mt-4 text-sm"><p className="text-stone-500">Details</p><p className="mt-1 whitespace-pre-wrap ck-user-text">{d.details}</p></div>}
             {(d.changemakerName || d.changemakerWhy) && (
               <div className="mt-4 text-sm space-y-2 border-t border-stone-100 pt-3 dark:border-zinc-800">
                 <p className="text-stone-500 font-semibold">Who is behind the drive</p>
                 <div className="flex items-start gap-3">
                   {d.changemakerPhotoUrl && <Photo src={d.changemakerPhotoUrl} alt={d.changemakerName || "Changemaker"} />}
                   <div>
-                    <p className="font-medium">{d.changemakerName} {d.changemakerRole ? `(${d.changemakerRole})` : ""}</p>
-                    {d.changemakerWhy && <p className="mt-1 text-xs text-stone-600 dark:text-stone-400 italic whitespace-pre-wrap">{d.changemakerWhy}</p>}
+                    <p className="font-medium ck-user-text">{d.changemakerName} {d.changemakerRole ? `(${d.changemakerRole})` : ""}</p>
+                    {d.changemakerWhy && <p className="mt-1 text-xs text-stone-600 dark:text-stone-400 italic whitespace-pre-wrap ck-user-text">{d.changemakerWhy}</p>}
                   </div>
                 </div>
               </div>
@@ -338,7 +339,7 @@ export function NgoDriveOffersPanel() {
       {shownOffers.map(o => (
         <article key={o.id} className={card}>
           <h2 className="text-lg font-bold">{o.donorName || "Donor"} → {o.driveTitle}</h2>
-          <p className="mt-1 text-sm text-stone-500">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${serverDate(o.submittedAt).toLocaleString()}` : ""}</p>
+          <p className="mt-1 text-sm text-stone-500 ck-user-text">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${serverDate(o.submittedAt).toLocaleString()}` : ""}</p>
           <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
             {([
               ["Offering", `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}`],
@@ -368,7 +369,7 @@ export function NgoDriveOffersPanel() {
               ["Notes for NGO", o.notesForNgo],
             ] as [string, React.ReactNode][]).filter(([_, value]) => value !== undefined).map(([name, value]) => (
               <div key={name}>
-                <dt className="text-stone-500">{name}</dt>
+                <dt className="text-stone-500 ck-user-text">{name}</dt>
                 <dd className="mt-1 break-words">{value || "Not provided"}</dd>
               </div>
             ))}
@@ -390,7 +391,7 @@ export function NgoDriveOffersPanel() {
                     "Donor confirmed": when(detail.handover.donorConfirmedAt),
                     "NGO confirmed receipt": when(detail.handover.ngoConfirmedAt),
                     "Delivery OTP verified": detail.handover.otpVerified ? "Yes" : "No",
-                  }).map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1">{value || "Not yet"}</dd></div>)}
+                  }).map(([name, value]) => <div key={name}><dt className="text-stone-500 ck-user-text">{name}</dt><dd className="mt-1">{value || "Not yet"}</dd></div>)}
                 </dl>
               ) : <p className="text-stone-500">No handover scheduled yet.</p>}
               {(detail.rejectionReason || detail.ngoDeclineReason) && <p><span className="text-stone-500">Reason: </span>{detail.rejectionReason || detail.ngoDeclineReason}</p>}
@@ -490,9 +491,9 @@ export function ProofDetails({ d, onEnlarge }: { d: AdminProofDrive; onEnlarge: 
   const donors = d.proofDonors?.length ? d.proofDonors : (d.donors ?? []);
   return (
     <>
-      <h2 className="text-lg font-bold">{d.title}</h2>
+      <h2 className="text-lg font-bold ck-user-text">{d.title}</h2>
       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2" data-testid="proof-fields">
-        {rows.map(([name, value]) => <div key={name}><dt className="text-stone-500">{name}</dt><dd className="mt-1 whitespace-pre-wrap break-words">{value}</dd></div>)}
+        {rows.map(([name, value]) => <div key={name}><dt className="text-stone-500 ck-user-text">{name}</dt><dd className="mt-1 whitespace-pre-wrap break-words ck-user-text">{value}</dd></div>)}
       </dl>
       {rejection && <p className="mt-3 rounded-lg bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-100"><strong>Previous rejection reason:</strong> {rejection}</p>}
       <p className="mt-4 text-sm font-semibold text-stone-500">Photos ({photos.length})</p>
@@ -508,7 +509,7 @@ export function ProofDetails({ d, onEnlarge }: { d: AdminProofDrive; onEnlarge: 
         <ul className="mt-1 divide-y divide-stone-100 text-sm dark:divide-zinc-800" data-testid="proof-donors">
           {donors.map((x, i) => (
             <li key={x.offerId ?? i} className="py-2">
-              <span className="font-semibold">{x.donorName}</span> · {x.quantity ?? "—"} {unit} · received {formatISTDate(x.receivedAt) || "—"}
+              <span className="font-semibold ck-user-text">{x.donorName}</span> · {x.quantity ?? "—"} {unit} · received {formatISTDate(x.receivedAt) || "—"}
             </li>
           ))}
         </ul>

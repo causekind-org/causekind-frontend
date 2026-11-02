@@ -529,6 +529,7 @@ export function DonationOfferWizard({
     if (Object.keys(stepErrors).length > 0) {
       setErrors(stepErrors);
       focusField(Object.keys(stepErrors)[0]);
+      toast.error("Please fill in the required details before continuing.");
       return;
     }
 
@@ -739,7 +740,20 @@ export function DonationOfferWizard({
           current={step} steps={steps} labels={STEP_LABELS} availability={availability}
           requestTitle={requestTitle} requestedQuantity={requestedQuantity}
           saveStatus={<DraftSaveStatus status={draft.status} onRetry={draft.retry} />}
-          onJump={s => goTo(s, offerStepIndex(s, steps) < offerStepIndex(step, steps) ? -1 : 1)}
+          onJump={s => {
+            const currentIdx = offerStepIndex(step, steps);
+            const targetIdx = offerStepIndex(s, steps);
+            if (targetIdx > currentIdx) {
+              const currentStepErrors = validateOfferStep(step, model, flowType, stillNeededQuantity);
+              if (Object.keys(currentStepErrors).length > 0) {
+                setErrors(currentStepErrors);
+                focusField(Object.keys(currentStepErrors)[0]);
+                toast.error("Please fill in the required details before continuing.");
+                return;
+              }
+            }
+            goTo(s, targetIdx < currentIdx ? -1 : 1);
+          }}
           onExit={onExit} onSaveExit={() => void handleSaveExit()}
           onContinue={() => void (isLast ? handleSubmit() : handleContinue())}
           submitting={submitting} submitted={submitted} savingExit={savingExit}

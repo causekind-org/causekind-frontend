@@ -1,5 +1,6 @@
 "use client";
 
+import { NGO_TOAST_STYLE } from "./ngoToastStyle";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Layers } from "lucide-react";
@@ -51,6 +52,7 @@ export function NgoCategoryPillBar() {
       toast.warning(
         `Upload handover photos for ${photosDueRequestName} to start your next drive.`,
         {
+          ...NGO_TOAST_STYLE,
           action: {
             label: "Upload",
             onClick: () => router.push("/ngo/handovers"),

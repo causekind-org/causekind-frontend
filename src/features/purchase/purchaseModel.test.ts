@@ -119,9 +119,45 @@ describe("purchase wizard model", () => {
     expect(firstIncompleteOfferStep(m, "WILL_PURCHASE")).toBe("purchasePlan");
   });
 
+  it("requires all item details on the plan step while keeping notes optional", () => {
+    const emptyPlan = { ...emptyOfferModel, purchaseTimeline: "WITHIN_7_DAYS", fulfilmentMethod: "DIRECT_DELIVERY" as const };
+    const errors = validateOfferStep("purchasePlan", emptyPlan, "WILL_PURCHASE");
+    expect(errors.productUrl).toBeTruthy();
+    expect(errors.proposedBrand).toBeTruthy();
+    expect(errors.proposedModel).toBeTruthy();
+    expect(errors.estimatedCost).toBeTruthy();
+    expect(errors.intendedStore).toBeTruthy();
+    expect(errors.purchaseNotes).toBeUndefined();
+
+    const filledPlan = {
+      ...emptyPlan,
+      productUrl: "https://amazon.in/example",
+      proposedBrand: "Classmate",
+      proposedModel: "172 pages",
+      estimatedCost: "250",
+      intendedStore: "Amazon",
+      purchaseNotes: "",
+    };
+    const validErrors = validateOfferStep("purchasePlan", filledPlan, "WILL_PURCHASE");
+    expect(Object.keys(validErrors).length).toBe(0);
+    expect(firstIncompleteOfferStep(filledPlan, "WILL_PURCHASE")).not.toBe("purchasePlan");
+  });
+
   it("direct-delivery declarations never promise an item photo", () => {
     const text = declarationGroupsFor("WILL_PURCHASE", "DIRECT_DELIVERY").flatMap(g => [...g.items]).join(" ");
     expect(text).not.toMatch(/photo/i);
     expect(text).toMatch(/prepaid/i);
   });
+
+  it("in ISSUE_WINDOW, requires donor delivery proof before transaction can finish", () => {
+    const withoutProof = v({ status: "RECEIPT_CONFIRMED", evidence: [] });
+    expect(purchaseNextAction("ISSUE_WINDOW", "DONOR", withoutProof)).toMatch(/upload proof of the delivered item/i);
+
+    const withProof = v({
+      status: "RECEIPT_CONFIRMED",
+      evidence: [{ id: 9, type: "DELIVERY_PROOF", url: "x", uploadedAt: "x", screeningAvailable: null, prohibited: null, uploadedByRole: "DONOR" }],
+    });
+    expect(purchaseNextAction("ISSUE_WINDOW", "DONOR", withProof)).toMatch(/delivery proof is on file/i);
+  });
 });
+

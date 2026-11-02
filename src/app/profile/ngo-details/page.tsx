@@ -42,6 +42,8 @@ import {
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { isNgoRole } from "@/lib/isNgoRole";
+import { errorIdOf } from "@/lib/errorId";
+import { ErrorIdNote } from "@/components/ErrorIdNote";
 
 // Reads a ?step=... deep link. email-verification is never a valid entry point.
 function readUrlStep(param: string | null): NGOStep | null {
@@ -83,6 +85,7 @@ function NgoDetailsEditor() {
   const [applicationStatus, setApplicationStatus] = useState("");
   const [reviewMessage, setReviewMessage] = useState("");
   const [restoreError, setRestoreError] = useState("");
+  const [restoreErrorId, setRestoreErrorId] = useState<string | null>(null);
   // "fresh" = just submitted in this session, "restored" = returned to a pending application.
   const [awaitingVerification, setAwaitingVerification] = useState<"fresh" | "restored" | null>(null);
   // A reviewer's per-item correction request: the flagged items start empty and show these notes.
@@ -205,7 +208,7 @@ function NgoDetailsEditor() {
             return;
           }
         } catch (error) {
-          if (active) setRestoreError(error instanceof Error ? error.message : "We could not restore your application. Please retry.");
+          if (active) { setRestoreErrorId(errorIdOf(error)); setRestoreError(error instanceof Error ? error.message : "We could not restore your application. Please retry."); }
           return;
         }
 
@@ -224,7 +227,7 @@ function NgoDetailsEditor() {
           try {
             draft = await getNgoDraft();
           } catch (error) {
-            if (active) setRestoreError(error instanceof Error ? error.message : "We could not restore your saved details. Please retry.");
+            if (active) { setRestoreErrorId(errorIdOf(error)); setRestoreError(error instanceof Error ? error.message : "We could not restore your saved details. Please retry."); }
             return;
           }
         }
@@ -574,6 +577,7 @@ function NgoDetailsEditor() {
     <main className="mx-auto max-w-xl space-y-4 p-8">
       <h1 className="text-xl font-bold">Let’s restore your application</h1>
       <p role="alert">{restoreError}</p>
+      <ErrorIdNote id={restoreErrorId} />
       <button type="button" className="rounded-lg border px-4 py-2" onClick={() => window.location.reload()}>Try again</button>
       <Link href="/profile" className="ml-4 underline">Back to profile</Link>
     </main>

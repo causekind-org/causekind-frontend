@@ -42,9 +42,7 @@ export function DriveLocationStep({
   const options = [...RADIUS_PRESETS.map(String), "custom"];
   return (
     <div className="space-y-6">
-      <section aria-labelledby="drive-where-heading" className="space-y-2">
-        <h3 id="drive-where-heading" className="text-base font-bold text-stone-900 dark:text-stone-100"><UiText>Where is this drive?</UiText></h3>
-        <p className="text-sm text-stone-600 dark:text-stone-400"><UiText>Donors near this place will see that you can pick up their items.</UiText></p>
+      <section aria-label={ui("Where is this drive?")} className="space-y-2">
         {registeredOfficeAddress && (
           <p className="text-xs text-stone-500 dark:text-stone-400">{df("registeredAddress", { address: registeredOfficeAddress })}</p>
         )}

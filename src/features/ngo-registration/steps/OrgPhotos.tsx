@@ -638,11 +638,6 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
         {/* 3. Past activity (required): at least one activity with a photo, the same form as /profile.
             Reviewed with the application; approval makes it live. */}
         <PastActivitySection required onCountChange={(n) => onChange({ pastActivitiesWithPhoto: n })} />
-        {data.pastActivitiesWithPhoto === 0 && (
-          <p role="alert" data-testid="past-activity-required" className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-            Add at least one past activity with a photo to continue.
-          </p>
-        )}
 
         {/* Older applications only: an activity photo the reviewer flagged is still fixed here. */}
         {Object.keys(corrections ?? {}).some((k) => k.startsWith("activityPhotos.")) && (
@@ -819,11 +814,6 @@ export function OrgPhotos({ data, onChange, onBack, onContinue, corrections }: O
             <ArrowRight className="h-4 w-4" aria-hidden />
           </button>
         </div>
-        {missing.length > 0 && (
-          <p className="text-3xs text-stone-500 dark:text-stone-400 text-right pr-1">
-            Still needed: {missing.join(", ")}
-          </p>
-        )}
       </div>
     </div>
   );

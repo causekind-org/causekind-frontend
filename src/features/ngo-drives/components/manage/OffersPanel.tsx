@@ -122,7 +122,7 @@ export function OffersPanel({ offers, reload }: { offers: DriveOffer[]; reload: 
         return (
           <section key={drive.id} aria-label={drive.title} data-testid="offer-group" className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-bold text-stone-900 dark:text-stone-100">{drive.title} <span className="font-normal text-stone-500">({list.length})</span></h3>
+              <h3 className="font-bold text-stone-900 dark:text-stone-100 ck-user-text">{drive.title} <span className="font-normal text-stone-500">({list.length})</span></h3>
               {covered && (
                 <Button size="sm" variant="outline" disabled={busy} data-testid="decline-remaining"
                   onClick={() => { setDeclining({ offers: list, title: ui("Decline all remaining offers?") }); setReason("This drive is now covered. Thank you for offering."); }}>

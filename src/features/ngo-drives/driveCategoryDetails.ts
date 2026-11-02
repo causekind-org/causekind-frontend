@@ -1,8 +1,8 @@
 import type { DriveCategoryDetails } from "@/lib/api";
 
 /** Category-specific drive fields. Kept in step with the backend's NgoDriveFormRules. */
-export const WORKING_ORDER_CATEGORIES = ["Electronics", "Household"] as const;
-export const REQUIRE_CLEAN_CATEGORIES = ["Clothing", "Household", "Furniture"] as const;
+export const WORKING_ORDER_CATEGORIES = ["Electronics"] as const;
+export const REQUIRE_CLEAN_CATEGORIES = ["Clothing"] as const;
 
 export const CLOTHING_SIZES = [
   { id: "XS", label: "XS" }, { id: "S", label: "S" }, { id: "M", label: "M" }, { id: "L", label: "L" },
@@ -27,14 +27,27 @@ export function showsRequireClean(category: string): boolean {
 const sizeLabel = (id: string) => CLOTHING_SIZES.find(s => s.id === id)?.label ?? id;
 const fitLabel = (id: string) => CLOTHING_FITS.find(f => f.id === id)?.label ?? id;
 
+/** A donor always confirms "washed and clean" for Clothing and "working order" for Electronics, and nothing elsewhere. */
+export const offerAsksClean = (category: string | null | undefined) => category === "Clothing";
+export const offerAsksWorking = (category: string | null | undefined) => category === "Electronics";
+
+/** Free text; older drives chose chips, joined here so they still read and can be edited. */
+export function clothingSizesText(d: DriveCategoryDetails): string {
+  return d.sizesNeeded ?? (d.sizes ?? []).map(sizeLabel).join(", ");
+}
+export function clothingForText(d: DriveCategoryDetails): string {
+  return d.clothesFor ?? (d.fits?.length ? d.fits : d.fit ? [d.fit] : []).map(fitLabel).join(", ");
+}
+
 /** Readable rows for the drive's category fields (Review, drive page, admin). Empty when there are none. */
 export function categoryDetailRows(category: string | null | undefined, d: DriveCategoryDetails | null | undefined): { label: string; value: string }[] {
   if (!d) return [];
   if (category === "Clothing") {
     const rows: { label: string; value: string }[] = [];
-    if (d.sizes?.length) rows.push({ label: "Sizes", value: d.sizes.map(sizeLabel).join(", ") });
-    const fits = d.fits?.length ? d.fits : d.fit ? [d.fit] : [];
-    if (fits.length) rows.push({ label: "For", value: fits.map(fitLabel).join(", ") });
+    const sizes = clothingSizesText(d);
+    const clothesFor = clothingForText(d);
+    if (sizes) rows.push({ label: "Sizes", value: sizes });
+    if (clothesFor) rows.push({ label: "For", value: clothesFor });
     return rows;
   }
   if (category === "Furniture") {

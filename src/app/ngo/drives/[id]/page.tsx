@@ -56,7 +56,7 @@ function StatusBanner({ drive }: { drive: NgoDrive }) {
   };
   return (
     <div role="status" className={`rounded-2xl border p-5 ${tones[b.tone]}`}>
-      <p className="font-bold">{b.title}</p>
+      <p className="font-bold ck-user-text">{b.title}</p>
       <p className="mt-1 text-sm">{b.body}</p>
       {drive.status === "CHANGES_REQUESTED" && (
         <Link href={`/ngo/drives/new?edit=${drive.id}`} className="mt-4 inline-flex min-h-[44px] items-center rounded-full bg-ngo-700 px-5 text-sm font-bold text-white hover:bg-ngo-600">
@@ -228,7 +228,7 @@ export default function NgoDriveManagePage() {
                 <span data-testid="drive-status-badge" className={`rounded-full px-3 py-1 text-xs font-bold ${STATUS_TONE[drive.status] ?? "bg-stone-100 text-stone-800 dark:bg-zinc-800 dark:text-stone-200"}`}>{statusLabel}</span>
                 <span className="rounded-full border border-stone-200 px-3 py-1 text-xs font-semibold text-stone-700 dark:border-zinc-700 dark:text-stone-300">{drive.category}</span>
               </div>
-              <h1 className="mt-2 break-words font-serif text-2xl font-semibold text-stone-900 dark:text-stone-50 sm:text-4xl">{drive.title}</h1>
+              <h1 className="mt-2 break-words font-serif text-2xl font-semibold text-stone-900 dark:text-stone-50 sm:text-4xl ck-user-text">{drive.title}</h1>
               {drive.neededBy && (
                 <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm text-stone-600 dark:text-stone-400">
                   <CalendarDays className="h-4 w-4" aria-hidden="true" /> Needed by {formatISTDate(drive.neededBy)}
@@ -270,7 +270,7 @@ export default function NgoDriveManagePage() {
           {([["Needed", needed], ["Pledged", pledged], ["Received", received], ["Still needed", still], ["Donors", donors]] as const).map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
               <dt className="text-xs font-semibold text-stone-500 dark:text-stone-400">{label}</dt>
-              <dd className="mt-1 font-serif text-2xl font-semibold text-stone-900 dark:text-stone-100">{value}</dd>
+              <dd className="mt-1 font-serif text-2xl font-semibold text-stone-900 dark:text-stone-100 ck-user-text">{value}</dd>
             </div>
           ))}
         </dl>
@@ -336,8 +336,8 @@ export default function NgoDriveManagePage() {
                   </div>
                 ))}
               </dl>
-              {drive.details && <p className="mt-4 break-words text-sm text-stone-700 dark:text-stone-300"><strong><UiText>Details:</UiText></strong> {drive.details}</p>}
-              {drive.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm text-stone-700 dark:text-stone-300">{drive.description}</p>}
+              {drive.details && <p className="ck-user-text mt-4 break-words text-sm text-stone-700 dark:text-stone-300"><strong><UiText>Details:</UiText></strong> {drive.details}</p>}
+              {drive.description && <p className="mt-3 whitespace-pre-wrap break-words text-sm text-stone-700 dark:text-stone-300 ck-user-text">{drive.description}</p>}
             </Panel>
 
             <Panel id="offers" title="Offers" icon={Inbox} action={<Link href={activityHref("offers", drive.id)} className={linkCls}>Review offers</Link>}>

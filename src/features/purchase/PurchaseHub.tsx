@@ -1,16 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
-import { AlertTriangle, ArrowLeft, Award, Check, Copy, ExternalLink, FileText, Handshake, Loader2, Lock, MapPin, MessageSquare, PackageCheck, ShieldCheck, Truck, Upload } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { AlertTriangle, ArrowLeft, Award, Check, Copy, ExternalLink, FileText, Handshake, Loader2, Lock, MapPin, MessageSquare, PackageCheck, ShieldCheck, Truck, Upload, Wand2 } from "lucide-react";
 import { HandoverMapPinField } from "@/features/handover/HandoverMapPinField";
 import { detectLocationFromServer } from "@/app/actions/locations";
 import {
   confirmPurchaseNoIssue, confirmPurchaseReceipt, decidePurchaseExtension, reconfirmOfferAvailability, recordPurchaseOrder,
   reportPurchaseIssue, requestPurchaseExtension, respondToPurchaseIssue, revokePurchaseAddress, sharePurchaseAddress,
   updatePurchaseShipment, uploadFlowBProof, uploadPurchaseRecipientEvidence,
-  type DonationOffer, type PurchaseIssueType, type PurchaseIssueView, type PurchaseProofType, type PurchaseReceiptCondition, type PurchaseView,
+  type DonationOffer, type ExtractedProofData, type PurchaseIssueType, type PurchaseIssueView, type PurchaseProofType, type PurchaseReceiptCondition, type PurchaseView,
 } from "@/lib/api";
+import { scanOrderProofImage } from "./proofOcr";
 import { toast } from "@/lib/toast";
 import { purchaseMethodLabel } from "@/features/donation-offer-wizard/offerModel";
 import {
@@ -110,8 +111,9 @@ export function PurchaseHub({
   // The participant who didn't report the open issue can answer it once.
   const canRespond = !!openIssue && !openIssue.response
     && ((donor && openIssue.reportedByRole === "DONEE") || (donee && openIssue.reportedByRole === "DONOR"));
-  const showDeliveryProof = donor && direct && (inTransit || stage === "ISSUE_OPEN");
+  const [extractedOrder, setExtractedOrder] = useState<ExtractedProofData | null>(null);
   const deliveryProofDone = view.evidence.some(e => e.type === "DELIVERY_PROOF");
+  const showDeliveryProof = donor && direct && (inTransit || stage === "ISSUE_OPEN" || (stage === "ISSUE_WINDOW" && !deliveryProofDone));
   const showAddress = donee && direct && !!view.acceptedAt && !view.orderedAt && stage !== "CLOSED";
   const showExtensionDecision = donee && !!view.extensionRequestedUntil && !view.extensionDecidedAt && !view.orderedAt && stage !== "CLOSED";
   const showPhoto = donor && !direct && (stage === "AWAITING_ITEM_PHOTO" || stage === "AWAITING_PROOF_REVIEW");
@@ -129,9 +131,15 @@ export function PurchaseHub({
   return (
     <div className="min-h-screen bg-[#F4F6F9] text-[#1B2430] dark:bg-zinc-950 dark:text-stone-100" style={{ fontFamily: "var(--font-nunito), system-ui, sans-serif" }}>
       <div className="mx-auto flex max-w-[1360px] flex-col gap-6 px-4 pb-[calc(var(--ck-bottom-chrome)+1.5rem)] pt-4 sm:px-8 lg:pb-12">
-        <Link href={donor ? "/offers" : role === "ADMIN" ? "/admin/offers" : "/donee/offers"} className="inline-flex min-h-11 items-center gap-2 self-start text-[15px] font-bold text-[var(--ck-role-accent)]">
-          <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden /> {donor ? "Back to my offers" : "Back to offers"}
-        </Link>
+        <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2.5 text-[15px]">
+          <Link href={donor ? "/offers" : role === "ADMIN" ? "/admin/offers" : "/donee/offers"} className="inline-flex min-h-11 items-center gap-2 font-bold text-[var(--ck-role-accent)]">
+            <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden /> {donor ? "Back to my offers" : "Back to offers"}
+          </Link>
+          <span className="text-stone-300 dark:text-zinc-700" aria-hidden>·</span>
+          <Link href="/dashboard" className="inline-flex min-h-11 items-center gap-1.5 font-semibold text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100">
+            Back to dashboard
+          </Link>
+        </nav>
 
         {/* Header: title on the left, deadline and quantity tiles on the right */}
         <header className="flex flex-wrap items-end justify-between gap-5">
@@ -219,13 +227,52 @@ export function PurchaseHub({
 
             {donor && stage === "READY_TO_BUY" && direct && (
               <EvidencePanel title="1. Upload the order confirmation" type="ORDER_CONFIRMATION" busy={busy}
-                hint="A screenshot or PDF of the shop's confirmation. Hide card numbers and payment details first. Only our team sees it."
+                hint="A screenshot or PDF of the shop's confirmation. Hide card numbers and payment details first. AI will scan it to pre-fill order details below."
                 done={view.evidence.some(e => e.type === "ORDER_CONFIRMATION")}
-                onUpload={f => run("upload", () => uploadFlowBProof(id, "ORDER_CONFIRMATION", f), "Order confirmation uploaded")} />
+                onUpload={async f => {
+                  return run("upload", async () => {
+                    let ocrExtracted: ExtractedProofData | null = null;
+                    if (f.type.startsWith("image/")) {
+                      try {
+                        ocrExtracted = await scanOrderProofImage(f);
+                      } catch (err) {
+                        console.warn("Client-side OCR scanning error:", err);
+                      }
+                    }
+
+                    const res = await uploadFlowBProof(
+                      id,
+                      "ORDER_CONFIRMATION",
+                      f,
+                      ocrExtracted?.trackingNumber ?? undefined,
+                      undefined,
+                      {
+                        retailer: ocrExtracted?.retailer ?? undefined,
+                        orderNumber: ocrExtracted?.orderNumber ?? undefined,
+                        expectedDeliveryDate: ocrExtracted?.expectedDeliveryDate ?? undefined,
+                        trackingUrl: ocrExtracted?.trackingUrl ?? undefined,
+                      }
+                    );
+
+                    const merged: ExtractedProofData = {
+                      retailer: res?.extracted?.retailer || ocrExtracted?.retailer || null,
+                      orderNumber: res?.extracted?.orderNumber || ocrExtracted?.orderNumber || null,
+                      expectedDeliveryDate: res?.extracted?.expectedDeliveryDate || ocrExtracted?.expectedDeliveryDate || null,
+                      quantity: res?.extracted?.quantity || ocrExtracted?.quantity || 1,
+                      totalAmountInr: res?.extracted?.totalAmountInr || null,
+                      trackingNumber: res?.extracted?.trackingNumber || ocrExtracted?.trackingNumber || null,
+                      trackingUrl: res?.extracted?.trackingUrl || ocrExtracted?.trackingUrl || null,
+                    };
+
+                    if (merged.retailer || merged.orderNumber || merged.trackingNumber || merged.expectedDeliveryDate) {
+                      setExtractedOrder(merged);
+                    }
+                  }, "Order confirmation uploaded and scanned by AI");
+                }} />
             )}
 
             {donor && stage === "READY_TO_BUY" && (
-              <OrderPanel view={view} direct={direct} busy={busy}
+              <OrderPanel view={view} direct={direct} busy={busy} extractedOrder={extractedOrder}
                 blocked={direct && !view.evidence.some(e => e.type === "ORDER_CONFIRMATION")}
                 onSubmit={data => run("order", () => recordPurchaseOrder(id, data), direct ? "Order recorded" : "Purchase recorded — now upload a photo of the item")} />
             )}
@@ -257,12 +304,25 @@ export function PurchaseHub({
               </>
             )}
 
+            {donor && direct && stage === "ISSUE_WINDOW" && !deliveryProofDone && (
+              <div role="alert" className="flex gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-[15px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                <AlertTriangle className="mt-0.5 size-5 shrink-0" aria-hidden />
+                <div>
+                  <p className="font-bold">Delivery proof required to finish transaction</p>
+                  <p className="mt-1 text-sm">The recipient confirmed that they have received the items. To complete the donation and receive your completion certificate, please upload proof of delivery below.</p>
+                </div>
+              </div>
+            )}
+
             {showDeliveryProof && (
-              <EvidencePanel title="Upload delivery proof" type="DELIVERY_PROOF" busy={busy}
+              <EvidencePanel
+                title={stage === "ISSUE_WINDOW" ? "Upload delivery proof (required to finish)" : "Upload delivery proof"}
+                type="DELIVERY_PROOF"
+                busy={busy}
                 hint="A screenshot of the courier's 'Delivered' status, or their proof-of-delivery slip (image or PDF). Hide payment details first. The recipient and our team can see it."
                 done={deliveryProofDone}
-                doneText="Delivery proof submitted — awaiting recipient confirmation."
-                onUpload={f => run("upload", () => uploadFlowBProof(id, "DELIVERY_PROOF", f), "Delivery proof submitted — the recipient has been asked to confirm")} />
+                doneText={stage === "ISSUE_WINDOW" ? "Delivery proof submitted — donation will complete shortly." : "Delivery proof submitted — awaiting recipient confirmation."}
+                onUpload={f => run("upload", () => uploadFlowBProof(id, "DELIVERY_PROOF", f), "Delivery proof submitted")} />
             )}
 
             {donor && direct && inTransit && (
@@ -307,19 +367,28 @@ export function PurchaseHub({
                   {donor ? " Your certificate covers only what was received." : " Thank you for confirming."}
                 </p>
                 {/* Certificates are the donor's; the server refuses anyone else. */}
-                {donor && (
-                  <Link href={`/certificate?offerId=${id}`} className={primary}>
-                    <Award className="size-4" aria-hidden /> View certificate
+                <div className="flex flex-wrap items-center gap-3">
+                  {donor && (
+                    <Link href={`/certificate?offerId=${id}`} className={primary}>
+                      <Award className="size-4" aria-hidden /> View certificate
+                    </Link>
+                  )}
+                  <Link href="/dashboard" className={donor ? secondary : primary}>
+                    <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden /> Back to dashboard
                   </Link>
-                )}
+                </div>
               </Panel>
             )}
 
             {donee && direct && stage === "ISSUE_WINDOW" && (
               <Panel title="Everything fine?" icon={<ShieldCheck className="size-5 text-green-700" aria-hidden />}>
-                <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">If the item is as expected, close the issue window now and complete the donation.</p>
+                <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
+                  {deliveryProofDone
+                    ? "If the item is as expected, close the issue window now and complete the donation."
+                    : "If the item is as expected, close the issue window now. The transaction will finish once the donor uploads their delivery proof."}
+                </p>
                 <button type="button" className={primary} disabled={!!busy}
-                  onClick={() => void run("noissue", () => confirmPurchaseNoIssue(id), "Donation completed")}>
+                  onClick={() => void run("noissue", () => confirmPurchaseNoIssue(id), deliveryProofDone ? "Donation completed" : "Issue window closed — awaiting donor's delivery proof")}>
                   {busy === "noissue" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Everything is fine
                 </button>
               </Panel>
@@ -329,6 +398,13 @@ export function PurchaseHub({
             {!hasMainAction && (
               <Panel title={stage === "COMPLETED" ? "All done" : stage === "CLOSED" || stage === "LEGACY" ? "Closed" : "Nothing to do right now"}>
                 <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-300">{purchaseNextAction(stage, role, view)}</p>
+                {(stage === "COMPLETED" || stage === "CLOSED" || stage === "LEGACY") && (
+                  <div className="mt-4">
+                    <Link href="/dashboard" className={secondary}>
+                      <ArrowLeft className="size-4 rtl:rotate-180" aria-hidden /> Back to dashboard
+                    </Link>
+                  </div>
+                )}
               </Panel>
             )}
           </main>
@@ -626,8 +702,8 @@ function AddressPanel({ view, busy, onShare, onRevoke }: {
         <button type="button" className={primary} disabled={!valid || !!busy}
           onClick={() => void onShare({
             address: joined,
-            ...(name.trim() ? { contactName: name.trim() } : {}),
-            ...(phone.trim() ? { contactPhone: phone.trim() } : {}),
+            contactName: name.trim(),
+            contactPhone: phone.trim(),
             ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
           }).then(ok => ok && setConsent(false))}>
           {busy === "address" && <Loader2 className="size-4 animate-spin" aria-hidden />} {view.address ? "Update and share" : "Share with the donor"}
@@ -641,36 +717,91 @@ function AddressPanel({ view, busy, onShare, onRevoke }: {
   );
 }
 
-function OrderPanel({ view, direct, blocked, busy, onSubmit }: {
+function OrderPanel({ view, direct, blocked, busy, extractedOrder, onSubmit }: {
   view: PurchaseView; direct: boolean; blocked: boolean; busy: string | null;
-  onSubmit: (d: { idempotencyKey: string; retailer: string; reference?: string; quantity: number; expectedDeliveryAt: string; prepaid: true }) => Promise<boolean>;
+  extractedOrder?: ExtractedProofData | null;
+  onSubmit: (d: {
+    idempotencyKey: string; retailer: string; reference?: string; quantity: number;
+    expectedDeliveryAt: string; prepaid: true;
+    trackingUrl?: string; trackingReference?: string;
+  }) => Promise<boolean>;
 }) {
   // One key per form mount, so a double-click or retry cannot record two orders.
   const key = useRef(typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
-  const [retailer, setRetailer] = useState("");
-  const [reference, setReference] = useState("");
-  const [qty, setQty] = useState(String(view.acceptedQuantity ?? 1));
-  const [date, setDate] = useState(today());
+  const [retailer, setRetailer] = useState(extractedOrder?.retailer ?? view.retailer ?? "");
+  const [reference, setReference] = useState(extractedOrder?.orderNumber ?? view.orderReference ?? "");
+  const [qty, setQty] = useState(String(extractedOrder?.quantity ?? view.acceptedQuantity ?? 1));
+  const [date, setDate] = useState(extractedOrder?.expectedDeliveryDate ?? view.expectedDeliveryAt?.slice(0, 10) ?? today());
+  const [trackingUrl, setTrackingUrl] = useState(extractedOrder?.trackingUrl ?? view.trackingUrl ?? "");
+  const [trackingRef, setTrackingRef] = useState(extractedOrder?.trackingNumber ?? view.trackingReference ?? "");
   const [prepaid, setPrepaid] = useState(false);
+  const [aiFilled, setAiFilled] = useState(false);
+
+  useEffect(() => {
+    let filled = false;
+    if (extractedOrder) {
+      if (extractedOrder.retailer) { setRetailer(extractedOrder.retailer); filled = true; }
+      if (extractedOrder.orderNumber) { setReference(extractedOrder.orderNumber); filled = true; }
+      if (extractedOrder.quantity) { setQty(String(extractedOrder.quantity)); filled = true; }
+      if (extractedOrder.expectedDeliveryDate) { setDate(extractedOrder.expectedDeliveryDate); filled = true; }
+      if (extractedOrder.trackingUrl) { setTrackingUrl(extractedOrder.trackingUrl); filled = true; }
+      if (extractedOrder.trackingNumber) { setTrackingRef(extractedOrder.trackingNumber); filled = true; }
+      if (extractedOrder.retailer || extractedOrder.orderNumber || extractedOrder.trackingNumber) {
+        filled = true;
+      }
+    } else if (view) {
+      if (view.retailer && !retailer) { setRetailer(view.retailer); filled = true; }
+      if (view.orderReference && !reference) { setReference(view.orderReference); filled = true; }
+      if (view.expectedDeliveryAt && date === today()) { setDate(view.expectedDeliveryAt.slice(0, 10)); filled = true; }
+      if (view.trackingUrl && !trackingUrl) { setTrackingUrl(view.trackingUrl); filled = true; }
+      if (view.trackingReference && !trackingRef) { setTrackingRef(view.trackingReference); filled = true; }
+      if (view.retailer || view.orderReference) { filled = true; }
+    }
+    if (filled) setAiFilled(true);
+  }, [extractedOrder, view]);
+
   const n = Number(qty);
-  const valid = retailer.trim() && Number.isInteger(n) && n >= 1 && n <= (view.acceptedQuantity ?? 1) && date && prepaid && (!direct || reference.trim());
+  const urlOk = !trackingUrl.trim() || /^https?:\/\/[^\s/@]+/i.test(trackingUrl.trim());
+  const valid = retailer.trim() && Number.isInteger(n) && n >= 1 && n <= (view.acceptedQuantity ?? 1) && date && prepaid && urlOk && (!direct || reference.trim());
 
   return (
     <Panel title={direct ? "2. Record the order" : "I have bought it"} icon={<Check className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
       {blocked && <p className="mb-3 text-sm text-amber-700 dark:text-amber-300">Upload the order confirmation first.</p>}
+      {aiFilled && (
+        <div className="mb-3 flex items-center gap-1.5 rounded-lg bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
+          <Wand2 className="size-3.5 shrink-0" aria-hidden />
+          <span>Scanned from your order confirmation proof. You can edit any details before submitting.</span>
+        </div>
+      )}
       <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={direct ? "Retailer" : "Where you bought it"}><input className={input} value={retailer} maxLength={200} onChange={e => setRetailer(e.target.value)} /></Field>
           <Field label={direct ? "Order number" : "Bill number (optional)"} hint="Private — the recipient doesn't see it."><input className={input} value={reference} maxLength={200} onChange={e => setReference(e.target.value)} /></Field>
           <Field label="Quantity" hint={`Up to ${view.acceptedQuantity ?? 1} accepted`}><input className={input} inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} /></Field>
           <Field label={direct ? "Expected delivery date" : "Ready to hand over from"}><input type="date" className={input} min={today()} value={date} onChange={e => setDate(e.target.value)} /></Field>
+          {direct && (
+            <>
+              <Field label="Tracking link (optional)"><input className={input} inputMode="url" value={trackingUrl} maxLength={2000} onChange={e => setTrackingUrl(e.target.value)} placeholder="https://" /></Field>
+              <Field label="Tracking number / ID (optional)"><input className={input} value={trackingRef} maxLength={200} onChange={e => setTrackingRef(e.target.value)} /></Field>
+            </>
+          )}
         </div>
+        {!urlOk && <p className="text-xs text-red-600">Use a link starting with https://</p>}
         <label className="flex items-start gap-3 text-sm">
           <input type="checkbox" className="mt-1 size-4 shrink-0" checked={prepaid} onChange={e => setPrepaid(e.target.checked)} />
           <span>{direct ? "I paid in full. This is not cash on delivery — the recipient will pay nothing." : "I paid for this myself in full."}</span>
         </label>
         <button type="button" className={primary} disabled={!valid || blocked || !!busy}
-          onClick={() => void onSubmit({ idempotencyKey: key.current, retailer: retailer.trim(), ...(reference.trim() ? { reference: reference.trim() } : {}), quantity: n, expectedDeliveryAt: endOfDayLocal(date), prepaid: true })}>
+          onClick={() => void onSubmit({
+            idempotencyKey: key.current,
+            retailer: retailer.trim(),
+            ...(reference.trim() ? { reference: reference.trim() } : {}),
+            quantity: n,
+            expectedDeliveryAt: endOfDayLocal(date),
+            prepaid: true,
+            ...(trackingUrl.trim() ? { trackingUrl: trackingUrl.trim() } : {}),
+            ...(trackingRef.trim() ? { trackingReference: trackingRef.trim() } : {}),
+          })}>
           {busy === "order" && <Loader2 className="size-4 animate-spin" aria-hidden />} {direct ? "Record order" : "Record purchase"}
         </button>
       </div>
@@ -700,28 +831,31 @@ function ShipmentPanel({ view, busy, onSubmit }: {
   view: PurchaseView; busy: string | null;
   onSubmit: (d: { trackingUrl?: string; reference?: string; expectedDeliveryAt: string; deliveredByRetailer: boolean }) => Promise<boolean>;
 }) {
-  const [url, setUrl] = useState(view.trackingUrl ?? "");
-  const [ref, setRef] = useState(view.trackingReference ?? "");
-  const [date, setDate] = useState(view.expectedDeliveryAt?.slice(0, 10) ?? today());
-  const [delivered, setDelivered] = useState(false);
-  const urlOk = !url.trim() || /^https?:\/\/[^\s/@]+/i.test(url.trim());
+  const [delivered, setDelivered] = useState(!!view.deliveryReportedAt);
   return (
     <Panel title="Shipping updates" icon={<Truck className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
       <div className="space-y-3">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Tracking link (optional)"><input className={input} inputMode="url" value={url} maxLength={2000} onChange={e => setUrl(e.target.value)} placeholder="https://" /></Field>
-          <Field label="Tracking number (optional)"><input className={input} value={ref} maxLength={200} onChange={e => setRef(e.target.value)} /></Field>
-          <Field label="Expected delivery"><input type="date" className={input} value={date} onChange={e => setDate(e.target.value)} /></Field>
-        </div>
-        {!urlOk && <p className="text-xs text-red-600">Use a link starting with https://</p>}
-        <label className="flex items-start gap-3 text-sm">
-          <input type="checkbox" className="mt-1 size-4 shrink-0" checked={delivered} onChange={e => setDelivered(e.target.checked)} />
-          <span>The retailer shows it as delivered. (The recipient still confirms what actually arrived.)</span>
-        </label>
-        <button type="button" className={primary} disabled={!urlOk || !date || !!busy}
-          onClick={() => void onSubmit({ ...(url.trim() ? { trackingUrl: url.trim() } : {}), ...(ref.trim() ? { reference: ref.trim() } : {}), expectedDeliveryAt: endOfDayLocal(date), deliveredByRetailer: delivered })}>
-          {busy === "ship" && <Loader2 className="size-4 animate-spin" aria-hidden />} Save update
-        </button>
+        {view.deliveryReportedAt ? (
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-green-700 dark:text-green-400">
+            <Check className="size-4" aria-hidden /> You reported this order as delivered. Awaiting recipient confirmation.
+          </p>
+        ) : (
+          <>
+            <label className="flex items-start gap-3 text-sm">
+              <input type="checkbox" className="mt-1 size-4 shrink-0" checked={delivered} onChange={e => setDelivered(e.target.checked)} />
+              <span>The retailer shows it as delivered. (The recipient still confirms what actually arrived.)</span>
+            </label>
+            <button type="button" className={primary} disabled={!delivered || !!busy}
+              onClick={() => void onSubmit({
+                trackingUrl: view.trackingUrl ?? undefined,
+                reference: view.trackingReference ?? undefined,
+                expectedDeliveryAt: view.expectedDeliveryAt ?? endOfDayLocal(today()),
+                deliveredByRetailer: delivered,
+              })}>
+              {busy === "ship" && <Loader2 className="size-4 animate-spin" aria-hidden />} Save update
+            </button>
+          </>
+        )}
       </div>
     </Panel>
   );

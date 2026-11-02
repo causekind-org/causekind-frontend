@@ -96,36 +96,36 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
       num: 1,
       title: "Post a need",
       desc: "Publish your drive.",
-      photo: "/images/journey/item-proof-blankets.webp",
-      alt: "Publishing NGO request",
+      photo: "/images/ngo-landing/ngo-step-1-post-need.webp",
+      alt: "An NGO posting what it needs for a drive",
     },
     {
       num: 2,
       title: "Donor matching",
       desc: "Donors offer to help.",
-      photo: "/images/journey/money-proof-ration.webp",
-      alt: "Donor pledge and match",
+      photo: "/images/ngo-landing/ngo-step-2-donor.webp",
+      alt: "A donor offering items for the drive",
     },
     {
       num: 3,
       title: "Delivery",
       desc: "Items are sent to you.",
-      photo: "/images/ngo-hero/col-a-1-blankets-pune.webp",
-      alt: "Items delivered to NGO center",
+      photo: "/images/ngo-landing/ngo-step-3-delivery.webp",
+      alt: "Donated items being delivered to the NGO",
     },
     {
       num: 4,
       title: "Handover proof",
       desc: "Upload photos.",
-      photo: "/images/ngo-hero/col-b-5-food-distribution.webp",
-      alt: "Handover photo proof uploaded",
+      photo: "/images/ngo-landing/ngo-step-4-proof.webp",
+      alt: "The NGO taking handover photos as proof",
     },
     {
       num: 5,
       title: "Confirmation",
       desc: "Close the loop.",
-      photo: "/images/ngo-hero/col-b-4-health-camp.webp",
-      alt: "Completed confirmed handover loop",
+      photo: "/images/ngo-landing/ngo-step-5-confirmation.webp",
+      alt: "The handover confirmed and the drive complete",
     },
   ];
 
@@ -344,7 +344,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
 
               {/* Right Column: photo card stack (height clamp(280px, 52vh, 420px), width 100%) */}
               <div className="col-span-5 flex justify-center w-full">
-                <div className="relative w-full h-[clamp(280px,52vh,420px)] rounded-[28px] overflow-hidden border border-white/[0.19] shadow-2xl bg-black/40">
+                <div className="relative w-full aspect-[4/3] max-h-[60vh] rounded-[28px] overflow-hidden border border-white/[0.19] shadow-2xl bg-black/40">
                   {journeySteps.map((step, i) => (
                     <div
                       key={step.num}
@@ -394,7 +394,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                 className="rounded-[24px] bg-white/[0.08] border border-white/25 overflow-hidden shadow-md flex flex-col"
               >
                 {/* Photo Above */}
-                <div className="relative w-full h-[200px] border-b border-white/15">
+                <div className="relative w-full aspect-[4/3] border-b border-white/15">
                   <Image
                     src={step.photo}
                     alt={step.alt}

@@ -45,11 +45,13 @@ export function NgoActivityModerationPanel({ onChange }: { onChange?: () => void
         : items.length === 0 ? <p className="mt-2 text-sm text-stone-500">Nothing waiting.</p>
         : shown.length === 0 ? <div className="mt-3"><NoSearchResults query={query} onClear={() => setQuery("")} /></div> : (
         <ul className="mt-3 space-y-4">
-          {shown.map(({ activity: a, organizationName }) => (
+          {shown.map(({ activity: a, organizationName, applicationUnderReview, editOfLive }) => (
             <li key={a.id} data-testid="admin-activity" className="rounded-lg border border-stone-200 p-4 dark:border-zinc-700">
-              <p className="text-xs text-stone-500">{organizationName ?? "NGO"} · {a.activityDate}</p>
-              <p className="font-semibold">{a.title}</p>
-              {a.description && <p className="mt-1 text-sm">{a.description}</p>}
+              <p className="ck-user-text text-xs text-stone-500">{organizationName ?? "NGO"} · {a.activityDate}</p>
+              {applicationUnderReview && <p data-testid="activity-application-label" className="mt-1 inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-2xs font-bold text-amber-800">NGO application under review</p>}
+              {editOfLive && <p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-2xs font-bold text-sky-800">Edit of a live activity</p>}
+              <p className="font-semibold ck-user-text">{a.title}</p>
+              {a.description && <p className="mt-1 text-sm ck-user-text">{a.description}</p>}
               <p className="mt-1 text-xs">Consent confirmed: {a.consentGiven ? "yes" : "no"}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {a.media.map(m => m.url && (m.mediaType === "VIDEO"

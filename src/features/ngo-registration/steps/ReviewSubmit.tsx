@@ -1,8 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FilePreviewDialog, type PreviewFile } from "@/components/FilePreviewDialog";
-import { getNgoFilePreviewUrl } from "@/lib/api";
+import { getMyNgoActivities, getNgoFilePreviewUrl, type NgoActivity } from "@/lib/api";
+import { formatActivityDate } from "@/features/ngo-profile/PastActivity";
+import { ActivityDetailDialog, ActivityLightbox } from "@/features/ngo-drives/components/PastWorkSection";
 import { AlertTriangle, ArrowLeft, Check, CheckCircle2, FileCheck, FileText, Image as ImageIcon, Loader2, Pencil, ShieldCheck, UserCheck } from "lucide-react";
 import {
   PAN_DOC,
@@ -46,6 +48,15 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
 
   // Every uploaded file on this page, in page order, for the preview popup.
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
+  const [activities, setActivities] = useState<NgoActivity[]>([]);
+  const [openActivity, setOpenActivity] = useState<NgoActivity | null>(null);
+  const [activityPhoto, setActivityPhoto] = useState<{ photos: string[]; start: number; title: string } | null>(null);
+  const activityPhotos = (a: NgoActivity) => a.media.filter((m) => m.mediaType === "IMAGE" && m.url).map((m) => m.url!);
+  useEffect(() => {
+    let live = true;
+    Promise.resolve(getMyNgoActivities()).then((list) => { if (live) setActivities(list ?? []); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
   const previewFiles = useMemo(() => {
     const out: { key: string; file: PreviewFile }[] = [];
     const add = (key: string, label: string, f: UploadedFile | null | undefined, kind: "document" | "photo") => {
@@ -136,25 +147,25 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-xs">
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Name</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="ck-user-text [overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.organizationName || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Legal Structure</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {legalStructureLabel(data.legalStructure) || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">PAN Number</dt>
-              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {normalizePan(data.panNumber ?? "") || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">{PAN_DOC.label}</dt>
-              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
+              <dd className="[overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
                 {fileChip("pan", data.documents[PAN_DOC.id])}
               </dd>
             </div>
@@ -162,7 +173,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
               <dt className="text-stone-400 text-3xs uppercase font-semibold">
                 {getRegistrationCertificateDoc(data.legalStructure)?.label ?? "Registration certificate"}
               </dt>
-              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
+              <dd className="[overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5 truncate">
                 {(() => {
                   const cert = getRegistrationCertificateDoc(data.legalStructure);
                   return cert ? fileChip(`doc-${cert.id}`, data.documents[cert.id]) : "Not uploaded";
@@ -171,37 +182,37 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Registration Number</dt>
-              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.registrationNumber || "—"}
               </dd>
             </div>
             <div>
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Year of Establishment</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.yearOfEstablishment || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Registered Office Address</dt>
-              <dd className="font-medium text-stone-700 dark:text-stone-300 mt-0.5">
+              <dd className="ck-user-text [overflow-wrap:anywhere] font-medium text-stone-700 dark:text-stone-300 mt-0.5">
                 {data.registeredOfficeAddress || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Email Address</dt>
-              <dd className="font-bold text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.officialEmail || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">Organization Phone Number</dt>
-              <dd className="font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
+              <dd className="[overflow-wrap:anywhere] font-bold font-mono text-stone-800 dark:text-stone-200 mt-0.5">
                 {data.organizationPhone || "—"}
               </dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-stone-400 text-3xs uppercase font-semibold">About us</dt>
-              <dd className="mt-0.5 whitespace-pre-line text-stone-800 dark:text-stone-200">
+              <dd className="[overflow-wrap:anywhere] mt-0.5 whitespace-pre-line text-stone-800 dark:text-stone-200">
                 {data.aboutUs?.trim() || "—"}
               </dd>
             </div>
@@ -282,16 +293,16 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           <ul className="grid gap-3 lg:grid-cols-2">
             {(data.representatives ?? []).map((card, i) => ({ card, i })).filter(({ card, i }) => i === 0 || !isRepresentativeEmpty(card)).map(({ card, i }) => (
               <li key={i} data-testid="review-representative" className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-                <p className="text-sm font-bold text-stone-900 dark:text-stone-100">{card.fullName || "—"}</p>
-                <p className="text-xs text-stone-500 dark:text-stone-400">{card.designation || "—"}{i === 0 ? " · Main contact" : ""}</p>
+                <p className="ck-user-text text-sm font-bold text-stone-900 dark:text-stone-100">{card.fullName || "—"}</p>
+                <p className="ck-user-text text-xs text-stone-500 dark:text-stone-400">{card.designation || "—"}{i === 0 ? " · Main contact" : ""}</p>
                 <dl className="mt-3 grid grid-cols-1 gap-x-4 gap-y-2.5 text-xs sm:grid-cols-2">
                   <div>
                     <dt className="text-3xs font-semibold uppercase text-stone-400">Mobile</dt>
-                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">{card.mobileNumber || "—"}</dd>
+                    <dd className="[overflow-wrap:anywhere] mt-0.5 font-mono text-stone-800 dark:text-stone-200">{card.mobileNumber || "—"}</dd>
                   </div>
                   <div className="min-w-0">
                     <dt className="text-3xs font-semibold uppercase text-stone-400">Email</dt>
-                    <dd className="mt-0.5 break-all text-stone-800 dark:text-stone-200">
+                    <dd className="[overflow-wrap:anywhere] mt-0.5 break-all text-stone-800 dark:text-stone-200">
                       {card.email || "—"}{" "}
                       {card.emailVerified ? (
                         <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
@@ -302,7 +313,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                   </div>
                   <div>
                     <dt className="text-3xs font-semibold uppercase text-stone-400">PAN</dt>
-                    <dd className="mt-0.5 font-mono text-stone-800 dark:text-stone-200">
+                    <dd className="[overflow-wrap:anywhere] mt-0.5 font-mono text-stone-800 dark:text-stone-200">
                       {normalizePan(card.panNumber) || (
                         <button
                           type="button"
@@ -316,7 +327,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
                   </div>
                   <div className="min-w-0">
                     <dt className="text-3xs font-semibold uppercase text-stone-400">ID proof</dt>
-                    <dd className="mt-0.5">{fileChip(`rep-${i}`, card.idProof)}</dd>
+                    <dd className="[overflow-wrap:anywhere] mt-0.5">{fileChip(`rep-${i}`, card.idProof)}</dd>
                   </div>
                 </dl>
               </li>
@@ -358,16 +369,43 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
               <p className="text-3xs uppercase text-stone-400 font-semibold">Office Photo</p>
               <div className="mt-1">{fileChip("office", data.officePhoto, "None")}</div>
             </div>
-            <div className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800">
-              <p className="text-3xs uppercase text-stone-400 font-semibold">Activity Photos</p>
-              {activityPhotosCount > 0 ? (
-                <div className="mt-1 flex flex-wrap gap-1">
+            <div data-testid="review-past-activity" className="rounded-lg bg-white dark:bg-zinc-800/60 p-2.5 border border-stone-100 dark:border-zinc-800 sm:col-span-3">
+              <p className="text-3xs uppercase text-stone-400 font-semibold">Past activity</p>
+              {activities.length > 0 ? (
+                <ul className="mt-1 space-y-2">
+                  {activities.map((a) => (
+                    <li key={a.id} data-testid="review-activity" className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-2 font-bold text-stone-800 dark:text-stone-200">
+                        <button type="button" onClick={() => setOpenActivity(a)} className="min-w-0 break-words text-left hover:underline ck-user-text">{a.title}</button>
+                        {a.status === "PENDING" && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Under review</span>}
+                      </p>
+                      <p className="text-3xs text-stone-500 dark:text-stone-400">Activity date: {formatActivityDate(a.activityDate)}</p>
+                      <div className="mt-1 flex flex-wrap gap-1.5">
+                        {a.media.filter((m) => m.mediaType === "IMAGE" && m.url).map((m) => (
+                          <button key={m.id} type="button" onClick={() => setOpenActivity(a)} aria-label={`Open ${a.title}`} className="size-12 overflow-hidden rounded-md">
+                            {/* eslint-disable-next-line @next/next/no-img-element -- signed photo link */}
+                            <img src={m.url!} alt="" className="h-full w-full object-cover" />
+                          </button>
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : <p className="mt-1 font-bold text-stone-800 dark:text-stone-200">None</p>}
+              {activityPhotosCount > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
                   {data.activityPhotos.map((f, i) => f ? <span key={i}>{fileChip(`activity-${i}`, f)}</span> : null)}
                 </div>
-              ) : <p className="mt-1 font-bold text-stone-800 dark:text-stone-200">None</p>}
+              )}
             </div>
           </div>
         </section>
+
+        {openActivity && (
+          <ActivityDetailDialog a={openActivity as never} photos={activityPhotos(openActivity)} onClose={() => setOpenActivity(null)}
+            onPhoto={(i) => { setActivityPhoto({ photos: activityPhotos(openActivity), start: i, title: openActivity.title }); setOpenActivity(null); }} />
+        )}
+        {activityPhoto && <ActivityLightbox {...activityPhoto} onClose={() => setActivityPhoto(null)} />}
 
         {/* Confirmation Checkbox */}
         <div className="rounded-xl border border-ngo-300/40 bg-ngo-50/60 dark:bg-ngo-950/20 p-4 space-y-2">
@@ -409,7 +447,7 @@ export function ReviewSubmit({ data, onChange, onBack, onEditStep, onSubmit, isS
           {resubmission.changes.length === 0
             ? <p className="mt-1 text-stone-500">Nothing yet. Fix the items our team flagged.</p>
             : <ul className="mt-2 space-y-1">{resubmission.changes.map((c) => (
-                <li key={c.key}><span className="font-semibold">{c.label}:</span> <span className="break-words">{c.value}</span></li>
+                <li key={c.key}><span className="font-semibold">{c.label}:</span> <span className="break-words ck-user-text">{c.value}</span></li>
               ))}</ul>}
           {resubmission.remaining > 0 && (
             <p role="alert" className="mt-2 font-semibold text-amber-800 dark:text-amber-300">

@@ -42,7 +42,7 @@ export function DocumentVisibility({ page, evidence }: { page: FundraisingCampai
       {current.map((e) => (
         <div key={e.id} style={row}>
           <Icon name={shown.has(e.id) ? "check" : "lock"} />
-          <span><strong>{shown.has(e.id) ? <UiText>Shown to donors</UiText> : <UiText>Always private</UiText>}</strong> — {e.fileName ?? label(e.type)}</span>
+          <span><strong>{shown.has(e.id) ? <UiText>Shown to donors</UiText> : <UiText>Always private</UiText>}</strong> — {e.fromProfile ? <UiText>Government ID</UiText> : e.fileName ?? label(e.type)}</span>
         </div>
       ))}
     </section>

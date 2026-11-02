@@ -87,6 +87,16 @@ const NgoProfileToast = dynamic(
     import("@/components/NgoProfileToast").then((m) => m.NgoProfileToast),
   { ssr: false },
 );
+const DrivePickupScheduledPopup = dynamic(
+  () =>
+    import("@/components/DrivePickupScheduledPopup").then((m) => m.DrivePickupScheduledPopup),
+  { ssr: false },
+);
+const DriveProofPublishedPopup = dynamic(
+  () =>
+    import("@/components/DriveProofPublishedPopup").then((m) => m.DriveProofPublishedPopup),
+  { ssr: false },
+);
 const NgoCampaignPrompt = dynamic(
   () =>
     import("@/components/NgoCampaignPrompt").then((m) => m.NgoCampaignPrompt),
@@ -105,6 +115,8 @@ export function DeferredOverlays() {
       <DoneeRequestPrompt />
       <NgoProfileToast />
       <NgoCampaignPrompt />
+      <DriveProofPublishedPopup />
+      <DrivePickupScheduledPopup />
     </>
   );
 }

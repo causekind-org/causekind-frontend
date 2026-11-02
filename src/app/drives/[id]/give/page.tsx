@@ -119,7 +119,7 @@ export default function DriveGivePage() {
     return (
       <main data-ck-role-theme="ngo" className="min-h-[60vh] bg-stone-50 px-4 py-16 dark:bg-zinc-950">
         <div className="mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100">{view.title}</h1>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100 ck-user-text">{view.title}</h1>
           <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">{view.body}</p>
           {view.link && (
             <Link href={view.link.href} className="mt-5 inline-flex min-h-[44px] items-center rounded-full bg-emerald-700 px-6 text-sm font-bold text-white hover:bg-emerald-800">

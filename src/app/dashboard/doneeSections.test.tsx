@@ -21,7 +21,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: { email: "asha@donee.test", role: "DONEE" }, isLoading: false }),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
 // next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 vi.mock("@/components/MyTasksCard", () => ({ MyTasksCard: () => null }));
@@ -185,7 +185,7 @@ describe("match history", () => {
 });
 
 describe("your requests", () => {
-  it("lists pending and closed requests, excludes fulfilled ones, and shows history link", async () => {
+  it("lists pending and closed requests, excludes fulfilled ones from Requests, and shows them in History", async () => {
     mocks.requests.mockResolvedValue([
       request,
       { ...request, id: 2, title: "Books for a study centre", quantity: 20, fulfilledQuantity: 20, status: "FULFILLED" },
@@ -199,7 +199,13 @@ describe("your requests", () => {
     expect(screen.queryByText("Fulfilled", { selector: "h4" })).toBeNull();
     expect(screen.queryByText("Books for a study centre")).toBeNull();
     expect(screen.queryByText("School bags")).toBeNull();
-    expect(screen.getByRole("link", { name: /See who delivered what/ })).toHaveAttribute("href", "/dashboard/history");
+    expect(screen.queryByRole("link", { name: /See who delivered what/ })).toBeNull();
+
+    await userEvent.click(await tab(/History/));
+    await openTab(/History/);
+    expect(screen.getByText("Request Fulfillment Records")).toBeInTheDocument();
+    expect(screen.getByText("Books for a study centre")).toBeInTheDocument();
+    expect(screen.getByText("School bags")).toBeInTheDocument();
   });
 });
 

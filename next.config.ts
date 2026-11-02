@@ -42,6 +42,18 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.amazonaws.com" },
     ],
   },
+  async headers() {
+    return [
+      {
+        // A private link's page: never sent as a referrer, never indexed.
+        source: "/volunteer-handover",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+    ];
+  },
   async redirects() {
     return [
       {

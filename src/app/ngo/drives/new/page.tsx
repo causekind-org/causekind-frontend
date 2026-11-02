@@ -1,5 +1,7 @@
 "use client";
 
+import { EXTERNAL_LINK_REL, linkDomain, safeExternalUrl } from "@/lib/externalLink";
+import { openDatePicker } from "@/lib/openDatePicker";
 import { OtherSpecifyField } from "@/features/ngo-registration/components/OtherSpecifyField";
 import { otherTextError } from "@/features/ngo-registration/ngoRegistrationModel";
 import { UploadedFilePreview } from "@/features/ngo-registration/components/UploadedFilePreview";
@@ -19,6 +21,7 @@ import {
   uploadNgoDriveReferencePhoto,
   deleteUnusedNgoDrivePhoto,
   getNgoDriveDraft,
+  getNgoDrivePhotoPreviews,
   saveNgoDriveDraft,
   deleteNgoDriveDraft,
   ApiError,
@@ -37,6 +40,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { WizardProgressBar, WizardProgressRail } from "@/features/wizard-kit/WizardProgress";
 import { StepErrorSummary } from "@/features/wizard-kit/StepErrorSummary";
 import { StepCardStack } from "@/features/wizard-kit/StepCardStack";
+import { clothingForText, clothingSizesText } from "@/features/ngo-drives/driveCategoryDetails";
 import { WizardField } from "@/features/wizard-kit/WizardField";
 import { DraftSaveStatus } from "@/features/wizard-kit/DraftSaveStatus";
 import { cardVariants } from "@/features/wizard-kit/wizardMotion";
@@ -57,7 +61,6 @@ import type { LocationStepHandle } from "@/features/item-listing-wizard/steps/Lo
 import { useLocationPinHandlers, type LocationFields } from "@/hooks/useLocationPinHandlers";
 import {
   CLOTHING_FITS,
-  CLOTHING_SIZES,
   categoryDetailRows,
   showsRequireClean,
   showsWorkingOrder,
@@ -97,7 +100,6 @@ export function hoursError(from: string, to: string): string {
   return from && to && to <= from ? "End time must be after start time" : "";
 }
 
-type ClothingSize = (typeof CLOTHING_SIZES)[number]["id"];
 
 const DAY_WORDS: Record<string, string> = { MON: "Mon", TUE: "Tue", WED: "Wed", THU: "Thu", FRI: "Fri", SAT: "Sat", SUN: "Sun" };
 
@@ -141,10 +143,10 @@ function useNgoDriveStepCopy(): { labels: Record<NgoDriveStep, string>; intros: 
   return {
     labels: {
       "drive-type": ui("Drive Type"),
-      "drive-location": ui("1 Where is this drive?"),
-      "drive-details": ui("2 Drive details"),
-      "beneficiaries-handover": ui("3 Beneficiaries & handover"),
-      "review-declarations": ui("4 Review & declarations"),
+      "drive-location": ui("Where is this drive?"),
+      "drive-details": ui("Drive details"),
+      "beneficiaries-handover": ui("Beneficiaries & handover"),
+      "review-declarations": ui("Review & declarations"),
     },
     intros: {
       "drive-type": ui("Choose what to collect"),
@@ -205,6 +207,27 @@ function splitGroups(value: unknown): string[] {
 }
 
 /** A drive photo in the shape the registration wizard's file card takes (shown from its preview link). */
+const plainUrl = (u: unknown) => (typeof u === "string" && u.includes("X-Amz-Signature=") ? u.slice(0, u.indexOf("?")) : u);
+
+/**
+ * A saved draft's signed links have expired: strip them and ask the server for fresh ones. Without
+ * an answer the photo has no preview (the file card shows its fallback), never a stale link.
+ */
+async function refreshDraftPhotoLinks(p: any, demo: boolean) {
+  const photos: any[] = Array.isArray(p.photos) ? p.photos : [];
+  for (const x of photos) { x.url = plainUrl(x.url); delete x.previewUrl; }
+  if (p.coverPhoto) { p.coverPhoto.url = plainUrl(p.coverPhoto.url); delete p.coverPhoto.previewUrl; }
+  p.changemakerPhotoUrl = plainUrl(p.changemakerPhotoUrl);
+  p.changemakerPhotoPreviewUrl = "";
+  const urls = [...photos.map((x) => x.url), p.coverPhoto?.url, p.changemakerPhotoUrl].filter((u) => typeof u === "string" && u);
+  if (demo || urls.length === 0) return;
+  let fresh: Record<string, string> = {};
+  try { fresh = (await getNgoDrivePhotoPreviews(urls)) ?? {}; } catch { return; }
+  for (const x of photos) if (fresh[x.url]) x.previewUrl = fresh[x.url];
+  if (p.coverPhoto && fresh[p.coverPhoto.url]) p.coverPhoto.previewUrl = fresh[p.coverPhoto.url];
+  if (fresh[p.changemakerPhotoUrl]) p.changemakerPhotoPreviewUrl = fresh[p.changemakerPhotoUrl];
+}
+
 function drivePhotoFile(photo: { url: string; previewUrl?: string }, name: string): UploadedFile {
   return { name, s3Url: photo.previewUrl || photo.url, mimeType: "image/jpeg" };
 }
@@ -239,8 +262,9 @@ function NewNgoDriveForm() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // ?type=items comes from the "Start a Drive" popup, which already chose the type.
-  const firstStep: NgoDriveStep = searchParams?.get("type") === "items" ? "drive-location" : "drive-type";
-  const urlStep = stepFromSlug(searchParams?.get("step"));
+  const firstStep: NgoDriveStep = "drive-location";
+  const slugStep = stepFromSlug(searchParams?.get("step"));
+  const urlStep = slugStep === "drive-type" ? null : slugStep;
   const [step, setStep] = useState<NgoDriveStep>(urlStep ?? firstStep);
   const [direction, setDirection] = useState(1);
   const reduced = !!useReducedMotion();
@@ -276,8 +300,8 @@ function NewNgoDriveForm() {
   const [mustBeWorking, setMustBeWorking] = useState(false);
   const [requireClean, setRequireClean] = useState(false);
   // Clothing sizing / Furniture dimensions (shown for those categories only).
-  const [sizes, setSizes] = useState<ClothingSize[]>([]);
-  const [fits, setFits] = useState<string[]>([]);
+  const [sizesNeeded, setSizesNeeded] = useState("");
+  const [clothesFor, setClothesFor] = useState("");
   const [lengthCm, setLengthCm] = useState("");
   const [breadthCm, setBreadthCm] = useState("");
   const [heightCm, setHeightCm] = useState("");
@@ -365,7 +389,10 @@ function NewNgoDriveForm() {
   const [contactName, setContactName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   // More handover contacts after the primary (contactName/contactPhone): up to 5 people in all.
-  const [extraContacts, setExtraContacts] = useState<{ name: string; phone: string; role: string }[]>([]);
+  const [contactEmail, setContactEmail] = useState("");
+  const [extraContacts, setExtraContacts] = useState<{ name: string; phone: string; email: string }[]>([]);
+  // An edited drive's people: they keep their stored email, and an older drive under 3 isn't blocked.
+  const [storedPhones, setStoredPhones] = useState<string[]>([]);
   // Country code for the contact phone; India by default. Never prefilled from the account.
 const [altContact, setAltContact] = useState("");
   const [pastWorkUrl, setPastWorkUrl] = useState("");
@@ -420,8 +447,8 @@ const [altContact, setAltContact] = useState("");
   function restoreCategoryDetails(cd: unknown) {
     const d = (cd && typeof cd === "object" ? cd : {}) as Record<string, unknown>;
     const str = (v: unknown) => (v === null || v === undefined || v === "" ? "" : String(v));
-    setSizes(Array.isArray(d.sizes) ? (d.sizes.filter(x => CLOTHING_SIZES.some(c => c.id === x)) as ClothingSize[]) : []);
-    setFits(Array.isArray(d.fits) ? d.fits.filter((x): x is string => typeof x === "string") : typeof d.fit === "string" && d.fit ? [d.fit] : []);
+    setSizesNeeded(clothingSizesText(d));
+    setClothesFor(clothingForText(d));
     setLengthCm(str(d.lengthCm)); setBreadthCm(str(d.breadthCm)); setHeightCm(str(d.heightCm));
     setWeightKg(str(d.weightKg)); setMaterial(typeof d.material === "string" ? d.material : "");
     setNeedsAssembly(Boolean(d.needsAssembly));
@@ -492,7 +519,11 @@ const [altContact, setAltContact] = useState("");
       setContactName(d.contactName || "");
       setContactPhone(fromStoredPhone(d.contactPhone).digits);
       // Older drives have only their single contact.
-      setExtraContacts((d.handoverContacts ?? []).slice(1).map((c) => ({ name: c.name ?? "", phone: fromStoredPhone(c.phone ?? "").digits, role: c.role ?? "" })));
+      setContactEmail(d.handoverContacts?.[0]?.email ?? "");
+      setExtraContacts((d.handoverContacts ?? []).slice(1).map((c) => ({ name: c.name ?? "", phone: fromStoredPhone(c.phone ?? "").digits, email: c.email ?? "" })));
+      setStoredPhones(d.handoverContacts?.length
+        ? d.handoverContacts.map((c) => fromStoredPhone(c.phone ?? "").digits)
+        : d.contactPhone ? [fromStoredPhone(d.contactPhone).digits] : []);
       setAltContact(d.altContact || "");
       setPastWorkUrl(d.pastWorkUrl || "");
 
@@ -516,6 +547,8 @@ const [altContact, setAltContact] = useState("");
       // The server draft restores on another device; the local copy is the fallback.
       const p = server && (!local || Number(server.savedAt || 0) >= Number(local.savedAt || 0)) ? server : local;
       if (p) {
+        await refreshDraftPhotoLinks(p, IS_NGO_DEMO_MODE);
+        if (!active) return;
         setTitle(p.title || "");
         setTagline(p.tagline || "");
         setCategory(p.category || "");
@@ -573,7 +606,8 @@ const [altContact, setAltContact] = useState("");
         // Contact
         setContactName(p.contactName || "");
         setContactPhone(fromStoredPhone(p.contactPhone).digits);
-        setExtraContacts(Array.isArray(p.extraContacts) ? p.extraContacts.slice(0, 4) : []);
+        setContactEmail(p.contactEmail || "");
+        setExtraContacts(Array.isArray(p.extraContacts) ? p.extraContacts.slice(0, 4).map((c: { name?: string; phone?: string; email?: string }) => ({ name: c.name ?? "", phone: c.phone ?? "", email: c.email ?? "" })) : []);
         setAltContact(p.altContact || "");
         setPastWorkUrl(p.pastWorkUrl || "");
 
@@ -598,7 +632,9 @@ const [altContact, setAltContact] = useState("");
   useEffect(() => {
     if (!showsWorkingOrder(category)) setMustBeWorking(false);
     if (!showsRequireClean(category)) setRequireClean(false);
-    if (category !== "Clothing") { setSizes([]); setFits([]); }
+    if (category !== "Clothing") { setSizesNeeded(""); setClothesFor(""); }
+    if (!showsWorkingOrder(category)) setMustBeWorking(false);
+    if (!showsRequireClean(category)) setRequireClean(false);
     if (category !== "Furniture") {
       setLengthCm(""); setBreadthCm(""); setHeightCm(""); setWeightKg(""); setMaterial(""); setNeedsAssembly(false);
     }
@@ -606,7 +642,7 @@ const [altContact, setAltContact] = useState("");
 
   /** The category fields as the backend stores them; undefined for other categories. */
   function categoryDetailsPayload(): DriveCategoryDetails | undefined {
-    if (category === "Clothing") return { sizes, fits };
+    if (category === "Clothing") return { sizesNeeded: sizesNeeded.trim(), clothesFor: clothesFor.trim() };
     if (category === "Furniture") {
       return {
         lengthCm: Number(lengthCm), breadthCm: Number(breadthCm), heightCm: Number(heightCm),
@@ -631,7 +667,7 @@ const [altContact, setAltContact] = useState("");
     try {
       const saveObj = {
         savedAt: Date.now(),
-        categoryDetails: { sizes, fits, lengthCm, breadthCm, heightCm, weightKg, material, needsAssembly },
+        categoryDetails: { sizesNeeded, clothesFor, lengthCm, breadthCm, heightCm, weightKg, material, needsAssembly },
         changemakerPhotoPreviewUrl: changemakerPreviewUrl,
         title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
         photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity,
@@ -641,7 +677,7 @@ const [altContact, setAltContact] = useState("");
         beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
         neededBy, availableDays, availableFrom, availableTo, handoverMode,
         changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-        contactName, contactPhone: contactPhone.trim() ? `+91${contactPhone.trim()}` : "", extraContacts, altContact, pastWorkUrl,
+        contactName, contactPhone: contactPhone.trim() ? `+91${contactPhone.trim()}` : "", contactEmail, extraContacts, altContact, pastWorkUrl,
         declarations: { accurate: declAccurate, usedOnlyForBeneficiaries: declUsedOnly, proofWithin48h: declProof, facesWithConsent: declFaces, notDuplicate: declNotDuplicate, falseInfoConsequences: declFalseInfo, contactConsent: declContact }
       };
       localStorage.setItem(DRAFT_KEY, JSON.stringify(saveObj));
@@ -657,12 +693,12 @@ const [altContact, setAltContact] = useState("");
     }
   }, [
     draftLoaded, title, tagline, category, itemName, quantity, unit, urgency, condition, mustBeWorking, requireClean, details,
-    sizes, fits, lengthCm, breadthCm, heightCm, weightKg, material, needsAssembly, changemakerPreviewUrl, IS_NGO_DEMO_MODE, editId,
+    sizesNeeded, clothesFor, lengthCm, breadthCm, heightCm, weightKg, material, needsAssembly, changemakerPreviewUrl, IS_NGO_DEMO_MODE, editId,
     photos, coverPhoto, whoFor, whyNow, whatChanges, legacyDescription, locationArea, locationCity, driveLoc, dropOffAddress, radiusChoice, customRadius,
     beneficiaryGroups, beneficiaryCount, beneficiaryDescription,
     neededBy, availableDays, availableFrom, availableTo, handoverMode,
     changemakerName, changemakerRole, changemakerPhotoUrl, changemakerPhotoKey, changemakerWhy,
-    contactName, contactPhone, extraContacts, altContact, pastWorkUrl,
+    contactName, contactPhone, contactEmail, extraContacts, altContact, pastWorkUrl,
     declAccurate, declUsedOnly, declProof, declFaces, declNotDuplicate, declFalseInfo, declContact, DRAFT_KEY
   ]);
 
@@ -853,7 +889,8 @@ const [altContact, setAltContact] = useState("");
     }
   }
 
-  function validateStep(s: NgoDriveStep): boolean {
+  /** Everything still wrong on a step (pure: nothing is shown until a field is left or Next runs). */
+  function stepErrors(s: NgoDriveStep): Record<string, string> {
     const e: Record<string, string> = {};
     if (s === "drive-location") {
       if (!driveLoc.countryIso) e.countryIso = ui("Choose the country");
@@ -880,8 +917,8 @@ const [altContact, setAltContact] = useState("");
       if (!whyNow.trim() || whyNow.length < 10 || whyNow.length > 300) e.whyNow = ui("Why now must be 10-300 characters");
       if (!whatChanges.trim() || whatChanges.length < 10 || whatChanges.length > 300) e.whatChanges = ui("What will change must be 10-300 characters");
       if (category === "Clothing") {
-        if (sizes.length === 0) e.sizes = "Choose at least one size";
-        if (fits.length === 0) e.fits = "Choose who the clothes are for";
+        if (sizesNeeded.trim().length < 2 || sizesNeeded.trim().length > 120) e.sizes = "Sizes needed must be 2-120 characters";
+        if (clothesFor.trim().length < 2 || clothesFor.trim().length > 80) e.fits = "Who the clothes are for must be 2-80 characters";
       }
       if (category === "Furniture") {
         const cm = (v: string) => { const n = Number(v); return v.trim() !== "" && n > 0 && n <= 1000; };
@@ -912,26 +949,102 @@ const [altContact, setAltContact] = useState("");
       extraContacts.forEach((c, i) => {
         if (c.name.trim().length < 2) e[`extraContacts.${i}.name`] = "Enter this person's name";
         if (!/^[6-9]\d{9}$/.test(c.phone.trim())) e[`extraContacts.${i}.phone`] = "Enter a 10-digit mobile number starting with 6, 7, 8 or 9";
-        if (c.role.trim() && otherTextError(c.role)) e[`extraContacts.${i}.role`] = "Role: 2–60 letters (spaces and . , - & allowed)";
+        const emailProblem = contactEmailError(c.email, c.phone);
+        if (emailProblem) e[`extraContacts.${i}.email`] = emailProblem;
       });
+      { const emailProblem = contactEmailError(contactEmail, contactPhone);
+        if (emailProblem) e.contactEmail = emailProblem; }
+      { const required = editId === null ? MIN_HANDOVER_CONTACTS : Math.min(MIN_HANDOVER_CONTACTS, storedPhones.length);
+        const people = new Set([contactPhone, ...extraContacts.map((c) => c.phone)].map((p) => p.trim()).filter(Boolean)).size;
+        if (people < required) e.handoverContacts = `Add at least ${required} different people`; }
       if (altContact.trim()) {
         const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(altContact.trim());
         const isPhone = /^\d{10}$/.test(altContact.trim());
         if (!isEmail && !isPhone) e.altContact = ui("Alternate contact must be a valid email or 10-digit phone");
       }
       if (pastWorkUrl.trim()) {
-        if (!/^https?:\/\/.+/i.test(pastWorkUrl.trim())) e.pastWorkUrl = ui("Past work link must be a valid http or https URL");
+        if (!safeExternalUrl(pastWorkUrl)) e.pastWorkUrl = ui("Enter a website address, like www.ourngo.org");
       }
     }
+    return e;
+  }
+
+  /** Email is needed for anyone new; someone already on the drive keeps what is stored. */
+  function contactEmailError(email: string, phone: string): string | null {
+    const value = email.trim();
+    if (value) return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 255 ? null : "Enter a valid email address";
+    return storedPhones.includes(phone.trim()) ? null : "Enter this person's email";
+  }
+
+  function validateStep(s: NgoDriveStep): boolean {
+    const e = stepErrors(s);
     setFieldErrors(e);
     return Object.keys(e).length === 0;
   }
+
+  // The step's button stays grey until this is empty. Errors appear per field: when it is left, then follow its value.
+  const liveErrors = stepErrors(step);
+  const liveErrorsKey = JSON.stringify(liveErrors);
+  const leftFields = useRef(new Set<string>());
+  useEffect(() => { leftFields.current.clear(); }, [step]);
+  useEffect(() => {
+    const live = JSON.parse(liveErrorsKey) as Record<string, string>;
+    setFieldErrors((prev) => {
+      let next = prev;
+      for (const k of new Set([...leftFields.current, ...Object.keys(prev).filter((x) => prev[x])])) {
+        if (!leftFields.current.has(k) && !(k in live) && !isLiveField.current.has(k)) continue;
+        const v = live[k] ?? "";
+        if ((prev[k] ?? "") !== v) next = { ...next, [k]: v };
+      }
+      return next;
+    });
+    Object.keys(live).forEach((k) => isLiveField.current.add(k));
+  }, [liveErrorsKey]);
+  // Keys this form validates itself (a server-sent error on any other key stays until the next submit).
+  const isLiveField = useRef(new Set<string>());
+
+  function handleFieldLeft(ev: React.FocusEvent<HTMLElement>) {
+    const t = ev.target as HTMLInputElement;
+    const key = t.name || t.id;
+    if (!key) return;
+    leftFields.current.add(key);
+    const message = liveErrors[key];
+    setFieldErrors((prev) => ((prev[key] ?? "") === (message ?? "") ? prev : { ...prev, [key]: message ?? "" }));
+  }
+
+  const stepIsValid = Object.keys(liveErrors).length === 0;
+  const allStepsValid = NGO_DRIVE_STEPS.filter((s) => !editParam || s !== "drive-location").every((s) => Object.keys(stepErrors(s)).length === 0);
+  const incompleteHint = (
+    <p id="step-incomplete-hint" data-testid="step-incomplete-hint" className="basis-full text-right text-2xs text-slate-500 dark:text-slate-400">
+      <UiText>Complete the required fields to continue.</UiText> {Object.values(liveErrors)[0] ?? ""}
+    </p>
+  );
+  const GREEN = "bg-ngo-700 text-white hover:bg-ngo-800";
+  const GREY = "cursor-not-allowed bg-slate-300 text-slate-600 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300";
 
   async function handleNext() {
     if (step === "drive-location" && locationStepRef.current && !(await locationStepRef.current.flush())) return;
     if (!validateStep(step)) { toast.error(ui("Please fix the highlighted fields")); return; }
     const i = ngoStepIndex(step);
     if (i < NGO_DRIVE_STEPS.length - 1) goToStep(NGO_DRIVE_STEPS[i + 1], 1);
+  }
+
+  const contactsKey = JSON.stringify([contactName, contactPhone, contactEmail, extraContacts]);
+  const [savedContactsKey, setSavedContactsKey] = useState<string | null>(null);
+  const [contactsJustSaved, setContactsJustSaved] = useState(false);
+  useEffect(() => { if (draftLoaded && savedContactsKey === null) setSavedContactsKey(contactsKey); }, [draftLoaded, savedContactsKey, contactsKey]);
+  const contactsUnsaved = savedContactsKey !== null && savedContactsKey !== contactsKey;
+
+  /** Checks only the contacts, then stores them at once (the draft; an edited drive saves on Submit). */
+  async function saveContacts() {
+    const all = stepErrors("beneficiaries-handover");
+    const problems = Object.fromEntries(Object.entries(all).filter(([k]) => /^(contact|extraContacts|handoverContacts)/.test(k)));
+    setFieldErrors((prev) => ({ ...Object.fromEntries(Object.entries(prev).filter(([k]) => !/^(contact|extraContacts|handoverContacts)/.test(k))), ...problems }));
+    setContactsJustSaved(false);
+    if (Object.keys(problems).length > 0) return;
+    await saveDraft(true);
+    setSavedContactsKey(contactsKey);
+    setContactsJustSaved(true);
   }
 
   /** Back: the previous step; from the first step, the NGO dashboard. */
@@ -1015,11 +1128,11 @@ const [altContact, setAltContact] = useState("");
         contactPhone: `+91${contactPhone.trim()}`,
         // Every handover contact, first = primary (the one the Call button uses).
         handoverContacts: [
-          { name: contactName.trim(), phone: `+91${contactPhone.trim()}`, role: null },
-          ...extraContacts.map((c) => ({ name: c.name.trim(), phone: `+91${c.phone.trim()}`, role: c.role.trim() || null })),
+          { name: contactName.trim(), phone: `+91${contactPhone.trim()}`, email: contactEmail.trim() || undefined },
+          ...extraContacts.map((c) => ({ name: c.name.trim(), phone: `+91${c.phone.trim()}`, email: c.email.trim() || undefined })),
         ],
         altContact: altContact.trim() || undefined,
-        pastWorkUrl: pastWorkUrl.trim() || undefined,
+        pastWorkUrl: safeExternalUrl(pastWorkUrl) || undefined,
         declarationsVersion: "v2",
         declarations: {
           accurate: declAccurate,
@@ -1117,7 +1230,7 @@ const [altContact, setAltContact] = useState("");
         <button type="button" onClick={() => router.push("/dashboard/ngo")} className="mb-6 inline-flex min-h-11 items-center gap-2 self-center rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
         <div className="w-12 h-12 text-stone-300 dark:text-zinc-700 mb-4"><ShieldCheck className="w-full h-full" /></div>
         <h1 className="text-xl font-bold text-stone-900 dark:text-white mb-2"><UiText>One drive at a time</UiText></h1>
-        <p className="text-stone-500 mb-6 max-w-md">{driveLockReason}</p>
+        <p className="text-stone-500 mb-6 max-w-md ck-user-text">{driveLockReason}</p>
         <Link href="/dashboard/ngo" className="px-6 py-2.5 rounded-full bg-ngo-700 text-white font-bold hover:bg-ngo-600">
           <UiText>Go to dashboard</UiText>
         </Link>
@@ -1166,37 +1279,6 @@ const [altContact, setAltContact] = useState("");
       </DialogContent>
     </Dialog>
   ) : null;
-
-  if (step === "drive-type") {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] dark:bg-zinc-950 flex flex-col justify-center items-center p-4">
-        <div className="max-w-xl w-full flex flex-col">
-          <button type="button" onClick={handleBack} className="mb-6 inline-flex min-h-11 items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden />Back</button>
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-black text-stone-900 dark:text-stone-100 mb-2" style={{ fontFamily: "serif" }}><UiText>What kind of drive?</UiText></h1>
-            <p className="text-stone-500 text-sm"><UiText>Choose the category of drive you want to organize.</UiText></p>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <button onClick={() => goToStep("drive-location", 1)} className="text-left bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 hover:border-ngo-600 dark:hover:border-ngo-500 rounded-2xl p-6 transition-all hover:shadow-md group">
-              <div className="w-10 h-10 rounded-xl bg-ngo-50 dark:bg-ngo-900/30 text-ngo-700 dark:text-ngo-300 flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
-                <Layers className="w-5 h-5" />
-              </div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2"><UiText>Item drive</UiText></h2>
-              <p className="text-stone-500 text-sm leading-relaxed"><UiText>Collect tangible items like blankets, books, food, clothes, or stationery.</UiText></p>
-              <div className="mt-4 flex items-center text-xs font-bold text-ngo-700 dark:text-ngo-400">
-                <UiText>Start an item drive</UiText> <ArrowRight className="w-3.5 h-3.5 ml-1" />
-              </div>
-            </button>
-            <button disabled aria-disabled className="text-left bg-stone-50 dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl p-6 opacity-60 relative">
-              <div className="absolute top-4 right-4 bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 text-2xs font-black uppercase tracking-wider px-2 py-1 rounded-md"><UiText>Coming soon</UiText></div>
-              <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 mb-2"><UiText>Money drive</UiText></h2>
-              <p className="text-stone-500 text-sm leading-relaxed"><UiText>Raise funds for what you need.</UiText></p>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   const availability = NGO_DRIVE_STEPS.reduce((acc, s) => {
     const i = ngoStepIndex(s);
@@ -1299,7 +1381,7 @@ const [altContact, setAltContact] = useState("");
           {legacyDescription && (
             <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
               <p className="font-semibold mb-1"><UiText>Previous description (rewrite into the three sections below):</UiText></p>
-              <p className="whitespace-pre-wrap">{legacyDescription}</p>
+              <p className="whitespace-pre-wrap ck-user-text">{legacyDescription}</p>
             </div>
           )}
 
@@ -1392,27 +1474,14 @@ const [altContact, setAltContact] = useState("");
           {category === "Clothing" && (
             <div className="space-y-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700" data-testid="clothing-sizing">
               <p className="text-xs font-bold text-stone-700 dark:text-stone-200">Sizing<span className="text-red-500">*</span></p>
-              <WizardField label="Sizes" required error={fieldErrors.sizes} hint="Choose all that you need.">
-                {({ id, describedBy }) => (
-                  <div id={id} data-field="sizes" aria-describedby={describedBy} className="flex flex-wrap gap-2">
-                    {CLOTHING_SIZES.map(sz => {
-                      const active = sizes.includes(sz.id);
-                      return (
-                        <button key={sz.id} type="button" aria-pressed={active} className={chipClass(active)}
-                          onClick={() => setSizes(prev => active ? prev.filter(x => x !== sz.id) : [...prev, sz.id])}>{sz.label}</button>
-                      );
-                    })}
-                  </div>
+              <WizardField label="Sizes needed" required error={fieldErrors.sizes} hint="e.g. S, M, L or 0–2 yrs, 6–8 yrs">
+                {({ id, describedBy, invalid }) => (
+                  <Input id={id} name="sizes" maxLength={120} value={sizesNeeded} onChange={e => setSizesNeeded(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} />
                 )}
               </WizardField>
-              <WizardField label="Gender / fit" required error={fieldErrors.fits} hint="Choose all that apply.">
-                {({ id, describedBy }) => (
-                  <div id={id} data-field="fits" aria-describedby={describedBy} className="flex flex-wrap gap-2">
-                    {CLOTHING_FITS.map(f => (
-                      <button key={f.id} type="button" aria-pressed={fits.includes(f.id)} className={chipClass(fits.includes(f.id))}
-                        onClick={() => setFits(prev => prev.includes(f.id) ? prev.filter(x => x !== f.id) : [...prev, f.id])}>{f.label}</button>
-                    ))}
-                  </div>
+              <WizardField label="Who are the clothes for?" required error={fieldErrors.fits} hint="e.g. Men, Women, Boys 6–12 yrs">
+                {({ id, describedBy, invalid }) => (
+                  <Input id={id} name="fits" maxLength={80} value={clothesFor} onChange={e => setClothesFor(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} />
                 )}
               </WizardField>
             </div>
@@ -1582,7 +1651,7 @@ const [altContact, setAltContact] = useState("");
           <WizardField label={ui("Needed by")} required error={fieldErrors.neededBy}>
             {({ id, describedBy, invalid }) => (
               <div>
-                <Input id={id} name="neededBy" type="date" min={minDateStr} max={maxDateStr} value={neededBy} onChange={e => setNeededBy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+                <Input id={id} name="neededBy" type="date" onClick={openDatePicker} min={minDateStr} max={maxDateStr} value={neededBy} onChange={e => setNeededBy(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
                 {neededBy && (
                   <p className="text-xs text-stone-500 mt-1">{df("neededByColon", { date: formatDateDDMMYYYY(neededBy) })}</p>
                 )}
@@ -1742,6 +1811,12 @@ const [altContact, setAltContact] = useState("");
             )}
           </WizardField>
 
+          <WizardField label={ui("Email")} required={!storedPhones.includes(contactPhone.trim())} error={fieldErrors.contactEmail} hint={ui("We send the pickup link here if this person is assigned")}>
+            {({ id, describedBy, invalid }) => (
+              <Input id={id} name="contactEmail" type="email" placeholder={ui("name@example.org")} value={contactEmail} onChange={e => setContactEmail(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+            )}
+          </WizardField>
+
           {/* More people who handle pickup and drop-off; the first contact above is the primary. */}
           {extraContacts.map((c, i) => (
             <div key={i} data-testid="extra-contact" className="space-y-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700">
@@ -1759,15 +1834,22 @@ const [altContact, setAltContact] = useState("");
                   onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, phone: e.target.value.replace(/\D/g, "") } : x)))} className="h-11" />
               </div>
               {fieldErrors[`extraContacts.${i}.phone`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.phone`]}</p>}
-              <Input aria-label={`Contact ${i + 2} role`} name={`extraContacts.${i}.role`} placeholder={ui("Role (optional)")} maxLength={60} value={c.role}
-                onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, role: e.target.value.replace(/[^A-Za-z .,&-]/g, "") } : x)))} className="h-11" />
-              {fieldErrors[`extraContacts.${i}.role`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.role`]}</p>}
+              <Input aria-label={`Contact ${i + 2} email`} name={`extraContacts.${i}.email`} type="email" placeholder={ui("Email")} value={c.email}
+                onChange={(e) => setExtraContacts((prev) => prev.map((x, j) => (j === i ? { ...x, email: e.target.value } : x)))} className="h-11" />
+              {fieldErrors[`extraContacts.${i}.email`] && <p className="text-xs text-red-500">{fieldErrors[`extraContacts.${i}.email`]}</p>}
             </div>
           ))}
           {extraContacts.length < 4 && (
-            <button type="button" onClick={() => setExtraContacts((prev) => [...prev, { name: "", phone: "", role: "" }])}
+            <button type="button" onClick={() => setExtraContacts((prev) => [...prev, { name: "", phone: "", email: "" }])}
               className="text-xs font-bold text-ngo-700 hover:underline dark:text-ngo-300">+ {ui("Add another person")}</button>
           )}
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <button type="button" onClick={() => void saveContacts()} disabled={saveStatus === "saving"}
+              className="min-h-11 rounded-lg bg-ngo-700 px-4 text-xs font-bold text-white hover:bg-ngo-800 disabled:opacity-50">{ui("Save contacts")}</button>
+            {contactsUnsaved ? <span data-testid="contacts-unsaved" className="text-xs text-amber-700 dark:text-amber-400">{ui("You have unsaved changes to these contacts.")}</span>
+              : contactsJustSaved ? <span role="status" className="text-xs font-semibold text-ngo-700 dark:text-ngo-300">{editId !== null ? ui("Saved, applied when you submit the changes") : ui("Saved")}</span> : null}
+          </div>
+          {liveErrors.handoverContacts && <p data-testid="contacts-minimum" className="text-xs text-amber-700 dark:text-amber-300">{liveErrors.handoverContacts}</p>}
 
           <WizardField label={ui("Alternate contact (phone or email)")} error={fieldErrors.altContact} hint={ui("Optional: phone or email")}>
             {({ id, describedBy, invalid }) => (
@@ -1777,7 +1859,7 @@ const [altContact, setAltContact] = useState("");
 
           <WizardField label={ui("Past work link")} error={fieldErrors.pastWorkUrl} hint={ui("Optional: Website, Instagram page or earlier drive photos")}>
             {({ id, describedBy, invalid }) => (
-              <Input id={id} name="pastWorkUrl" type="url" placeholder={ui("https://instagram.com/our_ngo or https://ourngo.org")} value={pastWorkUrl} onChange={e => setPastWorkUrl(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
+              <Input id={id} name="pastWorkUrl" type="text" inputMode="url" placeholder={ui("https://instagram.com/our_ngo or https://ourngo.org")} value={pastWorkUrl} onChange={e => setPastWorkUrl(e.target.value)} aria-describedby={describedBy} aria-invalid={invalid} className={`w-full box-border h-11 ${invalid ? "border-red-500" : ""}`} />
             )}
           </WizardField>
         </section>
@@ -1807,7 +1889,10 @@ const [altContact, setAltContact] = useState("");
             <div className="flex gap-2 flex-wrap">
               {photos.map((p, idx) => (
                 <div key={p.url + idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-zinc-700">
-                  <img src={p.url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  <button type="button" aria-label={`Preview photo ${idx + 1}`} className="block h-full w-full" onClick={() => setDrivePreviewIndex(drivePreviewFiles.findIndex((f) => f.key === `ref-${idx}`))}>
+                    {/* eslint-disable-next-line @next/next/no-img-element -- signed storage link */}
+                    <img src={p.previewUrl || p.url} alt={`Thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
                   {idx === 0 && (
                     <span className="absolute bottom-0 inset-x-0 bg-ngo-700 text-white text-[8px] font-bold text-center py-0.5">
                       <UiText>Cover</UiText>
@@ -1841,13 +1926,13 @@ const [altContact, setAltContact] = useState("");
           {categoryDetailRows(category, categoryDetailsPayload()).map(r => (
             <div key={r.label} className="flex justify-between gap-4 pb-2 border-b border-stone-100 dark:border-slate-800" data-testid="review-category-detail">
               <span className="text-stone-500">{r.label}</span>
-              <span className="font-medium text-right text-stone-900 dark:text-stone-100">{r.value}</span>
+              <span className="font-medium text-right text-stone-900 dark:text-stone-100 ck-user-text">{r.value}</span>
             </div>
           ))}
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500"><UiText>Drive location</UiText></span>
-            <span className="font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
+            <span className="ck-user-text font-medium text-right max-w-[200px] sm:max-w-md text-stone-900 dark:text-stone-100">
               {[driveLoc.locality, driveLoc.city, driveLoc.stateIso, driveLoc.pincode].filter(Boolean).join(", ") || `${locationArea}, ${locationCity}`}
             </span>
           </div>
@@ -1862,8 +1947,8 @@ const [altContact, setAltContact] = useState("");
           <div className="pb-2 border-b border-stone-100 dark:border-slate-800 space-y-1.5">
             <span className="text-stone-500 block"><UiText>Drive story</UiText></span>
             <div className="text-xs space-y-1 pl-2 border-l-2 border-ngo-600/40 text-stone-700 dark:text-stone-300">
-              <p><strong className="text-stone-900 dark:text-stone-100"><UiText>Who for:</UiText></strong> {whoFor}</p>
-              <p><strong className="text-stone-900 dark:text-stone-100"><UiText>Why now:</UiText></strong> {whyNow}</p>
+              <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Who for:</UiText></strong> {whoFor}</p>
+              <p className="ck-user-text"><strong className="text-stone-900 dark:text-stone-100"><UiText>Why now:</UiText></strong> {whyNow}</p>
               <p><strong className="text-stone-900 dark:text-stone-100"><UiText>What changes:</UiText></strong> {whatChanges}</p>
             </div>
           </div>
@@ -1872,7 +1957,7 @@ const [altContact, setAltContact] = useState("");
             <span className="text-stone-500"><UiText>People who will benefit</UiText></span>
             <span className="font-medium text-right max-w-[240px] text-stone-900 dark:text-stone-100">
               {beneficiaryCount} {beneficiaryGroups.join(", ")}
-              {beneficiaryDescription && <span className="block text-xs font-normal text-stone-500">{beneficiaryDescription}</span>}
+              {beneficiaryDescription && <span className="block text-xs font-normal text-stone-500 ck-user-text">{beneficiaryDescription}</span>}
             </span>
           </div>
 
@@ -1915,19 +2000,19 @@ const [altContact, setAltContact] = useState("");
                 <img src={changemakerPreviewUrl || changemakerPhotoUrl} alt={changemakerName} className="w-10 h-10 rounded-full object-cover border border-stone-200" />
               )}
               <div>
-                <p className="font-semibold text-stone-900 dark:text-stone-100">{changemakerName} <span className="text-xs font-normal text-stone-500">({changemakerRole})</span></p>
-                <p className="text-xs text-stone-600 dark:text-stone-400 italic">&ldquo;{changemakerWhy}&rdquo;</p>
+                <p className="font-semibold text-stone-900 dark:text-stone-100 ck-user-text">{changemakerName} <span className="text-xs font-normal text-stone-500">({changemakerRole})</span></p>
+                <p className="ck-user-text text-xs text-stone-600 dark:text-stone-400 italic">&ldquo;{changemakerWhy}&rdquo;</p>
               </div>
             </div>
           </div>
 
           <div className="flex justify-between pb-2 border-b border-stone-100 dark:border-slate-800">
             <span className="text-stone-500">Handover contact</span>
-            <span className="font-medium text-right text-stone-900 dark:text-stone-100">
+            <span className="font-medium text-right text-stone-900 dark:text-stone-100 ck-user-text">
               {contactName}<br />
-              <span className="text-stone-400 text-xs">+91 {contactPhone}</span>
+              <span className="text-stone-400 text-xs">+91 {contactPhone}{contactEmail.trim() ? ` · ${contactEmail.trim()}` : ""}</span>
               {extraContacts.map((c, i) => (
-                <span key={i} className="block text-stone-500 text-xs">{c.name}{c.role ? ` (${c.role})` : ""} · +91 {c.phone}</span>
+                <span key={i} className="block text-stone-500 text-xs ck-user-text">{c.name} · +91 {c.phone}{c.email.trim() ? ` · ${c.email.trim()}` : ""}</span>
               ))}
               {altContact && <span className="block text-stone-400 text-xs">Alt: {altContact}</span>}
             </span>
@@ -2120,7 +2205,7 @@ const [altContact, setAltContact] = useState("");
 
           <StepCardStack depth={ngoStepIndex(step as NgoDriveStep)}>
             <AnimatePresence mode="wait" initial={false} custom={direction}>
-              <motion.section key={step} custom={direction} variants={cardVariants(reduced)} initial="enter" animate="center" exit="exit" className="ck-wizard-step-card rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
+              <motion.section onBlur={handleFieldLeft} key={step} custom={direction} variants={cardVariants(reduced)} initial="enter" animate="center" exit="exit" className="ck-wizard-step-card rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgba(28,25,23,0.04),0_8px_24px_-16px_rgba(28,25,23,0.25)] sm:p-6 dark:border-zinc-800 dark:bg-zinc-900">
                 <div className="ck-wizard-step-card-content outline-none" tabIndex={-1}>
                   <h2 ref={headingRef} className="text-lg font-bold text-stone-900 sm:text-xl dark:text-stone-100" style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
                     {STEP_LABELS[step as NgoDriveStep]}
@@ -2156,7 +2241,7 @@ const [altContact, setAltContact] = useState("");
                         className={`min-h-11 w-full rounded-lg border bg-white px-3 py-2 text-sm text-stone-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 dark:bg-slate-900 dark:text-stone-100 ${fieldErrors.dropOffAddress ? "border-red-500 dark:border-red-500" : "border-slate-200 dark:border-slate-700"}`}
                       />
                       {fieldErrors.dropOffAddress ? (
-                        <p id="dropOffAddress-error" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.dropOffAddress}</p>
+                        <p id="dropOffAddress-error" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400 ck-user-text">{fieldErrors.dropOffAddress}</p>
                       ) : (
                         <p id="dropOffAddress-hint" className="mt-1 text-xs text-stone-500 dark:text-stone-400">Donors who drop off items come here. {dropOffAddress.trim().length}/300</p>
                       )}
@@ -2179,14 +2264,16 @@ const [altContact, setAltContact] = useState("");
               <button type="button" onClick={() => void saveDraft()} disabled={saveStatus === "saving"} className="min-h-11 rounded-lg border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                 {saveStatus === "saving" ? ui("Saving…") : ui("Save Draft")}
               </button>
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving"} className="min-h-11 rounded-lg bg-ngo-700 px-5 text-xs font-bold text-white transition-colors hover:bg-ngo-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed">{df("continueToStep", { n: step === "drive-location" ? 2 : 3 })} →</button>
+              <button type="button" onClick={() => { if (stepIsValid) void handleNext(); }} aria-disabled={!stepIsValid} aria-describedby={stepIsValid ? undefined : "step-incomplete-hint"} disabled={submitting || saveStatus === "saving"} className={`min-h-11 rounded-lg px-5 text-xs font-bold transition-colors ${stepIsValid ? GREEN : GREY} focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed`}>{df("continueToStep", { n: step === "drive-location" ? 2 : 3 })} →</button>
+              {!stepIsValid && incompleteHint}
             </div>
           </div>
         ) : step === "beneficiaries-handover" ? (
           <div className="mx-auto flex w-full max-w-[1040px] flex-wrap items-center justify-between gap-3 px-4 pb-6 sm:px-8 lg:px-10 mt-auto">
             <button type="button" onClick={handleBack} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><ArrowLeft className="size-4" aria-hidden /><UiText>Back to Step 2</UiText></button>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => void handleNext()} disabled={submitting || saveStatus === "saving" || Boolean(hoursProblem)} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{saveStatus === "saving" ? ui("Saving…") : ui("Save & Continue")}<ArrowRight className="size-4" aria-hidden /></button>
+              <button type="button" onClick={() => { if (stepIsValid) void handleNext(); }} aria-disabled={!stepIsValid} aria-describedby={stepIsValid ? undefined : "step-incomplete-hint"} disabled={submitting || saveStatus === "saving"} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed ${stepIsValid ? GREEN : GREY}`}>{saveStatus === "saving" ? ui("Saving…") : ui("Save & Continue")}<ArrowRight className="size-4" aria-hidden /></button>
+              {!stepIsValid && incompleteHint}
             </div>
           </div>
         ) : (
@@ -2198,7 +2285,7 @@ const [altContact, setAltContact] = useState("");
                  <UiText>Preview donor page</UiText>
                </button>
                <button type="button" onClick={() => void handleSaveExit()} disabled={submitting || saveStatus === "saving"} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><UiText>Save & exit</UiText></button>
-               <button type="button" onClick={() => void handleSubmit()} disabled={submitting || !allDeclarationsChecked} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed bg-ngo-700 text-white hover:bg-ngo-800">{submitting ? ui("Submitting…") : ui("Submit for verification")}</button>
+               <button type="button" onClick={() => { if (allDeclarationsChecked && allStepsValid) void handleSubmit(); }} aria-disabled={!(allDeclarationsChecked && allStepsValid)} disabled={submitting} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-5 text-xs font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ngo-700 disabled:opacity-50 disabled:cursor-not-allowed ${allDeclarationsChecked && allStepsValid ? GREEN : GREY}`}>{submitting ? ui("Submitting…") : ui("Submit for verification")}</button>
              </div>
           </div>
         )}
@@ -2278,6 +2365,8 @@ class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasErr
     return this.props.children;
   }
 }
+
+const MIN_HANDOVER_CONTACTS = 3;
 
 export default function NgoRequestCreationPage() {
   return (

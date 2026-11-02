@@ -8,7 +8,10 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: 
 // The approved NGO's About / past-activity sections have their own tests.
 vi.mock("@/features/ngo-profile/PastActivity", () => ({ PastActivitySection: () => null }));
 vi.mock("@/features/ngo-profile/NgoAboutSection", () => ({ NgoAboutSection: () => null }));
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  isSlowRequestError: vi.fn().mockReturnValue(false),
+  getMyNgoProfileDocuments: vi.fn().mockResolvedValue([]),
   getProfile: vi.fn(), updateProfile: vi.fn(), updateLocation: vi.fn(), getMyNgoApplication: vi.fn(),
   getNgoDraft: vi.fn(), submitNgoApplication: vi.fn(), saveNgoDraft: vi.fn(),
 }));
@@ -110,5 +113,19 @@ describe("applicationSteps", () => {
     expect(steps.map(s => s.state)).toEqual(["active", "waiting", "waiting"]);
     expect(steps[0].body).toMatch(/verify your email/i);
     expect(steps).toHaveLength(3);
+  });
+
+});
+
+describe("/profile long typed text", { timeout: 20000 }, () => {
+  it("wraps a 300-character organisation name", async () => {
+    const long = "w".repeat(300);
+    vi.mocked(getProfile).mockResolvedValue({
+      id: 101, email: "contact@smilefoundation.org", fullName: long, organizationName: long,
+      role: "NGO_PARTNER", phone: "+919876543210", city: "Mumbai", latitude: null, longitude: null,
+    } as never);
+    await renderCard("UNDER_REVIEW", { organizationName: long });
+    const heading = screen.getAllByText(long).find(n => n.classList.contains("ck-user-text"));
+    expect(heading).toBeDefined();
   });
 });
