@@ -1,5 +1,6 @@
 "use client";
 
+import { currentFromParam, ngoHandoverBackHref } from "@/features/ngo-drives/ngoBackLinks";
 import { useState } from "react";
 import { Camera, Check, Copy, KeyRound, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import {
@@ -463,7 +464,7 @@ export function DriveHandoverHub({
         } : undefined,
       }}
       drive={{
-        backHref: role === "NGO" ? `/ngo/drives/${offer.driveId}` : "/dashboard",
+        backHref: role === "NGO" ? ngoHandoverBackHref(currentFromParam()) : "/dashboard",
         subtitle: `${offer.ngoName}${offer.quantity ? ` · ${offer.quantity} ${unitWords(offer.driveUnit)}` : ""}${offer.driveItemName ? ` of ${offer.driveItemName}` : ""}`,
         confirmPanel,
         schedulePanel,

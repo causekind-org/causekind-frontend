@@ -95,7 +95,6 @@ export function NgoAboutSection({
             <textarea
               id="profile-about-us"
               rows={5}
-              maxLength={ABOUT_US_MAX}
               value={text}
               aria-describedby="profile-about-us-hint profile-about-us-count"
               aria-invalid={!!error}
@@ -108,10 +107,11 @@ export function NgoAboutSection({
             <p
               id="profile-about-us-count"
               aria-live="polite"
-              className="text-right text-3xs text-stone-500 dark:text-stone-400 font-medium"
+              className={`text-right text-3xs font-medium ${length > ABOUT_US_MAX ? "text-red-600 dark:text-red-400" : "text-stone-500 dark:text-stone-400"}`}
             >
               {length} / {ABOUT_US_MAX}
               {length < ABOUT_US_MIN ? ` (at least ${ABOUT_US_MIN} characters)` : ""}
+              {length > ABOUT_US_MAX ? ` · ${length - ABOUT_US_MAX} over the limit` : ""}
             </p>
             {error && <p role="alert" className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
             <div className="flex gap-2 pt-1">

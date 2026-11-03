@@ -27,7 +27,7 @@ function panNameMatches(formName: string, cardName: string): boolean {
   return parts(formName).some((p) => card.has(p));
 }
 import { SearchableSelect, type SelectOption } from '@/components/profile/SearchableSelect';
-import { getDialCodes } from '@/app/actions/locations';
+import { getDialCodes } from '@/app/[locale]/actions/locations';
 import { PHONE_LENGTHS, getDialCode } from '@/lib/phone';
 import { useAuth } from '@/hooks/useAuth';
 import styles from './MoneyDonationForm.module.css';

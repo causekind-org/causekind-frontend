@@ -19,7 +19,7 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: auth.user, isLoading
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), back: vi.fn() }), usePathname: () => "/ngos/hope", useSearchParams: () => new URLSearchParams() }));
 
 import { NgoPublicPage } from "./NgoPublicPage";
-import { NgoProfileChangesPanel } from "@/app/admin/ngos/NgoProfileChangesPanel";
+import { NgoProfileChangesPanel } from "@/app/[locale]/admin/ngos/NgoProfileChangesPanel";
 import { HandoverContactsCall } from "@/features/handover/HandoverContactPanel";
 
 const ngo = {

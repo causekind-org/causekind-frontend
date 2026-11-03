@@ -15,7 +15,7 @@ const api = vi.hoisted(() => ({
   analyzeOfferImages: vi.fn(),
 }));
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>()), ...api }));
-vi.mock("@/app/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
+vi.mock("@/app/[locale]/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
 vi.mock("next-intl", () => ({ useLocale: () => "en", useTranslations: () => (k: string) => k }));
 vi.mock("@/lib/toast", () => ({ toast: Object.assign(vi.fn(), { success: vi.fn(), error: vi.fn(), loading: vi.fn(() => "t"), dismiss: vi.fn() }) }));
 vi.mock("@/lib/imageCompression", () => ({ compressDisplayPhoto: async (f: File) => f }));

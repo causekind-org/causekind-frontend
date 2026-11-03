@@ -22,7 +22,7 @@ const toastMock = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), er
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>()), ...api }));
 vi.mock("@/lib/toast", () => ({ toast: toastMock }));
 // next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
-vi.mock("@/app/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
+vi.mock("@/app/[locale]/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
 vi.mock("@/hooks/useLocations", () => ({
   useLocations: () => ({ countries: [{ value: "IN", label: "India" }], states: [{ value: "MH", label: "Maharashtra" }], cities: [] }),
 }));

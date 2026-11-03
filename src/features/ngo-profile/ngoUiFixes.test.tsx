@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { FilePreviewDialog } from "@/components/FilePreviewDialog";
 import { fromStoredPhone, phoneError, toStoredPhone } from "@/features/ngo-drives/phoneCountries";
-import { handoverModeInWords } from "@/app/ngo/drives/new/page";
+import { handoverModeInWords } from "@/app/[locale]/ngo/drives/new/page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));
 
@@ -36,7 +36,7 @@ describe("drive form", () => {
   });
 
   it("does not prefill the contact phone, shows handover details in words, and the submitted popup blocks a second drive", () => {
-    const page = src("app/ngo/drives/new/page.tsx");
+    const page = src("app/[locale]/ngo/drives/new/page.tsx");
     expect(page).not.toMatch(/setContactPhone\(ngoContactPhone\)/);
     expect(handoverModeInWords("BOTH", 20)).toBe("I pick up from donors within 20 km; donors farther away drop off at the drive address");
     expect(handoverModeInWords("DROP_OFF", 20)).toMatch(/drop the items off/);
@@ -53,7 +53,7 @@ describe("FAQ and landing", () => {
     const en = JSON.parse(src("../messages/en.json")).faq;
     expect(en.q12).toBeUndefined();
     expect(en.ngoDriveQ6).toBeUndefined();
-    expect(src("app/faq/FaqPageClient.tsx")).not.toContain('t("q12")');
+    expect(src("app/[locale]/faq/FaqPageClient.tsx")).not.toContain('t("q12")');
   });
 
   it("an approved NGO does not see the closing 'Get verified. Post. Deliver.' section", () => {

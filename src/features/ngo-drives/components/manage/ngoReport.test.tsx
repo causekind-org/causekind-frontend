@@ -6,7 +6,7 @@ vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>(
 vi.mock("next/navigation", () => ({ useParams: () => ({ id: "5" }), useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { email: "ngo@x.test", role: "NGO_PARTNER" }, isLoading: false }) }));
 
-import ReportPage from "@/app/ngo/drives/[id]/report/page";
+import ReportPage from "@/app/[locale]/ngo/drives/[id]/report/page";
 import { HistoryTab } from "./HistoryTab";
 
 describe("NGO drive report", () => {

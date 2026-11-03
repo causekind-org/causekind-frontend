@@ -3,13 +3,13 @@
 import { useMemo } from "react";
 import { AdminFrEmbedContext } from "./adminLink";
 import a from "./admin.module.css";
-import ApplicationsQueue from "@/app/admin/fundraising/page";
-import ApplicationReview from "@/app/admin/fundraising/[id]/page";
-import PublicationQueue from "@/app/admin/fundraising/campaigns/page";
-import PublicationReview from "@/app/admin/fundraising/campaigns/[id]/page";
-import ItemReview from "@/app/admin/fundraising/review/page";
-import ReportCases from "@/app/admin/fundraising/reports/page";
-import ReportCase from "@/app/admin/fundraising/reports/[campaignId]/page";
+import ApplicationsQueue from "@/app/[locale]/admin/fundraising/page";
+import ApplicationReview from "@/app/[locale]/admin/fundraising/[id]/page";
+import PublicationQueue from "@/app/[locale]/admin/fundraising/campaigns/page";
+import PublicationReview from "@/app/[locale]/admin/fundraising/campaigns/[id]/page";
+import ItemReview from "@/app/[locale]/admin/fundraising/review/page";
+import ReportCases from "@/app/[locale]/admin/fundraising/reports/page";
+import ReportCase from "@/app/[locale]/admin/fundraising/reports/[campaignId]/page";
 
 /** Resolves an /admin/fundraising/... path to the page shown in the dashboard panel. */
 function resolve(path: string): { el: () => React.ReactElement; params: Record<string, string> } {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { LimitCounter, overLimit, overLimitBorder, TEXT_LIMITS } from "@/components/TextLimit";
 import { Loader2, Pencil, Plus } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -273,7 +274,9 @@ export function OwnerEditDialog({ kind, manage, onSaved, onClose }: {
           {kind === "about" && (
             <div className="space-y-1">
               <label htmlFor="owner-about" className="text-xs font-bold">About us</label>
-              <textarea id="owner-about" rows={7} maxLength={2000} value={about} onChange={(e) => setAbout(e.target.value)} className={`${input} py-2`} />
+              <textarea id="owner-about" rows={7} value={about} onChange={(e) => setAbout(e.target.value)} aria-invalid={overLimit(about, TEXT_LIMITS.aboutUs)}
+                className={`${input} py-2 ${overLimit(about, TEXT_LIMITS.aboutUs) ? overLimitBorder : ""}`} />
+              <LimitCounter id="owner-about-count" value={about} max={TEXT_LIMITS.aboutUs} />
               <p className="text-right text-3xs text-stone-500">{about.trim().length}/2000 (at least 100)</p>
             </div>
           )}

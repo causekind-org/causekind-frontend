@@ -1,6 +1,7 @@
 "use client";
 
 import { openDatePicker } from "@/lib/openDatePicker";
+import { LimitCounter, overLimit, overLimitBorder, TEXT_LIMITS } from "@/components/TextLimit";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Pencil, Plus, Trash2, UploadCloud } from "lucide-react";
 import {
@@ -78,6 +79,7 @@ export function PastActivityForm({ onSaved, onCancel, activity }: {
     if (!date) return setError("Add the activity date.");
     if (date > todayIst()) return setError("The date cannot be in the future.");
     if (!work.trim()) return setError("Tell donors what work you did.");
+    if (tooLong) return;
     if (photos.length + kept.length === 0) return setError("Add at least one photo.");
     setBusy(true);
     try {
@@ -97,12 +99,16 @@ export function PastActivityForm({ onSaved, onCancel, activity }: {
     }
   }
 
+  const titleOver = overLimit(title, TEXT_LIMITS.title), workOver = overLimit(work, TEXT_LIMITS.description);
+  const tooLong = titleOver || workOver;
   const field = "w-full min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 text-sm dark:border-zinc-700 dark:bg-zinc-900";
   return (
     <div data-testid="past-activity-form" className="space-y-3 rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
       <div className="space-y-1">
         <label htmlFor="activity-title" className="text-xs font-bold text-stone-700 dark:text-stone-200">Activity name <span className="text-red-500">*</span></label>
-        <input id="activity-title" maxLength={120} value={title} onChange={(e) => setTitle(e.target.value)} className={field} placeholder="e.g. Winter blanket drive" />
+        <input id="activity-title" value={title} onChange={(e) => setTitle(e.target.value)} aria-invalid={titleOver} aria-describedby="activity-title-count"
+          className={`${field} ${titleOver ? overLimitBorder : ""}`} placeholder="e.g. Winter blanket drive" />
+        <LimitCounter id="activity-title-count" value={title} max={TEXT_LIMITS.title} />
       </div>
       <div className="space-y-1">
         <label htmlFor="activity-date" className="text-xs font-bold text-stone-700 dark:text-stone-200">Activity date <span className="text-red-500">*</span></label>
@@ -110,8 +116,9 @@ export function PastActivityForm({ onSaved, onCancel, activity }: {
       </div>
       <div className="space-y-1">
         <label htmlFor="activity-work" className="text-xs font-bold text-stone-700 dark:text-stone-200">What work did you do? <span className="text-red-500">*</span></label>
-        <textarea id="activity-work" rows={4} maxLength={500} value={work} onChange={(e) => setWork(e.target.value)}
-          className={`${field} py-2`} placeholder="Who you helped, what you gave, where and how." />
+        <textarea id="activity-work" rows={4} value={work} onChange={(e) => setWork(e.target.value)} aria-invalid={workOver} aria-describedby="activity-work-count"
+          className={`${field} py-2 ${workOver ? overLimitBorder : ""}`} placeholder="Who you helped, what you gave, where and how." />
+        <LimitCounter id="activity-work-count" value={work} max={TEXT_LIMITS.description} />
       </div>
       <div className="space-y-2">
         <p className="text-xs font-bold text-stone-700 dark:text-stone-200">Photos <span className="text-red-500">*</span> <span className="font-normal text-stone-400">(1 to {MAX_ACTIVITY_PHOTOS})</span></p>
@@ -139,7 +146,7 @@ export function PastActivityForm({ onSaved, onCancel, activity }: {
       {error && <p role="alert" className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
       <div className="flex justify-end gap-2">
         {onCancel && <button type="button" onClick={onCancel} disabled={busy} className="min-h-[40px] rounded-lg border border-stone-300 px-3 text-xs font-semibold dark:border-zinc-700">Cancel</button>}
-        <button type="button" onClick={() => void save()} disabled={busy}
+        <button type="button" onClick={() => void save()} disabled={busy || tooLong}
           className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg bg-ngo-700 px-4 text-xs font-bold text-white hover:bg-ngo-600 disabled:opacity-60">
           {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />} {activity ? "Save changes" : "Save activity"}
         </button>

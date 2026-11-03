@@ -74,7 +74,7 @@ describe("giveState", () => {
 });
 
 describe("donor drive page /drives/[id]", () => {
-  const Page = async () => (await import("@/app/drives/[id]/page")).default;
+  const Page = async () => (await import("@/app/[locale]/drives/[id]/page")).default;
 
   it("a non-404 error shows the message and Retry, not 'Drive not found'", async () => {
     api.getNgoDrive.mockRejectedValueOnce(await apiError(500, "Something went wrong on our end.")).mockResolvedValueOnce(drive());
@@ -134,7 +134,7 @@ describe("donor drive page /drives/[id]", () => {
 });
 
 describe("give page /drives/[id]/give", () => {
-  const Page = async () => (await import("@/app/drives/[id]/give/page")).default;
+  const Page = async () => (await import("@/app/[locale]/drives/[id]/give/page")).default;
 
   it("logged out → login with ?next= back to the give page", async () => {
     auth.user = null;
@@ -203,7 +203,7 @@ describe("give page /drives/[id]/give", () => {
 });
 
 describe("NGO drive page /ngo/drives/[id]", () => {
-  const Page = async () => (await import("@/app/ngo/drives/[id]/page")).default;
+  const Page = async () => (await import("@/app/[locale]/ngo/drives/[id]/page")).default;
   const ngoDrive = (extra: Record<string, unknown> = {}) => ({
     ...drive(), itemCondition: "NEW_OR_GENTLY_USED", beneficiaryGroup: "Families", beneficiaryCount: 50,
     availableDays: "MON,TUE", availableFrom: "10:00", availableTo: "17:00", contactName: "Prachi", contactPhone: "9999999999",

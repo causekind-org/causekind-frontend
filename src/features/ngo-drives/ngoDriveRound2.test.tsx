@@ -80,7 +80,7 @@ describe("several offers on one drive", () => {
 describe("the giving-safely checklist is gone", () => {
   const root = resolve(__dirname, "../../..");
   it("no page, no links, a redirect to the FAQ", () => {
-    expect(existsSync(resolve(root, "src/app/give-safely"))).toBe(false);
+    expect(existsSync(resolve(root, "src/app/[locale]/give-safely"))).toBe(false);
     for (const f of ["src/components/Footer.tsx", "src/app/sitemap.ts", "src/features/ngo-drives/components/DriveDetailView.tsx"]) {
       expect(readFileSync(resolve(root, f), "utf8")).not.toContain("/give-safely");
     }

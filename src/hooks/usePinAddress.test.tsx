@@ -6,7 +6,7 @@ const actions = vi.hoisted(() => ({
   detect: vi.fn(),
   resolve: vi.fn(async () => ({ stateIso: "MH", cityValue: "Mumbai" })),
 }));
-vi.mock("@/app/actions/locations", () => ({
+vi.mock("@/app/[locale]/actions/locations", () => ({
   detectLocationFromServer: actions.detect,
   geocodeAddressFromServer: vi.fn(),
   resolveLocationFromGPS: actions.resolve,

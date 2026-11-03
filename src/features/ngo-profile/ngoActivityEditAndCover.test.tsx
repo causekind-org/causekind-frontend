@@ -4,7 +4,7 @@ import { PastActivitySection } from "./PastActivity";
 import { OwnerEditDialog } from "./NgoProfileOwnerEdit";
 import { ReviewSubmit } from "@/features/ngo-registration/steps/ReviewSubmit";
 import { INITIAL_NGO_FORM } from "@/features/ngo-registration/ngoRegistrationModel";
-import { NgoActivityModerationPanel } from "@/app/admin/ngos/NgoActivityModerationPanel";
+import { NgoActivityModerationPanel } from "@/app/[locale]/admin/ngos/NgoActivityModerationPanel";
 import {
   approveNgoActivity, deleteNgoActivity, dismissNgoActivityEditNote, getMyNgoActivities, getPendingNgoActivities, removeNgoActivityMedia, removeNgoProfilePhoto, updateNgoActivity,
   uploadNgoProfilePhoto,
