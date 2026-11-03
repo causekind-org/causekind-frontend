@@ -7244,3 +7244,59 @@ export const sahasCampaigns = {
   item: (slug: string, driveId: number) =>
     request<PublicNgoDrive>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}/items/${driveId}`, { silent401: true }),
 };
+
+// ── Sahas campaigns admin (Phase D2, 2026-11-03): /api/v1/admin/sahas-campaigns ──
+// Every mutation sends the campaign's current version; a stale one is refused (409).
+// Offers endpoints need OFFER_REVIEW, the rest CAMPAIGNS.
+
+export type SahasAdminRow = {
+  id: number; slug: string | null; title: string | null; status: string; phase: SahasPhase;
+  collectsItems: boolean; collectsMoney: boolean; targetAmount: number | null; amountRaised: number | null;
+  endDate: string | null; featured: boolean; publishAt: string | null; updatedAt: string;
+};
+export type SahasAdminDetail = {
+  id: number; version: number; status: string; slug: string | null; title: string | null; summary: string | null;
+  description: string | null; category: string | null; city: string | null; state: string | null; imageUrl: string | null;
+  coverAltText: string | null; coverConsent: boolean | null; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number | null; amountRaised: number | null; startDate: string | null; endDate: string | null;
+  featured: boolean; hidden: boolean; publishAt: string | null; pauseReason: string | null; missingForPublish: string[];
+};
+export type SahasUpsert = Partial<{
+  title: string; slug: string; summary: string; description: string; category: string; city: string; state: string;
+  imageUrl: string; coverAltText: string; coverConsent: boolean; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number; startDate: string; endDate: string; featured: boolean;
+}> & { version?: number };
+export type SahasLineInput = Partial<{
+  itemName: string; category: string; quantityNeeded: number; unit: string; itemCondition: string; details: string;
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH"; dropOffAddress: string; availableDays: string; pickupRadiusKm: number;
+  locationCity: string; locationLatitude: number; locationLongitude: number; contactName: string; contactPhone: string;
+}>;
+export type SahasAdminLine = {
+  id: number; itemName: string; category: string | null; quantityNeeded: number; quantityPledged: number; quantityReceived: number;
+  unit: string | null; itemCondition: string | null; details: string | null; handoverMode: "DROP_OFF" | "PICKUP" | "BOTH" | null;
+  dropOffAddress: string | null; availableDays: string | null; pickupRadiusKm: number | null; locationCity: string | null;
+  locationLatitude: number | null; locationLongitude: number | null; contactName: string | null; contactPhone: string | null;
+  status: string; missing: string[];
+};
+
+const SA = "/api/v1/admin/sahas-campaigns";
+export const sahasAdmin = {
+  list: () => request<SahasAdminRow[]>(SA),
+  get: (id: number) => request<SahasAdminDetail>(`${SA}/${id}`),
+  create: (body: SahasUpsert) => request<SahasAdminDetail>(SA, { method: "POST", body: JSON.stringify(body) }),
+  update: (id: number, body: SahasUpsert) => request<SahasAdminDetail>(`${SA}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  publish: (id: number, version: number, publishAt: string | null, note: string | null) =>
+    request<SahasAdminDetail>(`${SA}/${id}/publish`, { method: "POST", body: JSON.stringify({ version, publishAt, note }) }),
+  transition: (id: number, action: "pause" | "resume" | "close" | "cancel", version: number, reason: string | null) =>
+    request<SahasAdminDetail>(`${SA}/${id}/${action}`, { method: "POST", body: JSON.stringify({ version, reason }) }),
+  items: (id: number) => request<SahasAdminLine[]>(`${SA}/${id}/items`),
+  addItem: (id: number, body: SahasLineInput) => request<SahasAdminLine>(`${SA}/${id}/items`, { method: "POST", body: JSON.stringify(body) }),
+  updateItem: (id: number, lineId: number, body: SahasLineInput) =>
+    request<SahasAdminLine>(`${SA}/${id}/items/${lineId}`, { method: "PUT", body: JSON.stringify(body) }),
+  removeItem: (id: number, lineId: number) => request<void>(`${SA}/${id}/items/${lineId}`, { method: "DELETE" }),
+  offers: (id: number, status?: string) => request<NgoDriveOfferResponse[]>(`${SA}/${id}/offers${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+  review: (id: number, offerId: number, decision: "ACCEPT" | "DECLINE" | "ASK_TO_DROP_OFF", reason?: string, acceptedQuantity?: number) =>
+    request<NgoDriveOfferResponse>(`${SA}/${id}/offers/${offerId}/review`, { method: "POST", body: JSON.stringify({ decision, reason, acceptedQuantity }) }),
+  handover: (id: number, offerId: number, otp: string, quantity?: number) =>
+    request<unknown>(`${SA}/${id}/offers/${offerId}/handover`, { method: "POST", body: JSON.stringify({ otp, quantity }) }),
+};

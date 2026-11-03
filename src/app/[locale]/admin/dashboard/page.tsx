@@ -39,6 +39,8 @@ import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav";
 import { AdminFundraisingPanel } from "@/features/fundraising/AdminFundraisingPanel";
+import { AdminSahasPanel } from "@/features/sahas/AdminSahasPanel";
+import { FEATURES } from "@/lib/features";
 import {
   AlertTriangle, Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
@@ -48,7 +50,7 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising" | "sahas";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -78,6 +80,8 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   whatsapp: "WHATSAPP",
   // Fundraising pages render in the panel (2026-10-19); same capability as /admin/fundraising.
   fundraising: "CAMPAIGNS",
+  // Sahas campaigns (2026-11-03): same capability as the backend's sahas-campaigns segment.
+  sahas: "CAMPAIGNS",
 };
 /** ?tab= values that open an NGO tab (tab keys plus the longer names used in links). */
 const NGO_TAB_LINKS: Record<string, TabKey> = {
@@ -596,7 +600,7 @@ export default function AdminDashboardPage() {
   // wrong side of the mobile nav split below.
   const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
   const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
-    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising" || tab === "issues";
+    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising" || tab === "sahas" || tab === "issues";
   const showIssues = canSeeTab("issues");
 
   const TABS = [
@@ -645,6 +649,7 @@ export default function AdminDashboardPage() {
     : tab === "analytics" ? "Analytics"
     : tab === "whatsapp" ? "WhatsApp"
     : tab === "fundraising" ? "Fundraising"
+    : tab === "sahas" ? "Sahas campaigns"
     : "Approval Queue";
 
   const headerSubtitle = tab === "issues"
@@ -673,6 +678,8 @@ export default function AdminDashboardPage() {
     ? "Templates, flows, sends, and the message log"
     : tab === "fundraising"
     ? "Applications, publication, updates and reports for donee fundraisers"
+    : tab === "sahas"
+    ? "Campaigns organised by Sahas Charitable Trust: items, publishing, offers and handovers"
     : tab === "ai-logs"
     ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} across all listings`
     : loading ? "Loading..." : total > 0
@@ -805,6 +812,13 @@ export default function AdminDashboardPage() {
           )}
 
           <AdminFundraisingNav variant="sidebar" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
+          {FEATURES.sahas && canSeeTab("sahas") && (
+            <button type="button" onClick={() => setTab("sahas")} aria-current={tab === "sahas" ? "page" : undefined}
+              className={`mt-2 w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all border ${tab === "sahas" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"}`}
+              style={{ background: tab === "sahas" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}>
+              <span className={`text-sm font-semibold ${tab === "sahas" ? "text-white" : "text-stone-400"}`}>Sahas campaigns</span>
+            </button>
+          )}
         </div>
 
         {/* Reports */}
@@ -975,6 +989,12 @@ export default function AdminDashboardPage() {
             )}
 
             <AdminFundraisingNav variant="strip" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
+            {FEATURES.sahas && canSeeTab("sahas") && (
+              <button type="button" onClick={() => setTab("sahas")} aria-current={tab === "sahas" ? "page" : undefined}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "sahas" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}>
+                Sahas
+              </button>
+            )}
 
             {REPORTS.length > 0 && (
               <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
@@ -1261,6 +1281,9 @@ export default function AdminDashboardPage() {
 
           {/* ── FUNDRAISING — the /admin/fundraising pages, rendered in the panel ── */}
           {tab === "fundraising" && <AdminFundraisingPanel path={frPath} go={setFrPath} />}
+
+          {/* ── SAHAS CAMPAIGNS (2026-11-03) ── */}
+          {tab === "sahas" && <AdminSahasPanel />}
         </div>
 
         <ApprovalDetailDrawer
