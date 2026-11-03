@@ -699,6 +699,8 @@ export function SiteHeader() {
     ...(FEATURES.fundraising && user?.role === "DONEE" ? [{ href: "/fundraising", label: ui("Fundraising") }] : []),
     // Everyone else (donors, NGOs, signed-out visitors) browses live fundraisers.
     ...(FEATURES.fundraising && user?.role !== "DONEE" ? [{ href: "/fundraisers", label: ui("Fundraisers") }] : []),
+    // Campaigns organised by Sahas Charitable Trust (2026-11-03): open to every visitor.
+    ...(FEATURES.sahas ? [{ href: "/sahas", label: ui("Sahas Campaigns") }] : []),
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];

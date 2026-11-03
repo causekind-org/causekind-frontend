@@ -7213,3 +7213,34 @@ export const volunteerHandover = {
 export async function setVolunteerCallPermission(offerId: number, allowed: boolean): Promise<void> {
   await request<void>(`/api/v1/drive-offers/${offerId}/volunteer-call-permission`, { method: "PUT", body: JSON.stringify({ allowed }) });
 }
+
+// ── Sahas campaigns (Phase D1, 2026-11-03) ──
+// Public: GET /api/v1/sahas/campaigns[/{slug}[/items/{driveId}]], 404 while the backend's sahas.enabled is off.
+// Items only for now; money fields stay unused until phase C3.
+
+export type SahasPhase = "UPCOMING" | "OPEN" | "PAUSED" | "CLOSED";
+export type SahasCampaignCard = {
+  slug: string; title: string; summary: string | null; city: string | null; state: string | null;
+  imageUrl: string | null; coverAltText: string | null; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number | null; amountRaised: number | null; startDate: string | null; endDate: string | null;
+  phase: SahasPhase; featured: boolean;
+};
+/** One item line. `driveId` is what the donor give flow takes; contacts are never public. */
+export type SahasItemLine = {
+  driveId: number; itemName: string; unit: string | null; itemCondition: string | null; details: string | null;
+  quantityNeeded: number; quantityPledged: number; quantityReceived: number; quantityLeft: number;
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH" | null; dropOffAddress: string | null; availableDays: string | null;
+  pickupRadiusKm: number | null; locationCity: string | null;
+};
+export type SahasCampaignDetail = {
+  card: SahasCampaignCard; description: string | null; category: string | null; updatedAt: string;
+  items: SahasItemLine[];
+};
+
+export const sahasCampaigns = {
+  live: () => request<SahasCampaignCard[]>("/api/v1/sahas/campaigns", { silent401: true }),
+  detail: (slug: string) => request<SahasCampaignDetail>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}`, { silent401: true }),
+  /** The item line in the public drive shape, so the existing give wizard works unchanged. */
+  item: (slug: string, driveId: number) =>
+    request<PublicNgoDrive>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}/items/${driveId}`, { silent401: true }),
+};
