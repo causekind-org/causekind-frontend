@@ -112,6 +112,51 @@ function SahasCampaign() {
                 <Handover items={items} />
               </section>
             )}
+
+            {data.outcome && (
+              <section className="flex flex-col gap-3 rounded-2xl border border-[#CFE5D8] bg-[#F2F8F4] p-6 dark:border-emerald-900 dark:bg-emerald-950/30">
+                <h2 className={`${serif} m-0 text-2xl`}><UiText>What was delivered</UiText></h2>
+                {data.outcome.summary && <p className="m-0 whitespace-pre-line text-[16px] leading-relaxed ck-user-text">{data.outcome.summary}</p>}
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[420px] border-collapse text-sm">
+                    <thead><tr className="text-left text-xs uppercase tracking-[0.05em] text-[#24402F]">
+                      <th className="py-2 pe-3 font-semibold"><UiText>Item</UiText></th>
+                      <th className="py-2 pe-3 font-semibold"><UiText>Received</UiText></th>
+                      <th className="py-2 pe-3 font-semibold"><UiText>Handed out</UiText></th>
+                      <th className="py-2 font-semibold"><UiText>Left over</UiText></th>
+                    </tr></thead>
+                    <tbody>
+                      {data.outcome.lines.map((l) => (
+                        <tr key={l.driveId} className="border-t border-[#CFE5D8] dark:border-emerald-900">
+                          <td className="py-2 pe-3 font-semibold">{l.itemName}</td>
+                          <td className="py-2 pe-3">{l.received}</td>
+                          <td className="py-2 pe-3">{l.distributed ?? "—"}</td>
+                          <td className="py-2">{l.distributed == null ? "—" : l.received - l.distributed}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {data.outcome.leftoverNote && <p className="m-0 text-sm text-[#24402F] dark:text-emerald-200 ck-user-text">{data.outcome.leftoverNote}</p>}
+                {data.outcome.approvedAt && <p className="m-0 text-xs text-[#24402F] dark:text-emerald-300"><UiText>Checked and published by Sahas on</UiText> {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(data.outcome.approvedAt))}</p>}
+              </section>
+            )}
+
+            {data.updates.length > 0 && (
+              <section className="flex flex-col gap-3">
+                <h2 className={`${serif} m-0 text-2xl`}><UiText>Updates</UiText></h2>
+                {data.updates.map((u) => (
+                  <article key={u.id} className="flex flex-col gap-1 rounded-xl border border-[#EADFD3] bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+                    <span className="text-xs text-[#6B5A4E] dark:text-stone-400">
+                      {u.publishedAt && new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(u.publishedAt))}
+                      {u.correctedAt && <> · <UiText>corrected</UiText> {new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(new Date(u.correctedAt))}</>}
+                    </span>
+                    <b className="ck-user-text">{u.title}</b>
+                    <p className="m-0 whitespace-pre-line text-sm text-[#4A3B30] dark:text-stone-300 ck-user-text">{u.body}</p>
+                  </article>
+                ))}
+              </section>
+            )}
           </div>
 
           <aside aria-label={ui("Choose how to help")} className="flex flex-col gap-4 rounded-2xl border border-[#EADFD3] bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 lg:sticky lg:top-24">

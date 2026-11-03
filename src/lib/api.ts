@@ -7232,9 +7232,16 @@ export type SahasItemLine = {
   handoverMode: "DROP_OFF" | "PICKUP" | "BOTH" | null; dropOffAddress: string | null; availableDays: string | null;
   pickupRadiusKm: number | null; locationCity: string | null;
 };
+export type SahasUpdate = { id: number; version: number | null; title: string; body: string; publishedAt: string | null; correctedAt: string | null };
+export type SahasOutcomeLine = { driveId: number; itemName: string; received: number; distributed: number | null };
+/** Public copy has no admin identities or version; the admin copy has both. */
+export type SahasOutcome = {
+  id: number; version: number | null; status: "DRAFT" | "APPROVED"; summary: string | null; leftoverNote: string | null;
+  submittedBy: string | null; submittedAt: string | null; approvedBy: string | null; approvedAt: string | null; lines: SahasOutcomeLine[];
+};
 export type SahasCampaignDetail = {
   card: SahasCampaignCard; description: string | null; category: string | null; updatedAt: string;
-  items: SahasItemLine[];
+  items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null;
 };
 
 export const sahasCampaigns = {
@@ -7299,4 +7306,14 @@ export const sahasAdmin = {
     request<NgoDriveOfferResponse>(`${SA}/${id}/offers/${offerId}/review`, { method: "POST", body: JSON.stringify({ decision, reason, acceptedQuantity }) }),
   handover: (id: number, offerId: number, otp: string, quantity?: number) =>
     request<unknown>(`${SA}/${id}/offers/${offerId}/handover`, { method: "POST", body: JSON.stringify({ otp, quantity }) }),
+  updates: (id: number) => request<SahasUpdate[]>(`${SA}/${id}/updates`),
+  postUpdate: (id: number, title: string, body: string) =>
+    request<SahasUpdate>(`${SA}/${id}/updates`, { method: "POST", body: JSON.stringify({ title, body }) }),
+  correctUpdate: (id: number, updateId: number, version: number, title: string, body: string) =>
+    request<SahasUpdate>(`${SA}/${id}/updates/${updateId}`, { method: "PUT", body: JSON.stringify({ title, body, version }) }),
+  outcome: (id: number) => request<SahasOutcome | null>(`${SA}/${id}/outcome`),
+  saveOutcome: (id: number, body: { summary?: string; leftoverNote?: string; distributed?: Record<number, number | null>; version?: number | null }) =>
+    request<SahasOutcome>(`${SA}/${id}/outcome`, { method: "PUT", body: JSON.stringify(body) }),
+  approveOutcome: (id: number, version: number) =>
+    request<SahasOutcome>(`${SA}/${id}/outcome/approve`, { method: "POST", body: JSON.stringify({ version }) }),
 };

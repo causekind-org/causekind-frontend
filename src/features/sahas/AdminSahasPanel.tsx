@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ApiError, sahasAdmin, type NgoDriveOfferResponse, type SahasAdminDetail, type SahasAdminLine, type SahasAdminRow,
-  type SahasLineInput, type SahasUpsert,
+  type SahasLineInput, type SahasOutcome, type SahasUpdate, type SahasUpsert,
 } from "@/lib/api";
 
 /**
@@ -110,7 +110,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
 
 // ── Editor ────────────────────────────────────────────────────────────────
 
-type Tab = "details" | "items" | "offers";
+type Tab = "details" | "items" | "offers" | "outcome";
 
 function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
   const [d, setD] = useState<SahasAdminDetail | null>(null);
@@ -131,10 +131,10 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
         {d.slug && d.status !== "DRAFT" && <a href={`/sahas/${d.slug}`} target="_blank" rel="noreferrer" className="ms-auto text-sm font-semibold text-[#b04a15]">View public page ↗</a>}
       </div>
       <div role="tablist" aria-label="Campaign sections" className="flex gap-5 border-b border-stone-200 dark:border-zinc-800">
-        {(["details", "items", "offers"] as Tab[]).map((t) => (
+        {(["details", "items", "offers", "outcome"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
             className={`min-h-[44px] border-b-[3px] text-sm font-semibold ${tab === t ? "border-[#b04a15] text-stone-900 dark:text-stone-100" : "border-transparent text-stone-500"}`}>
-            {t === "details" ? "Details and publishing" : t === "items" ? "Items" : "Offers and handovers"}
+            {t === "details" ? "Details and publishing" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : "Updates and outcome"}
           </button>
         ))}
       </div>
@@ -142,6 +142,7 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
       {tab === "details" && <Details d={d} onSaved={setD} onError={setError} />}
       {tab === "items" && <Items d={d} onChanged={load} onError={setError} />}
       {tab === "offers" && <Offers campaignId={d.id} onError={setError} />}
+      {tab === "outcome" && <UpdatesAndOutcome d={d} onError={setError} />}
     </div>
   );
 }
@@ -386,6 +387,117 @@ function Offers({ campaignId, onError }: { campaignId: number; onError: (m: stri
             ))}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Updates and outcome (Phase C2b) ───────────────────────────────────────
+
+function UpdatesAndOutcome({ d, onError }: { d: SahasAdminDetail; onError: (m: string | null) => void }) {
+  const [list, setList] = useState<SahasUpdate[] | null>(null);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [editing, setEditing] = useState<SahasUpdate | null>(null);
+  const [outcome, setOutcome] = useState<SahasOutcome | null | undefined>(undefined);
+  const [summary, setSummary] = useState("");
+  const [leftover, setLeftover] = useState("");
+  const [given, setGiven] = useState<Record<number, string>>({});
+  const [busy, setBusy] = useState(false);
+  // Before the first draft, the rows come from the item lines (received so far, nothing handed out).
+  const [fallback, setFallback] = useState<SahasOutcome["lines"]>([]);
+  const closed = d.status === "COLLECTIONS_CLOSED";
+
+  const load = useCallback(() => {
+    sahasAdmin.updates(d.id).then(setList).catch((e) => onError(messageOf(e)));
+    sahasAdmin.items(d.id).then((ls) => setFallback(ls.filter((l) => l.status !== "PENDING_REVIEW" && l.status !== "CANCELLED")
+      .map((l) => ({ driveId: l.id, itemName: l.itemName, received: l.quantityReceived, distributed: null })))).catch(() => setFallback([]));
+    sahasAdmin.outcome(d.id).then((o) => {
+      setOutcome(o ?? null);
+      setSummary(o?.summary ?? ""); setLeftover(o?.leftoverNote ?? "");
+      setGiven(Object.fromEntries((o?.lines ?? []).map((l) => [l.driveId, l.distributed == null ? "" : String(l.distributed)])));
+    }).catch((e) => onError(messageOf(e)));
+  }, [d.id, onError]);
+  useEffect(load, [load]);
+
+  const run = async (p: Promise<unknown>) => {
+    setBusy(true); onError(null);
+    try { await p; load(); changed(); return true; } catch (e) { onError(messageOf(e)); return false; } finally { setBusy(false); }
+  };
+  const publishUpdate = async () => {
+    const ok = editing
+      ? await run(sahasAdmin.correctUpdate(d.id, editing.id, editing.version ?? 0, title, body))
+      : await run(sahasAdmin.postUpdate(d.id, title, body));
+    if (ok) { setTitle(""); setBody(""); setEditing(null); }
+  };
+  const saveOutcome = () => run(sahasAdmin.saveOutcome(d.id, {
+    summary, leftoverNote: leftover, version: outcome?.version ?? null,
+    distributed: Object.fromEntries(Object.entries(given).map(([k, v]) => [Number(k), v === "" ? null : Number(v)])),
+  }));
+  const approved = outcome?.status === "APPROVED";
+
+  return (
+    <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-2">
+      <div className={`${box} flex flex-col gap-3`}>
+        <h3 className="m-0 text-base font-bold">{editing ? "Correct an update" : "Post an update"}</h3>
+        {d.status === "DRAFT" ? <p className="m-0 text-sm text-stone-500">Updates can be posted once the campaign is published.</p> : (
+          <>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">Title<input className={`${field} font-normal`} value={title} onChange={(e) => setTitle(e.target.value)} /></label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">What happened<textarea className={`${field} min-h-[100px] py-2 font-normal`} value={body} onChange={(e) => setBody(e.target.value)} /></label>
+            <div className="flex gap-2">
+              <button type="button" className={primary} disabled={busy || !title.trim() || !body.trim()} onClick={publishUpdate}>{editing ? "Publish correction" : "Publish update"}</button>
+              {editing && <button type="button" className={secondary} onClick={() => { setEditing(null); setTitle(""); setBody(""); }}>Cancel</button>}
+            </div>
+            <p className="m-0 text-xs text-stone-500">Published at once. A correction shows its date on the public page.</p>
+          </>
+        )}
+        <h3 className="m-0 mt-3 text-base font-bold">Published</h3>
+        {list?.length === 0 && <p className="m-0 text-sm text-stone-500">No updates yet.</p>}
+        {list?.map((u) => (
+          <div key={u.id} className="flex items-start justify-between gap-3 rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-800">
+            <div><b>{u.title}</b><div className="text-xs text-stone-500">{u.publishedAt?.slice(0, 10)}{u.correctedAt ? ` · corrected ${u.correctedAt.slice(0, 10)}` : ""}</div></div>
+            <button type="button" className="text-xs font-semibold text-stone-600 hover:underline" onClick={() => { setEditing(u); setTitle(u.title); setBody(u.body); }}>Correct</button>
+          </div>
+        ))}
+      </div>
+
+      <div className={`${box} flex flex-col gap-3`}>
+        <h3 className="m-0 text-base font-bold">Final outcome</h3>
+        {!closed && !approved ? <p className="m-0 text-sm text-stone-500">Close the campaign first. The outcome records what was handed out.</p> : outcome === undefined ? <p className="m-0 text-sm text-stone-500">Loading…</p> : (
+          <>
+            {approved && <p className="m-0 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-900">Approved by {outcome?.approvedBy} · drafted by {outcome?.submittedBy}. The campaign shows as completed.</p>}
+            <p className="m-0 text-xs text-stone-500">Received comes from confirmed handovers and can&apos;t be changed here. Enter only what was handed out.</p>
+            <table className="w-full border-collapse text-sm">
+              <thead><tr className="text-left text-xs text-stone-500"><th className="py-2">Item</th><th className="py-2">Received</th><th className="py-2">Handed out</th><th className="py-2">Left over</th></tr></thead>
+              <tbody>
+                {(outcome?.lines ?? fallback).map((l) => {
+                  const n = given[l.driveId] === "" || given[l.driveId] == null ? null : Number(given[l.driveId]);
+                  return (
+                    <tr key={l.driveId} className="border-t border-stone-100 dark:border-zinc-800">
+                      <td className="py-2 font-semibold">{l.itemName}</td>
+                      <td className="py-2"><span className="rounded bg-stone-100 px-2 py-1 font-semibold dark:bg-zinc-800">{l.received}</span></td>
+                      <td className="py-2"><input type="number" min={0} max={l.received} aria-label={`${l.itemName} handed out`} disabled={approved} className={`${field} w-24`} value={given[l.driveId] ?? ""} onChange={(e) => setGiven((g) => ({ ...g, [l.driveId]: e.target.value }))} /></td>
+                      <td className="py-2">{n == null ? "—" : l.received - n}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">What happened to anything left over
+              <input disabled={approved} className={`${field} font-normal`} value={leftover} onChange={(e) => setLeftover(e.target.value)} />
+            </label>
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">Summary (public)
+              <textarea disabled={approved} className={`${field} min-h-[90px] py-2 font-normal`} value={summary} onChange={(e) => setSummary(e.target.value)} />
+            </label>
+            {!approved && (
+              <div className="flex flex-wrap gap-2">
+                <button type="button" className={secondary} disabled={busy} onClick={() => void saveOutcome()}>Save draft</button>
+                {outcome && <button type="button" className={primary} disabled={busy} onClick={() => void run(sahasAdmin.approveOutcome(d.id, outcome.version ?? 0))}>Approve and mark completed</button>}
+              </div>
+            )}
+            {!approved && outcome && <p className="m-0 text-xs text-stone-500">Drafted by {outcome.submittedBy}. A different admin must approve.</p>}
+          </>
+        )}
       </div>
     </div>
   );
