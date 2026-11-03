@@ -4049,6 +4049,7 @@
     "donationCount": "{count, plural, one {# don} other {# dons}}",
     "endsOnLower": "se termine le {date}",
     "trustNotice": "Les dons sont reçus par Sahas Charitable Trust, qui les transfère au bénéficiaire. CauseKind conserve {pct} % pour faire fonctionner la plateforme. <strong>Les dons ne sont pas remboursables</strong> et ne donnent pas de reçu fiscal 80G.",
+    "trustNotice80G": "Les dons sont reçus par Sahas Charitable Trust, qui les transfère au bénéficiaire. CauseKind conserve {pct} % pour faire fonctionner la plateforme. <strong>Les dons ne sont pas remboursables.</strong> Ajoutez votre carte PAN avant de payer pour recevoir un reçu fiscal 80G.",
     "platformFee": "Frais de plateforme CauseKind ({pct} %)",
     "payAmount": "Payer {amount}",
     "reportThanks": "Merci. Notre équipe va examiner ce signalement. Référence <strong>{reference}</strong>.",

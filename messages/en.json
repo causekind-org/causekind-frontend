@@ -5099,6 +5099,7 @@
     "donationCount": "{count, plural, one {# donation} other {# donations}}",
     "endsOnLower": "ends {date}",
     "trustNotice": "Donations are received by Sahas Charitable Trust, which transfers them to the beneficiary. CauseKind keeps {pct}% to run the platform. <strong>Donations are not refundable</strong> and do not get an 80G tax receipt.",
+    "trustNotice80G": "Donations are received by Sahas Charitable Trust, which transfers them to the beneficiary. CauseKind keeps {pct}% to run the platform. <strong>Donations are not refundable.</strong> Add your PAN card before paying to get an 80G tax receipt.",
     "platformFee": "CauseKind platform fee ({pct}%)",
     "payAmount": "Pay {amount}",
     "reportThanks": "Thank you. Our team will look into it. Reference <strong>{reference}</strong>.",

@@ -48,7 +48,7 @@ export default function FundraiserPage() {
 
   return (
     <div className={`${s.root} ${s.publicTheme}`} style={{ fontSize: 16, lineHeight: 1.6 }}>
-      <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(280px,380px)", gap: 40, alignItems: "start", maxWidth: 1180 }}>
+      <main className={`${s.wrap} ${s.detail}`} style={{ paddingTop: 32, paddingBottom: 72, maxWidth: 1180 }}>
         <article style={{ display: "flex", flexDirection: "column", gap: 28, minWidth: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Link href="/fundraisers" className={s.small} style={{ textDecoration: "none" }}><UiText>← All fundraisers</UiText></Link>
@@ -150,7 +150,7 @@ export default function FundraiserPage() {
           <button type="button" className={`${s.btn} ${s.bs}`} onClick={share}>{copied ? ui("Link copied") : ui("Share")}</button>
           <div className={s.small} style={{ padding: "12px 14px", border: "1px dashed #cfc3b6", borderRadius: 10 }}>
             <strong><UiText>Where your money goes</UiText></strong><br />
-            <span className={s.muted}>{t.rich("trustNotice", { pct: d.platformFeePercent, strong: (chunks) => <strong>{chunks}</strong> })}</span>
+            <span className={s.muted}>{t.rich(d.taxReceiptOffered ? "trustNotice80G" : "trustNotice", { pct: d.platformFeePercent, strong: (chunks) => <strong>{chunks}</strong> })}</span>
           </div>
           <p className={`${s.small} ${s.muted}`}><UiText>The total counts only payments our server has confirmed.</UiText></p>
           <Link href={`/fundraisers/${c.id}/report`} className={s.small} style={{ alignSelf: "flex-start" }}><UiText>Report this fundraiser</UiText></Link>
