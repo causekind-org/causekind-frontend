@@ -686,7 +686,7 @@ export type DonationOrder = {
 };
 
 /** Starting a fundraiser donation returns no payment details; those come only from checkout (2026-10-30). */
-export type FundraiserDonationStart = { donationId: number; amountInPaise: number; currency: string };
+export type FundraiserDonationStart = { donationId: number; amountInPaise: number; currency: string; guestToken?: string };
 
 /** Fundraiser donation documents, from the server (2026-10-30). */
 export type DocumentPolicy = "CERTIFICATE_ONLY" | "RECEIPT_AND_CERTIFICATE";
@@ -6800,11 +6800,13 @@ export type FundraiserDetail = {
   remaining?: number | null;
 };
 
-/** Fundraiser donation: the signed-in donor's PAN photo for an 80G receipt, before checkout. */
-export function uploadDonationPanPhoto(donationId: number, file: File) {
+/** Fundraiser donation: the donor's PAN photo for an 80G receipt, before checkout. A guest proves the donation with its token. */
+export function uploadDonationPanPhoto(donationId: number, file: File, guestToken?: string) {
   const fd = new FormData();
   fd.append("file", file);
-  return fetch(`${BASE_URL}/api/v1/donations/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
+  if (guestToken) fd.append("uploadToken", guestToken);
+  const path = guestToken ? `trust/${donationId}` : `${donationId}`;
+  return fetch(`${BASE_URL}/api/v1/donations/${path}/pan-photo`, { method: "POST", credentials: "include", body: fd })
     .then(async (res) => {
       // 409 with "already uploaded" means a retry after a successful upload: fine.
       if (res.ok) return;
@@ -6819,12 +6821,19 @@ export const fundraisers = {
     request<FundraiserCard[]>(`/api/v1/fundraising/public/campaigns${category ? `?category=${category}` : ""}`, { silent401: true }),
   detail: (id: number) => request<FundraiserDetail>(`/api/v1/fundraising/public/campaigns/${id}`, { silent401: true }),
   /** Donor-only: asks Razorpay directly when the webhook is late (or never comes, e.g. localhost). */
-  checkDonation: (donationId: number) => request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
+  checkDonation: (donationId: number, guestToken?: string | null) => guestToken
+    ? request<Donation>(`/api/v1/donations/guest/${donationId}/check`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
+    : request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
   donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }) =>
     request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, ...(tax ?? {}) }) }),
+  /** The same donation without an account: the name and email come from the form, and the reply carries its token. */
+  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string }) =>
+    request<FundraiserDonationStart>("/api/v1/donations/guest", { method: "POST", silent401: true, body: JSON.stringify({ campaignId, amount, anonymous, ...guest, ...(tax ?? {}) }) }),
   /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
-  checkout: (donationId: number) => request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
+  checkout: (donationId: number, guestToken?: string | null) => guestToken
+    ? request<DonationOrder>(`/api/v1/donations/guest/${donationId}/checkout`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
+    : request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
   setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>
     request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${id}/payout-ready`, { method: "POST", body: JSON.stringify({ expectedVersion, ready }) }),
 };

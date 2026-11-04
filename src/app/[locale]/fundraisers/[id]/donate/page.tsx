@@ -16,6 +16,7 @@ function panNameMatches(formName: string, cardName: string): boolean {
   return parts(formName).some((p) => card.has(p));
 }
 const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * The server takes only JPEG, PNG and WebP (415 otherwise — HEIC, AVIF, GIF… failed at "Pay", 2026-10-31).
@@ -34,6 +35,7 @@ async function toAcceptedImage(file: File): Promise<File | null> {
   } catch { return null; }
 }
 import { Icon, formatINR } from "@/features/fundraising/ui";
+import { guestTokenFor, rememberGuestToken } from "@/features/fundraising/guestDonation";
 import s from "@/features/fundraising/fundraising.module.css";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -73,18 +75,22 @@ type CheckoutResult =
  */
 /** 80G details for this donation; the photo must be on the server before checkout or the donation is certificate-only. */
 type Tax = { panNumber: string; address: string; photo: File };
+/** Someone donating without an account (2026-11-04); null for a signed-in donor. */
+type Guest = { fullName: string; email: string; mobileNumber: string };
 
 async function checkoutReusingDonation(campaignId: number, amount: number, anonymous: boolean, fresh: boolean,
-                                       tax: Tax | null, skipPhoto = false): Promise<CheckoutResult> {
+                                       tax: Tax | null, guest: Guest | null, skipPhoto = false): Promise<CheckoutResult> {
   const key = pendingKey(campaignId);
-  type Saved = { donationId: number; amount: number; anonymous: boolean; pan: string | null; photo: boolean };
+  // The details are frozen on the donation, so different ones (or a different kind of donor) need a new donation.
+  const who = guest ? JSON.stringify(guest) : null;
+  type Saved = { donationId: number; amount: number; anonymous: boolean; pan: string | null; photo: boolean; who?: string | null };
   let saved: Saved | null = null;
   try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
   const remember = (s: Saved) => { try { sessionStorage.setItem(key, JSON.stringify(s)); } catch { /* fine */ } };
   /** Upload the PAN photo (once) before checkout fixes the documents. */
   const ensurePhoto = async (s: Saved): Promise<CheckoutResult | null> => {
     if (!tax || s.photo || skipPhoto) return null;
-    try { await uploadDonationPanPhoto(s.donationId, tax.photo); }
+    try { await uploadDonationPanPhoto(s.donationId, tax.photo, guestTokenFor(s.donationId) ?? undefined); }
     catch (e) {
       // 409 = already uploaded on an earlier try; anything else stops before checkout.
       if (!(e instanceof ApiError) || e.status !== 409) return { photoFailed: s.donationId, reason: e instanceof ApiError ? e.message : null };
@@ -92,15 +98,15 @@ async function checkoutReusingDonation(campaignId: number, amount: number, anony
     remember({ ...s, photo: true });
     return null;
   };
-  if (!fresh && saved && saved.amount === amount && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null)) {
+  if (!fresh && saved && saved.amount === amount && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.who ?? null) === who) {
     const stop = await ensurePhoto(saved);
     if (stop) return stop;
-    try { return { order: await fundraisers.checkout(saved.donationId) }; }
+    try { return { order: await fundraisers.checkout(saved.donationId, guestTokenFor(saved.donationId)) }; }
     catch (e) {
       if (!(e instanceof ApiError) || (e.status !== 404 && e.status !== 409)) throw e;
       if (e.status === 404) return { prior: { kind: "unknown", donationId: saved.donationId } };
       try {
-        const status = (await fundraisers.checkDonation(saved.donationId)).status;
+        const status = (await fundraisers.checkDonation(saved.donationId, guestTokenFor(saved.donationId))).status;
         if (status === "COMPLETED" || status === "INITIATED") return { redirect: saved.donationId };
         if (status === "FAILED") return { prior: { kind: "failed", donationId: saved.donationId } };
         return { prior: { kind: "unknown", donationId: saved.donationId } };
@@ -110,13 +116,16 @@ async function checkoutReusingDonation(campaignId: number, amount: number, anony
       }
     }
   }
-  const started = await fundraisers.donate(campaignId, amount, anonymous,
-    tax ? { panNumber: tax.panNumber, address: tax.address } : undefined);
-  const fresh_: Saved = { donationId: started.donationId, amount, anonymous, pan: tax?.panNumber ?? null, photo: false };
+  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address } : undefined;
+  const started = guest
+    ? await fundraisers.donateAsGuest(campaignId, amount, anonymous, guest, taxDetails)
+    : await fundraisers.donate(campaignId, amount, anonymous, taxDetails);
+  if (started.guestToken) rememberGuestToken(started.donationId, started.guestToken);
+  const fresh_: Saved = { donationId: started.donationId, amount, anonymous, pan: tax?.panNumber ?? null, photo: false, who };
   remember(fresh_);
   const stop = await ensurePhoto(fresh_);
   if (stop) return stop;
-  return { order: await fundraisers.checkout(started.donationId) };
+  return { order: await fundraisers.checkout(started.donationId, started.guestToken) };
 }
 
 export default function DonatePage() {
@@ -131,6 +140,10 @@ export default function DonatePage() {
   const [custom, setCustom] = useState("");
   const [tried, setTried] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [detailsTried, setDetailsTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prior, setPrior] = useState<Prior | null>(null);
@@ -154,12 +167,9 @@ export default function DonatePage() {
     : error === ERR_START ? ui("We couldn't start the payment. Nothing was charged.") : error;
 
   useEffect(() => { if (FEATURES.fundraising) fundraisers.detail(Number(id)).then(setD).catch(() => setError(ERR_UNAVAILABLE)); }, [id]);
-  useEffect(() => {
-    if (!isLoading && !isRestoring && !user) router.replace(loginUrlFor(`/fundraisers/${id}/donate`));
-  }, [isLoading, isRestoring, user, router, id]);
 
   if (!FEATURES.fundraising) return null;
-  if (!d || !user) return <div className={`${s.root} ${s.publicTheme}`} aria-busy="true">{error && <p role="alert" className={s.errText} style={{ padding: 32 }}>{errorText}</p>}</div>;
+  if (!d || isLoading || isRestoring) return <div className={`${s.root} ${s.publicTheme}`} aria-busy="true">{error && <p role="alert" className={s.errText} style={{ padding: 32 }}>{errorText}</p>}</div>;
   if (!d.acceptingDonations) {
     return <div className={`${s.root} ${s.publicTheme}`}><main className={s.wrap} style={{ paddingTop: 48 }}><p><strong><UiText>This fundraiser isn&apos;t accepting donations right now.</UiText></strong> <UiText>Nothing was charged.</UiText></p><Link href={`/fundraisers/${id}`}><UiText>Back to fundraiser</UiText></Link></main></div>;
   }
@@ -173,12 +183,17 @@ export default function DonatePage() {
   const gateway = Number.isFinite(value) ? Math.round(value * GATEWAY_PERCENT) / 100 : 0;
   const offer80G = !!d.taxReceiptOffered;
   const panClean = pan.replace(/\s/g, "").toUpperCase();
-  const nameMismatch = !!panName && !panNameMatches(user.fullName ?? "", panName);
+  const donorName = user ? user.fullName ?? "" : guestName.trim();
+  const donorEmail = user ? user.email : guestEmail.trim();
+  const guest: Guest | null = user ? null : { fullName: donorName, email: donorEmail, mobileNumber: guestPhone.trim() };
+  const nameInvalid = !user && !donorName;
+  const emailInvalid = !user && !EMAIL_RE.test(donorEmail);
+  const nameMismatch = !!panName && !panNameMatches(donorName, panName);
   const taxProblems = !offer80G || !want80G ? [] : [
     ...(!panFile ? [ui("Add a photo of your PAN card")] : []),
     ...(!PAN_RE.test(panClean) ? [ui("Enter a valid PAN, like ABCDE1234F")] : []),
     ...(!address.trim() ? [ui("Enter your address")] : []),
-    ...(nameMismatch ? [ui("The name on the PAN card doesn't match your account name")] : []),
+    ...(nameMismatch ? [user ? ui("The name on the PAN card doesn't match your account name") : ui("The name on the PAN card doesn't match the name you entered")] : []),
   ];
   const tax: Tax | null = offer80G && want80G && panFile && taxProblems.length === 0
     ? { panNumber: panClean, address: address.trim(), photo: panFile } : null;
@@ -211,7 +226,7 @@ export default function DonatePage() {
       const ok = await loadRazorpay();
       const Rzp = rzpCtor();
       if (!ok || !Rzp) { setError(ERR_OPEN); setBusy(false); return; }
-      const result = await checkoutReusingDonation(Number(id), value, anonymous, fresh, tax, skipPhoto);
+      const result = await checkoutReusingDonation(Number(id), value, anonymous, fresh, tax, guest, skipPhoto);
       if ("redirect" in result) { router.push(`/fundraisers/donations/${result.redirect}`); return; }
       if ("prior" in result) { setPrior(result.prior); setBusy(false); return; }
       if ("photoFailed" in result) { setPhotoFailed(true); setPhotoReason(result.reason); setBusy(false); return; }
@@ -219,7 +234,7 @@ export default function DonatePage() {
       const rzp = new Rzp({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
         name: "CauseKind", description: d!.card.title ?? "Fundraiser", order_id: order.razorpayOrderId,
-        prefill: { email: user!.email, name: user!.fullName },
+        prefill: { email: donorEmail, name: donorName },
         theme: { color: "#b04a15" },
         // The browser callback is never proof of payment: the result page asks the server.
         handler: () => router.push(`/fundraisers/donations/${order.donationId}`),
@@ -273,10 +288,23 @@ export default function DonatePage() {
           {step === 1 && (
             <>
               <h1 className={s.serif} style={{ fontSize: 32 }}><UiText>Your details</UiText></h1>
-              <div className={s.grid2}>
-                <div><label className={s.lbl} htmlFor="n"><UiText>Full name</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="n" className={s.in} value={user.fullName ?? ""} readOnly /></div>
-                <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="e" className={s.in} value={user.email} readOnly style={{ background: "#f7f3ee" }} /></div>
-              </div>
+              {user ? (
+                <div className={s.grid2}>
+                  <div><label className={s.lbl} htmlFor="n"><UiText>Full name</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="n" className={s.in} value={user.fullName ?? ""} readOnly /></div>
+                  <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="e" className={s.in} value={user.email} readOnly style={{ background: "#f7f3ee" }} /></div>
+                </div>
+              ) : (
+                <>
+                  <p className={s.small}><UiText>No account needed.</UiText> <Link href={loginUrlFor(`/fundraisers/${id}/donate`)}><UiText>Log in</UiText></Link> <UiText>if you have one.</UiText></p>
+                  <div className={s.grid2}>
+                    <div><label className={s.lbl} htmlFor="n"><UiText>Full name</UiText></label><input id="n" className={s.in} value={guestName} maxLength={150} autoComplete="name" aria-invalid={detailsTried && nameInvalid ? true : undefined} onChange={(e) => setGuestName(e.target.value)} />
+                      {detailsTried && nameInvalid && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Enter your full name.</UiText></p>}</div>
+                    <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText></label><input id="e" className={s.in} type="email" value={guestEmail} maxLength={320} autoComplete="email" aria-invalid={detailsTried && emailInvalid ? true : undefined} onChange={(e) => setGuestEmail(e.target.value)} />
+                      {detailsTried && emailInvalid && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Enter a valid email address.</UiText></p>}</div>
+                    <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></label><input id="ph" className={s.in} type="tel" value={guestPhone} maxLength={30} autoComplete="tel" onChange={(e) => setGuestPhone(e.target.value)} /></div>
+                  </div>
+                </>
+              )}
               <p className={`${s.small} ${s.muted}`}><UiText>We&apos;ll send your donation certificate here.</UiText></p>
               {offer80G && (
                 <section className={s.card} aria-labelledby="t80" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
@@ -286,7 +314,7 @@ export default function DonatePage() {
                   <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fdf6f1", border: "1px solid #ecd9cb" }}>
                     <p className={s.small} style={{ fontWeight: 700, marginBottom: 6 }}><UiText>How the 80G receipt works</UiText></p>
                     <ul className={s.small} style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                      <li><UiText>The name on your PAN card must match the name on your CauseKind account.</UiText></li>
+                      <li>{user ? <UiText>The name on your PAN card must match the name on your CauseKind account.</UiText> : <UiText>The name on your PAN card must match the name you entered above.</UiText>}</li>
                       <li><UiText>The receipt is issued in the PAN holder&apos;s name, for the amount you donate.</UiText></li>
                       <li><UiText>Sahas Charitable Trust reports your donation, PAN and address to the Income Tax Department (Form 10BD).</UiText></li>
                       <li><UiText>After the financial year ends, the Trust sends your Form 10BE certificate, by 31 May.</UiText></li>
@@ -368,8 +396,9 @@ export default function DonatePage() {
                 </div>
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}><button type="button" className={`${s.btn} ${s.bs}`} onClick={() => setStep(0)}><UiText>Back</UiText></button><button type="button" className={`${s.btn} ${s.bp}`} onClick={() => {
-                setTaxTried(true);
-                if (taxProblems.length === 0) { setStep(2); window.scrollTo({ top: 0 }); }
+                setTaxTried(true); setDetailsTried(true);
+                if (nameInvalid || emailInvalid) document.getElementById(nameInvalid ? "n" : "e")?.focus();
+                else if (taxProblems.length === 0) { setStep(2); window.scrollTo({ top: 0 }); }
                 else document.getElementById("t80")?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}><UiText>Continue</UiText></button></div>
             </>
@@ -385,7 +414,8 @@ export default function DonatePage() {
                   [t("platformFee", { pct: d.platformFeePercent }), `− ${formatINR(fee)}`],
                   [ui("Payment provider charges (about)"), `− ${formatINR(gateway)}`],
                   [ui("Reaches the beneficiary (about)"), <strong key="r">{formatINR(Math.max(0, value - fee - gateway))}</strong>],
-                  [ui("Shown publicly as"), anonymous ? ui("Anonymous") : (user.fullName ?? ui("Your name"))],
+                  [ui("Shown publicly as"), anonymous ? ui("Anonymous") : (donorName || ui("Your name"))],
+                  ...(user ? [] : [[ui("Documents sent to"), donorEmail] as [string, string]]),
                   ...(offer80G ? [[ui("80G receipt"), tax ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
                 ].map(([k, v], i) => (
                   <div key={i} className={s.tabular} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", borderTop: i ? "1px solid #efe7de" : 0 }}><span>{k}</span><span style={{ textAlign: "right" }}>{v}</span></div>
