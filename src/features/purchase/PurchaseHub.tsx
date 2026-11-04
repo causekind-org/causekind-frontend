@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AlertTriangle, ArrowLeft, Award, Check, Copy, ExternalLink, FileText, Handshake, Loader2, Lock, MapPin, MessageSquare, PackageCheck, ShieldCheck, Truck, Upload, Wand2 } from "lucide-react";
 import { HandoverMapPinField } from "@/features/handover/HandoverMapPinField";
-import { detectLocationFromServer } from "@/app/actions/locations";
+import { detectLocationFromServer } from "@/app/[locale]/actions/locations";
 import {
   confirmPurchaseNoIssue, confirmPurchaseReceipt, decidePurchaseExtension, reconfirmOfferAvailability, recordPurchaseOrder,
   reportPurchaseIssue, requestPurchaseExtension, respondToPurchaseIssue, replyToPurchaseInfoRequest, sharePurchaseAddress,

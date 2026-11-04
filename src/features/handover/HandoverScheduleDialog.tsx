@@ -29,6 +29,8 @@ export type SchedulePayload = {
   courierName?: string;
   trackingNumber?: string;
   reason?: string;
+  /** NGO drive pickups: the donor lets the assigned person see their phone. */
+  allowVolunteerCall?: boolean;
 };
 
 /**
@@ -106,6 +108,7 @@ export function HandoverScheduleDialog({
   const [courierName, setCourierName] = useState(vm.schedule?.courierName ?? "");
   const [trackingNumber, setTrackingNumber] = useState(vm.schedule?.trackingNumber ?? "");
   const [reason, setReason] = useState("");
+  const [allowVolunteerCall, setAllowVolunteerCall] = useState(false);
   const [busy, setBusy] = useState(false);
   /** The map or the address box is still working out the location. */
   const [locationBusy, setLocationBusy] = useState(false);
@@ -149,6 +152,7 @@ export function HandoverScheduleDialog({
   // they share on the handover page, so the donor is not asked to name one.
   const isDropOff = vm.flow === "OFFER" && method === "DROP_OFF";
   const toRecipient = isCourier || isDropOff;
+  const showVolunteerCall = vm.flow === "NGO_OFFER" && method === "NGO_PICKUP" && !isReschedule;
   const hasPin = lat != null && lng != null;
   // In-person handovers send the donee both the written address and a map link, so both
   // are required and Save waits for any lookup still filling one from the other. Courier
@@ -177,6 +181,7 @@ export function HandoverScheduleDialog({
         courierName: courierName.trim() || undefined,
         trackingNumber: trackingNumber.trim() || undefined,
         reason: reasonRequired ? reason.trim() : undefined,
+        ...(showVolunteerCall ? { allowVolunteerCall } : {}),
       });
       onOpenChange(false);
     } catch (e) {
@@ -244,6 +249,12 @@ export function HandoverScheduleDialog({
             </div>
           )}
 
+          {showVolunteerCall && (
+            <label className="flex min-h-11 items-center gap-3 text-sm text-stone-800 dark:text-stone-200">
+              <input type="checkbox" checked={allowVolunteerCall} onChange={(e) => setAllowVolunteerCall(e.target.checked)} className="size-4" />
+              Let the pickup person call me
+            </label>
+          )}
           <Field label={isCourier ? "When will you dispatch?" : "When?"} htmlFor="ho-when" required>
             <Input
               id="ho-when"

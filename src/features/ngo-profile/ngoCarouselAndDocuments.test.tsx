@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { PHOTO_ROTATE_MS } from "./ActivityHeroCarousel";
 import { PastWorkSection } from "@/features/ngo-drives/components/PastWorkSection";
 import { NgoDocumentsSection, expiryStatus } from "./NgoDocumentsSection";
-import { NgoProfileChangesPanel } from "@/app/admin/ngos/NgoProfileChangesPanel";
+import { NgoProfileChangesPanel } from "@/app/[locale]/admin/ngos/NgoProfileChangesPanel";
 import {
   adminApproveNgoProfileChange, adminGetNgoProfileChanges, getMyNgoProfileDocuments, requestNgoProfileChange, uploadNgoDocument,
 } from "@/lib/api";
@@ -18,41 +19,55 @@ const long = "We distributed blankets to families. ".repeat(12);
 const acts = [1, 2, 3].map((id) => ({ id, title: `Drive ${id}`, activityDate: `2026-0${id}-10`, description: id === 1 ? long : "Short.",
   media: [{ id, url: `https://x.test/${id}.jpg`, mediaType: "IMAGE" }], status: "APPROVED" })) as never;
 
-function setScroll(el: HTMLElement, left: number, client = 600, width = 1800) {
-  Object.defineProperty(el, "clientWidth", { configurable: true, value: client });
-  Object.defineProperty(el, "scrollWidth", { configurable: true, value: width });
-  el.scrollLeft = left;
-  fireEvent.scroll(el);
-}
-
 describe("Past activity carousel", () => {
-  it("has < and > buttons disabled at the ends and keyboard arrows", () => {
-    render(<PastWorkSection title="Past activity" activities={acts} />);
+  const twoPhotos = [{ id: 1, title: "Drive 1", activityDate: "2026-01-10", description: long, status: "APPROVED", media: [{ id: 1, url: "https://x.test/1.jpg", mediaType: "IMAGE" }, { id: 2, url: "https://x.test/2.jpg", mediaType: "IMAGE" }] },
+    { id: 2, title: "Drive 2", activityDate: "2026-02-10", status: "APPROVED", media: [{ id: 3, url: "https://x.test/3.jpg", mediaType: "IMAGE" }] }] as never;
+  const photo = () => screen.getByTestId("activity-slide-photo").getAttribute("src");
+
+  it("shows one activity a slide; arrows, dots, keys and swipe move between them", () => {
+    render(<PastWorkSection title="Past activity" activities={twoPhotos} />);
     expect(screen.getByRole("heading", { name: "Past activity" })).toBeInTheDocument();
+    expect(screen.getAllByTestId("activity-slide")).toHaveLength(1);
+    expect(screen.getByRole("heading", { name: "Drive 2" })).toBeInTheDocument(); // newest first
+    fireEvent.click(screen.getByRole("button", { name: "Next activity" }));
+    expect(screen.getByRole("heading", { name: "Drive 1" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Previous activity" }));
+    expect(screen.getByRole("heading", { name: "Drive 2" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Activity 2" }));
+    expect(screen.getByRole("heading", { name: "Drive 1" })).toBeInTheDocument();
     const region = screen.getByTestId("activity-carousel");
-    const track = within(region).getAllByRole("listitem")[0].parentElement!;
-    setScroll(track, 0);
-    expect(screen.getByRole("button", { name: "Previous activities" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Next activities" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: "Next activities" }));
-    setScroll(track, 1200);
-    expect(screen.getByRole("button", { name: "Next activities" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Previous activities" })).toBeEnabled();
     fireEvent.keyDown(region, { key: "ArrowLeft" });
-    setScroll(track, 600);
-    expect(screen.getByRole("button", { name: "Previous activities" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "Next activities" })).toBeEnabled();
+    expect(screen.getByRole("heading", { name: "Drive 2" })).toBeInTheDocument();
+    const img = screen.getByTestId("activity-slide-photo");
+    fireEvent.touchStart(img, { touches: [{ clientX: 300 }] });
+    fireEvent.touchEnd(img, { changedTouches: [{ clientX: 200 }] });
+    expect(screen.getByRole("heading", { name: "Drive 1" })).toBeInTheDocument();
+  });
+
+  it("rotates the activity's photos every 3 s and pauses on hover", () => {
+    vi.useFakeTimers();
+    try {
+      render(<PastWorkSection activities={[twoPhotos[0]] as never} />);
+      expect(photo()).toBe("https://x.test/1.jpg");
+      act(() => { vi.advanceTimersByTime(PHOTO_ROTATE_MS); });
+      expect(photo()).toBe("https://x.test/2.jpg");
+      fireEvent.mouseEnter(screen.getByTestId("activity-carousel"));
+      act(() => { vi.advanceTimersByTime(PHOTO_ROTATE_MS * 2); });
+      expect(photo()).toBe("https://x.test/2.jpg");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("Read more opens a dialog with gallery, title, Activity date and the full text", async () => {
     render(<PastWorkSection title="Past activity" activities={acts} />);
+    fireEvent.click(screen.getByRole("button", { name: "Activity 3" }));
     fireEvent.click(screen.getByRole("button", { name: "Read more about Drive 1" }));
     const dialog = await screen.findByTestId("past-work-detail");
     expect(within(dialog).getByText("Drive 1")).toBeInTheDocument();
     expect(dialog).toHaveTextContent("Activity date:");
     expect(dialog).toHaveTextContent(long.trim());
     expect(within(dialog).getByRole("button", { name: "Open photo 1 of Drive 1" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Read more about Drive 2" })).toBeNull();
   });
 });
 

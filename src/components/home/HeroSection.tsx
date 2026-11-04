@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { CategoryStrip } from "@/components/home/CategoryStrip";
 import { TrustBand } from "@/components/home/TrustBand";
 import { useAuth } from "@/hooks/useAuth";
+import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { useNavratriCampaign } from "@/hooks/useNavratriCampaign";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
@@ -410,6 +411,8 @@ export function HeroSection() {
   const primaryAction = usePrimaryAction();
   const { user, isRestoring } = useAuth();
   const navratri = useNavratriCampaign();
+  // Diwali dresses the everyday hero until 13 Nov 00:00 IST (src/lib/diwali.ts).
+  const diwali = useDiwaliCampaign() && !navratri;
   const headlineTop = navratri ? NAVRATRI_COPY.headlineTop : t("headlineTop");
   const headlineAccent = navratri ? NAVRATRI_COPY.headlineAccent : t("headlineAccent");
   const subtext = navratri ? NAVRATRI_COPY.subtext : t("subtext");
@@ -428,7 +431,7 @@ export function HeroSection() {
         data-tour="guest-hero"
         style={{ "--font-hero-mobile": mobileDisplay.style.fontFamily } as React.CSSProperties}
         aria-labelledby="causekind-hero-title"
-        className={`${navratri ? "ck-hero-navratri" : "ck-hero-diwali"} ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
+        className={`${navratri ? "ck-hero-navratri" : diwali ? "ck-hero-diwali" : ""} ck-showcase-hero relative isolate overflow-hidden bg-[var(--surface-cream)] px-3 pb-3 pt-3 text-[#100c06] dark:text-stone-100 sm:px-5 sm:pb-4 sm:pt-4 lg:px-[clamp(2rem,3.4vw,5.5rem)] lg:pt-0`}
       >
         <div className="ck-hero-dot-field pointer-events-none absolute inset-x-0 bottom-0 h-[42%] opacity-55 dark:opacity-15" aria-hidden />
 
@@ -464,7 +467,7 @@ export function HeroSection() {
               <div className="ck-hero-eyebrow hidden w-max items-center gap-2 rounded-full bg-[var(--ck-home-accent,#b04a15)]/[0.07] px-3 py-1 text-[var(--ck-home-ink,#c54805)] ring-1 ring-[var(--ck-home-accent,#b04a15)]/15 lg:flex dark:bg-white/5 dark:text-[var(--ck-home-highlight,#f29a65)] dark:ring-white/10">
                 <span className="size-1.5 rounded-full bg-current" aria-hidden />
                 <p className="text-[0.65rem] font-medium uppercase tracking-[0.2em]">
-                  {navratri ? t("eyebrow") : <LandingText>{DIWALI_COPY.badge}</LandingText>}
+                  {diwali ? <LandingText>{DIWALI_COPY.badge}</LandingText> : t("eyebrow")}
                 </p>
               </div>
 
@@ -473,7 +476,7 @@ export function HeroSection() {
                   that there would make the two layouts compete. */}
               <div className="ck-mobile-hero-badge lg:hidden">
                 <Heart className="size-3 fill-current" strokeWidth={0} aria-hidden />
-                {navratri ? (
+                {!diwali ? (
                   <span>{t("badge")}</span>
                 ) : (
                   <>
@@ -489,12 +492,12 @@ export function HeroSection() {
               >
                 {/* Mobile copy wraps naturally with the bundled condensed font;
                     desktop retains the existing two-line composition. */}
-                <span className={navratri ? "block lg:whitespace-nowrap" : "hidden md:block lg:hidden"}><LandingText>{headlineTop}</LandingText></span>
-                {!navratri && <span className="block [text-wrap:balance] md:hidden lg:block"><LandingText>{DIWALI_COPY.headlineTop}</LandingText></span>}
-                <span className={`ck-hero-headline-accent text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)] ${navratri ? "block" : "hidden md:block lg:hidden"}`}>
+                <span className={!diwali ? "block lg:whitespace-nowrap" : "hidden md:block lg:hidden"}><LandingText>{headlineTop}</LandingText></span>
+                {diwali && <span className="block [text-wrap:balance] md:hidden lg:block"><LandingText>{DIWALI_COPY.headlineTop}</LandingText></span>}
+                <span className={`ck-hero-headline-accent text-[var(--ck-home-highlight,#f0a06a)] lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)] ${!diwali ? "block" : "hidden md:block lg:hidden"}`}>
                   <LandingText>{headlineAccent}</LandingText>
                 </span>
-                {!navratri && (
+                {diwali && (
                   <span className="ck-hero-headline-accent block text-[var(--ck-home-highlight,#f0a06a)] md:hidden lg:block lg:whitespace-nowrap lg:text-[var(--ck-home-ink,#c54805)] dark:text-[var(--ck-home-highlight,#ef8f54)]">
                     <LandingText>{DIWALI_COPY.headlineAccent}</LandingText>
                   </span>
@@ -550,10 +553,10 @@ export function HeroSection() {
               </div>
             </div>
 
-            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <><DiwaliMedia /><div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
+            {navratri ? <><NavratriMobilePhoto /><NavratriArt /></> : <>{diwali && <DiwaliMedia />}<div className="ck-hero-photo-shell absolute inset-0 z-0 min-w-0 lg:relative lg:inset-auto lg:min-h-[clamp(10.5rem,24vh,14rem)]">
               <div className="ck-hero-photo-clip absolute inset-0 overflow-hidden bg-[var(--ck-home-highlight,#e9c69d)]">
                 <picture>
-                <source media="(max-width: 767px), (min-width: 1024px)" srcSet={BLANK_PIXEL} />
+                {diwali && <source media="(max-width: 767px), (min-width: 1024px)" srcSet={BLANK_PIXEL} />}
                 <source media="(max-width: 1023px)" srcSet="/images/causekind-mobile-hero-v1.webp" />
                 <LandingAttributes><img {...heroPhotoProps} className="ck-hero-photo-image object-cover object-center" /></LandingAttributes>
                 </picture>

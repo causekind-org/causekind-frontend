@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2, MapPin, TriangleAlert } from "lucide-react";
-import { detectLocationFromServer, geocodeFreeTextFromServer } from "@/app/actions/locations";
+import { detectLocationFromServer, geocodeFreeTextFromServer } from "@/app/[locale]/actions/locations";
 import { Textarea } from "@/components/ui/textarea";
 import { handoverInput } from "./handoverStyles";
 

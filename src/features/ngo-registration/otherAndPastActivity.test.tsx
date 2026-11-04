@@ -68,7 +68,7 @@ describe("Past activity in the wizard", () => {
     expect(getNgoStillNeededItems("org-photos", { ...base, pastActivitiesWithPhoto: 1 } as never)).not.toContain("At least one past activity with a photo");
   });
 
-  it("the section lists saved activities read-only (no edit pen, no Live chip), reports the count, and Add opens the form", async () => {
+  it("the section lists saved activities with an Edit pen (no Live chip), reports the count, and Add opens the form", async () => {
     api.getMyNgoActivities.mockResolvedValue([
       { id: 1, title: "Meal drive", activityDate: "2026-08-27", description: "300 meals", status: "APPROVED", sortOrder: 0,
         media: [{ id: 3, mediaType: "IMAGE", url: "https://s/1.webp", status: "APPROVED" }] },
@@ -79,7 +79,7 @@ describe("Past activity in the wizard", () => {
     await waitFor(() => expect(onCount).toHaveBeenCalledWith(1));
     expect(screen.getByText("Activity date: 27 Aug 2026")).toBeInTheDocument();
     expect(screen.queryByText("Live")).toBeNull();
-    expect(screen.queryByRole("button", { name: /edit/i })).toBeNull();
+    expect(screen.getByRole("button", { name: "Edit Meal drive" })).toBeInTheDocument();
     expect(screen.queryByText(/summary/i)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Add activity" }));
     expect(screen.getByTestId("past-activity-form")).toBeInTheDocument();

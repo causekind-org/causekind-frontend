@@ -9,8 +9,9 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
 import Link from "@/components/AppLink";
-import { DiwaliLogo } from "@/components/brand/DiwaliLogo";
+import { DiwaliVideoLogo } from "@/components/brand/DiwaliVideoLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
+import { isDiwaliCampaignActive } from "@/lib/diwali";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -77,11 +78,11 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   const rakshaBandhan = isRakshaBandhanCampaignActive();
 
   // The diya sits with the heart, so the Diwali logo keeps its icon on mobile
-  // too, whatever `hideIcon` asked for.
-  if (!rakshaBandhan) {
+  // too, whatever `hideIcon` asked for. Gated like the tie, so it leaves on 13 Nov.
+  if (isDiwaliCampaignActive()) {
     return (
       <span className="flex items-center" aria-label="CauseKind">
-        <DiwaliLogo />
+        <DiwaliVideoLogo />
       </span>
     );
   }
@@ -698,6 +699,8 @@ export function SiteHeader() {
     ...(FEATURES.fundraising && user?.role === "DONEE" ? [{ href: "/fundraising", label: ui("Fundraising") }] : []),
     // Everyone else (donors, NGOs, signed-out visitors) browses live fundraisers.
     ...(FEATURES.fundraising && user?.role !== "DONEE" ? [{ href: "/fundraisers", label: ui("Fundraisers") }] : []),
+    // Campaigns organised by Sahas Charitable Trust (2026-11-03): open to every visitor.
+    ...(FEATURES.sahas ? [{ href: "/sahas", label: ui("Sahas Campaigns") }] : []),
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];

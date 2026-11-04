@@ -61,6 +61,7 @@ export function driveOfferErrors(e: unknown, fallback: string): { fields: Record
 import {
   driveOfferModelFrom, driveOfferSnapshotKey, driveOfferMaterialDigest, serializeDriveOffer, DRIVE_OFFER_DECLARATION_GROUPS,
 } from "../driveOfferSerializer";
+import { offerAsksClean, offerAsksWorking } from "../driveCategoryDetails";
 import { mapLegacyAgeToAgeRange } from "../driveOfferAge";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -182,8 +183,8 @@ function useStepCopy(): { labels: Record<OfferStep, string>; intros: Record<Offe
  * `offerId` is non-null for the whole lifetime of this component.
  */
 export function NgoDriveOfferWizard({
-  offerId, driveId: propDriveId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
-  driveUnit, acceptedConditions, driveCategory: propDriveCategory, mustBeWorking: propMustBeWorking, requireClean: propRequireClean,
+  offerId, driveId: propDriveId, driveHref, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  driveUnit, acceptedConditions, driveCategory: propDriveCategory, 
   drivePin = null, drivePickupRadiusKm = null, driveDropOffAddress = null, onDeclineOutside = () => window.location.assign("/"),
 }: {
   /** "No" to giving from outside the pickup radius: leaves for the home page. */
@@ -197,6 +198,8 @@ export function NgoDriveOfferWizard({
   /** Donor conditions the drive accepts; null/empty shows every condition. */
   acceptedConditions?: readonly string[] | null;
   driveId?: number;
+  /** The drive's page; defaults to /drives/{driveId}. Sahas item lines pass their campaign page. */
+  driveHref?: string;
   ngoName: string;
   driveUnit: string;
   driveCategory?: string | null;
@@ -228,8 +231,8 @@ export function NgoDriveOfferWizard({
   const isRtl = locale === "ar" || locale === "ur";
   const driveId = propDriveId ?? offer?.driveId;
   const driveCategory = propDriveCategory ?? (offer as any)?.driveCategory ?? (offer as any)?.category ?? null;
-  const mustBeWorking = Boolean(propMustBeWorking ?? (offer as any)?.mustBeWorking ?? (offer as any)?.driveMustBeWorking);
-  const requireClean = Boolean(propRequireClean ?? (offer as any)?.requireClean ?? (offer as any)?.driveRequireClean);
+  const mustBeWorking = offerAsksWorking(driveCategory);
+  const requireClean = offerAsksClean(driveCategory);
 
   const showSpecNotes = needsSpecNotes((offer as any)?.flowType);
   const serializerOpts = useMemo(
@@ -297,7 +300,7 @@ export function NgoDriveOfferWizard({
   const updateDraft = useCallback(
     async (id: number, m: OfferModel) => {
       try {
-        const res = await updateNgoDriveOfferItem(id, serializeDriveOffer(m, serializerOpts));
+        const res = await updateNgoDriveOfferItem(id, serializeDriveOffer(m, { ...serializerOpts, asksWorking: mustBeWorking, asksClean: requireClean }));
         lastSaveErrorRef.current = null;
         return res;
       } catch (e) {
@@ -735,7 +738,7 @@ export function NgoDriveOfferWizard({
             {driveId && (
               <div className="mb-8">
                 <Link
-                  href={`/drives/${driveId}`}
+                  href={driveHref ?? `/drives/${driveId}`}
                   className="inline-flex items-center text-xs text-white/70 underline underline-offset-2 transition-colors hover:text-white"
                 >
                   <UiText>View full drive details</UiText>
@@ -771,7 +774,7 @@ export function NgoDriveOfferWizard({
               </button>
               {driveId && (
                 <Link
-                  href={`/drives/${driveId}`}
+                  href={driveHref ?? `/drives/${driveId}`}
                   className="text-xs font-semibold text-emerald-700 underline underline-offset-2 dark:text-emerald-400"
                 >
                   <UiText>View full drive details</UiText>
@@ -801,7 +804,7 @@ export function NgoDriveOfferWizard({
                   <p className="flex items-center gap-1.5 text-2xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
                     <TriangleAlert className="h-3.5 w-3.5" aria-hidden /> <UiText>Our team asked for more information</UiText>
                   </p>
-                  <p className="mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
+                  <p className="ck-user-text mt-1 text-2xs leading-relaxed text-amber-800 dark:text-amber-300">{adminNote}</p>
                 </div>
               )}
 
@@ -1010,7 +1013,7 @@ export function NgoDriveOfferWizard({
                 : `You are ${locResult?.distanceKm != null ? formatKm(locResult.distanceKm) : "?"} km away, outside this NGO's pickup radius of ${offer?.pickupRadiusKm ?? "?"} km. You will need to drop the items off at the NGO's address yourself. The NGO will not pick them up.`}
             </p>
             {driveDropOffAddress && (
-              <p className="mt-2 break-words text-sm text-stone-700 dark:text-stone-300"><span className="font-semibold">Drop-off address:</span> {driveDropOffAddress}</p>
+              <p className="ck-user-text mt-2 text-sm text-stone-700 dark:text-stone-300"><span className="font-semibold">Drop-off address:</span> {driveDropOffAddress}</p>
             )}
             <p className="mt-2 text-sm font-semibold text-stone-700 dark:text-stone-300">You&apos;ll need to drop the items at this address yourself.</p>
             <p className="mt-3 text-sm font-bold text-stone-900 dark:text-stone-100">Do you still want to give to this drive?</p>

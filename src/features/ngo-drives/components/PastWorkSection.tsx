@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, ImageIcon, X } from "lucide-react";
+import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import type { PublicNgoActivity } from "@/lib/api";
 import { formatActivityDate } from "@/features/ngo-profile/PastActivity";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
-import { ActivityCarousel } from "@/features/ngo-profile/ActivityCarousel";
+import { ActivityHeroCarousel } from "@/features/ngo-profile/ActivityHeroCarousel";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 /** Only approved activities with a title; newest first. Activities without a status are treated as approved (public endpoints only send approved ones). */
@@ -16,14 +16,14 @@ export function approvedActivities(list?: PublicNgoActivity[] | null): PublicNgo
     .sort((a, b) => String(b.activityDate ?? "").localeCompare(String(a.activityDate ?? "")));
 }
 
-function photosOf(a: PublicNgoActivity): string[] {
+export function photosOf(a: PublicNgoActivity): string[] {
   const media = (a.media ?? []).filter((m) => m?.url && (m.mediaType ?? "IMAGE").toUpperCase() === "IMAGE")
     .map((m) => resolveMediaUrl(m.url)).filter((u): u is string => !!u);
   const cover = resolveMediaUrl(a.coverPhotoUrl);
   return cover ? [cover, ...media.filter((u) => u !== cover)] : media;
 }
 
-function Lightbox({ photos, start, title, onClose }: { photos: string[]; start: number; title: string; onClose: () => void }) {
+export function ActivityLightbox({ photos, start, title, onClose }: { photos: string[]; start: number; title: string; onClose: () => void }) {
   const [i, setI] = useState(start);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -64,98 +64,31 @@ function Lightbox({ photos, start, title, onClose }: { photos: string[]; start: 
 export function ActivityDetailDialog({ a, photos, onClose, onPhoto }: { a: PublicNgoActivity; photos: string[]; onClose: () => void; onPhoto: (i: number) => void }) {
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent data-testid="past-work-detail" className="max-h-[90vh] max-w-2xl overflow-y-auto">
-        <DialogTitle className="break-words pr-8 font-serif text-xl font-semibold text-stone-900 dark:text-stone-100">{a.title}</DialogTitle>
-        {a.activityDate && (
-          <p className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-            <CalendarDays className="size-3.5" aria-hidden="true" /> Activity date: {formatActivityDate(a.activityDate)}
-          </p>
-        )}
-        {photos.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {photos.map((src, i) => (
-              <button key={src} type="button" onClick={() => onPhoto(i)} aria-label={`Open photo ${i + 1} of ${a.title}`}
-                className="aspect-[4/3] overflow-hidden rounded-lg bg-stone-100 dark:bg-zinc-800">
-                {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
-                <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
-              </button>
-            ))}
-          </div>
-        )}
-        {a.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-stone-700 dark:text-stone-300">{a.description}</p>}
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-/** Text longer than this (or with several paragraphs) is clamped to 4 lines with "Read more". */
-const CLAMP_CHARS = 220;
-
-/**
- * One past activity: gallery (1 large + up to 2 small, "+N" for more; click opens the lightbox),
- * the title, "Activity date: …" (IST) and the text clamped to 4 lines ("Read more" opens it in place).
- * Equal height in the grid. The same card on the NGO page and the drive page.
- */
-function ActivityCard({ a }: { a: PublicNgoActivity }) {
-  const [open, setOpen] = useState(false);
-  const [lightbox, setLightbox] = useState<number | null>(null);
-  const photos = photosOf(a);
-  const video = (a.media ?? []).find((m) => m?.url && (m.mediaType ?? "").toUpperCase() === "VIDEO")?.url ?? null;
-  const text = a.description ?? "";
-  const long = text.length > CLAMP_CHARS || text.split("\n").length > 4;
-  const small = photos.slice(1, 3);
-  const more = photos.length - 3;
-  return (
-    <div data-testid="past-work-item" className="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-      {photos.length > 0 ? (
-        <div className="grid gap-1">
-          <button type="button" onClick={() => setLightbox(0)} aria-label={`View photos of ${a.title}`}
-            className="relative block aspect-[16/10] w-full overflow-hidden bg-stone-100 dark:bg-zinc-800">
-            {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
-            <img src={photos[0]} alt="" className="h-full w-full object-cover" loading="lazy" />
-          </button>
-          {small.length > 0 && (
-            <div className="grid grid-cols-2 gap-1">
-              {small.map((src, i) => (
-                <button key={src} type="button" onClick={() => setLightbox(i + 1)} aria-label={`View photo ${i + 2} of ${a.title}`}
-                  className="relative block aspect-[16/10] overflow-hidden bg-stone-100 dark:bg-zinc-800">
+      <DialogContent data-testid="past-work-detail" className="max-h-[85dvh] max-w-2xl max-sm:left-0 max-sm:top-0 max-sm:h-dvh max-sm:max-h-dvh max-sm:w-full max-sm:max-w-none max-sm:translate-x-0 max-sm:translate-y-0 max-sm:rounded-none">
+        <div className="shrink-0 border-b border-stone-200 px-5 py-4 pr-12 dark:border-zinc-800">
+          <DialogTitle className="break-words font-serif text-xl font-semibold text-stone-900 dark:text-stone-100 ck-user-text">{a.title}</DialogTitle>
+          {a.activityDate && (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
+              <CalendarDays className="size-3.5" aria-hidden="true" /> Activity date: {formatActivityDate(a.activityDate)}
+            </p>
+          )}
+        </div>
+        <div data-testid="past-work-detail-body" className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4">
+          {photos.length > 0 && (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {photos.map((src, i) => (
+                <button key={src} type="button" onClick={() => onPhoto(i)} aria-label={`Open photo ${i + 1} of ${a.title}`}
+                  className="aspect-[4/3] overflow-hidden rounded-lg bg-stone-100 dark:bg-zinc-800">
                   {/* eslint-disable-next-line @next/next/no-img-element -- signed storage links */}
                   <img src={src} alt="" className="h-full w-full object-cover" loading="lazy" />
-                  {i === small.length - 1 && more > 0 && (
-                    <span className="absolute inset-0 flex items-center justify-center bg-black/55 text-sm font-bold text-white">+{more}</span>
-                  )}
                 </button>
               ))}
             </div>
           )}
+          {a.description && <p className="whitespace-pre-line break-words text-sm leading-relaxed text-stone-700 dark:text-stone-300 ck-user-text">{a.description}</p>}
         </div>
-      ) : video ? (
-        <video src={video} controls preload="metadata" className="aspect-[16/10] w-full bg-black object-contain" aria-label={a.title} />
-      ) : (
-        <div className="flex aspect-[16/10] w-full items-center justify-center bg-gradient-to-br from-emerald-50 to-stone-100 text-emerald-700 dark:from-zinc-900 dark:to-zinc-950 dark:text-emerald-400">
-          <ImageIcon className="size-7" aria-hidden="true" />
-        </div>
-      )}
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="break-words font-serif text-lg font-semibold leading-snug text-stone-900 dark:text-stone-100">{a.title}</h3>
-        {a.activityDate && (
-          <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-emerald-800 dark:text-emerald-300">
-            <CalendarDays className="size-3.5" aria-hidden="true" /> Activity date: {formatActivityDate(a.activityDate)}
-          </p>
-        )}
-        {text && (
-          <p data-testid="past-work-text" className="mt-2 line-clamp-4 whitespace-pre-line break-words text-sm text-stone-700 dark:text-stone-300">{text}</p>
-        )}
-        {long && (
-          <button type="button" onClick={() => setOpen(true)} aria-haspopup="dialog" aria-label={`Read more about ${a.title}`}
-            className="self-start pt-1 min-h-11 text-sm font-bold text-emerald-700 hover:underline dark:text-emerald-400">
-            Read more
-          </button>
-        )}
-      </div>
-      {open && <ActivityDetailDialog a={a} photos={photos} onClose={() => setOpen(false)} onPhoto={(i) => { setOpen(false); setLightbox(i); }} />}
-      {lightbox != null && <Lightbox photos={photos} start={lightbox} title={a.title} onClose={() => setLightbox(null)} />}
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -164,8 +97,10 @@ function ActivityCard({ a }: { a: PublicNgoActivity }) {
  * `limit` shows the latest N with a "See all" link to the NGO page.
  */
 export function PastWorkSection({
-  ngoName, activities, limit, seeAllHref, className = "", title,
+  ngoName, activities, limit, seeAllHref, className = "", title, actions,
 }: {
+  /** The owner's Edit on the NGO's own page. */
+  actions?: (a: PublicNgoActivity) => React.ReactNode;
   /** Heading override; with it the section is the page's white card (the NGO page's "Past activity"). */
   title?: string;
   ngoName?: string | null;
@@ -190,9 +125,7 @@ export function PastWorkSection({
           </Link>
         )}
       </div>
-      <ActivityCarousel label={title ?? "Past work"}>
-        {shown.map((a) => <ActivityCard key={a.id} a={a} />)}
-      </ActivityCarousel>
+      <ActivityHeroCarousel activities={shown} label={title ?? "Past work"} actions={actions} />
     </section>
   );
 }

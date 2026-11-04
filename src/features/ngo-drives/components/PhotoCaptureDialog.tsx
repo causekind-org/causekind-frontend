@@ -60,8 +60,10 @@ type Phase = "starting" | "live" | "captured" | "error";
  * camera light never stays on after the dialog closes.
  */
 export function PhotoCaptureDialog({
-  open, onCancel, onCaptured,
+  open, onCancel, onCaptured, unavailableMessage,
 }: {
+  /** Replaces the "choose a photo instead" wording where only a live photo is accepted. */
+  unavailableMessage?: string;
   open: boolean;
   onCancel: () => void;
   onCaptured: (file: File) => void;
@@ -182,7 +184,7 @@ export function PhotoCaptureDialog({
           )}
           {phase === "error" && (
             <p role="alert" className="absolute inset-0 grid place-items-center p-6 text-center text-sm font-semibold text-white">
-              {error}
+              {unavailableMessage ?? error}
             </p>
           )}
         </div>

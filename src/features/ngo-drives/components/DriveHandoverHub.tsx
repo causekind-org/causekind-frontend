@@ -1,5 +1,6 @@
 "use client";
 
+import { currentFromParam, ngoHandoverBackHref } from "@/features/ngo-drives/ngoBackLinks";
 import { useState } from "react";
 import { Camera, Check, Copy, KeyRound, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import {
@@ -12,6 +13,8 @@ import { HandoverHubShell } from "@/features/handover/HandoverHubShell";
 import { adaptNgoOffer } from "@/features/handover/adapters";
 import { PhotoCaptureDialog } from "./PhotoCaptureDialog";
 import { DriveDropOffPlanner } from "./DriveDropOffPlanner";
+import { VolunteerAssignPanel } from "./VolunteerAssignPanel";
+import { DonorPickupPersonCard, WhoConfirmed } from "./DonorPickupPerson";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import type { SchedulePayload } from "@/features/handover/HandoverScheduleDialog";
 
@@ -405,13 +408,24 @@ export function DriveHandoverHub({
     method: p.method === "NGO_PICKUP" ? "PICKUP" : "DROP_OFF",
     scheduledDateTime: p.scheduledDateTime,
     locationAddress: p.method === "NGO_PICKUP" ? p.address : undefined,
+    donorAllowsVolunteerCall: p.allowVolunteerCall === true,
   });
 
   const inHandover = IN_HANDOVER.has(offer.status) && handover?.scheduledDateTime != null;
   const confirmPanel = inHandover
     ? (role === "DONOR"
-        ? <DriveDonorCodePanel offer={offer} handover={handover} onChanged={onChanged} />
-        : <DriveNgoReceivePanel offer={offer} handover={handover} onChanged={onChanged} />)
+        ? (
+          <>
+            {handover?.method === "PICKUP" && <DonorPickupPersonCard offer={offer} handover={handover} onChanged={onChanged} />}
+            <DriveDonorCodePanel offer={offer} handover={handover} onChanged={onChanged} />
+          </>
+        )
+        : (
+          <>
+            {handover?.method === "PICKUP" && <VolunteerAssignPanel offer={offer} handover={handover} onChanged={onChanged} />}
+            <DriveNgoReceivePanel offer={offer} handover={handover} onChanged={onChanged} />
+          </>
+        ))
     : null;
 
   // Outside the pickup radius: no method choice and no "Schedule handover" popup. The donor
@@ -450,11 +464,16 @@ export function DriveHandoverHub({
         } : undefined,
       }}
       drive={{
-        backHref: role === "NGO" ? `/ngo/drives/${offer.driveId}` : "/dashboard",
+        backHref: role === "NGO" ? ngoHandoverBackHref(currentFromParam()) : "/dashboard",
         subtitle: `${offer.ngoName}${offer.quantity ? ` · ${offer.quantity} ${unitWords(offer.driveUnit)}` : ""}${offer.driveItemName ? ` of ${offer.driveItemName}` : ""}`,
         confirmPanel,
         schedulePanel,
-        aside: <DrivePhotoSets offer={offer} viewerRole={role} />,
+        aside: (
+          <>
+            <WhoConfirmed handover={handover} />
+            <DrivePhotoSets offer={offer} viewerRole={role} />
+          </>
+        ),
       }}
     />
   );

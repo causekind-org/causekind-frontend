@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getCountries, getStates, getCities, getDialCodes } from "@/app/actions/locations";
+import { getCountries, getStates, getCities, getDialCodes } from "@/app/[locale]/actions/locations";
 import type { SelectOption } from "@/components/profile/SearchableSelect";
 
 export function useLocations(countryIso: string, stateIso: string) {

@@ -1,0 +1,35 @@
+/* ── Fundraisers row, everyday dress ──────────────────────────────────────────
+   The row's layout lives in diwaliMobile.css / diwaliDesktop.css and is
+   permanent; its colours come from the --dw-* variables. While the Diwali theme
+   is on (.ck-diwali on the home root, until 13 Nov 00:00 IST — src/lib/diwali.ts)
+   those are the festive maroons and butter. Off it, this file maps them onto the
+   everyday CauseKind palette and drops the scalloped edge. */
+.ck-home-page:not(.ck-diwali) .ck-dw-campaigns {
+  --dw-butter: #f6f1e8;
+  --dw-card: #ffffff;
+  --dw-cream: #efe7da;
+  --dw-peach: #eadfce;
+  --dw-burgundy: var(--ck-home-accent, #b04a15);
+  --dw-maroon: var(--ck-home-hover, #c45520);
+  --dw-heading: #1c1410;
+  --dw-white: #ffffff;
+  --dw-saffron: var(--ck-home-highlight, #f29a65);
+}
+.dark .ck-home-page:not(.ck-diwali) .ck-dw-campaigns {
+  --dw-butter: #0f0f11;
+  --dw-card: #18181b;
+  --dw-cream: #27272a;
+  /* Peach is also the card's text colour in dark mode, so it stays light. */
+  --dw-peach: #e7e5e4;
+  --dw-heading: #fafaf9;
+}
+.dark .ck-home-page:not(.ck-diwali) .ck-dw-c-bar { background: #3f3f46; }
+
+.ck-home-page:not(.ck-diwali) .ck-dw-campaigns::before,
+.ck-home-page:not(.ck-diwali) .ck-dw-campaigns::after { content: none; }
+
+.ck-home-page:not(.ck-diwali) .ck-dw-card { box-shadow: 0 14px 30px -20px rgb(28 20 16 / 0.35); }
+@media (min-width: 1024px) {
+  .ck-home-page:not(.ck-diwali) .ck-dw-web .ck-dw-card:hover { box-shadow: 0 26px 44px -24px rgb(28 20 16 / 0.4); }
+  .ck-home-page:not(.ck-diwali) .ck-dw-web .ck-dw-c-all:hover { background: rgb(176 74 21 / 0.08); }
+}

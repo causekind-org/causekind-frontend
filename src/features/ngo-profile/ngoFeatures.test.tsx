@@ -34,11 +34,11 @@ import { NgoAboutSection } from "./NgoAboutSection";
 import { AboutNgoContent } from "@/features/ngo-drives/components/AboutNgoCard";
 import { isBannerDimensions, NgoHeroBanner, NgoPublicPage } from "./NgoPublicPage";
 import { PastActivityCard, PastActivityForm } from "./PastActivity";
-import { NgoActivityModerationPanel } from "@/app/admin/ngos/NgoActivityModerationPanel";
+import { NgoActivityModerationPanel } from "@/app/[locale]/admin/ngos/NgoActivityModerationPanel";
 import { MatchSegmentControl, NgoAcceptedOffersList, acceptedDriveOffers } from "@/components/matches/NgoAcceptedOffers";
 import MatchChatWindow from "@/components/MatchChatWindow";
 import { DriveOfferChatPanel } from "@/features/ngo-drives/components/DriveOfferChatPanel";
-import { FaqPageClient } from "@/app/faq/FaqPageClient";
+import { FaqPageClient } from "@/app/[locale]/faq/FaqPageClient";
 import { NGO_DRIVE_FAQ_KEYS } from "@/features/ngo-drives/ngoDriveFaq";
 
 const ABOUT = "We collect school bags and books for children in rural Pune and run weekend reading classes for them.";
@@ -135,7 +135,7 @@ describe("3. About the NGO card and public page", () => {
     // Documents open in the preview popup (no download link).
     fireEvent.click(screen.getByRole("button", { name: /80G certificate/ }));
     expect(await screen.findByTestId("file-preview")).toBeInTheDocument();
-    expect(screen.getAllByTestId("past-work-item")).toHaveLength(1);
+    expect(screen.getAllByTestId("activity-slide", { })).toHaveLength(1);
     expect(screen.getByRole("button", { name: "View photos of Meal drive", hidden: true })).toBeInTheDocument();
   });
 
@@ -374,12 +374,32 @@ describe("7. FAQ", () => {
 
 describe("8. Tick all declarations", () => {
   it("comes after the last declaration and before the submit hint", () => {
-    const src = readFileSync(resolve(__dirname, "../../app/ngo/drives/new/page.tsx"), "utf8");
+    const src = readFileSync(resolve(__dirname, "../../app/[locale]/ngo/drives/new/page.tsx"), "utf8");
     const list = src.indexOf("{DECLARATIONS.map(d => (");
     const tickAll = src.search(/>(<UiText>)?Tick all declarations(<\/UiText>)?<\/span>/);
     const hint = src.indexOf("Tick all declarations to submit.");
     expect(list).toBeGreaterThan(0);
     expect(tickAll).toBeGreaterThan(list);
     expect(hint).toBeGreaterThan(tickAll);
+  });
+
+});
+
+describe("long typed text and links on the NGO page", () => {
+  it("wraps a 300-character word and normalises links", async () => {
+    const long = "y".repeat(300);
+    api.getPublicNgo.mockResolvedValue({
+      slug: "hope-trust", organizationName: "Hope Trust", verified: true, aboutUs: long, registeredOfficeAddress: long,
+      links: ["www.x.com", "javascript:alert(1)"], representatives: [], documents: [], activities: [], liveDrives: [],
+    });
+    render(<NgoPublicPage slug="hope-trust" />);
+    const nodes = await screen.findAllByText(long);
+    expect(nodes.length).toBeGreaterThan(1);
+    for (const node of nodes) expect(node).toHaveClass("ck-user-text");
+    const links = within(screen.getByTestId("ngo-links")).getAllByRole("link");
+    expect(links).toHaveLength(1);
+    expect(links[0]).toHaveAttribute("href", "https://www.x.com");
+    expect(links[0]).toHaveAttribute("rel", "noopener noreferrer nofollow");
+    expect(links[0]).toHaveTextContent(/^x\.com$/);
   });
 });

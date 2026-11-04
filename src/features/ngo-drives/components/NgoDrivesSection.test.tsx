@@ -1,10 +1,22 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { NgoDrivesSection } from "./NgoDrivesSection";
+import { DRIVES_LOAD_TIMEOUT_MS, NgoDrivesSection } from "./NgoDrivesSection";
 import type { PublicNgoDrive } from "@/lib/api";
 
 const mockGetNgoDrives = vi.fn();
+// The section is NGO-gated (off in production); these cases describe it switched on.
+const featureState = vi.hoisted(() => ({ ngo: true }));
+vi.mock("@/lib/features", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/features")>();
+  return {
+    ...actual,
+    FEATURES: new Proxy(actual.FEATURES, {
+      get: (target, key) => (key === "ngoRegistration" ? featureState.ngo : target[key as keyof typeof target]),
+    }),
+  };
+});
+
 vi.mock("@/lib/api", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>();
   return {
@@ -113,19 +125,51 @@ describe("NgoDrivesSection", () => {
     // Bottom banner
     expect(screen.getByText("Want to see every drive?")).toBeInTheDocument();
     const seeAllLink = screen.getByRole("link", { name: /SEE ALL DRIVES/i });
-    expect(seeAllLink).toHaveAttribute("href", "/requests?source=ngo");
+    expect(seeAllLink).toHaveAttribute("href", "/requests?type=ngos");
   });
 
-  it("hides the whole section when zero live drives exist", async () => {
+  it("0 live drives: mirrors the Live board's empty state, with chips and banner kept", async () => {
     mockGetNgoDrives.mockResolvedValue([]);
-    const { container } = render(<NgoDrivesSection />);
+    render(<NgoDrivesSection />);
+    const empty = await screen.findByTestId("ngo-drives-empty");
+    expect(empty).toHaveTextContent("No open drives in All right now");
+    expect(empty).toHaveTextContent("Check back soon: verified NGOs add new drives regularly.");
+    expect(empty.className).toContain("border-dashed");
+    expect(empty.querySelector("svg")).not.toBeNull();
+    expect(screen.queryByRole("link", { name: /Browse donee needs/ })).toBeNull();
+    expect(screen.getByRole("heading", { name: /Drives by/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /All Categories/ })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: /Education/ })).toBeDisabled();
+    expect(screen.getByText("Want to see every drive?")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /SEE ALL DRIVES/ })).toHaveAttribute("href", "/requests?type=ngos");
+  });
 
-    // Waits for load to settle and component to unmount/return null
-    await vi.waitFor(() => {
-      expect(screen.queryByText(/Drives by/i)).toBeNull();
+  describe("below 768px", () => {
+    const realMatchMedia = window.matchMedia;
+    beforeEach(() => {
+      window.matchMedia = ((q: string) => ({ matches: q.includes("max-width: 767px"), media: q, addEventListener() {}, removeEventListener() {} })) as never;
     });
+    afterEach(() => { window.matchMedia = realMatchMedia; });
 
-    expect(container.firstChild).toBeNull();
+    it("shows one card with chips, dots, arrows, swipe and the more link", async () => {
+      render(<NgoDrivesSection />);
+      await screen.findByRole("button", { name: "Next drive" });
+      expect(screen.getAllByTestId(/^ngo-drive-card-/)).toHaveLength(1);
+      expect(screen.getByRole("group", { name: /Filter NGO drives/ })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Previous drive" })).toBeDisabled();
+      expect(screen.getAllByRole("button", { name: /^Drive \d$/ })).toHaveLength(3);
+      expect(screen.getByRole("link", { name: /2 more open drives/ })).toHaveAttribute("href", "/requests?type=ngos");
+      expect(screen.getByText("Want to help an NGO?")).toBeInTheDocument();
+      expect(screen.getByText("Documents and registration checked before a drive goes live")).toBeInTheDocument();
+
+      const first = screen.getByTestId(/^ngo-drive-card-/).getAttribute("data-testid");
+      fireEvent.click(screen.getByRole("button", { name: "Next drive" }));
+      expect(screen.getByTestId(/^ngo-drive-card-/).getAttribute("data-testid")).not.toBe(first);
+      const region = screen.getByRole("region", { name: "Active NGO drives" });
+      fireEvent.touchStart(region, { touches: [{ clientX: 200 }] });
+      fireEvent.touchEnd(region, { changedTouches: [{ clientX: 300 }] });
+      expect(screen.getByTestId(/^ngo-drive-card-/).getAttribute("data-testid")).toBe(first);
+    });
   });
 
   it("renders category chips with counts and disables zero-count categories", async () => {
@@ -178,17 +222,58 @@ describe("NgoDrivesSection", () => {
     expect(screen.queryByText("View drive & give")).toBeNull();
   });
 
-  it("shows 'View drive & give' linking to /drives/{id} for guest or donor accounts", async () => {
-    mockUser = null; // Guest
+  it("guest (no auth) loads the cards, each with the locked login button", async () => {
+    mockUser = null;
     render(<NgoDrivesSection />);
+    const links = await screen.findAllByRole("link", { name: /Log in to give to this drive/i });
+    expect(links.map((l) => l.getAttribute("href")).sort()).toEqual(["/login?next=/drives/1", "/login?next=/drives/2", "/login?next=/drives/3"]);
+  });
 
-    const defaultLinks = await screen.findAllByRole("link", { name: /View drive & give/i });
-    expect(defaultLinks.length).toBe(3);
-    const hrefs = defaultLinks.map((l) => l.getAttribute("href"));
-    expect(hrefs).toContain("/drives/1");
-    expect(hrefs).toContain("/drives/2");
-    expect(hrefs).toContain("/drives/3");
+  it("a donor sees Give to this drive", async () => {
+    mockUser = { role: "ROLE_DONOR", id: 501 };
+    render(<NgoDrivesSection />);
+    const gives = await screen.findAllByRole("link", { name: /Give to this drive/i });
+    expect(gives.length).toBeGreaterThan(0);
+    gives.forEach((l) => expect(l.getAttribute("href")).toMatch(/^\/drives\/\d+$/));
+    expect(screen.queryByRole("link", { name: /Log in to give/i })).toBeNull();
+  });
+
+  it("an NGO sees View drive", async () => {
+    mockUser = { role: "NGO_PARTNER", id: 6 };
+    render(<NgoDrivesSection />);
+    expect(await screen.findAllByRole("link", { name: /^View drive$/i })).toHaveLength(3);
     expect(screen.queryByText("Give to this drive")).toBeNull();
+  });
+
+  it("remount after an aborted first request loads the cards", async () => {
+    let abort: (e: unknown) => void = () => {};
+    mockGetNgoDrives.mockReturnValueOnce(new Promise((_, rej) => { abort = rej; }));
+    const first = render(<NgoDrivesSection />);
+    first.unmount();
+    abort(new DOMException("aborted", "AbortError"));
+    render(<NgoDrivesSection />);
+    expect(await screen.findByText("Primary School Uniforms")).toBeInTheDocument();
+    expect(screen.queryByTestId("ngo-drives-error")).toBeNull();
+  });
+
+  it("a failed call shows Retry, and Retry loads the cards", async () => {
+    mockGetNgoDrives.mockRejectedValueOnce(new Error("down"));
+    render(<NgoDrivesSection />);
+    fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
+    expect(await screen.findByText("Primary School Uniforms")).toBeInTheDocument();
+    expect(screen.queryByTestId("ngo-drives-error")).toBeNull();
+  });
+
+  it("a call that never answers gives way to Retry after the timeout", async () => {
+    vi.useFakeTimers();
+    try {
+      mockGetNgoDrives.mockReturnValueOnce(new Promise(() => {}));
+      render(<NgoDrivesSection />);
+      await act(async () => { vi.advanceTimersByTime(DRIVES_LOAD_TIMEOUT_MS); });
+      expect(screen.getByTestId("ngo-drives-error")).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("shows no days-left line and hides donorCount when 0", async () => {
@@ -204,5 +289,17 @@ describe("NgoDrivesSection", () => {
 
     // Cards no longer show the days-left line.
     expect(screen.queryByText("Ends today")).toBeNull();
+  });
+});
+
+describe("NgoDrivesSection in production", () => {
+  afterEach(() => {
+    featureState.ngo = true;
+  });
+
+  it("renders nothing while the NGO feature is off", () => {
+    featureState.ngo = false;
+    const { container } = render(<NgoDrivesSection initialDrives={[]} />);
+    expect(container.innerHTML).toBe("");
   });
 });

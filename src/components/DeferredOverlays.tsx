@@ -87,6 +87,11 @@ const NgoProfileToast = dynamic(
     import("@/components/NgoProfileToast").then((m) => m.NgoProfileToast),
   { ssr: false },
 );
+const DrivePickupScheduledPopup = dynamic(
+  () =>
+    import("@/components/DrivePickupScheduledPopup").then((m) => m.DrivePickupScheduledPopup),
+  { ssr: false },
+);
 const DriveProofPublishedPopup = dynamic(
   () =>
     import("@/components/DriveProofPublishedPopup").then((m) => m.DriveProofPublishedPopup),
@@ -111,6 +116,7 @@ export function DeferredOverlays() {
       <NgoProfileToast />
       <NgoCampaignPrompt />
       <DriveProofPublishedPopup />
+      <DrivePickupScheduledPopup />
     </>
   );
 }

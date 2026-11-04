@@ -80,7 +80,7 @@ describe("several offers on one drive", () => {
 describe("the giving-safely checklist is gone", () => {
   const root = resolve(__dirname, "../../..");
   it("no page, no links, a redirect to the FAQ", () => {
-    expect(existsSync(resolve(root, "src/app/give-safely"))).toBe(false);
+    expect(existsSync(resolve(root, "src/app/[locale]/give-safely"))).toBe(false);
     for (const f of ["src/components/Footer.tsx", "src/app/sitemap.ts", "src/features/ngo-drives/components/DriveDetailView.tsx"]) {
       expect(readFileSync(resolve(root, f), "utf8")).not.toContain("/give-safely");
     }
@@ -104,8 +104,13 @@ describe("Past work by the NGO", () => {
   it("shows approved only, newest first, 3 latest and See all", () => {
     render(<PastWorkSection ngoName="Hope Trust" activities={acts} limit={3} seeAllHref="/ngos/hope-trust" />);
     expect(screen.getByRole("heading", { name: "Past work by Hope Trust" })).toBeInTheDocument();
-    const titles = screen.getAllByTestId("past-work-item").map((li) => li.querySelector("h3")?.textContent);
-    expect(titles).toEqual(["Newest blanket drive", "Winter clothes", "School kits"]);
+    // One activity a slide: newest first, and only the 3 latest get a dot.
+    expect(screen.getByRole("heading", { name: "Newest blanket drive" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next activity" }));
+    expect(screen.getByRole("heading", { name: "Winter clothes" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Next activity" }));
+    expect(screen.getByRole("heading", { name: "School kits" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Activity \d$/ })).toHaveLength(3);
     expect(screen.queryByText("Pending draft")).toBeNull();
     expect(screen.queryByText("Rejected one")).toBeNull();
     expect(screen.getByRole("link", { name: /See all/ })).toHaveAttribute("href", "/ngos/hope-trust");
@@ -113,11 +118,8 @@ describe("Past work by the NGO", () => {
     expect(screen.getByTestId("past-work-detail")).toBeInTheDocument();
   });
 
-  it("photo gallery: 1 large + 2 small, +N for the rest, labelled date, opens a lightbox", () => {
+  it("a large photo area, labelled date, opens a lightbox", () => {
     render(<PastWorkSection ngoName="Hope Trust" activities={[acts[0]]} />);
-    expect(screen.getByText("+1")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "View photo 2 of Old meal drive" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "View photo 3 of Old meal drive" })).toBeInTheDocument();
     expect(screen.getByText(/Activity date: 1 Jan 2025/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "View photos of Old meal drive" }));
     expect(screen.getByTestId("past-work-lightbox")).toBeInTheDocument();

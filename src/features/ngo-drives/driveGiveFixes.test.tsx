@@ -37,7 +37,7 @@ describe("drive card", () => {
 });
 
 describe("back button", () => {
-  it("is white inside the green hero on the drive and NGO pages; plain elsewhere", () => {
+  it("is white on the dark hero and the NGO cover chip; plain elsewhere", () => {
     const { unmount } = render(<BackButton onDark />);
     expect(screen.getByTestId("back-button").className).toContain("text-white");
     unmount();
@@ -45,11 +45,11 @@ describe("back button", () => {
     expect(screen.getByTestId("back-button").className).toContain("text-stone-700");
     const detail = src("features/ngo-drives/components/DriveDetailView.tsx");
     expect(detail.indexOf("<BackButton onDark")).toBeGreaterThan(detail.indexOf("{/* ── Hero ── */}"));
-    expect(src("features/ngo-profile/NgoPublicPage.tsx")).toMatch(/to-emerald-800 text-white">\s*<div[^>]*><BackButton onDark \/>/);
+    expect(src("features/ngo-profile/NgoPublicPage.tsx")).toMatch(/data-testid="ngo-hero-back"[^>]*><BackButton onDark \/>/);
   });
 
   it("the give page shares one draft request and keys the wizard by offer id", () => {
-    const page = src("app/drives/[id]/give/page.tsx");
+    const page = src("app/[locale]/drives/[id]/give/page.tsx");
     expect(page).toContain("draftRequest.current?.driveId === drive.id");
     expect(page).toContain("key={offer.id}");
   });

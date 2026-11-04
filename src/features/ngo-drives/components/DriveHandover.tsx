@@ -1,5 +1,7 @@
 "use client";
 
+import { currentFromParam, ngoHandoverBackHref } from "@/features/ngo-drives/ngoBackLinks";
+import { openDatePicker } from "@/lib/openDatePicker";
 import { directionsHref } from "@/features/handover/adapters";
 import { CallAction, HandoverContactsCall } from "@/features/handover/HandoverContactPanel";
 import { DriveOfferChatPanel } from "./DriveOfferChatPanel";
@@ -124,7 +126,7 @@ function PlanForm({
       )}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="text-sm font-bold text-stone-800 dark:text-stone-200">Date
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={field} required />
+          <input type="date" value={date} onClick={openDatePicker} onChange={(e) => setDate(e.target.value)} className={field} required />
         </label>
         <label className="text-sm font-bold text-stone-800 dark:text-stone-200">Time
           <input type="time" value={time} onChange={(e) => setTime(e.target.value)} min={hhmm(offer.driveAvailableFrom) || undefined}
@@ -314,11 +316,11 @@ export function DriveHandover({
         {/* ── Context Header (Donee Reference style) ───────────────────────── */}
         <header className="mb-5">
           <Link
-            href={role === "NGO" ? driveHref : "/dashboard"}
+            href={role === "NGO" ? ngoHandoverBackHref(currentFromParam()) : "/dashboard"}
             className="group mb-3 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-stone-500 hover:text-emerald-700 dark:text-stone-400 dark:hover:text-emerald-400 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 transition-colors"
           >
             <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" aria-hidden="true" />
-            {role === "NGO" ? "Back to the drive" : "Back to your dashboard"}
+            {role === "NGO" ? "Back" : "Back to your dashboard"}
           </Link>
 
           <div className="flex items-start gap-3">
@@ -627,7 +629,7 @@ export function DriveHandover({
                     {offer.handoverDetails?.registeredOfficeAddress && !handover && (
                       <p className="flex items-start gap-1.5 text-stone-600 dark:text-stone-400">
                         <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-stone-400" aria-hidden="true" />
-                        <span>{offer.handoverDetails.registeredOfficeAddress}</span>
+                        <span className="ck-user-text">{offer.handoverDetails.registeredOfficeAddress}</span>
                       </p>
                     )}
                     {!offer.handoverDetails?.contactName && !offer.handoverDetails?.registeredOfficeAddress && (
@@ -677,7 +679,7 @@ export function DriveHandover({
                 )}
                 {offer.sizeSpec && (
                   <p className="text-xs text-stone-600 dark:text-stone-400">
-                    Size / spec: <span className="font-medium text-stone-800 dark:text-stone-200">{offer.sizeSpec}</span>
+                    Size / spec: <span className="ck-user-text font-medium text-stone-800 dark:text-stone-200">{offer.sizeSpec}</span>
                   </p>
                 )}
                 {(offer.confirmedWorking || offer.confirmedClean) && (
@@ -697,7 +699,7 @@ export function DriveHandover({
                   </div>
                 )}
                 {offer.notesForNgo && (
-                  <p className="mt-2 rounded bg-stone-50 p-2 text-xs italic text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
+                  <p className="ck-user-text mt-2 rounded bg-stone-50 p-2 text-xs italic text-stone-600 dark:bg-zinc-800 dark:text-stone-300">
                     &ldquo;{offer.notesForNgo}&rdquo;
                   </p>
                 )}

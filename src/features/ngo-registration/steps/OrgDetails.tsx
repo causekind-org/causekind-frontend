@@ -367,7 +367,6 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
           <textarea
             id="ngo-about-us"
             rows={5}
-            maxLength={ABOUT_US_MAX}
             value={data.aboutUs ?? ""}
             aria-invalid={!!errors.aboutUs}
             aria-describedby="ngo-about-us-hint ngo-about-us-count"
@@ -378,8 +377,9 @@ export function OrgDetails({ data, onChange, onBack, onContinue, corrections }: 
             className={cn(controlClass, "min-h-[120px] resize-y", errors.aboutUs && "border-red-400 focus-visible:border-red-400 focus-visible:outline-red-400")}
           />
           <p id="ngo-about-us-count" aria-live="polite" className={cn("text-right text-xs",
-            (data.aboutUs ?? "").trim().length < ABOUT_US_MIN ? "text-stone-500 dark:text-stone-400" : "text-ngo-700 dark:text-ngo-300")}>
-            {(data.aboutUs ?? "").trim().length} / {ABOUT_US_MAX}{(data.aboutUs ?? "").trim().length < ABOUT_US_MIN ? ` (at least ${ABOUT_US_MIN})` : ""}
+            (data.aboutUs ?? "").trim().length > ABOUT_US_MAX ? "font-semibold text-red-600 dark:text-red-400"
+              : (data.aboutUs ?? "").trim().length < ABOUT_US_MIN ? "text-stone-500 dark:text-stone-400" : "text-ngo-700 dark:text-ngo-300")}>
+            {(data.aboutUs ?? "").trim().length} / {ABOUT_US_MAX}{(data.aboutUs ?? "").trim().length < ABOUT_US_MIN ? ` (at least ${ABOUT_US_MIN})` : ""}{(data.aboutUs ?? "").trim().length > ABOUT_US_MAX ? ` · ${(data.aboutUs ?? "").trim().length - ABOUT_US_MAX} over the limit` : ""}
           </p>
           {field("aboutUs")}
         </div>

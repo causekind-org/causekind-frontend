@@ -12,7 +12,7 @@ import {
   INITIAL_NGO_FORM, prefillNgoFormWithUser, correctionFieldLabel, correctionFieldStep, firstCorrectionStep,
 } from "./ngoRegistrationModel";
 
-vi.mock("@/lib/api", () => ({ uploadNgoDocument: vi.fn(), uploadNgoPhoto: vi.fn() }));
+vi.mock("@/lib/api", () => ({ getMyNgoActivities: vi.fn(() => Promise.resolve([])), uploadNgoDocument: vi.fn(), uploadNgoPhoto: vi.fn() }));
 
 const noop = () => {};
 const trust = { ...INITIAL_NGO_FORM, legalStructure: "trust" as const };

@@ -22,7 +22,7 @@ const toastMock = vi.hoisted(() => Object.assign(vi.fn(), { success: vi.fn(), er
 vi.mock("@/lib/api", async (orig) => ({ ...(await orig<Record<string, unknown>>()), ...api }));
 vi.mock("@/lib/toast", () => ({ toast: toastMock }));
 // next-intl: the shared English fallback in vitest.setup.ts renders the real copy.
-vi.mock("@/app/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
+vi.mock("@/app/[locale]/actions/locations", () => ({ detectLocationFromServer: vi.fn() }));
 vi.mock("@/hooks/useLocations", () => ({
   useLocations: () => ({ countries: [{ value: "IN", label: "India" }], states: [{ value: "MH", label: "Maharashtra" }], cities: [] }),
 }));
@@ -65,8 +65,9 @@ describe("NGO drive form step 1: where is this drive?", () => {
 
   it("offers 10/20/30/50/100 km or a custom distance from 1 to 500 km", () => {
     render(<Harness />);
-    expect(screen.getByText("Where is this drive?")).toBeInTheDocument();
-    expect(screen.getByText("Donors near this place will see that you can pick up their items.")).toBeInTheDocument();
+    // The page's step heading says these; the step itself doesn't repeat them.
+    expect(screen.getByRole("region", { name: "Where is this drive?" })).toBeInTheDocument();
+    expect(screen.queryByText("Donors near this place will see that you can pick up their items.")).toBeNull();
     expect(screen.getByText(/You will pick up items from donors within this distance/)).toBeInTheDocument();
     expect(screen.getAllByRole("radio").map(r => r.textContent)).toEqual(["10 km", "20 km", "30 km", "50 km", "100 km", "Custom"]);
     fireEvent.click(screen.getByRole("radio", { name: "50 km" }));

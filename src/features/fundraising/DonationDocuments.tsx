@@ -11,11 +11,13 @@ import { UiText, useUiText } from "@/components/UiText";
  * when it says a document is available, otherwise a status line. Never shown for unconfirmed payments, and a
  * document delay or delivery problem never changes the payment's own "confirmed" state around it.
  */
-export function DonationDocuments({ d, compact = false }: { d: Donation; compact?: boolean }) {
+export function DonationDocuments({ d, compact = false, guest = false }: { d: Donation; compact?: boolean; guest?: boolean }) {
   const ui = useUiText();
   const [busy, setBusy] = useState<"certificate" | "receipt" | null>(null);
   const [failed, setFailed] = useState(false);
   if (d.status !== "COMPLETED") return null;
+  // Downloads need an account; a guest's documents only go by email.
+  if (guest) return <p className={`${s.small} ${s.muted}`}><UiText>We&apos;ll email your documents to the address you gave. If they don&apos;t arrive, contact support.</UiText></p>;
 
   async function download(kind: "certificate" | "receipt") {
     setBusy(kind); setFailed(false);

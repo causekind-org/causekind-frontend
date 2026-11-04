@@ -71,7 +71,7 @@ describe("give success popup", () => {
       quantityReceived: 0, quantityPledged: 0, ngoOrganizationName: "Hope Trust" });
     api.getMyNgoDriveOffers.mockResolvedValue([offer("DRAFT", { driveId: 7 })]);
     sessionStorage.clear();
-    const P = (await import("@/app/drives/[id]/give/page")).default;
+    const P = (await import("@/app/[locale]/drives/[id]/give/page")).default;
     const { unmount } = render(<P />);
     fireEvent.click(await screen.findByRole("button", { name: "Submit offer" }));
     await waitFor(() => expect(nav.replace).toHaveBeenCalledWith("/drives/7?offerSent=1"));
@@ -80,7 +80,7 @@ describe("give success popup", () => {
 
     // The drive page shows the same success content as a popup.
     window.history.replaceState(null, "", "/drives/7?offerSent=1");
-    const D = (await import("@/app/drives/[id]/page")).default;
+    const D = (await import("@/app/[locale]/drives/[id]/page")).default;
     render(<D />);
     const popup = await screen.findByTestId("drive-offer-sent");
     expect(popup).toHaveTextContent("Offer sent");

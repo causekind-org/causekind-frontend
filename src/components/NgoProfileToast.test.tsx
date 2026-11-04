@@ -6,8 +6,17 @@ import { useAuth } from "@/hooks/useAuth";
 
 const mockUsePathname = vi.fn();
 
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  isSlowRequestError: vi.fn().mockReturnValue(false),
+  getMyNgoProfileDocuments: vi.fn().mockResolvedValue([]),
   getMyNgoApplication: vi.fn().mockResolvedValue(null),
+  getNgoDraft: vi.fn().mockResolvedValue(null),
+  getNgoOverview: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("@/components/ngo-landing/useNgoStatus", () => ({
+  useNgoStatus: () => ({ status: "incomplete", stepNumber: 1, totalSteps: 5, isLoading: false }),
 }));
 
 vi.mock("next/navigation", () => ({

@@ -85,6 +85,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
     return [
       { href: "/requests", label: "In-kind requests" },
       { href: "/dashboard", label: "My dashboard" },
+      ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
     ];
@@ -93,6 +94,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
   if (isNgo) {
     return [
       { href: "/", label: "My dashboard" },
+      ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
     ];
@@ -109,6 +111,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
       label: isNgoLive ? "Register your NGO" : "Register your NGO · Coming soon",
       disabled: !isNgoLive,
     },
+    ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
     { href: "/faq", label: "Help & FAQ" },
     { href: "/blog", label: "Read our Blog" },
   ];

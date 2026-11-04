@@ -1,5 +1,6 @@
 "use client";
 
+import { EXTERNAL_LINK_REL, linkDomain, safeExternalUrl } from "@/lib/externalLink";
 import { categoryDetailRows } from "@/features/ngo-drives/driveCategoryDetails";
 import { AboutNgoContent } from "./AboutNgoCard";
 import { BackButton } from "@/components/BackButton";
@@ -162,6 +163,8 @@ export function DriveDetailView({
 
   // Registered office address
   const fullAddress = drive.ngo?.registeredOfficeAddress;
+  const ngoWebsite = safeExternalUrl(drive.ngo?.website);
+  const pastWorkLink = safeExternalUrl(drive.pastWorkUrl);
 
   // Changemaker info
   const hasChangemaker = Boolean(drive.changemakerName && drive.changemakerName.trim());
@@ -229,7 +232,7 @@ export function DriveDetailView({
             )}
           </div>
 
-          <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl">
+          <h1 className="mt-4 max-w-3xl text-3xl font-black leading-tight sm:text-4xl lg:text-5xl ck-user-text">
             {drive.title}
           </h1>
 
@@ -267,7 +270,7 @@ export function DriveDetailView({
       {/* ── Main Content Grid ── */}
       <div className="mx-auto mt-8 grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-3 lg:gap-8">
         {/* Main column */}
-        <div className="order-2 lg:order-1 space-y-6 lg:col-span-2">
+        <div className="order-2 min-w-0 lg:order-1 space-y-6 lg:col-span-2">
           {/* 1. Gallery */}
           {photos.length === 0 ? (
             <div className="flex aspect-video w-full items-center justify-center rounded-2xl border border-stone-200 bg-gradient-to-br from-emerald-50 to-stone-100 p-6 dark:border-zinc-800 dark:from-zinc-900 dark:to-zinc-950">
@@ -326,39 +329,6 @@ export function DriveDetailView({
                 </div>
               </div>
 
-              {/* Thumbnail Strip with Scroll-Snap */}
-              <div
-                className="flex gap-2 overflow-x-auto pb-1 pt-0.5 scrollbar-thin scrollbar-thumb-stone-300 dark:scrollbar-thumb-zinc-700"
-                style={{ scrollSnapType: "x mandatory" }}
-                role="tablist"
-                aria-label={ui("Photo thumbnails")}
-              >
-                {photos.map((url, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    role="tab"
-                    aria-selected={activePhotoIdx === idx}
-                    aria-label={df("viewPhotoN", { n: idx + 1 })}
-                    onClick={() => setActivePhotoIdx(idx)}
-                    style={{ scrollSnapAlign: "start" }}
-                    className={`relative aspect-video h-16 shrink-0 overflow-hidden rounded-xl border-2 transition-all ${
-                      activePhotoIdx === idx
-                        ? "border-emerald-600 ring-2 ring-emerald-600/30"
-                        : "border-stone-200 opacity-70 hover:opacity-100 dark:border-zinc-800"
-                    }`}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      src={url}
-                      alt={`Thumbnail ${idx + 1}`}
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
             </div>
           )}
 
@@ -381,7 +351,7 @@ export function DriveDetailView({
                     <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                       <UiText>Why now?</UiText>
                     </h3>
-                    <p className="mt-1.5 whitespace-pre-wrap leading-relaxed text-stone-800 dark:text-stone-200">
+                    <p className="mt-1.5 whitespace-pre-wrap leading-relaxed text-stone-800 dark:text-stone-200 ck-user-text">
                       {drive.whyNow}
                     </p>
                   </div>
@@ -398,7 +368,7 @@ export function DriveDetailView({
                 )}
               </div>
             ) : (
-              <p className="whitespace-pre-wrap leading-relaxed text-stone-700 dark:text-stone-300">
+              <p className="whitespace-pre-wrap leading-relaxed text-stone-700 dark:text-stone-300 ck-user-text">
                 {drive.description}
               </p>
             )}
@@ -443,7 +413,7 @@ export function DriveDetailView({
                     {drive.beneficiaryCount} {drive.beneficiaryGroup}
                   </span>
                   {drive.beneficiaryDescription && (
-                    <span className="mt-0.5 block text-xs font-normal text-stone-600 dark:text-stone-400">
+                    <span className="mt-0.5 block text-xs font-normal text-stone-600 dark:text-stone-400 ck-user-text">
                       {drive.beneficiaryDescription}
                     </span>
                   )}
@@ -476,7 +446,7 @@ export function DriveDetailView({
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-base font-bold text-stone-900 dark:text-stone-100">
+                  <h3 className="text-base font-bold text-stone-900 dark:text-stone-100 ck-user-text">
                     {drive.changemakerName}
                   </h3>
                   {drive.changemakerRole && (
@@ -485,7 +455,7 @@ export function DriveDetailView({
                     </p>
                   )}
                   {drive.changemakerWhy && (
-                    <p className="mt-2.5 text-sm italic leading-relaxed text-stone-700 dark:text-stone-300">
+                    <p className="ck-user-text mt-2.5 text-sm italic leading-relaxed text-stone-700 dark:text-stone-300">
                       &ldquo;{drive.changemakerWhy}&rdquo;
                     </p>
                   )}
@@ -512,7 +482,7 @@ export function DriveDetailView({
                 <Fact icon={<Lock className="h-5 w-5" />} label={ui("Address")}>
                   {fullAddress ? (
                     <div>
-                      <p className="font-semibold text-stone-900 dark:text-stone-100">
+                      <p className="font-semibold text-stone-900 dark:text-stone-100 ck-user-text">
                         {fullAddress}
                       </p>
                       <a
@@ -566,39 +536,39 @@ export function DriveDetailView({
               <dl className="grid gap-4 pt-1 sm:grid-cols-2">
 
 
-                {drive.ngo?.website && (
+                {ngoWebsite && (
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                       <UiText>Website</UiText>
                     </dt>
                     <dd className="mt-0.5 text-sm">
                       <a
-                        href={drive.ngo.website}
+                        href={ngoWebsite}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel={EXTERNAL_LINK_REL}
                         className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:underline dark:text-emerald-400"
                       >
                         <Globe className="h-3.5 w-3.5" aria-hidden="true" />
-                        {drive.ngo.website.replace(/^https?:\/\//, "")}
+                        {linkDomain(ngoWebsite)}
                       </a>
                     </dd>
                   </div>
                 )}
 
-                {drive.pastWorkUrl && (
+                {pastWorkLink && (
                   <div>
                     <dt className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
                       <UiText>Past work</UiText>
                     </dt>
                     <dd className="mt-0.5 text-sm">
                       <a
-                        href={drive.pastWorkUrl}
+                        href={pastWorkLink}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel={EXTERNAL_LINK_REL}
                         className="inline-flex items-center gap-1 font-bold text-emerald-700 hover:underline dark:text-emerald-400"
                       >
                         <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                        <UiText>View past work</UiText>
+                        {linkDomain(pastWorkLink)}
                       </a>
                     </dd>
                   </div>
@@ -771,7 +741,7 @@ export function DriveDetailView({
         </div>
 
         {/* Side card (Progress and CTA) */}
-        <aside className="order-1 lg:order-2 lg:col-span-1">
+        <aside className="order-1 min-w-0 lg:order-2 lg:col-span-1">
           <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:sticky lg:top-24">
             {/* Header: Label + Urgency chip */}
             <div className="flex items-center justify-between gap-2">
@@ -1057,7 +1027,7 @@ export function DriveDetailView({
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="mb-4 text-lg font-bold text-stone-900 dark:text-stone-100">{title}</h2>
+      <h2 className="mb-4 text-lg font-bold text-stone-900 dark:text-stone-100 ck-user-text">{title}</h2>
       {children}
     </section>
   );
@@ -1094,7 +1064,7 @@ function Stat({ label, value, swatch }: { label: string; value: number; swatch: 
         <span className={`h-2 w-2 rounded-full ${swatch}`} aria-hidden="true" />
         {label}
       </dt>
-      <dd className="text-xl font-black text-stone-900 dark:text-stone-100">{value}</dd>
+      <dd className="text-xl font-black text-stone-900 dark:text-stone-100 ck-user-text">{value}</dd>
     </div>
   );
 }

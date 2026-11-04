@@ -19,7 +19,6 @@ import { useRouter } from "next/navigation";
 import { triggerNgoLockedToast, type NgoStatusData } from "./useNgoStatus";
 import { NgoHeroRedesign } from "./NgoHeroRedesign";
 import { NgoProofDueSection } from "./NgoProofDueSection";
-import { NgoSuccessStories } from "./NgoSuccessStories";
 import {
   NgoCard,
   NgoSectionHeader,
@@ -96,35 +95,36 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
       num: 1,
       title: "Post a need",
       desc: "Publish your drive.",
-      photo: "/images/journey/item-proof-blankets.webp",
+      photo: "/images/ngo-steps/post-a-need.webp",
       alt: "Publishing NGO request",
     },
     {
       num: 2,
       title: "Donor matching",
       desc: "Donors offer to help.",
-      photo: "/images/journey/money-proof-ration.webp",
+      photo: "/images/ngo-steps/donor-matching.webp",
       alt: "Donor pledge and match",
     },
     {
       num: 3,
       title: "Delivery",
       desc: "Items are sent to you.",
-      photo: "/images/ngo-hero/col-a-1-blankets-pune.webp",
+      photo: "/images/ngo-steps/delivery.webp",
       alt: "Items delivered to NGO center",
     },
     {
       num: 4,
       title: "Handover proof",
       desc: "Upload photos.",
-      photo: "/images/ngo-hero/col-b-5-food-distribution.webp",
+      photo: "/images/ngo-steps/handover-proof.webp",
       alt: "Handover photo proof uploaded",
     },
     {
       num: 5,
       title: "Confirmation",
       desc: "Close the loop.",
-      photo: "/images/ngo-hero/col-b-4-health-camp.webp",
+      photo: "/images/ngo-steps/confirmation.webp",
+      objectPosition: "85% center",
       alt: "Completed confirmed handover loop",
     },
   ];
@@ -344,7 +344,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
 
               {/* Right Column: photo card stack (height clamp(280px, 52vh, 420px), width 100%) */}
               <div className="col-span-5 flex justify-center w-full">
-                <div className="relative w-full h-[clamp(280px,52vh,420px)] rounded-[28px] overflow-hidden border border-white/[0.19] shadow-2xl bg-black/40">
+                <div className="relative w-full aspect-[4/3] max-h-[60vh] rounded-[28px] overflow-hidden border border-white/[0.19] shadow-2xl bg-black/40">
                   {journeySteps.map((step, i) => (
                     <div
                       key={step.num}
@@ -360,6 +360,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                         fill
                         sizes="(max-width: 1200px) 45vw, 440px"
                         className="object-cover"
+                        style={{ objectPosition: step.objectPosition }}
                         priority={i === 0}
                         loading={i === 0 ? "eager" : "lazy"}
                       />
@@ -394,13 +395,14 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
                 className="rounded-[24px] bg-white/[0.08] border border-white/25 overflow-hidden shadow-md flex flex-col"
               >
                 {/* Photo Above */}
-                <div className="relative w-full h-[200px] border-b border-white/15">
+                <div className="relative w-full aspect-[4/3] border-b border-white/15">
                   <Image
                     src={step.photo}
                     alt={step.alt}
                     fill
                     sizes="(max-width: 860px) 100vw, 400px"
                     className="object-cover"
+                    style={{ objectPosition: step.objectPosition }}
                     loading="lazy"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
@@ -522,8 +524,104 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
         </div>
       </section>
 
-      {/* 6. SUCCESS STORIES (this NGO's drives with admin-approved proof; hidden when none) */}
-      <NgoSuccessStories stories={overview?.successStories} />
+      {/* 6. SUCCESS STORIES */}
+      <section className="ngo-section ngo-band-cream">
+        <div className="ngo-container">
+          <NgoSectionHeader
+            eyebrow="Success stories"
+            h2="Stories of help, delivered."
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Story 1 */}
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
+              <div className="relative h-56 w-full overflow-hidden">
+                <Image
+                  src="/images/ngo-stories/book-donation-drive.webp"
+                  alt="Stationery donation drive story"
+                  fill
+                  sizes="(max-width: 860px) 100vw, 400px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute top-4 left-4 z-10">
+                  <span className="ngo-card-tag !bg-white/90 dark:!bg-[#0F2A20]/90 !backdrop-blur-sm">
+                    Completed
+                  </span>
+                </div>
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="ngo-heading text-xl text-[#0B3D2E] dark:text-[#EFEADB] mb-2 leading-snug">
+                    Stationery Donation Drive
+                  </h3>
+                  <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
+                    50 stationery kits with notebooks, pens and school bags delivered to students in Vasai, Palghar.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Story 2 */}
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
+              <div className="relative h-56 w-full overflow-hidden">
+                <Image
+                  src="/images/ngo-stories/community-food-kits.webp"
+                  alt="Ration kit distribution story"
+                  fill
+                  sizes="(max-width: 860px) 100vw, 400px"
+                  className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute top-4 left-4 z-10">
+                  <span className="ngo-card-tag !bg-white/90 dark:!bg-[#0F2A20]/90 !backdrop-blur-sm">
+                    Completed
+                  </span>
+                </div>
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="ngo-heading text-xl text-[#0B3D2E] dark:text-[#EFEADB] mb-2 leading-snug">
+                    Community Food Kits
+                  </h3>
+                  <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
+                    Essential grains, oil, and nutrition kits delivered to 10 low-income family households.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Story 3 */}
+            <div className="ngo-card ngo-card-interactive group !p-0 overflow-hidden flex flex-col justify-between">
+              <div className="relative h-56 w-full overflow-hidden">
+                <Image
+                  src="/images/ngo-stories/old-age-home-visit.webp"
+                  alt="Old age home visit story"
+                  fill
+                  sizes="(max-width: 860px) 100vw, 400px"
+                  className="object-cover object-[center_20%] group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <div className="absolute top-4 left-4 z-10">
+                  <span className="ngo-card-tag !bg-white/90 dark:!bg-[#0F2A20]/90 !backdrop-blur-sm">
+                    Completed
+                  </span>
+                </div>
+              </div>
+              <div className="p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="ngo-heading text-xl text-[#0B3D2E] dark:text-[#EFEADB] mb-2 leading-snug">
+                    Old Age Home Visit
+                  </h3>
+                  <p className="text-sm text-stone-600 dark:text-stone-300 leading-relaxed">
+                    Volunteers spent a day with residents, sharing books, essentials and conversation at a local old age home.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 7. TIPS FOR BETTER DRIVES */}
       <section className="ngo-section ngo-band-cream">
@@ -555,6 +653,10 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
 
       {/* 8. FINAL CTA */}
       <NgoFinalCtaBand
+        photos={[
+          { src: "/images/ngo-steps/left-side.webp", alt: "Volunteer handing over care package" },
+          { src: "/images/ngo-steps/right-side.webp", alt: "Children supported through community drives" },
+        ]}
         headline={
           <>
             Publish a need.{" "}

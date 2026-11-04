@@ -1,0 +1,259 @@
+import { StartDriveChoice } from "@/components/ngo-landing/StartDriveChoice";
+import { StoredImageFallback } from "@/components/media/StoredImageFallback";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { Plus_Jakarta_Sans, Nunito, Source_Serif_4, Inter, Lora, Roboto_Mono } from "next/font/google";
+import Script from "next/script";
+import { RouteProgressBar } from "@/components/RouteProgressBar";
+import "@/styles.css";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages, setRequestLocale } from "next-intl/server";
+import { notFound } from "next/navigation";
+import { locales } from "@/i18n/config";
+import { TranslationAttribution } from "@/components/TranslationAttribution";
+import { AutoPageTranslator } from "@/components/AutoPageTranslator";
+import { getInterfaceCatalogue } from "@/lib/translation/messages";
+import { isTranslationLocale } from "@/lib/translation/server";
+import { AuthProvider } from "@/hooks/useAuth";
+import { NotificationsProvider } from "@/hooks/useNotifications";
+import { NeedProfileGateProvider } from "@/hooks/useNeedProfileGate";
+import { GoogleProvider } from "@/components/GoogleProvider";
+import { SiteHeader, SiteFooter } from "@/components/Navbar";
+import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
+import { ScrollProgress } from "@/components/ScrollProgress";
+import { Toaster } from "sonner";
+import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
+import { AdminRedirect } from "@/components/AdminRedirect";
+/*
+  Cookies are out of the project for now: the consent banner, and the two
+  trackers that existed behind it.
+
+  Unmounting the banner alone was not enough. Both trackers read the visitor's
+  stored answer directly, so anyone carrying ck_cookie_consent="accepted" from
+  before kept loading Meta's pixel and GTM with no banner left to withdraw it
+  from. Off means off for them too, which is why the trackers come out here
+  rather than the stored key being cleared.
+
+  Commented, not deleted: GoogleTagManagerGated.tsx, MetaPixel.tsx,
+  CookieConsent.tsx and useCookieConsent are all untouched and still tested, so
+  bringing any of it back is uncommenting two lines here and one in
+  DeferredOverlays.
+*/
+import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
+import MetaPixel from "@/components/MetaPixel";
+import ClarityAnalytics from "@/components/ClarityAnalytics";
+import { SiteBottomBlur } from "@/components/SiteBottomBlur";
+import { RoleClickSpark } from "@/components/RoleClickSpark";
+import { RoleThemeBridge } from "@/components/RoleThemeBridge";
+import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
+// Client boundary holding the deferred, client-only overlays and prompts.
+// They live behind their own `"use client"` file because `next/dynamic` with
+// `ssr: false` is rejected inside a Server Component, and this layout is one.
+import { DeferredOverlays } from "@/components/DeferredOverlays";
+import { HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
+import { DonateChoice } from "@/components/donate/DonateChoice";
+import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
+import { MatchActionDock } from "@/components/matches/MatchActionDock";
+import { DriveNotificationDock } from "@/components/notifications/DriveNotificationDock";
+import { CompletionCelebrationWatcher } from "@/components/handover/CompletionCelebrationWatcher";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta-sans",
+  subsets: ["latin"],
+});
+
+/**
+ * Only the two fonts the site actually renders with on every page are
+ * preloaded: Source Serif 4 (headings) and Plus Jakarta Sans (body). The other
+ * four are used on a handful of surfaces each.
+ *
+ * <p>`next/font` emits a `<link rel="preload">` for every declared family by
+ * default, on every page. Six families' worth of font files were therefore
+ * preloaded everywhere and mostly never used, which is exactly what Chrome's
+ * "resource was preloaded using link preload but not used within a few seconds"
+ * warning is reporting — hundreds of times, once per family per navigation and
+ * again after every hot reload.
+ *
+ * <p>`preload: false` does NOT stop these loading. The font still downloads the
+ * moment something uses it; it just stops the browser being told to fetch it
+ * eagerly on pages that never will.
+ */
+const nunito = Nunito({
+  variable: "--font-nunito",
+  subsets: ["latin"],
+  weight: ["700", "800", "900"],
+  preload: false,
+});
+
+const sourceSerif4 = Source_Serif_4({
+  variable: "--font-source-serif-4",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  preload: false,
+});
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  preload: false,
+});
+
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
+  subsets: ["latin"],
+  preload: false,
+});
+
+// Cold translation misses have bounded queue/provider deadlines. Cache warming
+// before release keeps normal renders out of that cold path.
+export const maxDuration = 60;
+
+export const metadata: Metadata = {
+  metadataBase: new URL("https://www.causekind.com"),
+  title: "CauseKind — Give With Purpose",
+  description: "Discover and support verified charity campaigns.",
+  icons: { icon: "/logo-filled.webp" },
+};
+
+// English is built ahead of time; every other language is built on its first
+// visit and then cached like any other page.
+export function generateStaticParams() {
+  return [{ locale: "en" }];
+}
+
+export default async function RootLayout({
+  children,
+  params,
+}: {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
+  if (!locales.includes(locale as (typeof locales)[number])) notFound();
+  // Lets next-intl read the locale without request headers, so pages stay static.
+  setRequestLocale(locale);
+  const messages = await getMessages();
+  const catalogue = await getInterfaceCatalogue(isTranslationLocale(locale) ? locale : "en");
+
+  return (
+    <html lang={catalogue.translated ? `${locale}-x-mtfrom-en` : "en"} suppressHydrationWarning>
+      <head>
+        {/* Sets data-ck-role-theme BEFORE first paint. Without it a recipient
+            sees a terracotta flash: useAuth hydrates from localStorage in a
+            useEffect, which runs after paint. Reads only the non-secret
+            {email, role} metadata the app already caches, and whitelists the
+            role to donor|donee — see lib/roleTheme.ts. */}
+        <script
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }}
+        />
+        {/* Material Symbols, subset and pinned.
+
+            This was requesting the FULL variable axis range
+            (opsz 20-48, wght 100-700, FILL 0-1, GRAD -50..200) — the entire
+            icon font — as a render-blocking third-party stylesheet on EVERY
+            route, while the font is used on exactly one: /blog/[slug].
+
+            `icon_names` narrows it to the eight glyphs actually referenced
+            there (grep `material-symbols-outlined` in BlogPostClient.tsx —
+            all eight are string literals, so this list is verifiable, not a
+            guess). The axes are pinned to the single instance used rather
+            than a range. `display=swap` stops it blocking text paint, and
+            the preconnect saves a connection setup on the gstatic origin the
+            stylesheet then pulls the font file from.
+
+            If a new Material Symbol is added to the blog, it must be added to
+            icon_names or it renders as its literal ligature text. */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=check,expand_more,format_bold,link,mail,pause,play_arrow,replay&display=swap"
+        />
+      </head>
+      <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+        <StoredImageFallback />
+        {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
+            banner coming back — see the TESTING_BYPASS note in each
+            component. Remove this comment once the banner is restored. */}
+        <HiddenOnVolunteerPage>
+          <MetaPixel />
+          <ClarityAnalytics />
+          <GoogleTagManagerGated />
+        </HiddenOnVolunteerPage>
+        <NextIntlClientProvider messages={messages}>
+          <GoogleProvider>
+            <AuthProvider>
+              <NotificationsProvider>
+                <NeedProfileGateProvider>
+                {/* Suspense is required, not stylistic: RouteProgressBar calls
+                    useSearchParams, and without a boundary Next opts the whole
+                    tree out of static rendering and fails the build. It has no
+                    fallback because there is nothing to show before a
+                    navigation starts. */}
+                <Suspense fallback={null}>
+                  <RouteProgressBar />
+                </Suspense>
+                <RoleThemeBridge />
+                <HiddenOnVolunteerPage>
+                  <SuperAdminRedirect />
+                  <AdminRedirect />
+                </HiddenOnVolunteerPage>
+                {/* Site-wide click spark. The colour follows the signed-in
+                    role — canvas painting can't read a CSS custom property per
+                    frame, so RoleClickSpark resolves it from the same palette
+                    module the tokens come from. */}
+                <RoleClickSpark
+                  sparkSize={10}
+                  sparkRadius={15}
+                  sparkCount={8}
+                  duration={400}
+                >
+                  <ScrollProgress />
+                  <HiddenOnVolunteerPage><SiteHeader /></HiddenOnVolunteerPage>
+                  {/* Pages are prerendered now, so a page that reads useSearchParams
+                      without its own boundary would fail the build. This
+                      catches those; only that page renders in the browser. */}
+                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad"><Suspense fallback={null}>{children}</Suspense></main>
+                  <HiddenOnVolunteerPage><SiteFooter /></HiddenOnVolunteerPage>
+                  {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
+                  <HiddenOnVolunteerPage><MobileBottomNav /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><FloatingSupportButton /></HiddenOnVolunteerPage>
+                  {/* Site-wide bottom fade — hidden on /admin & /super-admin. */}
+                  <SiteBottomBlur />
+                  {/* top-center: bottom-left sat on the admin sidebar's Sign Out and the
+                    mobile bottom nav; top corners hold the navbar's icons. The offset
+                    clears the 3.5rem sticky header. */}
+                  <Toaster
+                    richColors
+                    position="top-center"
+                    offset={72}
+                    mobileOffset={64}
+                    visibleToasts={3}
+                    duration={4500}
+                    style={{ zIndex: 2147483647 }}
+                  />
+                  <HiddenOnVolunteerPage><DeferredOverlays /></HiddenOnVolunteerPage>
+                  {/* Every Donate button opens this In-Kind / Money choice. */}
+                  <HiddenOnVolunteerPage><DonateChoice /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><StartDriveChoice /></HiddenOnVolunteerPage>
+                  {/* Guests' and donors' next step after "Donate items". */}
+                  <HiddenOnVolunteerPage><DonateItemsChoiceModal /></HiddenOnVolunteerPage>
+                  {/* Donor-only: a waiting match, once, until answered or closed. */}
+                  <HiddenOnVolunteerPage><MatchActionDock /></HiddenOnVolunteerPage>
+                  {/* NGO and donor drive notices: unread ones, one at a time. */}
+                  <HiddenOnVolunteerPage><DriveNotificationDock /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><CompletionCelebrationWatcher /></HiddenOnVolunteerPage>
+                </RoleClickSpark>
+                </NeedProfileGateProvider>
+              </NotificationsProvider>
+            </AuthProvider>
+          </GoogleProvider>
+        </NextIntlClientProvider>
+      </body>
+    </html>
+  );
+}

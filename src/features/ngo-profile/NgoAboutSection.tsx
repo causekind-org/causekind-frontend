@@ -95,7 +95,6 @@ export function NgoAboutSection({
             <textarea
               id="profile-about-us"
               rows={5}
-              maxLength={ABOUT_US_MAX}
               value={text}
               aria-describedby="profile-about-us-hint profile-about-us-count"
               aria-invalid={!!error}
@@ -108,10 +107,11 @@ export function NgoAboutSection({
             <p
               id="profile-about-us-count"
               aria-live="polite"
-              className="text-right text-3xs text-stone-500 dark:text-stone-400 font-medium"
+              className={`text-right text-3xs font-medium ${length > ABOUT_US_MAX ? "text-red-600 dark:text-red-400" : "text-stone-500 dark:text-stone-400"}`}
             >
               {length} / {ABOUT_US_MAX}
               {length < ABOUT_US_MIN ? ` (at least ${ABOUT_US_MIN} characters)` : ""}
+              {length > ABOUT_US_MAX ? ` · ${length - ABOUT_US_MAX} over the limit` : ""}
             </p>
             {error && <p role="alert" className="text-xs font-semibold text-red-600 dark:text-red-400">{error}</p>}
             <div className="flex gap-2 pt-1">
@@ -150,14 +150,14 @@ export function NgoAboutSection({
                 <Link
                   href={`/ngos/${ngo.slug}`}
                   data-testid="about-ngo-name"
-                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 hover:text-ngo-700 dark:hover:text-ngo-300 transition-colors break-words [overflow-wrap:anywhere] min-w-0"
+                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 hover:text-ngo-700 dark:hover:text-ngo-300 transition-colors break-words [overflow-wrap:anywhere] min-w-0 ck-user-text"
                 >
                   {ngo.organizationName}
                 </Link>
               ) : (
                 <h3
                   data-testid="about-ngo-name"
-                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 break-words [overflow-wrap:anywhere] min-w-0"
+                  className="font-serif text-xl sm:text-2xl font-bold text-stone-900 dark:text-stone-100 break-words [overflow-wrap:anywhere] min-w-0 ck-user-text"
                 >
                   {ngo.organizationName}
                 </h3>
@@ -183,7 +183,7 @@ export function NgoAboutSection({
                     <p className="text-3xs font-black uppercase tracking-wider text-stone-400 dark:text-stone-500">
                       {ngo.founderDesignation ? ngo.founderDesignation : "Founder / Trustee"}
                     </p>
-                    <p className="mt-0.5 text-sm font-bold text-stone-800 dark:text-stone-200 break-words [overflow-wrap:anywhere]">
+                    <p className="mt-0.5 text-sm font-bold text-stone-800 dark:text-stone-200 break-words [overflow-wrap:anywhere] ck-user-text">
                       {ngo.founderName}
                     </p>
                   </div>

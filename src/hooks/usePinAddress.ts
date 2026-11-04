@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useUiText } from "@/components/UiText";
-import { detectLocationFromServer, geocodeAddressFromServer, resolveLocationFromGPS } from "@/app/actions/locations";
+import { detectLocationFromServer, geocodeAddressFromServer, resolveLocationFromGPS } from "@/app/[locale]/actions/locations";
 
 /** What a map pin turned into. Fields the lookup had nothing for are absent. */
 export type PinAddress = {

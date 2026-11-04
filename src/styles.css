@@ -4692,6 +4692,22 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
     bottom: calc(var(--ck-bottom-chrome) + var(--ck-fab-size) + 1rem);
   }
 }
+/* ── Wizards on phones (Give to a drive, Start a drive) ─────────────────────
+   [data-ck-wizard] marks a wizard's action bar. The page scrolls far enough
+   that the last field clears the bar + dock + safe area, focused fields stop
+   above the bar, and the support bubble steps aside (it sat on the bar). */
+@media (max-width: 1023.98px) {
+  body:has([data-ck-wizard]) { --ck-wizard-bar-h: 4.75rem; }
+  body:has([data-ck-wizard]) main {
+    padding-bottom: calc(var(--ck-wizard-bar-h) + var(--ck-bottom-chrome) + env(safe-area-inset-bottom));
+  }
+  html:has([data-ck-wizard]) {
+    scroll-padding-bottom: calc(var(--ck-wizard-bar-h) + var(--ck-bottom-chrome) + env(safe-area-inset-bottom) + 0.5rem);
+  }
+  body:has([data-ck-wizard]) .ck-support-fab,
+  body:has([data-ck-wizard]) .ck-support-panel { display: none; }
+}
+
 /* The idle ripple animated box-shadow forever — a repaint every frame on a
    fixed layer. Phones get the button still. */
 @media (max-width: 767.98px) {
@@ -5297,22 +5313,32 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
    section use emerald utilities; inside this section those resolve to the brand
    scale. The "Verified by CauseKind" dot uses the ngo-* token (inlined by @theme inline), so it stays green.
    Everywhere else (drive pages, NGO pages) the card keeps its green. */
-.ck-drives-donor-tone {
-  --color-emerald-50: var(--color-brand-50);
-  --color-emerald-100: var(--color-brand-100);
-  --color-emerald-200: var(--color-brand-200);
-  --color-emerald-300: var(--color-brand-300);
-  --color-emerald-400: var(--color-brand-300);
-  --color-emerald-500: var(--color-brand-400);
-  --color-emerald-600: var(--color-brand-500);
-  --color-emerald-700: var(--color-brand-500);
-  --color-emerald-800: var(--color-brand-600);
-  --color-emerald-900: var(--color-brand-700);
-  --color-emerald-950: var(--color-brand-900);
+/* The drive cards' emerald follows the home theme here, like the Live board's cards;
+   elsewhere they stay green. The verified dot is ngo-400, so it stays green too. */
+.ck-drives-theme {
+  --color-emerald-50: var(--ck-home-surface, #fff7ed);
+  --color-emerald-100: var(--ck-home-soft, #e8e2d5);
+  --color-emerald-200: var(--ck-home-soft, #e8e2d5);
+  --color-emerald-300: color-mix(in srgb, var(--ck-home-accent, #b04a15) 45%, white);
+  --color-emerald-400: var(--ck-home-ink, #e07b3a);
+  --color-emerald-500: var(--ck-home-accent, #b04a15);
+  --color-emerald-600: var(--ck-home-accent, #b04a15);
+  --color-emerald-700: var(--ck-home-accent, #b04a15);
+  --color-emerald-800: var(--ck-home-ink, #b04a15);
+  --color-emerald-900: var(--ck-home-deep, #431407);
+  --color-emerald-950: var(--ck-home-deep, #431407);
 }
 
 /* Bottom-bar "back to top" moves focus to <main> (lib/scrollToTop.ts). Hide the
    outline for touch/mouse, keep it for keyboard users. */
 main:focus:not(:focus-visible) {
   outline: none;
+}
+
+/* Anything a person typed: long unbroken text wraps inside its card. */
+.ck-user-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: pre-line;
+  min-width: 0;
 }

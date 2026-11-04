@@ -2,6 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render } from "@testing-library/react";
 
 vi.mock("./fonts", () => ({ galleryFonts: "" }));
+// The mandala is Diwali-only (until 13 Nov 2026 00:00 IST); pinned per case.
+const diwaliState = vi.hoisted(() => ({ on: true }));
+vi.mock("@/lib/diwali", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/diwali")>()),
+  isDiwaliCampaignActive: () => diwaliState.on,
+}));
 
 const { SupportGallery } = await import("./SupportGallery");
 
@@ -28,6 +34,7 @@ function setEnvironment({ width, reducedMotion = false, saveData = false }: { wi
 
 describe("the mandala video", () => {
   beforeEach(() => {
+    diwaliState.on = true;
     HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
     HTMLMediaElement.prototype.pause = vi.fn();
   });
@@ -51,5 +58,13 @@ describe("the mandala video", () => {
     const { container } = render(<SupportGallery />);
     expect(container.querySelector("video")).toBeNull();
     expect(container.querySelector('[aria-hidden] img[src*="diwali-support-mandala-poster"]')).not.toBeNull();
+  });
+
+  it("leaves with Diwali, taking the poster too", () => {
+    diwaliState.on = false;
+    setEnvironment({ width: 1440 });
+    const { container } = render(<SupportGallery />);
+    expect(container.querySelector("video")).toBeNull();
+    expect(container.querySelector('img[src*="diwali-support-mandala"]')).toBeNull();
   });
 });

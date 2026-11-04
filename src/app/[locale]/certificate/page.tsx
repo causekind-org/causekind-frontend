@@ -1,0 +1,529 @@
+"use client";
+
+import { serverDate } from "@/lib/serverTime";
+import React, { useEffect, useRef, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { getOfferCertificate, getMatchCertificate, verifyCertificate, downloadNgoDriveOfferCertificatePdf, type Certificate } from "@/lib/api";
+import Link from "@/components/AppLink";
+import { ArrowLeft, Download } from "lucide-react";
+import QRCode from "qrcode";
+import { normalizeCertificateColors } from "@/lib/certificateCaptureColors";
+import { Dancing_Script, Playfair_Display } from "next/font/google";
+
+const dancingScript = Dancing_Script({ weight: "700", subsets: ["latin"] });
+
+// The same face the emailed PDF embeds. Georgia stood here before, and could not
+// be used server-side at all (Microsoft-licensed, not redistributable), so the page
+// and the attachment were set in different typefaces. Playfair is OFL, so both
+// can use it and the two documents finally look like the same thing.
+const playfair = Playfair_Display({ subsets: ["latin"] });
+
+/** The certificate's layout width; smaller screens scale it down. */
+const CERT_WIDTH = 960;
+const CERT_HEIGHT = CERT_WIDTH * 1000 / 1414;
+
+export default function CertificatePage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const offerId = searchParams.get("offerId");
+  const matchId = searchParams.get("matchId");
+  const certNumber = searchParams.get("certNumber");
+  const type = searchParams.get("type");
+  const printRef = useRef<HTMLDivElement>(null);
+  // The card is always laid out at its 960px desktop size and scaled down to
+  // fit narrower screens (2026-10-08): at phone width the fixed-size contents
+  // overflowed a 240px-tall card. The PDF snapshot drops the scale.
+  const frameRef = useRef<HTMLDivElement>(null);
+  const [cardScale, setCardScale] = useState(1);
+  // Drawn once its web fonts and the logo are in, so the first paint is the final layout
+  // (no reflow over the border lines); a slow network still shows it after 1.5 s.
+  const [cardReady, setCardReady] = useState(false);
+  useEffect(() => {
+    let done = false;
+    const show = () => { if (!done) { done = true; setCardReady(true); } };
+    const logo = new window.Image();
+    const logoLoaded = new Promise<void>((resolve) => { logo.onload = () => resolve(); logo.onerror = () => resolve(); });
+    logo.src = "/logo-filled.webp";
+    void Promise.all([document.fonts?.ready ?? Promise.resolve(), logoLoaded]).then(show);
+    const t = window.setTimeout(show, 1500);
+    return () => window.clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const fit = () => setCardScale(Math.min(1, el.clientWidth / CERT_WIDTH));
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
+  // A drive certificate grows with a long title: the frame follows the card's real height.
+  const [cardHeight, setCardHeight] = useState<number | null>(null);
+  useEffect(() => {
+    const el = printRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const measure = () => setCardHeight(el.offsetHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
+
+  const [cert, setCert] = useState<Certificate | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [generating, setGenerating] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (certNumber) {
+      verifyCertificate(certNumber).then(setCert).catch(() => setError("Certificate not found")).finally(() => setLoading(false));
+    } else if (offerId && type === "ngo_drive") {
+      import("@/lib/api").then(({ getNgoDriveOfferCertificate }) => {
+        getNgoDriveOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
+      });
+    } else if (offerId) {
+      getOfferCertificate(Number(offerId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
+    } else if (matchId) {
+      getMatchCertificate(Number(matchId)).then(setCert).catch(() => setError("Certificate not yet issued")).finally(() => setLoading(false));
+    } else {
+      setError("No certificate reference provided");
+      setLoading(false);
+    }
+  }, [offerId, matchId, certNumber, type]);
+
+  // Generate a scannable QR pointing at this same verification page — this is what
+  // actually makes the certificate "QR-verifiable", not just the text label.
+  useEffect(() => {
+    if (!cert) return;
+    const verifyUrl = `${window.location.origin}/certificate?certNumber=${cert.certificateNumber}`;
+    QRCode.toDataURL(verifyUrl, { width: 160, margin: 1 })
+      .then(setQrDataUrl)
+      .catch(() => setQrDataUrl(null));
+  }, [cert]);
+
+  // Snapshots the live certificate card into a raster image, then embeds that
+  // image into an actual .pdf file — a real download, not a "use your
+  // browser's Save as PDF" print dialog. html2canvas/jsPDF are dynamically
+  // imported here (not top-level) so their ~200kb doesn't load until someone
+  // actually clicks download. The card's 1414:1000 ratio matches A4 landscape
+  // exactly, so the snapshot fills the page edge to edge with no letterboxing.
+  async function handleDownload() {
+    if (!cert || generating) return;
+    if (type === "ngo_drive" && offerId) {
+      // Drive certificates: the backend renders the PDF (NGO + Drive rows, no Condition).
+      setDownloadError(null);
+      setGenerating(true);
+      try {
+        await downloadNgoDriveOfferCertificatePdf(Number(offerId), cert.certificateNumber);
+      } catch (error) {
+        setDownloadError(error instanceof Error ? `Could not download the certificate: ${error.message}` : "Could not download the certificate. Please try again.");
+      } finally {
+        setGenerating(false);
+      }
+      return;
+    }
+    if (!printRef.current) return;
+    setDownloadError(null);
+    setGenerating(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      await document.fonts.ready;
+      const canvas = await html2canvas(printRef.current, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#f5f0e8",
+        onclone: (document, element) => {
+          element.style.transform = "none";
+          normalizeCertificateColors(document, element);
+        },
+      });
+
+      const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      pdf.addImage(canvas.toDataURL("image/png", 1.0), "PNG", 0, 0, pageWidth, pageHeight);
+      pdf.save(`CauseKind-Certificate-${cert.certificateNumber}.pdf`);
+    } catch (error) {
+      setDownloadError(error instanceof Error ? `Could not download the certificate: ${error.message}` : "Could not download the certificate. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <p className="animate-pulse text-gray-400">Loading certificate...</p>
+      </div>
+    );
+  }
+
+  if (error || !cert) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 px-4 text-center">
+        <div className="text-4xl mb-3">📜</div>
+        <h2 className="text-lg font-semibold text-gray-700">{error ?? "Certificate not found"}</h2>
+        <p className="mt-1 text-sm text-gray-500">Please check the link or contact CauseKind support.</p>
+        <Link href="/dashboard" className="mt-4 text-sm text-[#b04a15] font-medium hover:underline">Back to Dashboard</Link>
+      </div>
+    );
+  }
+
+  const handoverDate = serverDate(cert.handoverDate).toLocaleDateString("en-IN", {
+    day: "2-digit", month: "2-digit", year: "numeric",
+  });
+
+  // Absent means in-kind: certificates issued before the field existed do not
+  // carry it, and this page must keep rendering them unchanged.
+  const isMoney = cert.type === "MONEY";
+  const isDrive = type === "ngo_drive" || cert.ngoName != null || cert.driveTitle != null;
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 py-8 px-4 print:bg-transparent print:p-0">
+      {/* Print rules:
+          1. Color-adjust so backgrounds/borders survive "Save as PDF" instead of
+             being stripped to plain black-on-white (the browser default).
+          2. Isolate to just the certificate — the root layout wraps every page
+             (including this one) in a site header, footer, mobile nav, and a
+             floating support button, none of which have their own print-hidden
+             treatment. Rather than hunting down and print-hiding each of those
+             components individually (fragile — a new floating widget added later
+             would leak through again), hide everything on the page by default and
+             re-reveal only .cert-print-card and its contents. That's what actually
+             gets "one page, the certificate only" instead of the full page layout.
+          3. A4 landscape explicitly — the certificate's own 1414:1000 aspect ratio
+             maps to A4 landscape edge to edge; leaving @page size unset falls back
+             to the browser/OS default paper size (often US Letter), which crops it. */}
+      <style>{`
+        @media print {
+          @page { size: A4 landscape; margin: 0; }
+          /* visibility:hidden still reserves the hidden element's layout height,
+             which pushed a blank second page — display:none actually removes it.
+             Targets the root layout's site chrome by tag/id/class directly (it's
+             a fixed, known set: header, #footer, the mobile bottom nav, the
+             floating support button/panel, and the toast notification host —
+             see src/app/layout.tsx). */
+          header, footer#footer, nav, .floating-support-item, [data-sonner-toaster] { display: none !important; }
+          /* The root layout's <main> (src/app/layout.tsx) carries a viewport-height
+             min-height plus 72px of bottom padding reserved for the mobile nav on
+             screen — neither is reset by hiding the nav itself, and left alone pushes
+             a near-empty second page onto every print. */
+          main { min-height: 0 !important; padding-bottom: 0 !important; }
+          html, body, .cert-print-card, .cert-print-card * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+          }
+          .cert-print-frame { height: auto !important; max-width: none !important; }
+          .cert-print-card {
+            transform: none !important;
+            width: 100vw !important; height: 100vh !important; max-width: none !important;
+            box-shadow: none !important; page-break-inside: avoid; margin: 0 !important;
+          }
+        }
+      `}</style>
+
+      {/* Nav — hidden on print */}
+      <div className="mx-auto mb-6 flex max-w-4xl items-center justify-between print:hidden">
+        <button
+          // Opened from an email or a new tab there is no history: an NGO drive certificate falls back to the NGO dashboard.
+          onClick={() => (window.history.length > 1 ? router.back() : router.push(type === "ngo_drive" ? "/dashboard/ngo" : "/dashboard"))}
+          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+          <ArrowLeft size={14} /> Back
+        </button>
+        <button
+          onClick={handleDownload}
+          disabled={generating}
+          className="flex items-center gap-2 rounded-xl bg-[#b04a15] px-4 py-2 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors disabled:opacity-60 disabled:cursor-wait"
+        >
+          <Download size={14} /> {generating ? "Generating PDF…" : "Download PDF"}
+        </button>
+      </div>
+
+      {downloadError && <p role="alert" className="mx-auto mb-4 max-w-4xl text-sm text-red-700 dark:text-red-400 print:hidden">{downloadError}</p>}
+
+      {/* Certificate — landscape A4 */}
+      <div
+        ref={frameRef}
+        className="mx-auto cert-print-frame"
+        style={{ width: "100%", maxWidth: `${CERT_WIDTH}px`, height: `${(isDrive && cardHeight ? cardHeight : CERT_HEIGHT) * cardScale}px` }}
+      >
+      <div
+        ref={printRef}
+        className="cert-print-card"
+        style={{
+          width: `${CERT_WIDTH}px`,
+          ...(isDrive ? { minHeight: `${CERT_HEIGHT}px` } : { aspectRatio: "1414 / 1000" }),
+          transform: cardScale < 1 ? `scale(${cardScale})` : undefined,
+          transformOrigin: "top left",
+          visibility: cardReady ? "visible" : "hidden",
+        }}
+      >
+        <div
+          data-testid="cert-body"
+          style={{
+            width: "100%",
+            // A drive certificate keeps everything inside the frame (inset 22-27px) and grows to fit.
+            ...(isDrive ? { minHeight: `${CERT_HEIGHT}px` } : { height: "100%" }),
+            backgroundColor: "#f5f0e8",
+            backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E\")",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: isDrive ? "48px 72px" : "40px",
+            fontFamily: playfair.style.fontFamily,
+            boxSizing: "border-box",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.15)",
+          }}
+        >
+          {/* Ornamental border */}
+          <OrnamentalBorder />
+
+          {/* Logo — the static filled PNG, not the animated LogoSVG (see LogoSVG.tsx:
+              that component draws itself in over ~3.5s and is meant for the live navbar;
+              on a printable/static page it risks being captured mid-reveal). */}
+          <div style={{ marginBottom: "16px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-filled.webp" alt="CauseKind" style={{ width: "64px", height: "64px", objectFit: "contain" }} />
+            <div style={{ fontSize: "18px", fontWeight: "700", letterSpacing: "0.05em", color: "#1a1008", marginTop: "4px" }}>
+              <span style={{ color: "#c4501a" }}>Cause</span>Kind
+            </div>
+          </div>
+
+          {/* Title */}
+          <div style={{ textAlign: "center", marginBottom: "12px" }}>
+            <div style={{
+              fontSize: "4rem",
+              fontWeight: "900",
+              letterSpacing: "0.15em",
+              color: "#1a1008",
+              fontFamily: playfair.style.fontFamily,
+              lineHeight: 1,
+            }}>
+              CERTIFICATE
+            </div>
+            <div style={{
+              fontSize: "1.125rem",
+              letterSpacing: "0.35em",
+              color: "#1a1008",
+              fontWeight: "600",
+              marginTop: "4px",
+            }}>
+              {isMoney
+                ? "M O N E T A R Y  D O N A T I O N"
+                : "I N - K I N D   D O N A T I O N"}
+            </div>
+          </div>
+
+          {/* Body text */}
+          <p style={{
+            fontStyle: "italic",
+            textAlign: "center",
+            color: "#3a2a1a",
+            fontSize: "0.9375rem",
+            lineHeight: 1.7,
+            maxWidth: "580px",
+            marginBottom: "20px",
+          }}>
+            {isMoney ? (
+              /* Word for word the emailed PDF. A donor comparing the page with
+                 the attachment must not find two differently-worded documents
+                 under one certificate number. */
+              <>
+                This is to formally certify that the individual named below<br />
+                has made a verified monetary contribution through the<br />
+                CauseKind platform.
+              </>
+            ) : (
+              <>
+                This is to formally certify that the individual named below<br />
+                has made a verified in-kind contribution through the<br />
+                CauseKind platform.
+              </>
+            )}
+          </p>
+
+          {/* Donor name with signature style */}
+          <div style={{ marginBottom: "24px", textAlign: "center" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "8px", justifyContent: "center" }}>
+              <span style={{ fontSize: "0.875rem", color: "#5a4a3a" }}>Mr./Ms.</span>
+              <div style={{ borderBottom: "1.5px solid #5a4a3a", minWidth: "220px", textAlign: "center" }}>
+                <span style={{
+                  fontFamily: dancingScript.style.fontFamily,
+                  fontWeight: 700,
+                  fontSize: "2.875rem",
+                  color: "#1a1008",
+                }}>
+                  {cert.donorName}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Data table */}
+          <table style={{
+            borderCollapse: "collapse",
+            marginBottom: "20px",
+            fontSize: "0.875rem",
+          }}>
+            <tbody>
+              {/* No amount on the money variant. This page is reachable by anyone
+                  holding a certificate number, and the verify endpoint is
+                  unauthenticated — showing what a named person gave would turn a
+                  verification check into a disclosure. */}
+              {isDrive && cert.ngoName?.trim() && <TableRow label="NGO" value={cert.ngoName} wrap />}
+              {isDrive && cert.driveTitle?.trim() && <TableRow label="Drive" value={cert.driveTitle} wrap />}
+              <TableRow label={isMoney ? "Contribution" : "Item Donated"} value={cert.category} />
+              {!isDrive && cert.condition && <TableRow label="Condition" value={cert.condition} />}
+              {/* Same label/value as the backend PDF (CertificatePdfRenderer.renderDrive): a bare number, no unit. */}
+              {isDrive && <TableRow label="Quantity" value={cert.quantityUnit ? `${cert.quantityDelivered} ${cert.quantityUnit}` : String(cert.quantityDelivered)} />}
+              <TableRow label="Donation Date" value={handoverDate} />
+              <TableRow label="Certificate ID" value={cert.certificateNumber} />
+            </tbody>
+          </table>
+
+          {/* Website */}
+          <div style={{
+            fontStyle: "italic",
+            color: "#5a4a3a",
+            fontSize: "0.875rem",
+            marginBottom: "8px",
+          }}>
+            www.causekind.com
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            fontStyle: "italic",
+            color: "#7a6a5a",
+            fontSize: "0.6875rem",
+            marginBottom: "10px",
+          }}>
+            {/* The PDF's only footer line, and the page carries the same one.
+                A longer tax disclaimer used to sit here; it was removed from both
+                on the owner's decision, since the Trust's design carries no such
+                line and the receipt already covers the tax position. */}
+            This certificate is digitally issued and valid without a physical signature.
+          </div>
+
+          {/* Scannable QR — bottom-right corner, tucked just inside the ornamental
+              border so it doesn't collide with the corner flourish. This is what's
+              actually printed/downloaded, so the verification path travels with the
+              certificate wherever it's shown. */}
+          {qrDataUrl && (
+            <div style={{
+              position: "absolute",
+              bottom: "80px",
+              right: "80px",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={qrDataUrl}
+                alt="Scan to verify this certificate"
+                style={{ width: "72px", height: "72px" }}
+              />
+              <span style={{ fontSize: "0.625rem", color: "#5a4a3a", marginTop: "3px" }}>
+                Scan to verify
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+      </div>
+
+      {/* Verify info below (screen-only convenience — the QR above is what's printed) */}
+      <div className="mx-auto mt-4 max-w-4xl text-center print:hidden">
+        <p className="text-xs text-gray-400">
+          Certificate ID: <span className="font-mono font-semibold text-gray-600">{cert.certificateNumber}</span>
+          {" · "}Verify at{" "}
+          <span className="font-mono text-gray-600">causekind.com/certificate?certNumber={cert.certificateNumber}</span>
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function TableRow({ label, value, wrap }: { label: string; value: string; wrap?: boolean }) {
+  return (
+    <tr>
+      <td style={{
+        border: "1px solid #c4a882",
+        padding: "7px 16px",
+        color: "#3a2a1a",
+        fontWeight: "500",
+        backgroundColor: "rgba(255,255,255,0.3)",
+      }}>
+        {label}
+      </td>
+      <td style={{
+        border: "1px solid #c4a882",
+        padding: "7px 16px",
+        color: "#3a2a1a",
+        backgroundColor: "rgba(255,255,255,0.3)",
+        minWidth: "160px",
+        ...(wrap ? { maxWidth: "420px", overflowWrap: "anywhere" as const, wordBreak: "break-word" as const } : {}),
+      }}>
+        {value}
+      </td>
+    </tr>
+  );
+}
+
+function OrnamentalBorder() {
+  // A Greek-key square spiral, drawn as one unbroken polyline so the stroke stays
+  // even all the way in. This mirrors the emailed PDF's corner exactly — the two
+  // are the same certificate and should not be recognisably different objects.
+  //
+  // The path is the same sequence of points the PDF renderer walks, scaled to a
+  // 72px box: out along one edge, into the corner, out along the other, then
+  // winding inward.
+  const corner = (style: React.CSSProperties) => (
+    <div style={{ position: "absolute", width: "72px", height: "72px", ...style }}>
+      <svg viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M10 62 V10 H62 V23 H23 V48 H40 V36"
+          stroke="#c4501a"
+          strokeWidth="2"
+          strokeLinecap="square"
+          strokeLinejoin="miter"
+        />
+      </svg>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Double-line frame — a thin outer rule and a fainter inner rule, the
+          classic diploma look, replacing the earlier single hairline. */}
+      <div style={{
+        position: "absolute", inset: "22px",
+        border: "1.5px solid #c4501a",
+        pointerEvents: "none",
+      }} />
+      <div style={{
+        position: "absolute", inset: "27px",
+        border: "0.75px solid #c4501a",
+        opacity: 0.45,
+        pointerEvents: "none",
+      }} />
+      {/* Offset to 22px so the spiral's outer arm starts ON the frame line, not
+          floating outside it — the inset here must match the outer frame above. */}
+      {corner({ top: "22px", left: "22px" })}
+      {corner({ top: "22px", right: "22px", transform: "scaleX(-1)" })}
+      {corner({ bottom: "22px", left: "22px", transform: "scaleY(-1)" })}
+      {corner({ bottom: "22px", right: "22px", transform: "scale(-1)" })}
+    </>
+  );
+}

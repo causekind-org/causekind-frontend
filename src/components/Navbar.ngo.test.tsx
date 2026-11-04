@@ -18,7 +18,10 @@ vi.mock("next/navigation", () => ({
   usePathname: () => mockPath.current,
 }));
 
-vi.mock("@/lib/api", () => ({
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  isSlowRequestError: vi.fn().mockReturnValue(false),
+  getMyNgoProfileDocuments: vi.fn().mockResolvedValue([]),
   getMyNgoApplication: vi.fn(),
   getMyProfile: vi.fn().mockResolvedValue(null),
   getMyMatches: vi.fn().mockResolvedValue([]),

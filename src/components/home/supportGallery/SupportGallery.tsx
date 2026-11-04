@@ -26,6 +26,7 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 
 import styles from "./SupportGallery.module.css";
 import { galleryFonts } from "./fonts";
@@ -579,13 +580,14 @@ function SupportMandala() {
 /* ══ Section ═════════════════════════════════════════════════════════════ */
 
 export function SupportGallery({ photos = PHOTOS }: { photos?: Photo[] }) {
+  const diwali = useDiwaliCampaign();
   return (
     <LandingAttributes><section
       id="where-support-goes"
       aria-label="Where does my support go? Photographs from CauseKind drives"
       className={`${styles.section} ${galleryFonts} ck-m-section`}
     >
-      <SupportMandala />
+      {diwali && <SupportMandala />}
       <div className="relative hidden px-4 py-14 md:block lg:px-8 lg:py-20">
         <Table photos={photos} />
       </div>

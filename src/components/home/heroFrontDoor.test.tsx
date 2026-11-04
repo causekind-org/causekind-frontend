@@ -120,7 +120,19 @@ vi.mock("@/lib/navratri", async (importOriginal) => ({
   isNavratriCampaignActive: () => false,
 }));
 
+// Diwali (until 13 Nov 2026 00:00 IST) is pinned per case, so these keep
+// passing whatever the date the suite runs on.
+const diwaliState = vi.hoisted(() => ({ on: true }));
+vi.mock("@/lib/diwali", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/diwali")>()),
+  isDiwaliCampaignActive: () => diwaliState.on,
+}));
+
 describe("hero", () => {
+  beforeEach(() => {
+    diwaliState.on = true;
+  });
+
   it("renders the signup prompt with an older message bundle", () => {
     messageState.missingGivingPrompt = true;
     try {
@@ -146,6 +158,18 @@ describe("hero", () => {
       .toContain("diwali-hero-mobile-poster.jpg");
     expect(media?.querySelector("video")).toBeNull();
     expect(container.querySelectorAll("h1")).toHaveLength(1);
+  });
+
+  it("goes back to the everyday hero once Diwali has ended", () => {
+    diwaliState.on = false;
+    const { container } = render(<HeroSection />);
+    expect(container.querySelector(".ck-hero-diwali")).toBeNull();
+    expect(container.querySelector(".ck-diwali-media")).toBeNull();
+    expect(screen.queryByText("A festival of giving")).toBeNull();
+    expect(screen.queryByText("This Diwali, Share the Light of Kindness")).toBeNull();
+    expect(screen.getByText(enMessages.hero.headlineTop)).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: enMessages.hero.photoAlt }))
+      .toHaveAttribute("src", expect.stringContaining("causekind-hero-handoff.webp"));
   });
 
   it("opens the verified public board without requiring a category choice", () => {
