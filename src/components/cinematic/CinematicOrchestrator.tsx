@@ -31,7 +31,6 @@ import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { getLenis } from "@/components/SmoothScroll";
-import { isFilmSkipEligible, markFilmSeen } from "@/lib/filmSeen";
 import { SkipFilmButton } from "@/components/cinematic/SkipFilmButton";
 import styles from "@/sections/landing/cinematic/cinematic.module.css";
 import { cineFonts } from "@/sections/landing/cinematic/fonts";
@@ -98,9 +97,6 @@ export function CinematicOrchestrator({
     window.dispatchEvent(new CustomEvent("ck:immersive-nav", { detail: next }));
   }, []);
   const [active, setActive] = useState(false);
-  // Per-view snapshot (src/lib/filmSeen.ts), read on the client after mount.
-  const [eligible, setEligible] = useState(false);
-  useEffect(() => { setEligible(isFilmSkipEligible()); }, []);
 
   // Hide the nav while the story plays. Starts once the hero's bottom edge has
   // passed the top of the screen (or, with no hero, when the film reaches the
@@ -118,7 +114,6 @@ export function CinematicOrchestrator({
       onToggle: (self) => {
         setNav(self.isActive);
         setActive(self.isActive);
-        if (self.isActive) markFilmSeen();
       },
     });
     return () => {
@@ -162,7 +157,7 @@ export function CinematicOrchestrator({
       </div>
       {/* Portalled: the film's stages use transforms, which would trap a
           position:fixed child inside them. */}
-      {eligible && active && destinationRef && createPortal(<SkipFilmButton onSkip={skip} />, document.body)}
+      {active && destinationRef && createPortal(<SkipFilmButton onSkip={skip} />, document.body)}
     </div>
   );
 }

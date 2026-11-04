@@ -69,10 +69,10 @@ function SahasHub() {
           </p>
         </header>
 
-        <div role="tablist" aria-label={ui("Campaign status")} className="flex gap-6 overflow-x-auto border-b border-[#EADFD3] dark:border-zinc-800">
+        <div role="tablist" aria-label={ui("Campaign status")} className="flex gap-2 overflow-x-auto pb-1">
           {TABS.map((t) => (
             <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => pick(t)}
-              className={`min-h-[48px] whitespace-nowrap border-b-[3px] text-[15px] font-semibold ${tab === t ? "border-[#b04a15] text-[#1F140D] dark:text-stone-100" : "border-transparent text-[#6B5A4E] dark:text-stone-400"}`}>
+              className={`min-h-[44px] cursor-pointer whitespace-nowrap rounded-full border px-5 text-[15px] font-semibold transition-colors ${tab === t ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-[#D9C9B8] bg-white text-[#4A3B30] hover:border-[#b04a15] hover:text-[#b04a15] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300"}`}>
               {tabLabel[t]}{cards ? ` · ${counts[t]}` : ""}
             </button>
           ))}

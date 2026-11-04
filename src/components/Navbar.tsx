@@ -9,7 +9,7 @@ import StaggeredMenu from "@/components/StaggeredMenu";
 // @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
 import SpecularButton from "@/components/SpecularButton";
 import Link from "@/components/AppLink";
-import { DiwaliLogo } from "@/components/brand/DiwaliLogo";
+import { DiwaliVideoLogo } from "@/components/brand/DiwaliVideoLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isDiwaliCampaignActive } from "@/lib/diwali";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
@@ -82,7 +82,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
   if (isDiwaliCampaignActive()) {
     return (
       <span className="flex items-center" aria-label="CauseKind">
-        <DiwaliLogo />
+        <DiwaliVideoLogo />
       </span>
     );
   }

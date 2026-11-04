@@ -2,7 +2,7 @@
 import { LandingText, LandingAttributes, useLandingTranslation, splitLandingHeading } from "@/components/LandingTranslation";
 
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { motion, AnimatePresence, useInView, useReducedMotion } from "framer-motion";
@@ -18,7 +18,7 @@ import {
   PackageCheck,
   ArrowRight,
 } from "lucide-react";
-import { LANDING_ROUTES, HOME_ROLE_COLORS, HOW_IT_WORKS_AUTOPLAY_MS } from "@/lib/landingConstants";
+import { LANDING_ROUTES, HOME_ROLE_COLORS } from "@/lib/landingConstants";
 
 type RoleTab = "donor" | "donee" | "ngo";
 
@@ -293,111 +293,34 @@ function StepCard({
 export function HowItWorksDesktop() {
   const sectionRef = useRef<HTMLElement>(null);
   const tabListRef = useRef<HTMLDivElement>(null);
-  const isSectionVisible = useInView(sectionRef, { amount: 0.15 });
   const hasScrolledIn = useInView(sectionRef, { once: true, amount: 0.15 });
-  const reduceMotion = useReducedMotion();
 
   const [activeTab, setActiveTab] = useState<RoleTab>("donor");
-  const [isStoppedPermanently, setIsStoppedPermanently] = useState(false);
-  const [isPageVisible, setIsPageVisible] = useState(true);
   const [pressedHref, setPressedHref] = useState<string | null>(null);
 
-  const autoTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const timerStartRef = useRef<number>(Date.now());
-  const remainingMsRef = useRef<number>(HOW_IT_WORKS_AUTOPLAY_MS);
-
-  // Advance to next tab in rotation order (Donor -> Donee -> NGO -> Donor)
-  const advanceTab = useCallback(() => {
-    setActiveTab((current) => {
-      const idx = TABS.findIndex((t) => t.id === current);
-      const nextIdx = (idx + 1) % TABS.length;
-      return TABS[nextIdx].id;
-    });
-    remainingMsRef.current = HOW_IT_WORKS_AUTOPLAY_MS;
-  }, []);
-
-  // Monitor document visibility (pause when browser tab is inactive)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsPageVisible(document.visibilityState === "visible");
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, []);
-
-  // Compute pause state (only off-screen, hidden browser tab, permanent stop, reduced-motion)
-  const isPaused =
-    isStoppedPermanently ||
-    Boolean(reduceMotion) ||
-    !isSectionVisible ||
-    !isPageVisible;
-
-  // Master continuous timer management
-  useEffect(() => {
-    if (isPaused) {
-      if (autoTimerRef.current) {
-        clearTimeout(autoTimerRef.current);
-        autoTimerRef.current = null;
-        // Compute and store remaining milliseconds
-        const elapsed = Date.now() - timerStartRef.current;
-        remainingMsRef.current = Math.max(100, remainingMsRef.current - elapsed);
-      }
-      return;
-    }
-
-    // Active - arm timeout for remaining duration
-    timerStartRef.current = Date.now();
-    const timeoutDuration = remainingMsRef.current;
-
-    autoTimerRef.current = setTimeout(() => {
-      advanceTab();
-    }, timeoutDuration);
-
-    return () => {
-      if (autoTimerRef.current) {
-        clearTimeout(autoTimerRef.current);
-        autoTimerRef.current = null;
-      }
-    };
-  }, [isPaused, activeTab, advanceTab]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
-    };
-  }, []);
-
-  // Manual tab click: switch immediately and stop rotation (like userDriven on mobile)
+  // The selected role stays put until the reader picks another: four steps
+  // per role is too much to read on a timer.
   const handleTabClick = (tabId: RoleTab) => {
     setActiveTab(tabId);
-    setIsStoppedPermanently(true);
   };
 
-  // Keyboard navigation: switch immediately and stop rotation
+  // Keyboard navigation: arrow keys move between roles
   const handleKeyDown = (e: React.KeyboardEvent) => {
     const currentIndex = TABS.findIndex((t) => t.id === activeTab);
     if (e.key === "ArrowRight") {
       e.preventDefault();
       const nextIndex = (currentIndex + 1) % TABS.length;
       setActiveTab(TABS[nextIndex].id);
-      setIsStoppedPermanently(true);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
       const prevIndex = (currentIndex - 1 + TABS.length) % TABS.length;
       setActiveTab(TABS[prevIndex].id);
-      setIsStoppedPermanently(true);
     }
   };
 
-  // Join button: capture role immediately on pointer down & stop rotation permanently
+  // Join button: capture role immediately on pointer down
   const handlePointerDownJoin = (href: string) => {
-    setIsStoppedPermanently(true);
     setPressedHref(href);
-  };
-
-  const handleJoinClick = () => {
-    setIsStoppedPermanently(true);
   };
 
   const currentTabConfig = TABS.find((t) => t.id === activeTab) || TABS[0];
@@ -562,7 +485,6 @@ export function HowItWorksDesktop() {
             {currentTabConfig.buttonHref ? <Link
               href={pressedHref || currentTabConfig.buttonHref}
               onPointerDown={() => handlePointerDownJoin(currentTabConfig.buttonHref)}
-              onClick={handleJoinClick}
             >
               <motion.button
                 className="group relative inline-flex items-center justify-center gap-2 px-6 py-2.5 sm:px-7 sm:py-3 rounded-full font-extrabold text-xs sm:text-sm text-white shadow-sm hover:shadow-md transition-all duration-300 active:scale-98 cursor-pointer"

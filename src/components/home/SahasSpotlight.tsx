@@ -6,7 +6,7 @@ import Link from "@/components/AppLink";
 import { FEATURES } from "@/lib/features";
 import { sahasCampaigns, type SahasCampaignCard } from "@/lib/api";
 import { UiText } from "@/components/UiText";
-import { SAHAS_NAME, SahasCard, serif } from "@/features/sahas/sahasUi";
+import { SAHAS_NAME, SahasFeaturedCard, SahasMiniCard, serif } from "@/features/sahas/sahasUi";
 
 /**
  * Homepage Sahas spotlight (owner decision D08, option B, 2026-11-03): one featured campaign
@@ -32,23 +32,23 @@ export function SahasSpotlight() {
   const more = rest.slice(0, 2);
 
   return (
-    <section aria-labelledby="sahas-spotlight-h" className="mx-auto w-full max-w-6xl px-4 py-12 text-[#1F140D] sm:px-6 dark:text-stone-100">
-      <div className="mb-6 flex flex-wrap items-end gap-4">
+    <section aria-labelledby="sahas-spotlight-h" className="mx-auto w-full max-w-6xl px-4 py-6 text-[#1F140D] sm:px-6 dark:text-stone-100">
+      <div className="mb-3 flex flex-wrap items-end gap-4">
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-semibold uppercase tracking-[0.05em] text-[#b04a15] dark:text-[#e07b3a]">
             <UiText>Organised by</UiText> {SAHAS_NAME}
           </span>
-          <h2 id="sahas-spotlight-h" className={`${serif} m-0 text-3xl sm:text-4xl`}><UiText>Sahas Campaigns</UiText></h2>
+          <h2 id="sahas-spotlight-h" className={`${serif} m-0 text-xl sm:text-2xl`}><UiText>Sahas Campaigns</UiText></h2>
         </div>
         <Link href="/sahas" className="ms-auto flex min-h-[44px] items-center text-[15px] font-semibold text-[#b04a15] no-underline hover:underline dark:text-[#e07b3a]">
           <UiText>View all campaigns</UiText> →
         </Link>
       </div>
-      <div className={`grid grid-cols-1 gap-6 ${more.length ? "lg:grid-cols-[minmax(0,1.75fr)_minmax(0,1fr)]" : ""}`}>
-        <SahasCard c={first} locale={locale} />
+      <div className={`grid grid-cols-1 gap-5 ${more.length ? "lg:grid-cols-[minmax(0,1.9fr)_minmax(0,1fr)]" : ""}`}>
+        <SahasFeaturedCard c={first} locale={locale} />
         {more.length > 0 && (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-1">
-            {more.map((c) => <SahasCard key={c.slug} c={c} locale={locale} compact />)}
+          <div className="flex flex-col gap-3">
+            {more.map((c) => <SahasMiniCard key={c.slug} c={c} />)}
           </div>
         )}
       </div>

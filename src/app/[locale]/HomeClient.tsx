@@ -308,7 +308,10 @@ export default function HomeClient({
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {/* Live fundraisers follow the hero and leave with it, then the film. */}
-      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeFundraisers /><SahasSpotlight /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeFundraisers /><SahasSpotlight /></>}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeFundraisers /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeFundraisers /></>}
+
+      {/* Sahas campaigns sit below the film (owner, 2026-11-04), not in its lead-in. */}
+      <SahasSpotlight />
 
       <DiwaliSeam kind="edge" from="film" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />

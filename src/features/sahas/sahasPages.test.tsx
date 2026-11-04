@@ -35,7 +35,7 @@ import { SahasSpotlight } from "@/components/home/SahasSpotlight";
 const card = (over: Partial<SahasCampaignCard>): SahasCampaignCard => ({
   slug: "kits", title: "School kits", summary: "Bags", city: "Virar", state: "MH", imageUrl: null, coverAltText: null,
   collectsItems: true, collectsMoney: false, targetAmount: null, amountRaised: null, startDate: null,
-  endDate: "2026-12-01", phase: "OPEN", featured: false, ...over,
+  endDate: "2026-12-01", phase: "OPEN", featured: false, description: null, moneyOpen: false, ...over,
 });
 
 const detailOf = (phase: SahasCampaignCard["phase"]): SahasCampaignDetail => ({

@@ -30,6 +30,7 @@ function messageOf(e: unknown): string {
   return "Something went wrong. Try again.";
 }
 const changed = () => window.dispatchEvent(new Event("ck:data-changed"));
+const slugify = (t: string) => t.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Draft", APPROVED: "Live", PAUSED: "Paused", COLLECTIONS_CLOSED: "Closed", CANCELLED: "Cancelled",
@@ -56,7 +57,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
 
   const create = async () => {
     setCreating(true);
-    try { const d = await sahasAdmin.create({ title: "Untitled campaign", collectsItems: true, collectsMoney: false }); changed(); onOpen(d.id); }
+    try { const d = await sahasAdmin.create({ title: "Untitled campaign", collectsItems: false, collectsMoney: true }); changed(); onOpen(d.id); }
     catch (e) { setError(messageOf(e)); } finally { setCreating(false); }
   };
 
@@ -91,7 +92,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
               {shown.map((r) => (
                 <tr key={r.id} className="border-t border-stone-100 dark:border-zinc-800">
                   <td className="p-3">
-                    <button type="button" onClick={() => onOpen(r.id)} className="text-left font-semibold text-[#b04a15] hover:underline">{r.title || "Untitled"}</button>
+                    <button type="button" onClick={() => onOpen(r.id)} className="cursor-pointer text-left font-semibold text-[#b04a15] underline underline-offset-2">{r.title || "Untitled"}</button>
                     <div className="text-xs text-stone-500">{r.slug ? `/sahas/${r.slug}` : "No page address yet"}</div>
                   </td>
                   <td className="p-3"><StatusChip status={r.status} publishAt={r.publishAt} /></td>
@@ -125,15 +126,15 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <button type="button" onClick={onBack} className="text-sm text-stone-500 hover:underline">← Sahas campaigns</button>
+        <button type="button" onClick={onBack} className={secondary}>← All campaigns</button>
         <h2 className="m-0 text-xl font-bold">{d.title || "Untitled"}</h2>
         <StatusChip status={d.status} publishAt={d.publishAt} />
         {d.slug && d.status !== "DRAFT" && <a href={`/sahas/${d.slug}`} target="_blank" rel="noreferrer" className="ms-auto text-sm font-semibold text-[#b04a15]">View public page ↗</a>}
       </div>
-      <div role="tablist" aria-label="Campaign sections" className="flex gap-5 border-b border-stone-200 dark:border-zinc-800">
+      <div role="tablist" aria-label="Campaign sections" className="flex flex-wrap gap-2">
         {(["details", "items", "offers", "payments", "outcome"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
-            className={`min-h-[44px] border-b-[3px] text-sm font-semibold ${tab === t ? "border-[#b04a15] text-stone-900 dark:text-stone-100" : "border-transparent text-stone-500"}`}>
+            className={`min-h-[42px] cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors ${tab === t ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-stone-300 bg-white text-stone-700 hover:border-[#b04a15] hover:text-[#b04a15] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300"}`}>
             {t === "details" ? "Details and publishing" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : t === "payments" ? "Payments" : "Updates and outcome"}
           </button>
         ))}
@@ -165,44 +166,78 @@ function Details({ d, onSaved, onError }: { d: SahasAdminDetail; onSaved: (d: Sa
     catch (e) { onError(messageOf(e)); } finally { setBusy(false); }
   };
 
-  const text = (k: keyof SahasUpsert, label: string, opts: { area?: boolean; type?: string; disabled?: boolean } = {}) => (
+  // Keeps unsaved form edits: only the cover and the version change.
+  const uploadCover = async (file: File) => {
+    setBusy(true); onError(null);
+    try { onSaved(await sahasAdmin.uploadCover(d.id, file)); changed(); }
+    catch (e) { onError(messageOf(e)); } finally { setBusy(false); }
+  };
+
+  const startV = v("startDate") as string | undefined;
+  const endV = v("endDate") as string | undefined;
+  const save = () => {
+    const body = { ...f, version: d.version };
+    if (startV && endV && endV < startV) { onError("The end date can't be before the start date."); return; }
+    if (body.slug !== undefined) {
+      // The short name after /sahas/, never a full link: "Feeding Strays" becomes feeding-strays.
+      const slug = slugify(body.slug);
+      if (!slug || /^https?:/i.test(body.slug.trim())) { onError("Page address: enter a short name like feeding-strays, not a website link."); return; }
+      body.slug = slug;
+    }
+    void run(sahasAdmin.update(d.id, body));
+  };
+
+  const text = (k: keyof SahasUpsert, label: string, opts: { area?: boolean; type?: string; disabled?: boolean; min?: string; max?: string; maxLength?: number } = {}) => (
     <label className="flex flex-col gap-1.5 text-sm font-semibold">
       {label}
       {opts.area
-        ? <textarea className={`${field} min-h-[120px] py-2 font-normal`} value={(v(k) as string | undefined) ?? ""} onChange={(e) => set(k, e.target.value as never)} />
-        : <input type={opts.type ?? "text"} disabled={opts.disabled} className={`${field} font-normal`} value={(v(k) as string | undefined) ?? ""} onChange={(e) => set(k, e.target.value as never)} />}
+        ? <textarea maxLength={opts.maxLength} className={`${field} min-h-[120px] py-2 font-normal`} value={(v(k) as string | undefined) ?? ""} onChange={(e) => set(k, e.target.value as never)} />
+        : <input type={opts.type ?? "text"} disabled={opts.disabled} min={opts.min} max={opts.max} maxLength={opts.maxLength} className={`${field} font-normal`} value={(v(k) as string | undefined) ?? ""} onChange={(e) => set(k, e.target.value as never)} />}
     </label>
   );
 
   return (
     <div className="grid grid-cols-1 items-start gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
       <div className={`${box} flex flex-col gap-4`}>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {text("title", "Title")}
-          {text("slug", "Page address (/sahas/…)", { disabled: live })}
-          {text("city", "City / area")}
-          {text("state", "State")}
-          {text("startDate", "Start date", { type: "date" })}
-          {text("endDate", "End date", { type: "date" })}
-        </div>
-        {text("summary", "One-line summary (shown on cards)")}
-        {text("description", "Story", { area: true })}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {text("imageUrl", "Cover photo URL")}
-          {text("coverAltText", "Cover photo description (alt text)")}
-        </div>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(v("coverConsent"))} onChange={(e) => set("coverConsent", e.target.checked)} /> People shown in the cover photo agreed to it being public</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(v("featured"))} onChange={(e) => set("featured", e.target.checked)} /> Feature on the home page</label>
+        <p className="m-0 text-sm font-semibold">What does this campaign collect?</p>
         <div className="flex flex-wrap gap-4 text-sm">
           <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(v("collectsItems"))} onChange={(e) => set("collectsItems", e.target.checked)} /> Collects items</label>
           <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(v("collectsMoney"))} onChange={(e) => set("collectsMoney", e.target.checked)} /> Collects money</label>
         </div>
         {Boolean(v("collectsMoney")) && (
           <label className="flex max-w-xs flex-col gap-1.5 text-sm font-semibold">Money target (₹)
-            <input type="number" min={1} className={`${field} font-normal`} value={(v("targetAmount") as number | undefined) ?? ""} onChange={(e) => set("targetAmount", e.target.value === "" ? undefined : Number(e.target.value))} />
+            <input inputMode="numeric" maxLength={9} className={`${field} font-normal`} value={(v("targetAmount") as number | undefined) ?? ""} onChange={(e) => { const n = e.target.value.replace(/\D/g, "").replace(/^0+/, ""); set("targetAmount", n === "" ? undefined : Number(n)); }} />
           </label>
         )}
-        <button type="button" className={`${primary} self-start`} disabled={!dirty || busy} onClick={() => run(sahasAdmin.update(d.id, { ...f, version: d.version }))}>Save</button>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {text("title", "Title", { maxLength: 120 })}
+          {text("slug", "Page address: short name, e.g. feeding-strays", { disabled: live, maxLength: 120 })}
+          {text("city", "City / area", { maxLength: 100 })}
+          {text("state", "State", { maxLength: 100 })}
+          {text("startDate", "Start date", { type: "date", max: endV || undefined })}
+          {text("endDate", "End date", { type: "date", min: startV || undefined })}
+        </div>
+        {text("summary", "One-line summary (shown on cards)", { maxLength: 300 })}
+        {text("description", "Story", { area: true, maxLength: 5000 })}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="flex flex-col gap-1.5 text-sm font-semibold">
+            <span>Cover photo</span>
+            <label className={`${secondary} w-fit cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#b04a15] ${busy ? "pointer-events-none opacity-50" : ""}`}>
+              {busy ? "Uploading…" : d.imageUrl ? "Change photo" : "Upload photo"}
+              <input type="file" accept="image/jpeg,image/png,image/webp" disabled={busy} className="sr-only"
+                onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ""; if (file) void uploadCover(file); }} />
+            </label>
+            <span className="text-xs font-normal text-stone-500">JPG, PNG or WebP, up to 5 MB</span>
+            {d.imageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={d.imageUrl} alt="" className="mt-1 h-24 w-40 rounded-lg object-cover" />
+            )}
+          </div>
+          {text("coverAltText", "Cover photo description (alt text)", { maxLength: 300 })}
+        </div>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(v("coverConsent"))} onChange={(e) => set("coverConsent", e.target.checked)} /> People shown in the cover photo agreed to it being public</label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(v("featured"))} onChange={(e) => set("featured", e.target.checked)} /> Feature on the home page</label>
+        <button type="button" className={`${primary} self-start`} disabled={!dirty || busy} onClick={save}>Save</button>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -263,10 +298,11 @@ function Items({ d, onChanged, onError }: { d: SahasAdminDetail; onChanged: () =
     onError(null);
     try { await sahasAdmin.removeItem(d.id, lineId); load(); onChanged(); changed(); } catch (e) { onError(messageOf(e)); }
   };
-  const inp = (k: keyof SahasLineInput, label: string, type = "text") => (
+  const inp = (k: keyof SahasLineInput, label: string, type = "text", maxLength = 200) => (
     <label className="flex flex-col gap-1 text-xs font-semibold">{label}
-      <input type={type} className={`${field} font-normal`} value={(draft[k] as string | number | undefined) ?? ""}
-        onChange={(e) => setDraft((x) => ({ ...x, [k]: type === "number" ? (e.target.value === "" ? undefined : Number(e.target.value)) : e.target.value }))} />
+      <input type={type} maxLength={type === "number" ? undefined : maxLength} inputMode={k === "contactPhone" ? "numeric" : undefined} className={`${field} font-normal`} value={(draft[k] as string | number | undefined) ?? ""}
+        min={k === "quantityNeeded" || k === "pickupRadiusKm" ? 1 : undefined} max={k === "quantityNeeded" ? 100000 : k === "pickupRadiusKm" ? 100 : undefined} step={k === "locationLatitude" || k === "locationLongitude" ? "any" : undefined}
+        onChange={(e) => setDraft((x) => ({ ...x, [k]: type === "number" ? (e.target.value === "" ? undefined : Number(e.target.value)) : k === "contactPhone" ? e.target.value.replace(/\D/g, "").slice(0, 10) : e.target.value }))} />
     </label>
   );
 
@@ -285,7 +321,7 @@ function Items({ d, onChanged, onError }: { d: SahasAdminDetail; onChanged: () =
                 <td className="p-3">{l.quantityNeeded}</td><td className="p-3">{l.quantityPledged}</td><td className="p-3">{l.quantityReceived}</td>
                 <td className="p-3 text-xs">{l.handoverMode === "DROP_OFF" ? "Drop-off" : l.handoverMode === "PICKUP" ? `Pickup ${l.pickupRadiusKm ?? "?"} km` : `Both · ${l.pickupRadiusKm ?? "?"} km`}</td>
                 <td className="p-3 text-xs text-red-800">{l.missing.join(", ") || <span className="text-emerald-800">Complete</span>}</td>
-                <td className="p-3">{!closed && <button type="button" className="text-xs font-semibold text-stone-600 hover:underline" onClick={() => remove(l.id)}>{d.status === "DRAFT" && l.quantityPledged + l.quantityReceived === 0 ? "Remove" : "Close"}</button>}</td>
+                <td className="p-3">{!closed && <button type="button" className={secondary} onClick={() => remove(l.id)}>{d.status === "DRAFT" && l.quantityPledged + l.quantityReceived === 0 ? "Remove" : "Close"}</button>}</td>
               </tr>
             ))}
           </tbody>
@@ -317,7 +353,7 @@ function Items({ d, onChanged, onError }: { d: SahasAdminDetail; onChanged: () =
           )}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {inp("contactName", "Collection contact (private)")}
-            {inp("contactPhone", "Contact phone (private)")}
+            {inp("contactPhone", "Contact phone (private)", "tel", 10)}
           </div>
           <button type="button" className={`${primary} self-start`} disabled={busy || !draft.itemName || !draft.quantityNeeded} onClick={add}>Add item</button>
         </div>
@@ -462,7 +498,7 @@ function UpdatesAndOutcome({ d, onError }: { d: SahasAdminDetail; onError: (m: s
         {list?.map((u) => (
           <div key={u.id} className="flex items-start justify-between gap-3 rounded-lg border border-stone-200 p-3 text-sm dark:border-zinc-800">
             <div><b>{u.title}</b><div className="text-xs text-stone-500">{u.publishedAt?.slice(0, 10)}{u.correctedAt ? ` · corrected ${u.correctedAt.slice(0, 10)}` : ""}</div></div>
-            <button type="button" className="text-xs font-semibold text-stone-600 hover:underline" onClick={() => { setEditing(u); setTitle(u.title); setBody(u.body); }}>Correct</button>
+            <button type="button" className={secondary} onClick={() => { setEditing(u); setTitle(u.title); setBody(u.body); }}>Correct</button>
           </div>
         ))}
       </div>

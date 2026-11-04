@@ -7223,7 +7223,7 @@ export type SahasCampaignCard = {
   slug: string; title: string; summary: string | null; city: string | null; state: string | null;
   imageUrl: string | null; coverAltText: string | null; collectsItems: boolean; collectsMoney: boolean;
   targetAmount: number | null; amountRaised: number | null; startDate: string | null; endDate: string | null;
-  phase: SahasPhase; featured: boolean;
+  phase: SahasPhase; featured: boolean; description: string | null; moneyOpen: boolean;
 };
 /** One item line. `driveId` is what the donor give flow takes; contacts are never public. */
 export type SahasItemLine = {
@@ -7263,7 +7263,15 @@ export const sahasCampaigns = {
   donationCheckout: (id: number, token: string) =>
     request<DonationOrder>(`/api/v1/sahas/campaigns/donations/${id}/checkout`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
   donationStatus: (id: number, token: string) =>
-    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null; certificateReady: boolean; receiptReady: boolean; receiptOwed: boolean }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  /** POST so the token stays out of URLs and logs. */
+  donationDocument: async (id: number, token: string, kind: "certificate" | "receipt") => {
+    const res = await fetch(`${BASE_URL}/api/v1/sahas/campaigns/donations/${id}/${kind}`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }),
+    });
+    if (!res.ok) throw new ApiError(res.status, "The document isn't ready yet.", null);
+    return res.blob();
+  },
 };
 
 // ── Sahas campaigns admin (Phase D2, 2026-11-03): /api/v1/admin/sahas-campaigns ──
@@ -7310,6 +7318,14 @@ export const sahasAdmin = {
     request<SahasAdminDetail>(`${SA}/${id}/publish`, { method: "POST", body: JSON.stringify({ version, publishAt, note }) }),
   transition: (id: number, action: "pause" | "resume" | "close" | "cancel", version: number, reason: string | null) =>
     request<SahasAdminDetail>(`${SA}/${id}/${action}`, { method: "POST", body: JSON.stringify({ version, reason }) }),
+  uploadCover: async (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${SA}/${id}/cover`, { method: "POST", credentials: "include", body: fd });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new ApiError(res.status, body?.detail || body?.message || "The photo didn't upload.", body);
+    return body as SahasAdminDetail;
+  },
   items: (id: number) => request<SahasAdminLine[]>(`${SA}/${id}/items`),
   addItem: (id: number, body: SahasLineInput) => request<SahasAdminLine>(`${SA}/${id}/items`, { method: "POST", body: JSON.stringify(body) }),
   updateItem: (id: number, lineId: number, body: SahasLineInput) =>
