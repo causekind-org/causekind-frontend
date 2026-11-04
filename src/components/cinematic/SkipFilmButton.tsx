@@ -3,10 +3,9 @@
 import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
 
 /**
- * "Skip intro" pill shown to returning visitors while the landing film plays
- * (handoffs/Landing Film Skip Plan.md). The orchestrator mounts it only while
- * the film is active and the visitor is eligible, so when it isn't shown it is
- * not in the DOM and never in the tab order.
+ * "Skip intro" pill shown to every visitor while the landing film plays. The
+ * orchestrator mounts it only while the film is active, so when it isn't shown
+ * it is not in the DOM and never in the tab order.
  */
 export function SkipFilmButton({ onSkip }: { onSkip: () => void }) {
   const label = useLandingTranslation("Skip the intro film");

@@ -4,7 +4,7 @@ import { UiText, useUiText } from "@/components/UiText";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Check, ChevronRight, HandCoins, HandHeart, Package, type LucideIcon } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, HandCoins, HandHeart, Megaphone, Package, type LucideIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { DONATE_HREF } from "@/lib/donateScroll";
@@ -34,6 +34,7 @@ import { openDonateItemsChoice } from "@/components/donate/DonateItemsChoiceModa
 
 const OPEN_EVENT = "ck:open-donate-choice";
 const IN_KIND_HREF = "/requests";
+const FUNDRAISERS_HREF = "/fundraisers";
 
 export function openDonateChoice() {
   window.dispatchEvent(new Event(OPEN_EVENT));
@@ -111,7 +112,7 @@ export function DonateChoice() {
               How would you like to give?
             </UiText></DrawerTitle>
             <DrawerDescription className="text-sm text-stone-500 dark:text-stone-400"><UiText>
-              Both reach verified people and NGOs.
+              All reach verified people and NGOs.
             </UiText></DrawerDescription>
           </div>
           <div className="mt-4 flex flex-col gap-3">
@@ -127,6 +128,13 @@ export function DonateChoice() {
               text={ui("Secure online payment to a cause. Receipt by email.")}
               onSelect={() => go(DONATE_HREF)}
             />
+            <PhoneOption
+              tone="need"
+              icon={Megaphone}
+              title={ui("Back a fundraiser")}
+              text={ui("Give to a verified person's fundraiser. Certificate by email.")}
+              onSelect={() => go(FUNDRAISERS_HREF)}
+            />
           </div>
         </DrawerContent>
       </Drawer>
@@ -135,16 +143,16 @@ export function DonateChoice() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent onCloseAutoFocus={runAfterClose} className={POPUP.content}>
+      <DialogContent onCloseAutoFocus={runAfterClose} className={POPUP.content.replace("max-w-[690px]", "max-w-[980px]")}>
         <div className={POPUP.header}>
           <span className={POPUP.eyebrow}><UiText>Donate</UiText></span>
           <DialogTitle className={POPUP.title}><UiText>How would you like to give?</UiText></DialogTitle>
           <DialogDescription className={POPUP.subtitle}><UiText>
-            Both go to verified people and NGOs. Pick the way that suits you.
+            All go to verified people and NGOs. Pick the way that suits you.
           </UiText></DialogDescription>
         </div>
 
-        <div className={POPUP.grid}>
+        <div className={POPUP.grid.replace("grid-cols-2", "grid-cols-3")}>
           <DesktopOption
             tone="items"
             title={ui("Donate items")}
@@ -160,6 +168,15 @@ export function DonateChoice() {
             text={ui("Make a secure online contribution to a cause or campaign you care about.")}
             points={[ui("Secure payment via Razorpay"), ui("Any amount, one time"), ui("Receipt sent to your email")]}
             onSelect={() => go(DONATE_HREF)}
+          />
+          <DesktopOption
+            tone="need"
+            icon={Megaphone}
+            title={ui("Back a fundraiser")}
+            kicker={ui("Fundraisers")}
+            text={ui("Help a verified person reach their goal for a specific need, like a treatment or a drive.")}
+            points={[ui("Admin-verified fundraisers"), ui("See progress to the goal"), ui("Certificate for your gift")]}
+            onSelect={() => go(FUNDRAISERS_HREF)}
           />
         </div>
       </DialogContent>

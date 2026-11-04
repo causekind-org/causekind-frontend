@@ -22,16 +22,21 @@
 // `fundraising`: donee money-fundraiser applications (handoff screens F01–F12,
 // 2026-10-16). Off unless NEXT_PUBLIC_FUNDRAISING_ENABLED="true"; the backend
 // has its own switch (fundraising.enabled) and answers 404 while it is off.
+// `sahas`: Sahas Charitable Trust campaigns (/sahas, 2026-11-03). Off unless
+// NEXT_PUBLIC_SAHAS_ENABLED="true"; the backend has its own switch (sahas.enabled)
+// and answers 404 while it is off.
 export const FEATURES: {
   money: boolean;
   bottomBlur: boolean;
   ngoRegistration: boolean;
   cinematicLanding: boolean;
   fundraising: boolean;
+  sahas: boolean;
 } = {
   money: false,
   bottomBlur: false,
   ngoRegistration: process.env.NEXT_PUBLIC_NGO_ENABLED === "true",
   cinematicLanding: true,
   fundraising: process.env.NEXT_PUBLIC_FUNDRAISING_ENABLED === "true",
+  sahas: process.env.NEXT_PUBLIC_SAHAS_ENABLED === "true",
 };

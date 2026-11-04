@@ -2023,7 +2023,10 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       });
 
     return [...fromOffers, ...fromItems, ...fromClosedOffers, ...fromMatches].sort((a, b) => b.at - a.at);
-  }, [offers, fulfilledItems, matches, pastMatches, ui, dt]);
+  // ui is left out: useUiText() returns a new function each render, and a language change
+  // remounts the page (locale is a route segment). The UI-text extractor also rejects a bare ui.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offers, fulfilledItems, matches, pastMatches, dt]);
 
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const filtered = entries.filter(e => {

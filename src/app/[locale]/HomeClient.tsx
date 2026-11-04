@@ -66,6 +66,7 @@ import { toast } from "@/lib/toast";
 import { HeroSection } from "@/components/home/HeroSection";
 import { DiwaliMobileLayer, DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
+import { SahasSpotlight } from "@/components/home/SahasSpotlight";
 import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
@@ -308,6 +309,9 @@ export default function HomeClient({
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {/* Live fundraisers follow the hero and leave with it, then the film. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeFundraisers /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeFundraisers /></>}
+
+      {/* Sahas campaigns sit below the film (owner, 2026-11-04), not in its lead-in. */}
+      <SahasSpotlight />
 
       <DiwaliSeam kind="edge" from="film" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />

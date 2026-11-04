@@ -7224,3 +7224,138 @@ export const volunteerHandover = {
 export async function setVolunteerCallPermission(offerId: number, allowed: boolean): Promise<void> {
   await request<void>(`/api/v1/drive-offers/${offerId}/volunteer-call-permission`, { method: "PUT", body: JSON.stringify({ allowed }) });
 }
+
+// ── Sahas campaigns (Phase D1, 2026-11-03) ──
+// Public: GET /api/v1/sahas/campaigns[/{slug}[/items/{driveId}]], 404 while the backend's sahas.enabled is off.
+// Items only for now; money fields stay unused until phase C3.
+
+export type SahasPhase = "UPCOMING" | "OPEN" | "PAUSED" | "CLOSED";
+export type SahasCampaignCard = {
+  slug: string; title: string; summary: string | null; city: string | null; state: string | null;
+  imageUrl: string | null; coverAltText: string | null; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number | null; amountRaised: number | null; startDate: string | null; endDate: string | null;
+  phase: SahasPhase; featured: boolean; description: string | null; moneyOpen: boolean;
+};
+/** One item line. `driveId` is what the donor give flow takes; contacts are never public. */
+export type SahasItemLine = {
+  driveId: number; itemName: string; unit: string | null; itemCondition: string | null; details: string | null;
+  quantityNeeded: number; quantityPledged: number; quantityReceived: number; quantityLeft: number;
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH" | null; dropOffAddress: string | null; availableDays: string | null;
+  pickupRadiusKm: number | null; locationCity: string | null;
+};
+export type SahasUpdate = { id: number; version: number | null; title: string; body: string; publishedAt: string | null; correctedAt: string | null };
+export type SahasOutcomeLine = { driveId: number; itemName: string; received: number; distributed: number | null };
+/** Public copy has no admin identities or version; the admin copy has both. */
+export type SahasOutcome = {
+  id: number; version: number | null; status: "DRAFT" | "APPROVED"; summary: string | null; leftoverNote: string | null;
+  submittedBy: string | null; submittedAt: string | null; approvedBy: string | null; approvedAt: string | null; lines: SahasOutcomeLine[];
+};
+export type SahasCampaignDetail = {
+  card: SahasCampaignCard; description: string | null; category: string | null; updatedAt: string;
+  items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
+};
+export type SahasDonationInput = {
+  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber?: string; address?: string;
+};
+export type SahasDonationRow = {
+  id: number; donor: string; anonymous: boolean; amount: number; platformFee: number | null; status: string;
+  documentsStatus: string | null; createdAt: string;
+};
+
+export const sahasCampaigns = {
+  live: () => request<SahasCampaignCard[]>("/api/v1/sahas/campaigns", { silent401: true }),
+  detail: (slug: string) => request<SahasCampaignDetail>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}`, { silent401: true }),
+  /** The item line in the public drive shape, so the existing give wizard works unchanged. */
+  item: (slug: string, driveId: number) =>
+    request<PublicNgoDrive>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}/items/${driveId}`, { silent401: true }),
+  /** Guests allowed. The returned panUploadToken proves this browser started the donation. */
+  donate: (campaignId: number, body: SahasDonationInput) =>
+    request<DonationOrder>(`/api/v1/sahas/campaigns/${campaignId}/donations`, { method: "POST", body: JSON.stringify(body), silent401: true }),
+  donationCheckout: (id: number, token: string) =>
+    request<DonationOrder>(`/api/v1/sahas/campaigns/donations/${id}/checkout`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  donationStatus: (id: number, token: string) =>
+    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null; certificateReady: boolean; receiptReady: boolean; receiptOwed: boolean }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  /** POST so the token stays out of URLs and logs. */
+  donationDocument: async (id: number, token: string, kind: "certificate" | "receipt") => {
+    const res = await fetch(`${BASE_URL}/api/v1/sahas/campaigns/donations/${id}/${kind}`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }),
+    });
+    if (!res.ok) throw new ApiError(res.status, "The document isn't ready yet.", null);
+    return res.blob();
+  },
+};
+
+// ── Sahas campaigns admin (Phase D2, 2026-11-03): /api/v1/admin/sahas-campaigns ──
+// Every mutation sends the campaign's current version; a stale one is refused (409).
+// Offers endpoints need OFFER_REVIEW, the rest CAMPAIGNS.
+
+export type SahasAdminRow = {
+  id: number; slug: string | null; title: string | null; status: string; phase: SahasPhase;
+  collectsItems: boolean; collectsMoney: boolean; targetAmount: number | null; amountRaised: number | null;
+  endDate: string | null; featured: boolean; publishAt: string | null; updatedAt: string;
+};
+export type SahasAdminDetail = {
+  id: number; version: number; status: string; slug: string | null; title: string | null; summary: string | null;
+  description: string | null; category: string | null; city: string | null; state: string | null; imageUrl: string | null;
+  coverAltText: string | null; coverConsent: boolean | null; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number | null; amountRaised: number | null; startDate: string | null; endDate: string | null;
+  featured: boolean; hidden: boolean; publishAt: string | null; pauseReason: string | null; missingForPublish: string[];
+};
+export type SahasUpsert = Partial<{
+  title: string; slug: string; summary: string; description: string; category: string; city: string; state: string;
+  imageUrl: string; coverAltText: string; coverConsent: boolean; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number; startDate: string; endDate: string; featured: boolean;
+}> & { version?: number };
+export type SahasLineInput = Partial<{
+  itemName: string; category: string; quantityNeeded: number; unit: string; itemCondition: string; details: string;
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH"; dropOffAddress: string; availableDays: string; pickupRadiusKm: number;
+  locationCity: string; locationLatitude: number; locationLongitude: number; contactName: string; contactPhone: string;
+}>;
+export type SahasAdminLine = {
+  id: number; itemName: string; category: string | null; quantityNeeded: number; quantityPledged: number; quantityReceived: number;
+  unit: string | null; itemCondition: string | null; details: string | null; handoverMode: "DROP_OFF" | "PICKUP" | "BOTH" | null;
+  dropOffAddress: string | null; availableDays: string | null; pickupRadiusKm: number | null; locationCity: string | null;
+  locationLatitude: number | null; locationLongitude: number | null; contactName: string | null; contactPhone: string | null;
+  status: string; missing: string[];
+};
+
+const SA = "/api/v1/admin/sahas-campaigns";
+export const sahasAdmin = {
+  list: () => request<SahasAdminRow[]>(SA),
+  get: (id: number) => request<SahasAdminDetail>(`${SA}/${id}`),
+  create: (body: SahasUpsert) => request<SahasAdminDetail>(SA, { method: "POST", body: JSON.stringify(body) }),
+  update: (id: number, body: SahasUpsert) => request<SahasAdminDetail>(`${SA}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  publish: (id: number, version: number, publishAt: string | null, note: string | null) =>
+    request<SahasAdminDetail>(`${SA}/${id}/publish`, { method: "POST", body: JSON.stringify({ version, publishAt, note }) }),
+  transition: (id: number, action: "pause" | "resume" | "close" | "cancel", version: number, reason: string | null) =>
+    request<SahasAdminDetail>(`${SA}/${id}/${action}`, { method: "POST", body: JSON.stringify({ version, reason }) }),
+  uploadCover: async (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${SA}/${id}/cover`, { method: "POST", credentials: "include", body: fd });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new ApiError(res.status, body?.detail || body?.message || "The photo didn't upload.", body);
+    return body as SahasAdminDetail;
+  },
+  items: (id: number) => request<SahasAdminLine[]>(`${SA}/${id}/items`),
+  addItem: (id: number, body: SahasLineInput) => request<SahasAdminLine>(`${SA}/${id}/items`, { method: "POST", body: JSON.stringify(body) }),
+  updateItem: (id: number, lineId: number, body: SahasLineInput) =>
+    request<SahasAdminLine>(`${SA}/${id}/items/${lineId}`, { method: "PUT", body: JSON.stringify(body) }),
+  removeItem: (id: number, lineId: number) => request<void>(`${SA}/${id}/items/${lineId}`, { method: "DELETE" }),
+  offers: (id: number, status?: string) => request<NgoDriveOfferResponse[]>(`${SA}/${id}/offers${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+  review: (id: number, offerId: number, decision: "ACCEPT" | "DECLINE" | "ASK_TO_DROP_OFF", reason?: string, acceptedQuantity?: number) =>
+    request<NgoDriveOfferResponse>(`${SA}/${id}/offers/${offerId}/review`, { method: "POST", body: JSON.stringify({ decision, reason, acceptedQuantity }) }),
+  handover: (id: number, offerId: number, otp: string, quantity?: number) =>
+    request<unknown>(`${SA}/${id}/offers/${offerId}/handover`, { method: "POST", body: JSON.stringify({ otp, quantity }) }),
+  donations: (id: number) => request<SahasDonationRow[]>(`${SA}/${id}/donations`),
+  updates: (id: number) => request<SahasUpdate[]>(`${SA}/${id}/updates`),
+  postUpdate: (id: number, title: string, body: string) =>
+    request<SahasUpdate>(`${SA}/${id}/updates`, { method: "POST", body: JSON.stringify({ title, body }) }),
+  correctUpdate: (id: number, updateId: number, version: number, title: string, body: string) =>
+    request<SahasUpdate>(`${SA}/${id}/updates/${updateId}`, { method: "PUT", body: JSON.stringify({ title, body, version }) }),
+  outcome: (id: number) => request<SahasOutcome | null>(`${SA}/${id}/outcome`),
+  saveOutcome: (id: number, body: { summary?: string; leftoverNote?: string; distributed?: Record<number, number | null>; version?: number | null }) =>
+    request<SahasOutcome>(`${SA}/${id}/outcome`, { method: "PUT", body: JSON.stringify(body) }),
+  approveOutcome: (id: number, version: number) =>
+    request<SahasOutcome>(`${SA}/${id}/outcome/approve`, { method: "POST", body: JSON.stringify({ version }) }),
+};
