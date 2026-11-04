@@ -90,4 +90,22 @@ describe("Sahas spotlight", () => {
     await waitFor(() => expect(live).toHaveBeenCalled());
     expect(container.innerHTML).toBe("");
   });
+
+  it("renders single featured card when exactly 1 campaign is open", async () => {
+    live.mockResolvedValue([card({ slug: "one", title: "Single Diwali Campaign", phase: "OPEN" })]);
+    render(<SahasSpotlight />);
+    expect(await screen.findByText("Single Diwali Campaign")).toBeTruthy();
+    expect(screen.queryByLabelText("Previous campaign")).toBeNull();
+  });
+
+  it("renders continuous scrolling row with navigation controls when multiple campaigns are open", async () => {
+    live.mockResolvedValue([
+      card({ slug: "c1", title: "Diwali First", phase: "OPEN" }),
+      card({ slug: "c2", title: "Diwali Second", phase: "OPEN" }),
+    ]);
+    render(<SahasSpotlight />);
+    expect(await screen.findAllByText("Diwali First")).toHaveLength(2);
+    expect(screen.getByLabelText("Previous campaign")).toBeTruthy();
+    expect(screen.getByLabelText("Next campaign")).toBeTruthy();
+  });
 });

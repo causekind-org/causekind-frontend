@@ -53,9 +53,9 @@ export function Chip({ children }: { children: React.ReactNode }) {
 export function ItemsBar({ needed, pledged, received, label }: { needed: number; pledged: number; received: number; label: string }) {
   const pct = (n: number) => (needed > 0 ? Math.min(100, (n / needed) * 100) : 0);
   return (
-    <div role="img" aria-label={label} className="flex h-2 overflow-hidden rounded bg-[#F3EEE8] dark:bg-zinc-800">
-      <i className="block h-full bg-[#b04a15]" style={{ width: `${pct(received)}%` }} />
-      <i className="block h-full bg-[#f0b97a]" style={{ width: `${Math.min(100 - pct(received), pct(pledged))}%` }} />
+    <div role="img" aria-label={label} className="flex h-2 overflow-hidden rounded-full bg-[#F3EEE8] dark:bg-zinc-800 shadow-inner">
+      <i className="block h-full bg-gradient-to-r from-[#b04a15] to-[#ea580c] rounded-full" style={{ width: `${pct(received)}%` }} />
+      <i className="block h-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] rounded-full" style={{ width: `${Math.min(100 - pct(received), pct(pledged))}%` }} />
     </div>
   );
 }
@@ -66,7 +66,7 @@ export function formatDate(iso: string | null, locale: string): string | null {
   return Number.isNaN(d.getTime()) ? null : new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(d);
 }
 
-/** A hub / spotlight card: the whole campaign and its action, with no need to open another page. */
+/** A hub / spotlight card: donors donate money directly from the card. */
 export function SahasCard({ c, locale, compact = false }: { c: SahasCampaignCard; locale: string; compact?: boolean }) {
   const ui = useUiText();
   const ends = formatDate(c.endDate, locale);
@@ -87,7 +87,6 @@ export function SahasCard({ c, locale, compact = false }: { c: SahasCampaignCard
       <div className="flex flex-1 flex-col gap-2.5 p-5">
         <div className="flex flex-wrap items-center gap-1.5">
           {c.featured && <span className="rounded-full bg-[#FBEBDD] px-2.5 py-0.5 text-xs font-semibold text-[#7a3410]"><UiText context="sahas card">Featured</UiText></span>}
-          {c.collectsItems && <Chip><UiText context="sahas contribution type">Items</UiText></Chip>}
           {c.collectsMoney && <Chip><UiText context="sahas contribution type">Money</UiText></Chip>}
           {c.phase !== "OPEN" && <PhaseChip phase={c.phase} />}
           <span className="ms-auto text-xs text-[#6B5A4E] dark:text-stone-400">
@@ -105,14 +104,13 @@ export function SahasCard({ c, locale, compact = false }: { c: SahasCampaignCard
           </div>
         )}
         <div className="mt-auto flex flex-col gap-2 pt-2">
-          {canDonate && (
+          {canDonate ? (
             <button type="button" onClick={() => setDonating(true)} className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white hover:bg-[#9a3f10]">
               <UiText>Donate</UiText>
             </button>
-          )}
-          {(c.collectsItems || c.phase === "CLOSED") && (
+          ) : (
             <Link href={`/sahas/${c.slug}`} className="flex min-h-[44px] items-center justify-center rounded-xl border border-[#b04a15] px-5 text-sm font-semibold text-[#b04a15] no-underline">
-              {c.phase === "CLOSED" ? ui("See what was delivered") : ui("Give items")}
+              {c.phase === "CLOSED" ? ui("See what was delivered") : ui("View details")}
             </Link>
           )}
         </div>
@@ -135,7 +133,7 @@ function Money({ c }: { c: SahasCampaignCard }) {
   );
 }
 
-/** Spotlight lead campaign (option B): photo beside the details on desktop, stacked on phones. */
+/** Spotlight lead campaign: photo beside details. Donors only donate money. */
 export function SahasFeaturedCard({ c, locale }: { c: SahasCampaignCard; locale: string }) {
   const ui = useUiText();
   const [donating, setDonating] = useState(false);
@@ -162,8 +160,11 @@ export function SahasFeaturedCard({ c, locale }: { c: SahasCampaignCard; locale:
         <Link href={`/sahas/${c.slug}`} className="text-sm font-semibold text-[#b04a15] underline underline-offset-2"><UiText>Read more</UiText></Link>
         <div className="mt-auto flex flex-col gap-2 pt-1">
           <Money c={c} />
-          {canDonate && <button type="button" onClick={() => setDonating(true)} className="flex min-h-[44px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-sm font-semibold text-white hover:bg-[#9a3f10]"><UiText>Donate</UiText></button>}
-          {!canDonate && c.collectsItems && <Link href={`/sahas/${c.slug}`} className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline"><UiText>Give items</UiText></Link>}
+          {canDonate ? (
+            <button type="button" onClick={() => setDonating(true)} className="flex min-h-[44px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-sm font-semibold text-white hover:bg-[#9a3f10]"><UiText>Donate</UiText></button>
+          ) : (
+            <Link href={`/sahas/${c.slug}`} className="flex min-h-[44px] items-center justify-center rounded-xl border border-[#b04a15] px-5 text-sm font-semibold text-[#b04a15] no-underline"><UiText>View details</UiText></Link>
+          )}
         </div>
       </div>
       {donating && <SahasDonateDialog slug={c.slug} onClose={close} />}
@@ -171,7 +172,7 @@ export function SahasFeaturedCard({ c, locale }: { c: SahasCampaignCard; locale:
   );
 }
 
-/** Spotlight's other campaigns: a compact row, photo beside name, progress and action. */
+/** Spotlight's other campaigns: compact row, photo beside name, progress and donate action. */
 export function SahasMiniCard({ c }: { c: SahasCampaignCard }) {
   const [donating, setDonating] = useState(false);
   const close = useCallback(() => setDonating(false), []);
@@ -190,7 +191,7 @@ export function SahasMiniCard({ c }: { c: SahasCampaignCard }) {
         <Money c={c} />
         {canDonate
           ? <button type="button" onClick={() => setDonating(true)} className={`${action} mt-auto`}><UiText>Donate</UiText></button>
-          : <Link href={`/sahas/${c.slug}`} className={`${action} mt-auto`}>{c.collectsItems && c.phase === "OPEN" ? <UiText>Give items</UiText> : <UiText>See campaign</UiText>}</Link>}
+          : <Link href={`/sahas/${c.slug}`} className={`${action} mt-auto`}>{c.phase === "CLOSED" ? <UiText>See what was delivered</UiText> : <UiText>See campaign</UiText>}</Link>}
       </div>
       {donating && <SahasDonateDialog slug={c.slug} onClose={close} />}
     </article>

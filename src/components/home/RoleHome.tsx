@@ -44,11 +44,12 @@ export function RoleHome({
     <div className={`ck-role-desktop-${role} relative z-10 w-full`}>
       <HeroSection />
       <HomeFundraisers />
-      <SahasSpotlight />
       <DiwaliSeam kind="edge" from="butter" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
       {/* The main page's About (flip cards), in the default donor colours. */}
       <WhoAreWeDesktop />
+      {/* Sahas campaigns section after About CauseKind */}
+      <SahasSpotlight />
       <DiwaliSeam kind="diya" diyas={3} />
       <DiwaliSeam kind="line" />
       <SupportGallery />

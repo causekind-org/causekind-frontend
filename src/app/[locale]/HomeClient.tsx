@@ -310,9 +310,6 @@ export default function HomeClient({
       {/* Live fundraisers follow the hero and leave with it, then the film. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeFundraisers /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeFundraisers /></>}
 
-      {/* Sahas campaigns sit below the film (owner, 2026-11-04), not in its lead-in. */}
-      <SahasSpotlight />
-
       <DiwaliSeam kind="edge" from="film" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
 
@@ -325,6 +322,9 @@ export default function HomeClient({
           <WhoAreWeSection />
         </div>
       </section>
+
+      {/* Sahas campaigns spotlight after Who Are We / About CauseKind */}
+      <SahasSpotlight />
 
       <DiwaliSeam kind="diya" diyas={3} />
       <DiwaliSeam kind="line" />
