@@ -4393,6 +4393,8 @@
     "teamAskedMore": "हमारी टीम ने और जानकारी माँगी है: {note}",
     "shortSteps": "{count} छोटे चरण। हम साथ-साथ सहेजते हैं।",
     "quantityRequestedN": "माँगी गई मात्रा: {quantity}",
+    "stillNeededN": "अभी भी ज़रूरत: {quantity}",
+    "requestedTotalCovered": "कुल {requested} माँगे गए · {covered} अन्य दाताओं द्वारा पहले ही पूरे",
     "forTitle": "किसके लिए: <b>{title}</b>",
     "towardsTitle": "इसके लिए: <b>{title}</b>",
     "partlyMetHint": "{still} अभी चाहिए ({requested} में से)। आप अधिकतम {still} दे सकते हैं।",

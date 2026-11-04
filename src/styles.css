@@ -2450,6 +2450,16 @@ body.mobile-menu-open {
   }
   header[data-home-hero] .ck-mobile-header > button:hover { background: rgb(255 255 255 / 0.12); }
 
+
+  /* -- Mobile logo dark-mode swap --
+     In dark mode the header bg is dark everywhere, so the blackcause logo
+     (dark ''Cause'' text) is invisible. Show whitecause instead. */
+  .dark .ck-dlogo-mobile-dark { display: none !important; }
+  .dark .ck-dlogo-mobile-light { display: block !important; }
+  /* Over the home hero the header is transparent on the dark video, so the
+     light logo shows there too, at every width the mobile header exists. */
+  header[data-home-hero="top"] .ck-dlogo-mobile-dark { display: none !important; }
+  header[data-home-hero="top"] .ck-dlogo-mobile-light { display: block !important; }
   .ck-showcase-hero {
     padding: 0;
     margin-top: calc(-1 * var(--ck-nav-h, 4.25rem));

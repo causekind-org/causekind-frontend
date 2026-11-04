@@ -3,8 +3,9 @@
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import {
-  adminResolvePurchaseIssue, superAdminListDisputes, superAdminResolveDispute, type PostDeliveryIssue,
+  superAdminListDisputes, superAdminResolveDispute, type PostDeliveryIssue,
 } from "@/lib/api";
+import { PurchaseIssueResolverFor } from "@/features/purchase/PurchaseIssueResolver";
 import { toast } from "@/lib/toast";
 import { Scale, Loader2, ExternalLink, CheckCircle2, Clock } from "lucide-react";
 
@@ -93,21 +94,8 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
     return () => { active = false; };
   }, [tab]);
 
-  /** Purchase problems resolve through the purchase lifecycle so stock and status move with them. */
-  async function handlePurchaseResolve(d: PostDeliveryIssue, action: "RETRY_DELIVERY" | "CANCEL_REMAINDER") {
-    const reason = (drafts[d.id] ?? "").trim();
-    if (reason.length < 10 || d.offerId == null) { toast.error("Add a reason of at least 10 characters"); return; }
-    setResolvingId(d.id);
-    try {
-      await adminResolvePurchaseIssue(d.offerId, { action, reason });
-      toast.success(action === "RETRY_DELIVERY" ? "Redelivery expected — the donor has been told" : "Remainder closed");
-      const fresh = await superAdminListDisputes(tab);
-      setDisputes(fresh);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not resolve dispute");
-    } finally {
-      setResolvingId(null);
-    }
+  async function refresh() {
+    try { setDisputes(await superAdminListDisputes(tab)); } catch { /* keeps the current list */ }
   }
 
   async function handleResolve(id: number) {
@@ -159,7 +147,7 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
               draft={drafts[d.id] ?? ""}
               onDraftChange={(v) => setDrafts((prev) => ({ ...prev, [d.id]: v }))}
               onResolve={() => handleResolve(d.id)}
-              onPurchaseResolve={(action) => handlePurchaseResolve(d, action)}
+              onPurchaseDecided={() => void refresh()}
             />
           ))}
         </div>
@@ -169,11 +157,11 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
 }
 
 function DisputeCard({
-  d, t, resolving, draft, onDraftChange, onResolve, onPurchaseResolve,
+  d, t, resolving, draft, onDraftChange, onResolve, onPurchaseDecided,
 }: {
   d: PostDeliveryIssue; t: Theme; resolving: boolean;
   draft: string; onDraftChange: (v: string) => void; onResolve: () => void;
-  onPurchaseResolve: (action: "RETRY_DELIVERY" | "CANCEL_REMAINDER") => void;
+  onPurchaseDecided: () => void;
 }) {
   const resolved = !!d.resolvedAt;
   return (
@@ -229,27 +217,9 @@ function DisputeCard({
           <p className={`mt-1 ${t.muted}`}>{d.adminResolution}</p>
           <p className={`mt-1.5 ${t.dim}`}>{d.resolvedAt && serverDate(d.resolvedAt).toLocaleString("en-IN")}</p>
         </div>
-      ) : d.purchase ? (
-        <div className="space-y-2">
-          <textarea
-            value={draft}
-            onChange={(e) => onDraftChange(e.target.value)}
-            placeholder="Reason — recorded in the audit log and shown to both participants (at least 10 characters)"
-            rows={2}
-            className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none ${t.textarea}`}
-          />
-          <div className="flex flex-wrap gap-2">
-            <button onClick={() => onPurchaseResolve("RETRY_DELIVERY")} disabled={resolving || draft.trim().length < 10}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50 ${t.primaryBtn}`}>
-              {resolving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Expect redelivery / replacement"}
-            </button>
-            <button onClick={() => onPurchaseResolve("CANCEL_REMAINDER")} disabled={resolving || draft.trim().length < 10}
-              className={`px-4 py-2 rounded-xl border text-sm font-bold transition-colors disabled:opacity-50 ${t.chipInactive}`}>
-              Close undelivered remainder
-            </button>
-          </div>
-          <p className={`text-3xs ${t.dim}`}>Closing counts only what was confirmed received; the rest goes back to the request. If nothing was received, the offer is cancelled.</p>
-        </div>
+      ) : d.purchase && d.offerId != null ? (
+        // Purchase problems resolve through the purchase lifecycle so stock, counts and the certificate move with them.
+        <PurchaseIssueResolverFor offerId={d.offerId} onDone={onPurchaseDecided} />
       ) : (
         <div className="flex flex-col sm:flex-row gap-2">
           <textarea

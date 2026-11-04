@@ -5237,6 +5237,8 @@
     "teamAskedMore": "Our team asked for more information: {note}",
     "shortSteps": "{count} short steps. We save as you go.",
     "quantityRequestedN": "Quantity requested: {quantity}",
+    "stillNeededN": "Still needed: {quantity}",
+    "requestedTotalCovered": "{requested} requested in total · {covered} already covered by other donors",
     "forTitle": "For: <b>{title}</b>",
     "towardsTitle": "Towards <b>{title}</b>",
     "partlyMetHint": "{still} still needed (of the {requested} requested). You can offer up to {still}.",

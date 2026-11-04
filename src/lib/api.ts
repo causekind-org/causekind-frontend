@@ -2376,9 +2376,19 @@ export type PurchaseCommitmentDetails = {
   /** Set at donee acceptance; null before. */
   purchaseDeadline: string | null;
   acceptedAt: string | null;
+  /** Buy and hand over: where the donor buys. Null for direct delivery and older offers. */
+  purchaseChannel?: PurchaseChannel | null;
+  /** What was actually bought, once recorded. The price is never sent here (the donee sees this). */
+  actualItemName?: string | null;
+  actualBrand?: string | null;
+  actualModel?: string | null;
+  purchasedQuantity?: number | null;
+  purchasedOn?: string | null;
+  purchaseNotes?: string | null;
 };
 
 export type PurchaseFulfilmentMethod = "BUY_AND_HAND_OVER" | "DIRECT_DELIVERY";
+export type PurchaseChannel = "ONLINE" | "OFFLINE";
 
 export type PurchaseStatus =
   | "INTENT_DECLARED" | "READY_TO_BUY" | "ORDER_PLACED" | "PROOF_UPLOADED" | "READY_FOR_HANDOVER"
@@ -2434,6 +2444,25 @@ export type PurchaseView = {
   issues: PurchaseIssueView[];
   /** Why our team sent the item photo back; the donor (and admins) only. Cleared by a new upload. */
   proofRejectionReason?: string | null;
+  /** The plan and what was actually bought, side by side. */
+  details?: PurchaseDetailsView | null;
+};
+
+/**
+ * Planned vs actually bought. `actualPrice`, `reviewOutcome` and `reviewedAt`
+ * reach the donor and our team only (null for the recipient).
+ */
+export type PurchaseDetailsView = {
+  channel: PurchaseChannel | null;
+  plannedItem: string | null; plannedBrand: string | null; plannedModel: string | null;
+  estimatedCost: number | null; productUrl: string | null; intendedStore: string | null;
+  planNotes: string | null; purchaseTimeline: string | null;
+  actualItemName: string | null; actualBrand: string | null; actualModel: string | null;
+  actualPrice: number | null; purchasedQuantity: number | null; purchasedOn: string | null;
+  purchaseNotes: string | null;
+  /** APPROVED, INFO_REQUIRED or REJECTED — our team's last decision on the evidence. */
+  reviewOutcome: "APPROVED" | "INFO_REQUIRED" | "REJECTED" | null;
+  reviewedAt: string | null;
 };
 
 export type PurchaseIssueView = {
@@ -2441,7 +2470,12 @@ export type PurchaseIssueView = {
   reportedByRole: "DONOR" | "DONEE"; createdAt: string;
   response: string | null; respondedAt: string | null;
   resolution: string | null; resolvedAt: string | null;
+  /** Support's open question; each side gets only the one put to it (support sees all). */
+  infoRequest?: string | null; infoAudience?: PurchaseInfoAudience | null; infoRequestedAt?: string | null;
+  /** Each side's answer; a participant sees only their own. */
+  infoReplyDonor?: string | null; infoReplyDonee?: string | null; infoRepliedAt?: string | null;
 };
+export type PurchaseInfoAudience = "DONOR" | "DONEE" | "BOTH";
 
 /** Donor uploads ITEM_PHOTO..DELIVERY_PROOF; the recipient uploads RECEIVED_PHOTO and ISSUE_EVIDENCE. */
 export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT" | "DELIVERY_PROOF" | "RECEIVED_PHOTO" | "ISSUE_EVIDENCE";
@@ -3109,6 +3143,9 @@ export function recordPurchaseOrder(offerId: number, data: {
   idempotencyKey: string; retailer: string; reference?: string; quantity: number;
   expectedDeliveryAt: string; prepaid: true;
   trackingUrl?: string; trackingReference?: string;
+  /** Buy and hand over: what was actually bought (required there). */
+  itemName?: string; brand?: string; model?: string; actualPrice?: number;
+  purchasedQuantity?: number; purchasedOn?: string; notes?: string;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/order`, { method: "POST", body: JSON.stringify(data) });
 }
@@ -3176,11 +3213,36 @@ export function adminListPurchases(page = 0, attention = false) {
   return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}${attention ? "&attention=true" : ""}`);
 }
 
-export function adminReviewPurchaseProof(offerId: number, data: { approve: boolean; reason: string }) {
+/** What a buy-and-hand-over donor bought, corrected; `resubmit` sends it back to our team. */
+export type PurchaseDetailsInput = {
+  itemName: string; brand?: string; model?: string; actualPrice: number; purchasedQuantity: number;
+  quantity: number; retailer: string; purchasedOn: string; notes?: string; resubmit: boolean;
+};
+
+export function updatePurchaseDetails(offerId: number, data: PurchaseDetailsInput) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/details`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+/** APPROVE opens the handover; REQUEST_INFO asks the donor to add or correct details; REJECT asks for new evidence. */
+export function adminReviewPurchaseProof(offerId: number, data: { action: "APPROVE" | "REQUEST_INFO" | "REJECT"; reason: string }) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/proof-review`, { method: "POST", body: JSON.stringify(data) });
 }
 
-export function adminResolvePurchaseIssue(offerId: number, data: { action: "RETRY_DELIVERY" | "CANCEL_REMAINDER"; reason: string }) {
+/**
+ * Support's decision on an open purchase problem. `finalQuantity` (closing, direct
+ * delivery only) replaces the recipient's count; 0 cancels the donation.
+ * `expectedBy` resets the delivery date on a retry; REQUEST_INFO asks `audience`.
+ */
+export type PurchaseResolution =
+  | { action: "RETRY_DELIVERY"; reason: string; expectedBy?: string }
+  | { action: "CANCEL_REMAINDER"; reason: string; finalQuantity?: number }
+  | { action: "REQUEST_INFO"; reason: string; audience: PurchaseInfoAudience };
+
+export function replyToPurchaseInfoRequest(offerId: number, message: string) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/issues/info-reply`, { method: "POST", body: JSON.stringify({ message }) });
+}
+
+export function adminResolvePurchaseIssue(offerId: number, data: PurchaseResolution) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
 }
 

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import {
-  MIN_OFFER_PHOTOS, PURCHASE_METHODS, PURCHASE_TIMELINES, isPurchaseFlow,
+  MIN_OFFER_PHOTOS, PURCHASE_CHANNELS, PURCHASE_METHODS, PURCHASE_TIMELINES, isPurchaseFlow, planNeedsListing,
   offerStepsFor, type OfferModel, type OfferStep,
 } from "./offerModel";
 import { offerErrorCode } from "./offerErrorText";
@@ -22,6 +22,7 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
   .object({
     photos: z.array(z.any()),
     fulfilmentMethod: z.string(),
+    purchaseChannel: z.string(),
     productUrl: z.string(),
     proposedBrand: z.string(),
     proposedModel: z.string(),
@@ -74,9 +75,22 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
         });
       }
 
+      // Buy and hand over: online or a shop. Only an online purchase (and direct
+      // delivery) names a listing now; a shop purchase records the item after buying.
+      if (v.fulfilmentMethod === "BUY_AND_HAND_OVER" && !PURCHASE_CHANNELS.some(c => c.value === v.purchaseChannel)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom, path: ["purchaseChannel"],
+          message: "Choose whether you'll buy it online or from a shop.",
+        });
+      }
+      const listing = planNeedsListing({
+        fulfilmentMethod: v.fulfilmentMethod as OfferModel["fulfilmentMethod"],
+        purchaseChannel: v.purchaseChannel as OfferModel["purchaseChannel"],
+      });
+
       const url = v.productUrl.trim();
       if (!url) {
-        ctx.addIssue({
+        if (listing) ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["productUrl"],
           message: "Please enter the product link.",
         });
@@ -96,14 +110,14 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
         }
       }
 
-      if (!v.proposedBrand.trim()) {
+      if (listing && !v.proposedBrand.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["proposedBrand"],
           message: "Please enter the brand.",
         });
       }
 
-      if (!v.proposedModel.trim()) {
+      if (listing && !v.proposedModel.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["proposedModel"],
           message: "Please enter the model or variant.",
@@ -112,7 +126,7 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
 
       const cost = v.estimatedCost.trim();
       if (!cost) {
-        ctx.addIssue({
+        if (listing) ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["estimatedCost"],
           message: "Please enter the estimated cost in rupees.",
         });
@@ -123,7 +137,7 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
         });
       }
 
-      if (!v.intendedStore.trim()) {
+      if (listing && !v.intendedStore.trim()) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom, path: ["intendedStore"],
           message: v.fulfilmentMethod === "DIRECT_DELIVERY" ? "Please enter the retailer." : "Please enter the store or shop.",
@@ -211,7 +225,7 @@ export const OFFER_STEP_FIELDS: Record<OfferStep, readonly (keyof OfferValues)[]
   pickup: ["deliveryCostBornBy"],
   photos: ["photos"],
   purchasePlan: [
-    "fulfilmentMethod", "productUrl",
+    "fulfilmentMethod", "purchaseChannel", "productUrl",
     "purchaseTimeline", "estimatedCost", "proposedBrand", "proposedModel",
     "intendedStore", "purchaseNotes",
   ],

@@ -316,6 +316,9 @@ export default function AdminDashboardPage() {
       setNgoDeepLink(qs.get("application"));
     } else if (wanted && NGO_TAB_LINKS[wanted]) {
       setTab(NGO_TAB_LINKS[wanted]);
+    } else if (wanted === "offers") {
+      // ?tab=offers&view=purchases — the "Purchase to verify" bell.
+      setTab("offers");
     }
   }, []);
   const [rejectId, setRejectId] = useState<number | null>(null);

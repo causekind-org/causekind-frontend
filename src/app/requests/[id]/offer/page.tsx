@@ -920,7 +920,7 @@ export default function OfferWizardPage() {
               <section className="mb-8">
                 <p className="mb-2 text-2xs font-bold uppercase tracking-wide text-gray-400"><UiText>Request Description</UiText></p>
                 <div className="rounded-xl border-l-4 border-indigo-300 bg-indigo-50 px-3.5 sm:px-5 py-4 dark:border-indigo-600 dark:bg-indigo-950/30">
-                  <p className="text-sm italic leading-relaxed text-gray-700 dark:text-gray-300">&ldquo;{request.description}&rdquo;</p>
+                  <p className="text-sm italic leading-relaxed text-gray-700 [overflow-wrap:anywhere] dark:text-gray-300">&ldquo;{request.description}&rdquo;</p>
                 </div>
               </section>
             )}

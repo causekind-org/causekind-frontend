@@ -24,7 +24,7 @@ const steps = [
     glowColor: 'rgba(217,119,6,0.3)',
     label: 'Sahas Charitable Trust',
     headline: 'Managed with full transparency.',
-    description: 'Sahas Charitable Trust — registered with 12AA and 80G certifications — manages every rupee with accountability.',
+    description: 'Sahas Charitable Trust — registered with 12A and 80G certifications — manages every rupee with accountability.',
     detail: 'Registered · Audited',
   },
   {

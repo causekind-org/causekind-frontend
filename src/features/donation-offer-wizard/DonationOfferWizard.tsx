@@ -378,7 +378,8 @@ export function DonationOfferWizard({
 
   const runScreening = useCallback(async () => {
     const urls = uploadedOfferPhotos(model.photos);
-    if (urls.length === 0) { setScreening({ kind: "idle" }); return; }
+    // A purchase offer's photo is only a reference image; nothing to screen as an item.
+    if (urls.length === 0 || purchase) { setScreening({ kind: "idle" }); return; }
 
     const token = ++screenTokenRef.current;
     setScreening({ kind: "running" });
@@ -702,6 +703,7 @@ export function DonationOfferWizard({
                         <OfferPurchasePlanStep
                           model={model} errors={errors} onChange={setField}
                           requestTitle={requestTitle}
+                          reference={{ photos: model.photos, onAdd: photoApi.addFiles, onRemove: photoApi.removePhoto }}
                         />
                       )}
                       {step === "details" && (
@@ -738,7 +740,7 @@ export function DonationOfferWizard({
       <MotionConfig reducedMotion={reduced ? "always" : "never"}>
         <GuidedPurchaseLayout
           current={step} steps={steps} labels={STEP_LABELS} availability={availability}
-          requestTitle={requestTitle} requestedQuantity={requestedQuantity}
+          requestTitle={requestTitle} requestedQuantity={requestedQuantity} stillNeededQuantity={stillNeededQuantity}
           saveStatus={<DraftSaveStatus status={draft.status} onRetry={draft.retry} />}
           onJump={s => {
             const currentIdx = offerStepIndex(step, steps);

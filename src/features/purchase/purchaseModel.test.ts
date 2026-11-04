@@ -49,8 +49,12 @@ describe("purchaseStage", () => {
     expect(purchaseNextAction(stage, "DONOR", base)).toMatch(/don't buy/i);
   });
 
-  it("waits for the recipient's address on direct delivery", () => {
-    expect(purchaseStage(v({ acceptedAt: "2026-10-15T10:00:00" }), "DONOR_RECONFIRMATION_REQUIRED")).toBe("AWAITING_ADDRESS");
+  it("waits for the donor to reconfirm before asking for an address", () => {
+    expect(purchaseStage(v({ acceptedAt: "2026-10-15T10:00:00" }), "DONOR_RECONFIRMATION_REQUIRED")).toBe("AWAITING_RECONFIRMATION");
+  });
+
+  it("waits for the recipient's address on direct delivery once the donor reconfirms", () => {
+    expect(purchaseStage(v({ acceptedAt: "2026-10-15T10:00:00" }), "DONOR_RECONFIRMED")).toBe("AWAITING_ADDRESS");
   });
 
   it("waits for approval when accepted with address but not approved", () => {

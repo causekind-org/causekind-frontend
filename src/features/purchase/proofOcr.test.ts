@@ -66,4 +66,9 @@ describe("parseOrderProofText", () => {
     expect(result.quantity).toBe(1);
     expect(result.expectedDeliveryDate).toBe("2026-10-30");
   });
+
+  it("leaves the quantity empty when the confirmation shows none", () => {
+    expect(parseOrderProofText("Demo Electronics\nOrder ID: OD1234567890").quantity).toBeNull();
+    expect(parseOrderProofText("").quantity).toBeNull();
+  });
 });

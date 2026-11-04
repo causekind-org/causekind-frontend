@@ -7,15 +7,20 @@ import { HandoverMapPinField } from "@/features/handover/HandoverMapPinField";
 import { detectLocationFromServer } from "@/app/actions/locations";
 import {
   confirmPurchaseNoIssue, confirmPurchaseReceipt, decidePurchaseExtension, reconfirmOfferAvailability, recordPurchaseOrder,
-  reportPurchaseIssue, requestPurchaseExtension, respondToPurchaseIssue, revokePurchaseAddress, sharePurchaseAddress,
-  updatePurchaseShipment, uploadFlowBProof, uploadPurchaseRecipientEvidence,
+  reportPurchaseIssue, requestPurchaseExtension, respondToPurchaseIssue, replyToPurchaseInfoRequest, sharePurchaseAddress,
+  updatePurchaseDetails, updatePurchaseShipment, uploadFlowBProof, uploadPurchaseRecipientEvidence, withdrawOffer,
   type DonationOffer, type ExtractedProofData, type PurchaseIssueType, type PurchaseIssueView, type PurchaseProofType, type PurchaseReceiptCondition, type PurchaseView,
 } from "@/lib/api";
 import { scanOrderProofImage } from "./proofOcr";
 import { toast } from "@/lib/toast";
-import { purchaseMethodLabel } from "@/features/donation-offer-wizard/offerModel";
 import {
-  PURCHASE_STAGE_LABEL, endOfDayLocal, formatLocal, purchaseNextAction, purchaseStage,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { purchaseChannelLabel, purchaseMethodLabel, purchaseTimelineLabel } from "@/features/donation-offer-wizard/offerModel";
+import { PurchaseDetailsForm, type PurchaseFormValues } from "./PurchaseDetailsForm";
+import {
+  endOfDayLocal, formatLocal, purchaseNextAction, purchaseStage, purchaseStageLabel,
   type PurchaseRole, type PurchaseStage,
 } from "./purchaseModel";
 
@@ -55,7 +60,8 @@ function Fact({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// The viewer's local calendar date (YYYY-MM-DD); toISOString would give UTC and lag in IST mornings.
+const today = () => new Date().toLocaleDateString("en-CA");
 
 /**
  * The purchase hub — one page for both purchase journeys and both roles.
@@ -98,6 +104,31 @@ export function PurchaseHub({
     }
   }
 
+  /** Records the purchase, then the item photo and the optional private receipt. */
+  async function submitPurchase(v: PurchaseFormValues) {
+    if (!v.photo) throw new Error("Add a photo of the item you bought.");
+    await recordPurchaseOrder(id, {
+      idempotencyKey: purchaseKey, retailer: v.retailer, quantity: v.quantity,
+      expectedDeliveryAt: endOfDayLocal(today()), prepaid: true,
+      itemName: v.itemName, brand: v.brand, model: v.model, actualPrice: v.actualPrice,
+      purchasedQuantity: v.purchasedQuantity, purchasedOn: v.purchasedOn, notes: v.notes,
+    });
+    // Recorded now; a failed photo leaves the donor on the photo step with the form's data kept.
+    await uploadFlowBProof(id, "ITEM_PHOTO", v.photo);
+    if (v.receipt) await uploadFlowBProof(id, "RECEIPT", v.receipt).catch(() => toast.error("Sent — but the receipt didn't upload. You can add it again below."));
+  }
+  /** After our team asked for more: the corrected details, then a new photo if one was chosen. */
+  async function resubmitPurchase(v: PurchaseFormValues) {
+    if (v.receipt) await uploadFlowBProof(id, "RECEIPT", v.receipt);
+    const base = {
+      itemName: v.itemName, brand: v.brand, model: v.model, actualPrice: v.actualPrice, purchasedQuantity: v.purchasedQuantity,
+      quantity: v.quantity, retailer: v.retailer, purchasedOn: v.purchasedOn, notes: v.notes,
+    };
+    // A new photo sends it back for review by itself, so the details go first without resubmitting.
+    await updatePurchaseDetails(id, { ...base, resubmit: !v.photo });
+    if (v.photo) await uploadFlowBProof(id, "ITEM_PHOTO", v.photo);
+  }
+
   const orderedOpen = !!view.orderedAt && !["ISSUE_OPEN", "COMPLETED", "CLOSED", "ISSUE_WINDOW"].includes(stage);
   // In person, the handover page owns the handover and its issue window ("Everything's fine" / report).
   const physicalWindow = !direct && stage === "ISSUE_WINDOW";
@@ -113,15 +144,59 @@ export function PurchaseHub({
     && ((donor && openIssue.reportedByRole === "DONEE") || (donee && openIssue.reportedByRole === "DONOR"));
   const [extractedOrder, setExtractedOrder] = useState<ExtractedProofData | null>(null);
   const deliveryProofDone = view.evidence.some(e => e.type === "DELIVERY_PROOF");
+  // Direct delivery, ready to buy: step 1 is the checklist; the upload and order
+  // details follow once the donor says they've ordered (or already uploaded proof).
+  const [placedClicked, setPlacedClicked] = useState(false);
+  const orderPlaced = placedClicked || view.evidence.some(e => e.type === "ORDER_CONFIRMATION");
+  const checklistStep = donor && direct && stage === "READY_TO_BUY" && !orderPlaced;
+  // A re-upload replaces the earlier file of that type; only the newest is shown.
+  const latestEvidence = view.evidence.filter(e =>
+    !view.evidence.some(o => o.type === e.type && o.uploadedByRole === e.uploadedByRole && o.uploadedAt > e.uploadedAt));
+  const latestConfirmation = latestEvidence.find(e => e.type === "ORDER_CONFIRMATION");
+  // Where the purchase stands, so the sidebar speaks in the right tense.
+  const phase: "planned" | "ordered" | "delivered" =
+    ["DELIVERED", "ISSUE_WINDOW", "COMPLETED"].includes(stage) || (view.receivedQuantity ?? 0) > 0 ? "delivered"
+      : view.orderedAt || (donor && orderPlaced) ? "ordered" : "planned";
+  const copy = {
+    addressTitle: { planned: donor ? "Deliver to" : "Delivering to", ordered: donor ? "Your order ships to" : "Your order ships to", delivered: "Delivered to" }[phase],
+    productTitle: {
+      planned: donor ? "What you agreed to buy" : "What the donor will buy",
+      ordered: donor ? "What you ordered" : "What the donor ordered",
+      delivered: donor ? "What you donated" : "What you received",
+    }[phase],
+    delivery: direct
+      ? { planned: donor ? "To be shipped to the recipient" : "To be shipped to you", ordered: donor ? "Shipping to the recipient" : "Shipping to you", delivered: donor ? "Delivered to the recipient" : "Delivered to you" }[phase]
+      : "Handed over in person",
+    donorAddressNote: phase === "planned"
+      ? "Use this address only for this order. Pay in full online — never choose cash on delivery, and never ask the recipient for a delivery OTP."
+      : "This address was used only for this order. Never ask the recipient for a delivery OTP.",
+    doneeAddressNote: phase === "planned"
+      ? "Shared with the donor. If it is incorrect, please contact support before the order is placed."
+      : phase === "ordered"
+        ? "The donor has placed the order to this address. If there is a problem, please contact support."
+        : "Your order was delivered to this address.",
+  };
   const showDeliveryProof = donor && direct && (inTransit || stage === "ISSUE_OPEN" || (stage === "ISSUE_WINDOW" && !deliveryProofDone));
-  const showAddress = donee && direct && !!view.acceptedAt && !view.orderedAt && stage !== "CLOSED";
+  // The form only while it's the recipient's turn; afterwards a status update replaces it.
+  const showAddress = donee && direct && stage === "AWAITING_ADDRESS";
+  const doneeWaiting = donee && direct && (stage === "AWAITING_APPROVAL" || stage === "READY_TO_BUY");
   const showExtensionDecision = donee && !!view.extensionRequestedUntil && !view.extensionDecidedAt && !view.orderedAt && stage !== "CLOSED";
   const showPhoto = donor && !direct && (stage === "AWAITING_ITEM_PHOTO" || stage === "AWAITING_PROOF_REVIEW");
+  const showInfoRequired = donor && !direct && stage === "PURCHASE_INFO_REQUIRED";
+  // In person, the donor is committed once they say yes; they tell us what they bought here.
+  const showPurchaseForm = donor && !direct && stage === "READY_TO_BUY";
+  const details = view.details ?? null;
+  const [purchaseKey] = useState(() => typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
+  const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+  // "I can't buy it any more": until the item is bought (the server re-checks).
+  const canWithdraw = donor && !view.orderedAt && (offer.status === "DONOR_RECONFIRMATION_REQUIRED" || (!direct && stage === "READY_TO_BUY"));
   // After the recipient accepts, the donor confirms here that they'll still buy it.
   const showReconfirm = donor && offer.status === "DONOR_RECONFIRMATION_REQUIRED";
   const showReview = donee && stage === "AWAITING_ACCEPTANCE";
   // Whether the main column has a form for this viewer; otherwise it explains the wait.
-  const hasMainAction = showAddress || showExtensionDecision || showPhoto || showReconfirm || showReview
+  const waitingForAddress = donor && direct && stage === "AWAITING_ADDRESS";
+  const hasMainAction = showAddress || waitingForAddress || doneeWaiting || showExtensionDecision || showPhoto || showReconfirm || showReview
+    || showInfoRequired || showPurchaseForm
     || (donor && stage === "READY_TO_BUY")
     || (direct && inTransit && (donor || donee))
     || (donee && direct && stage === "ISSUE_WINDOW")
@@ -150,8 +225,8 @@ export function PurchaseHub({
                 {donor ? purchaseMethodLabel(view.method) : `Promise to buy · ${direct ? "Delivered to you" : "Handed over in person"}`}
               </span>
               {showReconfirm
-                ? <span className="rounded-full bg-amber-50 px-3 py-[5px] text-[13px] font-extrabold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">Your turn: confirm you&apos;ll buy it</span>
-                : <span className={`rounded-full px-3 py-[5px] text-[13px] font-extrabold ${stageTone(stage, role)}`}>{stageBadge(stage, role)}</span>}
+                ? <span className="rounded-full bg-amber-50 px-3 py-[5px] text-[13px] font-extrabold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">{purchaseStageLabel(stage, view, role)}</span>
+                : <span className={`rounded-full px-3 py-[5px] text-[13px] font-extrabold ${stageTone(stage, role)}`}>{stageBadge(stage, role, view)}</span>}
             </div>
             <h1 className="break-words text-[32px] font-extrabold leading-[1.1] sm:text-[40px]">{offer.requestTitle}</h1>
             <p className="text-[16px] leading-relaxed text-[#3D4756] dark:text-stone-300" role="status">{purchaseNextAction(stage, role, view)}</p>
@@ -159,7 +234,7 @@ export function PurchaseHub({
           <div className="flex flex-wrap gap-3">
             {!view.orderedAt && view.deadline && (
               <Tile label={donor ? (direct ? "Order by" : "Buy by") : (direct ? "Donor orders by" : "Donor buys by")}
-                value={formatShort(view.deadline)} sub={beforeApproval ? "Restarts when our team approves" : daysLeft(view.deadline)} />
+                value={formatShort(view.deadline)} sub={beforeApproval && direct ? "Restarts when our team approves" : daysLeft(view.deadline)} />
             )}
             {view.orderedAt && view.expectedDeliveryAt && (
               <Tile label={direct ? "Expected delivery" : "Ready from"} value={formatShort(view.expectedDeliveryAt)} sub={view.retailer ?? undefined} />
@@ -181,34 +256,31 @@ export function PurchaseHub({
           {/* What this person has to do now */}
           <main className="flex min-w-0 flex-[999_1_560px] flex-col gap-6">
             {showReconfirm && (
-              <Panel title="Still planning to buy it?" icon={<Check className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+              <Panel title={direct ? "Still planning to buy it?" : "Can you still purchase this item?"} icon={<Check className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
                 <p className="mb-4 text-[15px] text-[#3D4756] dark:text-stone-300">
-                  The recipient said yes to your plan. Confirm you&apos;ll still buy it so our team can approve.
-                  Don&apos;t buy yet — wait until this page shows <strong>Ready to buy</strong>.
+                  {direct
+                    ? <>The recipient said yes to your plan. Confirm you&apos;ll still buy it so our team can approve. Don&apos;t buy yet — wait until this page shows <strong>Ready to buy</strong>.</>
+                    : "The recipient has accepted your offer. Please confirm that you're still able to purchase and hand over the promised quantity."}
                 </p>
-                <button type="button" className={primary} disabled={!!busy}
-                  onClick={() => void run("reconfirm", () => reconfirmOfferAvailability(id), "Confirmed — our team approves next")}>
-                  {busy === "reconfirm" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Yes, I&apos;ll buy it
-                </button>
-                <p className="mt-3 text-[13px] text-stone-500 dark:text-stone-400">Can&apos;t buy it any more? Withdraw the offer from your offers page so another donor can help.</p>
+                {!direct && <PlanSummary offer={offer} view={view} donor />}
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <button type="button" className={primary} disabled={!!busy}
+                    onClick={() => void run("reconfirm", () => reconfirmOfferAvailability(id), direct ? "Confirmed — our team approves next" : "Confirmed — you can buy the item now")}>
+                    {busy === "reconfirm" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Yes, I&apos;ll buy it
+                  </button>
+                  <button type="button" className={secondary} disabled={!!busy} onClick={() => setConfirmWithdraw(true)}>
+                    No, I can&apos;t buy it anymore
+                  </button>
+                </div>
               </Panel>
             )}
 
             {showReview && (
               <Panel title="Review the proposal" icon={<FileText className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
                 <p className="mb-4 text-[15px] text-[#3D4756] dark:text-stone-300">
-                  Check what the donor plans to buy and how it reaches you, then accept or decline it on your offers page.
-                  {direct ? " After you accept, you'll share a delivery address here." : " After you accept, you'll meet the donor for an in-person handover."}
-                </p>
-                <Link href="/donee/offers" className={primary}>Review on my offers page</Link>
-              </Panel>
-            )}
-
-            {showReview && (
-              <Panel title="Review the proposal" icon={<FileText className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
-                <p className="mb-4 text-[15px] text-[#3D4756] dark:text-stone-300">
-                  Check what the donor plans to buy and how it reaches you, then accept or decline it on your offers page.
-                  {direct ? " After you accept, you'll share a delivery address here." : " After you accept, you'll meet the donor for an in-person handover."}
+                  {direct
+                    ? "Check what the donor plans to buy and how it reaches you, then accept or decline it on your offers page. After you accept, you'll share a delivery address here."
+                    : "Accepting reserves the offered quantity with this donor. The donor then confirms, buys the item and arranges a handover with you."}
                 </p>
                 <Link href="/donee/offers" className={primary}>Review on my offers page</Link>
               </Panel>
@@ -216,8 +288,27 @@ export function PurchaseHub({
 
             {showAddress && (
               <AddressPanel view={view} busy={busy}
-                onShare={a => run("address", () => sharePurchaseAddress(id, a), "Delivery details shared with the donor")}
-                onRevoke={() => run("revoke", () => revokePurchaseAddress(id), "Delivery details withdrawn")} />
+                onShare={a => run("address", () => sharePurchaseAddress(id, a), "Delivery details shared with the donor")} />
+            )}
+
+            {doneeWaiting && <DoneeStatusPanel stage={stage} view={view} />}
+
+            {waitingForAddress && (
+              <Panel title="The recipient is sharing their delivery address" icon={<MapPin className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+                <p className="text-[15px] leading-relaxed text-[#3D4756] dark:text-stone-300">
+                  The recipient has accepted your offer of {view.acceptedQuantity ?? "the"} {view.acceptedQuantity === 1 ? "item" : "items"} and is now providing the address the order should be shipped to.
+                  No action is needed from you at this stage.
+                </p>
+                <ol className="mt-4 space-y-2 text-sm text-[#3D4756] dark:text-stone-300">
+                  <li className="flex gap-2"><span className="font-bold text-[var(--ck-role-accent)]">1.</span> The recipient shares their delivery address.</li>
+                  <li className="flex gap-2"><span className="font-bold text-[var(--ck-role-accent)]">2.</span> Our team reviews and approves the offer.</li>
+                  <li className="flex gap-2"><span className="font-bold text-[var(--ck-role-accent)]">3.</span> You receive the address here, along with everything you need to place the order.</li>
+                </ol>
+                <div role="note" className="mt-5 flex gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden />
+                  <p><strong>Please don&apos;t place the order yet.</strong> This page will show <strong>Ready to buy</strong> once the address is shared and our team has approved the offer.</p>
+                </div>
+              </Panel>
             )}
 
             {showExtensionDecision && (
@@ -225,11 +316,41 @@ export function PurchaseHub({
                 onDecide={(approve, reason) => run("extdecide", () => decidePurchaseExtension(id, { approve, reason }), approve ? "Extension approved" : "Extension declined")} />
             )}
 
-            {donor && stage === "READY_TO_BUY" && direct && (
-              <EvidencePanel title="1. Upload the order confirmation" type="ORDER_CONFIRMATION" busy={busy}
-                hint="A screenshot or PDF of the shop's confirmation. Hide card numbers and payment details first. AI will scan it to pre-fill order details below."
-                done={view.evidence.some(e => e.type === "ORDER_CONFIRMATION")}
-                onUpload={async f => {
+            {donor && stage === "READY_TO_BUY" && direct && !orderPlaced && (
+              <OrderChecklistPanel view={view} plan={plan} onPlaced={() => setPlacedClicked(true)} />
+            )}
+
+            {showPurchaseForm && (
+              <>
+                <Panel title="You're committed to purchasing this item" icon={<Handshake className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+                  <PlanSummary offer={offer} view={view} donor />
+                </Panel>
+                <Panel title="I've purchased the item" icon={<PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+                  <p className="-mt-1 mb-5 text-[15px] text-[#3D4756] dark:text-stone-300">
+                    <strong>Tell us what you purchased.</strong> Enter the actual purchase details and upload a clear photograph of the item. Our team will verify the purchase before the handover.
+                  </p>
+                  <PurchaseDetailsForm mode="new" acceptedQuantity={view.acceptedQuantity ?? 1} heldQuantity={view.acceptedQuantity ?? 1}
+                    acceptedAt={view.acceptedAt} defaults={{ ...details, itemName: details?.plannedItem ?? offer.requestTitle }} busy={busy === "purchase"}
+                    onSubmit={v => run("purchase", () => submitPurchase(v), "Sent — our team will verify your purchase")} />
+                </Panel>
+              </>
+            )}
+
+            {showInfoRequired && (
+              <Panel title="Our team needs more information" icon={<AlertTriangle className="size-5 text-amber-600" aria-hidden />}>
+                <div role="alert" className="mb-5 rounded-xl border border-amber-300 bg-amber-50 p-4 text-[15px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                  {view.proofRejectionReason}
+                </div>
+                <PurchaseDetailsForm mode="edit" acceptedQuantity={view.acceptedQuantity ?? 1} heldQuantity={view.orderedQuantity ?? view.acceptedQuantity ?? 1}
+                  acceptedAt={view.acceptedAt} defaults={{ ...details, intendedStore: view.retailer ?? details?.intendedStore }} busy={busy === "purchase"}
+                  onSubmit={v => run("purchase", () => resubmitPurchase(v), "Sent — our team will check it again")} />
+              </Panel>
+            )}
+
+            {donor && stage === "READY_TO_BUY" && direct && orderPlaced && (
+              <OrderPanel view={view} direct={direct} busy={busy} extractedOrder={extractedOrder}
+                confirmation={latestConfirmation}
+                onUploadConfirmation={async f => {
                   return run("upload", async () => {
                     let ocrExtracted: ExtractedProofData | null = null;
                     if (f.type.startsWith("image/")) {
@@ -258,26 +379,28 @@ export function PurchaseHub({
                       retailer: res?.extracted?.retailer || ocrExtracted?.retailer || null,
                       orderNumber: res?.extracted?.orderNumber || ocrExtracted?.orderNumber || null,
                       expectedDeliveryDate: res?.extracted?.expectedDeliveryDate || ocrExtracted?.expectedDeliveryDate || null,
-                      quantity: res?.extracted?.quantity || ocrExtracted?.quantity || 1,
+                      quantity: res?.extracted?.quantity || ocrExtracted?.quantity || null,
                       totalAmountInr: res?.extracted?.totalAmountInr || null,
                       trackingNumber: res?.extracted?.trackingNumber || ocrExtracted?.trackingNumber || null,
                       trackingUrl: res?.extracted?.trackingUrl || ocrExtracted?.trackingUrl || null,
                     };
 
-                    if (merged.retailer || merged.orderNumber || merged.trackingNumber || merged.expectedDeliveryDate) {
-                      setExtractedOrder(merged);
-                    }
-                  }, "Order confirmation uploaded and scanned by AI");
-                }} />
-            )}
-
-            {donor && stage === "READY_TO_BUY" && (
-              <OrderPanel view={view} direct={direct} busy={busy} extractedOrder={extractedOrder}
-                blocked={direct && !view.evidence.some(e => e.type === "ORDER_CONFIRMATION")}
+                    // Always replace: a new file whose scan finds nothing still clears the old file's details.
+                    setExtractedOrder(merged);
+                  }, "Order confirmation attached — details filled in below");
+                }}
                 onSubmit={data => run("order", () => recordPurchaseOrder(id, data), direct ? "Order recorded" : "Purchase recorded — now upload a photo of the item")} />
             )}
 
-            {donor && stage === "READY_TO_BUY" && (
+            {canWithdraw && !showReconfirm && (
+              <p className="text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
+                Can&apos;t buy it after all? Ask for more time below, or{" "}
+                <button type="button" className="font-bold text-[var(--ck-role-accent)] underline" onClick={() => setConfirmWithdraw(true)}>withdraw your offer</button>
+                {" "}so another donor can help.
+              </p>
+            )}
+
+            {donor && stage === "READY_TO_BUY" && direct && (
               <p className="text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
                 Can&apos;t buy it after all? Approved offers can&apos;t be withdrawn here — ask for more time, or{" "}
                 <Link href="/contact" className="font-bold text-[var(--ck-role-accent)] underline">contact support</Link> so the recipient isn&apos;t left waiting.
@@ -292,10 +415,10 @@ export function PurchaseHub({
                     <p><strong>Our team couldn&apos;t accept the last photo.</strong> {view.proofRejectionReason} Upload a new photo below.</p>
                   </div>
                 )}
-                <EvidencePanel title={stage === "AWAITING_ITEM_PHOTO" ? (view.proofRejectionReason ? "Upload a new photo of the item" : "Upload a photo of the item") : "Replace the item photo"} type="ITEM_PHOTO" busy={busy} accept="image/*"
+                <EvidencePanel title={stage === "AWAITING_ITEM_PHOTO" ? (view.proofRejectionReason ? "Upload a new photo of the item" : "Upload a photo of the item") : "Replace the item photo"} type="ITEM_PHOTO" busy={busy} accept="image/*" replaceable
                   hint="A clear, recent photo of the actual item you bought. This is not the handover photo — that comes later."
                   done={stage === "AWAITING_PROOF_REVIEW"}
-                  doneText="Photo uploaded — our team is checking it. You can replace it until it's approved."
+                  doneText="Purchase sent — our team is verifying it. You can replace the photo until it's verified."
                   onUpload={f => run("upload", () => uploadFlowBProof(id, "ITEM_PHOTO", f), "Photo uploaded — our team will check it before the handover")} />
                 <EvidencePanel title="Receipt (optional, private)" type="RECEIPT" busy={busy}
                   hint="Only our team sees it. Hide payment details."
@@ -332,25 +455,28 @@ export function PurchaseHub({
 
             {donee && direct && inTransit && (
               <ReceiptPanel view={view} busy={busy}
-                onSubmit={(outcome, file) => run("receipt", async () => {
+                onSubmit={(outcome, files) => run("receipt", async () => {
                   const confirming = outcome.kind === "receipt" && (outcome.data.condition === "GOOD" || outcome.data.condition === "PARTIAL");
-                  // A receipt needs the photo on file first; the server refuses it otherwise.
+                  // A receipt needs the photos on file first; the server refuses it otherwise.
                   if (confirming) {
-                    if (!file) throw new Error("Add a photo of the items you received.");
-                    await uploadPurchaseRecipientEvidence(id, "RECEIVED_PHOTO", file);
+                    if (!files.length) throw new Error("Add a photo of the items you received.");
+                    for (const f of files) await uploadPurchaseRecipientEvidence(id, "RECEIVED_PHOTO", f);
                   }
                   if (outcome.kind === "receipt") await confirmPurchaseReceipt(id, outcome.data);
                   else await reportPurchaseIssue(id, outcome.data);
-                  if (file && !confirming) {
-                    await uploadPurchaseRecipientEvidence(id, "ISSUE_EVIDENCE", file).catch(() =>
-                      toast.error("Saved — but the file didn't upload. You can add it again from this page."));
+                  // Problem photos attach to the issue, so they go after it opens.
+                  if (!confirming) {
+                    const failed = (await Promise.allSettled(files.map(f => uploadPurchaseRecipientEvidence(id, "ISSUE_EVIDENCE", f))))
+                      .filter(r => r.status === "rejected").length;
+                    if (failed) toast.error(`Saved — but ${failed === 1 ? "a photo" : `${failed} photos`} didn't upload. You can add them again from this page.`);
                   }
-                }, outcome.kind === "receipt" && outcome.data.condition === "GOOD" ? "Thanks — receipt recorded" : "Thanks — we've recorded it and support will follow up")} />
+                }, outcome.kind === "receipt" && outcome.data.condition === "GOOD" ? "Thanks — receipt recorded" : "Issue raised — our team will review it and follow up")} />
             )}
 
             {view.issues.length > 0 && (
               <IssuesPanel issues={view.issues} role={role} canRespond={canRespond} busy={busy}
-                onRespond={message => run("respond", () => respondToPurchaseIssue(id, message), "Response sent to support")} />
+                onRespond={message => run("respond", () => respondToPurchaseIssue(id, message), "Response sent to support")}
+                onInfoReply={message => run("info", () => replyToPurchaseInfoRequest(id, message), "Answer sent to our team")} />
             )}
 
             {donee && direct && stage === "ISSUE_OPEN" && (
@@ -407,12 +533,37 @@ export function PurchaseHub({
                 )}
               </Panel>
             )}
+            <AlertDialog open={confirmWithdraw} onOpenChange={setConfirmWithdraw}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure you can no longer fulfil this offer?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Your offer will be closed and the {view.acceptedQuantity ?? ""} reserved {view.acceptedQuantity === 1 ? "item goes" : "items go"} back to the request, so another donor can help. The recipient will be told. This can&apos;t be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep my offer</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => void run("withdraw", () => withdrawOffer(id, "The donor can no longer buy this item"), "Offer withdrawn — the recipient has been told")}>
+                    Withdraw offer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </main>
 
           {/* Reference: what was agreed, where it goes, help */}
           <aside aria-label="About this purchase" className="flex min-w-0 flex-[1_1_360px] flex-col gap-5">
-            {view.address && (donor || role === "ADMIN") && (
-              <Panel title="Deliver to" small aside={<span className="inline-flex items-center gap-1 text-xs font-bold text-stone-500 dark:text-stone-400"><Lock className="size-3.5" aria-hidden /> Shared with you only</span>}>
+            {view.address && donee && direct && !showAddress && (
+              <Panel title={copy.addressTitle} small aside={<span className="inline-flex items-center gap-1 text-xs font-bold text-stone-500 dark:text-stone-400"><Lock className="size-3.5" aria-hidden /> Locked</span>}>
+                <p className="flex gap-2 text-[15px] leading-relaxed [overflow-wrap:anywhere]">
+                  <MapPin className="mt-1 size-4 shrink-0 text-[var(--ck-role-accent)]" aria-hidden /> {view.address.address}
+                </p>
+                <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">{copy.doneeAddressNote}</p>
+              </Panel>
+            )}
+
+            {view.address && (donor || role === "ADMIN") && !checklistStep && (
+              <Panel title={copy.addressTitle} small aside={<span className="inline-flex items-center gap-1 text-xs font-bold text-stone-500 dark:text-stone-400"><Lock className="size-3.5" aria-hidden /> Shared with you only</span>}>
                 <address className="whitespace-pre-line text-[15px] not-italic leading-relaxed">
                   {[view.address.contactName, view.address.address, view.address.contactPhone].filter(Boolean).join("\n")}
                 </address>
@@ -429,30 +580,42 @@ export function PurchaseHub({
                     <MapPin className="size-4" aria-hidden /> Open pin in Maps
                   </a>
                 )}
-                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">Use it only for this order. Prepaid only — never cash on delivery. Never ask for delivery OTP.</p>
+                <p className="mt-3 text-xs text-stone-500 dark:text-stone-400">{copy.donorAddressNote}</p>
               </Panel>
             )}
 
-            <Panel title={donor ? "What you agreed to buy" : "What the donor will buy"} small>
+            {!direct && (donor || donee || role === "ADMIN") && !showReconfirm && !showPurchaseForm && (
+              <Panel title={view.orderedAt ? (donor ? "What you bought" : "What the donor bought") : (donor ? "Your purchase plan" : "The donor's purchase plan")} small>
+                {view.orderedAt && details?.actualItemName ? <ActualSummary view={view} donor={donor || role === "ADMIN"} /> : <PlanSummary offer={offer} view={view} donor={donor} compact />}
+              </Panel>
+            )}
+
+            {direct && !checklistStep && <Panel title={copy.productTitle} small>
               <dl className="grid grid-cols-2 gap-3">
                 <Fact label="Brand" value={plan?.proposedBrand || "Not decided"} />
                 <Fact label="Model" value={plan?.proposedModel || "Not decided"} />
-                {(view.retailer || plan?.intendedStore) && <Fact label="Shop" value={view.retailer ?? plan?.intendedStore} />}
-                <Fact label="Delivery" value={direct ? "Shipped to the recipient" : "Handed over in person"} />
-                {view.orderReference && <Fact label="Order number (private)" value={view.orderReference} />}
-                {view.trackingReference && <Fact label="Tracking number" value={view.trackingReference} />}
+                {/* Scanned order details (retailer, tracking) reach the recipient only once the donor submits the order. */}
+                {(() => { const shop = view.orderedAt ? view.retailer ?? plan?.intendedStore : plan?.intendedStore; return shop && <Fact label="Shop" value={shop} />; })()}
+                <Fact label="Delivery" value={copy.delivery} />
+                {phase !== "planned" && view.orderedQuantity != null && <Fact label="Quantity ordered" value={String(view.orderedQuantity)} />}
+                {view.orderedAt && view.orderReference && <Fact label="Order number (private)" value={view.orderReference} />}
+                {view.orderedAt && view.trackingReference && <Fact label="Tracking number" value={view.trackingReference} />}
               </dl>
               {plan?.productUrl && /^https?:\/\//i.test(plan.productUrl) && (
-                <a href={plan.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
+                <a href={plan.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="group/product mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/10 px-4 text-sm font-bold text-[var(--ck-role-accent)] shadow-sm transition-colors hover:bg-[var(--ck-role-accent)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2">
                   <ExternalLink className="size-4" aria-hidden /> View the product
+                  <span aria-hidden className="transition-transform group-hover/product:translate-x-0.5">→</span>
                 </a>
               )}
-              {view.trackingUrl && (
-                <a href={view.trackingUrl} target="_blank" rel="noopener noreferrer nofollow" className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
-                  <ExternalLink className="size-4" aria-hidden /> Tracking link (from the donor)
+              {/* Only a link the donor entered and submitted with the order; a scanned draft never shows. */}
+              {view.orderedAt && view.trackingUrl && /^https?:\/\//i.test(view.trackingUrl) && (
+                <a href={view.trackingUrl} target="_blank" rel="noopener noreferrer nofollow"
+                  className="group/track mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-4 text-sm font-extrabold text-white shadow-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2">
+                  <Truck className="size-4" aria-hidden /> {donee ? "Track your parcel" : "Track the parcel"}
+                  <span aria-hidden className="transition-transform group-hover/track:translate-x-0.5">→</span>
                 </a>
               )}
-            </Panel>
+            </Panel>}
 
             {donee && (
               <Panel title="How this works" small>
@@ -465,8 +628,8 @@ export function PurchaseHub({
                     </>
                   ) : (
                     <>
-                      <li>Our team approves the offer. The donor buys the item.</li>
-                      <li>We check a photo of what they bought.</li>
+                      <li>Accepting reserves the quantity with this donor; the donor confirms they can still buy it.</li>
+                      <li>The donor buys a suitable item and our team verifies the purchase. You don&apos;t need to approve the product.</li>
                       <li>You meet for the handover and confirm with the handover code.</li>
                     </>
                   )}
@@ -485,10 +648,11 @@ export function PurchaseHub({
               </p>
             )}
 
-            {view.evidence.length > 0 && (
+            {/* Proof joins the record once the order is submitted, not while it's being filled in. */}
+            {latestEvidence.length > 0 && !!view.orderedAt && (
               <Panel title="Evidence" small icon={<FileText className="size-4 text-stone-500" aria-hidden />}>
                 <ul className="space-y-1">
-                  {view.evidence.map(e => (
+                  {latestEvidence.map(e => (
                     <li key={e.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
                       <span>{EVIDENCE_LABEL[e.type] ?? e.type}{e.uploadedByRole === "DONEE" && !donee ? " (recipient)" : ""} · {formatLocal(e.uploadedAt)}
                         {e.prohibited && <span className="ms-2 text-xs font-semibold text-red-700">Flagged</span>}
@@ -519,6 +683,73 @@ export function PurchaseHub({
   );
 }
 
+/**
+ * The donor's commitment as both sides see it. Only what was given is shown; a
+ * shop purchase with no details says so plainly instead of listing blanks.
+ */
+function PlanSummary({ offer, view, donor, compact = false }: { offer: DonationOffer; view: PurchaseView; donor: boolean; compact?: boolean }) {
+  const d = view.details;
+  const plan = offer.purchaseCommitment;
+  const brand = d?.plannedBrand ?? plan?.proposedBrand;
+  const model = d?.plannedModel ?? plan?.proposedModel;
+  const cost = d?.estimatedCost ?? plan?.estimatedCost;
+  const store = d?.intendedStore ?? plan?.intendedStore;
+  const url = d?.productUrl ?? plan?.productUrl;
+  const notes = d?.planNotes ?? plan?.notes;
+  const channel = purchaseChannelLabel(d?.channel ?? plan?.purchaseChannel);
+  const offline = (d?.channel ?? plan?.purchaseChannel) === "OFFLINE";
+  const product = [brand, model].filter(Boolean).join(" ");
+  const nothing = !product && cost == null && !store && !url && !notes;
+  return (
+    <div className="space-y-4">
+      <dl className={`grid gap-3 ${compact ? "grid-cols-2" : "grid-cols-2 sm:grid-cols-3"}`}>
+        {!compact && <Fact label="Request" value={offer.requestTitle} />}
+        {!compact && offer.doneeName && donor && <Fact label="Recipient" value={offer.doneeName} />}
+        <Fact label="Quantity" value={`${view.acceptedQuantity ?? offer.itemDetails?.quantity ?? "—"} accepted`} />
+        {channel && <Fact label="Purchasing" value={offline ? "Offline store" : channel} />}
+        {view.deadline
+          ? <Fact label={donor ? "Buy by" : "Donor buys by"} value={formatShort(view.deadline)} />
+          : plan && <Fact label="Buying" value={`${purchaseTimelineLabel(plan.purchaseTimeline)} of acceptance`} />}
+        {product && <Fact label="Planned product" value={product} />}
+        {cost != null && <Fact label="Estimated cost" value={`₹${Number(cost).toLocaleString("en-IN")}`} />}
+        {store && <Fact label="Store" value={store} />}
+      </dl>
+      {notes && <p className="text-sm text-[#3D4756] [overflow-wrap:anywhere] dark:text-stone-300">{notes}</p>}
+      {nothing && (
+        <p className="text-sm text-[#3D4756] dark:text-stone-300">
+          {donor
+            ? "The exact product details will be updated after purchase."
+            : "The donor will purchase the item from a physical store. Actual purchase details will be available once the donor completes the purchase."}
+        </p>
+      )}
+      {url && /^https?:\/\//i.test(url) && (
+        <a href={url} target="_blank" rel="noopener noreferrer nofollow" className={`${secondary} w-full sm:w-auto`}>
+          <ExternalLink className="size-4" aria-hidden /> View product
+        </a>
+      )}
+    </div>
+  );
+}
+
+/** What was actually bought. The price paid is shown to the donor and our team only (the server omits it otherwise). */
+function ActualSummary({ view, donor }: { view: PurchaseView; donor: boolean }) {
+  const d = view.details;
+  if (!d) return null;
+  const product = [d.actualBrand, d.actualModel].filter(Boolean).join(" ");
+  return (
+    <dl className="grid grid-cols-2 gap-3">
+      <Fact label="Item" value={d.actualItemName} />
+      {product && <Fact label="Brand and model" value={product} />}
+      <Fact label="Donated here" value={String(view.orderedQuantity ?? "—")} />
+      {donor && d.purchasedQuantity != null && <Fact label="Bought" value={String(d.purchasedQuantity)} />}
+      {view.retailer && <Fact label="Store" value={view.retailer} />}
+      {d.purchasedOn && <Fact label="Bought on" value={new Date(`${d.purchasedOn}T12:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })} />}
+      {donor && d.actualPrice != null && <Fact label="Price paid (private)" value={`₹${Number(d.actualPrice).toLocaleString("en-IN")}`} />}
+      {d.purchaseNotes && <div className="col-span-2"><Fact label="Details" value={d.purchaseNotes} /></div>}
+    </dl>
+  );
+}
+
 function Tile({ label, value, sub }: { label: string; value: ReactNode; sub?: string }) {
   return (
     <div className="min-w-[150px] rounded-[14px] border border-[#E3E7EE] bg-white px-[18px] py-[14px] dark:border-zinc-800 dark:bg-zinc-900">
@@ -539,17 +770,17 @@ const EVIDENCE_LABEL: Record<PurchaseProofType, string> = {
 };
 
 const STEPS: Record<string, string[]> = {
-  "direct-DONEE": ["You accepted", "Share address", "Team approves", "Donor orders", "On the way", "You confirm it arrived"],
-  "direct-DONOR": ["Recipient accepted", "Address shared", "Team approved", "You order", "On the way", "Recipient confirms"],
-  "physical-DONEE": ["You accepted", "Team approves", "Donor buys it", "Photo checked", "Handover", "You received it"],
-  "physical-DONOR": ["Recipient accepted", "Team approved", "You buy it", "Photo checked", "Handover", "Recipient received it"],
+  "direct-DONEE": ["You accepted", "Donor confirms", "Share address", "Team approves", "Donor orders", "On the way", "You confirm it arrived"],
+  "direct-DONOR": ["Recipient accepted", "You confirm", "Recipient shares address", "Team approved", "You order", "On the way", "Recipient confirms"],
+  "physical-DONEE": ["Offer accepted", "Donor confirmed", "Purchase in progress", "Purchase verified", "Handover", "Completed"],
+  "physical-DONOR": ["Offer accepted", "You confirmed", "Purchase in progress", "Purchase verified", "Handover", "Completed"],
 };
 
-/** Index of the step in progress; steps before it are done. 6 = everything done, -1 = no bar. */
+/** Index of the step in progress; steps before it are done. steps.length = everything done, -1 = no bar. */
 function stepIndex(stage: PurchaseStage, direct: boolean): number {
   const map: Partial<Record<PurchaseStage, number>> = direct
-    ? { AWAITING_ACCEPTANCE: 0, AWAITING_ADDRESS: 1, AWAITING_APPROVAL: 2, READY_TO_BUY: 3, IN_TRANSIT: 4, PARTIALLY_RECEIVED: 4, DELIVERED: 5, ISSUE_OPEN: 4, ISSUE_WINDOW: 5, COMPLETED: 6 }
-    : { AWAITING_ACCEPTANCE: 0, AWAITING_APPROVAL: 1, READY_TO_BUY: 2, AWAITING_ITEM_PHOTO: 3, AWAITING_PROOF_REVIEW: 3, READY_FOR_HANDOVER: 4, ISSUE_OPEN: 4, ISSUE_WINDOW: 5, COMPLETED: 6 };
+    ? { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, AWAITING_ADDRESS: 2, AWAITING_APPROVAL: 3, READY_TO_BUY: 4, IN_TRANSIT: 5, PARTIALLY_RECEIVED: 5, DELIVERED: 6, ISSUE_OPEN: 5, ISSUE_WINDOW: 6, COMPLETED: 7 }
+    : { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, AWAITING_APPROVAL: 1, READY_TO_BUY: 2, AWAITING_ITEM_PHOTO: 2, PURCHASE_INFO_REQUIRED: 2, AWAITING_PROOF_REVIEW: 3, READY_FOR_HANDOVER: 4, ISSUE_OPEN: 4, ISSUE_WINDOW: 5, COMPLETED: 6 };
   return map[stage] ?? -1;
 }
 
@@ -560,7 +791,7 @@ function ProgressBar({ stage, role, direct }: { stage: PurchaseStage; role: Purc
   const issue = stage === "ISSUE_OPEN";
   return (
     <nav aria-label="Purchase progress" className="overflow-x-auto rounded-[18px] border border-[#E3E7EE] bg-white px-6 py-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <ol className="grid min-w-[640px] grid-cols-6 gap-3">
+      <ol className="grid min-w-[640px] gap-3" style={{ gridTemplateColumns: `repeat(${steps.length}, minmax(0, 1fr))` }}>
         {steps.map((label, i) => {
           const done = i < idx;
           const current = i === idx;
@@ -579,16 +810,20 @@ function ProgressBar({ stage, role, direct }: { stage: PurchaseStage; role: Purc
   );
 }
 
-function stageBadge(stage: PurchaseStage, role: PurchaseRole): string {
+function stageBadge(stage: PurchaseStage, role: PurchaseRole, view: PurchaseView): string {
+  if (view.method === "BUY_AND_HAND_OVER") {
+    const label = purchaseStageLabel(stage, view, role);
+    return role === "DONOR" && (stage === "AWAITING_ITEM_PHOTO" || stage === "PURCHASE_INFO_REQUIRED") ? `${label} · your turn` : label;
+  }
   if (role === "DONEE" && stage === "AWAITING_ADDRESS") return "Your turn: share delivery details";
-  if (role === "DONOR" && (stage === "READY_TO_BUY" || stage === "AWAITING_ITEM_PHOTO")) return `${PURCHASE_STAGE_LABEL[stage]} · your turn`;
+  if (role === "DONOR" && (stage === "READY_TO_BUY" || stage === "AWAITING_ITEM_PHOTO")) return `${purchaseStageLabel(stage, view, role)} · your turn`;
   if (role === "DONEE" && stage === "DELIVERED") return "Your turn: confirm what arrived";
   if (role === "DONEE" && (stage === "IN_TRANSIT" || stage === "PARTIALLY_RECEIVED")) return "Your turn when it arrives";
-  return PURCHASE_STAGE_LABEL[stage];
+  return purchaseStageLabel(stage, view, role);
 }
 
 function stageTone(stage: PurchaseStage, role: PurchaseRole): string {
-  const yourTurn = (role === "DONEE" && (stage === "AWAITING_ADDRESS" || stage === "DELIVERED")) || (role === "DONOR" && (stage === "READY_TO_BUY" || stage === "AWAITING_ITEM_PHOTO"));
+  const yourTurn = (role === "DONEE" && (stage === "AWAITING_ADDRESS" || stage === "DELIVERED")) || (role === "DONOR" && (stage === "READY_TO_BUY" || stage === "AWAITING_ITEM_PHOTO" || stage === "PURCHASE_INFO_REQUIRED"));
   if (stage === "ISSUE_OPEN" || yourTurn) return "bg-amber-50 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300";
   if (stage === "COMPLETED" || stage === "ISSUE_WINDOW" || stage === "READY_FOR_HANDOVER") return "bg-green-50 text-green-800 dark:bg-green-950/40 dark:text-green-300";
   return "bg-stone-200/70 text-stone-700 dark:bg-zinc-800 dark:text-stone-300";
@@ -607,26 +842,54 @@ function daysLeft(value: string): string | undefined {
   return days >= 1 ? `${days} day${days === 1 ? "" : "s"} left` : "Less than a day left";
 }
 
-function AddressPanel({ view, busy, onShare, onRevoke }: {
+function AddressPanel({ view, busy, onShare }: {
   view: PurchaseView; busy: string | null;
   onShare: (a: { address: string; contactName?: string; contactPhone?: string; latitude?: number; longitude?: number }) => Promise<boolean>;
-  onRevoke: () => Promise<boolean>;
+}) {
+  // Shared once, then locked: a donor may already have typed it into the
+  // shop's checkout, so a later edit could send the parcel to the wrong place.
+  if (view.address) return <SharedAddressPanel address={view.address} />;
+  return <AddressForm busy={busy} onShare={onShare} />;
+}
+
+function SharedAddressPanel({ address: a }: { address: NonNullable<PurchaseView["address"]> }) {
+  return (
+    <Panel title="Your shared delivery details"
+      aside={<span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600 dark:bg-zinc-800 dark:text-stone-300"><Lock className="size-3.5" aria-hidden /> Locked</span>}>
+      <div className="flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
+        <MapPin className="mt-0.5 size-5 shrink-0 text-[var(--ck-role-accent)]" aria-hidden />
+        <div className="min-w-0 space-y-1 text-[15px] text-stone-800 [overflow-wrap:anywhere] dark:text-stone-200">
+          <p className="font-semibold">{a.address}</p>
+          {(a.contactName || a.contactPhone) && (
+            <p className="text-sm text-[#3D4756] dark:text-stone-300">{[a.contactName, a.contactPhone].filter(Boolean).join(" · ")}</p>
+          )}
+        </div>
+      </div>
+      <p className="mt-4 text-sm text-[#3D4756] dark:text-stone-300">
+        This address has been shared with the donor and can&apos;t be changed. If it&apos;s wrong, contact support before the donor places the order.
+      </p>
+    </Panel>
+  );
+}
+
+function AddressForm({ busy, onShare }: {
+  busy: string | null;
+  onShare: (a: { address: string; contactName?: string; contactPhone?: string; latitude?: number; longitude?: number }) => Promise<boolean>;
 }) {
   // Separate fields make a complete address more likely; the backend stores
-  // one text, so they are joined on submit. An already-shared address cannot
-  // be split back, so it reopens whole in the first field.
-  const shared = view.address?.address ?? "";
-  const [line1, setLine1] = useState(shared);
+  // one text, so they are joined on submit.
+  const [line1, setLine1] = useState("");
   const [area, setArea] = useState("");
   const [landmark, setLandmark] = useState("");
   const [city, setCity] = useState("");
   const [pin, setPin] = useState("");
-  const [name, setName] = useState(view.address?.contactName ?? "");
-  const [phone, setPhone] = useState(view.address?.contactPhone ?? "");
+  const [name] = useState("");
+  const [phone] = useState("");
   const [consent, setConsent] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   // Optional pin: helps the donor (and courier) find the door; the typed address stays required.
-  const [lat, setLat] = useState<number | null>(view.address?.latitude ?? null);
-  const [lng, setLng] = useState<number | null>(view.address?.longitude ?? null);
+  const [lat, setLat] = useState<number | null>(null);
+  const [lng, setLng] = useState<number | null>(null);
   const [pinFill, setPinFill] = useState<string | null>(null);
   // What the last pin wrote into each field. A field still holding that value
   // may be refilled by a new pin; one the person typed over is never touched.
@@ -661,65 +924,152 @@ function AddressPanel({ view, busy, onShare, onRevoke }: {
       : "Pin saved. Your typed address was kept.");
   }
 
-  const editingShared = !!shared && line1 === shared;
-  const placeOk = editingShared || (city.trim().length >= 2 && /^\d{6}$/.test(pin.trim()));
+  const placeOk = city.trim().length >= 2 && /^\d{6}$/.test(pin.trim());
   const valid = line1.trim().length >= 5 && placeOk && consent;
-  const joined = editingShared
-    ? line1.trim()
-    : [line1.trim(), area.trim(), landmark.trim() && `Near ${landmark.trim()}`, [city.trim(), pin.trim()].filter(Boolean).join(" - ")]
-        .filter(Boolean).join(", ");
+  const joined = [line1.trim(), area.trim(), landmark.trim() && `Near ${landmark.trim()}`, [city.trim(), pin.trim()].filter(Boolean).join(" - ")]
+    .filter(Boolean).join(", ");
 
   return (
-    <Panel title={view.address ? "Your shared delivery details" : "Where should it be delivered?"}
+    <Panel title="Where should it be delivered?"
       aside={<span className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600 dark:bg-zinc-800 dark:text-stone-300"><Lock className="size-3.5" aria-hidden /> Private</span>}>
       <p className="-mt-1 mb-5 text-[15px] text-[#3D4756] dark:text-stone-300">Only this donor sees it, to enter at the shop&apos;s checkout for this one order.</p>
       <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-1.5 sm:col-span-2">
+          <span className="text-[14px] font-bold text-stone-900 dark:text-stone-100">Pin the exact spot <span className="font-semibold text-[#5B6575]">(optional)</span></span>
+          <p className="text-[13px] text-[#5B6575] dark:text-stone-400">Drop a pin and we&apos;ll fill in the address below. Your typed address is still what goes on the order.</p>
+          <HandoverMapPinField lat={lat} lng={lng} disabled={busy !== null} hint="Drag the pin to your door" onChange={(a, b) => { setLat(a); setLng(b); void fillFromPin(a, b); }} />
+          {pinFill && <p role="status" className="text-[13px] font-semibold text-[#3D4756] dark:text-stone-300">{pinFill}</p>}
+        </div>
         <div className="sm:col-span-2">
           <Field label="House / flat and street">
             <input className={input} value={line1} maxLength={300} autoComplete="address-line1" onChange={e => setLine1(e.target.value)} placeholder="e.g. Flat 12, Shanti Apartments, Station Road" />
           </Field>
         </div>
-        {!editingShared && (
-          <>
-            <Field label="Area / locality"><input className={input} value={area} maxLength={100} autoComplete="address-line2" onChange={e => setArea(e.target.value)} /></Field>
-            <Field label="Landmark (optional)"><input className={input} value={landmark} maxLength={100} onChange={e => setLandmark(e.target.value)} /></Field>
-            <Field label="City"><input className={input} value={city} maxLength={60} autoComplete="address-level2" onChange={e => setCity(e.target.value)} /></Field>
-            <Field label="PIN code"><input className={input} inputMode="numeric" value={pin} maxLength={6} autoComplete="postal-code" onChange={e => setPin(e.target.value.replace(/\D/g, ""))} /></Field>
-          </>
-        )}
-        <div className="space-y-1.5 sm:col-span-2">
-          <span className="text-[14px] font-bold text-stone-900 dark:text-stone-100">Pin the exact spot <span className="font-semibold text-[#5B6575]">(optional)</span></span>
-          <p className="text-[13px] text-[#5B6575] dark:text-stone-400">Helps find your door. Your typed address is still what goes on the order.</p>
-          <HandoverMapPinField lat={lat} lng={lng} disabled={busy !== null} onChange={(a, b) => { setLat(a); setLng(b); void fillFromPin(a, b); }} />
-          {pinFill && <p role="status" className="text-[13px] font-semibold text-[#3D4756] dark:text-stone-300">{pinFill}</p>}
-        </div>
+        <Field label="Area / locality"><input className={input} value={area} maxLength={100} autoComplete="address-line2" onChange={e => setArea(e.target.value)} /></Field>
+        <Field label="Landmark (optional)"><input className={input} value={landmark} maxLength={100} onChange={e => setLandmark(e.target.value)} /></Field>
+        <Field label="City"><input className={input} value={city} maxLength={60} autoComplete="address-level2" onChange={e => setCity(e.target.value)} /></Field>
+        <Field label="PIN code"><input className={input} inputMode="numeric" value={pin} maxLength={6} autoComplete="postal-code" onChange={e => setPin(e.target.value.replace(/\D/g, ""))} /></Field>
       </div>
       <label className="mt-5 flex items-start gap-3 rounded-xl border border-stone-200 bg-stone-50 p-4 text-sm leading-relaxed text-stone-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-300">
         <input type="checkbox" className="mt-0.5 size-5 shrink-0" checked={consent} onChange={e => setConsent(e.target.checked)} />
-        <span>I agree to share this address with this donor only, so they can enter it at the shop for this order. If I stop sharing later, the donor won&apos;t see it again — but it can&apos;t undo what they or the shop have already seen.</span>
+        <span>I agree to share this address with this donor only, so they can enter it at the shop for this order. Once shared, it can&apos;t be changed.</span>
       </label>
       <div className="mt-5 flex flex-wrap items-center gap-3">
-        <button type="button" className={primary} disabled={!valid || !!busy}
-          onClick={() => void onShare({
-            address: joined,
-            contactName: name.trim(),
-            contactPhone: phone.trim(),
-            ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
-          }).then(ok => ok && setConsent(false))}>
-          {busy === "address" && <Loader2 className="size-4 animate-spin" aria-hidden />} {view.address ? "Update and share" : "Share with the donor"}
+        <button type="button" className={primary} disabled={!valid || !!busy} onClick={() => setConfirming(true)}>
+          {busy === "address" && <Loader2 className="size-4 animate-spin" aria-hidden />} Share with the donor
         </button>
-        {view.address && (
-          <button type="button" className={secondary} disabled={!!busy} onClick={() => void onRevoke()}>Stop sharing</button>
-        )}
         <span className="text-xs text-stone-500 dark:text-stone-400">Delivery is prepaid — you never pay on delivery.</span>
       </div>
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Is this address correct?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Once you share it, the address can&apos;t be changed — the donor will use it to place the order. Please check every detail before you continue.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <p className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm font-semibold text-stone-800 [overflow-wrap:anywhere] dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-200">{joined}</p>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back and edit</AlertDialogCancel>
+            <AlertDialogAction onClick={() => void onShare({
+              address: joined,
+              contactName: name.trim(),
+              contactPhone: phone.trim(),
+              ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
+            })}>
+              Yes, share this address
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Panel>
   );
 }
 
-function OrderPanel({ view, direct, blocked, busy, extractedOrder, onSubmit }: {
-  view: PurchaseView; direct: boolean; blocked: boolean; busy: string | null;
+/* The recipient's view while others act: one plain message about what is
+   happening now (the progress bar above already shows the steps). */
+function DoneeStatusPanel({ stage, view }: { stage: PurchaseStage; view: PurchaseView }) {
+  const approving = stage === "AWAITING_APPROVAL";
+  const qty = view.acceptedQuantity;
+  const items = qty ? `${qty} ${qty === 1 ? "item" : "items"}` : "your items";
+  return (
+    <Panel title={approving ? "Your offer is under review" : "The donor is placing your order"}
+      icon={approving ? <ShieldCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden /> : <PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+      <p className="text-[15px] leading-relaxed text-[#3D4756] dark:text-stone-300">
+        {approving
+          ? "Thank you for sharing your delivery address. Our team is now reviewing the offer. Once it is approved, the donor will place the order."
+          : `Our team has approved the offer, and the donor is now ordering ${items} for delivery to your address${view.deadline ? `. The order will be placed by ${formatShort(view.deadline)}` : ""}.`}
+      </p>
+      <p className="mt-3 text-[15px] leading-relaxed text-[#3D4756] dark:text-stone-300">
+        {approving
+          ? "No action is required from you at this stage."
+          : "No action is required from you at this stage. Once the order is placed, the expected delivery date and tracking details will appear here."}
+      </p>
+    </Panel>
+  );
+}
+
+/* Everything the donor needs at the shop's checkout, in one place: what to
+   buy, how many, and where it ships. */
+function OrderChecklistPanel({ view, plan, onPlaced }: { view: PurchaseView; plan: DonationOffer["purchaseCommitment"]; onPlaced: () => void }) {
+  const a = view.address;
+  const addressText = a ? [a.contactName, a.address, a.contactPhone].filter(Boolean).join("\n") : "";
+  const product = [plan?.proposedBrand, plan?.proposedModel].filter(Boolean).join(" ") || "The item you agreed to buy";
+  const shop = view.retailer ?? plan?.intendedStore;
+  return (
+    <Panel title="1. Place the order" icon={<PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+      <p className="-mt-1 mb-5 text-[15px] text-[#3D4756] dark:text-stone-300">
+        Our team approved this. Order exactly what&apos;s below and ship it to the recipient&apos;s address.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
+          <p className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">What to order</p>
+          <p className="mt-1.5 text-[17px] font-extrabold [overflow-wrap:anywhere]">{product}</p>
+          <dl className="mt-3 space-y-1.5 text-sm">
+            <div className="flex gap-2"><dt className="text-stone-500 dark:text-stone-400">Quantity:</dt><dd className="font-bold">{view.acceptedQuantity ?? "—"}</dd></div>
+            {shop && <div className="flex gap-2"><dt className="text-stone-500 dark:text-stone-400">Shop:</dt><dd className="font-bold">{shop}</dd></div>}
+            {view.deadline && <div className="flex gap-2"><dt className="text-stone-500 dark:text-stone-400">Order by:</dt><dd className="font-bold">{formatShort(view.deadline)}</dd></div>}
+          </dl>
+          {plan?.productUrl && /^https?:\/\//i.test(plan.productUrl) && (
+            <a href={plan.productUrl} target="_blank" rel="noopener noreferrer nofollow"
+              className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-[var(--ck-role-accent)] px-4 text-sm font-bold text-white shadow-sm transition-opacity hover:opacity-90">
+              <ExternalLink className="size-4" aria-hidden /> Open the product page
+            </a>
+          )}
+        </div>
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400"><Truck className="size-3.5" aria-hidden /> Ship to</p>
+          {a ? (
+            <>
+              <address className="mt-1.5 whitespace-pre-line text-[15px] font-semibold not-italic leading-relaxed [overflow-wrap:anywhere]">{addressText}</address>
+              <button type="button" className={`${secondary} mt-3`}
+                onClick={() => void navigator.clipboard?.writeText(addressText).then(() => toast.success("Address copied"), () => toast.error("Couldn't copy — select it instead"))}>
+                <Copy className="size-4" aria-hidden /> Copy address
+              </button>
+            </>
+          ) : (
+            <p className="mt-1.5 text-sm text-stone-600 dark:text-stone-300">The address isn&apos;t available. Please contact support.</p>
+          )}
+        </div>
+      </div>
+      <ul className="mt-5 space-y-1.5 text-sm text-[#3D4756] dark:text-stone-300">
+        <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden /> Pay in full online — never choose cash on delivery.</li>
+        <li className="flex gap-2"><Check className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden /> Use this address only for this order.</li>
+      </ul>
+      <button type="button" className={`${primary} mt-5`} onClick={onPlaced}>
+        <Check className="size-4" aria-hidden /> I&apos;ve placed the order
+      </button>
+      <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">Next, you&apos;ll attach the shop&apos;s order confirmation and confirm the order details.</p>
+    </Panel>
+  );
+}
+
+function OrderPanel({ view, direct, busy, extractedOrder, confirmation, onUploadConfirmation, onSubmit }: {
+  view: PurchaseView; direct: boolean; busy: string | null;
   extractedOrder?: ExtractedProofData | null;
+  /** Direct delivery: the shop's confirmation is attached in this same step (latest upload). */
+  confirmation?: PurchaseView["evidence"][number];
+  onUploadConfirmation: (f: File) => Promise<boolean>;
   onSubmit: (d: {
     idempotencyKey: string; retailer: string; reference?: string; quantity: number;
     expectedDeliveryAt: string; prepaid: true;
@@ -730,58 +1080,124 @@ function OrderPanel({ view, direct, blocked, busy, extractedOrder, onSubmit }: {
   const key = useRef(typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`);
   const [retailer, setRetailer] = useState(extractedOrder?.retailer ?? view.retailer ?? "");
   const [reference, setReference] = useState(extractedOrder?.orderNumber ?? view.orderReference ?? "");
-  const [qty, setQty] = useState(String(extractedOrder?.quantity ?? view.acceptedQuantity ?? 1));
+  // The agreed quantity, never the scan's: confirmations often read "Qty 1", and
+  // a scan used to quietly replace the donor's 3 with it.
+  const [qty, setQty] = useState(String(view.acceptedQuantity ?? 1));
   const [date, setDate] = useState(extractedOrder?.expectedDeliveryDate ?? view.expectedDeliveryAt?.slice(0, 10) ?? today());
   const [trackingUrl, setTrackingUrl] = useState(extractedOrder?.trackingUrl ?? view.trackingUrl ?? "");
   const [trackingRef, setTrackingRef] = useState(extractedOrder?.trackingNumber ?? view.trackingReference ?? "");
   const [prepaid, setPrepaid] = useState(false);
+  // The donor opens the tracking link and confirms it is the right parcel; any edit asks again.
+  const [linkChecked, setLinkChecked] = useState(false);
+  useEffect(() => { setLinkChecked(false); }, [trackingUrl]);
   const [aiFilled, setAiFilled] = useState(false);
 
+  // A new confirmation replaces every scanned field with what it shows, or blank,
+  // so nothing from an earlier file lingers. Runs once per scan, not on every
+  // page refresh, so the donor's own corrections are kept.
   useEffect(() => {
+    if (!extractedOrder) return;
+    setRetailer(extractedOrder.retailer ?? "");
+    setReference(extractedOrder.orderNumber ?? "");
+    setDate(extractedOrder.expectedDeliveryDate ?? "");
+    setTrackingUrl(extractedOrder.trackingUrl ?? "");
+    setTrackingRef(extractedOrder.trackingNumber ?? "");
+    setAiFilled(!!(extractedOrder.retailer || extractedOrder.orderNumber
+      || extractedOrder.expectedDeliveryDate || extractedOrder.trackingUrl || extractedOrder.trackingNumber));
+  }, [extractedOrder]);
+
+  // Coming back to the page: fill empty fields from what the server saved from the last scan.
+  useEffect(() => {
+    if (extractedOrder) return;
     let filled = false;
-    if (extractedOrder) {
-      if (extractedOrder.retailer) { setRetailer(extractedOrder.retailer); filled = true; }
-      if (extractedOrder.orderNumber) { setReference(extractedOrder.orderNumber); filled = true; }
-      if (extractedOrder.quantity) { setQty(String(extractedOrder.quantity)); filled = true; }
-      if (extractedOrder.expectedDeliveryDate) { setDate(extractedOrder.expectedDeliveryDate); filled = true; }
-      if (extractedOrder.trackingUrl) { setTrackingUrl(extractedOrder.trackingUrl); filled = true; }
-      if (extractedOrder.trackingNumber) { setTrackingRef(extractedOrder.trackingNumber); filled = true; }
-      if (extractedOrder.retailer || extractedOrder.orderNumber || extractedOrder.trackingNumber) {
-        filled = true;
-      }
-    } else if (view) {
-      if (view.retailer && !retailer) { setRetailer(view.retailer); filled = true; }
-      if (view.orderReference && !reference) { setReference(view.orderReference); filled = true; }
-      if (view.expectedDeliveryAt && date === today()) { setDate(view.expectedDeliveryAt.slice(0, 10)); filled = true; }
-      if (view.trackingUrl && !trackingUrl) { setTrackingUrl(view.trackingUrl); filled = true; }
-      if (view.trackingReference && !trackingRef) { setTrackingRef(view.trackingReference); filled = true; }
-      if (view.retailer || view.orderReference) { filled = true; }
-    }
+    if (view.retailer && !retailer) { setRetailer(view.retailer); filled = true; }
+    if (view.orderReference && !reference) { setReference(view.orderReference); filled = true; }
+    if (view.expectedDeliveryAt && date === today()) { setDate(view.expectedDeliveryAt.slice(0, 10)); filled = true; }
+    if (view.trackingUrl && !trackingUrl) { setTrackingUrl(view.trackingUrl); filled = true; }
+    if (view.trackingReference && !trackingRef) { setTrackingRef(view.trackingReference); filled = true; }
     if (filled) setAiFilled(true);
-  }, [extractedOrder, view]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view]);
 
   const n = Number(qty);
+  const scannedQty = extractedOrder?.quantity ?? null;
   const urlOk = !trackingUrl.trim() || /^https?:\/\/[^\s/@]+/i.test(trackingUrl.trim());
-  const valid = retailer.trim() && Number.isInteger(n) && n >= 1 && n <= (view.acceptedQuantity ?? 1) && date && prepaid && urlOk && (!direct || reference.trim());
+  const blocked = direct && !confirmation;
+  // The server refuses a past date; a scanned confirmation often carries one (e.g. an old order).
+  const dateOk = !!date && date >= today();
+  const valid = retailer.trim() && Number.isInteger(n) && n >= 1 && n <= (view.acceptedQuantity ?? 1) && dateOk && prepaid && urlOk && (!trackingUrl.trim() || linkChecked) && (!direct || reference.trim());
+  const fileRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Panel title={direct ? "2. Record the order" : "I have bought it"} icon={<Check className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
-      {blocked && <p className="mb-3 text-sm text-amber-700 dark:text-amber-300">Upload the order confirmation first.</p>}
+    <Panel title={direct ? "2. Confirm your order" : "I have bought it"} icon={<Check className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
+      {direct && (
+        <div className="mb-5 rounded-xl border border-stone-200 bg-stone-50 p-4 dark:border-zinc-700 dark:bg-zinc-800">
+          <p className="text-[14px] font-bold text-stone-900 dark:text-stone-100">Order confirmation</p>
+          <p className="mt-1 text-[13px] text-[#5B6575] dark:text-stone-400">
+            Attach a screenshot or PDF of the shop&apos;s confirmation. Please hide card numbers and payment details first. We&apos;ll read it to fill in the details below.
+          </p>
+          <input ref={fileRef} type="file" accept="image/*,application/pdf" className="sr-only" data-proof-type="ORDER_CONFIRMATION"
+            onChange={e => { const f = e.target.files?.[0]; e.target.value = ""; if (f) void onUploadConfirmation(f); }} />
+          {confirmation ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <p role="status" className="me-2 flex items-center gap-1.5 text-sm font-semibold text-green-700 dark:text-green-400">
+                <Check className="size-4" aria-hidden /> Confirmation attached
+              </p>
+              <a href={confirmation.url} target="_blank" rel="noopener noreferrer" className={secondary}>
+                <ExternalLink className="size-4" aria-hidden /> View
+              </a>
+              <button type="button" className={secondary} disabled={!!busy} onClick={() => fileRef.current?.click()}>
+                {busy === "upload" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Upload className="size-4" aria-hidden />} Replace
+              </button>
+            </div>
+          ) : (
+            <button type="button" className={`${secondary} mt-3`} disabled={!!busy} onClick={() => fileRef.current?.click()}>
+              {busy === "upload" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Upload className="size-4" aria-hidden />} Attach confirmation
+            </button>
+          )}
+        </div>
+      )}
       {aiFilled && (
         <div className="mb-3 flex items-center gap-1.5 rounded-lg bg-orange-50 px-3 py-1.5 text-xs font-semibold text-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
           <Wand2 className="size-3.5 shrink-0" aria-hidden />
-          <span>Scanned from your order confirmation proof. You can edit any details before submitting.</span>
+          <span>Filled in from your order confirmation. Please check each detail and correct anything that is wrong before submitting.</span>
         </div>
       )}
       <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label={direct ? "Retailer" : "Where you bought it"}><input className={input} value={retailer} maxLength={200} onChange={e => setRetailer(e.target.value)} /></Field>
           <Field label={direct ? "Order number" : "Bill number (optional)"} hint="Private — the recipient doesn't see it."><input className={input} value={reference} maxLength={200} onChange={e => setReference(e.target.value)} /></Field>
-          <Field label="Quantity" hint={`Up to ${view.acceptedQuantity ?? 1} accepted`}><input className={input} inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} /></Field>
-          <Field label={direct ? "Expected delivery date" : "Ready to hand over from"}><input type="date" className={input} min={today()} value={date} onChange={e => setDate(e.target.value)} /></Field>
+          <div className="space-y-1">
+            <Field label="Quantity" hint={`Up to ${view.acceptedQuantity ?? 1} accepted`}><input className={input} inputMode="numeric" value={qty} onChange={e => setQty(e.target.value)} /></Field>
+            {scannedQty != null && scannedQty !== n && (
+              <p role="status" className="text-xs font-semibold text-amber-700 dark:text-amber-400">
+                Your confirmation seems to show {scannedQty}. Enter the number you actually ordered.
+              </p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <Field label={direct ? "Expected delivery date" : "Ready to hand over from"}><input type="date" className={input} min={today()} value={date} onChange={e => setDate(e.target.value)} aria-invalid={!!date && !dateOk} /></Field>
+            {date && !dateOk && (
+              <p className="text-xs font-semibold text-red-600">This date has already passed. Please enter the expected delivery date shown on your order.</p>
+            )}
+          </div>
           {direct && (
             <>
-              <Field label="Tracking link (optional)"><input className={input} inputMode="url" value={trackingUrl} maxLength={2000} onChange={e => setTrackingUrl(e.target.value)} placeholder="https://" /></Field>
+              <div className="space-y-2">
+                <Field label="Tracking link (optional)"><input className={input} inputMode="url" value={trackingUrl} maxLength={2000} onChange={e => setTrackingUrl(e.target.value)} placeholder="https://" /></Field>
+                {trackingUrl.trim() && urlOk && (
+                  <div className="rounded-xl border border-[var(--ck-role-accent)]/25 bg-[var(--ck-role-accent)]/5 p-3">
+                    <a href={trackingUrl.trim()} target="_blank" rel="noopener noreferrer nofollow"
+                      className="inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[var(--ck-role-accent)] px-3 text-sm font-bold text-white hover:opacity-90">
+                      <ExternalLink className="size-4" aria-hidden /> Open link
+                    </a>
+                    <label className="mt-2.5 flex items-start gap-2 text-[13px] text-stone-700 dark:text-stone-300">
+                      <input type="checkbox" className="mt-0.5 size-4 shrink-0" checked={linkChecked} onChange={e => setLinkChecked(e.target.checked)} />
+                      <span>I&apos;ve opened this link and it shows the tracking for this order.</span>
+                    </label>
+                  </div>
+                )}
+              </div>
               <Field label="Tracking number / ID (optional)"><input className={input} value={trackingRef} maxLength={200} onChange={e => setTrackingRef(e.target.value)} /></Field>
             </>
           )}
@@ -802,17 +1218,27 @@ function OrderPanel({ view, direct, blocked, busy, extractedOrder, onSubmit }: {
             ...(trackingUrl.trim() ? { trackingUrl: trackingUrl.trim() } : {}),
             ...(trackingRef.trim() ? { trackingReference: trackingRef.trim() } : {}),
           })}>
-          {busy === "order" && <Loader2 className="size-4 animate-spin" aria-hidden />} {direct ? "Record order" : "Record purchase"}
+          {busy === "order" && <Loader2 className="size-4 animate-spin" aria-hidden />} {direct ? "Submit order details" : "Record purchase"}
         </button>
       </div>
     </Panel>
   );
 }
 
-function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, accept = "image/*,application/pdf", onUpload }: {
+function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, accept = "image/*,application/pdf", replaceable = true, onUpload }: {
   title: string; hint: string; type: PurchaseProofType; done: boolean; doneText?: string; busy: string | null; accept?: string;
+  /** False locks the panel after the first upload; by default a new upload replaces the old one. */
+  replaceable?: boolean;
   onUpload: (f: File) => Promise<boolean>;
 }) {
+  if (done && !replaceable) {
+    return (
+      <Panel title={title} icon={<Upload className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
+        <p role="status" className="flex items-center gap-1 text-sm font-medium text-green-700 dark:text-green-400"><Check className="size-4" aria-hidden /> {doneText}</p>
+        <p className="mt-2 text-xs text-stone-500 dark:text-stone-400">Already submitted — it can&apos;t be changed. If it&apos;s wrong, contact support.</p>
+      </Panel>
+    );
+  }
   const ref = useRef<HTMLInputElement>(null);
   return (
     <Panel title={title} icon={<Upload className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
@@ -863,13 +1289,13 @@ function ShipmentPanel({ view, busy, onSubmit }: {
 
 type ReceiptOutcome =
   | { kind: "receipt"; data: { cumulativeQuantity: number; condition: PurchaseReceiptCondition; closeRemainder: boolean; affectedQuantity?: number; note?: string } }
-  | { kind: "issue"; data: { type: PurchaseIssueType; description: string } };
+  | { kind: "issue"; data: { type: PurchaseIssueType; description: string; affectedQuantity?: number } };
 
 type OutcomeChoice = "ALL" | "PARTIAL" | "PROBLEM" | "NOT_RECEIVED";
 
 const OUTCOMES: { value: OutcomeChoice; label: string; hint: string }[] = [
   { value: "ALL", label: "I received everything", hint: "In good condition" },
-  { value: "PARTIAL", label: "Only part of it arrived", hint: "Some items are still missing" },
+  { value: "PARTIAL", label: "Only part of it arrived", hint: "Fewer items than ordered" },
   { value: "PROBLEM", label: "Damaged or wrong items", hint: "Broken, wrong product or model" },
   { value: "NOT_RECEIVED", label: "I didn't receive it", hint: "Even if tracking says delivered" },
 ];
@@ -882,66 +1308,92 @@ const NOT_RECEIVED_REASONS = [
 ];
 
 /**
- * The recipient's four answers to a delivery. Every count is the running total
- * of good units, so a second shipment never double-counts; the server re-checks
- * each number against what was ordered and what was already confirmed.
+ * The recipient's four answers to a delivery. Only good units are ever credited:
+ * a short, damaged, wrong or missing delivery opens an issue for support, who
+ * either expects the rest or closes it, and the donation, the request's count and
+ * the donor's certificate all use what actually arrived. Counts are running
+ * totals, so a second shipment never double-counts; the server re-checks each
+ * number against what was ordered and what was already confirmed.
  */
 function ReceiptPanel({ view, busy, onSubmit }: {
   view: PurchaseView; busy: string | null;
-  onSubmit: (outcome: ReceiptOutcome, file: File | null) => Promise<boolean>;
+  onSubmit: (outcome: ReceiptOutcome, files: File[]) => Promise<boolean>;
 }) {
   const max = view.orderedQuantity ?? view.acceptedQuantity ?? 1;
   const prev = view.receivedQuantity ?? 0;
   const fileRef = useRef<HTMLInputElement>(null);
   const [choice, setChoice] = useState<OutcomeChoice | "">("");
-  const [total, setTotal] = useState(String(max));
-  const [partialTotal, setPartialTotal] = useState(String(Math.max(prev, 1)));
-  const [remainder, setRemainder] = useState<"EXPECTED" | "CLOSE">("EXPECTED");
-  const [closeReason, setCloseReason] = useState("");
+  const [partialTotal, setPartialTotal] = useState("");
   const [problem, setProblem] = useState<"DAMAGED" | "WRONG_ITEM">("DAMAGED");
-  const [good, setGood] = useState(String(prev));
-  const [affected, setAffected] = useState(String(Math.max(1, max - prev)));
+  const [arrived, setArrived] = useState(String(max));
+  const [scope, setScope] = useState<"ALL" | "SOME">("ALL");
+  const [bad, setBad] = useState("");
   const [details, setDetails] = useState("");
   const [reason, setReason] = useState(NOT_RECEIVED_REASONS[0]);
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
 
   const int = (v: string) => (/^\d+$/.test(v.trim()) ? Number(v) : NaN);
-  const totalN = int(total), partialN = int(partialTotal), goodN = int(good), affectedN = int(affected);
+  const partialN = int(partialTotal), arrivedN = int(arrived), badSomeN = int(bad);
+  const newlyArrived = arrivedN - prev;
+  const badN = scope === "ALL" ? newlyArrived : badSomeN;
+  const wrongWord = problem === "WRONG_ITEM" ? "wrong" : "damaged";
+  const described = details.trim().length >= 10;
+  const range = (lo: number, hi: number) => (lo === hi ? String(lo) : `${lo} to ${hi}`);
 
   let error: string | null = null;
   let outcome: ReceiptOutcome | null = null;
   if (choice === "ALL") {
-    if (!(totalN >= Math.max(1, prev) && totalN <= max)) error = `Enter a number from ${Math.max(1, prev)} to ${max}.`;
-    else outcome = { kind: "receipt", data: { cumulativeQuantity: totalN, condition: "GOOD", closeRemainder: false } };
+    outcome = { kind: "receipt", data: { cumulativeQuantity: max, condition: "GOOD", closeRemainder: false } };
   } else if (choice === "PARTIAL") {
-    if (!(partialN >= Math.max(1, prev) && partialN < max)) error = `Enter how many arrived in total — at least ${Math.max(1, prev)} and fewer than ${max}.`;
-    else if (remainder === "CLOSE" && closeReason.trim().length < 10) error = "Tell us why the rest won't come (at least 10 characters).";
+    const least = Math.max(1, prev);
+    // Fewer than ordered, never equal: an equal count is "I received everything".
+    if (least > max - 1) error = "Everything ordered is already counted. Choose another option.";
+    else if (!(partialN >= least && partialN < max)) error = `Enter how many arrived in total: ${range(least, max - 1)}.`;
+    else if (!described) error = "Describe what happened (at least 10 characters).";
     else outcome = { kind: "receipt", data: {
-      cumulativeQuantity: partialN, condition: "PARTIAL", closeRemainder: remainder === "CLOSE",
-      ...(remainder === "CLOSE" ? { note: closeReason.trim() } : {}),
+      // Always reaches support, who expect the rest or close it; only what arrived is credited.
+      cumulativeQuantity: partialN, condition: "PARTIAL", closeRemainder: true, note: details.trim(),
     } };
   } else if (choice === "PROBLEM") {
-    if (!(goodN >= prev && goodN <= max)) error = `Usable items received in total must be from ${prev} to ${max}.`;
-    else if (!(affectedN >= 1 && goodN + affectedN <= max)) error = `Affected items must be at least 1, and together with usable items no more than ${max}.`;
-    else if (details.trim().length < 10) error = "Describe what's wrong (at least 10 characters).";
-    else outcome = { kind: "receipt", data: { cumulativeQuantity: goodN, condition: problem, closeRemainder: false, affectedQuantity: affectedN, note: details.trim() } };
+    if (!(arrivedN >= prev + 1 && arrivedN <= max)) error = `Enter how many arrived in total: ${range(prev + 1, max)}.`;
+    else if (scope === "SOME" && !(badSomeN >= 1 && badSomeN < newlyArrived)) error = newlyArrived > 1
+      ? `Enter how many are ${wrongWord}: ${range(1, newlyArrived - 1)}. If all ${newlyArrived} are, choose "All of them".`
+      : `Only 1 item arrived, so choose "All of them".`;
+    else if (!described) error = `Describe what's ${wrongWord === "wrong" ? "wrong" : "damaged"} (at least 10 characters).`;
+    else {
+      const missing = max - arrivedN;
+      const summary = `${arrivedN} of ${max} arrived; ${badN} ${wrongWord}, ${arrivedN - badN} usable${missing ? `; ${missing} didn't arrive` : ""}.`;
+      outcome = { kind: "receipt", data: {
+        cumulativeQuantity: arrivedN - badN, condition: problem, closeRemainder: false,
+        affectedQuantity: badN, note: `${summary} ${details.trim()}`,
+      } };
+    }
   } else if (choice === "NOT_RECEIVED") {
     const description = details.trim() ? `${reason}. ${details.trim()}` : reason;
-    outcome = { kind: "issue", data: { type: "ITEM_NOT_RECEIVED", description } };
+    outcome = { kind: "issue", data: { type: "ITEM_NOT_RECEIVED", description, affectedQuantity: max - prev } };
   }
 
-  const photoRequired = choice === "ALL" || choice === "PARTIAL";
-  const photoLabel = photoRequired ? "Photo of the items you received" : "Photo or document (optional)";
-  if (outcome && photoRequired && !file) { error = "Add a photo of the items you received."; outcome = null; }
+  const photoRequired = choice === "ALL" || choice === "PARTIAL" || choice === "PROBLEM";
+  const photoLabel = choice === "PROBLEM" ? `Photos of the ${wrongWord} items`
+    : photoRequired ? "Photos of the items you received" : "Photo or document (optional)";
+  const photoHint = choice === "PROBLEM"
+    ? "Required. Show the damage or the wrong product clearly — the donor and our team can see them."
+    : "Required. Clear photos of what came in the parcel — the donor and our team can see them.";
+  if (outcome && photoRequired && files.length === 0) {
+    error = choice === "PROBLEM" ? `Add a photo of the ${wrongWord} items.` : "Add a photo of the items you received.";
+    outcome = null;
+  }
+
+  const pick = (o: OutcomeChoice) => { setChoice(o); setDetails(""); setFiles([]); };
 
   return (
     <Panel title={view.deliveryReportedAt ? "Your order was reported delivered" : "Did it arrive?"} icon={<PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
       <p className="-mt-1 mb-4 text-[15px] text-[#3D4756] dark:text-stone-300">
-        Tell us what actually arrived. Nothing counts as donated until you confirm it{prev ? ` — ${prev} already confirmed` : ""}.
+        Tell us what actually arrived. Only what you receive counts as donated{prev ? ` — ${prev} already confirmed` : ""}.
       </p>
       <div role="radiogroup" aria-label="What happened with the delivery" className="grid gap-2 sm:grid-cols-2">
         {OUTCOMES.map(o => (
-          <button key={o.value} type="button" role="radio" aria-checked={choice === o.value} onClick={() => setChoice(o.value)}
+          <button key={o.value} type="button" role="radio" aria-checked={choice === o.value} onClick={() => pick(o.value)}
             className={`min-h-14 rounded-xl border px-3.5 py-2.5 text-left ${choice === o.value ? "border-[var(--ck-role-accent)] bg-[var(--ck-role-soft)] ring-1 ring-[var(--ck-role-accent)]" : "border-stone-300 dark:border-zinc-700"}`}>
             <span className="block text-[15px] font-bold text-stone-900 dark:text-stone-100">{o.label}</span>
             <span className="block text-[13px] text-stone-500 dark:text-stone-400">{o.hint}</span>
@@ -952,54 +1404,57 @@ function ReceiptPanel({ view, busy, onSubmit }: {
       {choice && (
         <div className="mt-5 space-y-4">
           {choice === "ALL" && (
-            <Field label="How many have you received in total?" hint={`Ordered: ${max}`}>
-              <input className={input} inputMode="numeric" value={total} onChange={e => setTotal(e.target.value)} />
-            </Field>
+            <p className="text-[14px] text-stone-700 dark:text-stone-300">
+              All {max} item{max === 1 ? "" : "s"} ordered arrived in good condition.
+            </p>
           )}
 
           {choice === "PARTIAL" && (
             <>
-              <Field label="How many have arrived in total so far?" hint={`Ordered: ${max}${prev ? ` · already confirmed: ${prev}` : ""}`}>
+              <Field label="How many have arrived in total?" hint={`Fewer than the ${max} ordered${prev ? ` · already confirmed: ${prev}` : ""}`}>
                 <input className={input} inputMode="numeric" value={partialTotal} onChange={e => setPartialTotal(e.target.value)} />
               </Field>
-              <fieldset className="space-y-2">
-                <legend className="mb-1 text-[14px] font-bold text-stone-900 dark:text-stone-100">What about the rest?</legend>
-                <label className="flex items-start gap-3 text-sm">
-                  <input type="radio" name="remainder" className="mt-1 size-4 shrink-0" checked={remainder === "EXPECTED"} onChange={() => setRemainder("EXPECTED")} />
-                  <span>I&apos;m still expecting it — keep the rest open.</span>
-                </label>
-                <label className="flex items-start gap-3 text-sm">
-                  <input type="radio" name="remainder" className="mt-1 size-4 shrink-0" checked={remainder === "CLOSE"} onChange={() => setRemainder("CLOSE")} />
-                  <span>It won&apos;t come — ask support to close the remainder.</span>
-                </label>
-              </fieldset>
-              {remainder === "CLOSE" && (
-                <Field label="Why won't the rest come?" hint="At least 10 characters. Support reviews this before closing.">
-                  <textarea rows={2} className={input} value={closeReason} maxLength={2000} onChange={e => setCloseReason(e.target.value)} />
-                </Field>
-              )}
+              <Field label="What happened?" hint="At least 10 characters. Our team and the donor will see this.">
+                <textarea rows={3} className={input} value={details} maxLength={1800} placeholder="e.g. The parcel had 3 laptops instead of 5."
+                  onChange={e => setDetails(e.target.value)} />
+              </Field>
             </>
           )}
 
           {choice === "PROBLEM" && (
             <>
               <fieldset className="flex flex-wrap gap-2">
-                <legend className="mb-1 w-full text-[14px] font-bold text-stone-900 dark:text-stone-100">What&apos;s wrong?</legend>
+                <legend className="mb-1 w-full text-[14px] font-bold text-stone-900 dark:text-stone-100">What&apos;s the problem?</legend>
                 {([["DAMAGED", "Damaged"], ["WRONG_ITEM", "Wrong product or model"]] as const).map(([v, l]) => (
                   <button key={v} type="button" aria-pressed={problem === v} onClick={() => setProblem(v)}
                     className={`min-h-11 rounded-xl border px-3.5 text-sm font-bold ${problem === v ? "border-[var(--ck-role-accent)] ring-1 ring-[var(--ck-role-accent)]" : "border-stone-300 dark:border-zinc-700"}`}>{l}</button>
                 ))}
               </fieldset>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Usable items received in total" hint={prev ? `Including the ${prev} already confirmed` : "0 if nothing usable arrived"}>
-                  <input className={input} inputMode="numeric" value={good} onChange={e => setGood(e.target.value)} />
+              <Field label="How many items arrived in total?" hint={`Ordered: ${max}${prev ? ` · already confirmed: ${prev}` : ""}. Count the ${wrongWord} ones too.`}>
+                <input className={input} inputMode="numeric" value={arrived} onChange={e => setArrived(e.target.value)} />
+              </Field>
+              <fieldset className="space-y-2">
+                <legend className="mb-1 text-[14px] font-bold text-stone-900 dark:text-stone-100">
+                  {prev ? `Are all the newly arrived items ${wrongWord}?` : `Are all of them ${wrongWord}?`}
+                </legend>
+                <label className="flex items-start gap-3 text-sm">
+                  <input type="radio" name="scope" className="mt-1 size-4 shrink-0" checked={scope === "ALL"} onChange={() => setScope("ALL")} />
+                  <span>All of them</span>
+                </label>
+                <label className="flex items-start gap-3 text-sm">
+                  <input type="radio" name="scope" className="mt-1 size-4 shrink-0" checked={scope === "SOME"} onChange={() => setScope("SOME")} />
+                  <span>Only some — the rest are fine</span>
+                </label>
+              </fieldset>
+              {scope === "SOME" && (
+                <Field label={`How many are ${wrongWord}?`} hint="The others count as received.">
+                  <input className={input} inputMode="numeric" value={bad} onChange={e => setBad(e.target.value)} />
                 </Field>
-                <Field label="Items with the problem" hint={`Ordered: ${max}`}>
-                  <input className={input} inputMode="numeric" value={affected} onChange={e => setAffected(e.target.value)} />
-                </Field>
-              </div>
-              <Field label="What's wrong with them?" hint="At least 10 characters. The donor and support will see this.">
-                <textarea rows={3} className={input} value={details} maxLength={2000} onChange={e => setDetails(e.target.value)} />
+              )}
+              <Field label={problem === "WRONG_ITEM" ? "What's wrong with them?" : "What's damaged?"} hint="At least 10 characters. Our team and the donor will see this.">
+                <textarea rows={3} className={input} value={details} maxLength={1500}
+                  placeholder={problem === "WRONG_ITEM" ? "e.g. We needed a 14-inch Chromebook but got an 11-inch one." : "e.g. Screen cracked on 2 laptops; the box was crushed."}
+                  onChange={e => setDetails(e.target.value)} />
               </Field>
             </>
           )}
@@ -1014,33 +1469,45 @@ function ReceiptPanel({ view, busy, onSubmit }: {
               <Field label="Anything else? (optional)" hint="e.g. you checked with neighbours or security. You don't need proof.">
                 <textarea rows={2} className={input} value={details} maxLength={1800} onChange={e => setDetails(e.target.value)} />
               </Field>
-              <p className="text-[13px] text-stone-600 dark:text-stone-300">Support will look at the courier&apos;s information and the donor&apos;s proof, and contact you both. Nobody is blamed automatically.</p>
+              <p className="text-[13px] text-stone-600 dark:text-stone-300">
+                Nothing more is counted as donated{prev ? ` beyond the ${prev} you already confirmed` : ""}. Our team checks the courier&apos;s
+                information and the donor&apos;s proof, then either arranges delivery or closes it — nobody is blamed automatically.
+              </p>
             </>
+          )}
+
+          {(choice === "PARTIAL" || choice === "PROBLEM") && (
+            <p className="text-[13px] text-stone-600 dark:text-stone-300">
+              Only the {choice === "PARTIAL" ? "items that arrived" : "usable items"} count as donated, on your dashboard and on the donor&apos;s
+              certificate. Our team reviews this and either arranges the rest or closes it.
+            </p>
           )}
 
           <div>
             <span className="text-[14px] font-bold text-stone-900 dark:text-stone-100">{photoLabel}</span>
-            {photoRequired && <span className="block text-[13px] text-stone-500 dark:text-stone-400">Required. A clear photo of what came in the parcel — the donor and our team can see it.</span>}
-            <input ref={fileRef} type="file" accept={choice === "ALL" || choice === "PARTIAL" ? "image/*" : "image/*,application/pdf"} className="sr-only"
-              onChange={e => { setFile(e.target.files?.[0] ?? null); e.target.value = ""; }} />
+            {photoRequired && <span className="block text-[13px] text-stone-500 dark:text-stone-400">{photoHint}</span>}
+            <input ref={fileRef} type="file" multiple accept={choice === "NOT_RECEIVED" ? "image/*,application/pdf" : "image/*"} className="sr-only"
+              onChange={e => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; setFiles(f => [...f, ...picked].slice(0, 5)); }} />
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
-              <button type="button" className={secondary} onClick={() => fileRef.current?.click()}>
-                <Upload className="size-4" aria-hidden /> {file ? "Change file" : "Choose file"}
-              </button>
-              {file && (
-                <>
-                  <span className="max-w-[16rem] truncate text-sm text-stone-600 dark:text-stone-300">{file.name}</span>
-                  <button type="button" className="min-h-11 text-sm font-bold text-stone-500 underline" onClick={() => setFile(null)}>Remove</button>
-                </>
+              {files.map((f, i) => (
+                <span key={`${f.name}-${i}`} className="flex min-h-11 items-center gap-1.5 rounded-lg bg-stone-100 px-2.5 text-sm dark:bg-zinc-800">
+                  <span className="max-w-[12rem] truncate">{f.name}</span>
+                  <button type="button" aria-label={`Remove ${f.name}`} className="px-1 font-bold text-stone-500" onClick={() => setFiles(fs => fs.filter((_, j) => j !== i))}>×</button>
+                </span>
+              ))}
+              {files.length < 5 && (
+                <button type="button" className={secondary} onClick={() => fileRef.current?.click()}>
+                  <Upload className="size-4" aria-hidden /> {files.length ? "Add another" : "Choose photos"}
+                </button>
               )}
             </div>
           </div>
 
           {error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</p>}
           <button type="button" className={primary} disabled={!outcome || !!busy}
-            onClick={() => outcome && void onSubmit(outcome, file).then(ok => { if (ok) { setChoice(""); setFile(null); } })}>
+            onClick={() => outcome && void onSubmit(outcome, files).then(ok => { if (ok) { setChoice(""); setFiles([]); } })}>
             {busy === "receipt" && <Loader2 className="size-4 animate-spin" aria-hidden />}
-            {choice === "ALL" ? "Confirm receipt" : choice === "NOT_RECEIVED" ? "Report not received" : "Send"}
+            {choice === "ALL" ? "Confirm receipt" : choice === "NOT_RECEIVED" ? "Report not received" : "Raise issue"}
           </button>
         </div>
       )}
@@ -1057,11 +1524,16 @@ const ISSUE_LABEL: Record<string, string> = {
 };
 
 /** Reported problems, each side's account and support's decision. */
-function IssuesPanel({ issues, role, canRespond, busy, onRespond }: {
+function IssuesPanel({ issues, role, canRespond, busy, onRespond, onInfoReply }: {
   issues: PurchaseIssueView[]; role: PurchaseRole; canRespond: boolean; busy: string | null;
   onRespond: (message: string) => Promise<boolean>;
+  onInfoReply: (message: string) => Promise<boolean>;
 }) {
   const [text, setText] = useState("");
+  const [answer, setAnswer] = useState("");
+  // Support's open question to this participant (the server sends only the one put to them).
+  const asked = issues.find(i => !i.resolvedAt && i.infoRequest);
+  const myAnswer = asked ? (role === "DONOR" ? asked.infoReplyDonor : asked.infoReplyDonee) : null;
   const who = (r: "DONOR" | "DONEE") => (role === r ? "You" : r === "DONOR" ? "The donor" : "The recipient");
   return (
     <Panel title="Reported problems" icon={<AlertTriangle className="size-5 text-amber-600" aria-hidden />}>
@@ -1088,6 +1560,26 @@ function IssuesPanel({ issues, role, canRespond, busy, onRespond }: {
           </li>
         ))}
       </ul>
+      {asked && (
+        <div className="mt-4 space-y-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30">
+          <p className="text-sm text-blue-950 dark:text-blue-100">
+            <strong>Our team asked you</strong> · {formatLocal(asked.infoRequestedAt)}: {asked.infoRequest}
+          </p>
+          {myAnswer ? (
+            <p className="text-sm text-blue-950 dark:text-blue-100"><strong>Your answer:</strong> {myAnswer}</p>
+          ) : (
+            <>
+              <Field label="Your answer" hint={`Our team reads this before deciding. You can answer once.${role === "DONEE" ? " If they asked for photos, add them under “Add evidence” below." : ""}`}>
+                <textarea rows={3} className={input} value={answer} maxLength={2000} onChange={e => setAnswer(e.target.value)} />
+              </Field>
+              <button type="button" className={primary} disabled={answer.trim().length < 5 || !!busy}
+                onClick={() => void onInfoReply(answer.trim()).then(ok => ok && setAnswer(""))}>
+                {busy === "info" && <Loader2 className="size-4 animate-spin" aria-hidden />} Send answer
+              </button>
+            </>
+          )}
+        </div>
+      )}
       {canRespond && (
         <div className="mt-4 space-y-3">
           <Field label="Your side of the story" hint="At least 10 characters. Support sees it with the case. You can answer once.">

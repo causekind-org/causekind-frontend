@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { serverDate } from "@/lib/serverTime";
 import { useNotifications } from "@/hooks/useNotifications";
+import { PurchaseIssueResolverFor } from "@/features/purchase/PurchaseIssueResolver";
 
 /**
  * Admin → Issues: every problem report and support case in the application,
@@ -296,6 +297,7 @@ const KIND_TONE = { ISSUE: "bg-amber-500", STATUS: "bg-sky-500", CASE: "bg-stone
 function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce: number; onBack: () => void }) {
   const [d, setD] = useState<AdminIssueDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [decided, setDecided] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -304,7 +306,7 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
       .then(r => { if (active) setD(r); })
       .catch(e => { if (active) setError(e instanceof Error ? e.message : "Couldn't load this issue"); });
     return () => { active = false; };
-  }, [issueKey, nonce]);
+  }, [issueKey, nonce, decided]);
 
   const back = (
     <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#b04a15]">
@@ -315,6 +317,8 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
   if (!d || d.summary.key !== issueKey) return <div className="space-y-4">{back}<div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-stone-300" aria-label="Loading issue" /></div></div>;
 
   const s = d.summary;
+  // An open purchase problem is decided right here; everything else stays a read-only record.
+  const decidable = s.source === "PURCHASE" && s.open && s.entityType === "offer" && s.entityId != null;
   const reportFacts: { label: string; value: ReactNode }[] = [
     { label: "Reported by", value: <PersonFact p={s.reportedBy} /> },
     { label: "About", value: <PersonFact p={s.against} /> },
@@ -336,7 +340,7 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
           {s.entityType && s.entityId != null && <span className="text-xs text-stone-500">· {s.entityType} #{s.entityId}</span>}
         </div>
         <h2 className="text-xl font-black text-stone-900">{s.title ?? "Untitled"}</h2>
-        <p className="flex items-center gap-1.5 text-xs text-stone-500"><Lock className="h-3.5 w-3.5" aria-hidden /> Read-only view — the full record of this issue.</p>
+        <p className="flex items-center gap-1.5 text-xs text-stone-500"><Lock className="h-3.5 w-3.5" aria-hidden /> {decidable ? "The full record of this issue — decide it below." : "Read-only view — the full record of this issue."}</p>
       </header>
 
       <Card title="What was reported" icon={<AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />}>
@@ -355,6 +359,12 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
           </div>
         )}
       </Card>
+
+      {decidable && (
+        <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#b04a15]" aria-hidden />}>
+          <PurchaseIssueResolverFor offerId={s.entityId as number} onDone={() => setDecided(x => x + 1)} />
+        </Card>
+      )}
 
       {d.sections.map(sec => (
         <Card key={sec.title} title={sec.title} icon={<UserRound className="h-4 w-4 text-stone-500" aria-hidden />}>

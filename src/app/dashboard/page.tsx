@@ -754,7 +754,21 @@ function journeyStage(status: string, fulfilment: RequestFulfilment): { stage: n
   return { stage: 2, state: "active" }; // all matching-phase statuses
 }
 
-function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: ItemRequest; index: number; onCancelled: () => void; review?: React.ReactNode }) {
+/** The request's status can sit at PUBLIC_REQUEST after the donee has said yes,
+ *  so a committed match or offer passes "Matched" and makes "Received" current. */
+function committedStage(base: ReturnType<typeof journeyStage>, matched?: boolean): ReturnType<typeof journeyStage> {
+  return matched && base.stage === 2 && base.state === "active" ? { stage: 3, state: "active" } : base;
+}
+
+// Statuses from the donee's yes onward. Earlier ones (donor review, admin
+// approval, waiting on the donee) are still matching.
+const COMMITTED_MATCH_STATUSES = new Set(["DONEE_ACCEPTED", "BOTH_PARTIES_ACCEPTED", "LOGISTICS_CONFIRMED",
+  "TRANSPORT_DISCUSSION", "ARRANGEMENT_AGREED", "PICKUP_SCHEDULED", "PICKED_UP", "IN_TRANSIT",
+  "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION", "RESCHEDULED"]);
+const COMMITTED_OFFER_STATUSES = new Set(["DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED", "DONOR_RECONFIRMED",
+  "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_WINDOW_OPEN", "ISSUE_RAISED"]);
+
+function DoneeRequestRow({ request: r, index, onCancelled, review, matched }: { request: ItemRequest; index: number; onCancelled: () => void; review?: React.ReactNode; matched?: boolean }) {
   const ui = useUiText();
   const pl = usePageLabels();
   const jt = useJourneyText();
@@ -784,7 +798,7 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors"
+          <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug [overflow-wrap:anywhere] group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors"
             style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
             <TranslatedText text={r.title} />
           </p>
@@ -828,7 +842,7 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
       )}
       {/* Always open, like the donor's listing card (owner, 2026-10-09). */}
       {r.status !== "DRAFT" && (
-        <RequestDetailsPanel request={r} {...journeyStage(r.status, fulfilment)}
+        <RequestDetailsPanel request={r} {...committedStage(journeyStage(r.status, fulfilment), matched)}
           partial={fulfilment.isPartiallyFulfilled} fulfilled={fulfilment.fulfilled} requested={fulfilment.requested} review={review} />
       )}
     </motion.div>
@@ -956,7 +970,7 @@ function OfferStageCard({
   const jt = useJourneyText();
   const dt = useTranslations("dashFlow");
   const dc = useDashCopy();
-  const meta = OFFER_STATUS_META[offer.status] ?? {
+  const meta = purchaseOfferMeta(offer) ?? OFFER_STATUS_META[offer.status] ?? {
     label: offer.status.replace(/_/g, " "),
     explanation: "",
     severity: "neutral" as const,
@@ -2588,6 +2602,28 @@ const DONOR_SECTIONS: readonly string[] = ["offers", "items", "matches"];
 const isDonorSection = (s: string): s is DonorSection => DONOR_SECTIONS.includes(s);
 
 /** Offers waiting on the donor: finish a draft, answer a question, reconfirm. */
+/**
+ * Buy and hand over speaks in purchase terms: after the donor's yes the offer is
+ * ADMIN_APPROVED (our team approved it before the recipient saw it), which for a
+ * purchase means "buying", not "schedule the handover". Null for everything else.
+ */
+function purchaseOfferMeta(offer: { flowType?: string | null; status: string; purchaseCommitment?: { fulfilmentMethod?: string | null; purchaseStatus?: string | null } | null }) {
+  if (offer.flowType !== "WILL_PURCHASE" || offer.purchaseCommitment?.fulfilmentMethod !== "BUY_AND_HAND_OVER") return null;
+  if (offer.status === "DONOR_RECONFIRMATION_REQUIRED")
+    return { label: "Confirm you can still buy it", explanation: "The recipient accepted your offer. Confirm on the purchase page that you can still buy and hand it over.", action: "reconfirm" as const, actionLabel: "Open purchase", severity: "warning" as const };
+  if (offer.status !== "ADMIN_APPROVED") return null;
+  switch (offer.purchaseCommitment?.purchaseStatus) {
+    case "PROOF_UPLOADED":
+      return { label: "Purchase being verified", explanation: "Our team is checking what you bought. The handover opens once it's verified.", severity: "info" as const };
+    case "READY_FOR_HANDOVER":
+      return { label: "Ready for handover", explanation: "Our team verified the purchase. Arrange the handover with the recipient.", action: "handover" as const, actionLabel: "Arrange handover", severity: "warning" as const };
+    case "ORDER_PLACED":
+      return { label: "Bought — details needed", explanation: "Finish telling us what you bought on the purchase page.", severity: "warning" as const };
+    default:
+      return { label: "Purchase in progress", explanation: "Buy the item, then tell us what you bought on the purchase page.", severity: "warning" as const };
+  }
+}
+
 const OFFER_NEEDS_DONOR = ["DRAFT", "NEEDS_INFORMATION", "DONOR_RECONFIRMATION_REQUIRED", "DONEE_ACCEPTED", "ADMIN_APPROVED"];
 /** Matches waiting on the donor: confirm the donation before it can move. */
 const MATCH_NEEDS_DONOR = new Set(["DONOR_REVIEW"]);
@@ -2761,6 +2797,10 @@ function DoneeDashboard({
   const requestOptions = requestFilterOptions(itemRequests, liveMatchRequestIds);
   const filteredRequests = filterRequests(itemRequests, requestFilter, liveMatchRequestIds);
   const activeOffers = incomingOffers.filter(o => !isPastOffer(o, now));
+  const committedRequestIds = new Set<number>([
+    ...activeMatches.filter(m => m.requestId != null && COMMITTED_MATCH_STATUSES.has(m.status)).map(m => m.requestId as number),
+    ...activeOffers.filter(o => COMMITTED_OFFER_STATUSES.has(o.status)).map(o => o.requestId),
+  ]);
   const pastOffers = incomingOffers.filter(o => isPastOffer(o, now));
   const offersNeedYou = activeOffers.some(o => OFFER_NEEDS_DONEE.has(o.status));
   // Owner, 2026-10-07: Your Requests holds requests not yet in a live flow (plus
@@ -3003,7 +3043,7 @@ function DoneeDashboard({
                   <div className="mt-4">
                     <AnimatePresence initial={false}>
                       {filteredRequests.map((r, i) => (
-                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} />
+                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} matched={committedRequestIds.has(r.id)} />
                       ))}
                     </AnimatePresence>
                   </div>
@@ -3019,7 +3059,7 @@ function DoneeDashboard({
                       <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{dc(label)}</h4>
                       <AnimatePresence initial={false}>
                         {group.map((r, i) => (
-                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} />
+                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} matched={committedRequestIds.has(r.id)} />
                         ))}
                       </AnimatePresence>
                     </div>
@@ -3083,7 +3123,10 @@ function DoneeDashboard({
                       isPendingReview ? ui("Awaiting your review") :
                         isNeedsInfo ? ui("Waiting on donor to add details") :
                           isScreening ? ui("AI screening in progress") :
-                            offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? ui("Donor is reconfirming") :
+                            offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? (offer.flowType === "WILL_PURCHASE" ? ui("Waiting for donor confirmation") : ui("Donor is reconfirming")) :
+                              offer.status === "ADMIN_APPROVED" && offer.purchaseCommitment?.fulfilmentMethod === "BUY_AND_HAND_OVER"
+                                ? (offer.purchaseCommitment.purchaseStatus === "READY_FOR_HANDOVER" ? ui("Ready for handover")
+                                  : offer.purchaseCommitment.purchaseStatus === "PROOF_UPLOADED" ? ui("Purchase being verified") : ui("Donor is buying it")) :
                               offer.status === "DONOR_RECONFIRMED" ? ui("Under admin review") :
                                 isApproved ? ui("Approved") :
                                   isHandover ? ui("Handover in progress") :

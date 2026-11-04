@@ -12,10 +12,12 @@ export type PurchaseRole = "DONOR" | "DONEE" | "ADMIN";
 
 export type PurchaseStage =
   | "AWAITING_ACCEPTANCE"
+  | "AWAITING_RECONFIRMATION" // accepted, donor has not yet confirmed they'll still buy
   | "AWAITING_ADDRESS"       // direct: accepted, recipient has not shared delivery details
   | "AWAITING_APPROVAL"      // accepted, offer not yet ADMIN_APPROVED
   | "READY_TO_BUY"
-  | "AWAITING_ITEM_PHOTO"    // physical: bought, no photo yet
+  | "AWAITING_ITEM_PHOTO"    // physical: bought, no photo yet (or our team asked for a new one)
+  | "PURCHASE_INFO_REQUIRED" // physical: our team asked the donor for more information
   | "AWAITING_PROOF_REVIEW"  // physical: photo uploaded, admin review pending
   | "READY_FOR_HANDOVER"
   | "IN_TRANSIT"             // direct: ordered / shipped
@@ -41,12 +43,16 @@ export function purchaseStage(view: PurchaseView, offerStatus: OfferStatus | str
 
   if (!view.orderedAt) {
     if (view.readyToBuy) return "READY_TO_BUY";
+    // Strict order: donor reconfirms, then the recipient shares an address, then our team approves.
+    if (offerStatus === "DONOR_RECONFIRMATION_REQUIRED") return "AWAITING_RECONFIRMATION";
     if (view.method === "DIRECT_DELIVERY" && !view.address) return "AWAITING_ADDRESS";
     return "AWAITING_APPROVAL";
   }
 
   if (view.method === "BUY_AND_HAND_OVER") {
     if (view.status === "READY_FOR_HANDOVER") return "READY_FOR_HANDOVER";
+    // Seen by the donor and our team only; the recipient just sees the purchase being checked.
+    if (view.status === "ORDER_PLACED" && view.details?.reviewOutcome === "INFO_REQUIRED") return "PURCHASE_INFO_REQUIRED";
     // Status, not "a photo exists": a rejected photo sends the purchase back to
     // ORDER_PLACED, and the old photo must not read as "under review".
     return view.status === "PROOF_UPLOADED" ? "AWAITING_PROOF_REVIEW" : "AWAITING_ITEM_PHOTO";
@@ -59,13 +65,26 @@ export function purchaseStage(view: PurchaseView, offerStatus: OfferStatus | str
 }
 
 /** Plain-language status label for lists and the hub header. */
+export function purchaseStageLabel(stage: PurchaseStage, view: Pick<PurchaseView, "method">, role: PurchaseRole): string {
+  // In person, "ready to buy" means the donor has confirmed and is buying.
+  if (view.method === "BUY_AND_HAND_OVER") {
+    if (stage === "AWAITING_RECONFIRMATION") return role === "DONOR" ? "Your turn: confirm you can still buy it" : "Waiting for donor confirmation";
+    if (stage === "READY_TO_BUY") return role === "DONOR" ? "Purchase in progress · your turn" : "Donor is buying it";
+    if (stage === "AWAITING_ITEM_PHOTO" && role !== "DONOR") return "Bought — being checked";
+  }
+  if (stage === "AWAITING_RECONFIRMATION" && role === "DONOR") return "Your turn: confirm you'll buy it";
+  return PURCHASE_STAGE_LABEL[stage];
+}
+
 export const PURCHASE_STAGE_LABEL: Record<PurchaseStage, string> = {
   AWAITING_ACCEPTANCE: "Waiting for recipient",
+  AWAITING_RECONFIRMATION: "Waiting for donor to confirm",
   AWAITING_ADDRESS: "Waiting for delivery details",
   AWAITING_APPROVAL: "Waiting for approval",
   READY_TO_BUY: "Ready to buy",
   AWAITING_ITEM_PHOTO: "Bought — photo needed",
-  AWAITING_PROOF_REVIEW: "Photo under review",
+  PURCHASE_INFO_REQUIRED: "More information needed",
+  AWAITING_PROOF_REVIEW: "Purchase being verified",
   READY_FOR_HANDOVER: "Ready for handover",
   IN_TRANSIT: "Ordered",
   DELIVERED: "Delivered — awaiting recipient",
@@ -88,32 +107,50 @@ export function purchaseNextAction(stage: PurchaseStage, role: PurchaseRole, vie
       return donor
         ? "The recipient is reviewing your proposal. Please don't buy anything yet."
         : "Review this purchase proposal on your offers page and accept or decline it. Nothing is bought until you accept and our team approves.";
+    case "AWAITING_RECONFIRMATION":
+      return donor
+        ? direct
+          ? "The recipient has accepted your offer. Please confirm that you will still buy it."
+          : "The recipient has accepted your offer. Please confirm that you're still able to purchase and hand over the promised quantity."
+        : direct
+          ? "You have accepted the offer. The donor is now confirming they will still buy it — you'll be asked for your delivery address once they do."
+          : "You accepted, which reserves this quantity with this donor. Waiting for the donor to confirm they can still buy it.";
     case "AWAITING_ADDRESS":
       return donor
-        ? "Accepted. Waiting for the recipient to share delivery details — don't buy yet."
+        ? "The recipient has accepted your offer and is now sharing their delivery address. Please don't place the order yet."
         : "Share where the item should be delivered so the donor can place the order.";
     case "AWAITING_APPROVAL":
       return donor
-        ? "Accepted. Our team approves next — don't buy yet."
-        : "You accepted. The donor will buy once our team has approved the offer.";
+        ? direct
+          ? "The recipient has shared their delivery address. Our team is now reviewing the offer — please don't place the order yet."
+          : "Accepted. Our team approves next — don't buy yet."
+        : direct
+          ? "Your address has been shared. Our team is reviewing the offer; the donor will place the order once it's approved."
+          : "You accepted. The donor will buy once our team has approved the offer.";
     case "READY_TO_BUY":
       return donor
         ? direct
-          ? "You can place the prepaid order now. Upload the order confirmation, then record the order."
-          : "You can buy the item now. Record the purchase, then upload a photo of the item."
+          ? "You can place the prepaid order now. Order the item to the recipient's address, tap \"I've placed the order\", then attach the shop's confirmation and confirm the order details."
+          : "You're committed to buying this item. Once you've bought it, tap \"I've purchased the item\" and tell us what you bought, with a photo."
         : direct
           ? "Our team approved the offer. The donor can place the order now — you'll be notified when it's on its way."
-          : "Our team approved the offer. The donor can buy the item now — you'll be notified when it's ready to hand over.";
+          : "The donor confirmed and is buying the item. You'll be notified once our team has verified the purchase and the handover can be arranged.";
+    case "PURCHASE_INFO_REQUIRED":
+      return donor
+        ? `Our team needs more information about your purchase: ${view.proofRejectionReason ?? ""} Update the details below and send them again.`
+        : "Our team asked the donor for more information about the purchase.";
     case "AWAITING_ITEM_PHOTO":
-      if (!donor) return "The donor bought the item. Our team checks a photo of it before the handover.";
+      if (!donor) return "The donor bought the item. Our team checks it before the handover.";
       return view.proofRejectionReason
         ? `Our team couldn't accept the item photo: ${view.proofRejectionReason} Please upload a new photo.`
         : "Upload a clear photo of the item you bought. Our team checks it before the handover.";
     case "AWAITING_PROOF_REVIEW":
-      return "Our team is checking the item photo. The handover opens once it's approved.";
+      return donor
+        ? "Our team is verifying what you bought. The handover opens once it's verified."
+        : "The donor has bought the item. Our team is verifying it — the handover opens once it's verified.";
     case "READY_FOR_HANDOVER":
       return donor
-        ? "The item photo is approved. Open the handover page to agree a time and place — the recipient confirms with your handover code."
+        ? "Our team verified the purchase. Open the handover page to agree a time and place — the recipient confirms with your handover code."
         : "The donor has the item. Open the handover page to agree a time and place — you'll confirm with the donor's handover code.";
     case "DELIVERED":
       if (donor) {

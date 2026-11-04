@@ -10,10 +10,21 @@ const api = vi.hoisted(() => ({
   superAdminListDisputes: vi.fn(),
   superAdminResolveDispute: vi.fn(() => Promise.resolve()),
   adminResolvePurchaseIssue: vi.fn(() => Promise.resolve()),
+  adminGetPurchase: vi.fn(),
 }));
 vi.mock("@/lib/api", () => api);
 
 import { DisputesPanel } from "./DisputesPanel";
+
+const purchaseView = {
+  offerId: 4, method: "DIRECT_DELIVERY", status: "ISSUE_RAISED", readyToBuy: false, acceptedAt: null, deadline: null,
+  acceptedQuantity: 3, orderedAt: "2026-10-11T10:00:00", orderedQuantity: 3, receivedQuantity: 0, expectedDeliveryAt: null,
+  trackingUrl: null, trackingReference: null, address: null, retailer: "Shop", orderReference: null, evidence: [],
+  extensionRequestedUntil: null, extensionDecidedAt: null, issueWindowExpiresAt: null, version: 1, deliveryReportedAt: null,
+  deliveryReminderSentAt: null, deliveryEscalatedAt: null, receivedCondition: null, receiptRecordedBySupport: false,
+  issues: [{ id: 7, type: "ITEM_NOT_RECEIVED", description: "Nothing arrived", affectedQuantity: 3, reportedByRole: "DONEE",
+    createdAt: "2026-10-16T10:00:00", response: null, respondedAt: null, resolution: null, resolvedAt: null }],
+};
 
 const dispute = (p: Partial<PostDeliveryIssue>): PostDeliveryIssue => ({
   id: 7, offerId: 4, itemTitle: "School bags", donorName: "Ravi", doneeName: "Asha", reportedByName: "Asha",
@@ -25,15 +36,15 @@ const dispute = (p: Partial<PostDeliveryIssue>): PostDeliveryIssue => ({
 describe("DisputesPanel", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("offers redelivery or closing the remainder for a purchase problem", async () => {
+  it("decides a purchase problem through the purchase lifecycle", async () => {
     api.superAdminListDisputes.mockResolvedValue([dispute({ purchase: true, affectedQuantity: 3, counterpartyResponse: "Courier photo shows the gate" })]);
+    api.adminGetPurchase.mockResolvedValue(purchaseView);
     render(<DisputesPanel isDark={false} />);
     await screen.findByText(/Courier photo shows the gate/);
     expect(screen.queryByRole("button", { name: "Resolve" })).toBeNull();
-    const redeliver = screen.getByRole("button", { name: /Expect redelivery/ }) as HTMLButtonElement;
-    expect(redeliver.disabled).toBe(true);
-    await userEvent.type(screen.getByRole("textbox"), "Donor will reship via a new courier");
-    await userEvent.click(redeliver);
+    await userEvent.click(await screen.findByRole("radio", { name: /The rest is coming/ }));
+    await userEvent.type(screen.getByLabelText(/Reason/), "Donor will reship via a new courier");
+    await userEvent.click(screen.getByRole("button", { name: "Expect the rest" }));
     await waitFor(() => expect(api.adminResolvePurchaseIssue).toHaveBeenCalledWith(4, {
       action: "RETRY_DELIVERY", reason: "Donor will reship via a new courier",
     }));
@@ -44,6 +55,6 @@ describe("DisputesPanel", () => {
     api.superAdminListDisputes.mockResolvedValue([dispute({ purchase: false })]);
     render(<DisputesPanel isDark={false} />);
     expect(await screen.findByRole("button", { name: "Resolve" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: /Expect redelivery/ })).toBeNull();
+    expect(screen.queryByRole("radio", { name: /The rest is coming/ })).toBeNull();
   });
 });

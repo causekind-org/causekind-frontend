@@ -145,11 +145,15 @@ export function HandoverScheduleDialog({
   // A reschedule costs the other person a trip, so it has to say why.
   const reasonRequired = isReschedule;
   const isCourier = method === "COURIER" || method === "THIRD_PARTY";
+  // The donor takes it to the recipient: the place is the recipient's address, which
+  // they share on the handover page, so the donor is not asked to name one.
+  const isDropOff = vm.flow === "OFFER" && method === "DROP_OFF";
+  const toRecipient = isCourier || isDropOff;
   const hasPin = lat != null && lng != null;
   // In-person handovers send the donee both the written address and a map link, so both
   // are required and Save waits for any lookup still filling one from the other. Courier
   // deliveries get the recipient's address in the hub; NGO drop-offs use the NGO's address.
-  const locationValid = isCourier || driveDropOff || (!locationBusy && address.trim() !== "" && hasPin);
+  const locationValid = toRecipient || driveDropOff || (!locationBusy && address.trim() !== "" && hasPin);
   let canSubmit = !busy && when.trim() !== "" && locationValid
     && (!reasonRequired || reason.trim().length >= 3);
 
@@ -167,8 +171,8 @@ export function HandoverScheduleDialog({
         // Drive handovers: the local (IST) time as picked — toISOString() turned 18:30 IST into
         // 13:00, which the server read as outside the NGO's hours. Other flows unchanged.
         scheduledDateTime: vm.flow === "NGO_OFFER" ? `${when.slice(0, 16)}:00` : new Date(when).toISOString(),
-        address: driveDropOff ? (dropOff?.address ?? undefined) : isCourier ? undefined : (address.trim() || undefined),
-        ...(!driveDropOff && !isCourier && lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
+        address: driveDropOff ? (dropOff?.address ?? undefined) : toRecipient ? undefined : (address.trim() || undefined),
+        ...(!driveDropOff && !toRecipient && lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
         notes: notes.trim() || undefined,
         courierName: courierName.trim() || undefined,
         trackingNumber: trackingNumber.trim() || undefined,
@@ -198,7 +202,7 @@ export function HandoverScheduleDialog({
           <DialogDescription>
             {isReschedule
               ? "They're planning around the current time, so tell them why it's moving."
-              : (isCourier ? "Pick when you plan to dispatch the item." : "Pick a time and place that works for both of you.")}
+              : (isCourier ? "Pick when you plan to dispatch the item." : (isDropOff ? "Pick when you plan to deliver the item." : "Pick a time and place that works for both of you."))}
           </DialogDescription>
         </DialogHeader>
 
@@ -257,13 +261,15 @@ export function HandoverScheduleDialog({
             )}
           </Field>
 
-          {isCourier ? (
+          {toRecipient ? (
             <div className="rounded-lg border border-amber-200/80 bg-amber-50/70 p-3.5 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
               <p className="font-semibold text-stone-900 dark:text-stone-100 text-sm mb-1">
-                Recipient delivery address
+                {isDropOff ? "Where to deliver" : "Recipient delivery address"}
               </p>
               <p className="text-stone-600 dark:text-stone-400">
-                You won't need to specify a meeting location for courier delivery. Once scheduled, you will request the recipient's delivery address directly in the handover hub.
+                {isDropOff
+                  ? "You're taking it to the recipient, so you don't need to enter an address. Once scheduled, ask the recipient for their address on the handover page — only you will see it."
+                  : "You won't need to specify a meeting location for courier delivery. Once scheduled, you will request the recipient's delivery address directly in the handover hub."}
               </p>
             </div>
           ) : !driveDropOff && (
@@ -369,7 +375,7 @@ export function HandoverScheduleDialog({
           <Button disabled={!canSubmit} onClick={submit} className={handoverPrimary}>
             {busy
               ? <><Loader2 className="animate-spin" aria-hidden /> Saving</>
-              : (!isCourier && locationBusy)
+              : (!toRecipient && locationBusy)
                 ? <><Loader2 className="animate-spin" aria-hidden /> Checking location…</>
                 : "Save"}
           </Button>

@@ -84,13 +84,13 @@ export function RequestDetailsPanel({ request: r, stage: baseStage, state: baseS
       <div className="flex min-w-0 flex-col gap-2.5">
         <h3 className={heading}><UiText>Request</UiText></h3>
         <PhotoThumbs photos={r.imageUrl ? [r.imageUrl] : []} alt={r.title} size={72} />
-        {r.description && <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300">{r.description}</p>}
+        {r.description && <p className="text-xs leading-relaxed text-stone-700 dark:text-stone-300 break-words [overflow-wrap:anywhere]">{r.description}</p>}
         <p className="text-2xs text-stone-500 dark:text-stone-400">{facts.join(" · ")}</p>
       </div>
 
       <div className="flex min-w-0 flex-col gap-2">
         <h3 className={heading}><UiText>Delivery</UiText></h3>
-        {delivery.map(line => <p key={line} className="text-xs text-stone-700 dark:text-stone-300">{line}</p>)}
+        {delivery.map(line => <p key={line} className="text-xs text-stone-700 dark:text-stone-300 [overflow-wrap:anywhere]">{line}</p>)}
       </div>
 
       <div className="flex min-w-0 flex-col">

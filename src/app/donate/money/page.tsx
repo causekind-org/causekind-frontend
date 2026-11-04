@@ -7,7 +7,7 @@ import MoneyDonateClient from "./MoneyDonateClient";
 export const metadata: Metadata = {
   title: "Donate Money — CauseKind",
   description:
-    "Fund education, healthcare and social welfare through Sahas Charitable Trust. 12AA and 80G certified, with every rupee accounted for.",
+    "Fund education, healthcare and social welfare through Sahas Charitable Trust. 12A and 80G certified, with every rupee accounted for.",
   alternates: { canonical: "/donate/money" },
 };
 
