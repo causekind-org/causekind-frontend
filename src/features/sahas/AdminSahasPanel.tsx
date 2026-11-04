@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ApiError, sahasAdmin, type NgoDriveOfferResponse, type SahasAdminDetail, type SahasAdminLine, type SahasAdminRow,
-  type SahasLineInput, type SahasOutcome, type SahasUpdate, type SahasUpsert,
+  type SahasDonationRow, type SahasLineInput, type SahasOutcome, type SahasUpdate, type SahasUpsert,
 } from "@/lib/api";
 
 /**
@@ -110,7 +110,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
 
 // ── Editor ────────────────────────────────────────────────────────────────
 
-type Tab = "details" | "items" | "offers" | "outcome";
+type Tab = "details" | "items" | "offers" | "payments" | "outcome";
 
 function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
   const [d, setD] = useState<SahasAdminDetail | null>(null);
@@ -131,10 +131,10 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
         {d.slug && d.status !== "DRAFT" && <a href={`/sahas/${d.slug}`} target="_blank" rel="noreferrer" className="ms-auto text-sm font-semibold text-[#b04a15]">View public page ↗</a>}
       </div>
       <div role="tablist" aria-label="Campaign sections" className="flex gap-5 border-b border-stone-200 dark:border-zinc-800">
-        {(["details", "items", "offers", "outcome"] as Tab[]).map((t) => (
+        {(["details", "items", "offers", "payments", "outcome"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
             className={`min-h-[44px] border-b-[3px] text-sm font-semibold ${tab === t ? "border-[#b04a15] text-stone-900 dark:text-stone-100" : "border-transparent text-stone-500"}`}>
-            {t === "details" ? "Details and publishing" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : "Updates and outcome"}
+            {t === "details" ? "Details and publishing" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : t === "payments" ? "Payments" : "Updates and outcome"}
           </button>
         ))}
       </div>
@@ -142,6 +142,7 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
       {tab === "details" && <Details d={d} onSaved={setD} onError={setError} />}
       {tab === "items" && <Items d={d} onChanged={load} onError={setError} />}
       {tab === "offers" && <Offers campaignId={d.id} onError={setError} />}
+      {tab === "payments" && <Payments campaignId={d.id} onError={setError} />}
       {tab === "outcome" && <UpdatesAndOutcome d={d} onError={setError} />}
     </div>
   );
@@ -194,8 +195,13 @@ function Details({ d, onSaved, onError }: { d: SahasAdminDetail; onSaved: (d: Sa
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={Boolean(v("featured"))} onChange={(e) => set("featured", e.target.checked)} /> Feature on the home page</label>
         <div className="flex flex-wrap gap-4 text-sm">
           <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(v("collectsItems"))} onChange={(e) => set("collectsItems", e.target.checked)} /> Collects items</label>
-          <label className="flex items-center gap-2 text-stone-400"><input type="checkbox" checked={Boolean(v("collectsMoney"))} disabled={live} onChange={(e) => set("collectsMoney", e.target.checked)} /> Collects money (not available yet)</label>
+          <label className="flex items-center gap-2"><input type="checkbox" checked={Boolean(v("collectsMoney"))} onChange={(e) => set("collectsMoney", e.target.checked)} /> Collects money</label>
         </div>
+        {Boolean(v("collectsMoney")) && (
+          <label className="flex max-w-xs flex-col gap-1.5 text-sm font-semibold">Money target (₹)
+            <input type="number" min={1} className={`${field} font-normal`} value={(v("targetAmount") as number | undefined) ?? ""} onChange={(e) => set("targetAmount", e.target.value === "" ? undefined : Number(e.target.value))} />
+          </label>
+        )}
         <button type="button" className={`${primary} self-start`} disabled={!dirty || busy} onClick={() => run(sahasAdmin.update(d.id, { ...f, version: d.version }))}>Save</button>
       </div>
 
@@ -498,6 +504,36 @@ function UpdatesAndOutcome({ d, onError }: { d: SahasAdminDetail; onError: (m: s
             {!approved && outcome && <p className="m-0 text-xs text-stone-500">Drafted by {outcome.submittedBy}. A different admin must approve.</p>}
           </>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── Payments (Phase C3): this campaign's ledger; needs PAYMENT_REVIEW ──────
+
+function Payments({ campaignId, onError }: { campaignId: number; onError: (m: string | null) => void }) {
+  const [rows, setRows] = useState<SahasDonationRow[] | null>(null);
+  useEffect(() => { sahasAdmin.donations(campaignId).then(setRows).catch((e) => onError(messageOf(e))); }, [campaignId, onError]);
+  const done = (rows ?? []).filter((r) => r.status === "COMPLETED");
+  const total = done.reduce((t, r) => t + r.amount, 0);
+  const fees = done.reduce((t, r) => t + (r.platformFee ?? 0), 0);
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="m-0 text-sm text-stone-600">{rows ? `Confirmed ₹${total.toLocaleString("en-IN")} from ${done.length} donation${done.length === 1 ? "" : "s"} · platform fee ₹${fees.toLocaleString("en-IN")}` : "Loading…"}</p>
+      <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <table className="w-full min-w-[640px] border-collapse text-sm">
+          <thead><tr className="text-left text-xs text-stone-500"><th className="p-3">Ref</th><th className="p-3">Donor</th><th className="p-3">Amount</th><th className="p-3">Fee</th><th className="p-3">Payment</th><th className="p-3">Documents</th><th className="p-3">Date</th></tr></thead>
+          <tbody>
+            {rows?.length === 0 && <tr><td colSpan={7} className="p-4 text-stone-500">No donations yet.</td></tr>}
+            {rows?.map((r) => (
+              <tr key={r.id} className="border-t border-stone-100 dark:border-zinc-800">
+                <td className="p-3">#{r.id}</td><td className="p-3">{r.donor}{r.anonymous ? " (hidden publicly)" : ""}</td>
+                <td className="p-3">₹{r.amount.toLocaleString("en-IN")}</td><td className="p-3">₹{(r.platformFee ?? 0).toLocaleString("en-IN")}</td>
+                <td className="p-3">{r.status}</td><td className="p-3">{r.documentsStatus ?? "—"}</td><td className="p-3">{r.createdAt.slice(0, 10)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

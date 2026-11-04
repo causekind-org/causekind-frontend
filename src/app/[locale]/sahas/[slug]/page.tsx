@@ -69,6 +69,7 @@ function SahasCampaign() {
         <div className="flex flex-wrap items-center gap-2">
           <PhaseChip phase={c.phase} />
           {c.collectsItems && <Chip><UiText context="sahas contribution type">Items</UiText></Chip>}
+          {c.collectsMoney && <Chip><UiText context="sahas contribution type">Money</UiText></Chip>}
           <span className="text-sm text-[#4A3B30] dark:text-stone-300"><UiText>Organised by</UiText> <b>{SAHAS_NAME}</b></span>
         </div>
         <h1 className={`${serif} m-0 max-w-4xl text-3xl leading-tight sm:text-5xl`}>{c.title}</h1>
@@ -160,6 +161,20 @@ function SahasCampaign() {
           </div>
 
           <aside aria-label={ui("Choose how to help")} className="flex flex-col gap-4 rounded-2xl border border-[#EADFD3] bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 lg:sticky lg:top-24">
+            {c.collectsMoney && (
+              <div className="flex flex-col gap-3">
+                <h2 className={`${serif} m-0 text-2xl`}><UiText>Donate money</UiText></h2>
+                <div className="text-sm text-[#4A3B30] dark:text-stone-300">
+                  <b className="text-[#1F140D] dark:text-stone-100">₹{(c.amountRaised ?? 0).toLocaleString("en-IN")}</b> {ui("of")} ₹{(c.targetAmount ?? 0).toLocaleString("en-IN")}
+                </div>
+                <ItemsBar needed={c.targetAmount ?? 0} pledged={0} received={c.amountRaised ?? 0} label={`₹${c.amountRaised ?? 0} / ₹${c.targetAmount ?? 0}`} />
+                <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>Counts confirmed payments only.</UiText></p>
+                {data.moneyOpen && (c.amountRaised ?? 0) < (c.targetAmount ?? 0) ? (
+                  <Link href={`/sahas/${c.slug}/donate`} className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline hover:bg-[#9a3f10]"><UiText>Donate money</UiText></Link>
+                ) : <p className="m-0 rounded-xl bg-[#F7F1EA] p-3 text-sm dark:bg-zinc-800"><UiText>Donations aren&apos;t open right now.</UiText></p>}
+              </div>
+            )}
+            {c.collectsItems && <>
             <h2 className={`${serif} m-0 text-2xl`}><UiText>Give items</UiText></h2>
             <div className="text-sm text-[#4A3B30] dark:text-stone-300">
               <b className="text-[#1F140D] dark:text-stone-100">{t.received} {ui("received")}</b> · {t.pledged} {ui("pledged")} · {t.needed} {ui("needed")}
@@ -180,16 +195,17 @@ function SahasCampaign() {
                       : <UiText>Everything on the list is pledged. Thank you.</UiText>}
               </p>
             )}
+            </>}
           </aside>
         </div>
       </div>
 
-      {open && firstOpen && (
+      {open && (firstOpen || data.moneyOpen) && (
         <div className="fixed inset-x-0 z-30 border-t border-[#EADFD3] bg-white p-3 lg:hidden dark:border-zinc-800 dark:bg-zinc-900"
           style={{ bottom: "var(--ck-bottom-chrome, env(safe-area-inset-bottom, 0px))" }}>
-          <Link href={`/sahas/${c.slug}/give/${firstOpen.driveId}`}
+          <Link href={data.moneyOpen ? `/sahas/${c.slug}/donate` : `/sahas/${c.slug}/give/${firstOpen?.driveId}`}
             className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] text-[15px] font-semibold text-white no-underline">
-            <UiText>Give items</UiText>
+            {data.moneyOpen ? <UiText>Donate money</UiText> : <UiText>Give items</UiText>}
           </Link>
         </div>
       )}

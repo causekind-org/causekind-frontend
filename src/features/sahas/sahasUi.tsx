@@ -82,6 +82,7 @@ export function SahasCard({ c, locale, compact = false }: { c: SahasCampaignCard
         <div className="flex flex-wrap items-center gap-1.5">
           {c.featured && <span className="rounded-full bg-[#FBEBDD] px-2.5 py-0.5 text-xs font-semibold text-[#7a3410]"><UiText context="sahas card">Featured</UiText></span>}
           {c.collectsItems && <Chip><UiText context="sahas contribution type">Items</UiText></Chip>}
+          {c.collectsMoney && <Chip><UiText context="sahas contribution type">Money</UiText></Chip>}
           {c.phase !== "OPEN" && <PhaseChip phase={c.phase} />}
           <span className="ms-auto text-xs text-[#6B5A4E] dark:text-stone-400">
             {c.phase === "UPCOMING" && starts ? `${ui("Opens")} ${starts}` : ends ? `${ui("Ends")} ${ends}` : null}

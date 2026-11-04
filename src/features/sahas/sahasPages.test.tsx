@@ -43,7 +43,7 @@ const detailOf = (phase: SahasCampaignCard["phase"]): SahasCampaignDetail => ({
   items: [{ driveId: 7, itemName: "School bag", unit: "piece", itemCondition: "New only", details: null, quantityNeeded: 100,
     quantityPledged: 30, quantityReceived: 20, quantityLeft: 50, handoverMode: "DROP_OFF", dropOffAddress: "Station Road",
     availableDays: null, pickupRadiusKm: null, locationCity: "Virar" }],
-  updates: [], outcome: null,
+  updates: [], outcome: null, moneyOpen: false, campaignId: 1,
 });
 
 beforeEach(() => { live.mockReset(); detail.mockReset(); });

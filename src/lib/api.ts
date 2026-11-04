@@ -7241,7 +7241,14 @@ export type SahasOutcome = {
 };
 export type SahasCampaignDetail = {
   card: SahasCampaignCard; description: string | null; category: string | null; updatedAt: string;
-  items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null;
+  items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
+};
+export type SahasDonationInput = {
+  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber?: string; address?: string;
+};
+export type SahasDonationRow = {
+  id: number; donor: string; anonymous: boolean; amount: number; platformFee: number | null; status: string;
+  documentsStatus: string | null; createdAt: string;
 };
 
 export const sahasCampaigns = {
@@ -7250,6 +7257,13 @@ export const sahasCampaigns = {
   /** The item line in the public drive shape, so the existing give wizard works unchanged. */
   item: (slug: string, driveId: number) =>
     request<PublicNgoDrive>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}/items/${driveId}`, { silent401: true }),
+  /** Guests allowed. The returned panUploadToken proves this browser started the donation. */
+  donate: (campaignId: number, body: SahasDonationInput) =>
+    request<DonationOrder>(`/api/v1/sahas/campaigns/${campaignId}/donations`, { method: "POST", body: JSON.stringify(body), silent401: true }),
+  donationCheckout: (id: number, token: string) =>
+    request<DonationOrder>(`/api/v1/sahas/campaigns/donations/${id}/checkout`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  donationStatus: (id: number, token: string) =>
+    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
 };
 
 // ── Sahas campaigns admin (Phase D2, 2026-11-03): /api/v1/admin/sahas-campaigns ──
@@ -7306,6 +7320,7 @@ export const sahasAdmin = {
     request<NgoDriveOfferResponse>(`${SA}/${id}/offers/${offerId}/review`, { method: "POST", body: JSON.stringify({ decision, reason, acceptedQuantity }) }),
   handover: (id: number, offerId: number, otp: string, quantity?: number) =>
     request<unknown>(`${SA}/${id}/offers/${offerId}/handover`, { method: "POST", body: JSON.stringify({ otp, quantity }) }),
+  donations: (id: number) => request<SahasDonationRow[]>(`${SA}/${id}/donations`),
   updates: (id: number) => request<SahasUpdate[]>(`${SA}/${id}/updates`),
   postUpdate: (id: number, title: string, body: string) =>
     request<SahasUpdate>(`${SA}/${id}/updates`, { method: "POST", body: JSON.stringify({ title, body }) }),
