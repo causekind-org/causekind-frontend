@@ -43,7 +43,7 @@ type RazorpayCtor = new (opts: Record<string, unknown>) => { open: () => void };
 const rzpCtor = () => (window as unknown as { Razorpay?: RazorpayCtor }).Razorpay;
 
 const EXAMPLES = [500, 1000, 2500, 5000];
-const SUPPORT_AMOUNTS = [0, 20, 50, 100];
+const SUPPORT_AMOUNTS = [0, 30, 50, 100];
 /** Razorpay standard rate incl. GST (2% + 18%), shown as an estimate only. */
 const GATEWAY_PERCENT = 2.36;
 
@@ -148,8 +148,8 @@ export default function DonatePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prior, setPrior] = useState<Prior | null>(null);
-  // Optional support to CauseKind: off until the donor chooses it, and never part of the donation.
-  const [support, setSupport] = useState(0);
+  // Optional support to CauseKind: starts at ₹30, the donor can change it, and it is never part of the donation.
+  const [support, setSupport] = useState(30);
   const [customSupport, setCustomSupport] = useState<string | null>(null);
   // 80G (CA approved, 2026-10-30): only when the server offers it.
   const [want80G, setWant80G] = useState(false);
