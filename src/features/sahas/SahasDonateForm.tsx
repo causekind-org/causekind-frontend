@@ -217,23 +217,23 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     <section className={box}>
       <div className="flex flex-col gap-0.5">
         <b className="text-sm"><UiText>Support CauseKind</UiText></b>
-        <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>An optional tip for the platform. It is separate from your donation and not covered by the 80G receipt.</UiText></p>
+        <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>Optional support for the CauseKind platform. It is separate from your donation and not covered by the 80G receipt.</UiText></p>
       </div>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
         {TIPS.map((t) => (
           <button key={t} type="button" aria-pressed={customTip === null && tip === t} onClick={() => { setTip(t); setCustomTip(null); }}
-            className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip === null && tip === t ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}>{t === 0 ? ui("No tip") : `₹${t}`}</button>
+            className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip === null && tip === t ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}>{t === 0 ? ui("No thanks") : `₹${t}`}</button>
         ))}
         <button type="button" aria-pressed={customTip !== null} onClick={() => setCustomTip("")}
           className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip !== null ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}><UiText>Other</UiText></button>
       </div>
-      {customTip !== null && <label className="flex flex-col gap-1.5 text-sm font-semibold"><UiText>Tip amount (₹)</UiText><input inputMode="numeric" className={field} value={customTip} maxLength={5} onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, ""))} /></label>}
+      {customTip !== null && <label className="flex flex-col gap-1.5 text-sm font-semibold"><UiText>Support amount (₹)</UiText><input inputMode="numeric" className={field} value={customTip} maxLength={5} onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, ""))} /></label>}
     </section>
   </>;
   const footer = <>
     <section className={onClose ? "flex flex-col gap-2 text-xs leading-relaxed" : "flex flex-col gap-2 rounded-2xl bg-[#F7F1EA] p-5 text-sm leading-relaxed dark:bg-zinc-900"}>
       <div className={`flex justify-between font-semibold ${onClose ? "text-base font-bold" : ""}`}><span><UiText>You pay</UiText></span><span>₹{valid ? total.toLocaleString("en-IN") : "—"}</span></div>
-      {valid && tipValue > 0 && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">₹{value.toLocaleString("en-IN")} <UiText>donation</UiText> + ₹{tipValue.toLocaleString("en-IN")} <UiText>tip to CauseKind</UiText></p>}
+      {valid && tipValue > 0 && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">₹{value.toLocaleString("en-IN")} <UiText>donation</UiText> + ₹{tipValue.toLocaleString("en-IN")} <UiText>support to CauseKind</UiText></p>}
       {/* In the popup the terms slide away once agreed, leaving room for the form. */}
       <div aria-hidden={slid} className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${slid ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
         <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
