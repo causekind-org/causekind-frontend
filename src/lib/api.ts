@@ -4025,6 +4025,73 @@ export function superAdminSetAdminPermissions(adminId: number, changes: AdminCap
   });
 }
 
+export function superAdminApplyCrmAgentPreset(adminId: number) {
+  return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/crm-agent-preset`, { method: "POST" });
+}
+
+// ── Calling CRM ──────────────────────────────────────────────────────────────
+
+export type CrmRole = "DONOR" | "DONEE";
+
+export type CrmContact = {
+  userId: number;
+  fullName: string;
+  role: CrmRole;
+  city: string | null;
+  maskedPhone: string | null;
+  maskedEmail: string | null;
+  registeredAt: string;
+  hasRequest: boolean;
+  ownerUserId: number | null;
+  ownerName: string | null;
+  doNotCall: boolean;
+  doNotCallReason: string | null;
+};
+
+export type CrmStaff = { id: number; fullName: string };
+
+export function crmListContacts(filters: {
+  role: CrmRole | null; name: string; noRequest: boolean; unassigned: boolean; page: number;
+}) {
+  const params = new URLSearchParams({
+    name: filters.name,
+    noRequest: String(filters.noRequest),
+    unassigned: String(filters.unassigned),
+    page: String(filters.page),
+  });
+  if (filters.role) params.set("role", filters.role);
+  return request<SaPage<CrmContact>>(`/api/v1/admin/crm/contacts?${params}`);
+}
+
+export function crmListStaff() {
+  return request<CrmStaff[]>("/api/v1/admin/crm/staff");
+}
+
+export function crmRevealPhone(userId: number) {
+  return request<{ phone: string }>(`/api/v1/admin/crm/contacts/${userId}/reveal-phone`, { method: "POST" });
+}
+
+export function crmSetDoNotCall(userId: number, reason: string) {
+  return request<void>(`/api/v1/admin/crm/contacts/${userId}/do-not-call`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function crmClearDoNotCall(userId: number, reason: string) {
+  return request<void>(`/api/v1/admin/crm/contacts/${userId}/do-not-call/clear`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+  });
+}
+
+export function crmAssignContact(userId: number, ownerUserId: number | null) {
+  return request<void>(`/api/v1/admin/crm/contacts/${userId}/assign`, {
+    method: "PUT",
+    body: JSON.stringify({ ownerUserId }),
+  });
+}
+
 // ── Admin user suspend/ban ───────────────────────────────────────────────────
 
 export function adminSuspendUser(userId: number, reason: string, until?: string | null) {

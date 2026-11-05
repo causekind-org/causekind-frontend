@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
-  superAdminListAdmins, superAdminSetAdminPermissions,
+  superAdminApplyCrmAgentPreset, superAdminListAdmins, superAdminSetAdminPermissions,
   type AdminAccount,
 } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
 /** Mirrors the backend AdminCapability enum, grouped for readability. Order here
@@ -25,6 +26,10 @@ const CAPABILITY_GROUPS: { label: string; capabilities: string[] }[] = [
   {
     label: "Communications",
     capabilities: ["WHATSAPP", "COMMUNICATION_MODERATE"],
+  },
+  {
+    label: "Calling CRM",
+    capabilities: ["CRM_ACCESS", "CRM_MANAGE"],
   },
   {
     label: "Money",
@@ -47,6 +52,8 @@ const CAPABILITY_LABELS: Record<string, string> = {
   OFFER_REVIEW: "Offers & disputes",
   MATCH_INTERVENE: "Matches",
   WHATSAPP: "WhatsApp",
+  CRM_ACCESS: "Call list",
+  CRM_MANAGE: "Manage call list",
   USER_READ: "View users",
   USER_RESTRICT: "Restrict users",
   USER_SUSPEND: "Suspend users",
@@ -99,6 +106,19 @@ export function AdminPermissionsPanel() {
     }
   }
 
+  async function applyCrmAgent(admin: AdminAccount) {
+    if (!window.confirm(`Make ${admin.fullName} a CRM agent? This revokes everything except the call list.`)) return;
+    setSavingKey(`${admin.id}:preset`);
+    try {
+      const permissions = await superAdminApplyCrmAgentPreset(admin.id);
+      setAdmins(prev => prev.map(a => a.id === admin.id ? { ...a, permissions } : a));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to apply the preset.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   if (loading) {
     return <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>;
   }
@@ -124,6 +144,11 @@ export function AdminPermissionsPanel() {
               <div className="flex items-center gap-2">
                 {admin.role === "SUPER_ADMIN" && <Badge variant="secondary">Super Admin — always full access</Badge>}
                 {!admin.active && <Badge variant="destructive">Inactive</Badge>}
+                {admin.role === "ADMIN" && (
+                  <Button size="sm" variant="outline" disabled={savingKey === `${admin.id}:preset`} onClick={() => applyCrmAgent(admin)}>
+                    Make CRM agent
+                  </Button>
+                )}
               </div>
             </div>
             <div className="space-y-3">
