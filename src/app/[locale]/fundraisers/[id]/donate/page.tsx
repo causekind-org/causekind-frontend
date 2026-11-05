@@ -235,7 +235,7 @@ export default function DonatePage() {
   const steps = [ui("Amount", "donate step"), ui("Your details", "donate step"), ui("Review", "donate step")];
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
-      <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 64, display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(240px,320px)", gap: 32, alignItems: "start", maxWidth: 1080 }}>
+      <main className={`${s.wrap} ${s.donateLayout}`} style={{ paddingTop: 32, paddingBottom: 64, alignItems: "start", maxWidth: 1080 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 22, minWidth: 0 }}>
           <ol aria-label={ui("Donation steps")} style={{ listStyle: "none", padding: 0, display: "flex", gap: 6, fontSize: 14, fontWeight: 600, color: "#6b5d52", flexWrap: "wrap" }}>
             {steps.map((label, i) => <li key={label} aria-current={i === step ? "step" : undefined} style={{ color: i === step ? "#7a3410" : undefined }}>{i + 1} {label}{i < step ? " ✓" : ""}{i < steps.length - 1 ? " ·" : ""}</li>)}
