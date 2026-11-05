@@ -7213,11 +7213,12 @@ const qs = (o: Record<string, string | number | undefined | null>) => {
 };
 
 // Backend: SuperAdminMoneyController. cause + platformFee is the donation; platformSupport is on top of it.
-export type SaMoneyKind = "FUNDRAISER" | "SAHAS" | "TRUST" | "CAMPAIGN" | "SUPPORT_ONLY";
+export type SaMoneyKind = "FUNDRAISER" | "SAHAS" | "TRUST" | "QR" | "CAMPAIGN" | "SUPPORT_ONLY";
 export type SaMoneyRow = {
   id: string; at: string | null; kind: SaMoneyKind; campaignId: number | null; towards: string | null;
   donorName: string | null; donorEmail: string | null; anonymous: boolean;
   cause: number; platformFee: number; platformSupport: number; paid: number; paymentId: string | null;
+  adSource: string | null; adCampaign: string | null; adContent: string | null;
 };
 export const superAdminMoney = {
   rows: () => request<SaMoneyRow[]>("/api/v1/super-admin/money"),

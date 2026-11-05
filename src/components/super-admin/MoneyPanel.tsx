@@ -11,6 +11,7 @@ const KINDS: Record<SaMoneyKind, string> = {
   FUNDRAISER: "Fundraiser",
   SAHAS: "Sahas campaign",
   TRUST: "Sahas Trust donation",
+  QR: "Scan QR (video)",
   CAMPAIGN: "Other campaign",
   SUPPORT_ONLY: "Platform support only",
 };
@@ -57,7 +58,7 @@ export function MoneyPanel({ isDark }: { isDark: boolean }) {
       return (!kind || r.kind === kind) && (!towards || r.towards === towards)
         && (!part || Number(r[part]) > 0)
         && (!from || day >= from) && (!to || day <= to)
-        && (!needle || `${r.donorName ?? ""} ${r.donorEmail ?? ""} ${r.paymentId ?? ""}`.toLowerCase().includes(needle));
+        && (!needle || `${r.donorName ?? ""} ${r.donorEmail ?? ""} ${r.paymentId ?? ""} ${r.adSource ?? ""} ${r.adCampaign ?? ""} ${r.adContent ?? ""}`.toLowerCase().includes(needle));
     });
   }, [rows, kind, towards, part, q, from, to]);
 
@@ -93,7 +94,7 @@ export function MoneyPanel({ isDark }: { isDark: boolean }) {
         </select>
         <input aria-label="From date" type="date" className={sel} value={from} onChange={(e) => setFrom(e.target.value)} />
         <input aria-label="To date" type="date" className={sel} value={to} onChange={(e) => setTo(e.target.value)} />
-        <input aria-label="Search donor" placeholder="Donor, email or payment ID" className={`${sel} min-w-0 flex-1 sm:max-w-[260px]`} value={q} onChange={(e) => setQ(e.target.value)} />
+        <input aria-label="Search donor" placeholder="Donor, email, payment ID or ad" className={`${sel} min-w-0 flex-1 sm:max-w-[260px]`} value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
 
       <Card t={t} className="overflow-x-auto">
@@ -109,7 +110,7 @@ export function MoneyPanel({ isDark }: { isDark: boolean }) {
                   <div className="font-semibold">{r.donorName ?? "—"} {r.anonymous && <Pill tone="muted">Anonymous</Pill>}</div>
                   <div className={t.muted}>{r.donorEmail ?? "—"}</div>
                 </td>
-                <td className="px-3 py-2.5"><div className="font-semibold">{r.towards ?? "—"}</div><div className={t.muted}>{KINDS[r.kind]}</div></td>
+                <td className="px-3 py-2.5"><div className="font-semibold">{r.towards ?? "—"}</div><div className={t.muted}>{KINDS[r.kind]}{r.adCampaign || r.adSource ? ` · ${[r.adSource, r.adCampaign, r.adContent].filter(Boolean).join(" / ")}` : ""}</div></td>
                 <td className="px-3 py-2.5 tabular-nums">{inr(r.cause)}</td>
                 <td className="px-3 py-2.5 tabular-nums">{inr(r.platformFee)}</td>
                 <td className="px-3 py-2.5 tabular-nums">{inr(r.platformSupport)}</td>
