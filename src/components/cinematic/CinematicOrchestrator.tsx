@@ -97,6 +97,48 @@ export function CinematicOrchestrator({
     window.dispatchEvent(new CustomEvent("ck:immersive-nav", { detail: next }));
   }, []);
   const [active, setActive] = useState(false);
+  // Once the reader is fully past the film (or skipped it), the film is taken
+  // out of the page — scroll compensated so nothing on screen moves — and the
+  // hero sits directly above the next section, as if there were no film.
+  // Back at the very top it is put back, so scrolling down plays it again.
+  // A reader still mid-film never triggers this and scrolls through it as usual.
+  const collapsed = useRef(false);
+  const collapse = useCallback(() => {
+    const root = rootRef.current;
+    const cell = root?.closest<HTMLElement>(".ck-hero-film") ?? root;
+    if (!root || !cell || collapsed.current) return;
+    // Pin what follows the film to the same spot on screen. Measured after the
+    // collapse, so a browser's own scroll anchoring (Chrome) isn't counted twice.
+    const before = cell.getBoundingClientRect().bottom;
+    const html = document.documentElement;
+    // Stops an iOS momentum scroll, which would otherwise override the jump.
+    html.style.overflow = "hidden";
+    root.style.display = "none";
+    collapsed.current = true;
+    const targetY = Math.max(0, window.scrollY + (cell.getBoundingClientRect().bottom - before));
+    const lenis = getLenis();
+    if (lenis) {
+      lenis.resize();
+      lenis.scrollTo(targetY, { immediate: true, force: true });
+    } else window.scrollTo({ top: targetY, behavior: "instant" });
+    requestAnimationFrame(() => { html.style.overflow = ""; });
+    ScrollTrigger.refresh();
+    setNav(false);
+    setActive(false);
+  }, [setNav]);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const root = rootRef.current;
+      if (!collapsed.current || !root || window.scrollY > 0) return;
+      root.style.display = "";
+      collapsed.current = false;
+      getLenis()?.resize();
+      ScrollTrigger.refresh();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   // Hide the nav while the story plays. Starts once the hero's bottom edge has
   // passed the top of the screen (or, with no hero, when the film reaches the
@@ -106,22 +148,30 @@ export function CinematicOrchestrator({
     const root = rootRef.current;
     if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const lead = leadInRef?.current;
+    // The film's last frame has fully scrolled off the top of the screen.
+    const gone = ScrollTrigger.create({
+      trigger: root,
+      start: "bottom top",
+      onEnter: () => { if (!collapsed.current) requestAnimationFrame(collapse); },
+    });
     const st = ScrollTrigger.create({
       trigger: lead ?? root,
       start: lead ? "bottom top+=24" : "top top",
       endTrigger: root,
       end: "bottom bottom",
       onToggle: (self) => {
+        if (collapsed.current) return;
         setNav(self.isActive);
         setActive(self.isActive);
       },
     });
     return () => {
       st.kill();
+      gone.kill();
       setNav(false);
       setActive(false);
     };
-  }, [leadInRef, setNav]);
+  }, [leadInRef, setNav, collapse]);
 
   // Jump past the film to "Who we are". One target, header height subtracted
   // once, used by both scroll paths (no scroll-margin, no Lenis offset).
@@ -139,8 +189,9 @@ export function CinematicOrchestrator({
     // nav; this covers a trigger that never fired (chapters still loading).
     setNav(false);
     setActive(false);
+    collapse();
     dest.focus({ preventScroll: true });
-  }, [destinationRef, setNav]);
+  }, [destinationRef, setNav, collapse]);
 
   return (
     <div ref={rootRef} className="ck-cinematic relative w-full">

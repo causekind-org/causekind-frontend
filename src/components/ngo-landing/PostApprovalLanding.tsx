@@ -93,7 +93,7 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
   const journeySteps = [
     {
       num: 1,
-      title: "Post a need",
+      title: "Start your drive",
       desc: "Publish your drive.",
       photo: "/images/ngo-steps/post-a-need.webp",
       alt: "Publishing NGO request",
