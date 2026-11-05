@@ -17,7 +17,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Loader2, Search, CalendarDays, X } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
-const ROLES = ["DONOR", "DONEE", "REPRESENTATIVE", "NGO_PARTNER", "ADMIN", "SUPER_ADMIN"];
+const ROLES = ["DONOR", "DONEE", "REPRESENTATIVE", "NGO_PARTNER", "ADMIN", "SUPER_ADMIN", "CRM_AGENT"];
 
 // Local date, not UTC — toISOString() would roll a late-evening pick in IST
 // back to the previous day.

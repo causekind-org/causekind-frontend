@@ -4029,9 +4029,15 @@ export function superAdminApplyCrmAgentPreset(adminId: number) {
   return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/crm-agent-preset`, { method: "POST" });
 }
 
+export function superAdminRemoveCrmAgent(adminId: number) {
+  return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/crm-agent-preset`, { method: "DELETE" });
+}
+
 // ── Calling CRM ──────────────────────────────────────────────────────────────
 
 export type CrmRole = "DONOR" | "DONEE";
+
+export type CrmCallPurpose = "SUPPORT" | "ONBOARDING" | "FUNDRAISING";
 
 export type CrmContact = {
   userId: number;
@@ -4067,8 +4073,11 @@ export function crmListStaff() {
   return request<CrmStaff[]>("/api/v1/admin/crm/staff");
 }
 
-export function crmRevealPhone(userId: number) {
-  return request<{ phone: string }>(`/api/v1/admin/crm/contacts/${userId}/reveal-phone`, { method: "POST" });
+export function crmRevealPhone(userId: number, purpose: CrmCallPurpose) {
+  return request<{ phone: string }>(`/api/v1/admin/crm/contacts/${userId}/reveal-phone`, {
+    method: "POST",
+    body: JSON.stringify({ purpose }),
+  });
 }
 
 export function crmSetDoNotCall(userId: number, reason: string) {

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
   crmAssignContact, crmClearDoNotCall, crmListContacts, crmListStaff, crmRevealPhone, crmSetDoNotCall,
-  type CrmContact, type CrmRole, type CrmStaff, type SaPage,
+  type CrmCallPurpose, type CrmContact, type CrmRole, type CrmStaff, type SaPage,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +33,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   const [error, setError] = useState<string | null>(null);
   const [staff, setStaff] = useState<CrmStaff[]>([]);
   const [revealed, setRevealed] = useState<Record<number, string>>({});
+  const [purposes, setPurposes] = useState<Record<number, CrmCallPurpose>>({});
   const [busyId, setBusyId] = useState<number | null>(null);
   const [prompt, setPrompt] = useState<ReasonPrompt | null>(null);
   const [reason, setReason] = useState("");
@@ -58,9 +59,11 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   }, [canManage]);
 
   async function reveal(userId: number) {
+    const purpose = purposes[userId];
+    if (!purpose) return;
     setBusyId(userId);
     try {
-      const { phone } = await crmRevealPhone(userId);
+      const { phone } = await crmRevealPhone(userId, purpose);
       setRevealed((prev) => ({ ...prev, [userId]: phone }));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not reveal this number.");
@@ -116,7 +119,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" checked={noRequest}
             onChange={(e) => { setNoRequest(e.target.checked); setPage(0); }} />
-          Registered, no request yet
+          Donees who never started a request
         </label>
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" checked={unassigned}
@@ -145,7 +148,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Badge variant="secondary">{c.role === "DONOR" ? "Donor" : "Donee"}</Badge>
-                {c.role === "DONEE" && !c.hasRequest && <Badge variant="outline">No request yet</Badge>}
+                {c.role === "DONEE" && !c.hasRequest && <Badge variant="outline">Never started a request</Badge>}
                 {c.doNotCall && <Badge variant="destructive">Do not call</Badge>}
               </div>
             </div>
@@ -160,9 +163,19 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                   <Phone className="size-4" aria-hidden /> {revealed[c.userId]}
                 </a>
               ) : (
-                <Button size="sm" disabled={busyId === c.userId} onClick={() => reveal(c.userId)}>
-                  <Phone className="size-4" aria-hidden /> Call
-                </Button>
+                <>
+                  <select aria-label={`Why are you calling ${c.fullName}?`} className="h-8 rounded-md border bg-background px-2 text-sm"
+                    value={purposes[c.userId] ?? ""}
+                    onChange={(e) => setPurposes((prev) => ({ ...prev, [c.userId]: e.target.value as CrmCallPurpose }))}>
+                    <option value="" disabled>Call purpose</option>
+                    <option value="SUPPORT">Support</option>
+                    <option value="ONBOARDING">Onboarding</option>
+                    {c.role === "DONOR" && <option value="FUNDRAISING" disabled>Fundraising (needs calling basis)</option>}
+                  </select>
+                  <Button size="sm" disabled={!purposes[c.userId] || busyId === c.userId} onClick={() => reveal(c.userId)}>
+                    <Phone className="size-4" aria-hidden /> Call
+                  </Button>
+                </>
               ))}
               {!c.doNotCall && (
                 <Button size="sm" variant="outline" onClick={() => { setPrompt({ userId: c.userId, clearing: false }); setReason(""); }}>

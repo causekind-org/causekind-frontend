@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
-  superAdminApplyCrmAgentPreset, superAdminListAdmins, superAdminSetAdminPermissions,
+  superAdminApplyCrmAgentPreset, superAdminListAdmins, superAdminRemoveCrmAgent, superAdminSetAdminPermissions,
   type AdminAccount,
 } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -107,13 +107,26 @@ export function AdminPermissionsPanel() {
   }
 
   async function applyCrmAgent(admin: AdminAccount) {
-    if (!window.confirm(`Make ${admin.fullName} a CRM agent? This revokes everything except the call list.`)) return;
+    if (!window.confirm(`Make ${admin.fullName} a CRM agent? They are logged out and can then only use the call list.`)) return;
     setSavingKey(`${admin.id}:preset`);
     try {
       const permissions = await superAdminApplyCrmAgentPreset(admin.id);
-      setAdmins(prev => prev.map(a => a.id === admin.id ? { ...a, permissions } : a));
+      setAdmins(prev => prev.map(a => a.id === admin.id ? { ...a, role: "CRM_AGENT", permissions } : a));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to apply the preset.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  async function removeCrmAgent(admin: AdminAccount) {
+    if (!window.confirm(`Return ${admin.fullName} to admin? They are logged out and start with no permissions.`)) return;
+    setSavingKey(`${admin.id}:preset`);
+    try {
+      const permissions = await superAdminRemoveCrmAgent(admin.id);
+      setAdmins(prev => prev.map(a => a.id === admin.id ? { ...a, role: "ADMIN", permissions } : a));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to remove the CRM agent role.");
     } finally {
       setSavingKey(null);
     }
@@ -144,6 +157,14 @@ export function AdminPermissionsPanel() {
               <div className="flex items-center gap-2">
                 {admin.role === "SUPER_ADMIN" && <Badge variant="secondary">Super Admin — always full access</Badge>}
                 {!admin.active && <Badge variant="destructive">Inactive</Badge>}
+                {admin.role === "CRM_AGENT" && (
+                  <>
+                    <Badge variant="secondary">CRM agent</Badge>
+                    <Button size="sm" variant="outline" disabled={savingKey === `${admin.id}:preset`} onClick={() => removeCrmAgent(admin)}>
+                      Return to admin
+                    </Button>
+                  </>
+                )}
                 {admin.role === "ADMIN" && (
                   <Button size="sm" variant="outline" disabled={savingKey === `${admin.id}:preset`} onClick={() => applyCrmAgent(admin)}>
                     Make CRM agent
@@ -152,7 +173,7 @@ export function AdminPermissionsPanel() {
               </div>
             </div>
             <div className="space-y-3">
-              {CAPABILITY_GROUPS.map(group => (
+              {CAPABILITY_GROUPS.filter(g => admin.role !== "CRM_AGENT" || g.label === "Calling CRM").map(group => (
                 <div key={group.label}>
                   <p className="text-[11px] uppercase tracking-wide text-muted-foreground mb-1.5">
                     {group.label}
