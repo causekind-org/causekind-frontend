@@ -104,6 +104,7 @@ export function MoneyDonationForm() {
   const [submitting, setSubmitting] = useState(false);
   // PAN card photo (2026-10-08): read by AI to fill the PAN, attached to the
   // donation once it exists. Optional — typing the PAN still works.
+  const [wants80g, setWants80g] = useState(false);
   const [panPhoto, setPanPhoto] = useState<File | null>(null);
   const [panPreview, setPanPreview] = useState<string | null>(null);
   // The browser can't draw every file the PAN reader accepts (PDF, TIFF, HEIC):
@@ -204,7 +205,7 @@ export function MoneyDonationForm() {
   };
 
   // The card's name vs the Full name field — shown as a note, and blocks the donation.
-  const panNameMismatch = !!cardName && formData.fullName.trim().length >= 2 && !panNameMatches(formData.fullName, cardName);
+  const panNameMismatch = wants80g && !!cardName && formData.fullName.trim().length >= 2 && !panNameMatches(formData.fullName, cardName);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,14 +247,12 @@ export function MoneyDonationForm() {
       toast.error(`Please enter a valid ${maxPhoneLength}-digit mobile number.`);
       return;
     }
-    // Required since 2026-09-18. The trust reports every donor's PAN in Form
-    // 10BD, so a donation taken without one cannot be included in that return.
-    // The same rule is enforced on the DTO — this check only saves a round trip.
-    if (!formData.panNumber) {
+    // 80G is the donor's choice; without it the donation gets the certificate only.
+    if (wants80g && !formData.panNumber) {
       toast.error('Please enter your PAN — it is required for your 80G receipt.');
       return;
     }
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
+    if (wants80g && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
       toast.error('PAN must be five letters, four digits and one letter, e.g. ABCDE1234F.');
       return;
     }
@@ -284,15 +283,13 @@ export function MoneyDonationForm() {
         // load-bearing — but omitting it would fail validation before it got there.
         email: donorEmail || formData.email,
         mobileNumber: fullPhone || undefined,
-        // Sent as-is, never coerced to undefined: it is validated non-blank just
-        // above, and the DTO now rejects a missing one.
-        panNumber: formData.panNumber,
+        panNumber: wants80g ? formData.panNumber : '',
         address: formData.address.trim() || undefined,
       });
 
       // Attach the card photo now that the donation exists. Best-effort: the
       // donation must not fail over the photo, the typed PAN is what counts.
-      if (panPhoto) {
+      if (wants80g && panPhoto) {
         uploadTrustDonationPanPhoto(order.donationId, panPhoto, order.panUploadToken).catch(() => { /* optional */ });
       }
 
@@ -750,6 +747,11 @@ export function MoneyDonationForm() {
                         />
                       </div>
                     </div>
+                    <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-foreground sm:col-span-2">
+                      <input id="wants80g" type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} className="size-5 shrink-0 accent-amber-700" />
+                      I want an 80G tax receipt
+                    </label>
+                    {wants80g && (
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="panNumber" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
                         PAN{' '}
@@ -825,6 +827,7 @@ export function MoneyDonationForm() {
                         </p>
                       )}
                     </div>
+                    )}
                     {/* Spans both columns so it costs exactly one grid row.
                         Deliberately NOT required and deliberately a single line:
                         this sits on the last screen before a payment, and an 80G
