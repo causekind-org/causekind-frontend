@@ -119,7 +119,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" checked={noRequest}
             onChange={(e) => { setNoRequest(e.target.checked); setPage(0); }} />
-          Donees who never started a request
+          Never created a request
         </label>
         <label className="flex items-center gap-1.5 text-sm">
           <input type="checkbox" checked={unassigned}
@@ -148,7 +148,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
               </div>
               <div className="flex flex-wrap items-center gap-1.5">
                 <Badge variant="secondary">{c.role === "DONOR" ? "Donor" : "Donee"}</Badge>
-                {c.role === "DONEE" && !c.hasRequest && <Badge variant="outline">Never started a request</Badge>}
+                {c.role === "DONEE" && !c.hasRequest && <Badge variant="outline">Never created a request</Badge>}
                 {c.doNotCall && <Badge variant="destructive">Do not call</Badge>}
               </div>
             </div>
