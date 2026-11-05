@@ -1,3 +1,19 @@
+export type RedonationNotice = {
+  issueId: number;
+  requestId: number;
+  requestTitle: string;
+  itemTitle?: string | null;
+  issueType: string;
+  promptType: "QUANTITY" | "QUALITY";
+  requestedQuantity: number;
+  sentQuantity: number;
+  receivedQuantity: number;
+  missingQuantity: number;
+  stillNeededQuantity: number;
+  adminMessage?: string | null;
+  status: "ACTIVE" | "DISMISSED" | "FULFILLED";
+};
+
 import { filterVisibleListings, hideListingLocally } from "./listingActions";
 import { errorIdOf, toastErrorId } from "./errorId";
 
@@ -577,6 +593,7 @@ export type UserProfile = {
   longitude: number | null;
   /** Donee only: set when a name change leaves the ID document contradicting the profile. */
   documentWarning?: string;
+  addressLandmark?: string | null;
 };
 
 export function getProfile() {
@@ -2361,6 +2378,7 @@ export type DonationOffer = {
   receivedQuantity: number | null;
   /** ISO timestamp when the 48-hour issue reporting window closes, or null if not yet dual-confirmed. */
   windowExpiresAt?: string | null;
+  redonationNotice?: RedonationNotice | null;
 };
 
 /**
@@ -3060,6 +3078,11 @@ export function getMyDonationOffers(includeArchived = false) {
  * status, rejection reason, AI assessments, history and audit trail all stay, and
  * admins, support and the donee are unaffected. Reversible via {@link unhideOffer}.
  */
+
+export function dismissOfferRedonation(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/dismiss-redonation`, { method: "POST" });
+}
+
 export function hideOffer(offerId: number) {
   return request<CancellationOption>(`/api/v1/offers/${offerId}/hide`, { method: "POST" });
 }
@@ -3248,8 +3271,8 @@ export function adminReviewPurchaseProof(offerId: number, data: { action: "APPRO
  * `expectedBy` resets the delivery date on a retry; REQUEST_INFO asks `audience`.
  */
 export type PurchaseResolution =
-  | { action: "RETRY_DELIVERY"; reason: string; expectedBy?: string }
-  | { action: "CANCEL_REMAINDER"; reason: string; finalQuantity?: number }
+  | { action: "RETRY_DELIVERY" | "REQUEST_REMAINING_DONOR"; reason: string; expectedBy?: string }
+  | { action: "CANCEL_REMAINDER" | "CLOSED_NO_ACTION"; reason: string; finalQuantity?: number }
   | { action: "REQUEST_INFO"; reason: string; audience: PurchaseInfoAudience };
 
 export function replyToPurchaseInfoRequest(offerId: number, message: string) {
@@ -3291,6 +3314,13 @@ export type AdminIssueDetail = {
     resolvedAt: string | null; resolutionSummary: string | null; linkedRecords: string[];
   } | null;
   timeline: { at: string | null; kind: "ISSUE" | "STATUS" | "CASE"; actor: string | null; text: string; internal: boolean }[];
+  requestedQuantity?: number | null;
+  sentQuantity?: number | null;
+  receivedQuantity?: number | null;
+  missingQuantity?: number | null;
+  adminDecision?: string | null;
+  donorNotificationStatus?: string | null;
+  requestId?: number | null;
 };
 
 export function adminListIssues(params: { status?: "open" | "resolved" | "all"; source?: AdminIssueSource | ""; q?: string; page?: number; size?: number } = {}) {
