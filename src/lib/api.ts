@@ -585,6 +585,7 @@ export type UserProfile = {
   id: number;
   email: string;
   fullName: string;
+  addressLandmark?: string | null;
   organizationName?: string;
   phone: string;
   city: string | null;
@@ -6917,11 +6918,11 @@ export const fundraisers = {
     ? request<Donation>(`/api/v1/donations/guest/${donationId}/check`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
     : request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
-  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }) =>
-    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, ...(tax ?? {}) }) }),
+  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }, tipAmount = 0) =>
+    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...(tax ?? {}) }) }),
   /** The same donation without an account: the name and email come from the form, and the reply carries its token. */
-  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string }) =>
-    request<FundraiserDonationStart>("/api/v1/donations/guest", { method: "POST", silent401: true, body: JSON.stringify({ campaignId, amount, anonymous, ...guest, ...(tax ?? {}) }) }),
+  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string }, tipAmount = 0) =>
+    request<FundraiserDonationStart>("/api/v1/donations/guest", { method: "POST", silent401: true, body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...guest, ...(tax ?? {}) }) }),
   /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
   checkout: (donationId: number, guestToken?: string | null) => guestToken
     ? request<DonationOrder>(`/api/v1/donations/guest/${donationId}/checkout`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
@@ -7212,6 +7213,17 @@ const qs = (o: Record<string, string | number | undefined | null>) => {
   return s ? `?${s}` : "";
 };
 
+// Backend: SuperAdminMoneyController. cause + platformFee is the donation; platformSupport is on top of it.
+export type SaMoneyKind = "FUNDRAISER" | "SAHAS" | "TRUST" | "CAMPAIGN" | "SUPPORT_ONLY";
+export type SaMoneyRow = {
+  id: string; at: string | null; kind: SaMoneyKind; campaignId: number | null; towards: string | null;
+  donorName: string | null; donorEmail: string | null; anonymous: boolean;
+  cause: number; platformFee: number; platformSupport: number; paid: number; paymentId: string | null;
+};
+export const superAdminMoney = {
+  rows: () => request<SaMoneyRow[]>("/api/v1/super-admin/money"),
+};
+
 export const superAdminFundraising = {
   overview: () => request<SaFrOverview>(`${SA_FR}/overview`),
   campaigns: (f: { q?: string; status?: string; category?: string; flag?: string; sort?: string } = {}) =>
@@ -7347,7 +7359,7 @@ export type SahasCampaignDetail = {
   items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
 };
 export type SahasDonationInput = {
-  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber?: string; address?: string;
+  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber?: string; tipAmount?: number; address?: string;
 };
 export type SahasDonationRow = {
   id: number; donor: string; anonymous: boolean; amount: number; platformFee: number | null; status: string;

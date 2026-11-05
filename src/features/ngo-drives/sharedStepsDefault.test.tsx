@@ -29,7 +29,7 @@ describe("shared offer steps without the drive-only props (donor↔donee flow)",
 
   it("OfferReviewStep: small cropped thumbnail strip and the Your location section", () => {
     const model = {
-      ...emptyOfferModel, quantity: "2", pickupCity: "Pune", pickupLocality: "Kothrud", pickupPincode: "411038",
+      ...emptyOfferModel, quantity: "2", pickupCity: "Pune", pickupLocality: "Kothrud", pickupPincode: "411038", latitude: 18.5, longitude: 73.8,
       photos: [{ id: "a", status: "uploaded", remoteUrl: "https://cdn.test/a.png" }, { id: "b", status: "uploaded", remoteUrl: "https://cdn.test/b.png" }],
     } as never;
     render(<OfferReviewStep model={model} errors={{}} requestTitle="School bags" compat={null}

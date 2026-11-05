@@ -22,6 +22,7 @@ import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPane
 import { GovernancePanel } from "@/components/super-admin/GovernancePanel";
 import { OperationsPanel } from "@/components/super-admin/OperationsPanel";
 import { FundraisersPanel } from "@/components/super-admin/fundraisers/FundraisersPanel";
+import { MoneyPanel } from "@/components/super-admin/MoneyPanel";
 import { DonationDetailModal } from "@/components/super-admin/DonationDetailModal";
 import { ListingDetailModal } from "@/components/super-admin/ListingDetailModal";
 import { RequestDetailModal } from "@/components/super-admin/RequestDetailModal";
@@ -239,6 +240,7 @@ const NAV = [
   { key: "users",         label: "Users (raw)", icon: Users },
   { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
   { key: "donations",     label: "Donations",   icon: CreditCard },
+  { key: "money",         label: "Money",       icon: HandCoins },
   { key: "item-requests", label: "Requests",    icon: ClipboardList },
   { key: "item-listings", label: "Listings",    icon: Package },
   { key: "matches",       label: "Matches",     icon: Handshake },
@@ -428,7 +430,7 @@ function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => 
         </div>
 
         {/* Total raised */}
-        <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 flex flex-col justify-center ${th.card}`}>
+        <button type="button" onClick={() => onOpen("money")} className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 flex flex-col justify-center text-left ${th.card}`}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className={`w-4 h-4 ${th.positive}`} />
             <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
@@ -438,8 +440,8 @@ function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => 
           <p className={`text-2xl sm:text-4xl font-black tabular-nums break-words ${th.positive}`}>
             ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
           </p>
-          <p className={`text-2xs sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations.</p>
-        </div>
+          <p className={`text-2xs sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations. Open for the breakdown.</p>
+        </button>
       </div>
     </div>
   );
@@ -557,6 +559,7 @@ export default function SuperAdminPage() {
       case "governance": return <GovernancePanel isDark={isDark} />;
       case "operations": return <OperationsPanel isDark={isDark} />;
       case "fundraisers": return <FundraisersPanel isDark={isDark} />;
+      case "money":       return <MoneyPanel isDark={isDark} />;
       case "users":         return <EntityTable entity="users"         title="Users"         columns={USER_COLS}    canCreate createColumns={USER_CREATE_COLS} isDark={isDark}
                               onView={(row) => router.push(`/admin/dashboard?journeyUser=${row.id}`)} />;
       case "campaigns":     return <EntityTable entity="campaigns"     title="Campaigns"     columns={CAMPAIGN_COLS} isDark={isDark} />;

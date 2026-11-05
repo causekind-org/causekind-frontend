@@ -2449,6 +2449,28 @@ body.mobile-menu-open {
     height: 44px;
   }
   header[data-home-hero] .ck-mobile-header > button:hover { background: rgb(255 255 255 / 0.12); }
+  /* Over the photograph the logo's dark "Cause" and the menu glyph sit on
+     whatever the image has there; give each a frosted cream patch of its own. */
+  header[data-home-hero="top"] .ck-mobile-header > a,
+  header[data-home-hero="top"] .ck-mobile-header > button {
+    background: rgb(250 248 245 / 0.82);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid rgb(255 255 255 / 0.6);
+    box-shadow: 0 6px 18px -8px rgb(28 20 16 / 0.45);
+  }
+  header[data-home-hero="top"] .ck-mobile-header > a {
+    padding: 0.4rem 1rem;
+    border-radius: 9999px;
+  }
+  header[data-home-hero="top"] .ck-mobile-header > button { color: #292524; }
+  header[data-home-hero="top"] .ck-mobile-header > button:hover { background: rgb(250 248 245 / 0.95); }
+  .dark header[data-home-hero="top"] .ck-mobile-header > a,
+  .dark header[data-home-hero="top"] .ck-mobile-header > button {
+    background: rgb(9 9 11 / 0.72);
+    border-color: rgb(255 255 255 / 0.12);
+    color: #fff6ed;
+  }
 
 
   /* -- Mobile logo dark-mode swap --
@@ -5342,3 +5364,50 @@ main:focus:not(:focus-visible) {
   white-space: pre-line;
   min-width: 0;
 }
+/* ── Calm header ───────────────────────────────────────────────────────────
+   The header stays still. Its looping animations (logo shimmer, Donate
+   breathe/sweep/heartbeat), sweeping sheens, glow rings, 3D tilt and nested
+   backdrop blurs flickered over the drifting hero photo, and on Chrome/macOS
+   painted buttons blank. Inside the header they are all off; surfaces are
+   plain and solid. (`data-calm-header` is set in Navbar.tsx.) */
+header[data-calm-header] *,
+header[data-calm-header] *::before,
+header[data-calm-header] *::after {
+  animation: none !important;
+}
+header[data-calm-header] .ck-donate-sheen,
+header[data-calm-header] .ck-donate-ring,
+header[data-calm-header] .glass-pill::after,
+header[data-calm-header] .glass-liquid::before,
+header[data-calm-header] .glass-liquid::after {
+  display: none !important;
+}
+header[data-calm-header] .ck-donate-cta {
+  box-shadow: none !important;
+}
+header[data-calm-header] .glass-pill,
+header[data-calm-header] .glass-liquid {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e2d5 !important;
+  box-shadow: none !important;
+}
+.dark header[data-calm-header] .glass-pill,
+.dark header[data-calm-header] .glass-liquid {
+  background: #27272a !important;
+  border-color: #3f3f46 !important;
+}
+header[data-calm-header] .glass-3d,
+header[data-calm-header] .glass-3d:hover,
+header[data-calm-header] .glass-3d:active {
+  transform: none !important;
+  filter: none !important;
+  will-change: auto;
+}
+header[data-calm-header] .ck-logo-kind-shimmer {
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  color: #b04a15;
+}
+.dark header[data-calm-header] .ck-logo-kind-shimmer { color: #ff8a4c; }

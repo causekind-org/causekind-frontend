@@ -43,6 +43,7 @@ type RazorpayCtor = new (opts: Record<string, unknown>) => { open: () => void };
 const rzpCtor = () => (window as unknown as { Razorpay?: RazorpayCtor }).Razorpay;
 
 const EXAMPLES = [500, 1000, 2500, 5000];
+const SUPPORT_AMOUNTS = [0, 30, 50, 100];
 /** Razorpay standard rate incl. GST (2% + 18%), shown as an estimate only. */
 const GATEWAY_PERCENT = 2.36;
 
@@ -78,12 +79,12 @@ type Tax = { panNumber: string; address: string; photo: File };
 /** Someone donating without an account (2026-11-04); null for a signed-in donor. */
 type Guest = { fullName: string; email: string; mobileNumber: string };
 
-async function checkoutReusingDonation(campaignId: number, amount: number, anonymous: boolean, fresh: boolean,
+async function checkoutReusingDonation(campaignId: number, amount: number, support: number, anonymous: boolean, fresh: boolean,
                                        tax: Tax | null, guest: Guest | null, skipPhoto = false): Promise<CheckoutResult> {
   const key = pendingKey(campaignId);
   // The details are frozen on the donation, so different ones (or a different kind of donor) need a new donation.
   const who = guest ? JSON.stringify(guest) : null;
-  type Saved = { donationId: number; amount: number; anonymous: boolean; pan: string | null; photo: boolean; who?: string | null };
+  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; photo: boolean; who?: string | null };
   let saved: Saved | null = null;
   try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
   const remember = (s: Saved) => { try { sessionStorage.setItem(key, JSON.stringify(s)); } catch { /* fine */ } };
@@ -98,7 +99,7 @@ async function checkoutReusingDonation(campaignId: number, amount: number, anony
     remember({ ...s, photo: true });
     return null;
   };
-  if (!fresh && saved && saved.amount === amount && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.who ?? null) === who) {
+  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.who ?? null) === who) {
     const stop = await ensurePhoto(saved);
     if (stop) return stop;
     try { return { order: await fundraisers.checkout(saved.donationId, guestTokenFor(saved.donationId)) }; }
@@ -118,10 +119,10 @@ async function checkoutReusingDonation(campaignId: number, amount: number, anony
   }
   const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address } : undefined;
   const started = guest
-    ? await fundraisers.donateAsGuest(campaignId, amount, anonymous, guest, taxDetails)
-    : await fundraisers.donate(campaignId, amount, anonymous, taxDetails);
+    ? await fundraisers.donateAsGuest(campaignId, amount, anonymous, guest, taxDetails, support)
+    : await fundraisers.donate(campaignId, amount, anonymous, taxDetails, support);
   if (started.guestToken) rememberGuestToken(started.donationId, started.guestToken);
-  const fresh_: Saved = { donationId: started.donationId, amount, anonymous, pan: tax?.panNumber ?? null, photo: false, who };
+  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, photo: false, who };
   remember(fresh_);
   const stop = await ensurePhoto(fresh_);
   if (stop) return stop;
@@ -147,6 +148,9 @@ export default function DonatePage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prior, setPrior] = useState<Prior | null>(null);
+  // Optional support to CauseKind: starts at ₹30, the donor can change it, and it is never part of the donation.
+  const [support, setSupport] = useState(30);
+  const [customSupport, setCustomSupport] = useState<string | null>(null);
   // 80G (CA approved, 2026-10-30): only when the server offers it.
   const [want80G, setWant80G] = useState(false);
   const [panFile, setPanFile] = useState<File | null>(null);
@@ -181,6 +185,7 @@ export default function DonatePage() {
   const invalid = !Number.isFinite(value) || value < 1 || tooMuch;
   const fee = Number.isFinite(value) ? Math.round(value * d.platformFeePercent) / 100 : 0;
   const gateway = Number.isFinite(value) ? Math.round(value * GATEWAY_PERCENT) / 100 : 0;
+  const supportValue = customSupport === null ? support : Number(customSupport) || 0;
   const offer80G = !!d.taxReceiptOffered;
   const panClean = pan.replace(/\s/g, "").toUpperCase();
   const donorName = user ? user.fullName ?? "" : guestName.trim();
@@ -226,7 +231,7 @@ export default function DonatePage() {
       const ok = await loadRazorpay();
       const Rzp = rzpCtor();
       if (!ok || !Rzp) { setError(ERR_OPEN); setBusy(false); return; }
-      const result = await checkoutReusingDonation(Number(id), value, anonymous, fresh, tax, guest, skipPhoto);
+      const result = await checkoutReusingDonation(Number(id), value, supportValue, anonymous, fresh, tax, guest, skipPhoto);
       if ("redirect" in result) { router.push(`/fundraisers/donations/${result.redirect}`); return; }
       if ("prior" in result) { setPrior(result.prior); setBusy(false); return; }
       if ("photoFailed" in result) { setPhotoFailed(true); setPhotoReason(result.reason); setBusy(false); return; }
@@ -281,6 +286,20 @@ export default function DonatePage() {
               </div>
               {remaining != null && <p className={s.small}><strong>{formatINR(remaining)}</strong> {ui("still needed to reach the target. You can give up to this amount.")}</p>}
               <p className={`${s.small} ${s.muted}`}><UiText>One-time donation in INR.</UiText></p>
+              <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend style={{ fontWeight: 600, marginBottom: 4 }}><UiText>Support the CauseKind platform (optional)</UiText></legend>
+                <p className={`${s.small} ${s.muted}`} style={{ marginBottom: 8 }}><UiText>This helps us keep CauseKind running. It is separate from your donation, does not go to the fundraiser, and is not covered by the 80G receipt.</UiText></p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SUPPORT_AMOUNTS.map((v) => {
+                    const on = customSupport === null && support === v;
+                    return <button key={v} type="button" aria-pressed={on} onClick={() => { setSupport(v); setCustomSupport(null); }}
+                      style={{ minHeight: 44, padding: "0 14px", borderRadius: 10, fontWeight: 600, cursor: "pointer", border: on ? "2px solid #b04a15" : "1px solid #cfc3b6", background: on ? "#fdf6f1" : "#fff", color: on ? "#7a3410" : "#1f140c" }}>{v === 0 ? ui("No thanks") : formatINR(v)}</button>;
+                  })}
+                  <button type="button" aria-pressed={customSupport !== null} onClick={() => setCustomSupport("")}
+                    style={{ minHeight: 44, padding: "0 14px", borderRadius: 10, fontWeight: 600, cursor: "pointer", border: customSupport !== null ? "2px solid #b04a15" : "1px solid #cfc3b6", background: customSupport !== null ? "#fdf6f1" : "#fff", color: customSupport !== null ? "#7a3410" : "#1f140c" }}><UiText>Other</UiText></button>
+                </div>
+                {customSupport !== null && <label style={{ display: "block", marginTop: 10, fontWeight: 600 }}><UiText>Support amount (₹)</UiText><input className={s.in} inputMode="numeric" maxLength={5} value={customSupport} onChange={(e) => setCustomSupport(e.target.value.replace(/\D/g, ""))} style={{ display: "block", marginTop: 6 }} /></label>}
+              </fieldset>
               <div><button type="button" className={`${s.btn} ${s.bp}`} onClick={() => { setTried(true); if (!invalid) { setStep(1); window.scrollTo({ top: 0 }); } else document.getElementById("cu")?.focus(); }}><UiText>Continue</UiText></button></div>
             </>
           )}
@@ -414,13 +433,14 @@ export default function DonatePage() {
                   [t("platformFee", { pct: d.platformFeePercent }), `− ${formatINR(fee)}`],
                   [ui("Payment provider charges (about)"), `− ${formatINR(gateway)}`],
                   [ui("Reaches the beneficiary (about)"), <strong key="r">{formatINR(Math.max(0, value - fee - gateway))}</strong>],
+                  ...(supportValue > 0 ? [[ui("Support to CauseKind (not part of your donation)"), formatINR(supportValue)] as [string, string]] : []),
                   [ui("Shown publicly as"), anonymous ? ui("Anonymous") : (donorName || ui("Your name"))],
                   ...(user ? [] : [[ui("Documents sent to"), donorEmail] as [string, string]]),
                   ...(offer80G ? [[ui("80G receipt"), tax ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
                 ].map(([k, v], i) => (
                   <div key={i} className={s.tabular} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", borderTop: i ? "1px solid #efe7de" : 0 }}><span>{k}</span><span style={{ textAlign: "right" }}>{v}</span></div>
                 ))}
-                <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #efe7de", fontWeight: 700, fontSize: 18 }}><span><UiText>You pay</UiText></span><span>{formatINR(value)}</span></div>
+                <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #efe7de", fontWeight: 700, fontSize: 18 }}><span><UiText>You pay</UiText></span><span>{formatINR(value + supportValue)}</span></div>
               </section>
               <section className={s.card} style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6, borderColor: "#e8c98a", background: "#fffbf3" }} aria-labelledby="pt">
                 <h2 id="pt" style={{ fontSize: 15, fontWeight: 700 }}><UiText>Before you pay</UiText></h2>
@@ -456,7 +476,7 @@ export default function DonatePage() {
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => setStep(1)}><UiText>Back</UiText></button>
-                <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy || prior !== null || photoFailed}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value) })}</button>
+                <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy || prior !== null || photoFailed}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value + supportValue) })}</button>
               </div>
             </>
           )}

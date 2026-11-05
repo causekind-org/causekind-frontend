@@ -6,8 +6,6 @@ import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useRef, useCallback } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
-// @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
-import SpecularButton from "@/components/SpecularButton";
 import Link from "@/components/AppLink";
 import { DiwaliVideoLogo } from "@/components/brand/DiwaliVideoLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
@@ -815,17 +813,23 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header
+      <header data-calm-header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
         style={{
+          // Slide only. Animating opacity here made Chrome flatten the glass
+          // (backdrop-filter) buttons inside, and on the way back they could
+          // stay painted as blank black circles. The shadow goes with the
+          // header so its edge never peeks below the top of the screen.
+          // No backdrop blur on the header itself either: its glass buttons
+          // blur their own backdrop, and a blur nested in a blur over the
+          // drifting hero photo flickers and paints blank on Chrome/macOS.
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
-          opacity: immersive ? 0 : 1,
+          boxShadow: immersive ? "none" : undefined,
           pointerEvents: immersive ? "none" : undefined,
-          transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
-          willChange: "transform",
+          transition: "transform 0.45s ease, box-shadow 0.3s ease",
         }}
-        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
+        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/95 lg:dark:bg-zinc-950/95 border-b border-[#e5e2d5] dark:border-stone-850 ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
@@ -1124,28 +1128,14 @@ export function SiteHeader() {
                 themselves since the page already is the login/register form. */}
             {!(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
-              <SpecularButton
-                size="sm"
-                radius={999}
-                tint={roleColors.accent}
-                tintOpacity={1}
-                textColor="#ffffff"
-                lineColor={roleColors.highlight}
-                baseColor={roleColors.deep}
-                intensity={1}
-                shineSize={14}
-                shineFade={35}
-                thickness={1.2}
-                followMouse
-                proximity={220}
+              <button
+                type="button"
                 onClick={() => (user ? requestLogout() : router.push("/login"))}
-                className="font-bold"
+                className="inline-flex items-center gap-1.5 h-10 rounded-full px-5 text-sm font-bold text-white bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
               >
-                <span className="inline-flex items-center gap-1.5">
-                  {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  {user ? t("nav.signOut") : t("nav.logIn")}
-                </span>
-              </SpecularButton>
+                {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                {user ? t("nav.signOut") : t("nav.logIn")}
+              </button>
               <LoginNudgeBubble user={user} />
             </div>
             )}
