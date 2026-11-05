@@ -569,6 +569,7 @@ export type UserProfile = {
   id: number;
   email: string;
   fullName: string;
+  addressLandmark?: string | null;
   organizationName?: string;
   phone: string;
   city: string | null;
