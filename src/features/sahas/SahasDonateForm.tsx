@@ -9,8 +9,9 @@ import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
 
-const MIN = 100;
+const MIN = 101;
 const PRESETS = [500, 1000, 2000];
+const TIPS = [0, 20, 50, 100];
 const FEE_PERCENT = 5;
 const MAX_PAN_FILE = 5 * 1024 * 1024;
 const field = "min-h-[42px] w-full rounded-lg border border-[#D9C9B8] bg-white px-3 text-[15px] font-normal focus:border-[#b04a15] focus:outline-none dark:border-zinc-700 dark:bg-zinc-950";
@@ -43,6 +44,8 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [tip, setTip] = useState(0);
+  const [customTip, setCustomTip] = useState<string | null>(null);
   const [anonymous, setAnonymous] = useState(false);
   const [wants80g, setWants80g] = useState(false);
   const [pan, setPan] = useState("");
@@ -83,12 +86,15 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const valid = Number.isFinite(value) && value >= MIN && value <= remaining;
   const nameOk = name.trim().length >= 2;
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
-  const phoneOk = phone === "" || /^[6-9][0-9]{9}$/.test(phone);
+  const cleanPhone = phone.replace(/[\s-]/g, "");
+  const phoneOk = phone === "" || /^\+?[0-9]{7,15}$/.test(cleanPhone);
+  const tipValue = customTip === null ? tip : Number(customTip) || 0;
+  const total = value + tipValue;
   const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
   const fileOk = panFile !== null && panFile.size <= MAX_PAN_FILE;
   const detailsOk = (user ? true : nameOk && emailOk) && phoneOk;
   const taxOk = !wants80g || (panOk && address.trim().length >= 10 && fileOk);
-  const amountError = amount === "" ? null : value < MIN ? ui("The minimum donation is ₹100.")
+  const amountError = amount === "" ? null : value < MIN ? ui("The minimum donation is ₹101.")
     : value > remaining ? `${ui("This campaign needs only")} ₹${remaining.toLocaleString("en-IN")}.` : null;
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
@@ -113,7 +119,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     try {
       if (!(await loadCheckout())) { setError(ui("Couldn't load the payment window. Check your connection.")); return; }
       const start = await sahasCampaigns.donate(data.campaignId, {
-        amount: value, fullName: name.trim(), email: email.trim(), mobileNumber: phone.trim(), anonymous,
+        amount: value, fullName: name.trim(), email: email.trim(), mobileNumber: cleanPhone, tipAmount: tipValue, anonymous,
         panNumber: wants80g ? pan.trim() : undefined, address: wants80g ? address.trim() : undefined,
       });
       const token = start.panUploadToken ?? "";
@@ -122,7 +128,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       new window.Razorpay({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
         name: "Sahas Charitable Trust", description: c.title, order_id: order.razorpayOrderId,
-        prefill: { email: user?.email ?? email.trim(), contact: phone.trim() }, theme: { color: "#b04a15" },
+        prefill: { email: user?.email ?? email.trim(), contact: cleanPhone }, theme: { color: "#b04a15" },
         handler: () => { setResult("pending"); watch(start.donationId, token); },
         modal: { ondismiss: () => setBusy(false) },
       }).open();
@@ -180,7 +186,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
         <input inputMode="numeric" className={field} value={amount} maxLength={9} onChange={(e) => setAmount(e.target.value.replace(/\D/g, "").replace(/^0+/, ""))} />
       </label>
       {amountError && <p role="alert" className={hint}>{amountError}</p>}
-      <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">{ui("Minimum ₹100. This campaign still needs")} ₹{remaining.toLocaleString("en-IN")}.</p>
+      <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">{ui("Minimum ₹101. This campaign still needs")} ₹{remaining.toLocaleString("en-IN")}.</p>
     </section>
 
     <section className={box}>
@@ -189,8 +195,8 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
         <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Email</UiText><input type="email" className={field} value={email} maxLength={254} onChange={(e) => setEmail(e.target.value.trim())} autoComplete="email" /></label>
         {email !== "" && !emailOk && <p className={hint}><UiText>Enter a valid email, like name@example.com.</UiText></p>}
       </>}
-      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone (optional)</UiText><input type="tel" inputMode="numeric" className={field} value={phone} maxLength={10} placeholder="10-digit mobile number" onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} autoComplete="tel-national" /></label>
-      {!phoneOk && phone.length > 0 && <p className={hint}><UiText>Enter a 10-digit Indian mobile number.</UiText></p>}
+      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone (optional)</UiText><input type="tel" inputMode="tel" className={field} value={phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ""))} autoComplete="tel" /></label>
+      {!phoneOk && phone.length > 0 && <p className={hint}><UiText>Enter a valid phone number.</UiText></p>}
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
       {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
@@ -208,10 +214,26 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
         {panFile && !fileOk && <p className={hint}><UiText>That file is over 5 MB. Choose a smaller one.</UiText></p>}
       </div>}
     </section>
+    <section className={box}>
+      <div className="flex flex-col gap-0.5">
+        <b className="text-sm"><UiText>Support CauseKind</UiText></b>
+        <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>An optional tip for the platform. It is separate from your donation and not covered by the 80G receipt.</UiText></p>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {TIPS.map((t) => (
+          <button key={t} type="button" aria-pressed={customTip === null && tip === t} onClick={() => { setTip(t); setCustomTip(null); }}
+            className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip === null && tip === t ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}>{t === 0 ? ui("No tip") : `₹${t}`}</button>
+        ))}
+        <button type="button" aria-pressed={customTip !== null} onClick={() => setCustomTip("")}
+          className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip !== null ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}><UiText>Other</UiText></button>
+      </div>
+      {customTip !== null && <label className="flex flex-col gap-1.5 text-sm font-semibold"><UiText>Tip amount (₹)</UiText><input inputMode="numeric" className={field} value={customTip} maxLength={5} onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, ""))} /></label>}
+    </section>
   </>;
   const footer = <>
     <section className={onClose ? "flex flex-col gap-2 text-xs leading-relaxed" : "flex flex-col gap-2 rounded-2xl bg-[#F7F1EA] p-5 text-sm leading-relaxed dark:bg-zinc-900"}>
-      <div className={`flex justify-between font-semibold ${onClose ? "text-base font-bold" : ""}`}><span><UiText>You pay</UiText></span><span>₹{valid ? value.toLocaleString("en-IN") : "—"}</span></div>
+      <div className={`flex justify-between font-semibold ${onClose ? "text-base font-bold" : ""}`}><span><UiText>You pay</UiText></span><span>₹{valid ? total.toLocaleString("en-IN") : "—"}</span></div>
+      {valid && tipValue > 0 && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">₹{value.toLocaleString("en-IN")} <UiText>donation</UiText> + ₹{tipValue.toLocaleString("en-IN")} <UiText>tip to CauseKind</UiText></p>}
       {/* In the popup the terms slide away once agreed, leaving room for the form. */}
       <div aria-hidden={slid} className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${slid ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
         <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
@@ -225,7 +247,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
     <button type="button" disabled={busy || !valid || !detailsOk || !taxOk || !agreed} onClick={() => void pay()}
       className="min-h-[48px] rounded-xl bg-gradient-to-r from-[#8e123c] via-[#a31a44] to-[#720d2d] hover:from-[#720d2d] hover:to-[#8e123c] text-[15px] font-bold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer">
-      {todo ?? `${ui("Pay")} ₹${value.toLocaleString("en-IN")}`}
+      {todo ?? `${ui("Pay")} ₹${total.toLocaleString("en-IN")}`}
     </button>
     <p className="m-0 text-center text-xs text-[#6B5A4E]"><UiText>Secured by Razorpay</UiText></p>
   </>;
