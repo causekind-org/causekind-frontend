@@ -28,6 +28,7 @@ import {
   SCAN_DEFAULTS,
   TIP_OPTIONS,
   chosenAmount,
+  chosenTip,
   normalizePhone,
   scanSchema,
   type ScanFormValues,
@@ -156,7 +157,8 @@ export function ScanDonation() {
   const otherAmount = watch("otherAmount");
   const wants80g = watch("wants80g");
   const amount = chosenAmount(preset, otherAmount);
-  const tip = Number(watch("tip"));
+  const tipChoice = watch("tip");
+  const tip = chosenTip(tipChoice, watch("otherTip"));
 
   useEffect(() => {
     utm.current = captureUtm(window.location.search);
@@ -380,7 +382,7 @@ export function ScanDonation() {
 
           <fieldset>
             <legend className="mb-2 text-sm font-semibold">Support for CauseKind platform (optional)</legend>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {TIP_OPTIONS.map((value) => (
                 <AmountOption
                   key={value}
@@ -389,7 +391,20 @@ export function ScanDonation() {
                   field={register("tip")}
                 />
               ))}
+              <AmountOption value={OTHER_PRESET} label="Other" field={register("tip")} />
             </div>
+            {tipChoice === OTHER_PRESET && (
+              <Field id="otherTip" label="Support amount in ₹" error={errors.otherTip?.message}>
+                <Input
+                  {...a11y("otherTip", errors.otherTip?.message)}
+                  {...register("otherTip", {
+                    onChange: (e) => setValue("otherTip", e.target.value.replace(/\D/g, "").slice(0, 5)),
+                  })}
+                  inputMode="numeric"
+                  className={inputClass}
+                />
+              </Field>
+            )}
             <FieldMessage id="tip-error" message={errors.tip?.message} />
             {tip > 0 && (
               <p className="mt-2 text-sm text-foreground/75 max-lg:text-white/85">

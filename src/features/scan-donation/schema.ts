@@ -17,6 +17,7 @@ export const scanSchema = z
     preset: z.string(),
     otherAmount: z.string(),
     tip: z.string(),
+    otherTip: z.string(),
     name: z.string().trim().min(1, "Please enter your full name."),
     phone: z.string().regex(PHONE_RE, "Enter a 10-digit Indian mobile number."),
     email: z.string().trim().min(1, "Please enter your email.").email("Enter a valid email address."),
@@ -50,6 +51,7 @@ export const SCAN_DEFAULTS: ScanFormValues = {
   preset: DEFAULT_PRESET,
   otherAmount: "",
   tip: DEFAULT_TIP,
+  otherTip: "",
   name: "",
   phone: "",
   email: "",
@@ -63,6 +65,11 @@ export const SCAN_DEFAULTS: ScanFormValues = {
 /** The chosen amount in rupees; 0 while "Other amount" is empty. */
 export function chosenAmount(preset: string, otherAmount: string): number {
   return Number(preset === OTHER_PRESET ? otherAmount : preset) || 0;
+}
+
+/** The support in rupees; 0 while "Other" is empty. */
+export function chosenTip(tip: string, otherTip: string): number {
+  return Number(tip === OTHER_PRESET ? otherTip : tip) || 0;
 }
 
 /** Keeps the 10 national digits of a typed or autofilled number ("+91 98765 43210"). */

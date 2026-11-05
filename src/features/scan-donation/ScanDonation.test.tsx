@@ -121,6 +121,18 @@ describe("ScanDonation", () => {
     expect(bodyOf(0)).toMatchObject({ amount: 101, tipAmount: 50 });
   });
 
+  it("takes a custom support amount", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(ok(ORDER));
+    render(<ScanDonation />);
+    await fillRequired(user);
+    await user.click(screen.getByRole("radio", { name: "Other" }));
+    await user.type(screen.getByLabelText("Support amount in ₹"), "75");
+    await user.click(screen.getByRole("button", { name: "Donate ₹176" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(bodyOf(0)).toMatchObject({ amount: 101, tipAmount: 75 });
+  });
+
   it("shows success only after verify returns PAID, and sends the contract payload", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(ok(ORDER));
