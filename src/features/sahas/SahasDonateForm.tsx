@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
 import { ApiError, sahasCampaigns, uploadTrustDonationPanPhoto, type SahasCampaignDetail } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
-import { serif } from "@/features/sahas/sahasUi";
+import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
 
 const MIN = 100;
-const PRESETS = [500, 1000, 2500];
+const PRESETS = [500, 1000, 2000];
 const FEE_PERCENT = 5;
 const MAX_PAN_FILE = 5 * 1024 * 1024;
 const field = "min-h-[42px] w-full rounded-lg border border-[#D9C9B8] bg-white px-3 text-[15px] font-normal focus:border-[#b04a15] focus:outline-none dark:border-zinc-700 dark:bg-zinc-950";
@@ -34,7 +35,9 @@ type Result = "pending" | "success" | "failed";
  */
 export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () => void }) {
   const ui = useUiText();
+  const locale = useLocale();
   const { user } = useAuth();
+  const [about, setAbout] = useState(false);
   const [data, setData] = useState<SahasCampaignDetail | null | undefined>(undefined);
   const [amount, setAmount] = useState("1000");
   const [name, setName] = useState("");
@@ -61,7 +64,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     : <Link href={`/sahas/${slug}`} className="font-semibold text-[#b04a15]"><UiText>Back to the campaign</UiText></Link>;
   const shell = (body: React.ReactNode) => (
     onClose
-      ? <div className="flex flex-col gap-3.5 text-[#1F140D] dark:text-stone-100">{body}</div>
+      ? <div className="flex h-full flex-col gap-4 overflow-y-auto p-6 pe-14 text-[#1F140D] dark:text-stone-100">{body}</div>
       : <main className="min-h-[70vh] bg-[#FBF7F2] px-4 py-10 text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
           <div className="mx-auto flex max-w-xl flex-col gap-5">{body}</div>
         </main>
@@ -162,18 +165,15 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     );
   }
 
-  return shell(<>
-    {!onClose && <Link href={`/sahas/${slug}`} className="text-sm font-semibold text-[#b04a15] hover:underline">← {c.title}</Link>}
-    <div className="flex flex-col gap-1">
-      <h1 id="sahas-donate-title" className={`${serif} m-0 text-2xl sm:text-3xl font-bold text-[#2A1016] dark:text-[#fef3c7]`}><UiText>Donate money</UiText></h1>
-      {onClose && <p className="m-0 text-xs sm:text-sm font-medium text-[#7a4e28] dark:text-[#f9dfc0]/75">{c.title}</p>}
-    </div>
-
-    <section className="flex flex-col gap-2.5 rounded-xl border border-[#EADFD3] bg-white p-3.5 sm:p-4.5 dark:border-zinc-800 dark:bg-zinc-900 shadow-2xs">
+  const box = onClose ? "flex flex-col gap-3" : "flex flex-col gap-3 rounded-2xl border border-[#EADFD3] bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900";
+  const short = !!onClose && wants80g;
+  const slid = !!onClose && agreed;
+  const fields = <>
+    <section className={box}>
       <div className="grid grid-cols-3 gap-2">
         {PRESETS.filter((p) => p <= remaining).map((p) => (
           <button key={p} type="button" aria-pressed={value === p} onClick={() => setAmount(String(p))}
-            className={`min-h-[42px] sm:min-h-[44px] rounded-xl border font-bold text-sm transition-all cursor-pointer ${value === p ? "border-2 border-[#b04a15] bg-[#FFF8F2] text-[#8e123c] dark:bg-zinc-800 dark:text-[#f4a340]" : "border-[#D9C9B8] hover:border-stone-400"}`}>₹{p.toLocaleString("en-IN")}</button>
+            className={`min-h-[44px] rounded-[10px] border font-semibold ${value === p ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}>₹{p.toLocaleString("en-IN")}</button>
         ))}
       </div>
       <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Amount (₹)</UiText>
@@ -183,7 +183,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">{ui("Minimum ₹100. This campaign still needs")} ₹{remaining.toLocaleString("en-IN")}.</p>
     </section>
 
-    <section className="flex flex-col gap-2.5 rounded-xl border border-[#EADFD3] bg-white p-3.5 sm:p-4.5 dark:border-zinc-800 dark:bg-zinc-900 shadow-2xs">
+    <section className={box}>
       {!user && <>
         <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Full name</UiText><input className={field} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
         <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Email</UiText><input type="email" className={field} value={email} maxLength={254} onChange={(e) => setEmail(e.target.value.trim())} autoComplete="email" /></label>
@@ -191,10 +191,10 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       </>}
       <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone (optional)</UiText><input type="tel" inputMode="numeric" className={field} value={phone} maxLength={10} placeholder="10-digit mobile number" onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} autoComplete="tel-national" /></label>
       {!phoneOk && phone.length > 0 && <p className={hint}><UiText>Enter a 10-digit Indian mobile number.</UiText></p>}
-      <label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer select-none"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
-      <label className="flex items-center gap-2 text-xs sm:text-sm cursor-pointer select-none"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
-      {wants80g && <>
-        <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
+      {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
+        <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
         {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
         <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
         <div className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200">
@@ -206,14 +206,20 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
           {panFile ? <span className="text-xs font-normal text-[#1E5B42]">✓ {panFile.name}</span> : <span className="text-xs font-normal text-[#6B5A4E]"><UiText>JPG, PNG or PDF, up to 5 MB</UiText></span>}
         </div>
         {panFile && !fileOk && <p className={hint}><UiText>That file is over 5 MB. Choose a smaller one.</UiText></p>}
-      </>}
+      </div>}
     </section>
-
-    <section className="flex flex-col gap-2 rounded-xl bg-[#F7F1EA] p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed dark:bg-zinc-900 shadow-2xs">
-      <div className="flex justify-between font-bold text-[#2A1016] dark:text-stone-100"><span><UiText>You pay</UiText></span><span>₹{valid ? value.toLocaleString("en-IN") : "—"}</span></div>
-      <p className="m-0 text-xs text-[#5a4030] dark:text-stone-400">{ui("Platform fee: 5% is deducted from your donation")}{valid ? ` (₹${fee.toLocaleString("en-IN")})` : ""}. <UiText>The rest goes to this campaign, through Sahas Charitable Trust.</UiText></p>
-      <p className="m-0 text-xs text-[#5a4030] dark:text-stone-400"><UiText>Donations can&apos;t be refunded. If a payment is confirmed after the campaign closes or fills up, it is kept and reported as surplus.</UiText></p>
-      <label className="mt-0.5 flex items-start gap-2 font-semibold text-xs sm:text-sm cursor-pointer select-none"><input type="checkbox" className="mt-0.5" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /> <UiText>I understand and agree</UiText></label>
+  </>;
+  const footer = <>
+    <section className={onClose ? "flex flex-col gap-2 text-xs leading-relaxed" : "flex flex-col gap-2 rounded-2xl bg-[#F7F1EA] p-5 text-sm leading-relaxed dark:bg-zinc-900"}>
+      <div className={`flex justify-between font-semibold ${onClose ? "text-base font-bold" : ""}`}><span><UiText>You pay</UiText></span><span>₹{valid ? value.toLocaleString("en-IN") : "—"}</span></div>
+      {/* In the popup the terms slide away once agreed, leaving room for the form. */}
+      <div aria-hidden={slid} className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${slid ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
+        <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
+                <p className={`m-0 ${short ? "lg:hidden" : ""}`}>{ui("Platform fee: 5% is deducted from your donation")}{valid ? ` (₹${fee.toLocaleString("en-IN")})` : ""}. <UiText>The rest goes to this campaign, through Sahas Charitable Trust.</UiText></p>
+                <p className={`m-0 ${short ? "lg:hidden" : ""}`}><UiText>Donations can&apos;t be refunded. If a payment is confirmed after the campaign closes or fills up, it is kept and reported as surplus.</UiText></p>
+        </div>
+      </div>
+      <label className="mt-1 flex items-start gap-2 font-semibold"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /> {short ? <UiText>I understand and agree to the fee and no-refund terms</UiText> : <UiText>I understand and agree</UiText>}</label>
     </section>
 
     {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
@@ -221,6 +227,70 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       className="min-h-[48px] rounded-xl bg-gradient-to-r from-[#8e123c] via-[#a31a44] to-[#720d2d] hover:from-[#720d2d] hover:to-[#8e123c] text-[15px] font-bold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer">
       {todo ?? `${ui("Pay")} ₹${value.toLocaleString("en-IN")}`}
     </button>
-    <p className="m-0 text-center text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>Secured by Razorpay</UiText></p>
-  </>);
+    <p className="m-0 text-center text-xs text-[#6B5A4E]"><UiText>Secured by Razorpay</UiText></p>
+  </>;
+
+  if (!onClose) {
+    return shell(<>
+      <Link href={`/sahas/${slug}`} className="text-sm text-[#6B5A4E]">← {c.title}</Link>
+      <h1 id="sahas-donate-title" className={`${serif} m-0 text-3xl`}><UiText>Donate money</UiText></h1>
+      {fields}
+      {footer}
+    </>);
+  }
+
+  // The popup (design: Sahas Donate Window): campaign on the left, donating on the right;
+  // on phones a short campaign summary sits above the form.
+  const pct = `${Math.min(100, ((c.amountRaised ?? 0) / (c.targetAmount || 1)) * 100)}%`;
+  const bar = <div className="h-1 bg-[#E3D6C8] dark:bg-zinc-800"><div className="h-1 bg-[#b04a15]" style={{ width: pct }} /></div>;
+  const ends = formatDate(c.endDate, locale);
+  const facts = [[c.city, c.state].filter(Boolean).join(", "), ends && `${ui("Ends")} ${ends}`].filter(Boolean).join(" · ");
+  const story = data.description || c.summary;
+  const left = `₹${remaining.toLocaleString("en-IN")}`;
+  const raised = `₹${(c.amountRaised ?? 0).toLocaleString("en-IN")} ${ui("of")} ₹${(c.targetAmount ?? 0).toLocaleString("en-IN")}`;
+  const cover = c.imageUrl
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={c.imageUrl} alt={c.coverAltText ?? ""} className="h-full w-full object-cover" />
+    : null;
+  return (
+    <div className="grid text-[#1F140D] lg:h-full lg:grid-cols-[minmax(0,1fr)_480px] dark:text-stone-100">
+      <article className="hidden min-h-0 flex-col overflow-y-auto bg-[#FBF7F2] lg:flex dark:bg-zinc-950">
+        <div className="h-[270px] shrink-0 bg-[#E6D5C3] dark:bg-zinc-800">{cover}</div>
+        <div className="flex flex-col gap-3 px-9 py-6">
+          <p className="m-0 text-[13px] text-[#5c4a3d] dark:text-stone-400"><UiText>Organised by</UiText> {SAHAS_NAME}</p>
+          <h2 className={`${serif} m-0 text-[38px] leading-[1.1]`}>{c.title}</h2>
+          {facts && <p className="m-0 text-sm text-[#5c4a3d] dark:text-stone-400">{facts}</p>}
+          <div className="flex items-baseline gap-2.5 pt-1.5">
+            <b className={`${serif} text-3xl`}>{left}</b>
+            <span className="text-sm text-[#4A3B30] dark:text-stone-300"><UiText>still needed</UiText></span>
+            <span className="ms-auto text-sm text-[#4A3B30] dark:text-stone-300">{raised}</span>
+          </div>
+          {bar}
+          {story && <p className="m-0 mt-1.5 whitespace-pre-line text-[15px] leading-relaxed text-[#2E2219] dark:text-stone-200 ck-user-text">{story}</p>}
+          <Link href={`/sahas/${slug}`} className="text-sm font-semibold text-[#8f3a0e] underline dark:text-[#e07b3a]"><UiText>Open the full campaign page</UiText></Link>
+        </div>
+      </article>
+
+      <div className="flex min-h-0 flex-col border-[#E3D6C8] bg-white lg:border-s dark:border-zinc-800 dark:bg-zinc-950">
+        <section className="flex flex-col gap-2.5 bg-[#FBF7F2] px-4 pb-3 pt-4 lg:hidden dark:bg-zinc-900">
+          <span className="pe-10 text-[13px] text-[#5c4a3d] dark:text-stone-400">{SAHAS_NAME}</span>
+          <div className="grid grid-cols-[88px_minmax(0,1fr)] gap-3">
+            <div className="h-[88px] bg-[#E6D5C3] dark:bg-zinc-800">{cover}</div>
+            <div>
+              <h2 className={`${serif} m-0 mb-1 text-[22px] leading-tight`}>{c.title}</h2>
+              <p className="m-0 text-sm"><b>{left}</b> <UiText>still needed</UiText></p>
+            </div>
+          </div>
+          {bar}
+          {story && <button type="button" aria-expanded={about} onClick={() => setAbout((v) => !v)} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 text-start text-sm font-semibold text-[#8f3a0e] underline dark:text-[#e07b3a]"><UiText>Read about this campaign</UiText></button>}
+          {about && story && <p className="m-0 whitespace-pre-line text-sm leading-relaxed ck-user-text">{story}</p>}
+        </section>
+        <div className="flex min-h-0 flex-1 flex-col gap-3.5 px-4 pb-3 pt-4 lg:overflow-y-auto lg:px-8 lg:pt-6">
+          <h1 id="sahas-donate-title" className={`${serif} m-0 text-[26px]`}>{short ? `${ui("Donate")} ₹${value.toLocaleString("en-IN")}` : <UiText>Donate</UiText>}</h1>
+          {fields}
+        </div>
+        <div className="flex flex-col gap-2 border-t border-[#E3D6C8] px-4 pb-5 pt-3 lg:px-8 dark:border-zinc-800">{footer}</div>
+      </div>
+    </div>
+  );
 }

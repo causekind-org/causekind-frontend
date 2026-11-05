@@ -34,28 +34,14 @@ export function SahasDonateDialog({ slug, onClose }: { slug: string; onClose: ()
   }, [onClose]);
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-xs sm:items-center sm:p-4 overscroll-contain"
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/50 sm:items-center sm:p-4 overscroll-contain"
       onWheel={(e) => e.stopPropagation()}
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sahas-donate-title"
-        tabIndex={-1}
-        className="relative max-h-[86vh] sm:max-h-[88vh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-3xl sm:rounded-2xl bg-[#FBF7F2] p-5 pb-7 sm:p-6 sm:pb-8 dark:bg-zinc-950 border border-amber-500/25 shadow-2xl outline-none [scrollbar-width:thin] [scrollbar-color:rgba(176,74,21,0.35)_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-[#b04a15]/30 hover:[&::-webkit-scrollbar-thumb]:bg-[#b04a15]/70 dark:[&::-webkit-scrollbar-thumb]:bg-zinc-700"
-      >
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label={ui("Close")}
-          className="sticky top-0 float-right z-20 -mb-9 flex size-9 items-center justify-center rounded-full text-[#4A3B30] hover:bg-black/5 dark:text-stone-300 dark:hover:bg-white/10 transition-colors"
-        >
-          <X className="size-5" aria-hidden="true" />
+      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div ref={panel} role="dialog" aria-modal="true" aria-labelledby="sahas-donate-title" tabIndex={-1}
+        className="relative max-h-[92dvh] w-full max-w-xl overflow-y-auto overscroll-contain rounded-t-2xl bg-white outline-none sm:rounded-2xl lg:h-[min(760px,92dvh)] lg:max-w-[1120px] lg:overflow-hidden dark:bg-zinc-950">
+        <button type="button" onClick={onClose} aria-label={ui("Close")}
+          className="absolute end-3 top-3 flex size-11 items-center justify-center rounded-full text-[#4A3B30] hover:bg-black/5 dark:text-stone-300">
+          <X className="size-5" aria-hidden />
         </button>
 
         <SahasDonateForm slug={slug} onClose={onClose} />

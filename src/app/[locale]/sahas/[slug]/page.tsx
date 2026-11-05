@@ -8,7 +8,7 @@ import { FEATURES } from "@/lib/features";
 import { ApiError, sahasCampaigns, type SahasCampaignDetail, type SahasItemLine } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
-import { Chip, ItemsBar, PhaseChip, SAHAS_NAME, formatDate, itemTotals, serif } from "@/features/sahas/sahasUi";
+import { Chip, ItemsBar, PhaseChip, SAHAS_NAME, SahasSurplus, formatDate, itemTotals, serif } from "@/features/sahas/sahasUi";
 
 /** /sahas/[slug] — a Sahas campaign page (design board HF · Campaign detail). Items only until phase C3. */
 export default function SahasCampaignPage() {
@@ -167,6 +167,7 @@ function SahasCampaign() {
                 <div className="text-sm text-[#4A3B30] dark:text-stone-300">
                   <b className="text-[#1F140D] dark:text-stone-100">₹{(c.amountRaised ?? 0).toLocaleString("en-IN")}</b> {ui("of")} ₹{(c.targetAmount ?? 0).toLocaleString("en-IN")}
                 </div>
+                <SahasSurplus raised={c.amountRaised ?? 0} target={c.targetAmount ?? 0} />
                 <ItemsBar needed={c.targetAmount ?? 0} pledged={0} received={c.amountRaised ?? 0} label={`₹${c.amountRaised ?? 0} / ₹${c.targetAmount ?? 0}`} />
                 <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>Counts confirmed payments only.</UiText></p>
                 {data.moneyOpen && (c.amountRaised ?? 0) < (c.targetAmount ?? 0) ? (

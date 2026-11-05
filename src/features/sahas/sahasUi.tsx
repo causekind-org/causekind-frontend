@@ -66,7 +66,14 @@ export function formatDate(iso: string | null, locale: string): string | null {
   return Number.isNaN(d.getTime()) ? null : new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(d);
 }
 
-/** A hub / spotlight card: donors donate money directly from the card. */
+/** Money confirmed beyond the target is kept (owner decision D12f), and shown to everyone. */
+export function SahasSurplus({ raised, target }: { raised: number; target: number }) {
+  const surplus = target > 0 ? raised - target : 0;
+  if (surplus <= 0) return null;
+  return <div className="text-sm font-semibold text-[#7a3410] dark:text-[#e07b3a]"><UiText>Surplus</UiText> ₹{surplus.toLocaleString("en-IN")}</div>;
+}
+
+/** A hub / spotlight card: the whole campaign and its action, with no need to open another page. */
 export function SahasCard({ c, locale, compact = false }: { c: SahasCampaignCard; locale: string; compact?: boolean }) {
   const ui = useUiText();
   const ends = formatDate(c.endDate, locale);
@@ -100,6 +107,7 @@ export function SahasCard({ c, locale, compact = false }: { c: SahasCampaignCard
         {c.collectsMoney && target > 0 && (
           <div className="flex flex-col gap-1.5">
             <div className="text-sm"><b>₹{raised.toLocaleString("en-IN")}</b> {ui("of")} ₹{target.toLocaleString("en-IN")}</div>
+            <SahasSurplus raised={raised} target={target} />
             <ItemsBar needed={target} pledged={0} received={raised} label={`₹${raised} / ₹${target}`} />
           </div>
         )}
@@ -128,6 +136,7 @@ function Money({ c }: { c: SahasCampaignCard }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="text-sm"><b>₹{raised.toLocaleString("en-IN")}</b> {ui("of")} ₹{target.toLocaleString("en-IN")}</div>
+      <SahasSurplus raised={raised} target={target} />
       <ItemsBar needed={target} pledged={0} received={raised} label={`₹${raised} / ₹${target}`} />
     </div>
   );

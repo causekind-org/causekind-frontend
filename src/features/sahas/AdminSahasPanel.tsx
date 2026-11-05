@@ -143,7 +143,7 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
       {tab === "details" && <Details d={d} onSaved={setD} onError={setError} />}
       {tab === "items" && <Items d={d} onChanged={load} onError={setError} />}
       {tab === "offers" && <Offers campaignId={d.id} onError={setError} />}
-      {tab === "payments" && <Payments campaignId={d.id} onError={setError} />}
+      {tab === "payments" && <Payments campaignId={d.id} target={d.targetAmount} onError={setError} />}
       {tab === "outcome" && <UpdatesAndOutcome d={d} onError={setError} />}
     </div>
   );
@@ -547,15 +547,18 @@ function UpdatesAndOutcome({ d, onError }: { d: SahasAdminDetail; onError: (m: s
 
 // ── Payments (Phase C3): this campaign's ledger; needs PAYMENT_REVIEW ──────
 
-function Payments({ campaignId, onError }: { campaignId: number; onError: (m: string | null) => void }) {
+function Payments({ campaignId, target, onError }: { campaignId: number; target: number | null; onError: (m: string | null) => void }) {
   const [rows, setRows] = useState<SahasDonationRow[] | null>(null);
   useEffect(() => { sahasAdmin.donations(campaignId).then(setRows).catch((e) => onError(messageOf(e))); }, [campaignId, onError]);
   const done = (rows ?? []).filter((r) => r.status === "COMPLETED");
   const total = done.reduce((t, r) => t + r.amount, 0);
   const fees = done.reduce((t, r) => t + (r.platformFee ?? 0), 0);
+  // Payments confirmed after the target was reached are kept (owner decision D12f).
+  const surplus = target ? Math.max(0, total - target) : 0;
   return (
     <div className="flex flex-col gap-3">
       <p className="m-0 text-sm text-stone-600">{rows ? `Confirmed ₹${total.toLocaleString("en-IN")} from ${done.length} donation${done.length === 1 ? "" : "s"} · platform fee ₹${fees.toLocaleString("en-IN")}` : "Loading…"}</p>
+      {surplus > 0 && <p className="m-0 text-sm font-semibold text-[#7a3410] dark:text-[#e07b3a]">{`Surplus ₹${surplus.toLocaleString("en-IN")} above the ₹${target!.toLocaleString("en-IN")} target`}</p>}
       <div className="overflow-x-auto rounded-xl border border-stone-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <table className="w-full min-w-[640px] border-collapse text-sm">
           <thead><tr className="text-left text-xs text-stone-500"><th className="p-3">Ref</th><th className="p-3">Donor</th><th className="p-3">Amount</th><th className="p-3">Fee</th><th className="p-3">Payment</th><th className="p-3">Documents</th><th className="p-3">Date</th></tr></thead>

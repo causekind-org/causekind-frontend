@@ -68,7 +68,7 @@ const logoLetterVariants = {
 /** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
 const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
-export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
+export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
 
@@ -79,7 +79,8 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
 
   // The diya sits with the heart, so the Diwali logo keeps its icon on mobile
   // too, whatever `hideIcon` asked for. Gated like the tie, so it leaves on 13 Nov.
-  if (isDiwaliCampaignActive()) {
+  // The footer passes seasonal={false} to keep the everyday logo.
+  if (seasonal && isDiwaliCampaignActive()) {
     return (
       <span className="flex items-center" aria-label="CauseKind">
         <DiwaliVideoLogo />
@@ -160,8 +161,8 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
 }
 
 // Keep CareNestLogo exported and map it to CauseKindLogo to prevent any broken imports in other files
-export function CareNestLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
-  return <CauseKindLogo size={size} hideIcon={hideIcon} />;
+export function CareNestLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
+  return <CauseKindLogo size={size} hideIcon={hideIcon} seasonal={seasonal} />;
 }
 
 // ── Login nudge — a speech-bubble popover anchored to the navbar's Login
