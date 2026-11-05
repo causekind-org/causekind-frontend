@@ -473,18 +473,7 @@ export function PurchaseHub({
                 }, outcome.kind === "receipt" && outcome.data.condition === "GOOD" ? "Thanks — receipt recorded" : "Issue raised — our team will review it and follow up")} />
             )}
 
-            {!donor && view.issues.length > 0 && (
-              <IssuesPanel issues={view.issues} role={role} canRespond={canRespond} busy={busy}
-                onRespond={message => run("respond", () => respondToPurchaseIssue(id, message), "Response sent to support")}
-                onInfoReply={message => run("info", () => replyToPurchaseInfoRequest(id, message), "Answer sent to our team")} />
-            )}
 
-            {donee && direct && stage === "ISSUE_OPEN" && (
-              <EvidencePanel title="Add evidence (optional)" type="ISSUE_EVIDENCE" busy={busy}
-                hint="Photos of the damage, the wrong item or the packaging help support resolve this. Images or PDF."
-                done={view.evidence.some(e => e.type === "ISSUE_EVIDENCE")}
-                onUpload={f => run("upload", () => uploadPurchaseRecipientEvidence(id, "ISSUE_EVIDENCE", f), "Evidence added")} />
-            )}
 
             {stage === "COMPLETED" && (donor || donee) && (
               <Panel title="Donation complete" icon={<Award className="size-5 text-green-700" aria-hidden />}>
@@ -505,6 +494,21 @@ export function PurchaseHub({
                 </div>
               </Panel>
             )}
+
+            {!donor && view.issues.length > 0 && (
+              <IssuesPanel issues={view.issues} role={role} canRespond={canRespond} busy={busy}
+                onRespond={message => run("respond", () => respondToPurchaseIssue(id, message), "Response sent to support")}
+                onInfoReply={message => run("info", () => replyToPurchaseInfoRequest(id, message), "Answer sent to our team")} />
+            )}
+
+            {donee && direct && stage === "ISSUE_OPEN" && (
+              <EvidencePanel title="Add evidence (optional)" type="ISSUE_EVIDENCE" busy={busy}
+                hint="Photos of the damage, the wrong item or the packaging help support resolve this. Images or PDF."
+                done={view.evidence.some(e => e.type === "ISSUE_EVIDENCE")}
+                onUpload={f => run("upload", () => uploadPurchaseRecipientEvidence(id, "ISSUE_EVIDENCE", f), "Evidence added")} />
+            )}
+
+            
 
             {donee && direct && stage === "ISSUE_WINDOW" && (
               <Panel title="Everything fine?" icon={<ShieldCheck className="size-5 text-green-700" aria-hidden />}>
