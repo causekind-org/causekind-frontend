@@ -265,7 +265,7 @@ export function PurchaseHub({
                 {!direct && <PlanSummary offer={offer} view={view} donor />}
                 <div className="mt-5 flex flex-wrap gap-3">
                   <button type="button" className={primary} disabled={!!busy}
-                    onClick={() => void run("reconfirm", () => reconfirmOfferAvailability(id), direct ? "Confirmed — our team approves next" : "Confirmed — you can buy the item now")}>
+                    onClick={() => void run("reconfirm", () => reconfirmOfferAvailability(id), direct ? "Confirmed — you can place the order now" : "Confirmed — you can buy the item now")}>
                     {busy === "reconfirm" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Yes, I&apos;ll buy it
                   </button>
                   <button type="button" className={secondary} disabled={!!busy} onClick={() => setConfirmWithdraw(true)}>
@@ -770,8 +770,8 @@ const EVIDENCE_LABEL: Record<PurchaseProofType, string> = {
 };
 
 const STEPS: Record<string, string[]> = {
-  "direct-DONEE": ["You accepted", "Donor confirms", "Share address", "Team approves", "Donor orders", "On the way", "You confirm it arrived"],
-  "direct-DONOR": ["Recipient accepted", "You confirm", "Recipient shares address", "Team approved", "You order", "On the way", "Recipient confirms"],
+  "direct-DONEE": ["You accepted", "Donor confirms", "Donor orders", "On the way", "You confirm it arrived"],
+  "direct-DONOR": ["Recipient accepted", "You confirm", "You order", "On the way", "Recipient confirms"],
   "physical-DONEE": ["Offer accepted", "Donor confirmed", "Purchase in progress", "Purchase verified", "Handover", "Completed"],
   "physical-DONOR": ["Offer accepted", "You confirmed", "Purchase in progress", "Purchase verified", "Handover", "Completed"],
 };
@@ -779,7 +779,7 @@ const STEPS: Record<string, string[]> = {
 /** Index of the step in progress; steps before it are done. steps.length = everything done, -1 = no bar. */
 function stepIndex(stage: PurchaseStage, direct: boolean): number {
   const map: Partial<Record<PurchaseStage, number>> = direct
-    ? { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, AWAITING_ADDRESS: 2, AWAITING_APPROVAL: 3, READY_TO_BUY: 4, IN_TRANSIT: 5, PARTIALLY_RECEIVED: 5, DELIVERED: 6, ISSUE_OPEN: 5, ISSUE_WINDOW: 6, COMPLETED: 7 }
+    ? { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, READY_TO_BUY: 2, IN_TRANSIT: 3, PARTIALLY_RECEIVED: 3, DELIVERED: 4, ISSUE_OPEN: 3, ISSUE_WINDOW: 4, COMPLETED: 5 }
     : { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, AWAITING_APPROVAL: 1, READY_TO_BUY: 2, AWAITING_ITEM_PHOTO: 2, PURCHASE_INFO_REQUIRED: 2, AWAITING_PROOF_REVIEW: 3, READY_FOR_HANDOVER: 4, ISSUE_OPEN: 4, ISSUE_WINDOW: 5, COMPLETED: 6 };
   return map[stage] ?? -1;
 }
@@ -989,21 +989,16 @@ function AddressForm({ busy, onShare }: {
 /* The recipient's view while others act: one plain message about what is
    happening now (the progress bar above already shows the steps). */
 function DoneeStatusPanel({ stage, view }: { stage: PurchaseStage; view: PurchaseView }) {
-  const approving = stage === "AWAITING_APPROVAL";
   const qty = view.acceptedQuantity;
   const items = qty ? `${qty} ${qty === 1 ? "item" : "items"}` : "your items";
   return (
-    <Panel title={approving ? "Your offer is under review" : "The donor is placing your order"}
-      icon={approving ? <ShieldCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden /> : <PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+    <Panel title="The donor is placing your order"
+      icon={<PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
       <p className="text-[15px] leading-relaxed text-[#3D4756] dark:text-stone-300">
-        {approving
-          ? "Thank you for sharing your delivery address. Our team is now reviewing the offer. Once it is approved, the donor will place the order."
-          : `Our team has approved the offer, and the donor is now ordering ${items} for delivery to your address${view.deadline ? `. The order will be placed by ${formatShort(view.deadline)}` : ""}.`}
+        {`The donor is now ordering ${items} for delivery to your address${view.deadline ? `. The order will be placed by ${formatShort(view.deadline)}` : ""}.`}
       </p>
       <p className="mt-3 text-[15px] leading-relaxed text-[#3D4756] dark:text-stone-300">
-        {approving
-          ? "No action is required from you at this stage."
-          : "No action is required from you at this stage. Once the order is placed, the expected delivery date and tracking details will appear here."}
+        No action is required from you at this stage. Once the order is placed, the expected delivery date and tracking details will appear here.
       </p>
     </Panel>
   );

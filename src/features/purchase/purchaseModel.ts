@@ -43,10 +43,9 @@ export function purchaseStage(view: PurchaseView, offerStatus: OfferStatus | str
 
   if (!view.orderedAt) {
     if (view.readyToBuy) return "READY_TO_BUY";
-    // Strict order: donor reconfirms, then the recipient shares an address, then our team approves.
+    // Strict order: donor reconfirms, then ready to buy.
     if (offerStatus === "DONOR_RECONFIRMATION_REQUIRED") return "AWAITING_RECONFIRMATION";
-    if (view.method === "DIRECT_DELIVERY" && !view.address) return "AWAITING_ADDRESS";
-    return "AWAITING_APPROVAL";
+    return "READY_TO_BUY";
   }
 
   if (view.method === "BUY_AND_HAND_OVER") {
@@ -106,7 +105,7 @@ export function purchaseNextAction(stage: PurchaseStage, role: PurchaseRole, vie
     case "AWAITING_ACCEPTANCE":
       return donor
         ? "The recipient is reviewing your proposal. Please don't buy anything yet."
-        : "Review this purchase proposal on your offers page and accept or decline it. Nothing is bought until you accept and our team approves.";
+        : "Review this purchase proposal on your offers page and accept or decline it. Nothing is bought until you accept and the donor confirms.";
     case "AWAITING_RECONFIRMATION":
       return donor
         ? direct

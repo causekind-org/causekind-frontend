@@ -523,6 +523,7 @@ function NewRequestForm() {
   const [pincode, setPincode] = useState("");
   /** Optional; saved at the front of the request's city text ("Locality, City, ST, CC"). */
   const [locality, setLocality] = useState("");
+  const [addressLine, setAddressLine] = useState("");
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   /** The latest typed address could not be placed: the pin no longer matches the fields. */
   const [typedFailed, setTypedFailed] = useState(false);
@@ -673,6 +674,7 @@ function NewRequestForm() {
         getMyRequestVerificationDetails(idNum)
           .then((v) => {
             if (!v) return;
+            if (v.addressLandmark) setAddressLine(v.addressLandmark);
             const filled = Object.fromEntries(
               Object.entries(v).filter(([, value]) => value !== null && value !== undefined)
             ) as Partial<RequestVerification>;
@@ -698,6 +700,7 @@ function NewRequestForm() {
           router.push("/dashboard");
         }
         setUserPhone(p.phone ?? "");
+        if (p.addressLandmark) setAddressLine((prev) => prev || p.addressLandmark || "");
         if (p.latitude != null && p.longitude != null) setProfileCenter({ lat: p.latitude, lng: p.longitude });
       })
       .catch(() => {});
@@ -936,6 +939,9 @@ function NewRequestForm() {
       const id = await ensureDraft();
       if (savesRequestDraft) {
         await updateItemRequestDraft(id, buildPayload());
+      }
+      if (step === "location" && addressLine.trim()) {
+        await saveRequestVerificationDetails(id, { ...verification, addressLandmark: addressLine.trim() });
       }
       if (step === "household-situation") {
         await saveRequestVerificationDetails(id, verification);
@@ -1307,6 +1313,19 @@ function NewRequestForm() {
   const stepLocation = (
     <section className="min-w-0 rounded-xl border border-slate-200/80 bg-white p-4 sm:p-5 dark:border-slate-700 dark:bg-slate-900" aria-label={ui("Location details")}>
       <div className="space-y-4">
+        <div role="note" className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50/90 p-4 text-xs sm:text-sm text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200">
+          <Info className="mt-0.5 size-4 sm:size-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
+          <div className="space-y-1">
+            <p className="font-bold text-blue-950 dark:text-blue-100">
+              <UiText>Please provide your complete home delivery address</UiText>
+            </p>
+            <p className="leading-relaxed text-blue-800/90 dark:text-blue-200/90">
+              <UiText>
+                It is necessary to enter your accurate home address (including house/flat number, building, street, and area). If a donor chooses to purchase and deliver items directly to you or arrange shipment, this address will be used so the delivery reaches you safely.
+              </UiText>
+            </p>
+          </div>
+        </div>
         {/* `data-field="gps"` is the error summary's target: the map has no input
             to focus, so this wrapper is the landing point. */}
         <div data-field="gps" tabIndex={-1} aria-describedby={fieldErrors.gps ? "gps-error" : undefined} className="space-y-2 outline-none">
@@ -1370,6 +1389,24 @@ function NewRequestForm() {
               </div>
             )}
             {fieldErrors.city && <p id="city-error" role="alert" className="text-xs text-[var(--ck-role-accent)] font-semibold">{fieldErrors.city}</p>}
+          </div>
+          <div className="col-span-2 space-y-1">
+            <label htmlFor="addressLine" className="text-xs font-bold text-stone-700 dark:text-stone-200">
+              <UiText>House / Flat / Building and Street</UiText>
+              <span className="ml-1 text-xs font-normal text-stone-500 dark:text-stone-400"><UiText>(for direct deliveries)</UiText></span>
+            </label>
+            <Input
+              id="addressLine"
+              name="addressLine"
+              placeholder={ui("e.g. Flat 12, Shanti Apartments, Station Road")}
+              value={addressLine}
+              maxLength={200}
+              onChange={(e) => {
+                setAddressLine(e.target.value);
+                setV("addressLandmark", e.target.value);
+              }}
+              className="h-11 w-full"
+            />
           </div>
           <WizardField label={ui("Locality")} hint={ui("Optional — area or neighbourhood")}>
             {({ id, describedBy }) => (
