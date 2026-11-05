@@ -127,6 +127,8 @@ describe("ScanDonation", () => {
     render(<ScanDonation />);
     await fillRequired(user);
     await user.click(screen.getByRole("radio", { name: "Other" }));
+    expect(screen.getByLabelText("Support amount in ₹")).toHaveValue("30");
+    await user.clear(screen.getByLabelText("Support amount in ₹"));
     await user.type(screen.getByLabelText("Support amount in ₹"), "75");
     await user.click(screen.getByRole("button", { name: "Donate ₹176" }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());

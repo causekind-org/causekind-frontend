@@ -22,6 +22,7 @@ import {
 } from "./api";
 import {
   DEFAULT_PRESET,
+  DEFAULT_TIP,
   MIN_AMOUNT,
   OTHER_PRESET,
   PRESET_AMOUNTS,
@@ -137,6 +138,7 @@ export function ScanDonation() {
   const [addressOpen, setAddressOpen] = useState(false);
   const utm = useRef<Utm>({ source: "", medium: "", campaign: "", content: "" });
   const viewTracked = useRef(false);
+  const lastTip = useRef(DEFAULT_TIP);
   const lastPreset = useRef(DEFAULT_PRESET);
   const resultHeading = useRef<HTMLHeadingElement>(null);
 
@@ -326,6 +328,13 @@ export function ScanDonation() {
       else lastPreset.current = e.target.value;
     },
   });
+  // "Other" opens on the support just selected, ready to be changed.
+  const tipField = register("tip", {
+    onChange: (e) => {
+      if (e.target.value === OTHER_PRESET) setValue("otherTip", lastTip.current === "0" ? "" : lastTip.current);
+      else lastTip.current = e.target.value;
+    },
+  });
   const panField = register("pan", {
     onChange: (e) => setValue("pan", e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10)),
   });
@@ -388,10 +397,10 @@ export function ScanDonation() {
                   key={value}
                   value={String(value)}
                   label={value === 0 ? "No thanks" : `₹${value}`}
-                  field={register("tip")}
+                  field={tipField}
                 />
               ))}
-              <AmountOption value={OTHER_PRESET} label="Other" field={register("tip")} />
+              <AmountOption value={OTHER_PRESET} label="Other" field={tipField} />
             </div>
             {tipChoice === OTHER_PRESET && (
               <Field id="otherTip" label="Support amount in ₹" error={errors.otherTip?.message}>

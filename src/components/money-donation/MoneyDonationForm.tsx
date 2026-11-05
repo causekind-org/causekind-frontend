@@ -647,7 +647,7 @@ export function MoneyDonationForm() {
                         whileTap={{ scale: 0.98 }}
                         type="button"
                         aria-pressed={false}
-                        onClick={() => setIsCustomTip(true)}
+                        onClick={() => { setCustomTip(presetTip ? String(presetTip) : ''); setIsCustomTip(true); }}
                         className={`${chipClasses(false)} px-1.5`}
                       >
                         Custom

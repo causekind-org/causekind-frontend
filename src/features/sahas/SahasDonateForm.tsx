@@ -224,7 +224,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
           <button key={t} type="button" aria-pressed={customTip === null && tip === t} onClick={() => { setTip(t); setCustomTip(null); }}
             className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip === null && tip === t ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}>{t === 0 ? ui("No thanks") : `₹${t}`}</button>
         ))}
-        <button type="button" aria-pressed={customTip !== null} onClick={() => setCustomTip("")}
+        <button type="button" aria-pressed={customTip !== null} onClick={() => setCustomTip((c) => c ?? (tip ? String(tip) : ""))}
           className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip !== null ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}><UiText>Other</UiText></button>
       </div>
       {customTip !== null && <label className="flex flex-col gap-1.5 text-sm font-semibold"><UiText>Support amount (₹)</UiText><input inputMode="numeric" className={field} value={customTip} maxLength={5} onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, ""))} /></label>}

@@ -300,7 +300,7 @@ export default function DonatePage() {
                     return <button key={v} type="button" aria-pressed={on} onClick={() => { setSupport(v); setCustomSupport(null); }}
                       style={{ minHeight: 44, padding: "0 14px", borderRadius: 10, fontWeight: 600, cursor: "pointer", border: on ? "2px solid #b04a15" : "1px solid #cfc3b6", background: on ? "#fdf6f1" : "#fff", color: on ? "#7a3410" : "#1f140c" }}>{v === 0 ? ui("No thanks") : formatINR(v)}</button>;
                   })}
-                  <button type="button" aria-pressed={customSupport !== null} onClick={() => setCustomSupport("")}
+                  <button type="button" aria-pressed={customSupport !== null} onClick={() => setCustomSupport((c) => c ?? (support ? String(support) : ""))}
                     style={{ minHeight: 44, padding: "0 14px", borderRadius: 10, fontWeight: 600, cursor: "pointer", border: customSupport !== null ? "2px solid #b04a15" : "1px solid #cfc3b6", background: customSupport !== null ? "#fdf6f1" : "#fff", color: customSupport !== null ? "#7a3410" : "#1f140c" }}><UiText>Other</UiText></button>
                 </div>
                 {customSupport !== null && <label style={{ display: "block", marginTop: 10, fontWeight: 600 }}><UiText>Support amount (₹)</UiText><input className={s.in} inputMode="numeric" maxLength={5} value={customSupport} onChange={(e) => setCustomSupport(e.target.value.replace(/\D/g, ""))} style={{ display: "block", marginTop: 6 }} /></label>}
