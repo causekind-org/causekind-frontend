@@ -167,20 +167,9 @@
 .fill[data-s="on"] {
   transform: scaleX(1);
 }
-.fill[data-s="run"] {
-  animation: hiw-fill var(--dur, 2000ms) linear both;
-}
 @media (max-width: 767.98px) {
   .segs {
     display: flex;
-  }
-}
-@keyframes hiw-fill {
-  from {
-    transform: scaleX(0);
-  }
-  to {
-    transform: scaleX(1);
   }
 }
 
@@ -190,9 +179,5 @@
   .row,
   .panel[data-state="active"] .row {
     transition: none !important;
-  }
-  .fill[data-s="run"] {
-    animation: none;
-    transform: scaleX(1);
   }
 }

@@ -4394,6 +4394,8 @@
     "teamAskedMore": "Notre équipe a demandé plus d’informations : {note}",
     "shortSteps": "{count} étapes courtes. Nous enregistrons au fur et à mesure.",
     "quantityRequestedN": "Quantité demandée : {quantity}",
+    "stillNeededN": "Encore nécessaire : {quantity}",
+    "requestedTotalCovered": "{requested} demandés au total · {covered} déjà couverts par d'autres donateurs",
     "forTitle": "Pour : <b>{title}</b>",
     "towardsTitle": "Pour : <b>{title}</b>",
     "partlyMetHint": "Encore {still} nécessaires (sur {requested} demandés). Vous pouvez en proposer jusqu’à {still}.",

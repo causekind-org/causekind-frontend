@@ -7,6 +7,7 @@ import Link from "@/components/AppLink";
 import { fundraisers, type Donation } from "@/lib/api";
 import { Icon, formatINR } from "@/features/fundraising/ui";
 import { DonationDocuments } from "@/features/fundraising/DonationDocuments";
+import { guestTokenFor } from "@/features/fundraising/guestDonation";
 import s from "@/features/fundraising/fundraising.module.css";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -23,13 +24,16 @@ export default function DonationResultPage() {
   const [d, setD] = useState<Donation | null>(null);
   const [checkFailed, setCheckFailed] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [guest, setGuest] = useState(false);
   const tries = useRef(0);
 
   const check = useCallback(async () => {
     setChecking(true);
     try {
       // The server asks Razorpay itself; the browser never decides the outcome.
-      const mine = await fundraisers.checkDonation(Number(id));
+      const guestToken = guestTokenFor(Number(id));
+      setGuest(!!guestToken);
+      const mine = await fundraisers.checkDonation(Number(id), guestToken);
       setD(mine);
       setCheckFailed(false);
       return mine;
@@ -70,8 +74,9 @@ export default function DonationResultPage() {
             <p>{t.rich("donationReceived", { amount: formatINR(d!.amount), title: d!.campaignTitle ?? "", strong: (chunks) => <strong>{chunks}</strong> })}</p>
             {ref}
             {/* The payment is confirmed whatever happens to the documents; they have their own status below. */}
-            <DonationDocuments d={d!} />
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><Link href="/fundraisers/my-donations" className={`${s.btn} ${s.bp}`}><UiText>View donation</UiText></Link>{back}</div>
+            <DonationDocuments d={d!} guest={guest} />
+            {guest && <p className={s.small}><Link href="/register"><UiText>Create an account</UiText></Link> <UiText>with this email to see this donation in your account.</UiText></p>}
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>{!guest && <Link href="/fundraisers/my-donations" className={`${s.btn} ${s.bp}`}><UiText>View donation</UiText></Link>}{back}</div>
           </>
         ) : status === "FAILED" ? (
           <>

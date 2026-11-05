@@ -13,6 +13,7 @@ import {
 import { useFundraisingLabels, Icon, type SaveState, SaveIndicator, Stepper, formatINR } from "./ui";
 import { FieldInfo } from "./FieldInfo";
 import { PageStep, pageGaps, usePageDraft } from "./PageSteps";
+import { earliestEndDate, endDateOk } from "./endDate";
 import { DisclosureNotice, DocumentVisibility } from "./DocumentConsent";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { coverConsentMissing } from "./CampaignWizard";
@@ -385,9 +386,10 @@ function TheNeed({ app, set, onEvidence, onBack, onNext }: {
         <div className={s.grid2}>
           <div><label className={s.lbl} htmlFor="ur"><UiText>By which date do you need the money?</UiText> <FieldInfo localize k="ur" /></label>
             {/* Stored as an ISO date (yyyy-mm-dd) in the urgency field. */}
-            <input id="ur" type="date" className={s.in} min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+            <input id="ur" type="date" className={s.in} min={earliestEndDate()}
               value={/^\d{4}-\d{2}-\d{2}$/.test(app.urgency ?? "") ? app.urgency! : ""}
               onChange={(e) => set({ urgency: e.target.value })} />
+            {app.urgency && !endDateOk(app.urgency) && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Choose a date after today.</UiText></p>}
             <p className={s.hint}><UiText>For example, the day of the operation, or the last day to pay the fees.</UiText></p></div>
           {/* The amount comes first (owner, 2026-10-26); the breakdown below explains it. */}
           <div><label className={s.lbl} htmlFor="ask"><UiText>How much money you want from this fundraising (₹)</UiText> <FieldInfo localize k="ask" /></label><input id="ask" className={`${s.in} ${s.tabular}`} inputMode="decimal" value={app.requestedAmount ?? ""} onChange={(e) => set({ requestedAmount: num(e.target.value) })} /></div>
@@ -668,12 +670,13 @@ function Review({ app, set, flush, goTo, fix, onSubmitted, page, reloadPage }: {
   );
 
   const gapLabels = { title: ui("page title"), story: ui("your story"), cover: ui("cover photo"), consent: ui("cover photo permission") };
-  const stillNeeded = [...app.missing, ...pageGaps(page, gapLabels)];
+  const dateGap = ui("date you need the money by");
+  const stillNeeded = [...app.missing, ...(endDateOk(app.urgency) ? [] : [dateGap]), ...pageGaps(page, gapLabels)];
   // Where each "Still needed" item is fixed. Keys are FundraisingApplicationService.missing()'s fixed strings;
   // an unknown item stays plain text.
   const fixAt: Record<string, number | "confirm"> = {
     "beneficiary name": 1, "relationship": 1, "authority to organise": 1,
-    "category": 2, "category not open yet": 2, "what happened": 2, "amount to raise": 2,
+    "category": 2, "category not open yet": 2, "what happened": 2, "amount to raise": 2, [dateGap]: 2,
     "your ID": 3, "their consent": 3, "proof of relationship": 3, "proof you know them": 3, "medical report": 3,
     "treatment estimate": 3, "admission or enrolment letter": 3, "fee demand": 3, "proof of what happened": 3,
     "cost proof": 3, "a supporting document": 3,

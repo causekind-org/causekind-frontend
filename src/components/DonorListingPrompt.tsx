@@ -18,6 +18,20 @@ const REPEAT_DELAY_MS = 45_000;
 const RETRY_DELAY_MS  = 6_000; // lane busy — the other prompt is on screen
 const EXIT_MS         = 380;
 
+/**
+ * Pages with a form and a bottom action bar. The pill sits bottom-centre, right
+ * over their Continue button, so a click meant for Continue landed on
+ * "List an Item" and sent the donor to /items/new mid-offer.
+ */
+function isFormPage(path: string | null): boolean {
+  if (!path) return false;
+  return path === "/items/new" || path === "/requests/new"
+    || /^\/items\/[^/]+\/edit$/.test(path)
+    || /^\/requests\/[^/]+\/offer$/.test(path)
+    || /^\/drives\/[^/]+\/give$/.test(path)
+    || /^\/offers\/[^/]+\/(purchase|handover|issues)$/.test(path);
+}
+
 export function DonorListingPrompt() {
   const ui = useUiText();
   const { user, isLoading } = useAuth();
@@ -49,7 +63,7 @@ export function DonorListingPrompt() {
 
     function show(delay: number) {
       t1.current = setTimeout(() => {
-        if (pathnameRef.current === "/items/new") { show(delay); return; }
+        if (isFormPage(pathnameRef.current)) { show(delay); return; }
         // Never open on top of DoneeRequestPrompt — wait for the lane instead.
         if (!claimPromptLane(LANE_ID)) { show(RETRY_DELAY_MS); return; }
         setVisible(true);
@@ -85,7 +99,8 @@ export function DonorListingPrompt() {
     t4.current = setTimeout(() => setVisible(false), EXIT_MS);
   }
 
-  if (!isDesktop || !visible || userRole !== "DONOR") return null;
+  // Also hides one already on screen when the donor moves onto a form page.
+  if (!isDesktop || !visible || userRole !== "DONOR" || isFormPage(pathname)) return null;
 
   return (
     /* max-w is what stops this bleeding off both edges: the pill is centred with

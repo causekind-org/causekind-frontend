@@ -8,9 +8,19 @@ import type { AdminIssueDetail, AdminIssuePage, AdminIssueSummary } from "@/lib/
  * each issue's whole story. No resolution controls in this section.
  */
 
-const api = vi.hoisted(() => ({ adminListIssues: vi.fn(), adminGetIssue: vi.fn() }));
+const api = vi.hoisted(() => ({ adminListIssues: vi.fn(), adminGetIssue: vi.fn(), adminGetPurchase: vi.fn(), adminResolvePurchaseIssue: vi.fn() }));
+vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/lib/api", () => api);
 const notes = vi.hoisted(() => ({ list: [] as { link: string; receivedAt: number }[] }));
+const purchaseView = {
+  offerId: 4, method: "DIRECT_DELIVERY", status: "ISSUE_RAISED", readyToBuy: false, acceptedAt: null, deadline: null,
+  acceptedQuantity: 3, orderedAt: "2026-10-11T10:00:00", orderedQuantity: 3, receivedQuantity: 0, expectedDeliveryAt: null,
+  trackingUrl: null, trackingReference: null, address: null, retailer: "Shop", orderReference: null, evidence: [],
+  extensionRequestedUntil: null, extensionDecidedAt: null, issueWindowExpiresAt: null, version: 1, deliveryReportedAt: null,
+  deliveryReminderSentAt: null, deliveryEscalatedAt: null, receivedCondition: null, receiptRecordedBySupport: false,
+  issues: [{ id: 7, type: "ITEM_NOT_RECEIVED", description: "Nothing arrived", affectedQuantity: 3, reportedByRole: "DONEE",
+    createdAt: "2026-10-16T10:00:00", response: null, respondedAt: null, resolution: null, resolvedAt: null }],
+};
 vi.mock("@/hooks/useNotifications", () => ({ useNotifications: () => ({ notifications: notes.list }) }));
 const params = vi.hoisted(() => ({ value: new URLSearchParams() }));
 vi.mock("next/navigation", () => ({ useSearchParams: () => params.value }));
@@ -75,14 +85,16 @@ describe("IssuesPanel", () => {
     await waitFor(() => expect(api.adminListIssues).toHaveBeenLastCalledWith(expect.objectContaining({ status: "resolved" })));
   });
 
-  it("opens the whole story, read-only", async () => {
+  it("opens the whole story, with the decision only for an open purchase problem", async () => {
+    api.adminGetPurchase.mockResolvedValue(purchaseView);
     render(<IssuesPanel />);
     await userEvent.click(await screen.findByRole("button", { name: /Open issue: Winter blankets/ }));
     const story = await screen.findByRole("article", { name: "Issue CK-2026-0042" });
 
     expect(within(story).getByText("Nothing arrived even though tracking says delivered")).toBeTruthy();
     expect(within(story).getByText("Courier photo shows it at the gate")).toBeTruthy();
-    expect(within(story).getByText("3")).toBeTruthy(); // units affected
+    const reported = within(story).getByRole("heading", { name: "What was reported" }).closest("section") as HTMLElement;
+    expect(within(reported).getByText("3")).toBeTruthy(); // units affected
     expect(within(story).getByText("Purchase and delivery")).toBeTruthy();
     expect(within(story).getByText("Shop")).toBeTruthy();
     expect(within(story).getByText("Delivery proof")).toBeTruthy();
@@ -92,12 +104,14 @@ describe("IssuesPanel", () => {
     const steps = within(story).getAllByRole("listitem").map(li => li.textContent ?? "");
     expect(steps.findIndex(t => t.includes("Order placed"))).toBeLessThan(steps.findIndex(t => t.includes("Reported: Item not received")));
 
-    // No resolution controls anywhere in this section.
-    const buttons = within(story).queryAllByRole("button").map(b => (b.textContent ?? "").trim());
-    expect(buttons).toEqual(["All issues"]);
+    // An open purchase problem is decided here, through the purchase lifecycle.
+    expect(within(story).getByRole("heading", { name: "Decide this problem" })).toBeTruthy();
+    expect(await within(story).findByRole("radio", { name: /Close and count what arrived/ })).toBeTruthy();
+    expect(api.adminGetPurchase).toHaveBeenCalledWith(4);
   });
 
   it("opens straight to an issue from a deep link and goes back to the list", async () => {
+    api.adminGetPurchase.mockResolvedValue(purchaseView);
     render(<IssuesPanel issueKey="pdi-7" />);
     await screen.findByRole("article", { name: "Issue CK-2026-0042" });
     expect(api.adminGetIssue).toHaveBeenCalledWith("pdi-7");

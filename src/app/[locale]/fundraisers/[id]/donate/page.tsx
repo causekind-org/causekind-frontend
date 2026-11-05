@@ -16,6 +16,7 @@ function panNameMatches(formName: string, cardName: string): boolean {
   return parts(formName).some((p) => card.has(p));
 }
 const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * The server takes only JPEG, PNG and WebP (415 otherwise — HEIC, AVIF, GIF… failed at "Pay", 2026-10-31).
@@ -34,6 +35,7 @@ async function toAcceptedImage(file: File): Promise<File | null> {
   } catch { return null; }
 }
 import { Icon, formatINR } from "@/features/fundraising/ui";
+import { guestTokenFor, rememberGuestToken } from "@/features/fundraising/guestDonation";
 import s from "@/features/fundraising/fundraising.module.css";
 
 import { UiText, useUiText } from "@/components/UiText";
@@ -41,6 +43,7 @@ type RazorpayCtor = new (opts: Record<string, unknown>) => { open: () => void };
 const rzpCtor = () => (window as unknown as { Razorpay?: RazorpayCtor }).Razorpay;
 
 const EXAMPLES = [500, 1000, 2500, 5000];
+const SUPPORT_AMOUNTS = [0, 30, 50, 100];
 /** Razorpay standard rate incl. GST (2% + 18%), shown as an estimate only. */
 const GATEWAY_PERCENT = 2.36;
 
@@ -72,19 +75,24 @@ type CheckoutResult =
  * unreadable → explained, and a new payment needs an explicit click. {@code fresh} is that explicit click.
  */
 /** 80G details for this donation; the photo must be on the server before checkout or the donation is certificate-only. */
-type Tax = { panNumber: string; address: string; photo: File };
+/** PAN and address come from every donor; a photo is there only when 80G is ticked. */
+type Tax = { panNumber: string; address: string; mobileNumber: string; photo: File | null };
+/** Someone donating without an account (2026-11-04); null for a signed-in donor. */
+type Guest = { fullName: string; email: string; mobileNumber: string };
 
-async function checkoutReusingDonation(campaignId: number, amount: number, anonymous: boolean, fresh: boolean,
-                                       tax: Tax | null, skipPhoto = false): Promise<CheckoutResult> {
+async function checkoutReusingDonation(campaignId: number, amount: number, support: number, anonymous: boolean, fresh: boolean,
+                                       tax: Tax | null, guest: Guest | null, skipPhoto = false): Promise<CheckoutResult> {
   const key = pendingKey(campaignId);
-  type Saved = { donationId: number; amount: number; anonymous: boolean; pan: string | null; photo: boolean };
+  // The details are frozen on the donation, so different ones (or a different kind of donor) need a new donation.
+  const who = guest ? JSON.stringify(guest) : null;
+  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; address?: string | null; phone?: string | null; wants?: boolean; photo: boolean; who?: string | null };
   let saved: Saved | null = null;
   try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
   const remember = (s: Saved) => { try { sessionStorage.setItem(key, JSON.stringify(s)); } catch { /* fine */ } };
   /** Upload the PAN photo (once) before checkout fixes the documents. */
   const ensurePhoto = async (s: Saved): Promise<CheckoutResult | null> => {
-    if (!tax || s.photo || skipPhoto) return null;
-    try { await uploadDonationPanPhoto(s.donationId, tax.photo); }
+    if (!tax?.photo || s.photo || skipPhoto) return null;
+    try { await uploadDonationPanPhoto(s.donationId, tax.photo, guestTokenFor(s.donationId) ?? undefined); }
     catch (e) {
       // 409 = already uploaded on an earlier try; anything else stops before checkout.
       if (!(e instanceof ApiError) || e.status !== 409) return { photoFailed: s.donationId, reason: e instanceof ApiError ? e.message : null };
@@ -92,15 +100,15 @@ async function checkoutReusingDonation(campaignId: number, amount: number, anony
     remember({ ...s, photo: true });
     return null;
   };
-  if (!fresh && saved && saved.amount === amount && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null)) {
+  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.address ?? null) === (tax?.address ?? null) && (saved.phone ?? null) === (tax?.mobileNumber ?? null) && !!saved.wants === !!tax?.photo && (saved.who ?? null) === who) {
     const stop = await ensurePhoto(saved);
     if (stop) return stop;
-    try { return { order: await fundraisers.checkout(saved.donationId) }; }
+    try { return { order: await fundraisers.checkout(saved.donationId, guestTokenFor(saved.donationId)) }; }
     catch (e) {
       if (!(e instanceof ApiError) || (e.status !== 404 && e.status !== 409)) throw e;
       if (e.status === 404) return { prior: { kind: "unknown", donationId: saved.donationId } };
       try {
-        const status = (await fundraisers.checkDonation(saved.donationId)).status;
+        const status = (await fundraisers.checkDonation(saved.donationId, guestTokenFor(saved.donationId))).status;
         if (status === "COMPLETED" || status === "INITIATED") return { redirect: saved.donationId };
         if (status === "FAILED") return { prior: { kind: "failed", donationId: saved.donationId } };
         return { prior: { kind: "unknown", donationId: saved.donationId } };
@@ -110,13 +118,16 @@ async function checkoutReusingDonation(campaignId: number, amount: number, anony
       }
     }
   }
-  const started = await fundraisers.donate(campaignId, amount, anonymous,
-    tax ? { panNumber: tax.panNumber, address: tax.address } : undefined);
-  const fresh_: Saved = { donationId: started.donationId, amount, anonymous, pan: tax?.panNumber ?? null, photo: false };
+  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address, mobileNumber: tax.mobileNumber, wants80g: !!tax.photo } : undefined;
+  const started = guest
+    ? await fundraisers.donateAsGuest(campaignId, amount, anonymous, guest, taxDetails, support)
+    : await fundraisers.donate(campaignId, amount, anonymous, taxDetails, support);
+  if (started.guestToken) rememberGuestToken(started.donationId, started.guestToken);
+  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, address: tax?.address ?? null, phone: tax?.mobileNumber ?? null, wants: !!tax?.photo, photo: false, who };
   remember(fresh_);
   const stop = await ensurePhoto(fresh_);
   if (stop) return stop;
-  return { order: await fundraisers.checkout(started.donationId) };
+  return { order: await fundraisers.checkout(started.donationId, started.guestToken) };
 }
 
 export default function DonatePage() {
@@ -131,9 +142,17 @@ export default function DonatePage() {
   const [custom, setCustom] = useState("");
   const [tried, setTried] = useState(false);
   const [anonymous, setAnonymous] = useState(false);
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  useEffect(() => { if (user?.phone) setGuestPhone((p) => p || user.phone!); }, [user?.phone]);
+  const [detailsTried, setDetailsTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [prior, setPrior] = useState<Prior | null>(null);
+  // Optional support to CauseKind: starts at ₹30, the donor can change it, and it is never part of the donation.
+  const [support, setSupport] = useState(30);
+  const [customSupport, setCustomSupport] = useState<string | null>(null);
   // 80G (CA approved, 2026-10-30): only when the server offers it.
   const [want80G, setWant80G] = useState(false);
   const [panFile, setPanFile] = useState<File | null>(null);
@@ -154,12 +173,9 @@ export default function DonatePage() {
     : error === ERR_START ? ui("We couldn't start the payment. Nothing was charged.") : error;
 
   useEffect(() => { if (FEATURES.fundraising) fundraisers.detail(Number(id)).then(setD).catch(() => setError(ERR_UNAVAILABLE)); }, [id]);
-  useEffect(() => {
-    if (!isLoading && !isRestoring && !user) router.replace(loginUrlFor(`/fundraisers/${id}/donate`));
-  }, [isLoading, isRestoring, user, router, id]);
 
   if (!FEATURES.fundraising) return null;
-  if (!d || !user) return <div className={`${s.root} ${s.publicTheme}`} aria-busy="true">{error && <p role="alert" className={s.errText} style={{ padding: 32 }}>{errorText}</p>}</div>;
+  if (!d || isLoading || isRestoring) return <div className={`${s.root} ${s.publicTheme}`} aria-busy="true">{error && <p role="alert" className={s.errText} style={{ padding: 32 }}>{errorText}</p>}</div>;
   if (!d.acceptingDonations) {
     return <div className={`${s.root} ${s.publicTheme}`}><main className={s.wrap} style={{ paddingTop: 48 }}><p><strong><UiText>This fundraiser isn&apos;t accepting donations right now.</UiText></strong> <UiText>Nothing was charged.</UiText></p><Link href={`/fundraisers/${id}`}><UiText>Back to fundraiser</UiText></Link></main></div>;
   }
@@ -171,17 +187,26 @@ export default function DonatePage() {
   const invalid = !Number.isFinite(value) || value < 1 || tooMuch;
   const fee = Number.isFinite(value) ? Math.round(value * d.platformFeePercent) / 100 : 0;
   const gateway = Number.isFinite(value) ? Math.round(value * GATEWAY_PERCENT) / 100 : 0;
+  const supportValue = customSupport === null ? support : Number(customSupport) || 0;
   const offer80G = !!d.taxReceiptOffered;
   const panClean = pan.replace(/\s/g, "").toUpperCase();
-  const nameMismatch = !!panName && !panNameMatches(user.fullName ?? "", panName);
-  const taxProblems = !offer80G || !want80G ? [] : [
-    ...(!panFile ? [ui("Add a photo of your PAN card")] : []),
+  const donorName = user ? user.fullName ?? "" : guestName.trim();
+  const donorEmail = user ? user.email : guestEmail.trim();
+  const guest: Guest | null = user ? null : { fullName: donorName, email: donorEmail, mobileNumber: guestPhone.trim() };
+  const nameInvalid = !user && !donorName;
+  const emailInvalid = !user && !EMAIL_RE.test(donorEmail);
+  const nameMismatch = !!panName && !panNameMatches(donorName, panName);
+  const ticked80G = offer80G && want80G;
+  const phoneClean = guestPhone.replace(/[\s-]/g, "");
+  const taxProblems = [
+    ...(!/^\+?[0-9]{7,15}$/.test(phoneClean) ? [ui("Enter your phone number")] : []),
     ...(!PAN_RE.test(panClean) ? [ui("Enter a valid PAN, like ABCDE1234F")] : []),
     ...(!address.trim() ? [ui("Enter your address")] : []),
-    ...(nameMismatch ? [ui("The name on the PAN card doesn't match your account name")] : []),
+    ...(ticked80G && !panFile ? [ui("Add a photo of your PAN card")] : []),
+    ...(ticked80G && nameMismatch ? [user ? ui("The name on the PAN card doesn't match your account name") : ui("The name on the PAN card doesn't match the name you entered")] : []),
   ];
-  const tax: Tax | null = offer80G && want80G && panFile && taxProblems.length === 0
-    ? { panNumber: panClean, address: address.trim(), photo: panFile } : null;
+  const tax: Tax | null = taxProblems.length === 0
+    ? { panNumber: panClean, address: address.trim(), mobileNumber: phoneClean, photo: ticked80G ? panFile : null } : null;
 
   async function choosePanPhoto(picked: File | null) {
     if (!picked) return; // cancelled the picker: keep the photo already chosen
@@ -211,7 +236,7 @@ export default function DonatePage() {
       const ok = await loadRazorpay();
       const Rzp = rzpCtor();
       if (!ok || !Rzp) { setError(ERR_OPEN); setBusy(false); return; }
-      const result = await checkoutReusingDonation(Number(id), value, anonymous, fresh, tax, skipPhoto);
+      const result = await checkoutReusingDonation(Number(id), value, supportValue, anonymous, fresh, tax, guest, skipPhoto);
       if ("redirect" in result) { router.push(`/fundraisers/donations/${result.redirect}`); return; }
       if ("prior" in result) { setPrior(result.prior); setBusy(false); return; }
       if ("photoFailed" in result) { setPhotoFailed(true); setPhotoReason(result.reason); setBusy(false); return; }
@@ -219,7 +244,7 @@ export default function DonatePage() {
       const rzp = new Rzp({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
         name: "CauseKind", description: d!.card.title ?? "Fundraiser", order_id: order.razorpayOrderId,
-        prefill: { email: user!.email, name: user!.fullName },
+        prefill: { email: donorEmail, name: donorName },
         theme: { color: "#b04a15" },
         // The browser callback is never proof of payment: the result page asks the server.
         handler: () => router.push(`/fundraisers/donations/${order.donationId}`),
@@ -266,6 +291,20 @@ export default function DonatePage() {
               </div>
               {remaining != null && <p className={s.small}><strong>{formatINR(remaining)}</strong> {ui("still needed to reach the target. You can give up to this amount.")}</p>}
               <p className={`${s.small} ${s.muted}`}><UiText>One-time donation in INR.</UiText></p>
+              <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend style={{ fontWeight: 600, marginBottom: 4 }}><UiText>Support the CauseKind platform (optional)</UiText></legend>
+                <p className={`${s.small} ${s.muted}`} style={{ marginBottom: 8 }}><UiText>This helps us keep CauseKind running. It is separate from your donation, does not go to the fundraiser, and is not covered by the 80G receipt.</UiText></p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {SUPPORT_AMOUNTS.map((v) => {
+                    const on = customSupport === null && support === v;
+                    return <button key={v} type="button" aria-pressed={on} onClick={() => { setSupport(v); setCustomSupport(null); }}
+                      style={{ minHeight: 44, padding: "0 14px", borderRadius: 10, fontWeight: 600, cursor: "pointer", border: on ? "2px solid #b04a15" : "1px solid #cfc3b6", background: on ? "#fdf6f1" : "#fff", color: on ? "#7a3410" : "#1f140c" }}>{v === 0 ? ui("No thanks") : formatINR(v)}</button>;
+                  })}
+                  <button type="button" aria-pressed={customSupport !== null} onClick={() => setCustomSupport((c) => c ?? (support ? String(support) : ""))}
+                    style={{ minHeight: 44, padding: "0 14px", borderRadius: 10, fontWeight: 600, cursor: "pointer", border: customSupport !== null ? "2px solid #b04a15" : "1px solid #cfc3b6", background: customSupport !== null ? "#fdf6f1" : "#fff", color: customSupport !== null ? "#7a3410" : "#1f140c" }}><UiText>Other</UiText></button>
+                </div>
+                {customSupport !== null && <label style={{ display: "block", marginTop: 10, fontWeight: 600 }}><UiText>Support amount (₹)</UiText><input className={s.in} inputMode="numeric" maxLength={5} value={customSupport} onChange={(e) => setCustomSupport(e.target.value.replace(/\D/g, ""))} style={{ display: "block", marginTop: 6 }} /></label>}
+              </fieldset>
               <div><button type="button" className={`${s.btn} ${s.bp}`} onClick={() => { setTried(true); if (!invalid) { setStep(1); window.scrollTo({ top: 0 }); } else document.getElementById("cu")?.focus(); }}><UiText>Continue</UiText></button></div>
             </>
           )}
@@ -273,11 +312,33 @@ export default function DonatePage() {
           {step === 1 && (
             <>
               <h1 className={s.serif} style={{ fontSize: 32 }}><UiText>Your details</UiText></h1>
-              <div className={s.grid2}>
-                <div><label className={s.lbl} htmlFor="n"><UiText>Full name</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="n" className={s.in} value={user.fullName ?? ""} readOnly /></div>
-                <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="e" className={s.in} value={user.email} readOnly style={{ background: "#f7f3ee" }} /></div>
-              </div>
+              {user ? (
+                <div className={s.grid2}>
+                  <div><label className={s.lbl} htmlFor="n"><UiText>Full name</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="n" className={s.in} value={user.fullName ?? ""} readOnly /></div>
+                  <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="e" className={s.in} value={user.email} readOnly style={{ background: "#f7f3ee" }} /></div>
+                  <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText></label><input id="ph" className={s.in} type="tel" value={guestPhone} maxLength={30} autoComplete="tel" onChange={(e) => setGuestPhone(e.target.value)} /></div>
+                </div>
+              ) : (
+                <>
+                  <p className={s.small}><UiText>No account needed.</UiText> <Link href={loginUrlFor(`/fundraisers/${id}/donate`)}><UiText>Log in</UiText></Link> <UiText>if you have one.</UiText></p>
+                  <div className={s.grid2}>
+                    <div><label className={s.lbl} htmlFor="n"><UiText>Full name</UiText></label><input id="n" className={s.in} value={guestName} maxLength={150} autoComplete="name" aria-invalid={detailsTried && nameInvalid ? true : undefined} onChange={(e) => setGuestName(e.target.value)} />
+                      {detailsTried && nameInvalid && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Enter your full name.</UiText></p>}</div>
+                    <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText></label><input id="e" className={s.in} type="email" value={guestEmail} maxLength={320} autoComplete="email" aria-invalid={detailsTried && emailInvalid ? true : undefined} onChange={(e) => setGuestEmail(e.target.value)} />
+                      {detailsTried && emailInvalid && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Enter a valid email address.</UiText></p>}</div>
+                    <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText></label><input id="ph" className={s.in} type="tel" value={guestPhone} maxLength={30} autoComplete="tel" onChange={(e) => setGuestPhone(e.target.value)} /></div>
+                  </div>
+                </>
+              )}
               <p className={`${s.small} ${s.muted}`}><UiText>We&apos;ll send your donation certificate here.</UiText></p>
+              <section className={s.card} aria-labelledby="dd" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+                <h2 id="dd" style={{ fontSize: 17, fontWeight: 700 }}><UiText>PAN and address</UiText></h2>
+                <p className={s.small}><UiText>We need these for every donation. Everyone gets a donation certificate.</UiText></p>
+                <div><label className={s.lbl} htmlFor="pan"><UiText>PAN</UiText></label>
+                  <input id="pan" className={s.in} value={pan} maxLength={10} autoComplete="off" onChange={(e) => setPan(e.target.value.toUpperCase())} style={{ textTransform: "uppercase" }} /></div>
+                <div><label className={s.lbl} htmlFor="addr"><UiText>Your address</UiText></label>
+                  <textarea id="addr" className={s.in} rows={3} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} style={{ resize: "vertical" }} /></div>
+              </section>
               {offer80G && (
                 <section className={s.card} aria-labelledby="t80" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
                   <h2 id="t80" style={{ fontSize: 17, fontWeight: 700 }}><UiText>80G tax receipt</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></h2>
@@ -286,7 +347,7 @@ export default function DonatePage() {
                   <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fdf6f1", border: "1px solid #ecd9cb" }}>
                     <p className={s.small} style={{ fontWeight: 700, marginBottom: 6 }}><UiText>How the 80G receipt works</UiText></p>
                     <ul className={s.small} style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                      <li><UiText>The name on your PAN card must match the name on your CauseKind account.</UiText></li>
+                      <li>{user ? <UiText>The name on your PAN card must match the name on your CauseKind account.</UiText> : <UiText>The name on your PAN card must match the name you entered above.</UiText>}</li>
                       <li><UiText>The receipt is issued in the PAN holder&apos;s name, for the amount you donate.</UiText></li>
                       <li><UiText>Sahas Charitable Trust reports your donation, PAN and address to the Income Tax Department (Form 10BD).</UiText></li>
                       <li><UiText>After the financial year ends, the Trust sends your Form 10BE certificate, by 31 May.</UiText></li>
@@ -344,11 +405,6 @@ export default function DonatePage() {
                           </div>
                         )}
                       </div>
-                      <div><label className={s.lbl} htmlFor="pan"><UiText>PAN</UiText></label>
-                        <input id="pan" className={s.in} value={pan} maxLength={10} autoComplete="off" onChange={(e) => setPan(e.target.value.toUpperCase())} style={{ textTransform: "uppercase" }} /></div>
-                      <div><label className={s.lbl} htmlFor="addr"><UiText>Your address</UiText></label>
-                        <textarea id="addr" className={s.in} rows={3} maxLength={500} value={address} onChange={(e) => setAddress(e.target.value)} style={{ resize: "vertical" }} />
-                        <p className={`${s.small} ${s.muted}`}><UiText>Printed on the receipt and reported by the Trust to the Income Tax Department.</UiText></p></div>
                       {taxTried && taxProblems.length > 0 && (
                         <ul role="alert" className={s.errText} style={{ margin: 0, paddingLeft: 18 }}>{taxProblems.map((p) => <li key={p}>{p}</li>)}</ul>
                       )}
@@ -363,14 +419,14 @@ export default function DonatePage() {
               {/* A blocked Continue must say why next to the button, not only inside the 80G box above (2026-11-02). */}
               {taxTried && taxProblems.length > 0 && (
                 <div role="alert" style={{ padding: "12px 14px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000" }} className={s.small}>
-                  <strong><UiText>To continue with an 80G receipt:</UiText></strong> {taxProblems.join(" · ")}.{" "}
-                  <UiText>Or untick &ldquo;I want an 80G tax receipt&rdquo; to continue without it.</UiText>
+                  <strong><UiText>To continue:</UiText></strong> {taxProblems.join(" · ")}.
                 </div>
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}><button type="button" className={`${s.btn} ${s.bs}`} onClick={() => setStep(0)}><UiText>Back</UiText></button><button type="button" className={`${s.btn} ${s.bp}`} onClick={() => {
-                setTaxTried(true);
-                if (taxProblems.length === 0) { setStep(2); window.scrollTo({ top: 0 }); }
-                else document.getElementById("t80")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                setTaxTried(true); setDetailsTried(true);
+                if (nameInvalid || emailInvalid) document.getElementById(nameInvalid ? "n" : "e")?.focus();
+                else if (taxProblems.length === 0) { setStep(2); window.scrollTo({ top: 0 }); }
+                else document.getElementById("dd")?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}><UiText>Continue</UiText></button></div>
             </>
           )}
@@ -385,18 +441,20 @@ export default function DonatePage() {
                   [t("platformFee", { pct: d.platformFeePercent }), `− ${formatINR(fee)}`],
                   [ui("Payment provider charges (about)"), `− ${formatINR(gateway)}`],
                   [ui("Reaches the beneficiary (about)"), <strong key="r">{formatINR(Math.max(0, value - fee - gateway))}</strong>],
-                  [ui("Shown publicly as"), anonymous ? ui("Anonymous") : (user.fullName ?? ui("Your name"))],
-                  ...(offer80G ? [[ui("80G receipt"), tax ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
+                  ...(supportValue > 0 ? [[ui("Support to CauseKind (not part of your donation)"), formatINR(supportValue)] as [string, string]] : []),
+                  [ui("Shown publicly as"), anonymous ? ui("Anonymous") : (donorName || ui("Your name"))],
+                  ...(user ? [] : [[ui("Documents sent to"), donorEmail] as [string, string]]),
+                  ...(offer80G ? [[ui("80G receipt"), tax?.photo ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
                 ].map(([k, v], i) => (
                   <div key={i} className={s.tabular} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", borderTop: i ? "1px solid #efe7de" : 0 }}><span>{k}</span><span style={{ textAlign: "right" }}>{v}</span></div>
                 ))}
-                <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #efe7de", fontWeight: 700, fontSize: 18 }}><span><UiText>You pay</UiText></span><span>{formatINR(value)}</span></div>
+                <div className={s.tabular} style={{ display: "flex", justifyContent: "space-between", padding: "12px 0", borderTop: "1px solid #efe7de", fontWeight: 700, fontSize: 18 }}><span><UiText>You pay</UiText></span><span>{formatINR(value + supportValue)}</span></div>
               </section>
               <section className={s.card} style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 6, borderColor: "#e8c98a", background: "#fffbf3" }} aria-labelledby="pt">
                 <h2 id="pt" style={{ fontSize: 15, fontWeight: 700 }}><UiText>Before you pay</UiText></h2>
                 <p className={s.small}><UiText>Your donation is received by</UiText> <strong><UiText>Sahas Charitable Trust</UiText></strong><UiText>, which transfers it to the beneficiary.</UiText></p>
                 <p className={s.small}><strong><UiText>Donations are not refundable.</UiText></strong></p>
-                {tax
+                {tax?.photo
                   ? <p className={s.small}><UiText>You&apos;ll get your 80G receipt and donation certificate by email.</UiText></p>
                   : <p className={s.small}><UiText>You&apos;ll get a donation certificate by email.</UiText>{!offer80G && <> <UiText>80G receipts aren&apos;t available right now.</UiText></>}</p>}
               </section>
@@ -426,7 +484,7 @@ export default function DonatePage() {
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => setStep(1)}><UiText>Back</UiText></button>
-                <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy || prior !== null || photoFailed}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value) })}</button>
+                <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy || prior !== null || photoFailed}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value + supportValue) })}</button>
               </div>
             </>
           )}

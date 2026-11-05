@@ -130,6 +130,8 @@ export type PurchaseCommitmentBody = {
   intendedStore?: string;
   notes?: string;
   fulfilmentMethod: "BUY_AND_HAND_OVER" | "DIRECT_DELIVERY";
+  /** Buy and hand over only. */
+  purchaseChannel?: "ONLINE" | "OFFLINE";
   productUrl?: string;
 };
 
@@ -164,6 +166,7 @@ export function serializePurchaseCommitment(
     itemName: (requestTitle ?? "").trim() || "Requested item",
     purchaseTimeline: model.purchaseTimeline,
     fulfilmentMethod: model.fulfilmentMethod,
+    ...(model.fulfilmentMethod === "BUY_AND_HAND_OVER" && model.purchaseChannel ? { purchaseChannel: model.purchaseChannel } : {}),
     // A half-typed link is held back rather than sent: the backend rejects it
     // and the inline error already tells the donor.
     ...(link && isSafeWebLink(link) ? { productUrl: link } : {}),
@@ -203,7 +206,7 @@ export function offerMaterialDigest(model: OfferModel): string {
     // The purchase plan is material: it is the substance of what the donee is
     // being asked to accept, so changing it after ticking the declarations has
     // to void them exactly as changing the item would.
-    model.fulfilmentMethod, model.productUrl,
+    model.fulfilmentMethod, model.purchaseChannel, model.productUrl,
     model.proposedBrand, model.proposedModel, model.estimatedCost,
     model.intendedStore, model.purchaseTimeline, model.purchaseNotes,
     model.quantity, model.approximateAge, model.accessoriesIncluded, model.specNotes,

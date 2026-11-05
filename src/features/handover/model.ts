@@ -197,11 +197,15 @@ export function deliveryAddressPending(vm: HandoverViewModel): boolean {
 
 function deliveryStepCopy(vm: HandoverViewModel): { title: string; body: string } {
   const s = deliveryAddressState(vm);
+  // The donor taking it in person rather than a courier.
+  const inPerson = vm.schedule?.method === "DROP_OFF";
   if (vm.role === "DONOR") {
     if (s === "awaiting" || !vm.delivery?.address) {
       return {
         title: "Ask for the delivery address",
-        body: "You're sending this by courier. Request the recipient's delivery address so you know where to send it.",
+        body: inPerson
+          ? "You're delivering this yourself. Ask the recipient for their address so you know where to take it."
+          : "You're sending this by courier. Request the recipient's delivery address so you know where to send it.",
       };
     }
     if (s === "requested") {
@@ -212,12 +216,24 @@ function deliveryStepCopy(vm: HandoverViewModel): { title: string; body: string 
     }
     return {
       title: "Delivery address",
-      body: "Recipient's delivery address is ready. Dispatch by courier, enter the tracking details, and confirm here.",
+      body: inPerson
+        ? "The recipient's address is ready. Take the item there at the agreed time and confirm the handover here."
+        : "Recipient's delivery address is ready. Dispatch by courier, enter the tracking details, and confirm here.",
+    };
+  }
+  if (s === "awaiting") {
+    return {
+      title: "Waiting for address request",
+      body: inPerson
+        ? "The donor will deliver this to you and will request your address when they're ready. You'll be notified here."
+        : "The donor will send this by courier and will request your address when they're ready. You'll be notified here.",
     };
   }
   return {
     title: s === "requested" ? "The donor needs your delivery address" : "Add your delivery address",
-    body: "The donor will send this by courier. Please provide your recipient name, contact phone, and delivery address.",
+    body: inPerson
+      ? "The donor will bring this to you. Please share the address they should come to, with a contact name and phone."
+      : "The donor will send this by courier. Please provide your recipient name, contact phone, and delivery address.",
   };
 }
 

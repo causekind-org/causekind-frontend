@@ -11,6 +11,7 @@ import {
 } from "@/lib/api";
 import { serverDate } from "@/lib/serverTime";
 import { useNotifications } from "@/hooks/useNotifications";
+import { PurchaseIssueResolverFor } from "@/features/purchase/PurchaseIssueResolver";
 
 /**
  * Admin → Issues: every problem report and support case in the application,
@@ -296,6 +297,7 @@ const KIND_TONE = { ISSUE: "bg-amber-500", STATUS: "bg-sky-500", CASE: "bg-stone
 function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce: number; onBack: () => void }) {
   const [d, setD] = useState<AdminIssueDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [decided, setDecided] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -304,7 +306,7 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
       .then(r => { if (active) setD(r); })
       .catch(e => { if (active) setError(e instanceof Error ? e.message : "Couldn't load this issue"); });
     return () => { active = false; };
-  }, [issueKey, nonce]);
+  }, [issueKey, nonce, decided]);
 
   const back = (
     <button onClick={onBack} className="inline-flex items-center gap-1.5 text-sm font-bold text-[#b04a15]">
@@ -315,6 +317,8 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
   if (!d || d.summary.key !== issueKey) return <div className="space-y-4">{back}<div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-stone-300" aria-label="Loading issue" /></div></div>;
 
   const s = d.summary;
+  // An open purchase problem is decided right here; everything else stays a read-only record.
+  const decidable = (s.source === "PURCHASE" || s.source === "OFFER_HANDOVER") && s.open && s.entityType === "offer" && s.entityId != null;
   const reportFacts: { label: string; value: ReactNode }[] = [
     { label: "Reported by", value: <PersonFact p={s.reportedBy} /> },
     { label: "About", value: <PersonFact p={s.against} /> },
@@ -336,11 +340,36 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
           {s.entityType && s.entityId != null && <span className="text-xs text-stone-500">· {s.entityType} #{s.entityId}</span>}
         </div>
         <h2 className="text-xl font-black text-stone-900">{s.title ?? "Untitled"}</h2>
-        <p className="flex items-center gap-1.5 text-xs text-stone-500"><Lock className="h-3.5 w-3.5" aria-hidden /> Read-only view — the full record of this issue.</p>
+        <p className="flex items-center gap-1.5 text-xs text-stone-500"><Lock className="h-3.5 w-3.5" aria-hidden /> {decidable ? "The full record of this issue — decide it below." : "Read-only view — the full record of this issue."}</p>
       </header>
 
       <Card title="What was reported" icon={<AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />}>
         <p className="mb-4 whitespace-pre-line rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-800">{s.description ?? "No description given."}</p>
+        {(d.requestedQuantity != null || d.sentQuantity != null || d.receivedQuantity != null || d.missingQuantity != null) && (
+          <dl className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs sm:grid-cols-4">
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Requested</dt><dd className="text-base font-bold text-stone-900">{d.requestedQuantity ?? "—"}</dd></div>
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Claimed / Sent</dt><dd className="text-base font-bold text-stone-900">{d.sentQuantity ?? "—"}</dd></div>
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Confirmed Received</dt><dd className="text-base font-bold text-emerald-700">{d.receivedQuantity ?? "—"}</dd></div>
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Missing / Shortfall</dt><dd className="text-base font-bold text-amber-700">{d.missingQuantity ?? "—"}</dd></div>
+          </dl>
+        )}
+        {d.adminDecision && (
+          <div className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs">
+            <span className="font-bold text-stone-700">Admin Decision: </span>
+            <span className="font-semibold text-stone-900">
+              {d.adminDecision === "REQUEST_REMAINING_DONOR"
+                ? "Option A — Requested remaining items from donor (voluntary redonation active in donor history)"
+                : d.adminDecision === "CLOSED_NO_ACTION"
+                  ? "Option B — Closed without requesting additional items"
+                  : humanize(d.adminDecision)}
+            </span>
+            {d.donorNotificationStatus && (
+              <span className="ms-2 rounded-full bg-stone-200 px-2 py-0.5 text-2xs font-semibold text-stone-700">
+                Notification: {d.donorNotificationStatus}
+              </span>
+            )}
+          </div>
+        )}
         <FactGrid facts={reportFacts} />
         {d.response && (
           <div className="mt-4 rounded-xl border border-stone-200 p-3">
@@ -355,6 +384,12 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
           </div>
         )}
       </Card>
+
+      {decidable && (
+        <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#b04a15]" aria-hidden />}>
+          <PurchaseIssueResolverFor offerId={s.entityId as number} onDone={() => setDecided(x => x + 1)} />
+        </Card>
+      )}
 
       {d.sections.map(sec => (
         <Card key={sec.title} title={sec.title} icon={<UserRound className="h-4 w-4 text-stone-500" aria-hidden />}>

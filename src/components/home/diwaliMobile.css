@@ -58,6 +58,7 @@
     background-image: linear-gradient(90deg, #f4a340 0%, #f4a340 25%, #fff3c4 52%, #f4a340 75%, #f4a340 100%);
   }
 
+
   /* ── Hero ── */
   .ck-showcase-hero.ck-hero-diwali { background: var(--dw-night); }
   .ck-diwali-media::after { background: linear-gradient(to bottom, transparent, var(--dw-night)); }

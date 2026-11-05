@@ -1,0 +1,34 @@
+/* Phones only: the shared header sits transparent over the full-page photo and
+   scrolls away with it. :has() scopes this to /scan without editing the shared nav. */
+@media (max-width: 1023.98px) {
+  body:has(.ck-scan-page) header {
+    position: absolute;
+    inset: 0 0 auto;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  body:has(.ck-scan-page) .ck-mobile-header {
+    background: transparent;
+  }
+
+  /* The menu icon turns white on the photo; the logo keeps its brand colours. */
+  body:has(.ck-scan-page) .ck-mobile-header > button {
+    filter: brightness(0) invert(1);
+  }
+
+  /* The dark "Cause" would vanish on the photo; the rest of the logo keeps its colours. */
+  body:has(.ck-scan-page) .ck-mobile-header .ck-dlogo-cause {
+    color: #fff;
+  }
+
+  body:has(.ck-scan-page) .ck-mobile-dock-glass-layer {
+    opacity: 0.12;
+  }
+
+  body:has(.ck-scan-page) .ck-mobile-dock svg {
+    color: #fff;
+    filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.6));
+  }
+}

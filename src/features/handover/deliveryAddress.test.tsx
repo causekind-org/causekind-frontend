@@ -113,7 +113,16 @@ describe("donor", () => {
 });
 
 describe("recipient", () => {
-  it("is asked for delivery address when requested, but NOT asked for courier details", async () => {
+  it("does not show delivery address form to recipient before donor requests it", () => {
+    const a = actions();
+    nextAction(vm("DONEE", { requestedAt: null, address: null, submittedAt: null }), a);
+    expect(screen.getByText("Waiting for delivery address request")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Recipient full name/)).toBeNull();
+    expect(screen.queryByLabelText(/Full delivery address/)).toBeNull();
+    expect(screen.queryByRole("button", { name: /Send to donor/ })).toBeNull();
+  });
+
+  it("is asked for delivery address when requested, shows confirmation prompt on Send, and NOT asked for courier details", async () => {
     const a = actions();
     nextAction(vm("DONEE", { requestedAt: "2026-09-19T10:00:00Z" }), a);
     expect(screen.getByText("The donor needs your delivery address")).toBeInTheDocument();
@@ -134,9 +143,23 @@ describe("recipient", () => {
     expect(screen.getByLabelText(/Recipient full name/)).toHaveValue("Asha Devi");
     expect(screen.getByLabelText(/Contact phone number/)).toHaveValue("9876543210");
     expect(screen.getByLabelText(/Full delivery address/)).toHaveValue("Flat 4, Sai Krupa, Virar, 401303");
+
+    // Click Send to donor -> Confirmation dialog appears
+    await userEvent.click(screen.getByRole("button", { name: /Send to donor/ }));
+    expect(screen.getByText("Confirm delivery address")).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure the address is correct\?/)).toBeInTheDocument();
+    expect(a.submit).not.toHaveBeenCalled();
+
+    // Confirm in dialog -> submits to donor
+    await userEvent.click(screen.getByRole("button", { name: /Yes, send to donor/ }));
+    expect(a.submit).toHaveBeenCalledWith(expect.objectContaining({
+      address: "Flat 4, Sai Krupa, Virar, 401303",
+      contactName: "Asha Devi",
+      contactPhone: "9876543210",
+    }));
   });
 
-  it("sees profile delivery address in panel and can edit if needed", async () => {
+  it("sees profile delivery address in panel and cannot edit once submitted (only one-time submission)", () => {
     const a = actions();
     render(<HandoverDeliveryPanel vm={vm("DONEE", {
       address: "Flat 4, Sai Krupa, Virar, 401303", contactName: "Asha Devi",
@@ -145,12 +168,8 @@ describe("recipient", () => {
     expect(screen.getByText("Your delivery address")).toBeInTheDocument();
     expect(screen.getByText("Flat 4, Sai Krupa, Virar, 401303")).toBeInTheDocument();
 
-    const editBtn = screen.getByRole("button", { name: /Edit address/ });
-    await userEvent.click(editBtn);
-
-    expect(screen.getByLabelText(/Full delivery address/)).toHaveValue("Flat 4, Sai Krupa, Virar, 401303");
-    const send = screen.getByRole("button", { name: /Send to donor/ });
-    expect(send).toBeEnabled();
+    // Donee cannot edit once submitted
+    expect(screen.queryByRole("button", { name: /Edit address/ })).toBeNull();
   });
 
   it("has clear courier copy when address has been provided", () => {
@@ -220,6 +239,87 @@ describe("courier schedule dialog and summary", () => {
     render(<HandoverScheduleSummary vm={courierVm} />);
     expect(screen.queryByText("Where")).toBeNull();
     expect(screen.queryByText("Some Old Meeting Location")).toBeNull();
+  });
+
+  it("does not show Where field in HandoverScheduleDialog when method is DROP_OFF and allows submission without address/pin", async () => {
+    const onSubmit = vi.fn().mockResolvedValue(undefined);
+    const donorVm: HandoverViewModel = {
+      ...vm("DONOR"),
+      flow: "OFFER",
+      methodOptions: [
+        { value: "DROP_OFF", label: "You deliver", hint: "You take it to them." },
+        { value: "PICKUP", label: "Recipient picks up", hint: "They come to you." },
+      ],
+      schedule: {
+        method: "DROP_OFF", methodLabel: "You deliver", scheduledAt: new Date().toISOString(), address: "",
+        latitude: null, longitude: null, notes: null, rescheduleCount: 0, maxReschedules: 2, atRisk: false,
+      },
+    };
+
+    render(
+      <HandoverScheduleDialog
+        vm={donorVm}
+        open={true}
+        onOpenChange={vi.fn()}
+        onSubmit={onSubmit}
+        isReschedule={false}
+      />
+    );
+
+    // "Where?" should NOT be rendered
+    expect(screen.queryByLabelText(/Where\?/i)).toBeNull();
+    expect(screen.getByText("Where to deliver")).toBeInTheDocument();
+    expect(screen.getByText(/You're taking it to the recipient, so you don't need to enter an address/i)).toBeInTheDocument();
+
+    const whenInput = screen.getByLabelText(/When\?/i);
+    await userEvent.type(whenInput, "2026-10-25T14:30");
+
+    const saveButton = screen.getByRole("button", { name: "Save" });
+    expect(saveButton).toBeEnabled();
+    await userEvent.click(saveButton);
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({
+      method: "DROP_OFF",
+      address: undefined,
+    }));
+  });
+
+  it("does not render meeting place Where row in HandoverScheduleSummary when method is DROP_OFF", () => {
+    const dropOffVm: HandoverViewModel = {
+      ...vm("DONOR"),
+      flow: "OFFER",
+      schedule: {
+        method: "DROP_OFF", methodLabel: "You deliver", scheduledAt: "2026-10-20T10:00:00Z",
+        address: "Old Address", latitude: 19.25, longitude: 72.86,
+        notes: null, rescheduleCount: 0, maxReschedules: 2, atRisk: false,
+      },
+    };
+
+    render(<HandoverScheduleSummary vm={dropOffVm} />);
+    expect(screen.queryByText("Where")).toBeNull();
+    expect(screen.queryByText("Old Address")).toBeNull();
+  });
+
+  it("does not render Courier details card in HandoverDeliveryPanel when method is DROP_OFF", () => {
+    const dropOffVm: HandoverViewModel = {
+      ...vm("DONOR"),
+      flow: "OFFER",
+      schedule: {
+        method: "DROP_OFF", methodLabel: "You deliver", scheduledAt: "2026-10-20T10:00:00Z",
+        address: null, latitude: null, longitude: null,
+        notes: null, rescheduleCount: 0, maxReschedules: 2, atRisk: false,
+      },
+      delivery: {
+        needed: true, address: "Flat 4, Sai Krupa, Virar 401303", latitude: 19.46, longitude: 72.8,
+        contactName: "Asha Devi", contactPhone: "9876543210",
+        requestedAt: "2026-09-19T10:00:00Z", submittedAt: "2026-09-19T11:00:00Z",
+      },
+    };
+
+    render(<HandoverDeliveryPanel vm={dropOffVm} actions={actions()} />);
+    expect(screen.getByText("Deliver to")).toBeInTheDocument();
+    expect(screen.getByText("Flat 4, Sai Krupa, Virar 401303")).toBeInTheDocument();
+    expect(screen.queryByText("Courier dispatch details")).toBeNull();
   });
 });
 

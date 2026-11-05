@@ -9,9 +9,6 @@ import { TrustCertificates } from "@/components/money-donation/TrustCertificates
 import { Suspense } from "react";
 import { DonateScrollOnArrival } from "@/components/donate/DonateScrollOnArrival";
 
-
-import { TrustCredibility } from "@/components/money-donation/TrustCredibility";
-
 export default function MoneyDonateClient() {
   return (
     <div className="relative min-h-screen overflow-clip bg-[#fffbf5] dark:bg-[#1a0b04]">
@@ -41,7 +38,6 @@ export default function MoneyDonateClient() {
       <TrustCertificates />
       <MoneyDonationForm />
       <MoneyFlowStory />
-      <TrustCredibility />
     </div>
   );
 }

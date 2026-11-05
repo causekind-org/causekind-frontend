@@ -616,26 +616,31 @@ export function Chapter1TheUnusedThing({
             if (!titleEl) return;
             const vh = window.innerHeight;
             const trackTop = track.getBoundingClientRect().top;
+            const inFilm = -trackTop > lead() + hold() + vh * 0.02;
+            // Back on the title card from inside the film: put the film on its
+            // first frame at once, rather than letting the scrub ease back
+            // behind the title (on a dark frame the words would be unreadable
+            // until it caught up).
+            if (!inFilm && tl.time() > 0.6) tl.scrollTrigger?.getTween()?.progress(1);
+            // Also "after" whenever the room has started drawing, so the title
+            // can never sit over it — the scrub eases behind the scroll, and a
+            // fast scroll (or a return to a film left mid-way) can otherwise
+            // leave the two out of step.
             const next =
-              -trackTop > lead() + hold() + vh * 0.02
+              inFilm || tl.time() > 0.6
                 ? "after"
                 : (leadEl ? leadEl.getBoundingClientRect().bottom > vh * 0.92 : trackTop > vh * 0.85)
                   ? "before"
                   : "in";
             if (next === titleState) return;
-            const prev = titleState;
             titleState = next;
             titleEl.dataset.state = next;
-            // Back on the title card from inside the film: put the film on its
-            // first frame at once, rather than letting the scrub ease back
-            // behind the title (on a dark frame the words would be unreadable
-            // until it caught up).
-            if (prev === "after") tl.scrollTrigger?.getTween()?.progress(1);
           };
           const queueTitle = () => {
             if (!titleRaf) titleRaf = requestAnimationFrame(syncTitle);
           };
           syncTitle();
+          tl.eventCallback("onUpdate", () => { apply(); queueTitle(); });
           window.addEventListener("scroll", queueTitle, { passive: true });
           window.addEventListener("resize", queueTitle);
           ScrollTrigger.addEventListener("refresh", queueTitle);

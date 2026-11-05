@@ -16,6 +16,8 @@ type Props = {
   availability: Record<OfferStep, StepAvailability>;
   requestTitle: string | null;
   requestedQuantity: number | null;
+  /** What's left after other offers; below requestedQuantity when the need is partly met. */
+  stillNeededQuantity?: number | null;
   onJump: (step: OfferStep) => void;
   onExit: () => void;
   onSaveExit: () => void;
@@ -28,7 +30,7 @@ type Props = {
 /** Guided presentation over the existing persisted purchase wizard. */
 export function GuidedPurchaseLayout({
   children, saveStatus, current, steps, labels, availability, requestTitle,
-  requestedQuantity, onJump, onExit, onSaveExit, onContinue,
+  requestedQuantity, stillNeededQuantity, onJump, onExit, onSaveExit, onContinue,
   submitting, submitted, savingExit,
 }: Props) {
   const wt = useTranslations("wizardFlow");
@@ -40,7 +42,13 @@ export function GuidedPurchaseLayout({
   const summary = (
     <>
       <p className="break-words text-base font-semibold text-stone-900 dark:text-stone-100">{title}</p>
-      {requestedQuantity != null && <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">{wt("quantityRequestedN", { quantity: requestedQuantity })}</p>}
+      {/* Partly covered: lead with what's still needed, so "5 requested" isn't read as "5 needed". */}
+      {requestedQuantity != null && stillNeededQuantity != null && stillNeededQuantity < requestedQuantity ? (
+        <>
+          <p className="mt-2 text-base font-bold text-[var(--ck-role-accent)]">{wt("stillNeededN", { quantity: stillNeededQuantity })}</p>
+          <p className="mt-0.5 text-sm text-stone-500 dark:text-stone-400">{wt("requestedTotalCovered", { requested: requestedQuantity, covered: requestedQuantity - stillNeededQuantity })}</p>
+        </>
+      ) : requestedQuantity != null && <p className="mt-2 text-sm text-stone-500 dark:text-stone-400">{wt("quantityRequestedN", { quantity: requestedQuantity })}</p>}
       <p className="mt-4 border-t border-stone-200 pt-4 text-sm leading-relaxed text-stone-600 dark:border-zinc-700 dark:text-stone-300">
         <UiText>Buy only once your offer is accepted and shows Ready to buy. You can hand it over in person or ship it straight to the recipient. CauseKind never takes payment.</UiText>
       </p>
