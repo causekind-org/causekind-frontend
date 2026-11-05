@@ -140,8 +140,8 @@ export function PurchaseHub({
   const inTransit = stage === "IN_TRANSIT" || stage === "PARTIALLY_RECEIVED" || stage === "DELIVERED";
   const openIssue = view.issues.find(i => !i.resolvedAt);
   // The participant who didn't report the open issue can answer it once.
-  const canRespond = !!openIssue && !openIssue.response
-    && ((donor && openIssue.reportedByRole === "DONEE") || (donee && openIssue.reportedByRole === "DONOR"));
+  const canRespond = !donor && !!openIssue && !openIssue.response
+    && (donee && openIssue.reportedByRole === "DONOR");
   const [extractedOrder, setExtractedOrder] = useState<ExtractedProofData | null>(null);
   const deliveryProofDone = view.evidence.some(e => e.type === "DELIVERY_PROOF");
   // Direct delivery, ready to buy: step 1 is the checklist; the upload and order
@@ -473,7 +473,7 @@ export function PurchaseHub({
                 }, outcome.kind === "receipt" && outcome.data.condition === "GOOD" ? "Thanks — receipt recorded" : "Issue raised — our team will review it and follow up")} />
             )}
 
-            {view.issues.length > 0 && (
+            {!donor && view.issues.length > 0 && (
               <IssuesPanel issues={view.issues} role={role} canRespond={canRespond} busy={busy}
                 onRespond={message => run("respond", () => respondToPurchaseIssue(id, message), "Response sent to support")}
                 onInfoReply={message => run("info", () => replyToPurchaseInfoRequest(id, message), "Answer sent to our team")} />
