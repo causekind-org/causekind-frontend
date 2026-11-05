@@ -99,9 +99,9 @@ export function buildOrderPayload(values: ScanFormValues, utm: Utm) {
 }
 
 export function createQrOrder(payload: ReturnType<typeof buildOrderPayload>) {
-  return post<QrOrder>("/api/donations/qr/orders", payload, ORDER_TIMEOUT_MS);
+  return post<QrOrder>("/api/v1/donations/qr/orders", payload, ORDER_TIMEOUT_MS);
 }
 
 export function verifyQrPayment(payload: QrVerifyRequest) {
-  return post<QrVerifyResult>("/api/donations/qr/verify", payload, VERIFY_TIMEOUT_MS);
+  return post<QrVerifyResult>("/api/v1/donations/qr/verify", payload, VERIFY_TIMEOUT_MS);
 }

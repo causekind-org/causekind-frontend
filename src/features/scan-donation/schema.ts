@@ -4,9 +4,9 @@ export const PRESET_AMOUNTS = [51, 101, 501] as const;
 export const DEFAULT_PRESET = "101";
 export const OTHER_PRESET = "other";
 export const MIN_AMOUNT = 10;
-/** Rupees. ₹20 is preselected; the donor can change it or pick "No tip". */
-export const TIP_OPTIONS = [0, 10, 20, 50] as const;
-export const DEFAULT_TIP = "20";
+/** Rupees. ₹30 is preselected, as on the other donate pages; the donor can change it or pick "No thanks". */
+export const TIP_OPTIONS = [0, 30, 50, 100] as const;
+export const DEFAULT_TIP = "30";
 
 const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const PHONE_RE = /^[6-9]\d{9}$/;
@@ -36,6 +36,12 @@ export const scanSchema = z
     }
     if (v.wants80g && !PAN_RE.test(v.pan)) {
       ctx.addIssue({ code: "custom", path: ["pan"], message: "Enter a valid PAN, like ABCDE1234F." });
+    }
+    if (v.wants80g) {
+      if (!v.address.line.trim()) ctx.addIssue({ code: "custom", path: ["address", "line"], message: "An 80G receipt needs your street address." });
+      if (!v.address.city.trim()) ctx.addIssue({ code: "custom", path: ["address", "city"], message: "An 80G receipt needs your city." });
+      if (!v.address.state.trim()) ctx.addIssue({ code: "custom", path: ["address", "state"], message: "An 80G receipt needs your state." });
+      if (!v.address.pincode) ctx.addIssue({ code: "custom", path: ["address", "pincode"], message: "An 80G receipt needs your PIN code." });
     }
   });
 

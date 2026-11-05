@@ -269,7 +269,8 @@ export function ScanDonation() {
           <h1 ref={resultHeading} tabIndex={-1} className="text-2xl font-extrabold tracking-tight outline-none">
             Thank you, {stage.firstName}. Your {rupees(stage.amount)} will feed someone in need this Diwali.
           </h1>
-          {stage.wants80g && <p className="mt-4">Your 80G certificate will be emailed to you.</p>}
+          {!stage.wants80g && <p className="mt-4">Your donation certificate will be emailed to you.</p>}
+          {stage.wants80g && <p className="mt-4">Your 80G receipt and donation certificate will be emailed to you.</p>}
           <p className="mt-4 text-sm text-foreground/75 max-lg:text-white/85">
             Payment ID: <span className="break-all font-mono text-foreground max-lg:text-white">{stage.paymentId}</span>
           </p>
@@ -384,7 +385,7 @@ export function ScanDonation() {
                 <AmountOption
                   key={value}
                   value={String(value)}
-                  label={value === 0 ? "No tip" : `₹${value}`}
+                  label={value === 0 ? "No thanks" : `₹${value}`}
                   field={register("tip")}
                 />
               ))}
@@ -392,7 +393,7 @@ export function ScanDonation() {
             <FieldMessage id="tip-error" message={errors.tip?.message} />
             {tip > 0 && (
               <p className="mt-2 text-sm text-foreground/75 max-lg:text-white/85">
-                {rupees(amount)} donation + {rupees(tip)} platform support
+                {rupees(amount)} donation + {rupees(tip)} support to CauseKind, separate from your donation and not covered by 80G
               </p>
             )}
           </fieldset>
@@ -432,7 +433,7 @@ export function ScanDonation() {
 
           <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
             <input id="wants80g" type="checkbox" {...wants80gField} className="size-5 shrink-0 accent-primary" />I want an
-            80G tax exemption certificate
+            80G tax receipt
           </label>
 
           {wants80g && (
@@ -450,9 +451,9 @@ export function ScanDonation() {
             </Field>
           )}
 
-          <Collapsible.Root open={addressOpen || !!pincodeError} onOpenChange={setAddressOpen}>
+          <Collapsible.Root open={addressOpen || !!pincodeError || wants80g} onOpenChange={setAddressOpen}>
             <Collapsible.Trigger className="group flex min-h-11 w-full items-center justify-between rounded-xl text-sm font-semibold text-primary max-lg:text-orange-300 focus-visible:outline-2 focus-visible:outline-ring">
-              Add address (optional)
+              {wants80g ? "Address (needed for 80G)" : "Add address (optional)"}
               <ChevronDown className="size-5 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
             </Collapsible.Trigger>
             <Collapsible.Content className="space-y-4 pt-3">
@@ -501,7 +502,7 @@ export function ScanDonation() {
         </fieldset>
 
         <p className="text-sm text-foreground/75 max-lg:text-white/85">
-          Your details are used only for your donation receipt and 80G certificate.
+          Your donation goes to Sahas Charitable Trust. Your details are used only for your donation documents.
         </p>
 
         {stage.kind === "failed" && (
