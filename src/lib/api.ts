@@ -7360,7 +7360,7 @@ export type SahasCampaignDetail = {
   items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
 };
 export type SahasDonationInput = {
-  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber: string; tipAmount?: number; address: string; wants80g: boolean;
+  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber: string; tipAmount?: number; address: string; wants80g: boolean; utm?: { source: string; medium: string; campaign: string; content: string };
 };
 export type SahasDonationRow = {
   id: number; donor: string; anonymous: boolean; amount: number; platformFee: number | null; status: string;

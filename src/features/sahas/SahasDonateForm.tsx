@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { captureUtm, trackDonationSuccess, trackInitiateCheckout } from "@/features/scan-donation/tracking";
 import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -59,6 +60,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [docs, setDocs] = useState<{ id: number; token: string; certificate: boolean; receipt: boolean; receiptOwed: boolean } | null>(null);
 
   useEffect(() => { sahasCampaigns.detail(slug).then(setData).catch(() => setData(null)); }, [slug]);
+  const tracked = useRef(false);
   useEffect(() => () => { if (poll.current) clearTimeout(poll.current); }, []);
 
   if (data === undefined) return onClose ? <p className="m-0 p-6 text-sm"><UiText>Loading…</UiText></p> : <PageSkeleton><div className="h-96" /></PageSkeleton>;
@@ -107,6 +109,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (s.status === "FAILED") { setResult("failed"); return; }
       if (s.status === "COMPLETED") {
         setResult("success");
+        if (!tracked.current) { tracked.current = true; trackDonationSuccess(value); }
         setDocs({ id, token, certificate: s.certificateReady, receipt: s.receiptReady, receiptOwed: s.receiptOwed });
         if (s.certificateReady && (s.receiptReady || !s.receiptOwed)) return;
       }
@@ -120,11 +123,12 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (!(await loadCheckout())) { setError(ui("Couldn't load the payment window. Check your connection.")); return; }
       const start = await sahasCampaigns.donate(data.campaignId, {
         amount: value, fullName: name.trim(), email: email.trim(), mobileNumber: cleanPhone, tipAmount: tipValue, anonymous,
-        panNumber: pan.trim(), address: address.trim(), wants80g,
+        panNumber: pan.trim(), address: address.trim(), wants80g, utm: captureUtm(window.location.search),
       });
       const token = start.panUploadToken ?? "";
       if (wants80g && panFile) await uploadTrustDonationPanPhoto(start.donationId, panFile, token);
       const order = await sahasCampaigns.donationCheckout(start.donationId, token);
+      trackInitiateCheckout(value);
       new window.Razorpay({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
         name: "Sahas Charitable Trust", description: c.title, order_id: order.razorpayOrderId,
