@@ -21,6 +21,7 @@ export const scanSchema = z
     phone: z.string().regex(PHONE_RE, "Enter a 10-digit Indian mobile number."),
     email: z.string().trim().min(1, "Please enter your email.").email("Enter a valid email address."),
     wants80g: z.boolean(),
+    anonymous: z.boolean(),
     pan: z.string(),
     address: z.object({
       line: z.string(),
@@ -53,6 +54,7 @@ export const SCAN_DEFAULTS: ScanFormValues = {
   phone: "",
   email: "",
   wants80g: false,
+  anonymous: false,
   pan: "",
   address: { line: "", city: "", state: "", pincode: "" },
   website: "",

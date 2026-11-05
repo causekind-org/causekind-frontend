@@ -105,6 +105,7 @@ export function MoneyDonationForm() {
   // PAN card photo (2026-10-08): read by AI to fill the PAN, attached to the
   // donation once it exists. Optional — typing the PAN still works.
   const [wants80g, setWants80g] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
   const [panPhoto, setPanPhoto] = useState<File | null>(null);
   const [panPreview, setPanPreview] = useState<string | null>(null);
   // The browser can't draw every file the PAN reader accepts (PDF, TIFF, HEIC):
@@ -290,6 +291,7 @@ export function MoneyDonationForm() {
         panNumber: formData.panNumber,
         address: formData.address.trim(),
         wants80g,
+        anonymous,
       });
 
       // Attach the card photo now that the donation exists. Best-effort: the
@@ -842,6 +844,10 @@ export function MoneyDonationForm() {
                         autoComplete="street-address"
                       />
                     </div>
+                    <label htmlFor="anonymous" className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-foreground sm:col-span-2">
+                      <input id="anonymous" type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} className="size-5 shrink-0 accent-amber-700" />
+                      Don&apos;t display my name publicly
+                    </label>
                     <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-foreground sm:col-span-2">
                       <input id="wants80g" type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} className="size-5 shrink-0 accent-amber-700" />
                       I want an 80G tax receipt

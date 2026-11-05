@@ -87,7 +87,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const nameOk = name.trim().length >= 2;
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
   const cleanPhone = phone.replace(/[\s-]/g, "");
-  const phoneOk = phone === "" || /^\+?[0-9]{7,15}$/.test(cleanPhone);
+  const phoneOk = /^\+?[0-9]{7,15}$/.test(cleanPhone);
   const tipValue = customTip === null ? tip : Number(customTip) || 0;
   const total = value + tipValue;
   const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
@@ -195,7 +195,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
         <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Email</UiText><input type="email" className={field} value={email} maxLength={254} onChange={(e) => setEmail(e.target.value.trim())} autoComplete="email" /></label>
         {email !== "" && !emailOk && <p className={hint}><UiText>Enter a valid email, like name@example.com.</UiText></p>}
       </>}
-      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone (optional)</UiText><input type="tel" inputMode="tel" className={field} value={phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ""))} autoComplete="tel" /></label>
+      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone</UiText><input type="tel" inputMode="tel" className={field} value={phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ""))} autoComplete="tel" /></label>
       {!phoneOk && phone.length > 0 && <p className={hint}><UiText>Enter a valid phone number.</UiText></p>}
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
       <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>

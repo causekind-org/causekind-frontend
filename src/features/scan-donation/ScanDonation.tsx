@@ -486,6 +486,10 @@ export function ScanDonation() {
               </Field>
             </Collapsible.Content>
           </Collapsible.Root>
+          <label htmlFor="anonymous" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
+            <input id="anonymous" type="checkbox" {...register("anonymous")} className="size-5 shrink-0 accent-primary" />
+            Don&apos;t display my name publicly
+          </label>
           <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
             <input id="wants80g" type="checkbox" {...wants80gField} className="size-5 shrink-0 accent-primary" />I want an
             80G tax receipt

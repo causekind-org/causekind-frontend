@@ -76,7 +76,7 @@ type CheckoutResult =
  */
 /** 80G details for this donation; the photo must be on the server before checkout or the donation is certificate-only. */
 /** PAN and address come from every donor; a photo is there only when 80G is ticked. */
-type Tax = { panNumber: string; address: string; photo: File | null };
+type Tax = { panNumber: string; address: string; mobileNumber: string; photo: File | null };
 /** Someone donating without an account (2026-11-04); null for a signed-in donor. */
 type Guest = { fullName: string; email: string; mobileNumber: string };
 
@@ -85,7 +85,7 @@ async function checkoutReusingDonation(campaignId: number, amount: number, suppo
   const key = pendingKey(campaignId);
   // The details are frozen on the donation, so different ones (or a different kind of donor) need a new donation.
   const who = guest ? JSON.stringify(guest) : null;
-  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; address?: string | null; wants?: boolean; photo: boolean; who?: string | null };
+  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; address?: string | null; phone?: string | null; wants?: boolean; photo: boolean; who?: string | null };
   let saved: Saved | null = null;
   try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
   const remember = (s: Saved) => { try { sessionStorage.setItem(key, JSON.stringify(s)); } catch { /* fine */ } };
@@ -100,7 +100,7 @@ async function checkoutReusingDonation(campaignId: number, amount: number, suppo
     remember({ ...s, photo: true });
     return null;
   };
-  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.address ?? null) === (tax?.address ?? null) && !!saved.wants === !!tax?.photo && (saved.who ?? null) === who) {
+  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.address ?? null) === (tax?.address ?? null) && (saved.phone ?? null) === (tax?.mobileNumber ?? null) && !!saved.wants === !!tax?.photo && (saved.who ?? null) === who) {
     const stop = await ensurePhoto(saved);
     if (stop) return stop;
     try { return { order: await fundraisers.checkout(saved.donationId, guestTokenFor(saved.donationId)) }; }
@@ -118,12 +118,12 @@ async function checkoutReusingDonation(campaignId: number, amount: number, suppo
       }
     }
   }
-  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address, wants80g: !!tax.photo } : undefined;
+  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address, mobileNumber: tax.mobileNumber, wants80g: !!tax.photo } : undefined;
   const started = guest
     ? await fundraisers.donateAsGuest(campaignId, amount, anonymous, guest, taxDetails, support)
     : await fundraisers.donate(campaignId, amount, anonymous, taxDetails, support);
   if (started.guestToken) rememberGuestToken(started.donationId, started.guestToken);
-  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, address: tax?.address ?? null, wants: !!tax?.photo, photo: false, who };
+  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, address: tax?.address ?? null, phone: tax?.mobileNumber ?? null, wants: !!tax?.photo, photo: false, who };
   remember(fresh_);
   const stop = await ensurePhoto(fresh_);
   if (stop) return stop;
@@ -145,6 +145,7 @@ export default function DonatePage() {
   const [guestName, setGuestName] = useState("");
   const [guestEmail, setGuestEmail] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+  useEffect(() => { if (user?.phone) setGuestPhone((p) => p || user.phone!); }, [user?.phone]);
   const [detailsTried, setDetailsTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -196,14 +197,16 @@ export default function DonatePage() {
   const emailInvalid = !user && !EMAIL_RE.test(donorEmail);
   const nameMismatch = !!panName && !panNameMatches(donorName, panName);
   const ticked80G = offer80G && want80G;
+  const phoneClean = guestPhone.replace(/[\s-]/g, "");
   const taxProblems = [
+    ...(!/^\+?[0-9]{7,15}$/.test(phoneClean) ? [ui("Enter your phone number")] : []),
     ...(!PAN_RE.test(panClean) ? [ui("Enter a valid PAN, like ABCDE1234F")] : []),
     ...(!address.trim() ? [ui("Enter your address")] : []),
     ...(ticked80G && !panFile ? [ui("Add a photo of your PAN card")] : []),
     ...(ticked80G && nameMismatch ? [user ? ui("The name on the PAN card doesn't match your account name") : ui("The name on the PAN card doesn't match the name you entered")] : []),
   ];
   const tax: Tax | null = taxProblems.length === 0
-    ? { panNumber: panClean, address: address.trim(), photo: ticked80G ? panFile : null } : null;
+    ? { panNumber: panClean, address: address.trim(), mobileNumber: phoneClean, photo: ticked80G ? panFile : null } : null;
 
   async function choosePanPhoto(picked: File | null) {
     if (!picked) return; // cancelled the picker: keep the photo already chosen
@@ -313,6 +316,7 @@ export default function DonatePage() {
                 <div className={s.grid2}>
                   <div><label className={s.lbl} htmlFor="n"><UiText>Full name</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="n" className={s.in} value={user.fullName ?? ""} readOnly /></div>
                   <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText> <span className={`${s.chip} ${s.cM}`}><UiText>From your account</UiText></span></label><input id="e" className={s.in} value={user.email} readOnly style={{ background: "#f7f3ee" }} /></div>
+                  <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText></label><input id="ph" className={s.in} type="tel" value={guestPhone} maxLength={30} autoComplete="tel" onChange={(e) => setGuestPhone(e.target.value)} /></div>
                 </div>
               ) : (
                 <>
@@ -322,7 +326,7 @@ export default function DonatePage() {
                       {detailsTried && nameInvalid && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Enter your full name.</UiText></p>}</div>
                     <div><label className={s.lbl} htmlFor="e"><UiText>Email</UiText></label><input id="e" className={s.in} type="email" value={guestEmail} maxLength={320} autoComplete="email" aria-invalid={detailsTried && emailInvalid ? true : undefined} onChange={(e) => setGuestEmail(e.target.value)} />
                       {detailsTried && emailInvalid && <p role="alert" className={s.errText}><Icon name="alert" /><UiText>Enter a valid email address.</UiText></p>}</div>
-                    <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></label><input id="ph" className={s.in} type="tel" value={guestPhone} maxLength={30} autoComplete="tel" onChange={(e) => setGuestPhone(e.target.value)} /></div>
+                    <div><label className={s.lbl} htmlFor="ph"><UiText>Phone</UiText></label><input id="ph" className={s.in} type="tel" value={guestPhone} maxLength={30} autoComplete="tel" onChange={(e) => setGuestPhone(e.target.value)} /></div>
                   </div>
                 </>
               )}
