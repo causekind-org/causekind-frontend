@@ -215,7 +215,7 @@ export function Footer({ role }: FooterProps) {
           <div className="col-span-2 md:col-span-1 flex flex-col items-center text-center md:items-start md:text-left space-y-3.5">
             <Link href="/" className="inline-block" aria-label={t("homeAria")}>
               <div className="inline-flex items-center bg-white px-3 py-1.5 rounded-xl [&_*]:dark:text-[#120c04]! [&_.ck-logo-kind-shimmer]:text-[#B4541A]!">
-                <CareNestLogo size="md" />
+                <CareNestLogo size="md" seasonal={false} />
               </div>
             </Link>
             <p className="text-[#D9CCBB] text-sm leading-relaxed font-medium max-w-xs mx-auto md:mx-0 md:max-w-none">

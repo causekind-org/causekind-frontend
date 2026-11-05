@@ -7,7 +7,8 @@ import Link from "@/components/AppLink";
 import { FEATURES } from "@/lib/features";
 import { sahasCampaigns, type SahasCampaignCard } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
-import { SAHAS_NAME, SahasCard, serif, tabOf, type SahasTab } from "@/features/sahas/sahasUi";
+import { SAHAS_NAME, serif, tabOf, type SahasTab } from "@/features/sahas/sahasUi";
+import { SahasHubList } from "@/features/sahas/SahasHubList";
 
 const TABS: SahasTab[] = ["active", "upcoming", "completed"];
 
@@ -55,25 +56,27 @@ function SahasHub() {
 
   return (
     <main className="min-h-screen bg-[#FBF7F2] text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
-      <div className="mx-auto flex max-w-6xl flex-col gap-7 px-4 py-10 sm:px-6">
+      <div className="flex w-full flex-col gap-5 px-4 py-8 sm:px-6 lg:px-10 lg:py-12 xl:px-16">
         <nav aria-label={ui("Breadcrumb")} className="text-sm text-[#6B5A4E] dark:text-stone-400">
           <Link href="/" className="text-inherit hover:underline"><UiText>Home</UiText></Link> › <UiText>Sahas Campaigns</UiText>
         </nav>
-        <header className="flex flex-col gap-3">
-          <span className="text-xs font-semibold uppercase tracking-[0.05em] text-[#b04a15] dark:text-[#e07b3a]">
-            <UiText>Organised by</UiText> {SAHAS_NAME}
-          </span>
-          <h1 className={`${serif} m-0 text-4xl leading-tight sm:text-5xl`}><UiText>Sahas Campaigns</UiText></h1>
-          <p className="m-0 max-w-2xl text-base leading-relaxed text-[#4A3B30] dark:text-stone-300">
+        <header className="grid grid-cols-1 gap-3 text-center lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end lg:gap-16 lg:border-b-2 lg:border-[#1F140D] lg:pb-7 lg:text-left dark:lg:border-stone-300">
+          <div className="flex flex-col gap-2 lg:gap-3">
+            <h1 className={`${serif} order-1 m-0 text-[40px] leading-[1.05] lg:order-2 lg:text-7xl`}><UiText>Sahas Campaigns</UiText></h1>
+            <span className="order-2 text-sm text-[#5c4a3d] lg:order-1 dark:text-stone-400">
+              <UiText>Organised by</UiText> {SAHAS_NAME}
+            </span>
+          </div>
+          <p className="m-0 hidden text-[15px] leading-relaxed text-[#4A3B30] lg:block dark:text-stone-300">
             <UiText>Specific needs that Sahas is collecting for right now. Give the items on the list, and follow what was received and delivered.</UiText>
           </p>
         </header>
 
-        <div role="tablist" aria-label={ui("Campaign status")} className="flex gap-2 overflow-x-auto pb-1">
+        <div role="tablist" aria-label={ui("Campaign status")} className="flex justify-center gap-5 overflow-x-auto border-y border-[#1F140D] lg:-mt-5 lg:justify-start lg:gap-7 lg:border-t-0 lg:border-[#D9C9B8] dark:border-zinc-700">
           {TABS.map((t) => (
             <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => pick(t)}
-              className={`min-h-[44px] cursor-pointer whitespace-nowrap rounded-full border px-5 text-[15px] font-semibold transition-colors ${tab === t ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-[#D9C9B8] bg-white text-[#4A3B30] hover:border-[#b04a15] hover:text-[#b04a15] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300"}`}>
-              {tabLabel[t]}{cards ? ` · ${counts[t]}` : ""}
+              className={`min-h-[44px] cursor-pointer whitespace-nowrap border-0 bg-transparent px-0 text-sm font-semibold underline-offset-[6px] ${tab === t ? "text-[#8f3a0e] underline dark:text-[#e07b3a]" : "text-[#5c4a3d] hover:text-[#8f3a0e] dark:text-stone-400"}`}>
+              {tabLabel[t]}{cards ? ` ${counts[t]}` : ""}
             </button>
           ))}
         </div>
@@ -87,8 +90,8 @@ function SahasHub() {
             </button>
           </div>
         ) : cards === null ? (
-          <div aria-busy="true" className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2].map((i) => <div key={i} className="h-96 animate-pulse rounded-2xl bg-[#EFE4D8] motion-reduce:animate-none dark:bg-zinc-900" />)}
+          <div aria-busy="true" className="flex flex-col gap-4">
+            {[0, 1, 2].map((i) => <div key={i} className="h-28 animate-pulse bg-[#EFE4D8] motion-reduce:animate-none dark:bg-zinc-900" />)}
           </div>
         ) : shown.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#D9C9B8] p-6 text-sm leading-relaxed text-[#4A3B30] dark:text-stone-300">
@@ -101,9 +104,7 @@ function SahasHub() {
             ) : tab === "upcoming" ? <UiText>No upcoming campaigns yet.</UiText> : <UiText>No completed campaigns yet.</UiText>}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {shown.map((c) => <SahasCard key={c.slug} c={c} locale={locale} />)}
-          </div>
+          <SahasHubList cards={shown} locale={locale} />
         )}
       </div>
     </main>
