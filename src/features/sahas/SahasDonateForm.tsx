@@ -10,7 +10,7 @@ import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
 
 const MIN = 101;
-const PRESETS = [500, 1000, 2000];
+const PRESETS = [101, 251, 501, 1001, 2001, 5001];
 const TIPS = [0, 20, 50, 100];
 const FEE_PERCENT = 5;
 const MAX_PAN_FILE = 5 * 1024 * 1024;
@@ -40,11 +40,11 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const { user } = useAuth();
   const [about, setAbout] = useState(false);
   const [data, setData] = useState<SahasCampaignDetail | null | undefined>(undefined);
-  const [amount, setAmount] = useState("1000");
+  const [amount, setAmount] = useState("1001");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [tip, setTip] = useState(0);
+  const [tip, setTip] = useState(50);
   const [customTip, setCustomTip] = useState<string | null>(null);
   const [anonymous, setAnonymous] = useState(false);
   const [wants80g, setWants80g] = useState(false);
