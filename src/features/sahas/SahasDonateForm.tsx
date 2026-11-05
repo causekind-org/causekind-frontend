@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { captureUtm, trackDonationSuccess, trackInitiateCheckout } from "@/features/scan-donation/tracking";
 import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +10,7 @@ import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
 
-const MIN = 101;
+const MIN = 1;
 const PRESETS = [101, 251, 501, 1001, 2001, 5001];
 const TIPS = [0, 30, 50, 100];
 const FEE_PERCENT = 5;
@@ -40,7 +41,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const { user } = useAuth();
   const [about, setAbout] = useState(false);
   const [data, setData] = useState<SahasCampaignDetail | null | undefined>(undefined);
-  const [amount, setAmount] = useState("1001");
+  const [amount, setAmount] = useState("101");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -59,6 +60,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [docs, setDocs] = useState<{ id: number; token: string; certificate: boolean; receipt: boolean; receiptOwed: boolean } | null>(null);
 
   useEffect(() => { sahasCampaigns.detail(slug).then(setData).catch(() => setData(null)); }, [slug]);
+  const tracked = useRef(false);
   useEffect(() => () => { if (poll.current) clearTimeout(poll.current); }, []);
 
   if (data === undefined) return onClose ? <p className="m-0 p-6 text-sm"><UiText>Loading…</UiText></p> : <PageSkeleton><div className="h-96" /></PageSkeleton>;
@@ -94,7 +96,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const fileOk = panFile !== null && panFile.size <= MAX_PAN_FILE;
   const detailsOk = (user ? true : nameOk && emailOk) && phoneOk;
   const taxOk = panOk && address.trim().length >= 10 && (!wants80g || fileOk);
-  const amountError = amount === "" ? null : value < MIN ? ui("The minimum donation is ₹101.")
+  const amountError = amount === "" ? null : value < MIN ? ui("Enter an amount of ₹1 or more.")
     : value > remaining ? `${ui("This campaign needs only")} ₹${remaining.toLocaleString("en-IN")}.` : null;
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
@@ -107,6 +109,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (s.status === "FAILED") { setResult("failed"); return; }
       if (s.status === "COMPLETED") {
         setResult("success");
+        if (!tracked.current) { tracked.current = true; trackDonationSuccess(value); }
         setDocs({ id, token, certificate: s.certificateReady, receipt: s.receiptReady, receiptOwed: s.receiptOwed });
         if (s.certificateReady && (s.receiptReady || !s.receiptOwed)) return;
       }
@@ -120,11 +123,12 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (!(await loadCheckout())) { setError(ui("Couldn't load the payment window. Check your connection.")); return; }
       const start = await sahasCampaigns.donate(data.campaignId, {
         amount: value, fullName: name.trim(), email: email.trim(), mobileNumber: cleanPhone, tipAmount: tipValue, anonymous,
-        panNumber: pan.trim(), address: address.trim(), wants80g,
+        panNumber: pan.trim(), address: address.trim(), wants80g, utm: captureUtm(window.location.search),
       });
       const token = start.panUploadToken ?? "";
       if (wants80g && panFile) await uploadTrustDonationPanPhoto(start.donationId, panFile, token);
       const order = await sahasCampaigns.donationCheckout(start.donationId, token);
+      trackInitiateCheckout(value);
       new window.Razorpay({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
         name: "Sahas Charitable Trust", description: c.title, order_id: order.razorpayOrderId,
@@ -186,7 +190,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
         <input inputMode="numeric" className={field} value={amount} maxLength={9} onChange={(e) => setAmount(e.target.value.replace(/\D/g, "").replace(/^0+/, ""))} />
       </label>
       {amountError && <p role="alert" className={hint}>{amountError}</p>}
-      <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">{ui("Minimum ₹101. This campaign still needs")} ₹{remaining.toLocaleString("en-IN")}.</p>
+      <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">{ui("This campaign still needs")} ₹{remaining.toLocaleString("en-IN")}.</p>
     </section>
 
     <section className={box}>
