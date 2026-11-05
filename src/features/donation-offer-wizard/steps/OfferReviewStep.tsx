@@ -149,16 +149,38 @@ export function OfferReviewStep({
         </ReviewSection>
       )}
 
-      {!hidePickup && <ReviewSection title={ui("Your location")} onEdit={onChangeLocation}>
-        <ReviewRow label={ui("City")} value={model.pickupCity} />
-        <ReviewRow label={ui("Locality")} value={model.pickupLocality} />
-        <ReviewRow label={ui("PIN code")} value={model.pickupPincode} />
-        <ReviewRow label={ui("Handover")} value={model.fulfilmentMethod === "DIRECT_DELIVERY"
-          ? "Shipped by the retailer to the recipient"
-          : model.donorDropOffAvailable
-          ? "You'll take it to the recipient's area if they can't come"
-          : "Within 10 km of the recipient"} />
-      </ReviewSection>}
+      {model.fulfilmentMethod === "DIRECT_DELIVERY" ? (
+        <ReviewSection title={ui("Delivery")}>
+          <ReviewRow label={ui("Method")} value={ui("Direct delivery — Shipped by retailer directly to recipient")} />
+          <ReviewRow label={ui("Donor pickup")} value={ui("Not required (no home pickup)")} />
+        </ReviewSection>
+      ) : !hidePickup ? (
+        <ReviewSection title={ui("Your location")} onEdit={onChangeLocation}>
+          {(!model.pickupCity?.trim() || model.latitude == null) ? (
+            <div className="py-2">
+              <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">
+                <UiText>Pickup location not set yet.</UiText>
+              </p>
+              <button
+                type="button"
+                onClick={onChangeLocation}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--ck-role-accent)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[var(--ck-role-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]"
+              >
+                📍 <UiText>Set location on map / share location</UiText>
+              </button>
+            </div>
+          ) : (
+            <>
+              <ReviewRow label={ui("City")} value={model.pickupCity} />
+              <ReviewRow label={ui("Locality")} value={model.pickupLocality} />
+              <ReviewRow label={ui("PIN code")} value={model.pickupPincode} />
+              <ReviewRow label={ui("Handover")} value={model.donorDropOffAvailable
+                ? ui("You'll take it to the recipient's area if they can't come")
+                : ui("Within 10 km of the recipient")} />
+            </>
+          )}
+        </ReviewSection>
+      ) : null}
 
       <DeclarationsBlock
         groups={(declarationGroups ?? declarationGroupsFor(flowType, model.fulfilmentMethod)).map(g => ({ ...g, items: g.items.map(tr) }))}

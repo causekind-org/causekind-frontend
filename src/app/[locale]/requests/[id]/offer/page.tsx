@@ -446,7 +446,9 @@ export default function OfferWizardPage() {
   // "Offer this item" opens with the donor's location check, not a form step.
   // Guests get here after logging in (the redirect above). A pass is kept for
   // the browser session (and on the offer itself), so it isn't asked twice.
-  const [passedLocation, setPassedLocation] = useState<PassedOfferLocation | null>(null);
+  const [passedLocation, setPassedLocation] = useState<PassedOfferLocation | null>(() => {
+    return typeof window !== "undefined" && requestId ? readPassedOfferLocation(requestId) : null;
+  });
   useEffect(() => { setPassedLocation(readPassedOfferLocation(requestId)); }, [requestId]);
   /** My offers for this request have been looked up (so we know whether one already has a location). */
   const [offersChecked, setOffersChecked] = useState(false);
@@ -637,7 +639,9 @@ export default function OfferWizardPage() {
   // mobile sticky controls are not constrained by the legacy page wrapper.
   const activeOfferSubmitted = !!existingOffer
     && existingOffer.status !== "DRAFT" && existingOffer.status !== "NEEDS_INFORMATION";
-  const draftHasLocation = existingOffer?.itemDetails?.latitude != null && existingOffer?.itemDetails?.longitude != null;
+  const draftHasLocation = existingOffer?.itemDetails?.latitude != null
+    && existingOffer?.itemDetails?.longitude != null
+    && !!existingOffer?.itemDetails?.pickupCity?.trim();
   /** "No, go back" / Cancel: to wherever "Offer this item" was clicked. */
   function leaveOffer() {
     if (typeof window !== "undefined" && window.history.length > 1) router.back();

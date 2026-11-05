@@ -340,6 +340,11 @@ export function DonationOfferWizard({
     modelRef.current = next; // same reason as setPhotos below
     setModel(next);
     if (invalidated !== null) setDeclarationsInvalidated(invalidated);
+    setErrors((prev) => {
+      if (!prev[key as string]) return prev;
+      const { [key as string]: _, ...rest } = prev;
+      return rest;
+    });
     queueSave(next);
   }, [queueSave]);
 
@@ -351,6 +356,15 @@ export function DonationOfferWizard({
     appliedLocationRef.current = initialLocation;
     (Object.keys(initialLocation) as (keyof PassedOfferLocation)[]).forEach((k) => {
       setField(k, initialLocation[k] as never);
+    });
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next.latitude;
+      delete next.longitude;
+      delete next.pickupCity;
+      delete next.pickupPincode;
+      delete next.pickupLocality;
+      return next;
     });
   }, [initialLocation, setField]);
 
@@ -510,10 +524,14 @@ export function DonationOfferWizard({
   useEffect(() => { headingRef.current?.focus(); }, [step]);
 
   const focusField = useCallback((field: string) => {
+    if (field === "latitude" || field === "longitude" || field === "pickupCity" || field === "pickupPincode" || field === "pickupLocality") {
+      onChangeLocation?.();
+      return;
+    }
     const el = document.querySelector<HTMLElement>(`[name="${field}"], [data-field="${field}"]`);
     el?.focus();
     el?.scrollIntoView({ block: "nearest", behavior: reduced ? "auto" : "smooth" });
-  }, [reduced]);
+  }, [reduced, onChangeLocation]);
 
   // Screening only ever runs on the photos step, which the purchase flow does
   // not have. Without this guard a stale `prohibited` result from a flow the

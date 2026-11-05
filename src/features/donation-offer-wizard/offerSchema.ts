@@ -201,11 +201,15 @@ export function buildOfferSchema(flowType?: string | null, maxQuantity?: number 
     }
 
     // The location step: a pin, and the city it gives (whitespace is not a city).
-    if (v.latitude == null || v.longitude == null) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["latitude"], message: offerErrorCode("locationRequired") });
-    }
-    if (!v.pickupCity.trim()) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: offerErrorCode("cityRequired") });
+    // Direct delivery has no donor pickup: the retailer ships straight to the recipient.
+    const directDelivery = purchase && v.fulfilmentMethod === "DIRECT_DELIVERY";
+    if (!directDelivery) {
+      if (v.latitude == null || v.longitude == null) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["latitude"], message: offerErrorCode("locationRequired") });
+      }
+      if (!v.pickupCity.trim()) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["pickupCity"], message: offerErrorCode("cityRequired") });
+      }
     }
 
     if (!v.declarationsConfirmed) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { emptyOfferModel, firstIncompleteOfferStep, type OfferModel } from "./offerModel";
-import { validateOfferStep } from "./offerSchema";
+import { validateOfferStep, validateOfferAll } from "./offerSchema";
 import { serializePurchaseCommitment } from "./offerSerializer";
 
 /** Buy and hand over: an online purchase names its listing up front; a shop purchase need not. */
@@ -39,5 +39,33 @@ describe("purchase plan rules", () => {
     expect(validateOfferStep("purchasePlan", m, "WILL_PURCHASE").productUrl).toBeTruthy();
     expect(serializePurchaseCommitment(m, "Laptops")?.purchaseChannel).toBeUndefined();
     expect(serializePurchaseCommitment(plan({ purchaseChannel: "OFFLINE" }), "Laptops")?.purchaseChannel).toBe("OFFLINE");
+  });
+
+  it("does not require location or pickup city for direct delivery", () => {
+    const m = plan({
+      fulfilmentMethod: "DIRECT_DELIVERY",
+      productUrl: "https://www.amazon.in/dp/B0TEST",
+      declarationsConfirmed: true,
+      latitude: null,
+      longitude: null,
+      pickupCity: "",
+    });
+    const errors = validateOfferAll(m, "WILL_PURCHASE");
+    expect(errors.latitude).toBeUndefined();
+    expect(errors.pickupCity).toBeUndefined();
+  });
+
+  it("still requires location and pickup city for buy and hand over", () => {
+    const m = plan({
+      fulfilmentMethod: "BUY_AND_HAND_OVER",
+      purchaseChannel: "OFFLINE",
+      declarationsConfirmed: true,
+      latitude: null,
+      longitude: null,
+      pickupCity: "",
+    });
+    const errors = validateOfferAll(m, "WILL_PURCHASE");
+    expect(errors.latitude).toBeTruthy();
+    expect(errors.pickupCity).toBeTruthy();
   });
 });
