@@ -11,7 +11,7 @@ import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
 
 const MIN = 101;
 const PRESETS = [101, 251, 501, 1001, 2001, 5001];
-const TIPS = [0, 20, 50, 100];
+const TIPS = [0, 30, 50, 100];
 const FEE_PERCENT = 5;
 const MAX_PAN_FILE = 5 * 1024 * 1024;
 const field = "min-h-[42px] w-full rounded-lg border border-[#D9C9B8] bg-white px-3 text-[15px] font-normal focus:border-[#b04a15] focus:outline-none dark:border-zinc-700 dark:bg-zinc-950";
@@ -44,7 +44,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [tip, setTip] = useState(50);
+  const [tip, setTip] = useState(30);
   const [customTip, setCustomTip] = useState<string | null>(null);
   const [anonymous, setAnonymous] = useState(false);
   const [wants80g, setWants80g] = useState(false);
