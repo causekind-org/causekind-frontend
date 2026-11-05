@@ -75,7 +75,8 @@ type CheckoutResult =
  * unreadable → explained, and a new payment needs an explicit click. {@code fresh} is that explicit click.
  */
 /** 80G details for this donation; the photo must be on the server before checkout or the donation is certificate-only. */
-type Tax = { panNumber: string; address: string; photo: File };
+/** PAN and address come from every donor; a photo is there only when 80G is ticked. */
+type Tax = { panNumber: string; address: string; photo: File | null };
 /** Someone donating without an account (2026-11-04); null for a signed-in donor. */
 type Guest = { fullName: string; email: string; mobileNumber: string };
 
@@ -84,13 +85,13 @@ async function checkoutReusingDonation(campaignId: number, amount: number, suppo
   const key = pendingKey(campaignId);
   // The details are frozen on the donation, so different ones (or a different kind of donor) need a new donation.
   const who = guest ? JSON.stringify(guest) : null;
-  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; photo: boolean; who?: string | null };
+  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; address?: string | null; wants?: boolean; photo: boolean; who?: string | null };
   let saved: Saved | null = null;
   try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
   const remember = (s: Saved) => { try { sessionStorage.setItem(key, JSON.stringify(s)); } catch { /* fine */ } };
   /** Upload the PAN photo (once) before checkout fixes the documents. */
   const ensurePhoto = async (s: Saved): Promise<CheckoutResult | null> => {
-    if (!tax || s.photo || skipPhoto) return null;
+    if (!tax?.photo || s.photo || skipPhoto) return null;
     try { await uploadDonationPanPhoto(s.donationId, tax.photo, guestTokenFor(s.donationId) ?? undefined); }
     catch (e) {
       // 409 = already uploaded on an earlier try; anything else stops before checkout.
@@ -99,7 +100,7 @@ async function checkoutReusingDonation(campaignId: number, amount: number, suppo
     remember({ ...s, photo: true });
     return null;
   };
-  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.who ?? null) === who) {
+  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.address ?? null) === (tax?.address ?? null) && !!saved.wants === !!tax?.photo && (saved.who ?? null) === who) {
     const stop = await ensurePhoto(saved);
     if (stop) return stop;
     try { return { order: await fundraisers.checkout(saved.donationId, guestTokenFor(saved.donationId)) }; }
@@ -117,12 +118,12 @@ async function checkoutReusingDonation(campaignId: number, amount: number, suppo
       }
     }
   }
-  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address } : undefined;
+  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address, wants80g: !!tax.photo } : undefined;
   const started = guest
     ? await fundraisers.donateAsGuest(campaignId, amount, anonymous, guest, taxDetails, support)
     : await fundraisers.donate(campaignId, amount, anonymous, taxDetails, support);
   if (started.guestToken) rememberGuestToken(started.donationId, started.guestToken);
-  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, photo: false, who };
+  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, address: tax?.address ?? null, wants: !!tax?.photo, photo: false, who };
   remember(fresh_);
   const stop = await ensurePhoto(fresh_);
   if (stop) return stop;
@@ -194,14 +195,15 @@ export default function DonatePage() {
   const nameInvalid = !user && !donorName;
   const emailInvalid = !user && !EMAIL_RE.test(donorEmail);
   const nameMismatch = !!panName && !panNameMatches(donorName, panName);
-  const taxProblems = !offer80G || !want80G ? [] : [
-    ...(!panFile ? [ui("Add a photo of your PAN card")] : []),
+  const ticked80G = offer80G && want80G;
+  const taxProblems = [
     ...(!PAN_RE.test(panClean) ? [ui("Enter a valid PAN, like ABCDE1234F")] : []),
     ...(!address.trim() ? [ui("Enter your address")] : []),
-    ...(nameMismatch ? [user ? ui("The name on the PAN card doesn't match your account name") : ui("The name on the PAN card doesn't match the name you entered")] : []),
+    ...(ticked80G && !panFile ? [ui("Add a photo of your PAN card")] : []),
+    ...(ticked80G && nameMismatch ? [user ? ui("The name on the PAN card doesn't match your account name") : ui("The name on the PAN card doesn't match the name you entered")] : []),
   ];
-  const tax: Tax | null = offer80G && want80G && panFile && taxProblems.length === 0
-    ? { panNumber: panClean, address: address.trim(), photo: panFile } : null;
+  const tax: Tax | null = taxProblems.length === 0
+    ? { panNumber: panClean, address: address.trim(), photo: ticked80G ? panFile : null } : null;
 
   async function choosePanPhoto(picked: File | null) {
     if (!picked) return; // cancelled the picker: keep the photo already chosen
@@ -325,6 +327,14 @@ export default function DonatePage() {
                 </>
               )}
               <p className={`${s.small} ${s.muted}`}><UiText>We&apos;ll send your donation certificate here.</UiText></p>
+              <section className={s.card} aria-labelledby="dd" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+                <h2 id="dd" style={{ fontSize: 17, fontWeight: 700 }}><UiText>PAN and address</UiText></h2>
+                <p className={s.small}><UiText>We need these for every donation. Everyone gets a donation certificate.</UiText></p>
+                <div><label className={s.lbl} htmlFor="pan"><UiText>PAN</UiText></label>
+                  <input id="pan" className={s.in} value={pan} maxLength={10} autoComplete="off" onChange={(e) => setPan(e.target.value.toUpperCase())} style={{ textTransform: "uppercase" }} /></div>
+                <div><label className={s.lbl} htmlFor="addr"><UiText>Your address</UiText></label>
+                  <textarea id="addr" className={s.in} rows={3} maxLength={300} value={address} onChange={(e) => setAddress(e.target.value)} style={{ resize: "vertical" }} /></div>
+              </section>
               {offer80G && (
                 <section className={s.card} aria-labelledby="t80" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
                   <h2 id="t80" style={{ fontSize: 17, fontWeight: 700 }}><UiText>80G tax receipt</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></h2>
@@ -391,11 +401,6 @@ export default function DonatePage() {
                           </div>
                         )}
                       </div>
-                      <div><label className={s.lbl} htmlFor="pan"><UiText>PAN</UiText></label>
-                        <input id="pan" className={s.in} value={pan} maxLength={10} autoComplete="off" onChange={(e) => setPan(e.target.value.toUpperCase())} style={{ textTransform: "uppercase" }} /></div>
-                      <div><label className={s.lbl} htmlFor="addr"><UiText>Your address</UiText></label>
-                        <textarea id="addr" className={s.in} rows={3} maxLength={500} value={address} onChange={(e) => setAddress(e.target.value)} style={{ resize: "vertical" }} />
-                        <p className={`${s.small} ${s.muted}`}><UiText>Printed on the receipt and reported by the Trust to the Income Tax Department.</UiText></p></div>
                       {taxTried && taxProblems.length > 0 && (
                         <ul role="alert" className={s.errText} style={{ margin: 0, paddingLeft: 18 }}>{taxProblems.map((p) => <li key={p}>{p}</li>)}</ul>
                       )}
@@ -410,15 +415,14 @@ export default function DonatePage() {
               {/* A blocked Continue must say why next to the button, not only inside the 80G box above (2026-11-02). */}
               {taxTried && taxProblems.length > 0 && (
                 <div role="alert" style={{ padding: "12px 14px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000" }} className={s.small}>
-                  <strong><UiText>To continue with an 80G receipt:</UiText></strong> {taxProblems.join(" · ")}.{" "}
-                  <UiText>Or untick &ldquo;I want an 80G tax receipt&rdquo; to continue without it.</UiText>
+                  <strong><UiText>To continue:</UiText></strong> {taxProblems.join(" · ")}.
                 </div>
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}><button type="button" className={`${s.btn} ${s.bs}`} onClick={() => setStep(0)}><UiText>Back</UiText></button><button type="button" className={`${s.btn} ${s.bp}`} onClick={() => {
                 setTaxTried(true); setDetailsTried(true);
                 if (nameInvalid || emailInvalid) document.getElementById(nameInvalid ? "n" : "e")?.focus();
                 else if (taxProblems.length === 0) { setStep(2); window.scrollTo({ top: 0 }); }
-                else document.getElementById("t80")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                else document.getElementById("dd")?.scrollIntoView({ behavior: "smooth", block: "start" });
               }}><UiText>Continue</UiText></button></div>
             </>
           )}
@@ -436,7 +440,7 @@ export default function DonatePage() {
                   ...(supportValue > 0 ? [[ui("Support to CauseKind (not part of your donation)"), formatINR(supportValue)] as [string, string]] : []),
                   [ui("Shown publicly as"), anonymous ? ui("Anonymous") : (donorName || ui("Your name"))],
                   ...(user ? [] : [[ui("Documents sent to"), donorEmail] as [string, string]]),
-                  ...(offer80G ? [[ui("80G receipt"), tax ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
+                  ...(offer80G ? [[ui("80G receipt"), tax?.photo ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
                 ].map(([k, v], i) => (
                   <div key={i} className={s.tabular} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", borderTop: i ? "1px solid #efe7de" : 0 }}><span>{k}</span><span style={{ textAlign: "right" }}>{v}</span></div>
                 ))}
@@ -446,7 +450,7 @@ export default function DonatePage() {
                 <h2 id="pt" style={{ fontSize: 15, fontWeight: 700 }}><UiText>Before you pay</UiText></h2>
                 <p className={s.small}><UiText>Your donation is received by</UiText> <strong><UiText>Sahas Charitable Trust</UiText></strong><UiText>, which transfers it to the beneficiary.</UiText></p>
                 <p className={s.small}><strong><UiText>Donations are not refundable.</UiText></strong></p>
-                {tax
+                {tax?.photo
                   ? <p className={s.small}><UiText>You&apos;ll get your 80G receipt and donation certificate by email.</UiText></p>
                   : <p className={s.small}><UiText>You&apos;ll get a donation certificate by email.</UiText>{!offer80G && <> <UiText>80G receipts aren&apos;t available right now.</UiText></>}</p>}
               </section>

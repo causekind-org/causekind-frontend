@@ -93,12 +93,12 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
   const fileOk = panFile !== null && panFile.size <= MAX_PAN_FILE;
   const detailsOk = (user ? true : nameOk && emailOk) && phoneOk;
-  const taxOk = !wants80g || (panOk && address.trim().length >= 10 && fileOk);
+  const taxOk = panOk && address.trim().length >= 10 && (!wants80g || fileOk);
   const amountError = amount === "" ? null : value < MIN ? ui("The minimum donation is ₹101.")
     : value > remaining ? `${ui("This campaign needs only")} ₹${remaining.toLocaleString("en-IN")}.` : null;
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
-    : !phoneOk ? ui("Check your phone number") : wants80g && !panOk ? ui("Check your PAN") : wants80g && address.trim().length < 10 ? ui("Add your full address")
+    : !phoneOk ? ui("Check your phone number") : !panOk ? ui("Check your PAN") : address.trim().length < 10 ? ui("Add your full address")
       : wants80g && !fileOk ? ui("Add your PAN photo, up to 5 MB") : !agreed ? ui("Tick the box to agree") : null;
   const hint = "m-0 text-xs font-normal text-red-700";
 
@@ -120,7 +120,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (!(await loadCheckout())) { setError(ui("Couldn't load the payment window. Check your connection.")); return; }
       const start = await sahasCampaigns.donate(data.campaignId, {
         amount: value, fullName: name.trim(), email: email.trim(), mobileNumber: cleanPhone, tipAmount: tipValue, anonymous,
-        panNumber: wants80g ? pan.trim() : undefined, address: wants80g ? address.trim() : undefined,
+        panNumber: pan.trim(), address: address.trim(), wants80g,
       });
       const token = start.panUploadToken ?? "";
       if (wants80g && panFile) await uploadTrustDonationPanPhoto(start.donationId, panFile, token);
@@ -198,11 +198,11 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone (optional)</UiText><input type="tel" inputMode="tel" className={field} value={phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ""))} autoComplete="tel" /></label>
       {!phoneOk && phone.length > 0 && <p className={hint}><UiText>Enter a valid phone number.</UiText></p>}
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
+      {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
+      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
       {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
-        <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
-        {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
-        <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
         <div className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200">
           <span><UiText>PAN card photo or PDF</UiText></span>
           <label className="flex min-h-[44px] w-fit cursor-pointer items-center justify-center rounded-xl border border-[#b04a15] bg-white px-5 text-sm font-semibold text-[#b04a15] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#b04a15] dark:bg-zinc-900">

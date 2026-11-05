@@ -34,15 +34,13 @@ export const scanSchema = z
     if (v.preset === OTHER_PRESET && !(Number(v.otherAmount) >= MIN_AMOUNT)) {
       ctx.addIssue({ code: "custom", path: ["otherAmount"], message: `The minimum donation is ₹${MIN_AMOUNT}.` });
     }
-    if (v.wants80g && !PAN_RE.test(v.pan)) {
+    if (!PAN_RE.test(v.pan)) {
       ctx.addIssue({ code: "custom", path: ["pan"], message: "Enter a valid PAN, like ABCDE1234F." });
     }
-    if (v.wants80g) {
-      if (!v.address.line.trim()) ctx.addIssue({ code: "custom", path: ["address", "line"], message: "An 80G receipt needs your street address." });
-      if (!v.address.city.trim()) ctx.addIssue({ code: "custom", path: ["address", "city"], message: "An 80G receipt needs your city." });
-      if (!v.address.state.trim()) ctx.addIssue({ code: "custom", path: ["address", "state"], message: "An 80G receipt needs your state." });
-      if (!v.address.pincode) ctx.addIssue({ code: "custom", path: ["address", "pincode"], message: "An 80G receipt needs your PIN code." });
-    }
+    if (!v.address.line.trim()) ctx.addIssue({ code: "custom", path: ["address", "line"], message: "Please enter your street address." });
+    if (!v.address.city.trim()) ctx.addIssue({ code: "custom", path: ["address", "city"], message: "Please enter your city." });
+    if (!v.address.state.trim()) ctx.addIssue({ code: "custom", path: ["address", "state"], message: "Please enter your state." });
+    if (!v.address.pincode) ctx.addIssue({ code: "custom", path: ["address", "pincode"], message: "Please enter your PIN code." });
   });
 
 export type ScanFormValues = z.infer<typeof scanSchema>;

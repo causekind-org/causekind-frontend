@@ -431,12 +431,6 @@ export function ScanDonation() {
             />
           </Field>
 
-          <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
-            <input id="wants80g" type="checkbox" {...wants80gField} className="size-5 shrink-0 accent-primary" />I want an
-            80G tax receipt
-          </label>
-
-          {wants80g && (
             <Field id="pan" label="PAN" error={errors.pan?.message}>
               <Input
                 {...a11y("pan", errors.pan?.message)}
@@ -449,11 +443,10 @@ export function ScanDonation() {
                 className={cn(inputClass, "uppercase")}
               />
             </Field>
-          )}
 
-          <Collapsible.Root open={addressOpen || !!pincodeError || wants80g} onOpenChange={setAddressOpen}>
+          <Collapsible.Root open onOpenChange={setAddressOpen}>
             <Collapsible.Trigger className="group flex min-h-11 w-full items-center justify-between rounded-xl text-sm font-semibold text-primary max-lg:text-orange-300 focus-visible:outline-2 focus-visible:outline-ring">
-              {wants80g ? "Address (needed for 80G)" : "Add address (optional)"}
+              Address
               <ChevronDown className="size-5 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
             </Collapsible.Trigger>
             <Collapsible.Content className="space-y-4 pt-3">
@@ -493,6 +486,11 @@ export function ScanDonation() {
               </Field>
             </Collapsible.Content>
           </Collapsible.Root>
+          <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
+            <input id="wants80g" type="checkbox" {...wants80gField} className="size-5 shrink-0 accent-primary" />I want an
+            80G tax receipt
+          </label>
+
 
           {/* Honeypot: off-screen and out of the tab order, so only bots fill it. */}
           <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">

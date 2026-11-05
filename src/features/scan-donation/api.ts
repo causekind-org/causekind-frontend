@@ -86,7 +86,7 @@ export function buildOrderPayload(values: ScanFormValues, utm: Utm) {
     // Separate from the donation, as on /donate/money: the backend adds it to the order total.
     tipAmount: Number(values.tip),
     wants80g: values.wants80g,
-    pan: values.wants80g ? values.pan : null,
+    pan: values.pan,
     address: {
       line: values.address.line.trim(),
       city: values.address.city.trim(),
