@@ -4,7 +4,8 @@ export type RedonationNotice = {
   requestTitle: string;
   itemTitle?: string | null;
   issueType: string;
-  promptType: "QUANTITY" | "QUALITY";
+  /** REDONATE: the donor agreed with our team to send the remaining items ("Help complete this request"). */
+  promptType: "QUANTITY" | "QUALITY" | "REDONATE";
   requestedQuantity: number;
   sentQuantity: number;
   receivedQuantity: number;
@@ -2380,6 +2381,40 @@ export type DonationOffer = {
   /** ISO timestamp when the 48-hour issue reporting window closes, or null if not yet dual-confirmed. */
   windowExpiresAt?: string | null;
   redonationNotice?: RedonationNotice | null;
+  /** A closed purchase's delivery for both histories; null for other flows. */
+  deliverySummary?: DeliverySummary | null;
+};
+
+/** Where a post-delivery issue stands. */
+export type IssueStatus = "OPEN" | "AWAITING_DONEE_INFO" | "PACKAGE_FOUND" | "DONOR_REDONATING" | "REPLACEMENT_IN_PROGRESS"
+  | "LATE_ARRIVAL_REPORTED" | "RESOLVED" | "CLOSED"
+  /** Admin-only label; participants receive CLOSED. */
+  | "DISPUTED";
+export type ReturnPickupStatus = "NOT_NEEDED" | "SCHEDULED" | "PICKED_UP";
+export type DeliveryOutcome = "ALL" | "PARTIAL" | "DAMAGED" | "NOT_ARRIVED";
+export type DeliverySummary = {
+  pledged: number | null;
+  received: number | null;
+  /** Units that didn't arrive and went to an issue (partial delivery). */
+  shortfall: number | null;
+  /** Units that arrived later through a replacement or redelivery. */
+  redelivered: number | null;
+  issueStatus: IssueStatus | null;
+  outcome: DeliveryOutcome | null;
+  /** A damage report: read as "usable items received · reported damaged". */
+  damageReport?: boolean;
+  arrived?: number | null;
+  minorDamage?: number | null;
+  unusable?: number | null;
+  missing?: number | null;
+  returnPickupStatus?: ReturnPickupStatus | null;
+  /** "Nothing arrived" still open as such (not turned into partial or damage). */
+  nonDelivery?: boolean;
+  /** The donor can download the non-delivery confirmation our team generated. */
+  confirmationAvailable?: boolean;
+  /** The recipient can still report that the package arrived after the issue closed. */
+  lateArrivalOpen?: boolean;
+  arrivedAfterClosure?: boolean;
 };
 
 /**
@@ -2479,6 +2514,27 @@ export type PurchaseView = {
   proofRejectionReason?: string | null;
   /** The plan and what was actually bought, side by side. */
   details?: PurchaseDetailsView | null;
+  /** The recipient's answer to "what arrived?". */
+  deliveryOutcome?: DeliveryOutcome | null;
+  /** Last time the donor said the order shows delivered (one nudge per 24 hours). */
+  deliveredNoticeAt?: string | null;
+  /** The most the recipient can confirm: min(ordered, what the request still needs). */
+  receivableMax?: number | null;
+  /** Set once the purchase is closed for both sides. */
+  completedAt?: string | null;
+  /** The recipient's damage videos; playbackUrl only once screened and approved. */
+  damageVideos?: { id: number; status: OfferVideoStatusName; playbackUrl: string | null }[];
+  /** The recipient may add damage photos or video now (reporting, or asked for more). */
+  evidenceOpen?: boolean;
+  /** "Not received yet" soft state (48 hours) and when we asked again. */
+  notReceivedYetAt?: string | null;
+  notReceivedPromptSentAt?: string | null;
+  /** The donor's delivery proof is in, so "Confirm nothing arrived" is available. */
+  nothingArrivedConfirmable?: boolean;
+  /** No proof, 3 days past the latest expected date: "Not arrived — no update from donor". */
+  noUpdateOptionOpen?: boolean;
+  /** The recipient may report items that arrived after the issue closed. */
+  lateArrivalOpen?: boolean;
 };
 
 /**
@@ -2507,11 +2563,22 @@ export type PurchaseIssueView = {
   infoRequest?: string | null; infoAudience?: PurchaseInfoAudience | null; infoRequestedAt?: string | null;
   /** Each side's answer; a participant sees only their own. */
   infoReplyDonor?: string | null; infoReplyDonee?: string | null; infoRepliedAt?: string | null;
+  status?: IssueStatus | null; shortfallQuantity?: number | null; redeliveredQuantity?: number | null;
+  /** Damage breakdown; good = arrived - minorDamage - unusable. */
+  arrivedQuantity?: number | null; minorDamageQuantity?: number | null; unusableQuantity?: number | null;
+  missingQuantity?: number | null; reclassifiedQuantity?: number | null; damageVerified?: boolean;
+  returnPickupStatus?: ReturnPickupStatus | null;
+  /** The pickup details; the recipient and our team only. */
+  returnPickupNote?: string | null;
+  declaredAt?: string | null; nonDelivery?: boolean;
+  /** Donor and our team only: the non-delivery confirmation is ready to download. */
+  confirmationGeneratedAt?: string | null;
+  lateArrivalQuantity?: number | null; lateArrivalCondition?: "GOOD" | "DAMAGED" | null; lateArrivalReportedAt?: string | null;
 };
 export type PurchaseInfoAudience = "DONOR" | "DONEE" | "BOTH";
 
 /** Donor uploads ITEM_PHOTO..DELIVERY_PROOF; the recipient uploads RECEIVED_PHOTO and ISSUE_EVIDENCE. */
-export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT" | "DELIVERY_PROOF" | "RECEIVED_PHOTO" | "ISSUE_EVIDENCE";
+export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT" | "DELIVERY_PROOF" | "RECEIVED_PHOTO" | "ISSUE_EVIDENCE" | "DAMAGE_PHOTO";
 export type PurchaseReceiptCondition = "GOOD" | "PARTIAL" | "DAMAGED" | "WRONG_ITEM";
 export type PurchaseIssueType = "ITEM_NOT_RECEIVED" | "ITEM_DAMAGED" | "WRONG_ITEM" | "QUANTITY_MISMATCH" | "OTHER";
 export const PURCHASE_CONSENT_VERSION = "purchase-delivery-v1";
@@ -2686,9 +2753,14 @@ export type ChatMessage = {
   threadId: number;
   senderId: number;
   senderName: string;
-  senderEmail: string;
+  /** Only for admins and on your own messages: a donor's email never reaches the donee. */
+  senderEmail: string | null;
+  /** DONOR / DONEE / ADMIN, for labels without contact details. */
+  senderRole?: "DONOR" | "DONEE" | "ADMIN";
+  mine?: boolean;
   content: string;
-  messageType: "TEXT" | "SYSTEM" | "QUESTION" | "ADMIN_NOTE";
+  /** SYSTEM and DELIVERY_UPDATE are posted by the platform (e.g. "Donor marked as delivered"). */
+  messageType: "TEXT" | "SYSTEM" | "QUESTION" | "ADMIN_NOTE" | "DELIVERY_UPDATE";
   recipientTarget: "DONOR" | "DONEE" | "BOTH" | null;
   readAt: string | null;
   sentAt: string;
@@ -3202,8 +3274,47 @@ export function updatePurchaseShipment(offerId: number, data: {
 export function confirmPurchaseReceipt(offerId: number, data: {
   cumulativeQuantity: number; condition: PurchaseReceiptCondition; closeRemainder: boolean;
   affectedQuantity?: number; note?: string;
+  /** Damage report: 1..pledged arrived; minor + unusable is 1..arrived; note required. */
+  arrivedQuantity?: number; minorDamageQuantity?: number; unusableQuantity?: number;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/receipt`, { method: "POST", body: JSON.stringify(data) });
+}
+
+/** "It shows Delivered on my end": tells the recipient to confirm what arrived. */
+export function notifyPurchaseDelivered(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/delivered-notice`, { method: "POST" });
+}
+
+/** The donor's delivery-date update; `expectedOn` is a yyyy-mm-dd date. */
+export function updatePurchaseDeliveryDate(offerId: number, data: { kind: "DELAYED" | "EARLY"; expectedOn: string; message: string }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/delivery-date`, { method: "POST", body: JSON.stringify(data) });
+}
+
+/**
+ * "Nothing arrived", after the checklist. NOT_YET is the 48-hour soft state; CONFIRM
+ * (donor proof in) and NO_UPDATE (no proof, 3 days past the expected date) are final.
+ */
+export function reportPurchaseNotReceived(offerId: number, data: {
+  checkedNeighbours: boolean; checkedFamily: boolean; checkedTracking: boolean;
+  mode: "NOT_YET" | "CONFIRM" | "NO_UPDATE"; declaration: boolean; note?: string;
+}) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/not-received`, { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Items that arrived after the issue closed; damaged ones need DAMAGE_PHOTO uploads first. */
+export function reportPurchaseLateArrival(offerId: number, data: { quantity: number; condition: "GOOD" | "DAMAGED"; note?: string }) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/late-arrival`, { method: "POST", body: JSON.stringify(data) });
+}
+
+/** Downloads the non-delivery confirmation PDF (donor or admin), with the session cookie. */
+export async function downloadNonDeliveryConfirmation(offerId: number) {
+  const res = await fetch(`${BASE_URL}/api/v1/offers/${offerId}/purchase/non-delivery-confirmation`, { credentials: "include" });
+  if (!res.ok) { const b = await res.json().catch(() => ({})); throw new Error(b?.message ?? "Download failed"); }
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement("a");
+  a.href = url; a.download = `non-delivery-confirmation-${offerId}.pdf`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
 
 export function confirmPurchaseNoIssue(offerId: number) {
@@ -3220,7 +3331,7 @@ export function respondToPurchaseIssue(offerId: number, message: string) {
 }
 
 /** Recipient evidence: a photo of what arrived, or evidence for a reported problem. Stored privately. */
-export function uploadPurchaseRecipientEvidence(offerId: number, proofType: "RECEIVED_PHOTO" | "ISSUE_EVIDENCE", file: File, notes?: string) {
+export function uploadPurchaseRecipientEvidence(offerId: number, proofType: "RECEIVED_PHOTO" | "ISSUE_EVIDENCE" | "DAMAGE_PHOTO", file: File, notes?: string) {
   const formData = new FormData();
   formData.append("proofType", proofType);
   formData.append("file", file);
@@ -3274,14 +3385,59 @@ export function adminReviewPurchaseProof(offerId: number, data: { action: "APPRO
 export type PurchaseResolution =
   | { action: "RETRY_DELIVERY" | "REQUEST_REMAINING_DONOR"; reason: string; expectedBy?: string }
   | { action: "CANCEL_REMAINDER" | "CLOSED_NO_ACTION"; reason: string; finalQuantity?: number }
-  | { action: "REQUEST_INFO"; reason: string; audience: PurchaseInfoAudience };
+  | { action: "REQUEST_INFO"; reason: string; audience: PurchaseInfoAudience }
+  // Partial delivery: the purchase already closed; only its issue is decided here.
+  | { action: "DONOR_REDONATE" | "CLOSE_REDONATION"; reason: string }
+  | { action: "REDELIVERED"; reason: string; additionalQuantity: number; pickupStatus?: ReturnPickupStatus; pickupNote?: string }
+  | { action: "CLOSE_UNREACHABLE"; reason: string; finalQuantity: number }
+  // Damage: review first (verify or reclassify), optionally mark a replacement on its way.
+  | { action: "VERIFY_DAMAGE" | "REPLACEMENT_IN_PROGRESS"; reason: string }
+  | { action: "RECLASSIFY"; reason: string; additionalQuantity: number }
+  // Nothing arrived.
+  | { action: "PACKAGE_FOUND"; reason: string; additionalQuantity: number; minorDamageQuantity?: number; unusableQuantity?: number }
+  | { action: "CLOSE_DISPUTED" | "LATE_ARRIVAL_DISMISS"; reason: string }
+  | { action: "LATE_ARRIVAL_CONFIRM"; reason: string; additionalQuantity: number };
+
+/** Our team generates the non-delivery confirmation the donor downloads from their history. */
+export function adminGenerateNonDeliveryConfirmation(offerId: number, reason: string) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/non-delivery-confirmation`, { method: "POST", body: JSON.stringify({ reason }) });
+}
+
+/** The seller's return pickup of damaged items; `note` is what the recipient is told. */
+export function adminUpdateReturnPickup(offerId: number, data: { status: ReturnPickupStatus; note: string }) {
+  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/return-pickup`, { method: "POST", body: JSON.stringify(data) });
+}
+
+// ── Damage video on a purchase: same six routes as every other video owner ──
+export function getDamageVideoCapability() {
+  return request<OfferVideoCapability>("/api/v1/purchase/damage-video/capability");
+}
+export function createDamageVideoSlot(offerId: number, contentLength: number, contentType?: string) {
+  const type = contentType ? `&contentType=${encodeURIComponent(contentType)}` : "";
+  return request<OfferVideoSlot>(`/api/v1/offers/${offerId}/purchase/damage-video/slot?contentLength=${contentLength}${type}`, { method: "POST" });
+}
+export function finalizeDamageVideo(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/offers/${offerId}/purchase/damage-video/${mediaId}/finalize`, { method: "POST" });
+}
+export function getDamageVideoStatus(offerId: number, mediaId: number) {
+  return request<OfferVideoStatus>(`/api/v1/offers/${offerId}/purchase/damage-video/${mediaId}`);
+}
+export function getDamageVideoPlayback(offerId: number, mediaId: number) {
+  return request<{ url: string }>(`/api/v1/offers/${offerId}/purchase/damage-video/${mediaId}/playback`);
+}
+export function deleteDamageVideo(offerId: number, mediaId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/damage-video/${mediaId}`, { method: "DELETE" });
+}
+
+/** What a resolution did: units counted (REDELIVERED) and whether the cap cut them. */
+export type PurchaseResolutionResult = { applied: number | null; capped: boolean; message: string | null } | null;
 
 export function replyToPurchaseInfoRequest(offerId: number, message: string) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/issues/info-reply`, { method: "POST", body: JSON.stringify({ message }) });
 }
 
 export function adminResolvePurchaseIssue(offerId: number, data: PurchaseResolution) {
-  return request<void>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
+  return request<PurchaseResolutionResult>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
 }
 
 // ── Admin Issues section (read-only) ──────────────────────────────────────
@@ -3297,6 +3453,9 @@ export type AdminIssueSummary = {
   caseNumber: string | null; caseStatus: string | null; casePriority: string | null;
   entityType: string | null; entityId: number | null;
   createdAt: string | null; resolvedAt: string | null; lastActivityAt: string | null;
+  issueStatus?: IssueStatus | null;
+  /** Admin-only repeat-claim flags: "DONEE_REPEAT_CLAIMS", "DONOR_REPEAT_ISSUES". */
+  flags?: string[];
 };
 export type AdminIssuePage = {
   items: AdminIssueSummary[]; total: number; page: number; size: number;
@@ -3322,6 +3481,50 @@ export type AdminIssueDetail = {
   adminDecision?: string | null;
   donorNotificationStatus?: string | null;
   requestId?: number | null;
+  /** Purchase issues only: everything needed to resolve it on one screen. */
+  purchase?: AdminPurchaseCase | null;
+};
+/** Contact details reach admins only, through this type. */
+export type AdminIssueParty = { role: "DONOR" | "DONEE"; userId: number | null; name: string | null; email: string | null; phone: string | null; city: string | null };
+export type AdminIssueLink = { kind: "REQUEST" | "PRODUCT" | "TRACKING" | "ORDER_PROOF" | "DELIVERY_PROOF" | "EVIDENCE"; label: string; url: string };
+export type AdminChatLine = { at: string | null; senderRole: "DONOR" | "DONEE" | "ADMIN"; senderName: string | null; type: string; text: string };
+export type AdminPurchaseCase = {
+  offerId: number; requestId: number | null; requestTitle: string | null;
+  issueStatus: IssueStatus; deliveryOutcome: DeliveryOutcome | null; partialDelivery: boolean;
+  requested: number; pledged: number | null; received: number | null; shortfall: number | null; redelivered: number | null;
+  stillNeededOnRequest: number; openOnRequest: number;
+  /** The most a "remaining items delivered" resolution can still count. */
+  redeliveryCap: number;
+  expectedDeliveryAt: string | null;
+  donor: AdminIssueParty | null; donee: AdminIssueParty | null;
+  links: AdminIssueLink[];
+  deliveryUpdates: AdminChatLine[];
+  chat: AdminChatLine[];
+  steps: { at: string | null; actor: string; action: string; note: string | null }[];
+  /** Damage reports only. */
+  damage?: AdminDamageCase | null;
+  /** "Nothing arrived" reports (and late arrivals) only. */
+  nonDelivery?: AdminNonDeliveryCase | null;
+  /** Admin-only, information only: never blocks anyone. */
+  donorFlag?: AdminRepeatFlag | null;
+  doneeFlag?: AdminRepeatFlag | null;
+};
+export type AdminRepeatFlag = { flagged: boolean; count: number; keys: string[]; reason: string | null };
+export type AdminNonDeliveryCase = {
+  checkedNeighbours: boolean; checkedFamily: boolean; checkedTracking: boolean;
+  declaredAt: string | null; declarationNote: string | null; deliveryProofSubmitted: boolean; notReceivedYetAt: string | null;
+  /** Still a "nothing arrived" case (not turned into partial or damage by "package found"). */
+  stillNothingArrived: boolean;
+  confirmationGeneratedAt: string | null; confirmationGeneratedBy: string | null;
+  lateArrivalQuantity: number | null; lateArrivalCondition: "GOOD" | "DAMAGED" | null; lateArrivalNote: string | null; lateArrivalReportedAt: string | null;
+};
+export type AdminGalleryItem = { kind: "PHOTO" | "VIDEO"; label: string; url: string | null; status: string | null; uploadedAt: string | null };
+export type AdminDamageCase = {
+  arrived: number; good: number; minorDamage: number; unusable: number; missing: number; reclassified: number;
+  verifiedAt: string | null; verifiedBy: string | null;
+  returnPickupStatus: ReturnPickupStatus | null; returnPickupNote: string | null;
+  infoRequest: string | null; infoReply: string | null;
+  gallery: AdminGalleryItem[];
 };
 
 export function adminListIssues(params: { status?: "open" | "resolved" | "all"; source?: AdminIssueSource | ""; q?: string; page?: number; size?: number } = {}) {

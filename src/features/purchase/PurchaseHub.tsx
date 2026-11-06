@@ -6,9 +6,9 @@ import { AlertTriangle, ArrowLeft, Award, Check, Copy, ExternalLink, FileText, H
 import { HandoverMapPinField } from "@/features/handover/HandoverMapPinField";
 import { detectLocationFromServer } from "@/app/[locale]/actions/locations";
 import {
-  confirmPurchaseNoIssue, confirmPurchaseReceipt, decidePurchaseExtension, reconfirmOfferAvailability, recordPurchaseOrder,
+  confirmPurchaseNoIssue, confirmPurchaseReceipt, downloadNonDeliveryConfirmation, reportPurchaseLateArrival, reportPurchaseNotReceived, decidePurchaseExtension, notifyPurchaseDelivered, reconfirmOfferAvailability, recordPurchaseOrder,
   reportPurchaseIssue, requestPurchaseExtension, respondToPurchaseIssue, replyToPurchaseInfoRequest, sharePurchaseAddress,
-  updatePurchaseDetails, updatePurchaseShipment, uploadFlowBProof, uploadPurchaseRecipientEvidence, withdrawOffer,
+  updatePurchaseDeliveryDate, updatePurchaseDetails, uploadFlowBProof, uploadPurchaseRecipientEvidence, withdrawOffer,
   type DonationOffer, type ExtractedProofData, type PurchaseIssueType, type PurchaseIssueView, type PurchaseProofType, type PurchaseReceiptCondition, type PurchaseView,
 } from "@/lib/api";
 import { scanOrderProofImage } from "./proofOcr";
@@ -20,9 +20,12 @@ import {
 import { purchaseChannelLabel, purchaseMethodLabel, purchaseTimelineLabel } from "@/features/donation-offer-wizard/offerModel";
 import { PurchaseDetailsForm, type PurchaseFormValues } from "./PurchaseDetailsForm";
 import {
-  endOfDayLocal, formatLocal, purchaseNextAction, purchaseStage, purchaseStageLabel,
+  deliveryHistoryNote, deliverySummaryFromView, endOfDayLocal, formatLocal, purchaseNextAction, purchaseStage, purchaseStageLabel,
   type PurchaseRole, type PurchaseStage,
 } from "./purchaseModel";
+import { DeliveryActionsPanel, PurchaseChatPanel, type DeliveryChange } from "./PurchaseDeliveryUpdates";
+import { DamageGallery, DamageReportForm, MoreDamageEvidence, type DamageReportData } from "./DamageReport";
+import { LateArrivalForm, NothingArrivedFlow, type NotReceivedMode } from "./NothingArrived";
 
 const input = "w-full min-h-12 rounded-xl border border-[#C9D0DB] bg-white px-3.5 py-2 text-base text-stone-900 focus:border-[var(--ck-role-accent)] focus:outline-none focus:ring-1 focus:ring-[var(--ck-role-accent)] dark:border-zinc-700 dark:bg-zinc-950 dark:text-stone-100 sm:text-[15px]";
 const primary = "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-[14px] bg-[var(--ck-role-accent)] px-7 py-2 text-[16px] font-extrabold text-white hover:bg-[var(--ck-role-hover)] disabled:opacity-60";
@@ -89,11 +92,14 @@ export function PurchaseHub({
   const direct = view.method === "DIRECT_DELIVERY";
   const id = offer.id;
 
+  // Bumped after an action that posts to the chat, so the thread shows it at once.
+  const [chatRefresh, setChatRefresh] = useState(0);
   async function run(key: string, fn: () => Promise<unknown>, ok: string) {
     setBusy(key);
     try {
       await fn();
       toast.success(ok);
+      setChatRefresh(n => n + 1);
       await onChanged();
       return true;
     } catch (e) {
@@ -103,6 +109,9 @@ export function PurchaseHub({
       setBusy(null);
     }
   }
+
+  const sendDateUpdate = (d: { kind: DeliveryChange; expectedOn: string; message: string }) =>
+    run("date", () => updatePurchaseDeliveryDate(id, d), "Update sent to the recipient");
 
   /** Records the purchase, then the item photo and the optional private receipt. */
   async function submitPurchase(v: PurchaseFormValues) {
@@ -177,6 +186,17 @@ export function PurchaseHub({
         : "Your order was delivered to this address.",
   };
   const showDeliveryProof = donor && direct && (inTransit || stage === "ISSUE_OPEN" || (stage === "ISSUE_WINDOW" && !deliveryProofDone));
+  const closedNote = stage === "COMPLETED" ? deliveryHistoryNote(deliverySummaryFromView(view), role) : null;
+  const damageIssue = view.issues.find(i => i.arrivedQuantity != null) ?? null;
+  const nonDeliveryIssue = view.issues.find(i => i.nonDelivery) ?? null;
+  const damageGallery = [
+    ...view.evidence.filter(e => e.type === "DAMAGE_PHOTO").map(e => ({ kind: "PHOTO" as const, label: "Damage photo", url: e.url })),
+    ...(view.damageVideos ?? []).map(v => ({ kind: "VIDEO" as const, label: "Damage video", url: v.playbackUrl, status: v.status })),
+  ];
+  // After an "everything arrived" closure the recipient can still flag a problem for a
+  // short while; it goes to our team and nothing reopens.
+  const lateReport = donee && direct && stage === "COMPLETED" && view.deliveryOutcome === "ALL" && !openIssue
+    && !!view.issueWindowExpiresAt && new Date(view.issueWindowExpiresAt).getTime() > Date.now();
   // The form only while it's the recipient's turn; afterwards a status update replaces it.
   const showAddress = donee && direct && stage === "AWAITING_ADDRESS";
   const doneeWaiting = donee && direct && (stage === "AWAITING_APPROVAL" || stage === "READY_TO_BUY");
@@ -444,43 +464,84 @@ export function PurchaseHub({
                 busy={busy}
                 hint="A screenshot of the courier's 'Delivered' status, or their proof-of-delivery slip (image or PDF). Hide payment details first. The recipient and our team can see it."
                 done={deliveryProofDone}
-                doneText={stage === "ISSUE_WINDOW" ? "Delivery proof submitted — donation will complete shortly." : "Delivery proof submitted — awaiting recipient confirmation."}
+                doneText={stage === "ISSUE_WINDOW" ? "Delivery proof submitted. The purchase is closing." : "Delivery proof submitted. Waiting for the recipient to confirm what arrived."}
                 onUpload={f => run("upload", () => uploadFlowBProof(id, "DELIVERY_PROOF", f), "Delivery proof submitted")} />
             )}
 
+            {view.notReceivedYetAt && direct && inTransit && (donor || donee) && (
+              <div role="status" data-testid="not-received-yet" className="rounded-2xl border border-amber-300 bg-amber-50 p-4 text-[15px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                <p className="font-bold">Not received yet · marked {formatShort(view.notReceivedYetAt)}</p>
+                <p className="mt-1 text-sm">
+                  {donor
+                    ? "The recipient hasn't received the package yet. Please check tracking on your end."
+                    : view.notReceivedPromptSentAt
+                      ? "It's been 48 hours. If it still hasn't come, choose \"Nothing arrived\" below to confirm; or tell us what did arrive."
+                      : "We've asked the donor to check tracking. If it turns up, tell us what arrived below."}
+                </p>
+              </div>
+            )}
+
             {donor && direct && inTransit && (
-              <ShipmentPanel view={view} busy={busy}
-                onSubmit={data => run("ship", () => updatePurchaseShipment(id, data), "Shipping details updated")} />
+              <DeliveryActionsPanel view={view} busy={busy}
+                onNotifyDelivered={() => run("delivered", () => notifyPurchaseDelivered(id), "The recipient has been asked to confirm what arrived")}
+                onUpdateDate={sendDateUpdate} />
             )}
 
             {donee && direct && inTransit && (
-              <ReceiptPanel view={view} busy={busy}
+              <ReceiptPanel view={view} offerId={id} busy={busy}
+                onNotReceived={(mode, declaration, note) => run("receipt", () => reportPurchaseNotReceived(id, {
+                  checkedNeighbours: true, checkedFamily: true, checkedTracking: true, mode, declaration, ...(note ? { note } : {}),
+                }), mode === "NOT_YET" ? "Thanks. We've asked the donor to check tracking" : "Reported. This purchase is closed and our team will follow up")}
+                onDamage={(data, photos) => run("receipt", async () => {
+                  // Photos first: the report closes the purchase, and the server needs at least one on file.
+                  for (const f of photos) await uploadPurchaseRecipientEvidence(id, "DAMAGE_PHOTO", f);
+                  await confirmPurchaseReceipt(id, {
+                    cumulativeQuantity: 0, condition: data.condition, closeRemainder: true, note: data.note,
+                    arrivedQuantity: data.arrivedQuantity, minorDamageQuantity: data.minorDamageQuantity, unusableQuantity: data.unusableQuantity,
+                  });
+                }, "Damage reported. This purchase is closed and our team will follow up")}
                 onSubmit={(outcome, files) => run("receipt", async () => {
                   const confirming = outcome.kind === "receipt" && (outcome.data.condition === "GOOD" || outcome.data.condition === "PARTIAL");
                   // A receipt needs the photos on file first; the server refuses it otherwise.
                   if (confirming) {
                     if (!files.length) throw new Error("Add a photo of the items you received.");
                     for (const f of files) await uploadPurchaseRecipientEvidence(id, "RECEIVED_PHOTO", f);
+                  } else {
+                    // Before the report: reporting closes the purchase, after which uploads are refused.
+                    for (const f of files) await uploadPurchaseRecipientEvidence(id, "ISSUE_EVIDENCE", f);
                   }
                   if (outcome.kind === "receipt") await confirmPurchaseReceipt(id, outcome.data);
                   else await reportPurchaseIssue(id, outcome.data);
-                  // Problem photos attach to the issue, so they go after it opens.
-                  if (!confirming) {
-                    const failed = (await Promise.allSettled(files.map(f => uploadPurchaseRecipientEvidence(id, "ISSUE_EVIDENCE", f))))
-                      .filter(r => r.status === "rejected").length;
-                    if (failed) toast.error(`Saved — but ${failed === 1 ? "a photo" : `${failed} photos`} didn't upload. You can add them again from this page.`);
-                  }
-                }, outcome.kind === "receipt" && outcome.data.condition === "GOOD" ? "Thanks — receipt recorded" : "Issue raised — our team will review it and follow up")} />
+                }, outcome.kind === "receipt" && outcome.data.condition === "GOOD" ? "Thanks — receipt recorded"
+                  : outcome.kind === "receipt" && outcome.data.condition === "PARTIAL" ? "Thanks. This purchase is closed and our team will follow up on the rest"
+                  : "Issue raised — our team will review it and follow up")} />
             )}
 
 
 
             {stage === "COMPLETED" && (donor || donee) && (
-              <Panel title="Donation complete" icon={<Award className="size-5 text-green-700" aria-hidden />}>
-                <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
-                  {view.receivedQuantity ?? 0} of {view.acceptedQuantity ?? "—"} {direct ? "received" : "handed over"} and confirmed.
-                  {donor ? " Your certificate covers only what was received." : " Thank you for confirming."}
-                </p>
+              <Panel title={closedNote?.tone === "pending" ? "Purchase closed" : "Donation complete"} icon={<Award className="size-5 text-green-700" aria-hidden />}>
+                {direct && closedNote ? (
+                  <div className="mb-4 space-y-2">
+                    <p className={`inline-flex rounded-lg px-2.5 py-1 text-sm font-bold ${closedNote.tone === "pending"
+                      ? "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+                      : "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"}`}>{closedNote.line}</p>
+                    {closedNote.note && <p className="text-sm text-stone-600 dark:text-stone-300">{closedNote.note}</p>}
+                    <p className="text-sm text-stone-600 dark:text-stone-300">
+                      {donor ? "Your certificate covers what was received. Nothing more is needed from you here." : "Nothing more is needed from you here."}
+                    </p>
+                    {damageIssue && donee && damageIssue.returnPickupStatus === "SCHEDULED" && damageIssue.returnPickupNote && (
+                      <p className="rounded-xl bg-sky-50 p-3 text-sm text-sky-900 dark:bg-sky-950/40 dark:text-sky-200">
+                        <strong>Return pickup scheduled.</strong> {damageIssue.returnPickupNote}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
+                    {view.receivedQuantity ?? 0} of {view.acceptedQuantity ?? "—"} {direct ? "received" : "handed over"} and confirmed.
+                    {donor ? " Your certificate covers only what was received." : " Thank you for confirming."}
+                  </p>
+                )}
                 {/* Certificates are the donor's; the server refuses anyone else. */}
                 <div className="flex flex-wrap items-center gap-3">
                   {donor && (
@@ -511,17 +572,76 @@ export function PurchaseHub({
             
 
             {donee && direct && stage === "ISSUE_WINDOW" && (
-              <Panel title="Everything fine?" icon={<ShieldCheck className="size-5 text-green-700" aria-hidden />}>
-                <p className="mb-4 text-sm text-stone-600 dark:text-stone-300">
+              <Panel title="You're all set" icon={<ShieldCheck className="size-5 text-green-700" aria-hidden />}>
+                <p className="text-sm text-stone-600 dark:text-stone-300">
                   {deliveryProofDone
-                    ? "If the item is as expected, close the issue window now and complete the donation."
-                    : "If the item is as expected, close the issue window now. The transaction will finish once the donor uploads their delivery proof."}
+                    ? "Thanks for confirming. You can close this now."
+                    : "Thanks for confirming. Nothing more is needed from you: the purchase closes as soon as the donor adds delivery proof."}
                 </p>
-                <button type="button" className={primary} disabled={!!busy}
-                  onClick={() => void run("noissue", () => confirmPurchaseNoIssue(id), deliveryProofDone ? "Donation completed" : "Issue window closed — awaiting donor's delivery proof")}>
-                  {busy === "noissue" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Everything is fine
+                {/* Purchases confirmed before delivery proof closed automatically still finish here. */}
+                {deliveryProofDone && (
+                  <button type="button" className={`${primary} mt-4`} disabled={!!busy}
+                    onClick={() => void run("noissue", () => confirmPurchaseNoIssue(id), "Donation completed")}>
+                    {busy === "noissue" ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Check className="size-4" aria-hidden />} Close the purchase
+                  </button>
+                )}
+              </Panel>
+            )}
+
+            {donor && stage === "COMPLETED" && nonDeliveryIssue?.confirmationGeneratedAt && (
+              <Panel title="Non-delivery confirmation" small>
+                <p className="mb-3 text-sm text-stone-600 dark:text-stone-300">
+                  Our team prepared a confirmation you can attach to an &ldquo;item not received&rdquo; claim with the seller. It carries no recipient contact details.
+                </p>
+                <button type="button" className={secondary} disabled={!!busy}
+                  onClick={() => void run("pdf", () => downloadNonDeliveryConfirmation(id), "Downloaded")}>
+                  <FileText className="size-4" aria-hidden /> Download PDF
                 </button>
               </Panel>
+            )}
+
+            {donee && view.lateArrivalOpen && stage === "COMPLETED" && (
+              <Panel title="Package arrived later?" icon={<PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+                <p className="mb-3 text-sm text-stone-600 dark:text-stone-300">If some or all of it turned up after the issue closed, tell our team. They confirm before anything is counted.</p>
+                <LateArrivalForm max={Math.max(0, (view.orderedQuantity ?? view.acceptedQuantity ?? 0) - (view.receivedQuantity ?? 0))} busy={busy === "late-arrival"}
+                  onSubmit={(data, photos) => run("late-arrival", async () => {
+                    // Photos first: the report needs at least one when damaged.
+                    for (const f of photos) await uploadPurchaseRecipientEvidence(id, "DAMAGE_PHOTO", f);
+                    await reportPurchaseLateArrival(id, { quantity: data.quantity, condition: data.condition, ...(data.note ? { note: data.note } : {}) });
+                  }, "Thanks. Our team will confirm and update the count")} />
+              </Panel>
+            )}
+
+            {damageIssue && (donor || donee) && stage === "COMPLETED" && (
+              <Panel title="Damage photos and video" small>
+                <p className="mb-3 text-sm text-stone-600 dark:text-stone-300">
+                  {donor
+                    ? "What the recipient shared about the damage. You can use these to raise a return or replacement with the seller."
+                    : "What you shared with our team and the donor."}
+                </p>
+                <DamageGallery items={damageGallery} />
+              </Panel>
+            )}
+
+            {donee && view.evidenceOpen && stage === "COMPLETED" && (
+              <Panel title="Add more photos for our team" icon={<Upload className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
+                <p className="mb-3 text-sm text-stone-600 dark:text-stone-300">Our team asked for more about the damage. Add photos (and a video if it helps), then answer their question below.</p>
+                <MoreDamageEvidence offerId={id} busy={busy === "upload"}
+                  onUpload={files => run("upload", async () => {
+                    for (const f of files) await uploadPurchaseRecipientEvidence(id, "DAMAGE_PHOTO", f);
+                  }, "Photos sent to our team")} />
+              </Panel>
+            )}
+
+            {lateReport && (
+              <LateProblemPanel received={view.receivedQuantity ?? 0} busy={busy}
+                onReport={data => run("late", () => reportPurchaseIssue(id, data), "Thanks. Our team will look into it")} />
+            )}
+
+            {direct && view.acceptedAt && (
+              <PurchaseChatPanel offerId={id} view={view} isDonor={donor} busy={busy} refreshKey={chatRefresh}
+                closed={stage === "COMPLETED" || stage === "CLOSED" || stage === "LEGACY"}
+                onUpdateDate={sendDateUpdate} />
             )}
 
             {/* Nothing to do right now: say what we're waiting for, never an empty column */}
@@ -771,6 +891,7 @@ const EVIDENCE_LABEL: Record<PurchaseProofType, string> = {
   DELIVERY_PROOF: "Delivery proof",
   RECEIVED_PHOTO: "Photo of what arrived",
   ISSUE_EVIDENCE: "Problem evidence",
+  DAMAGE_PHOTO: "Damage photo",
 };
 
 const STEPS: Record<string, string[]> = {
@@ -1252,35 +1373,50 @@ function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, a
   );
 }
 
-function ShipmentPanel({ view, busy, onSubmit }: {
-  view: PurchaseView; busy: string | null;
-  onSubmit: (d: { trackingUrl?: string; reference?: string; expectedDeliveryAt: string; deliveredByRetailer: boolean }) => Promise<boolean>;
+/**
+ * A problem the recipient notices shortly after confirming everything arrived. It
+ * goes to our team as an issue; the purchase stays closed and nothing is recounted.
+ */
+function LateProblemPanel({ received, busy, onReport }: {
+  received: number; busy: string | null;
+  onReport: (d: { type: PurchaseIssueType; description: string; affectedQuantity?: number }) => Promise<boolean>;
 }) {
-  const [delivered, setDelivered] = useState(!!view.deliveryReportedAt);
+  const [open, setOpen] = useState(false);
+  const [type, setType] = useState<PurchaseIssueType>("ITEM_DAMAGED");
+  const [count, setCount] = useState("");
+  const [text, setText] = useState("");
+  const n = /^\d+$/.test(count.trim()) ? Number(count) : null;
+  const error = text.trim().length < 10 ? "Describe the problem (at least 10 characters)."
+    : count.trim() && (n == null || n < 1 || n > received) ? `Enter a number from 1 to ${received}, or leave it empty.` : null;
+  if (!open) {
+    return (
+      <p className="text-[13px] text-stone-500 dark:text-stone-400">
+        Noticed a problem after confirming?{" "}
+        <button type="button" className="font-bold text-[var(--ck-role-accent)] underline" onClick={() => setOpen(true)}>Tell our team</button>
+      </p>
+    );
+  }
   return (
-    <Panel title="Shipping updates" icon={<Truck className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
+    <Panel title="Tell our team about a problem" icon={<AlertTriangle className="size-5 text-amber-600" aria-hidden />}>
       <div className="space-y-3">
-        {view.deliveryReportedAt ? (
-          <p className="flex items-center gap-1.5 text-sm font-semibold text-green-700 dark:text-green-400">
-            <Check className="size-4" aria-hidden /> You reported this order as delivered. Awaiting recipient confirmation.
-          </p>
-        ) : (
-          <>
-            <label className="flex items-start gap-3 text-sm">
-              <input type="checkbox" className="mt-1 size-4 shrink-0" checked={delivered} onChange={e => setDelivered(e.target.checked)} />
-              <span>The retailer shows it as delivered. (The recipient still confirms what actually arrived.)</span>
-            </label>
-            <button type="button" className={primary} disabled={!delivered || !!busy}
-              onClick={() => void onSubmit({
-                trackingUrl: view.trackingUrl ?? undefined,
-                reference: view.trackingReference ?? undefined,
-                expectedDeliveryAt: view.expectedDeliveryAt ?? endOfDayLocal(today()),
-                deliveredByRetailer: delivered,
-              })}>
-              {busy === "ship" && <Loader2 className="size-4 animate-spin" aria-hidden />} Save update
-            </button>
-          </>
-        )}
+        <Field label="What's wrong?">
+          <select className={input} value={type} onChange={e => setType(e.target.value as PurchaseIssueType)}>
+            <option value="ITEM_DAMAGED">Damaged</option>
+            <option value="WRONG_ITEM">Wrong product or model</option>
+            <option value="OTHER">Something else</option>
+          </select>
+        </Field>
+        <Field label="How many items are affected? (optional)">
+          <input className={input} inputMode="numeric" value={count} onChange={e => setCount(e.target.value)} />
+        </Field>
+        <Field label="What happened?" hint="Our team reads this and contacts the donor only if needed.">
+          <textarea rows={3} className={input} value={text} maxLength={1800} onChange={e => setText(e.target.value)} />
+        </Field>
+        {error && <p role="alert" className="text-sm text-red-700 dark:text-red-400">{error}</p>}
+        <button type="button" className={primary} disabled={!!error || !!busy}
+          onClick={() => void onReport({ type, description: text.trim(), ...(n ? { affectedQuantity: n } : {}) }).then(ok => { if (ok) setOpen(false); })}>
+          {busy === "late" && <Loader2 className="size-4 animate-spin" aria-hidden />} Send to our team
+        </button>
       </div>
     </Panel>
   );
@@ -1295,16 +1431,10 @@ type OutcomeChoice = "ALL" | "PARTIAL" | "PROBLEM" | "NOT_RECEIVED";
 const OUTCOMES: { value: OutcomeChoice; label: string; hint: string }[] = [
   { value: "ALL", label: "I received everything", hint: "In good condition" },
   { value: "PARTIAL", label: "Only part of it arrived", hint: "Fewer items than ordered" },
-  { value: "PROBLEM", label: "Damaged or wrong items", hint: "Broken, wrong product or model" },
-  { value: "NOT_RECEIVED", label: "I didn't receive it", hint: "Even if tracking says delivered" },
+  { value: "PROBLEM", label: "Some or all items damaged", hint: "Broken, dented, or the wrong product" },
+  { value: "NOT_RECEIVED", label: "Nothing arrived", hint: "Even if tracking says delivered" },
 ];
 
-const NOT_RECEIVED_REASONS = [
-  "Tracking says delivered, but nothing arrived",
-  "Delivered to the wrong address or person",
-  "Courier never came",
-  "Something else",
-];
 
 /**
  * The recipient's four answers to a delivery. Only good units are ever credited:
@@ -1314,29 +1444,24 @@ const NOT_RECEIVED_REASONS = [
  * totals, so a second shipment never double-counts; the server re-checks each
  * number against what was ordered and what was already confirmed.
  */
-function ReceiptPanel({ view, busy, onSubmit }: {
-  view: PurchaseView; busy: string | null;
+function ReceiptPanel({ view, offerId, busy, onSubmit, onDamage, onNotReceived }: {
+  view: PurchaseView; offerId: number; busy: string | null;
   onSubmit: (outcome: ReceiptOutcome, files: File[]) => Promise<boolean>;
+  onDamage: (data: DamageReportData, photos: File[]) => Promise<boolean>;
+  onNotReceived: (mode: NotReceivedMode, declaration: boolean, note: string) => Promise<boolean>;
 }) {
   const max = view.orderedQuantity ?? view.acceptedQuantity ?? 1;
+  // Never more than the request still needs (the server enforces the same cap).
+  const cap = Math.min(max, view.receivableMax ?? max);
   const prev = view.receivedQuantity ?? 0;
   const fileRef = useRef<HTMLInputElement>(null);
   const [choice, setChoice] = useState<OutcomeChoice | "">("");
   const [partialTotal, setPartialTotal] = useState("");
-  const [problem, setProblem] = useState<"DAMAGED" | "WRONG_ITEM">("DAMAGED");
-  const [arrived, setArrived] = useState(String(max));
-  const [scope, setScope] = useState<"ALL" | "SOME">("ALL");
-  const [bad, setBad] = useState("");
   const [details, setDetails] = useState("");
-  const [reason, setReason] = useState(NOT_RECEIVED_REASONS[0]);
   const [files, setFiles] = useState<File[]>([]);
 
   const int = (v: string) => (/^\d+$/.test(v.trim()) ? Number(v) : NaN);
-  const partialN = int(partialTotal), arrivedN = int(arrived), badSomeN = int(bad);
-  const newlyArrived = arrivedN - prev;
-  const badN = scope === "ALL" ? newlyArrived : badSomeN;
-  const wrongWord = problem === "WRONG_ITEM" ? "wrong" : "damaged";
-  const described = details.trim().length >= 10;
+  const partialN = int(partialTotal);
   const range = (lo: number, hi: number) => (lo === hi ? String(lo) : `${lo} to ${hi}`);
 
   let error: string | null = null;
@@ -1345,41 +1470,25 @@ function ReceiptPanel({ view, busy, onSubmit }: {
     outcome = { kind: "receipt", data: { cumulativeQuantity: max, condition: "GOOD", closeRemainder: false } };
   } else if (choice === "PARTIAL") {
     const least = Math.max(1, prev);
-    // Fewer than ordered, never equal: an equal count is "I received everything".
-    if (least > max - 1) error = "Everything ordered is already counted. Choose another option.";
-    else if (!(partialN >= least && partialN < max)) error = `Enter how many arrived in total: ${range(least, max - 1)}.`;
-    else if (!described) error = "Describe what happened (at least 10 characters).";
+    // Fewer than ordered, never equal (an equal count is "I received everything"),
+    // and never more than the request still needs.
+    const most = Math.min(max - 1, cap);
+    if (least > most) error = cap < max ? `Your request only needs ${cap} more, so choose "I received everything".` : "Everything ordered is already counted. Choose another option.";
+    else if (!Number.isFinite(partialN)) error = `Enter how many arrived in total: ${range(least, most)}.`;
+    else if (partialN > max - 1) error = `That's everything the donor ordered. Choose "I received everything" instead.`;
+    else if (partialN > cap) error = `Your request only needs ${cap} more, so enter at most ${cap}.`;
+    else if (partialN < least) error = `Enter how many arrived in total: ${range(least, most)}.`;
     else outcome = { kind: "receipt", data: {
-      // Always reaches support, who expect the rest or close it; only what arrived is credited.
-      cumulativeQuantity: partialN, condition: "PARTIAL", closeRemainder: true, note: details.trim(),
+      // Closes the purchase now; the shortfall goes to our team and back on the request.
+      cumulativeQuantity: partialN, condition: "PARTIAL", closeRemainder: true, ...(details.trim() ? { note: details.trim() } : {}),
     } };
-  } else if (choice === "PROBLEM") {
-    if (!(arrivedN >= prev + 1 && arrivedN <= max)) error = `Enter how many arrived in total: ${range(prev + 1, max)}.`;
-    else if (scope === "SOME" && !(badSomeN >= 1 && badSomeN < newlyArrived)) error = newlyArrived > 1
-      ? `Enter how many are ${wrongWord}: ${range(1, newlyArrived - 1)}. If all ${newlyArrived} are, choose "All of them".`
-      : `Only 1 item arrived, so choose "All of them".`;
-    else if (!described) error = `Describe what's ${wrongWord === "wrong" ? "wrong" : "damaged"} (at least 10 characters).`;
-    else {
-      const missing = max - arrivedN;
-      const summary = `${arrivedN} of ${max} arrived; ${badN} ${wrongWord}, ${arrivedN - badN} usable${missing ? `; ${missing} didn't arrive` : ""}.`;
-      outcome = { kind: "receipt", data: {
-        cumulativeQuantity: arrivedN - badN, condition: problem, closeRemainder: false,
-        affectedQuantity: badN, note: `${summary} ${details.trim()}`,
-      } };
-    }
-  } else if (choice === "NOT_RECEIVED") {
-    const description = details.trim() ? `${reason}. ${details.trim()}` : reason;
-    outcome = { kind: "issue", data: { type: "ITEM_NOT_RECEIVED", description, affectedQuantity: max - prev } };
   }
 
-  const photoRequired = choice === "ALL" || choice === "PARTIAL" || choice === "PROBLEM";
-  const photoLabel = choice === "PROBLEM" ? `Photos of the ${wrongWord} items`
-    : photoRequired ? "Photos of the items you received" : "Photo or document (optional)";
-  const photoHint = choice === "PROBLEM"
-    ? "Required. Show the damage or the wrong product clearly — the donor and our team can see them."
-    : "Required. Clear photos of what came in the parcel — the donor and our team can see them.";
+  const photoRequired = choice === "ALL" || choice === "PARTIAL";
+  const photoLabel = photoRequired ? "Photos of the items you received" : "Photo or document (optional)";
+  const photoHint = "Required. Clear photos of what came in the parcel — the donor and our team can see them.";
   if (outcome && photoRequired && files.length === 0) {
-    error = choice === "PROBLEM" ? `Add a photo of the ${wrongWord} items.` : "Add a photo of the items you received.";
+    error = "Add a photo of the items you received.";
     outcome = null;
   }
 
@@ -1405,15 +1514,16 @@ function ReceiptPanel({ view, busy, onSubmit }: {
           {choice === "ALL" && (
             <p className="text-[14px] text-stone-700 dark:text-stone-300">
               All {max} item{max === 1 ? "" : "s"} ordered arrived in good condition.
+              {cap < max && ` Your request only needed ${cap} more, so ${cap} will be counted.`}
             </p>
           )}
 
           {choice === "PARTIAL" && (
             <>
-              <Field label="How many have arrived in total?" hint={`Fewer than the ${max} ordered${prev ? ` · already confirmed: ${prev}` : ""}`}>
+              <Field label="How many have arrived in total?" hint={`Fewer than the ${max} ordered${cap < max - 1 ? ` · your request needs at most ${cap}` : ""}${prev ? ` · already confirmed: ${prev}` : ""}`}>
                 <input className={input} inputMode="numeric" value={partialTotal} onChange={e => setPartialTotal(e.target.value)} />
               </Field>
-              <Field label="What happened?" hint="At least 10 characters. Our team and the donor will see this.">
+              <Field label="Anything to add? (optional)" hint="Our team will see this.">
                 <textarea rows={3} className={input} value={details} maxLength={1800} placeholder="e.g. The parcel had 3 laptops instead of 5."
                   onChange={e => setDetails(e.target.value)} />
               </Field>
@@ -1421,71 +1531,27 @@ function ReceiptPanel({ view, busy, onSubmit }: {
           )}
 
           {choice === "PROBLEM" && (
-            <>
-              <fieldset className="flex flex-wrap gap-2">
-                <legend className="mb-1 w-full text-[14px] font-bold text-stone-900 dark:text-stone-100">What&apos;s the problem?</legend>
-                {([["DAMAGED", "Damaged"], ["WRONG_ITEM", "Wrong product or model"]] as const).map(([v, l]) => (
-                  <button key={v} type="button" aria-pressed={problem === v} onClick={() => setProblem(v)}
-                    className={`min-h-11 rounded-xl border px-3.5 text-sm font-bold ${problem === v ? "border-[var(--ck-role-accent)] ring-1 ring-[var(--ck-role-accent)]" : "border-stone-300 dark:border-zinc-700"}`}>{l}</button>
-                ))}
-              </fieldset>
-              <Field label="How many items arrived in total?" hint={`Ordered: ${max}${prev ? ` · already confirmed: ${prev}` : ""}. Count the ${wrongWord} ones too.`}>
-                <input className={input} inputMode="numeric" value={arrived} onChange={e => setArrived(e.target.value)} />
-              </Field>
-              <fieldset className="space-y-2">
-                <legend className="mb-1 text-[14px] font-bold text-stone-900 dark:text-stone-100">
-                  {prev ? `Are all the newly arrived items ${wrongWord}?` : `Are all of them ${wrongWord}?`}
-                </legend>
-                <label className="flex items-start gap-3 text-sm">
-                  <input type="radio" name="scope" className="mt-1 size-4 shrink-0" checked={scope === "ALL"} onChange={() => setScope("ALL")} />
-                  <span>All of them</span>
-                </label>
-                <label className="flex items-start gap-3 text-sm">
-                  <input type="radio" name="scope" className="mt-1 size-4 shrink-0" checked={scope === "SOME"} onChange={() => setScope("SOME")} />
-                  <span>Only some — the rest are fine</span>
-                </label>
-              </fieldset>
-              {scope === "SOME" && (
-                <Field label={`How many are ${wrongWord}?`} hint="The others count as received.">
-                  <input className={input} inputMode="numeric" value={bad} onChange={e => setBad(e.target.value)} />
-                </Field>
-              )}
-              <Field label={problem === "WRONG_ITEM" ? "What's wrong with them?" : "What's damaged?"} hint="At least 10 characters. Our team and the donor will see this.">
-                <textarea rows={3} className={input} value={details} maxLength={1500}
-                  placeholder={problem === "WRONG_ITEM" ? "e.g. We needed a 14-inch Chromebook but got an 11-inch one." : "e.g. Screen cracked on 2 laptops; the box was crushed."}
-                  onChange={e => setDetails(e.target.value)} />
-              </Field>
-            </>
+            <DamageReportForm view={view} offerId={offerId} busy={busy === "receipt"}
+              onSubmit={(data, photos) => onDamage(data, photos).then(ok => { if (ok) setChoice(""); return ok; })} />
           )}
 
           {choice === "NOT_RECEIVED" && (
-            <>
-              <Field label="What happened?">
-                <select className={input} value={reason} onChange={e => setReason(e.target.value)}>
-                  {NOT_RECEIVED_REASONS.map(r => <option key={r} value={r}>{r}</option>)}
-                </select>
-              </Field>
-              <Field label="Anything else? (optional)" hint="e.g. you checked with neighbours or security. You don't need proof.">
-                <textarea rows={2} className={input} value={details} maxLength={1800} onChange={e => setDetails(e.target.value)} />
-              </Field>
-              <p className="text-[13px] text-stone-600 dark:text-stone-300">
-                Nothing more is counted as donated{prev ? ` beyond the ${prev} you already confirmed` : ""}. Our team checks the courier&apos;s
-                information and the donor&apos;s proof, then either arranges delivery or closes it — nobody is blamed automatically.
-              </p>
-            </>
+            <NothingArrivedFlow view={view} busy={busy === "receipt"}
+              onSubmit={(mode, declaration, note) => onNotReceived(mode, declaration, note).then(ok => { if (ok) setChoice(""); return ok; })} />
           )}
 
-          {(choice === "PARTIAL" || choice === "PROBLEM") && (
+          {choice === "PARTIAL" && (
             <p className="text-[13px] text-stone-600 dark:text-stone-300">
-              Only the {choice === "PARTIAL" ? "items that arrived" : "usable items"} count as donated, on your dashboard and on the donor&apos;s
-              certificate. Our team reviews this and either arranges the rest or closes it.
+              {Number.isFinite(partialN) && partialN >= 1 && partialN < max
+                ? `${partialN} will count as received. This purchase then closes for you both, and our team follows up on the remaining ${max - partialN}. They go back on your request so other donors can help too.`
+                : "What arrived counts as received. This purchase then closes for you both, and our team follows up on the rest."}
             </p>
           )}
-
+          {choice !== "PROBLEM" && choice !== "NOT_RECEIVED" && <>
           <div>
             <span className="text-[14px] font-bold text-stone-900 dark:text-stone-100">{photoLabel}</span>
             {photoRequired && <span className="block text-[13px] text-stone-500 dark:text-stone-400">{photoHint}</span>}
-            <input ref={fileRef} type="file" multiple accept={choice === "NOT_RECEIVED" ? "image/*,application/pdf" : "image/*"} className="sr-only"
+            <input ref={fileRef} type="file" multiple accept="image/*" className="sr-only"
               onChange={e => { const picked = Array.from(e.target.files ?? []); e.target.value = ""; setFiles(f => [...f, ...picked].slice(0, 5)); }} />
             <div className="mt-1.5 flex flex-wrap items-center gap-2">
               {files.map((f, i) => (
@@ -1506,8 +1572,9 @@ function ReceiptPanel({ view, busy, onSubmit }: {
           <button type="button" className={primary} disabled={!outcome || !!busy}
             onClick={() => outcome && void onSubmit(outcome, files).then(ok => { if (ok) { setChoice(""); setFiles([]); } })}>
             {busy === "receipt" && <Loader2 className="size-4 animate-spin" aria-hidden />}
-            {choice === "ALL" ? "Confirm receipt" : choice === "NOT_RECEIVED" ? "Report not received" : "Raise issue"}
+            {choice === "ALL" ? "Confirm receipt" : "Confirm what arrived"}
           </button>
+          </>}
         </div>
       )}
     </Panel>

@@ -10,7 +10,9 @@ import type { AdminIssueDetail, AdminIssuePage, AdminIssueSummary } from "@/lib/
 
 const api = vi.hoisted(() => ({ adminListIssues: vi.fn(), adminGetIssue: vi.fn(), adminGetPurchase: vi.fn(), adminResolvePurchaseIssue: vi.fn() }));
 vi.mock("@/lib/toast", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/lib/api", () => api);
+vi.mock("@/lib/api", async (orig) => ({ ...(await orig<object>()), ...api }));
+vi.mock("@/features/donation-offer-wizard/steps/OfferVideoField", () => ({ OfferVideoField: () => null }));
+vi.mock("@/features/donation-offer-wizard/useOfferVideo", () => ({ useOfferVideo: () => ({ upload: vi.fn(), remove: vi.fn() }) }));
 const notes = vi.hoisted(() => ({ list: [] as { link: string; receivedAt: number }[] }));
 const purchaseView = {
   offerId: 4, method: "DIRECT_DELIVERY", status: "ISSUE_RAISED", readyToBuy: false, acceptedAt: null, deadline: null,
@@ -69,8 +71,9 @@ describe("IssuesPanel", () => {
     render(<IssuesPanel onOpenCount={onOpenCount} />);
     const card = await screen.findByRole("button", { name: /Open issue: Winter blankets/ });
     expect(within(card).getByText("Purchase")).toBeTruthy();
-    expect(within(card).getByText("Item not received")).toBeTruthy();
-    expect(within(card).getByText(/Reported by Asha \(Recipient\)/)).toBeTruthy();
+    expect(within(card).getByText("Issue: Item not received")).toBeTruthy();
+    expect(within(card).getByText("Request: Winter blankets")).toBeTruthy();
+    expect(within(card).getByText(/Reported by Donee: Asha · about Donor: Ravi/)).toBeTruthy();
     expect(screen.getByRole("button", { name: /Open issue: Cannot log in/ })).toBeTruthy();
     expect(onOpenCount).toHaveBeenCalledWith(2);
     expect(api.adminListIssues).toHaveBeenCalledWith({ status: "open", source: "", q: "", page: 0, size: 25 });
@@ -108,6 +111,70 @@ describe("IssuesPanel", () => {
     expect(within(story).getByRole("heading", { name: "Decide this problem" })).toBeTruthy();
     expect(await within(story).findByRole("radio", { name: /Close and count what arrived/ })).toBeTruthy();
     expect(api.adminGetPurchase).toHaveBeenCalledWith(4);
+  });
+
+  it("lays out a partial delivery as labelled cards with contacts, quantity tiles, link chips and the three actions", async () => {
+    const partial: AdminIssueDetail = {
+      ...detail,
+      summary: summary({ issueType: "QUANTITY_MISMATCH", title: "I need 20 laptops", description: "Only 3 of 5 arrived.", issueStatus: "OPEN" }),
+      purchase: {
+        offerId: 4, requestId: 3, requestTitle: "I need 20 laptops", issueStatus: "OPEN", deliveryOutcome: "PARTIAL", partialDelivery: true,
+        requested: 20, pledged: 5, received: 3, shortfall: 2, redelivered: 0, stillNeededOnRequest: 2, openOnRequest: 2, redeliveryCap: 2,
+        expectedDeliveryAt: "2026-10-20T23:59:00",
+        donor: { role: "DONOR", userId: 1, name: "Ravi", email: "ravi@test.com", phone: "9000000001", city: "Pune" },
+        donee: { role: "DONEE", userId: 2, name: "Asha", email: "asha@test.com", phone: null, city: "Mumbai" },
+        links: [
+          { kind: "REQUEST", label: "Request page", url: "/requests/3" },
+          { kind: "DELIVERY_PROOF", label: "Delivery proof · Donor", url: "https://signed.example/a-very-long-presigned-url?x=1" },
+        ],
+        deliveryUpdates: [{ at: "2026-10-17T10:00:00", senderRole: "DONOR", senderName: "Ravi", type: "DELIVERY_UPDATE", text: "Running late, new date 20 Oct" }],
+        chat: [{ at: "2026-10-17T10:00:00", senderRole: "DONOR", senderName: "Ravi", type: "SYSTEM", text: "Donor marked the order as delivered. Please confirm what arrived." }],
+        steps: [{ at: "2026-10-18T10:00:00", actor: "asha@test.com", action: "OPENED", note: "Only 3 of 5 arrived." }],
+      },
+    };
+    api.adminGetIssue.mockResolvedValue(partial);
+    render(<IssuesPanel issueKey="pdi-7" />);
+    const story = await screen.findByRole("article", { name: "Issue CK-2026-0042" });
+    expect(within(story).getByRole("heading", { name: "Request: I need 20 laptops" })).toBeTruthy();
+    expect(within(story).getByText("Donor: Ravi")).toBeTruthy();
+    expect(within(story).getByText("Donee: Asha")).toBeTruthy();
+    expect(within(story).getByRole("link", { name: "9000000001" }).getAttribute("href")).toBe("tel:9000000001");
+    for (const label of ["Requested", "Pledged", "Received", "Shortfall", "Still needed on request"]) expect(within(story).getByText(label)).toBeTruthy();
+    // Links are chips with labels; the raw URL is never printed.
+    expect(within(story).getByRole("link", { name: /Delivery proof · Donor/ })).toBeTruthy();
+    expect(within(story).queryByText(/a-very-long-presigned-url/)).toBeNull();
+    for (const action of [/Donor will donate again/, /remaining items delivered/, /donor unreachable/]) {
+      expect(within(story).getByRole("radio", { name: action })).toBeTruthy();
+    }
+    expect(within(story).getAllByText("Open").length).toBeGreaterThan(0);
+  });
+
+  it("shows a damage report with coloured breakdown tiles, the gallery and the review step", async () => {
+    const base = detail;
+    api.adminGetIssue.mockResolvedValue({
+      ...base,
+      summary: summary({ issueType: "ITEM_DAMAGED", title: "I need 5 laptops", issueStatus: "AWAITING_DONEE_INFO" }),
+      purchase: {
+        offerId: 4, requestId: 3, requestTitle: "I need 5 laptops", issueStatus: "AWAITING_DONEE_INFO", deliveryOutcome: "DAMAGED", partialDelivery: false,
+        requested: 5, pledged: 5, received: 3, shortfall: 2, redelivered: 0, stillNeededOnRequest: 2, openOnRequest: 2, redeliveryCap: 2,
+        expectedDeliveryAt: null, donor: null, donee: null, links: [], deliveryUpdates: [], chat: [], steps: [],
+        damage: { arrived: 5, good: 2, minorDamage: 1, unusable: 2, missing: 0, reclassified: 0, verifiedAt: null, verifiedBy: null,
+          returnPickupStatus: null, returnPickupNote: null, infoRequest: "Close-ups please", infoReply: null,
+          gallery: [{ kind: "PHOTO", label: "Damage photo", url: "https://signed/1", status: null, uploadedAt: null },
+                    { kind: "VIDEO", label: "Damage video", url: null, status: "TRANSCODING", uploadedAt: null }] },
+      },
+    } as AdminIssueDetail);
+    render(<IssuesPanel issueKey="pdi-7" />);
+    const story = await screen.findByRole("article", { name: "Issue CK-2026-0042" });
+    expect(within(story).getByRole("heading", { name: "Request: I need 5 laptops" })).toBeTruthy();
+    for (const label of ["Pledged", "Arrived", "Good", "Minor damage (usable)", "Unusable", "Missing", "Still needed on request"]) {
+      expect(within(story).getByText(label)).toBeTruthy();
+    }
+    expect(within(story).getAllByText("Awaiting donee info").length).toBeGreaterThan(0);
+    expect(within(story).getByRole("button", { name: /Open Damage photo 1/ })).toBeTruthy();
+    expect(within(story).getByText("Video being screened")).toBeTruthy();
+    expect(within(story).getByText(/Step 1 · Review the damage proof/)).toBeTruthy();
+    expect(within(story).getByText(/Return pickup: Not set/)).toBeTruthy();
   });
 
   it("opens straight to an issue from a deep link and goes back to the list", async () => {
