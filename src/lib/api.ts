@@ -17,7 +17,6 @@ export type RedonationNotice = {
 
 import { filterVisibleListings, hideListingLocally } from "./listingActions";
 import { errorIdOf, toastErrorId } from "./errorId";
-import { DEMO_FUNDRAISER_CARDS, DEMO_FUNDRAISER_DETAILS } from "./demoFundraisers";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -7255,15 +7254,8 @@ export function uploadDonationPanPhoto(donationId: number, file: File, guestToke
 
 export const fundraisers = {
   live: (category?: FundraisingCategory) =>
-    request<FundraiserCard[]>(`/api/v1/fundraising/public/campaigns${category ? `?category=${category}` : ""}`, { silent401: true })
-      .then((items) => (items && items.length > 0 ? items : DEMO_FUNDRAISER_CARDS.filter((c) => !category || c.category === category)))
-      .catch(() => DEMO_FUNDRAISER_CARDS.filter((c) => !category || c.category === category)),
-  detail: (id: number) =>
-    request<FundraiserDetail>(`/api/v1/fundraising/public/campaigns/${id}`, { silent401: true })
-      .catch((err) => {
-        if (DEMO_FUNDRAISER_DETAILS[id]) return DEMO_FUNDRAISER_DETAILS[id];
-        throw err;
-      }),
+    request<FundraiserCard[]>(`/api/v1/fundraising/public/campaigns${category ? `?category=${category}` : ""}`, { silent401: true }),
+  detail: (id: number) => request<FundraiserDetail>(`/api/v1/fundraising/public/campaigns/${id}`, { silent401: true }),
   /** Donor-only: asks Razorpay directly when the webhook is late (or never comes, e.g. localhost). */
   checkDonation: (donationId: number, guestToken?: string | null) => guestToken
     ? request<Donation>(`/api/v1/donations/guest/${donationId}/check`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
