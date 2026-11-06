@@ -641,7 +641,6 @@ export default function AdminDashboardPage() {
   // sidebar and the mobile strip — the two were hand-duplicated before, which is
   // how "User Journey" ended up in one list and not the other.
   const REPORTS = [
-    { key: "calls"         as TabKey, label: "CRM",               icon: Phone,         color: "text-sky-400"    },
     { key: "match-history" as TabKey, label: "Match History",     icon: Handshake,     color: "text-teal-400"   },
     { key: "handover-photos" as TabKey, label: "Handover Photo Log", icon: Camera,      color: "text-amber-400"  },
     { key: "ai-logs"       as TabKey, label: "AI Screening Logs", icon: Bot,           color: "text-violet-400" },
@@ -741,6 +740,19 @@ export default function AdminDashboardPage() {
 
         {/* Queue count pills */}
         <div className="px-3.5 sm:px-5 pt-5 space-y-2 flex-1">
+          {canSeeTab("calls") && (
+            <button
+              onClick={() => selectTab("calls")}
+              aria-current={tab === "calls" ? "page" : undefined}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all border ${
+                tab === "calls" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
+              }`}
+              style={{ background: tab === "calls" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
+            >
+              <Phone className="w-4 h-4 shrink-0" style={{ color: tab === "calls" ? "#b04a15" : "#38bdf8" }} aria-hidden />
+              <span className={`text-sm font-semibold ${tab === "calls" ? "text-white" : "text-stone-400"}`}>CRM</span>
+            </button>
+          )}
           <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
           {TABS.map(({ key, label, count, icon: Icon, color }) => (
             <button
@@ -943,6 +955,18 @@ export default function AdminDashboardPage() {
             ref={navStripRef}
             className="lg:hidden flex items-center gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide"
           >
+            {canSeeTab("calls") && (
+              <button
+                data-active={tab === "calls" || undefined}
+                onClick={() => selectTab("calls")}
+                aria-current={tab === "calls" ? "page" : undefined}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+                  tab === "calls" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
+                }`}
+              >
+                <Phone className="w-3.5 h-3.5" aria-hidden /> CRM
+              </button>
+            )}
             {TABS.map(({ key, label, count }) => (
               <button
                 key={key}
