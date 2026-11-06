@@ -7379,15 +7379,10 @@ export const sahasCampaigns = {
   donationCheckout: (id: number, token: string) =>
     request<DonationOrder>(`/api/v1/sahas/campaigns/donations/${id}/checkout`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
   donationStatus: (id: number, token: string) =>
-    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null; certificateReady: boolean; receiptReady: boolean; receiptOwed: boolean }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
-  /** POST so the token stays out of URLs and logs. */
-  donationDocument: async (id: number, token: string, kind: "certificate" | "receipt") => {
-    const res = await fetch(`${BASE_URL}/api/v1/sahas/campaigns/donations/${id}/${kind}`, {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }),
-    });
-    if (!res.ok) throw new ApiError(res.status, "The document isn't ready yet.", null);
-    return res.blob();
-  },
+    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null; certificateReady: boolean; receiptReady: boolean; receiptOwed: boolean; certificateLinkToken: string | null; receiptLinkToken: string | null }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  /** A plain link, because in-app browsers ignore downloads made from page memory. The token opens this one document, briefly. */
+  donationFileUrl: (id: number, kind: "certificate" | "receipt", linkToken: string) =>
+    `${BASE_URL}/api/v1/sahas/campaigns/donations/${id}/file/${kind}?t=${encodeURIComponent(linkToken)}`,
 };
 
 // ── Sahas campaigns admin (Phase D2, 2026-11-03): /api/v1/admin/sahas-campaigns ──

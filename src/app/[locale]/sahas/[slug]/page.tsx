@@ -101,7 +101,7 @@ function SahasCampaign() {
                 <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>Counts confirmed payments only.</UiText></p>
                 {data.moneyOpen && (c.amountRaised ?? 0) < (c.targetAmount ?? 0) ? (
                   <Link href={`/sahas/${c.slug}/donate`} className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline hover:bg-[#9a3f10]"><UiText>Donate money</UiText></Link>
-                ) : <p className="m-0 rounded-xl bg-[#F7F1EA] p-3 text-sm dark:bg-zinc-800"><UiText>Donations aren&apos;t open right now.</UiText></p>}
+                ) : <p className="m-0 rounded-xl bg-[#F7F1EA] p-3 text-sm dark:bg-zinc-800">{(c.targetAmount ?? 0) > 0 && (c.amountRaised ?? 0) >= (c.targetAmount ?? 0) ? <UiText>Target reached. Thank you.</UiText> : <UiText>Donations aren&apos;t open right now.</UiText>}</p>}
               </div>
             )}
             {c.collectsItems && <>
