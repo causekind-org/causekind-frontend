@@ -10,8 +10,10 @@ function formatIst(value: string) {
   return new Date(value).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }) + " IST";
 }
 
-/** Open follow-ups and call counts, above the call list. */
-export function CrmWorkSummary({ canManage, refreshKey }: { canManage: boolean; refreshKey: number }) {
+/** Open follow-ups and call counts, shown on request above the call list. */
+export function CrmWorkSummary({ canManage, refreshKey, onChanged }: {
+  canManage: boolean; refreshKey: number; onChanged: () => void;
+}) {
   const [followups, setFollowups] = useState<CrmFollowup[]>([]);
   const [report, setReport] = useState<CrmReport | null>(null);
 
@@ -26,6 +28,7 @@ export function CrmWorkSummary({ canManage, refreshKey }: { canManage: boolean; 
     try {
       await crmCloseFollowup(id, action);
       load();
+      onChanged();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not update this follow-up.");
     }

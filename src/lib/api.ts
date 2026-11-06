@@ -4075,6 +4075,9 @@ export type CrmContact = {
   doNotCall: boolean;
   doNotCallReason: string | null;
   identityReview: boolean;
+  lastCallOutcome: string | null;
+  lastCallAt: string | null;
+  nextFollowUpAt: string | null;
 };
 
 export type CrmStaff = { id: number; fullName: string };
@@ -4118,6 +4121,7 @@ export type CrmReport = {
   rows: { actorEmail: string; calls: number; outcomes: Record<string, number> }[];
   openFollowups: number;
   overdueFollowups: number;
+  callsToday: number;
 };
 
 export function crmHistory(userId: number) {
