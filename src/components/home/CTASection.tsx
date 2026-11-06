@@ -59,7 +59,7 @@ export function CTASection() {
             <div className="relative z-10 text-center px-8">
               <span className="text-7xl font-black text-white/10 leading-none block">♥</span>
               <p className="text-white font-extrabold text-lg mt-2 leading-tight">Join thousands<br />making a difference</p>
-              <p className="text-white/70 text-sm mt-2 font-medium">100% verified · local · direct</p>
+              <p className="text-white/70 text-sm mt-2 font-medium">Screened by AI and admins · OTP-confirmed handover</p>
             </div>
             <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-white/5" />
             <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-black/20" />

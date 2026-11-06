@@ -46,7 +46,7 @@ export const GUEST_HOME_TOUR: TourStep[] = [
   {
     anchor: "guest-signals",
     title: "Why you can trust it",
-    body: "Every listing is reviewed by our team before it goes live, and we match you with people within 10 km so you can hand things over yourself.",
+    body: "Listings are screened before they go live, and we match you with people within 10 km so you can hand things over yourself.",
     placement: "top",
   },
   {

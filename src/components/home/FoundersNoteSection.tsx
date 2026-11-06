@@ -174,7 +174,7 @@ function FoundersNoteMobile({ tone = "donor", seamless = false }: { tone?: Found
             </div>
 
             <p><LandingText>
-              We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
+              We built CauseKind to connect the two — simply, safely and with dignity. Give items or money, and see where your support goes.
             </LandingText></p>
           </div>
 
@@ -529,7 +529,7 @@ function FoundersNoteFull({
                 </LandingText><LandingText>{FOUNDER.personalLine && ` ${FOUNDER.personalLine}`}</LandingText>
               </p>
               <p><LandingText>
-                We built CauseKind to connect the two — simply, safely and with dignity. No cash, no middlemen. Just real things reaching real people.
+                We built CauseKind to connect the two — simply, safely and with dignity. Give items or money, and see where your support goes.
               </LandingText></p>
             </div>
 

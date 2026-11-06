@@ -74,7 +74,7 @@ const STAGES: Stage[] = [
     headline: "A person reviews it before anyone sees it.",
     detail:
       "Every need and every listing passes an admin review queue. Recipients have their ID and address checked before a need can be posted at all.",
-    evidence: "Admin-verified listings — the review queue is staffed, not automated.",
+    evidence: "Listings are screened automatically, and unclear cases go to an admin.",
     Icon: BadgeCheck,
   },
   {

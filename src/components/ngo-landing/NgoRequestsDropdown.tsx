@@ -294,7 +294,7 @@ export default function NgoRequestsDropdown({ onNavigate }: NgoRequestsDropdownP
           </div>
           <div className="flex items-center gap-2">
             <PackageCheck className="w-4 h-4 text-ngo-700 dark:text-ngo-300" />
-            <span className="font-medium">100% Direct In-Kind Giving</span>
+            <span className="font-medium">Direct In-Kind Giving</span>
           </div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-amber-500" />

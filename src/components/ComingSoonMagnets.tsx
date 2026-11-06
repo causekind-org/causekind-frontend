@@ -145,7 +145,7 @@ const CARD_DETAILS = [
       "Every campaign admin-verified before going live",
       "Real-time donation tracking & progress dashboard",
       "Automatic impact reports for every donor",
-      "0% platform fee — every rupee reaches the cause",
+      "Any platform fee shown before you pay",
     ],
     accent: TERRACOTTA,
     Illustration: FundraisingIllustration,

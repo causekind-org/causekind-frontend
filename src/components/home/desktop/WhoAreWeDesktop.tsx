@@ -401,7 +401,7 @@ export function WhoAreWeDesktop({ variant = "donor" }: { variant?: WhoAreWeVaria
             </div>
             <div className="flex flex-col items-start gap-7">
               <p className="m-0 text-lg sm:text-[22px] font-semibold leading-snug opacity-85"><LandingText>
-                No cash. No middlemen. Just real things reaching real people.
+                Give items or money, and see where your support goes.
               </LandingText></p>
               <Link
                 href="/about"

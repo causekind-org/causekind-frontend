@@ -4,8 +4,7 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 
 import React, { useEffect, useState } from "react";
 import { Star, ExternalLink } from "lucide-react";
-import { getReviews, GoogleReviewsData, GoogleReview, SAMPLE_REVIEWS } from "@/data/googleReviews";
-import { isPlaceholderPreviewHost } from "@/lib/placeholderPreview";
+import { getReviews, GoogleReviewsData, GoogleReview } from "@/data/googleReviews";
 
 export function GoogleReviewsSection({ initial = null }: { initial?: GoogleReviewsData | null }) {
   const [data, setData] = useState<GoogleReviewsData | null>(initial);
@@ -17,8 +16,7 @@ export function GoogleReviewsSection({ initial = null }: { initial?: GoogleRevie
     const controller = new AbortController();
     // Already in the page when the home page render fetched them.
     if (!initial) getReviews(controller.signal).then((res) => {
-      // Staging/dev only: fall back to sample reviews when the live Google API is not configured
-      if (mounted) setData(res ?? (isPlaceholderPreviewHost() ? SAMPLE_REVIEWS : null));
+      if (mounted) setData(res);
     });
 
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');

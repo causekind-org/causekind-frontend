@@ -16,7 +16,7 @@ export default function FaqPage() {
         "name": "Is it secure to use Causekind?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes, completely secure. We process all payments through verified gateways like Razorpay, and every campaign is verified by our admin team."
+          "text": "Payments are processed through Razorpay. Fundraisers are reviewed by our admin team before they go live."
         }
       },
       {
@@ -24,7 +24,7 @@ export default function FaqPage() {
         "name": "How do you check campaigns before they go live?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Every campaign and item request is reviewed by our team before it appears on the site. We verify the person's identity and confirm that the need is genuine. Anything that doesn't pass our checks is rejected."
+          "text": "Fundraisers are reviewed by our admin team before they go live. Item listings and requests go through automatic screening first. Some are approved or rejected there, and unclear cases go to an admin. Anything that fails our checks is rejected."
         }
       },
       {
@@ -32,7 +32,7 @@ export default function FaqPage() {
         "name": "How do you verify people?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Individuals are checked with ID and address. NGOs are checked with their official registration documents. Every request is reviewed by our team before it goes live."
+          "text": "Individuals are checked with ID and address. NGOs are checked with their official registration documents. Requests go through automatic screening, and an admin reviews any that need a closer look."
         }
       },
       {

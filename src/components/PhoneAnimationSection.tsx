@@ -13,7 +13,7 @@ const STEPS = [
     accentText: "text-[#b04a15]",
     accentRing: "ring-[#b04a15]/30",
     title: "Discover Needs",
-    desc: "Browse verified needs and item requests near you. Every listing is reviewed by our team before it goes live.",
+    desc: "Browse needs and item requests near you. Listings are screened before they go live.",
   },
   {
     number: "02",

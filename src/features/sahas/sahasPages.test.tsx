@@ -12,6 +12,7 @@ import type { SahasCampaignCard, SahasCampaignDetail } from "@/lib/api";
 vi.mock("@/lib/features", () => ({ FEATURES: { sahas: true } }));
 vi.mock("next-intl", () => ({ useLocale: () => "en", useTranslations: () => (k: string) => k }));
 vi.mock("next/navigation", () => ({
+  usePathname: () => "/sahas/kits",
   useParams: () => ({ slug: "kits" }),
   useRouter: () => ({ push: vi.fn(), replace: vi.fn() }),
   notFound: () => { throw new Error("NOT_FOUND"); },

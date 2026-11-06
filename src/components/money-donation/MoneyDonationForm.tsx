@@ -403,7 +403,7 @@ export function MoneyDonationForm() {
                   viewport. Same endpoints as before (1.5rem = 28px-ish floor,
                   2.125rem = 34px ceiling). */}
               <h2 className="text-[clamp(1.5rem,1.15rem+1.5vw,2.125rem)] font-extrabold leading-[1.1] tracking-tight text-foreground text-pretty">
-                Empower communities with your generosity.
+                Support Sahas&apos;s work.
               </h2>
               <p className="max-w-xl text-sm leading-relaxed text-stone-600 dark:text-stone-300">
                 Goes directly toward education, healthcare and community welfare run by Sahas

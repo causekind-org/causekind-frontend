@@ -325,8 +325,7 @@ export function FoundersNoteDesktop({
               </p>
               <p>
                 We built CauseKind to connect the two — simply, safely and with
-                dignity. No cash, no middlemen. Just real things reaching real
-                people.
+                dignity. Give items or money, and see where your support goes.
               </p>
             </div>
 
