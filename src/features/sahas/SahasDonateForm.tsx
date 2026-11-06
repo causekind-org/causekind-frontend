@@ -57,7 +57,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const poll = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [docs, setDocs] = useState<{ id: number; token: string; certificate: boolean; receipt: boolean; receiptOwed: boolean } | null>(null);
+  const [docs, setDocs] = useState<{ certificate: string | null; receipt: string | null; receiptOwed: boolean } | null>(null);
 
   useEffect(() => { sahasCampaigns.detail(slug).then(setData).catch(() => setData(null)); }, [slug]);
   const tracked = useRef(false);
@@ -110,7 +110,11 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (s.status === "COMPLETED") {
         setResult("success");
         if (!tracked.current) { tracked.current = true; trackDonationSuccess(value); }
-        setDocs({ id, token, certificate: s.certificateReady, receipt: s.receiptReady, receiptOwed: s.receiptOwed });
+        setDocs({
+          certificate: s.certificateReady && s.certificateLinkToken ? sahasCampaigns.donationFileUrl(id, "certificate", s.certificateLinkToken) : null,
+          receipt: s.receiptReady && s.receiptLinkToken ? sahasCampaigns.donationFileUrl(id, "receipt", s.receiptLinkToken) : null,
+          receiptOwed: s.receiptOwed,
+        });
         if (s.certificateReady && (s.receiptReady || !s.receiptOwed)) return;
       }
       if (tries < 40) poll.current = setTimeout(() => watch(id, token, tries + 1), 3000);
@@ -142,16 +146,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     }
   };
 
-  const download = async (kind: "certificate" | "receipt") => {
-    if (!docs) return;
-    try {
-      const url = URL.createObjectURL(await sahasCampaigns.donationDocument(docs.id, docs.token, kind));
-      const a = document.createElement("a");
-      a.href = url; a.download = `${kind}-${docs.id}.pdf`; a.click();
-      URL.revokeObjectURL(url);
-    } catch { setError(ui("The document isn't ready yet. It will reach you by email.")); }
-  };
-  const docButton = "flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white";
+  const docButton = "flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline";
 
   if (result) {
     return shell(
@@ -166,9 +161,10 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
             : result === "failed" ? <UiText>No money was taken. You can try again.</UiText>
               : <UiText>We&apos;re confirming your payment. You can leave this page; we&apos;ll email you.</UiText>}
         </p>
-        {result === "success" && docs?.certificate && <button type="button" className={docButton} onClick={() => void download("certificate")}><UiText>Download certificate</UiText></button>}
-        {result === "success" && docs?.receipt && <button type="button" className={docButton} onClick={() => void download("receipt")}><UiText>Download 80G receipt</UiText></button>}
+        {result === "success" && docs?.certificate && <a href={docs.certificate} className={docButton}><UiText>Download certificate</UiText></a>}
+        {result === "success" && docs?.receipt && <a href={docs.receipt} className={docButton}><UiText>Download 80G receipt</UiText></a>}
         {result === "success" && docs?.receiptOwed && !docs.receipt && <p className="m-0 text-sm"><UiText>Your 80G receipt is being prepared.</UiText></p>}
+        {result === "success" && docs?.certificate && /FBAN|FBAV|Instagram/.test(navigator.userAgent) && <p className="m-0 text-sm"><UiText>Trouble downloading? Your documents are in your email, or open this page in Chrome.</UiText></p>}
         {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
         {leave}
       </div>,
