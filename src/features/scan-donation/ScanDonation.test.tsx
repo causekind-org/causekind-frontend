@@ -27,6 +27,11 @@ async function fillRequired(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText("Full name"), "Asha Rao");
   await user.type(screen.getByLabelText("Phone"), "9876543210");
   await user.type(screen.getByLabelText("Email"), "asha@example.com");
+  await user.type(screen.getByLabelText("PAN"), "ABCDE1234F");
+  await user.type(screen.getByLabelText("Street"), "1 MG Road");
+  await user.type(screen.getByLabelText("City"), "Pune");
+  await user.type(screen.getByLabelText("State"), "Maharashtra");
+  await user.type(screen.getByLabelText("PIN code"), "411001");
 }
 
 beforeEach(() => {
@@ -56,22 +61,23 @@ describe("ScanDonation", () => {
     await waitFor(() => expect(donate).toBeEnabled());
   });
 
-  it("requires a valid, uppercased PAN and the address only when 80G is ticked", async () => {
+  it("requires PAN and address from everyone, with or without the 80G tick", async () => {
     const user = userEvent.setup();
     render(<ScanDonation />);
-    await fillRequired(user);
-    expect(screen.queryByLabelText("PAN")).toBeNull();
-    await user.click(screen.getByLabelText(/80G tax receipt/));
+    await user.type(screen.getByLabelText("Full name"), "Asha Rao");
+    await user.type(screen.getByLabelText("Phone"), "9876543210");
+    await user.type(screen.getByLabelText("Email"), "asha@example.com");
     const donate = screen.getByRole("button", { name: /Donate/ });
-    await waitFor(() => expect(donate).toBeDisabled());
     await user.type(screen.getByLabelText("PAN"), "abcde1234f");
     expect(screen.getByLabelText("PAN")).toHaveValue("ABCDE1234F");
-    await waitFor(() => expect(donate).toBeDisabled()); // 80G also needs the full address
+    await waitFor(() => expect(donate).toBeDisabled());
     await user.type(screen.getByLabelText("Street"), "1 MG Road");
     await user.type(screen.getByLabelText("City"), "Pune");
     await user.type(screen.getByLabelText("State"), "Maharashtra");
     await user.type(screen.getByLabelText("PIN code"), "411001");
     await waitFor(() => expect(donate).toBeEnabled());
+    await user.click(screen.getByLabelText(/80G tax receipt/));
+    expect(donate).toBeEnabled();
   });
 
   it("enforces the ₹10 minimum on Other amount", async () => {
@@ -115,6 +121,20 @@ describe("ScanDonation", () => {
     expect(bodyOf(0)).toMatchObject({ amount: 101, tipAmount: 50 });
   });
 
+  it("takes a custom support amount", async () => {
+    const user = userEvent.setup();
+    fetchMock.mockResolvedValueOnce(ok(ORDER));
+    render(<ScanDonation />);
+    await fillRequired(user);
+    await user.click(screen.getByRole("radio", { name: "Other" }));
+    expect(screen.getByLabelText("Support amount in ₹")).toHaveValue("30");
+    await user.clear(screen.getByLabelText("Support amount in ₹"));
+    await user.type(screen.getByLabelText("Support amount in ₹"), "75");
+    await user.click(screen.getByRole("button", { name: "Donate ₹176" }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(bodyOf(0)).toMatchObject({ amount: 101, tipAmount: 75 });
+  });
+
   it("shows success only after verify returns PAID, and sends the contract payload", async () => {
     const user = userEvent.setup();
     fetchMock.mockResolvedValueOnce(ok(ORDER));
@@ -129,7 +149,7 @@ describe("ScanDonation", () => {
       amount: 101,
       tipAmount: 30,
       wants80g: false,
-      pan: null,
+      pan: "ABCDE1234F",
       utm: { source: "video", campaign: "diwali", medium: "", content: "" },
       website: "",
     });
@@ -220,7 +240,6 @@ describe("ScanDonation", () => {
     render(<ScanDonation />);
     await fillRequired(user);
     await user.click(screen.getByLabelText(/80G tax receipt/));
-    await user.type(screen.getByLabelText("PAN"), "ABCDE1234F");
     expect(Object.keys(sessionStorage)).toEqual(["ck_scan_utm"]);
     expect(sessionStorage.getItem("ck_scan_utm")).not.toMatch(/Asha|ABCDE/);
     expect(localStorage.length).toBe(0);

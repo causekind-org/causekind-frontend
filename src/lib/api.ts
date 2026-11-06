@@ -762,12 +762,15 @@ export type TrustDonationPayload = {
   email: string;
   mobileNumber?: string;
   /**
-   * Only for an 80G receipt (optional since 2026-11-05): five letters, four
-   * digits, one letter. "" means certificate only, with no 80G receipt.
+   * Taken from every donor (2026-11-05): five letters, four digits, one letter.
+   * `wants80g` alone decides the 80G receipt; everyone gets the certificate.
    */
   panNumber: string;
-  /** Optional postal address, printed in the receipt's Address box. Max 300 chars. */
-  address?: string;
+  /** Required with the PAN. Max 300 chars. */
+  address: string;
+  wants80g: boolean;
+  /** Don't display the donor's name publicly. Documents still carry it. */
+  anonymous: boolean;
   /**
    * Optional tip to CauseKind, charged in the same payment. Deliberately
    * separate from `amount`: a tip to the platform is not a donation to the
@@ -6915,10 +6918,10 @@ export const fundraisers = {
     ? request<Donation>(`/api/v1/donations/guest/${donationId}/check`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
     : request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
-  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }, tipAmount = 0) =>
+  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string; wants80g: boolean; mobileNumber: string }, tipAmount = 0) =>
     request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...(tax ?? {}) }) }),
   /** The same donation without an account: the name and email come from the form, and the reply carries its token. */
-  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string }, tipAmount = 0) =>
+  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string; wants80g: boolean; mobileNumber: string }, tipAmount = 0) =>
     request<FundraiserDonationStart>("/api/v1/donations/guest", { method: "POST", silent401: true, body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...guest, ...(tax ?? {}) }) }),
   /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
   checkout: (donationId: number, guestToken?: string | null) => guestToken
@@ -7357,7 +7360,7 @@ export type SahasCampaignDetail = {
   items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
 };
 export type SahasDonationInput = {
-  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber?: string; tipAmount?: number; address?: string;
+  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber: string; tipAmount?: number; address: string; wants80g: boolean; utm?: { source: string; medium: string; campaign: string; content: string };
 };
 export type SahasDonationRow = {
   id: number; donor: string; anonymous: boolean; amount: number; platformFee: number | null; status: string;

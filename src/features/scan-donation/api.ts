@@ -1,5 +1,5 @@
 import type { ScanFormValues } from "./schema";
-import { chosenAmount } from "./schema";
+import { chosenAmount, chosenTip } from "./schema";
 import type { Utm } from "./tracking";
 
 // NEXT_PUBLIC_API_URL is what the rest of the site reads; it covers deployments
@@ -84,9 +84,10 @@ export function buildOrderPayload(values: ScanFormValues, utm: Utm) {
     email: values.email.trim(),
     amount: chosenAmount(values.preset, values.otherAmount),
     // Separate from the donation, as on /donate/money: the backend adds it to the order total.
-    tipAmount: Number(values.tip),
+    tipAmount: chosenTip(values.tip, values.otherTip),
     wants80g: values.wants80g,
-    pan: values.wants80g ? values.pan : null,
+    anonymous: values.anonymous,
+    pan: values.pan,
     address: {
       line: values.address.line.trim(),
       city: values.address.city.trim(),

@@ -105,6 +105,7 @@ export function MoneyDonationForm() {
   // PAN card photo (2026-10-08): read by AI to fill the PAN, attached to the
   // donation once it exists. Optional — typing the PAN still works.
   const [wants80g, setWants80g] = useState(false);
+  const [anonymous, setAnonymous] = useState(false);
   const [panPhoto, setPanPhoto] = useState<File | null>(null);
   const [panPreview, setPanPreview] = useState<string | null>(null);
   // The browser can't draw every file the PAN reader accepts (PDF, TIFF, HEIC):
@@ -247,13 +248,17 @@ export function MoneyDonationForm() {
       toast.error(`Please enter a valid ${maxPhoneLength}-digit mobile number.`);
       return;
     }
-    // 80G is the donor's choice; without it the donation gets the certificate only.
-    if (wants80g && !formData.panNumber) {
-      toast.error('Please enter your PAN — it is required for your 80G receipt.');
+    // PAN and address are taken from everyone; the tick alone decides the 80G receipt.
+    if (!formData.panNumber) {
+      toast.error('Please enter your PAN.');
       return;
     }
-    if (wants80g && !/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(formData.panNumber)) {
       toast.error('PAN must be five letters, four digits and one letter, e.g. ABCDE1234F.');
+      return;
+    }
+    if (!formData.address.trim()) {
+      toast.error('Please enter your address.');
       return;
     }
 
@@ -283,13 +288,15 @@ export function MoneyDonationForm() {
         // load-bearing — but omitting it would fail validation before it got there.
         email: donorEmail || formData.email,
         mobileNumber: fullPhone || undefined,
-        panNumber: wants80g ? formData.panNumber : '',
-        address: formData.address.trim() || undefined,
+        panNumber: formData.panNumber,
+        address: formData.address.trim(),
+        wants80g,
+        anonymous,
       });
 
       // Attach the card photo now that the donation exists. Best-effort: the
       // donation must not fail over the photo, the typed PAN is what counts.
-      if (wants80g && panPhoto) {
+      if (panPhoto) {
         uploadTrustDonationPanPhoto(order.donationId, panPhoto, order.panUploadToken).catch(() => { /* optional */ });
       }
 
@@ -640,7 +647,7 @@ export function MoneyDonationForm() {
                         whileTap={{ scale: 0.98 }}
                         type="button"
                         aria-pressed={false}
-                        onClick={() => setIsCustomTip(true)}
+                        onClick={() => { setCustomTip(presetTip ? String(presetTip) : ''); setIsCustomTip(true); }}
                         className={`${chipClasses(false)} px-1.5`}
                       >
                         Custom
@@ -747,17 +754,9 @@ export function MoneyDonationForm() {
                         />
                       </div>
                     </div>
-                    <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-foreground sm:col-span-2">
-                      <input id="wants80g" type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} className="size-5 shrink-0 accent-amber-700" />
-                      I want an 80G tax receipt
-                    </label>
-                    {wants80g && (
                     <div className="flex flex-col gap-1.5">
                       <label htmlFor="panNumber" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
-                        PAN{' '}
-                        <span className="font-semibold text-stone-400 dark:text-stone-500">
-                          · required for your 80G receipt
-                        </span>
+                        PAN
                       </label>
                       <input
                         type="text"
@@ -827,23 +826,16 @@ export function MoneyDonationForm() {
                         </p>
                       )}
                     </div>
-                    )}
-                    {/* Spans both columns so it costs exactly one grid row.
-                        Deliberately NOT required and deliberately a single line:
-                        this sits on the last screen before a payment, and an 80G
-                        receipt is valid without an address — refusing a donation
-                        over a blank box would trade money for a tidier document. */}
+                    {/* Spans both columns so it costs exactly one grid row. */}
                     <div className="flex flex-col gap-1.5 sm:col-span-2">
                       <label htmlFor="address" className="text-[0.6875rem] font-bold text-stone-600 dark:text-stone-300">
-                        Address{' '}
-                        <span className="font-semibold text-stone-400 dark:text-stone-500">
-                          · optional, printed on the receipt
-                        </span>
+                        Address
                       </label>
                       <input
                         type="text"
                         id="address"
                         name="address"
+                        required
                         value={formData.address}
                         onChange={handleChange}
                         className={inputClasses}
@@ -852,6 +844,17 @@ export function MoneyDonationForm() {
                         autoComplete="street-address"
                       />
                     </div>
+                    <label htmlFor="anonymous" className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-foreground sm:col-span-2">
+                      <input id="anonymous" type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} className="size-5 shrink-0 accent-amber-700" />
+                      Don&apos;t display my name publicly
+                    </label>
+                    <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold text-foreground sm:col-span-2">
+                      <input id="wants80g" type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} className="size-5 shrink-0 accent-amber-700" />
+                      I want an 80G tax receipt
+                    </label>
+                    <p className="m-0 text-xs text-stone-500 sm:col-span-2 dark:text-stone-400">
+                      Everyone gets a donation certificate by email. The 80G receipt is sent only if you tick this.
+                    </p>
                   </div>
                 </div>
               </div>
