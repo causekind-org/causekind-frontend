@@ -183,7 +183,7 @@ function useStepCopy(): { labels: Record<OfferStep, string>; intros: Record<Offe
  * `offerId` is non-null for the whole lifetime of this component.
  */
 export function NgoDriveOfferWizard({
-  offerId, driveId: propDriveId, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
+  offerId, driveId: propDriveId, driveHref, offer, requestTitle, requestedQuantity, stillNeededQuantity, adminNote, onSubmitted, onExit, onSaveExit,
   driveUnit, acceptedConditions, driveCategory: propDriveCategory, 
   drivePin = null, drivePickupRadiusKm = null, driveDropOffAddress = null, onDeclineOutside = () => window.location.assign("/"),
 }: {
@@ -198,6 +198,8 @@ export function NgoDriveOfferWizard({
   /** Donor conditions the drive accepts; null/empty shows every condition. */
   acceptedConditions?: readonly string[] | null;
   driveId?: number;
+  /** The drive's page; defaults to /drives/{driveId}. Sahas item lines pass their campaign page. */
+  driveHref?: string;
   ngoName: string;
   driveUnit: string;
   driveCategory?: string | null;
@@ -736,7 +738,7 @@ export function NgoDriveOfferWizard({
             {driveId && (
               <div className="mb-8">
                 <Link
-                  href={`/drives/${driveId}`}
+                  href={driveHref ?? `/drives/${driveId}`}
                   className="inline-flex items-center text-xs text-white/70 underline underline-offset-2 transition-colors hover:text-white"
                 >
                   <UiText>View full drive details</UiText>
@@ -772,7 +774,7 @@ export function NgoDriveOfferWizard({
               </button>
               {driveId && (
                 <Link
-                  href={`/drives/${driveId}`}
+                  href={driveHref ?? `/drives/${driveId}`}
                   className="text-xs font-semibold text-emerald-700 underline underline-offset-2 dark:text-emerald-400"
                 >
                   <UiText>View full drive details</UiText>

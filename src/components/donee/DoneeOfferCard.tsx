@@ -6,7 +6,7 @@ import { Check, ExternalLink, ShoppingBag, Truck } from "lucide-react";
 import Link from "@/components/AppLink";
 import { OfferJourneyDrawer } from "@/components/OfferJourney";
 import type { DonationOffer } from "@/lib/api";
-import { purchaseTimelineLabel } from "@/features/donation-offer-wizard/offerModel";
+import { purchaseChannelLabel, purchaseTimelineLabel } from "@/features/donation-offer-wizard/offerModel";
 
 import { UiText, useUiText } from "@/components/UiText";
 import { useTranslations } from "next-intl";
@@ -37,7 +37,7 @@ function stagesFor(offer: DonationOffer): Stage[] {
   const direct = offer.purchaseCommitment?.fulfilmentMethod === "DIRECT_DELIVERY";
   const labels = direct
     ? ["You review", "Share address", "Donor orders", "You confirm it arrived"]
-    : ["You review", "Team approves", "Donor buys it", "You receive it"];
+    : ["You review", "Donor confirms", "Donor buys it", "You receive it"];
   return OWNED_STAGES.map((s, i) => ({ ...s, label: labels[i] }));
 }
 
@@ -52,15 +52,17 @@ function nextSentence(offer: DonationOffer, idx: number): string {
       return purchase
         ? direct
           ? "If you accept, you'll be asked for a delivery address to share with this donor only. It's prepaid — you pay nothing on delivery."
-          : "If you accept, our team checks the offer. Then the donor buys it and you plan the handover."
+          : "By accepting this offer, you reserve the offered quantity with this donor. The donor will purchase the item and arrange a handover with you."
         : "If you accept, our team checks the offer. Then you and the donor plan the handover.";
     case 1:
       return purchase && direct
         ? "Share your delivery address on the purchase page so the donor can order."
-        : "Our team is checking the offer. You'll hear from us when it's approved.";
+        : purchase
+          ? "Waiting for donor confirmation: the donor is confirming they can still buy it."
+          : "Our team is checking the offer. You'll hear from us when it's approved.";
     case 2:
       return purchase
-        ? direct ? "The donor is ordering. Track it on the purchase page." : "The donor is buying the item. You'll plan the handover once it's ready."
+        ? direct ? "The donor is ordering. Track it on the purchase page." : "The donor is buying the item. You'll plan the handover once our team has verified it."
         : "Plan the handover with the donor.";
     default:
       return purchase && direct
@@ -114,6 +116,8 @@ export function DoneeOfferCard({
   const found = stages.findIndex(s => s.statuses.includes(offer.status));
   const idx = found < 0 ? 0 : found;
   const photos = offer.media?.filter(m => m.mediaType === "IMAGE") ?? [];
+  const handOverChannel = purchase && !direct ? purchaseChannelLabel(commitment?.purchaseChannel) : null;
+  const planned = [commitment?.proposedBrand, commitment?.proposedModel].filter(Boolean).join(" ");
   const qty = offer.itemDetails?.quantity;
   const quantity = offer.receivedQuantity != null && qty != null
     ? dt("receivedXOfY", { x: offer.receivedQuantity, y: qty })
@@ -136,7 +140,12 @@ export function DoneeOfferCard({
     <article className="grid grid-cols-1 gap-5 rounded-2xl border border-stone-200 p-4 dark:border-zinc-800 sm:p-6 lg:grid-cols-[132px_minmax(0,1fr)_260px] lg:gap-7">
       {/* Photo — or, for a purchase, an honest "not bought yet" tile */}
       <div className="flex items-start gap-4 lg:flex-col lg:items-center lg:gap-2">
-        {purchase ? (
+        {purchase && photos[0] ? (
+          <div className="relative size-22 shrink-0 overflow-hidden rounded-xl border border-stone-200 bg-stone-100 dark:border-zinc-700 dark:bg-zinc-800 lg:size-33 lg:rounded-2xl">
+            <Image src={photos[0].mediaUrl} alt={ui("Reference image")} fill sizes="132px" className="object-cover" />
+            <span className="absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-center text-3xs font-bold text-white"><UiText>Reference only</UiText></span>
+          </div>
+        ) : purchase ? (
           <div aria-hidden className="flex size-22 shrink-0 flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-[var(--ck-role-accent)]/40 bg-[var(--ck-role-soft)] text-[var(--ck-role-accent)] lg:size-33 lg:rounded-2xl">
             <ShoppingBag className="size-7 lg:size-10" strokeWidth={1.6} />
             <span className="text-3xs font-bold"><UiText>Not bought yet</UiText></span>
@@ -183,8 +192,10 @@ export function DoneeOfferCard({
         <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
           {purchase ? (
             <>
-              <Fact label={ui("They plan to buy")} value={[commitment?.proposedBrand, commitment?.proposedModel].filter(Boolean).join(" ") || "Brand not decided"} wide />
-              {quantity && <Fact label={ui("Quantity")} value={quantity} />}
+              {(planned || direct) && <Fact label={ui("Planned product")} value={planned || "Brand not decided"} wide />}
+              {quantity && <Fact label={ui("Donor plans to provide")} value={quantity} />}
+              {handOverChannel && <Fact label={ui("Purchasing method")} value={commitment?.purchaseChannel === "OFFLINE" ? ui("Buy offline (a shop)") : ui("Buy online")} />}
+              {commitment?.estimatedCost != null && <Fact label={ui("Estimated budget")} value={`₹${Number(commitment.estimatedCost).toLocaleString("en-IN")}`} />}
               <Fact label={direct ? ui("Ordered within") : ui("Bought within")}
                 value={commitment ? `${purchaseTimelineLabel(commitment.purchaseTimeline).replace(/^Within /, "")} of your yes` : "—"} />
             </>
@@ -204,10 +215,19 @@ export function DoneeOfferCard({
           </div>
         )}
 
+        {purchase && !direct && pending && (
+          <p className="text-xs text-stone-600 dark:text-stone-300">
+            {planned || commitment?.productUrl
+              ? <UiText>You're accepting this donor's commitment, not a specific product. If they buy a different suitable item, our team checks it.</UiText>
+              : <UiText>The donor will buy the item from a shop. Product details will be shared after purchase.</UiText>}
+          </p>
+        )}
+
         {purchase && commitment?.productUrl && /^https?:\/\//i.test(commitment.productUrl) && (
           <a href={commitment.productUrl} target="_blank" rel="noopener noreferrer nofollow"
-            className="inline-flex min-h-11 items-center gap-1.5 text-sm font-bold text-[var(--ck-role-accent)] hover:underline">
+            className="group/product inline-flex min-h-11 w-fit items-center gap-2 rounded-xl border border-[var(--ck-role-accent)]/30 bg-[var(--ck-role-accent)]/10 px-4 text-sm font-bold text-[var(--ck-role-accent)] shadow-sm transition-colors hover:bg-[var(--ck-role-accent)] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2">
             <ExternalLink className="size-4" aria-hidden /> <UiText>View the product they chose</UiText>
+            <span aria-hidden className="transition-transform group-hover/product:translate-x-0.5">→</span>
           </a>
         )}
 
@@ -303,6 +323,7 @@ function useDoneeStageText(): (text: string) => string {
     ["Donor orders", ui("Donor orders")],
     ["You confirm it arrived", ui("You confirm it arrived")],
     ["Donor buys it", ui("Donor buys it")],
+    ["Donor confirms", ui("Donor confirms")],
     ["The donor is adding details our team asked for.", ui("The donor is adding details our team asked for.")],
     ["Our team is reviewing the problem you reported.", ui("Our team is reviewing the problem you reported.")],
     ["If you accept, you'll be asked for a delivery address to share with this donor only. It's prepaid — you pay nothing on delivery.", ui("If you accept, you'll be asked for a delivery address to share with this donor only. It's prepaid — you pay nothing on delivery.")],

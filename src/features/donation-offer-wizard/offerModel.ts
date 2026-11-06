@@ -222,6 +222,39 @@ export const PURCHASE_METHODS = [
 
 export type PurchaseMethod = (typeof PURCHASE_METHODS)[number]["value"];
 
+/**
+ * Buy and hand over only: where the donor will buy. The recipient accepts the
+ * donor's commitment, not a product, so a shop purchase needs no product details
+ * up front — the actual item is recorded after it is bought and checked by our team.
+ */
+export const PURCHASE_CHANNELS = [
+  {
+    value: "ONLINE",
+    label: "Buy online",
+    desc: "I'll purchase the item from an online store and hand it over personally.",
+  },
+  {
+    value: "OFFLINE",
+    label: "Buy offline",
+    desc: "I'll purchase the item from a physical store and hand it over personally.",
+  },
+] as const;
+
+export type PurchaseChannel = (typeof PURCHASE_CHANNELS)[number]["value"];
+
+export function purchaseChannelLabel(value: string | null | undefined): string | null {
+  return PURCHASE_CHANNELS.find(c => c.value === value)?.label ?? null;
+}
+
+/**
+ * Whether this plan names an exact listing before acceptance: direct delivery
+ * (the retailer ships it) and an online hand-over purchase. A shop purchase does not.
+ */
+export function planNeedsListing(model: Pick<OfferModel, "fulfilmentMethod" | "purchaseChannel">): boolean {
+  return model.fulfilmentMethod === "DIRECT_DELIVERY"
+    || (model.fulfilmentMethod === "BUY_AND_HAND_OVER" && model.purchaseChannel === "ONLINE");
+}
+
 export function purchaseMethodLabel(value: string | null | undefined): string {
   return PURCHASE_METHODS.find(m => m.value === value)?.label ?? "Method not chosen";
 }
@@ -244,6 +277,8 @@ export type OfferModel = {
   // asked for — so it is filled from the request title at serialization time
   // rather than asked for a second time in a second place.
   fulfilmentMethod: "" | PurchaseMethod;
+  /** Buy and hand over only; "" until chosen, and ignored for direct delivery. */
+  purchaseChannel: "" | PurchaseChannel;
   productUrl: string;
   proposedBrand: string;
   proposedModel: string;
@@ -283,6 +318,7 @@ export type OfferModel = {
 export const emptyOfferModel: OfferModel = {
   photos: [],
   fulfilmentMethod: "",
+  purchaseChannel: "",
   productUrl: "",
   proposedBrand: "",
   proposedModel: "",
@@ -362,6 +398,7 @@ function purchasePlanFrom(offer: DonationOffer | null | undefined) {
   const method = PURCHASE_METHODS.find(m => m.value === c.fulfilmentMethod)?.value ?? "";
   return {
     fulfilmentMethod: method as OfferModel["fulfilmentMethod"],
+    purchaseChannel: (PURCHASE_CHANNELS.find(ch => ch.value === c.purchaseChannel)?.value ?? "") as OfferModel["purchaseChannel"],
     productUrl: c.productUrl ?? "",
     proposedBrand: c.proposedBrand ?? "",
     proposedModel: c.proposedModel ?? "",
@@ -439,14 +476,18 @@ export function firstIncompleteOfferStep(
   if (opts?.location && (model.latitude == null || model.longitude == null || !model.pickupCity.trim())) return "location";
 
   if (purchase) {
-    if (
-      !model.fulfilmentMethod ||
-      !model.purchaseTimeline ||
+    const listingMissing = planNeedsListing(model) && (
       !model.productUrl.trim() ||
       !model.proposedBrand.trim() ||
       !model.proposedModel.trim() ||
       !model.estimatedCost.trim() ||
       !model.intendedStore.trim()
+    );
+    if (
+      !model.fulfilmentMethod ||
+      !model.purchaseTimeline ||
+      (model.fulfilmentMethod === "BUY_AND_HAND_OVER" && !model.purchaseChannel) ||
+      listingMissing
     ) {
       return "purchasePlan";
     }

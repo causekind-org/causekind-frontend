@@ -9,7 +9,7 @@ export function parseOrderProofText(raw: string): ExtractedProofData {
     return {
       retailer: null,
       orderNumber: null,
-      quantity: 1,
+      quantity: null,
       expectedDeliveryDate: null,
       trackingNumber: null,
       trackingUrl: null,
@@ -73,7 +73,7 @@ export function parseOrderProofText(raw: string): ExtractedProofData {
   }
 
   // 3. Quantity detection
-  let quantity = 1;
+  let quantity: number | null = null;
   const qMatch =
     raw.match(/Quantity[:\s]+(\d+)/i) ||
     raw.match(/Qty[:\s]+(\d+)/i) ||

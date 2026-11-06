@@ -6,10 +6,8 @@ import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useRef, useCallback } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
-// @ts-expect-error — SpecularButton is the JS/CSS React Bits variant (no types shipped)
-import SpecularButton from "@/components/SpecularButton";
 import Link from "@/components/AppLink";
-import { DiwaliLogo } from "@/components/brand/DiwaliLogo";
+import { DiwaliVideoLogo } from "@/components/brand/DiwaliVideoLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isDiwaliCampaignActive } from "@/lib/diwali";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
@@ -68,7 +66,7 @@ const logoLetterVariants = {
 /** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
 const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
-export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
+export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
 
@@ -79,10 +77,11 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
 
   // The diya sits with the heart, so the Diwali logo keeps its icon on mobile
   // too, whatever `hideIcon` asked for. Gated like the tie, so it leaves on 13 Nov.
-  if (isDiwaliCampaignActive()) {
+  // The footer passes seasonal={false} to keep the everyday logo.
+  if (seasonal && isDiwaliCampaignActive()) {
     return (
       <span className="flex items-center" aria-label="CauseKind">
-        <DiwaliLogo />
+        <DiwaliVideoLogo />
       </span>
     );
   }
@@ -160,8 +159,8 @@ export function CauseKindLogo({ size = "md", hideIcon = false }: { size?: "sm" |
 }
 
 // Keep CareNestLogo exported and map it to CauseKindLogo to prevent any broken imports in other files
-export function CareNestLogo({ size = "md", hideIcon = false }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean }) {
-  return <CauseKindLogo size={size} hideIcon={hideIcon} />;
+export function CareNestLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
+  return <CauseKindLogo size={size} hideIcon={hideIcon} seasonal={seasonal} />;
 }
 
 // ── Login nudge — a speech-bubble popover anchored to the navbar's Login
@@ -699,6 +698,8 @@ export function SiteHeader() {
     ...(FEATURES.fundraising && user?.role === "DONEE" ? [{ href: "/fundraising", label: ui("Fundraising") }] : []),
     // Everyone else (donors, NGOs, signed-out visitors) browses live fundraisers.
     ...(FEATURES.fundraising && user?.role !== "DONEE" ? [{ href: "/fundraisers", label: ui("Fundraisers") }] : []),
+    // Campaigns organised by Sahas Charitable Trust (2026-11-03): open to every visitor.
+    ...(FEATURES.sahas ? [{ href: "/sahas", label: ui("Sahas Campaigns") }] : []),
     { href: "/blog", label: t("nav.blog") },
     ...aboutMenuItems,
   ];
@@ -812,17 +813,23 @@ export function SiteHeader() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <header
+      <header data-calm-header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
         style={{
+          // Slide only. Animating opacity here made Chrome flatten the glass
+          // (backdrop-filter) buttons inside, and on the way back they could
+          // stay painted as blank black circles. The shadow goes with the
+          // header so its edge never peeks below the top of the screen.
+          // No backdrop blur on the header itself either: its glass buttons
+          // blur their own backdrop, and a blur nested in a blur over the
+          // drifting hero photo flickers and paints blank on Chrome/macOS.
           transform: immersive ? "translateY(-100%)" : "translateY(0)",
-          opacity: immersive ? 0 : 1,
+          boxShadow: immersive ? "none" : undefined,
           pointerEvents: immersive ? "none" : undefined,
-          transition: "transform 0.45s ease, opacity 0.45s ease, box-shadow 0.3s ease",
-          willChange: "transform",
+          transition: "transform 0.45s ease, box-shadow 0.3s ease",
         }}
-        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/80 lg:dark:bg-zinc-950/80 backdrop-blur-none lg:backdrop-blur-md border-b border-[#e5e2d5] dark:border-stone-850 ${
+        className={`sticky top-0 z-50 w-full bg-[#faf8f5] dark:bg-zinc-950 lg:bg-[#faf8f5]/95 lg:dark:bg-zinc-950/95 border-b border-[#e5e2d5] dark:border-stone-850 ${
         scrolled
           ? "shadow-[0_10px_30px_-8px_rgba(28,25,23,0.18)] dark:shadow-[0_10px_30px_-8px_rgba(0,0,0,0.55)]"
           : "shadow-[0_6px_18px_-6px_rgba(28,25,23,0.10)] dark:shadow-[0_6px_18px_-6px_rgba(0,0,0,0.40)]"
@@ -864,7 +871,19 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            <CareNestLogo size="md" hideIcon={true} />
+            {isRakshaBandhanCampaignActive() ? (
+              <CareNestLogo size="md" hideIcon={true} />
+            ) : (
+              // Both are rendered and styles.css shows one: whitecause over the
+              // transparent home-hero header and in dark mode, blackcause on the
+              // cream bar everywhere else.
+              <span aria-label="CauseKind" className="flex items-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/diwali/blackcause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-dark block h-10 w-auto" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/images/diwali/whitecause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-light hidden h-10 w-auto" />
+              </span>
+            )}
           </Link>
           {/* With the bar gone there is nothing behind this button but the
               hero, so it brings its own surface: `glass-pill` is the same
@@ -1109,28 +1128,14 @@ export function SiteHeader() {
                 themselves since the page already is the login/register form. */}
             {!(pathname === "/login" || pathname === "/register") && (
             <div className="relative">
-              <SpecularButton
-                size="sm"
-                radius={999}
-                tint={roleColors.accent}
-                tintOpacity={1}
-                textColor="#ffffff"
-                lineColor={roleColors.highlight}
-                baseColor={roleColors.deep}
-                intensity={1}
-                shineSize={14}
-                shineFade={35}
-                thickness={1.2}
-                followMouse
-                proximity={220}
+              <button
+                type="button"
                 onClick={() => (user ? requestLogout() : router.push("/login"))}
-                className="font-bold"
+                className="inline-flex items-center gap-1.5 h-10 rounded-full px-5 text-sm font-bold text-white bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
               >
-                <span className="inline-flex items-center gap-1.5">
-                  {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                  {user ? t("nav.signOut") : t("nav.logIn")}
-                </span>
-              </SpecularButton>
+                {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                {user ? t("nav.signOut") : t("nav.logIn")}
+              </button>
               <LoginNudgeBubble user={user} />
             </div>
             )}

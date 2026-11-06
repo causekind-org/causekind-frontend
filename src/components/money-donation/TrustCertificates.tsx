@@ -42,33 +42,41 @@ export function TrustCertificates() {
 
           <div className={`${styles.certificates} grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mb-14`}>
             <CertificateCard
-              title="12AA Registration Certificate"
-              mobileSummary={{ title: '12AA', subtitle: 'Charitable institution' }}
-              description="Confirms our status as a charitable institution under the Income Tax Act, 1961."
+              title="12A Registration Certificate"
+              mobileSummary={{ title: '12A', subtitle: 'Charitable institution' }}
+              description="Confirms our status as a charitable institution under Section 12AB of the Income Tax Act, 1961."
               icon={<Award className="w-7 h-7" />}
               benefits={[
                 'Tax exemption on income',
                 'Charitable status recognition',
-                'Legal compliance'
+                'Form 10AD approved (12AB)'
               ]}
-              documentUrl="/certificates/12aa-page-1.webp"
-              imageUrl="/certificates/12aa-page-1.webp"
-              extraImages={['/certificates/12aa-page-2.webp']}
+              documentUrl="/certificates/12A Approval Order_1083926425(1)_20122025.pdf"
+              imageUrl="/certificates/12a-approval-page-1.webp"
+              extraImages={[
+                '/certificates/12a-approval-page-2.webp',
+                '/certificates/12a-approval-page-3.webp',
+                '/certificates/12a-approval-page-4.webp'
+              ]}
             />
 
             <CertificateCard
               title="80G Tax Exemption Certificate"
               mobileSummary={{ title: '80G', subtitle: 'Donation tax certificate' }}
-              description="Allows our donors to claim 50% tax deductions on their contributions."
+              description="Allows our donors to claim 50% tax deductions on their contributions under Section 80G(5)."
               icon={<FileText className="w-7 h-7" />}
               benefits={[
                 '50% tax deduction for donors',
                 'Valid across India',
-                'Government approved'
+                'Form 10AD approved'
               ]}
-              documentUrl="/certificates/80g-page-1.webp"
-              imageUrl="/certificates/80g-page-1.webp"
-              extraImages={['/certificates/80g-page-2.webp', '/certificates/80g-page-3.webp']}
+              documentUrl="/certificates/80G Approval Order_1083926453(1)_20122025.pdf"
+              imageUrl="/certificates/80g-approval-page-1.webp"
+              extraImages={[
+                '/certificates/80g-approval-page-2.webp',
+                '/certificates/80g-approval-page-3.webp',
+                '/certificates/80g-approval-page-4.webp'
+              ]}
             />
 
             <CertificateCard

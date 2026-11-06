@@ -37,11 +37,12 @@ function MapSkeleton() {
   );
 }
 
-export function HandoverMapPinField({ lat, lng, onChange, disabled }: {
+export function HandoverMapPinField({ lat, lng, onChange, disabled, hint = "Drag the pin to your exact meeting spot" }: {
   lat: number | null;
   lng: number | null;
   onChange: (lat: number, lng: number) => void;
   disabled?: boolean;
+  hint?: string;
 }) {
   const hasPin = lat != null && lng != null;
   // Already-pinned locations open expanded; new ones stay collapsed until asked for.
@@ -76,7 +77,7 @@ export function HandoverMapPinField({ lat, lng, onChange, disabled }: {
         onPick={onChange}
         showLocateButton
         pinAtStart
-        hint="Drag the pin to your exact meeting spot"
+        hint={hint}
       />
       <button
         type="button"

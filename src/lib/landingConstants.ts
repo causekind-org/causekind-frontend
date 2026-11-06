@@ -145,10 +145,3 @@ export const FOUNDER = {
  * false = static layout with simple fade-ins
  */
 export const ENABLE_SUPPORT_JOURNEY_ANIMATION = true;
-
-/**
- * Auto-rotation interval for the "How It Works" tabs on the home page.
- * Interval in milliseconds before advancing to the next role tab:
- * "I want to give" (donor) → "I need help" (donee) → "I'm an NGO" (ngo) → back to start.
- */
-export const HOW_IT_WORKS_AUTOPLAY_MS = 2000;

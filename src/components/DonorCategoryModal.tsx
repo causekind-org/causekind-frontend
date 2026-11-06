@@ -95,6 +95,14 @@ const BACKDROP_EMBERS = [
    COMPONENT
 ========================================================= */
 
+const DISMISSED_KEY = "ck-category-dismissed";
+
+function rememberDismissed() {
+  try {
+    localStorage.setItem(DISMISSED_KEY, "1");
+  } catch {}
+}
+
 export function DonorCategoryModal() {
   const ui = useUiText();
   const t = useTranslations("globalPrompts");
@@ -159,8 +167,19 @@ export function DonorCategoryModal() {
   when the key was never written, and `apply()` stores [] for
   "Show all needs instead", so that counts as an answer too.
 */
+/*
+  Superseded 2026-11-02: the picker kept reappearing on every page
+  load, so it now auto-opens only until the donor has answered once
+  (applied a selection, or dismissed it). The explicit open event
+  below still reopens it on demand.
+*/
 useEffect(() => {
-  if (!isLoading && user?.role === "DONOR") {
+  if (isLoading || user?.role !== "DONOR") return;
+  let dismissed = false;
+  try {
+    dismissed = localStorage.getItem(DISMISSED_KEY) === "1";
+  } catch {}
+  if (readSelectedDonorCategories() === null && !dismissed) {
     setShow(true);
   }
 }, [isLoading, user?.role]);
@@ -241,6 +260,7 @@ useEffect(() => {
   useEffect(() => {
     function handleEscape(event: KeyboardEvent) {
       if (event.key === "Escape") {
+        rememberDismissed();
         setHoveredCategory(null);
         setShow(false);
       }
@@ -309,6 +329,7 @@ useEffect(() => {
   ======================================================= */
 
   function closePicker() {
+    rememberDismissed();
     setHoveredCategory(null);
     setShow(false);
   }

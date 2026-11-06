@@ -66,6 +66,7 @@ import { toast } from "@/lib/toast";
 import { HeroSection } from "@/components/home/HeroSection";
 import { DiwaliMobileLayer, DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
+import { SahasSpotlight } from "@/components/home/SahasSpotlight";
 import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
@@ -321,6 +322,9 @@ export default function HomeClient({
           <WhoAreWeSection />
         </div>
       </section>
+
+      {/* Sahas campaigns spotlight after Who Are We / About CauseKind */}
+      <SahasSpotlight />
 
       <DiwaliSeam kind="diya" diyas={3} />
       <DiwaliSeam kind="line" />

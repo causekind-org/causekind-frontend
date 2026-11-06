@@ -7,7 +7,7 @@ import type { CompatibilityCheck } from "@/lib/api";
 import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 import {
   OFFER_GROUP_TITLES, declarationGroupsFor,
-  isPurchaseFlow, purchaseMethodLabel, purchaseTimelineLabel, uploadedOfferPhotos,
+  isPurchaseFlow, planNeedsListing, purchaseChannelLabel, purchaseMethodLabel, purchaseTimelineLabel, uploadedOfferPhotos,
   type OfferModel, type OfferStep,
 } from "../offerModel";
 
@@ -64,16 +64,33 @@ export function OfferReviewStep({
       {purchase ? (
         <ReviewSection title={ui("What you'll buy")} onEdit={() => onEdit("purchasePlan")}>
           <p className="mb-2 rounded-lg bg-orange-50 p-2 text-2xs font-semibold text-stone-700 dark:bg-orange-950/30 dark:text-stone-200">
-            <UiText>Please wait until your offer is accepted and ready to buy before purchasing.</UiText>
+            <UiText>Please wait until the recipient accepts and you confirm on the purchase page before buying.</UiText>
           </p>
-          <ReviewRow label={ui("Delivery")} value={tr(purchaseMethodLabel(model.fulfilmentMethod))} />
-          <ReviewRow label={ui("Buying by")} value={tr(purchaseTimelineLabel(model.purchaseTimeline))} />
-          {model.productUrl && <ReviewRow label={ui("Product link")} value={model.productUrl} />}
-          <ReviewRow label={ui("Brand")} value={model.proposedBrand || "Not decided"} />
-          <ReviewRow label={ui("Model")} value={model.proposedModel || "Not decided"} />
-          <ReviewRow label={ui("Estimated cost")} value={model.estimatedCost ? `₹${model.estimatedCost}` : "Not given"} />
-          <ReviewRow label={ui("Where from")} value={model.intendedStore || "Not decided"} />
-          {model.purchaseNotes && <ReviewRow label={ui("Note")} value={model.purchaseNotes} />}
+          <ReviewRow label={ui("Delivery method")} value={tr(purchaseMethodLabel(model.fulfilmentMethod))} />
+          {model.fulfilmentMethod === "BUY_AND_HAND_OVER" && purchaseChannelLabel(model.purchaseChannel) && (
+            <ReviewRow label={ui("Purchasing method")} value={ui(purchaseChannelLabel(model.purchaseChannel) as string)} />
+          )}
+          <ReviewRow label={ui("Quantity offered")} value={model.quantity} />
+          <ReviewRow label={ui("Purchase deadline")} value={`${tr(purchaseTimelineLabel(model.purchaseTimeline))} ${ui("of the recipient accepting")}`} />
+          {/* Only what the donor gave; a shop purchase may give nothing yet, and that is fine. */}
+          {model.productUrl.trim() && <ReviewRow label={ui("Product link")} value={model.productUrl} />}
+          {[model.proposedBrand, model.proposedModel].some(v => v.trim()) && (
+            <ReviewRow label={ui("Product")} value={[model.proposedBrand.trim(), model.proposedModel.trim()].filter(Boolean).join(" ")} />
+          )}
+          {model.estimatedCost.trim() && <ReviewRow label={ui("Estimated cost")} value={`₹${model.estimatedCost.trim()}`} />}
+          {model.intendedStore.trim() && <ReviewRow label={ui("Store")} value={model.intendedStore} />}
+          {model.purchaseNotes.trim() && <ReviewRow label={ui("Additional information")} value={model.purchaseNotes} />}
+          {photos.length > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <span className="relative h-14 w-14 overflow-hidden rounded-lg border border-stone-200 dark:border-zinc-800">
+                <WizardPhotoImage src={photos[0].remoteUrl as string} alt={ui("Reference image")} className="object-cover" />
+              </span>
+              <span className="text-2xs text-stone-500"><UiText>Reference image</UiText></span>
+            </div>
+          )}
+          {!planNeedsListing(model) && ![model.productUrl, model.proposedBrand, model.proposedModel, model.estimatedCost, model.intendedStore].some(v => v.trim()) && (
+            <p className="mt-1 text-2xs text-stone-500"><UiText>Product details will be shared after purchase.</UiText></p>
+          )}
         </ReviewSection>
       ) : (
         <ReviewSection title={ui("Photos")} onEdit={() => onEdit("photos")}>
@@ -132,16 +149,38 @@ export function OfferReviewStep({
         </ReviewSection>
       )}
 
-      {!hidePickup && <ReviewSection title={ui("Your location")} onEdit={onChangeLocation}>
-        <ReviewRow label={ui("City")} value={model.pickupCity} />
-        <ReviewRow label={ui("Locality")} value={model.pickupLocality} />
-        <ReviewRow label={ui("PIN code")} value={model.pickupPincode} />
-        <ReviewRow label={ui("Handover")} value={model.fulfilmentMethod === "DIRECT_DELIVERY"
-          ? "Shipped by the retailer to the recipient"
-          : model.donorDropOffAvailable
-          ? "You'll take it to the recipient's area if they can't come"
-          : "Within 10 km of the recipient"} />
-      </ReviewSection>}
+      {model.fulfilmentMethod === "DIRECT_DELIVERY" ? (
+        <ReviewSection title={ui("Delivery")}>
+          <ReviewRow label={ui("Method")} value={ui("Direct delivery — Shipped by retailer directly to recipient")} />
+          <ReviewRow label={ui("Donor pickup")} value={ui("Not required (no home pickup)")} />
+        </ReviewSection>
+      ) : !hidePickup ? (
+        <ReviewSection title={ui("Your location")} onEdit={onChangeLocation}>
+          {(!model.pickupCity?.trim() || model.latitude == null) ? (
+            <div className="py-2">
+              <p className="text-xs text-amber-700 dark:text-amber-400 mb-2">
+                <UiText>Pickup location not set yet.</UiText>
+              </p>
+              <button
+                type="button"
+                onClick={onChangeLocation}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-[var(--ck-role-accent)] px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-[var(--ck-role-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)]"
+              >
+                📍 <UiText>Set location on map / share location</UiText>
+              </button>
+            </div>
+          ) : (
+            <>
+              <ReviewRow label={ui("City")} value={model.pickupCity} />
+              <ReviewRow label={ui("Locality")} value={model.pickupLocality} />
+              <ReviewRow label={ui("PIN code")} value={model.pickupPincode} />
+              <ReviewRow label={ui("Handover")} value={model.donorDropOffAvailable
+                ? ui("You'll take it to the recipient's area if they can't come")
+                : ui("Within 10 km of the recipient")} />
+            </>
+          )}
+        </ReviewSection>
+      ) : null}
 
       <DeclarationsBlock
         groups={(declarationGroups ?? declarationGroupsFor(flowType, model.fulfilmentMethod)).map(g => ({ ...g, items: g.items.map(tr) }))}

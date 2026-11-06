@@ -48,7 +48,7 @@ export function AboutSahas() {
             <p className={styles.mobileIntro}>A registered non-profit helping children and families with education, healthcare and everyday support.</p>
             {/* Certified Indicator Card */}
             <div className={`${styles.certification} bg-amber-50/90 dark:bg-amber-950/50 p-5 rounded-xl border border-amber-300/60 dark:border-amber-700/50 shadow-xs inline-block`}>
-              <p className="text-sm font-bold text-amber-950 dark:text-amber-100">12AA & 80G Certified</p>
+              <p className="text-sm font-bold text-amber-950 dark:text-amber-100">12A & 80G Certified</p>
               <p className="text-xs text-stone-600 dark:text-stone-300 mt-1">Donations are eligible for tax exemption in India.</p>
             </div>
           </div>

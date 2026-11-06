@@ -19,7 +19,8 @@ import {
   reopenItemRequest, cancelItemRequest, deleteItemRequestDraft, hideWithdrawnRequest,
   getOfferCancellationOptions, type CancellationOption,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer,
-  getMyNgoDriveOffers, cancelNgoDriveOffer, invalidateRequestCache, type NgoDriveOfferResponse
+  getMyNgoDriveOffers, cancelNgoDriveOffer, invalidateRequestCache, type NgoDriveOfferResponse,
+  dismissOfferRedonation, type RedonationNotice
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
@@ -754,7 +755,21 @@ function journeyStage(status: string, fulfilment: RequestFulfilment): { stage: n
   return { stage: 2, state: "active" }; // all matching-phase statuses
 }
 
-function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: ItemRequest; index: number; onCancelled: () => void; review?: React.ReactNode }) {
+/** The request's status can sit at PUBLIC_REQUEST after the donee has said yes,
+ *  so a committed match or offer passes "Matched" and makes "Received" current. */
+function committedStage(base: ReturnType<typeof journeyStage>, matched?: boolean): ReturnType<typeof journeyStage> {
+  return matched && base.stage === 2 && base.state === "active" ? { stage: 3, state: "active" } : base;
+}
+
+// Statuses from the donee's yes onward. Earlier ones (donor review, admin
+// approval, waiting on the donee) are still matching.
+const COMMITTED_MATCH_STATUSES = new Set(["DONEE_ACCEPTED", "BOTH_PARTIES_ACCEPTED", "LOGISTICS_CONFIRMED",
+  "TRANSPORT_DISCUSSION", "ARRANGEMENT_AGREED", "PICKUP_SCHEDULED", "PICKED_UP", "IN_TRANSIT",
+  "DELIVERY_ATTEMPTED", "DELIVERED_PENDING_CONFIRMATION", "RESCHEDULED"]);
+const COMMITTED_OFFER_STATUSES = new Set(["DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED", "DONOR_RECONFIRMED",
+  "ADMIN_APPROVED", "HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_WINDOW_OPEN", "ISSUE_RAISED"]);
+
+function DoneeRequestRow({ request: r, index, onCancelled, review, matched }: { request: ItemRequest; index: number; onCancelled: () => void; review?: React.ReactNode; matched?: boolean }) {
   const ui = useUiText();
   const pl = usePageLabels();
   const jt = useJourneyText();
@@ -784,7 +799,7 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors"
+          <p className="text-base sm:text-lg font-bold text-stone-900 dark:text-stone-100 leading-snug [overflow-wrap:anywhere] group-hover:text-[#1e3a60] dark:group-hover:text-blue-400 transition-colors"
             style={{ fontFamily: "var(--font-source-serif-4), serif" }}>
             <TranslatedText text={r.title} />
           </p>
@@ -828,7 +843,7 @@ function DoneeRequestRow({ request: r, index, onCancelled, review }: { request: 
       )}
       {/* Always open, like the donor's listing card (owner, 2026-10-09). */}
       {r.status !== "DRAFT" && (
-        <RequestDetailsPanel request={r} {...journeyStage(r.status, fulfilment)}
+        <RequestDetailsPanel request={r} {...committedStage(journeyStage(r.status, fulfilment), matched)}
           partial={fulfilment.isPartiallyFulfilled} fulfilled={fulfilment.fulfilled} requested={fulfilment.requested} review={review} />
       )}
     </motion.div>
@@ -956,7 +971,7 @@ function OfferStageCard({
   const jt = useJourneyText();
   const dt = useTranslations("dashFlow");
   const dc = useDashCopy();
-  const meta = OFFER_STATUS_META[offer.status] ?? {
+  const meta = purchaseOfferMeta(offer) ?? OFFER_STATUS_META[offer.status] ?? {
     label: offer.status.replace(/_/g, " "),
     explanation: "",
     severity: "neutral" as const,
@@ -1564,6 +1579,9 @@ function DonorHistoryCard({
   hubHref,
   photos,
   thumb,
+  offerId,
+  redonationNotice,
+  onDismissRedonation,
 }: {
   title: string;
   tag?: string;
@@ -1584,9 +1602,14 @@ function DonorHistoryCard({
   hubHref?: string | null;
   photos?: string[];
   thumb?: string | null;
+  offerId?: number;
+  redonationNotice?: RedonationNotice | null;
+  onDismissRedonation?: (offerId: number) => Promise<void> | void;
 }) {
   const allPhotos = (photos?.length ? photos : thumb ? [thumb] : []).filter(Boolean) as string[];
   const [viewing, setViewing] = useState<number | null>(null);
+  const [isLocallyDismissed, setIsLocallyDismissed] = useState(false);
+  const [isDismissing, setIsDismissing] = useState(false);
 
   const statusBg = isCompleted
     ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
@@ -1730,6 +1753,120 @@ function DonorHistoryCard({
             )}
           </div>
         </div>
+
+        {/* Optional Redonation Notice for completed offers with active admin follow-up */}
+        {redonationNotice && redonationNotice.status === "ACTIVE" && !isLocallyDismissed && (
+          <div
+            data-testid="history-redonation-banner"
+            className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-3.5 sm:p-4 text-xs text-stone-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-stone-200 transition-all shadow-xs"
+          >
+            <div className="flex items-start gap-2.5">
+              <Info className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" aria-hidden />
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-amber-900 dark:text-amber-200">
+                    <UiText>Delivery update</UiText>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (offerId && onDismissRedonation) {
+                        setIsDismissing(true);
+                        try {
+                          await onDismissRedonation(offerId);
+                          setIsLocallyDismissed(true);
+                        } finally {
+                          setIsDismissing(false);
+                        }
+                      }
+                    }}
+                    disabled={isDismissing}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 hover:underline disabled:opacity-50"
+                  >
+                    {isDismissing ? <UiText>Dismissing...</UiText> : <UiText>Not interested</UiText>}
+                  </button>
+                </div>
+
+                {redonationNotice.promptType === "QUANTITY" || (redonationNotice.missingQuantity != null && redonationNotice.missingQuantity > 0) ? (
+                  <>
+                    <p className="text-stone-700 dark:text-stone-300">
+                      The recipient reported that they received{" "}
+                      <span className="font-semibold text-stone-900 dark:text-stone-100">
+                        {redonationNotice.receivedQuantity ?? 0} out of{" "}
+                        {redonationNotice.sentQuantity ?? ((redonationNotice.receivedQuantity ?? 0) + (redonationNotice.missingQuantity ?? 0))}
+                      </span>{" "}
+                      {redonationNotice.requestTitle || title || "items"}.{" "}
+                      <span className="font-semibold text-amber-800 dark:text-amber-300">
+                        {redonationNotice.missingQuantity}{" "}
+                        {redonationNotice.missingQuantity === 1 ? "item is" : "items are"}
+                      </span>{" "}
+                      still missing from their request.
+                    </p>
+                    <p className="text-stone-600 dark:text-stone-400">
+                      The recipient&apos;s request for the remaining{" "}
+                      <span className="font-semibold text-stone-800 dark:text-stone-200">
+                        {redonationNotice.stillNeededQuantity ?? redonationNotice.missingQuantity}{" "}
+                        {(redonationNotice.stillNeededQuantity ?? redonationNotice.missingQuantity) === 1 ? "item" : "items"}
+                      </span>{" "}
+                      is still active. You can contribute the remaining item if you wish.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-stone-700 dark:text-stone-300">
+                      The recipient reported a quality issue with the items received. The issue has been reviewed by our admin team.
+                    </p>
+                    {redonationNotice.stillNeededQuantity != null && redonationNotice.stillNeededQuantity > 0 && (
+                      <p className="text-stone-600 dark:text-stone-400">
+                        The recipient&apos;s request for{" "}
+                        <span className="font-semibold text-stone-800 dark:text-stone-200">
+                          {redonationNotice.stillNeededQuantity} remaining{" "}
+                          {redonationNotice.stillNeededQuantity === 1 ? "item" : "items"}
+                        </span>{" "}
+                        is still active if you wish to contribute again.
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {redonationNotice.requestId && (
+                  <div className="pt-1.5 flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/requests/${redonationNotice.requestId}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-colors"
+                    >
+                      <Heart className="size-3.5 fill-white" aria-hidden />
+                      <UiText>Donate Remaining Items</UiText>
+                      {redonationNotice.stillNeededQuantity != null && (
+                        <span className="ml-0.5 rounded-full bg-amber-700/60 px-1.5 py-0.2 text-[10px] font-bold">
+                          {redonationNotice.stillNeededQuantity} needed
+                        </span>
+                      )}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (offerId && onDismissRedonation) {
+                          setIsDismissing(true);
+                          try {
+                            await onDismissRedonation(offerId);
+                            setIsLocallyDismissed(true);
+                          } finally {
+                            setIsDismissing(false);
+                          }
+                        }
+                      }}
+                      disabled={isDismissing}
+                      className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-300 dark:hover:bg-zinc-700"
+                    >
+                      <UiText>Dismiss</UiText>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer actions */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 dark:border-zinc-800">
@@ -1878,6 +2015,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         return {
           kind: "donee" as const,
           key: `o${o.id}`,
+          offerId: o.id,
+          redonationNotice: o.redonationNotice ?? null,
           at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
           isCompleted: true,
           statusTone: "completed" as const,
@@ -1912,6 +2051,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       return {
         kind: "donee" as const,
         key: `l${item.id}`,
+        offerId: undefined,
+        redonationNotice: undefined,
         at: Date.parse(when ?? "") || 0,
         isCompleted: true,
         statusTone: "completed" as const,
@@ -1962,6 +2103,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         return {
           kind: "donee" as const,
           key: `c${o.id}`,
+          offerId: o.id,
+          redonationNotice: o.redonationNotice ?? null,
           at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
           isCompleted: false,
           statusTone: (o.status === "DONEE_DECLINED" ? "declined" : "closed") as "declined" | "closed",
@@ -1998,6 +2141,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         return {
           kind: "donee" as const,
           key: `m${m.id}`,
+          offerId: undefined,
+          redonationNotice: undefined,
           at: matchEndedAt(m),
           isCompleted: isReceived,
           statusTone: (isReceived ? "completed" : m.status === "DONOR_REJECTED" ? "declined" : "closed") as "completed" | "declined" | "closed",
@@ -2023,7 +2168,10 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       });
 
     return [...fromOffers, ...fromItems, ...fromClosedOffers, ...fromMatches].sort((a, b) => b.at - a.at);
-  }, [offers, fulfilledItems, matches, pastMatches, ui, dt]);
+  // ui is left out: useUiText() returns a new function each render, and a language change
+  // remounts the page (locale is a route segment). The UI-text extractor also rejects a bare ui.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offers, fulfilledItems, matches, pastMatches, dt]);
 
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const filtered = entries.filter(e => {
@@ -2046,6 +2194,16 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     { key: "donee", label: ui("Donee"), count: entries.filter(e => e.kind === "donee").length },
     { key: "drive", label: ui("NGO drives"), count: entries.filter(e => e.kind === "drive").length },
   ];
+
+  const handleDismissRedonation = async (offerId: number) => {
+    try {
+      await dismissOfferRedonation(offerId);
+      toast.success(ui("Notification dismissed"));
+      onChanged();
+    } catch {
+      toast.error(ui("Failed to dismiss notification"));
+    }
+  };
 
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
   const focusedOffer = useRef<number | null>(null);
@@ -2147,6 +2305,9 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
                   hubHref={e.hubHref}
                   photos={e.photos}
                   thumb={e.thumb}
+                  offerId={e.offerId}
+                  redonationNotice={e.redonationNotice}
+                  onDismissRedonation={handleDismissRedonation}
                 />
               )}
             </div>
@@ -2621,6 +2782,28 @@ const DONOR_SECTIONS: readonly string[] = ["offers", "items", "matches"];
 const isDonorSection = (s: string): s is DonorSection => DONOR_SECTIONS.includes(s);
 
 /** Offers waiting on the donor: finish a draft, answer a question, reconfirm. */
+/**
+ * Buy and hand over speaks in purchase terms: after the donor's yes the offer is
+ * ADMIN_APPROVED (our team approved it before the recipient saw it), which for a
+ * purchase means "buying", not "schedule the handover". Null for everything else.
+ */
+function purchaseOfferMeta(offer: { flowType?: string | null; status: string; purchaseCommitment?: { fulfilmentMethod?: string | null; purchaseStatus?: string | null } | null }) {
+  if (offer.flowType !== "WILL_PURCHASE" || offer.purchaseCommitment?.fulfilmentMethod !== "BUY_AND_HAND_OVER") return null;
+  if (offer.status === "DONOR_RECONFIRMATION_REQUIRED")
+    return { label: "Confirm you can still buy it", explanation: "The recipient accepted your offer. Confirm on the purchase page that you can still buy and hand it over.", action: "reconfirm" as const, actionLabel: "Open purchase", severity: "warning" as const };
+  if (offer.status !== "ADMIN_APPROVED") return null;
+  switch (offer.purchaseCommitment?.purchaseStatus) {
+    case "PROOF_UPLOADED":
+      return { label: "Purchase being verified", explanation: "Our team is checking what you bought. The handover opens once it's verified.", severity: "info" as const };
+    case "READY_FOR_HANDOVER":
+      return { label: "Ready for handover", explanation: "Our team verified the purchase. Arrange the handover with the recipient.", action: "handover" as const, actionLabel: "Arrange handover", severity: "warning" as const };
+    case "ORDER_PLACED":
+      return { label: "Bought — details needed", explanation: "Finish telling us what you bought on the purchase page.", severity: "warning" as const };
+    default:
+      return { label: "Purchase in progress", explanation: "Buy the item, then tell us what you bought on the purchase page.", severity: "warning" as const };
+  }
+}
+
 const OFFER_NEEDS_DONOR = ["DRAFT", "NEEDS_INFORMATION", "DONOR_RECONFIRMATION_REQUIRED", "DONEE_ACCEPTED", "ADMIN_APPROVED"];
 /** Matches waiting on the donor: confirm the donation before it can move. */
 const MATCH_NEEDS_DONOR = new Set(["DONOR_REVIEW"]);
@@ -2794,6 +2977,10 @@ function DoneeDashboard({
   const requestOptions = requestFilterOptions(itemRequests, liveMatchRequestIds);
   const filteredRequests = filterRequests(itemRequests, requestFilter, liveMatchRequestIds);
   const activeOffers = incomingOffers.filter(o => !isPastOffer(o, now));
+  const committedRequestIds = new Set<number>([
+    ...activeMatches.filter(m => m.requestId != null && COMMITTED_MATCH_STATUSES.has(m.status)).map(m => m.requestId as number),
+    ...activeOffers.filter(o => COMMITTED_OFFER_STATUSES.has(o.status)).map(o => o.requestId),
+  ]);
   const pastOffers = incomingOffers.filter(o => isPastOffer(o, now));
   const offersNeedYou = activeOffers.some(o => OFFER_NEEDS_DONEE.has(o.status));
   // Owner, 2026-10-07: Your Requests holds requests not yet in a live flow (plus
@@ -3036,7 +3223,7 @@ function DoneeDashboard({
                   <div className="mt-4">
                     <AnimatePresence initial={false}>
                       {filteredRequests.map((r, i) => (
-                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} />
+                        <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} matched={committedRequestIds.has(r.id)} />
                       ))}
                     </AnimatePresence>
                   </div>
@@ -3052,7 +3239,7 @@ function DoneeDashboard({
                       <h4 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-3">{dc(label)}</h4>
                       <AnimatePresence initial={false}>
                         {group.map((r, i) => (
-                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} />
+                          <DoneeRequestRow key={r.id} request={r} index={i} onCancelled={onRefresh} review={doneeReviewFor(r.id)} matched={committedRequestIds.has(r.id)} />
                         ))}
                       </AnimatePresence>
                     </div>
@@ -3116,7 +3303,10 @@ function DoneeDashboard({
                       isPendingReview ? ui("Awaiting your review") :
                         isNeedsInfo ? ui("Waiting on donor to add details") :
                           isScreening ? ui("AI screening in progress") :
-                            offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? ui("Donor is reconfirming") :
+                            offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? (offer.flowType === "WILL_PURCHASE" ? ui("Waiting for donor confirmation") : ui("Donor is reconfirming")) :
+                              offer.status === "ADMIN_APPROVED" && offer.purchaseCommitment?.fulfilmentMethod === "BUY_AND_HAND_OVER"
+                                ? (offer.purchaseCommitment.purchaseStatus === "READY_FOR_HANDOVER" ? ui("Ready for handover")
+                                  : offer.purchaseCommitment.purchaseStatus === "PROOF_UPLOADED" ? ui("Purchase being verified") : ui("Donor is buying it")) :
                               offer.status === "DONOR_RECONFIRMED" ? ui("Under admin review") :
                                 isApproved ? ui("Approved") :
                                   isHandover ? ui("Handover in progress") :

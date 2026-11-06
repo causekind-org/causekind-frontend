@@ -89,7 +89,9 @@ export function OffersQueuePanel() {
   });
   const [filter, setFilter] = useState<string>("PENDING");
   // Purchase commitments have their own lifecycle and queue endpoint.
-  const [showPurchases, setShowPurchases] = useState(false);
+  // ?view=purchases: the "Purchase to verify" bell opens straight on the purchases queue.
+  const [showPurchases, setShowPurchases] = useState(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("view") === "purchases");
   const [expanded, setExpanded] = useState<number | null>(null);
   const [expandedData, setExpandedData] = useState<ExpandedOffer | null>(null);
   const [expandLoading, setExpandLoading] = useState(false);

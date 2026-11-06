@@ -49,7 +49,7 @@ describe("back button", () => {
   });
 
   it("the give page shares one draft request and keys the wizard by offer id", () => {
-    const page = src("app/[locale]/drives/[id]/give/page.tsx");
+    const page = src("features/ngo-drives/components/DriveGiveScreen.tsx");
     expect(page).toContain("draftRequest.current?.driveId === drive.id");
     expect(page).toContain("key={offer.id}");
   });

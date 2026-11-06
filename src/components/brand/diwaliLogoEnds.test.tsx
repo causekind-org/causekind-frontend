@@ -21,13 +21,13 @@ describe("the header logo", () => {
 
   it("is the Diwali lockup during Diwali", () => {
     const { container } = render(<CauseKindLogo />);
-    expect(container.querySelector(".ck-dlogo-cause")).not.toBeNull();
+    expect(container.querySelector('img[src*="/brand/diwali-video/"]')).not.toBeNull();
   });
 
   it("is the everyday logo once Diwali has ended", () => {
     diwaliState.on = false;
     const { container } = render(<CauseKindLogo />);
-    expect(container.querySelector(".ck-dlogo-cause")).toBeNull();
+    expect(container.querySelector('img[src*="/brand/diwali-video/"]')).toBeNull();
     expect(container.querySelector('[aria-label="CauseKind"]')).not.toBeNull();
   });
 });

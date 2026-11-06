@@ -1,3 +1,19 @@
+export type RedonationNotice = {
+  issueId: number;
+  requestId: number;
+  requestTitle: string;
+  itemTitle?: string | null;
+  issueType: string;
+  promptType: "QUANTITY" | "QUALITY";
+  requestedQuantity: number;
+  sentQuantity: number;
+  receivedQuantity: number;
+  missingQuantity: number;
+  stillNeededQuantity: number;
+  adminMessage?: string | null;
+  status: "ACTIVE" | "DISMISSED" | "FULFILLED";
+};
+
 import { filterVisibleListings, hideListingLocally } from "./listingActions";
 import { errorIdOf, toastErrorId } from "./errorId";
 
@@ -577,6 +593,7 @@ export type UserProfile = {
   longitude: number | null;
   /** Donee only: set when a name change leaves the ID document contradicting the profile. */
   documentWarning?: string;
+  addressLandmark?: string | null;
 };
 
 export function getProfile() {
@@ -686,7 +703,7 @@ export type DonationOrder = {
 };
 
 /** Starting a fundraiser donation returns no payment details; those come only from checkout (2026-10-30). */
-export type FundraiserDonationStart = { donationId: number; amountInPaise: number; currency: string };
+export type FundraiserDonationStart = { donationId: number; amountInPaise: number; currency: string; guestToken?: string };
 
 /** Fundraiser donation documents, from the server (2026-10-30). */
 export type DocumentPolicy = "CERTIFICATE_ONLY" | "RECEIPT_AND_CERTIFICATE";
@@ -745,14 +762,15 @@ export type TrustDonationPayload = {
   email: string;
   mobileNumber?: string;
   /**
-   * Required since 2026-09-18, and validated server-side too: five letters,
-   * four digits, one letter. The trust has to report every donor's PAN in
-   * Form 10BD, so a donation without one cannot go into that return. "" is now
-   * rejected by the API rather than meaning "no receipt wanted".
+   * Taken from every donor (2026-11-05): five letters, four digits, one letter.
+   * `wants80g` alone decides the 80G receipt; everyone gets the certificate.
    */
   panNumber: string;
-  /** Optional postal address, printed in the receipt's Address box. Max 300 chars. */
-  address?: string;
+  /** Required with the PAN. Max 300 chars. */
+  address: string;
+  wants80g: boolean;
+  /** Don't display the donor's name publicly. Documents still carry it. */
+  anonymous: boolean;
   /**
    * Optional tip to CauseKind, charged in the same payment. Deliberately
    * separate from `amount`: a tip to the platform is not a donation to the
@@ -2361,6 +2379,7 @@ export type DonationOffer = {
   receivedQuantity: number | null;
   /** ISO timestamp when the 48-hour issue reporting window closes, or null if not yet dual-confirmed. */
   windowExpiresAt?: string | null;
+  redonationNotice?: RedonationNotice | null;
 };
 
 /**
@@ -2390,9 +2409,19 @@ export type PurchaseCommitmentDetails = {
   /** Set at donee acceptance; null before. */
   purchaseDeadline: string | null;
   acceptedAt: string | null;
+  /** Buy and hand over: where the donor buys. Null for direct delivery and older offers. */
+  purchaseChannel?: PurchaseChannel | null;
+  /** What was actually bought, once recorded. The price is never sent here (the donee sees this). */
+  actualItemName?: string | null;
+  actualBrand?: string | null;
+  actualModel?: string | null;
+  purchasedQuantity?: number | null;
+  purchasedOn?: string | null;
+  purchaseNotes?: string | null;
 };
 
 export type PurchaseFulfilmentMethod = "BUY_AND_HAND_OVER" | "DIRECT_DELIVERY";
+export type PurchaseChannel = "ONLINE" | "OFFLINE";
 
 export type PurchaseStatus =
   | "INTENT_DECLARED" | "READY_TO_BUY" | "ORDER_PLACED" | "PROOF_UPLOADED" | "READY_FOR_HANDOVER"
@@ -2448,6 +2477,25 @@ export type PurchaseView = {
   issues: PurchaseIssueView[];
   /** Why our team sent the item photo back; the donor (and admins) only. Cleared by a new upload. */
   proofRejectionReason?: string | null;
+  /** The plan and what was actually bought, side by side. */
+  details?: PurchaseDetailsView | null;
+};
+
+/**
+ * Planned vs actually bought. `actualPrice`, `reviewOutcome` and `reviewedAt`
+ * reach the donor and our team only (null for the recipient).
+ */
+export type PurchaseDetailsView = {
+  channel: PurchaseChannel | null;
+  plannedItem: string | null; plannedBrand: string | null; plannedModel: string | null;
+  estimatedCost: number | null; productUrl: string | null; intendedStore: string | null;
+  planNotes: string | null; purchaseTimeline: string | null;
+  actualItemName: string | null; actualBrand: string | null; actualModel: string | null;
+  actualPrice: number | null; purchasedQuantity: number | null; purchasedOn: string | null;
+  purchaseNotes: string | null;
+  /** APPROVED, INFO_REQUIRED or REJECTED — our team's last decision on the evidence. */
+  reviewOutcome: "APPROVED" | "INFO_REQUIRED" | "REJECTED" | null;
+  reviewedAt: string | null;
 };
 
 export type PurchaseIssueView = {
@@ -2455,7 +2503,12 @@ export type PurchaseIssueView = {
   reportedByRole: "DONOR" | "DONEE"; createdAt: string;
   response: string | null; respondedAt: string | null;
   resolution: string | null; resolvedAt: string | null;
+  /** Support's open question; each side gets only the one put to it (support sees all). */
+  infoRequest?: string | null; infoAudience?: PurchaseInfoAudience | null; infoRequestedAt?: string | null;
+  /** Each side's answer; a participant sees only their own. */
+  infoReplyDonor?: string | null; infoReplyDonee?: string | null; infoRepliedAt?: string | null;
 };
+export type PurchaseInfoAudience = "DONOR" | "DONEE" | "BOTH";
 
 /** Donor uploads ITEM_PHOTO..DELIVERY_PROOF; the recipient uploads RECEIVED_PHOTO and ISSUE_EVIDENCE. */
 export type PurchaseProofType = "ITEM_PHOTO" | "ORDER_CONFIRMATION" | "RECEIPT" | "DELIVERY_PROOF" | "RECEIVED_PHOTO" | "ISSUE_EVIDENCE";
@@ -3026,6 +3079,11 @@ export function getMyDonationOffers(includeArchived = false) {
  * status, rejection reason, AI assessments, history and audit trail all stay, and
  * admins, support and the donee are unaffected. Reversible via {@link unhideOffer}.
  */
+
+export function dismissOfferRedonation(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/dismiss-redonation`, { method: "POST" });
+}
+
 export function hideOffer(offerId: number) {
   return request<CancellationOption>(`/api/v1/offers/${offerId}/hide`, { method: "POST" });
 }
@@ -3123,6 +3181,9 @@ export function recordPurchaseOrder(offerId: number, data: {
   idempotencyKey: string; retailer: string; reference?: string; quantity: number;
   expectedDeliveryAt: string; prepaid: true;
   trackingUrl?: string; trackingReference?: string;
+  /** Buy and hand over: what was actually bought (required there). */
+  itemName?: string; brand?: string; model?: string; actualPrice?: number;
+  purchasedQuantity?: number; purchasedOn?: string; notes?: string;
 }) {
   return request<void>(`/api/v1/offers/${offerId}/purchase/order`, { method: "POST", body: JSON.stringify(data) });
 }
@@ -3190,11 +3251,36 @@ export function adminListPurchases(page = 0, attention = false) {
   return request<PurchaseView[]>(`/api/v1/admin/offers/purchases?page=${page}${attention ? "&attention=true" : ""}`);
 }
 
-export function adminReviewPurchaseProof(offerId: number, data: { approve: boolean; reason: string }) {
+/** What a buy-and-hand-over donor bought, corrected; `resubmit` sends it back to our team. */
+export type PurchaseDetailsInput = {
+  itemName: string; brand?: string; model?: string; actualPrice: number; purchasedQuantity: number;
+  quantity: number; retailer: string; purchasedOn: string; notes?: string; resubmit: boolean;
+};
+
+export function updatePurchaseDetails(offerId: number, data: PurchaseDetailsInput) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/details`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+/** APPROVE opens the handover; REQUEST_INFO asks the donor to add or correct details; REJECT asks for new evidence. */
+export function adminReviewPurchaseProof(offerId: number, data: { action: "APPROVE" | "REQUEST_INFO" | "REJECT"; reason: string }) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/proof-review`, { method: "POST", body: JSON.stringify(data) });
 }
 
-export function adminResolvePurchaseIssue(offerId: number, data: { action: "RETRY_DELIVERY" | "CANCEL_REMAINDER"; reason: string }) {
+/**
+ * Support's decision on an open purchase problem. `finalQuantity` (closing, direct
+ * delivery only) replaces the recipient's count; 0 cancels the donation.
+ * `expectedBy` resets the delivery date on a retry; REQUEST_INFO asks `audience`.
+ */
+export type PurchaseResolution =
+  | { action: "RETRY_DELIVERY" | "REQUEST_REMAINING_DONOR"; reason: string; expectedBy?: string }
+  | { action: "CANCEL_REMAINDER" | "CLOSED_NO_ACTION"; reason: string; finalQuantity?: number }
+  | { action: "REQUEST_INFO"; reason: string; audience: PurchaseInfoAudience };
+
+export function replyToPurchaseInfoRequest(offerId: number, message: string) {
+  return request<void>(`/api/v1/offers/${offerId}/purchase/issues/info-reply`, { method: "POST", body: JSON.stringify({ message }) });
+}
+
+export function adminResolvePurchaseIssue(offerId: number, data: PurchaseResolution) {
   return request<void>(`/api/v1/admin/offers/${offerId}/purchase/resolve-issue`, { method: "POST", body: JSON.stringify(data) });
 }
 
@@ -3229,6 +3315,13 @@ export type AdminIssueDetail = {
     resolvedAt: string | null; resolutionSummary: string | null; linkedRecords: string[];
   } | null;
   timeline: { at: string | null; kind: "ISSUE" | "STATUS" | "CASE"; actor: string | null; text: string; internal: boolean }[];
+  requestedQuantity?: number | null;
+  sentQuantity?: number | null;
+  receivedQuantity?: number | null;
+  missingQuantity?: number | null;
+  adminDecision?: string | null;
+  donorNotificationStatus?: string | null;
+  requestId?: number | null;
 };
 
 export function adminListIssues(params: { status?: "open" | "resolved" | "all"; source?: AdminIssueSource | ""; q?: string; page?: number; size?: number } = {}) {
@@ -6800,11 +6893,13 @@ export type FundraiserDetail = {
   remaining?: number | null;
 };
 
-/** Fundraiser donation: the signed-in donor's PAN photo for an 80G receipt, before checkout. */
-export function uploadDonationPanPhoto(donationId: number, file: File) {
+/** Fundraiser donation: the donor's PAN photo for an 80G receipt, before checkout. A guest proves the donation with its token. */
+export function uploadDonationPanPhoto(donationId: number, file: File, guestToken?: string) {
   const fd = new FormData();
   fd.append("file", file);
-  return fetch(`${BASE_URL}/api/v1/donations/${donationId}/pan-photo`, { method: "POST", credentials: "include", body: fd })
+  if (guestToken) fd.append("uploadToken", guestToken);
+  const path = guestToken ? `trust/${donationId}` : `${donationId}`;
+  return fetch(`${BASE_URL}/api/v1/donations/${path}/pan-photo`, { method: "POST", credentials: "include", body: fd })
     .then(async (res) => {
       // 409 with "already uploaded" means a retry after a successful upload: fine.
       if (res.ok) return;
@@ -6819,12 +6914,19 @@ export const fundraisers = {
     request<FundraiserCard[]>(`/api/v1/fundraising/public/campaigns${category ? `?category=${category}` : ""}`, { silent401: true }),
   detail: (id: number) => request<FundraiserDetail>(`/api/v1/fundraising/public/campaigns/${id}`, { silent401: true }),
   /** Donor-only: asks Razorpay directly when the webhook is late (or never comes, e.g. localhost). */
-  checkDonation: (donationId: number) => request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
+  checkDonation: (donationId: number, guestToken?: string | null) => guestToken
+    ? request<Donation>(`/api/v1/donations/guest/${donationId}/check`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
+    : request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
-  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }) =>
-    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, ...(tax ?? {}) }) }),
+  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string; wants80g: boolean; mobileNumber: string }, tipAmount = 0) =>
+    request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...(tax ?? {}) }) }),
+  /** The same donation without an account: the name and email come from the form, and the reply carries its token. */
+  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string; wants80g: boolean; mobileNumber: string }, tipAmount = 0) =>
+    request<FundraiserDonationStart>("/api/v1/donations/guest", { method: "POST", silent401: true, body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...guest, ...(tax ?? {}) }) }),
   /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
-  checkout: (donationId: number) => request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
+  checkout: (donationId: number, guestToken?: string | null) => guestToken
+    ? request<DonationOrder>(`/api/v1/donations/guest/${donationId}/checkout`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
+    : request<DonationOrder>(`/api/v1/donations/${donationId}/checkout`, { method: "POST" }),
   setPayoutReady: (id: number, expectedVersion: number, ready: boolean) =>
     request<FundraisingAdminCampaign>(`/api/v1/admin/fundraising/campaigns/${id}/payout-ready`, { method: "POST", body: JSON.stringify({ expectedVersion, ready }) }),
 };
@@ -7111,6 +7213,18 @@ const qs = (o: Record<string, string | number | undefined | null>) => {
   return s ? `?${s}` : "";
 };
 
+// Backend: SuperAdminMoneyController. cause + platformFee is the donation; platformSupport is on top of it.
+export type SaMoneyKind = "FUNDRAISER" | "SAHAS" | "TRUST" | "QR" | "CAMPAIGN" | "SUPPORT_ONLY";
+export type SaMoneyRow = {
+  id: string; at: string | null; kind: SaMoneyKind; campaignId: number | null; towards: string | null;
+  donorName: string | null; donorEmail: string | null; anonymous: boolean;
+  cause: number; platformFee: number; platformSupport: number; paid: number; paymentId: string | null;
+  adSource: string | null; adCampaign: string | null; adContent: string | null;
+};
+export const superAdminMoney = {
+  rows: () => request<SaMoneyRow[]>("/api/v1/super-admin/money"),
+};
+
 export const superAdminFundraising = {
   overview: () => request<SaFrOverview>(`${SA_FR}/overview`),
   campaigns: (f: { q?: string; status?: string; category?: string; flag?: string; sort?: string } = {}) =>
@@ -7215,3 +7329,138 @@ export const volunteerHandover = {
 export async function setVolunteerCallPermission(offerId: number, allowed: boolean): Promise<void> {
   await request<void>(`/api/v1/drive-offers/${offerId}/volunteer-call-permission`, { method: "PUT", body: JSON.stringify({ allowed }) });
 }
+
+// ── Sahas campaigns (Phase D1, 2026-11-03) ──
+// Public: GET /api/v1/sahas/campaigns[/{slug}[/items/{driveId}]], 404 while the backend's sahas.enabled is off.
+// Items only for now; money fields stay unused until phase C3.
+
+export type SahasPhase = "UPCOMING" | "OPEN" | "PAUSED" | "CLOSED";
+export type SahasCampaignCard = {
+  slug: string; title: string; summary: string | null; city: string | null; state: string | null;
+  imageUrl: string | null; coverAltText: string | null; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number | null; amountRaised: number | null; startDate: string | null; endDate: string | null;
+  phase: SahasPhase; featured: boolean; description: string | null; moneyOpen: boolean;
+};
+/** One item line. `driveId` is what the donor give flow takes; contacts are never public. */
+export type SahasItemLine = {
+  driveId: number; itemName: string; unit: string | null; itemCondition: string | null; details: string | null;
+  quantityNeeded: number; quantityPledged: number; quantityReceived: number; quantityLeft: number;
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH" | null; dropOffAddress: string | null; availableDays: string | null;
+  pickupRadiusKm: number | null; locationCity: string | null;
+};
+export type SahasUpdate = { id: number; version: number | null; title: string; body: string; publishedAt: string | null; correctedAt: string | null };
+export type SahasOutcomeLine = { driveId: number; itemName: string; received: number; distributed: number | null };
+/** Public copy has no admin identities or version; the admin copy has both. */
+export type SahasOutcome = {
+  id: number; version: number | null; status: "DRAFT" | "APPROVED"; summary: string | null; leftoverNote: string | null;
+  submittedBy: string | null; submittedAt: string | null; approvedBy: string | null; approvedAt: string | null; lines: SahasOutcomeLine[];
+};
+export type SahasCampaignDetail = {
+  card: SahasCampaignCard; description: string | null; category: string | null; updatedAt: string;
+  items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
+};
+export type SahasDonationInput = {
+  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber: string; tipAmount?: number; address: string; wants80g: boolean; utm?: { source: string; medium: string; campaign: string; content: string };
+};
+export type SahasDonationRow = {
+  id: number; donor: string; anonymous: boolean; amount: number; platformFee: number | null; status: string;
+  documentsStatus: string | null; createdAt: string;
+};
+
+export const sahasCampaigns = {
+  live: () => request<SahasCampaignCard[]>("/api/v1/sahas/campaigns", { silent401: true }),
+  detail: (slug: string) => request<SahasCampaignDetail>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}`, { silent401: true }),
+  /** The item line in the public drive shape, so the existing give wizard works unchanged. */
+  item: (slug: string, driveId: number) =>
+    request<PublicNgoDrive>(`/api/v1/sahas/campaigns/${encodeURIComponent(slug)}/items/${driveId}`, { silent401: true }),
+  /** Guests allowed. The returned panUploadToken proves this browser started the donation. */
+  donate: (campaignId: number, body: SahasDonationInput) =>
+    request<DonationOrder>(`/api/v1/sahas/campaigns/${campaignId}/donations`, { method: "POST", body: JSON.stringify(body), silent401: true }),
+  donationCheckout: (id: number, token: string) =>
+    request<DonationOrder>(`/api/v1/sahas/campaigns/donations/${id}/checkout`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  donationStatus: (id: number, token: string) =>
+    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null; certificateReady: boolean; receiptReady: boolean; receiptOwed: boolean }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  /** POST so the token stays out of URLs and logs. */
+  donationDocument: async (id: number, token: string, kind: "certificate" | "receipt") => {
+    const res = await fetch(`${BASE_URL}/api/v1/sahas/campaigns/donations/${id}/${kind}`, {
+      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }),
+    });
+    if (!res.ok) throw new ApiError(res.status, "The document isn't ready yet.", null);
+    return res.blob();
+  },
+};
+
+// ── Sahas campaigns admin (Phase D2, 2026-11-03): /api/v1/admin/sahas-campaigns ──
+// Every mutation sends the campaign's current version; a stale one is refused (409).
+// Offers endpoints need OFFER_REVIEW, the rest CAMPAIGNS.
+
+export type SahasAdminRow = {
+  id: number; slug: string | null; title: string | null; status: string; phase: SahasPhase;
+  collectsItems: boolean; collectsMoney: boolean; targetAmount: number | null; amountRaised: number | null;
+  endDate: string | null; featured: boolean; publishAt: string | null; updatedAt: string;
+};
+export type SahasAdminDetail = {
+  id: number; version: number; status: string; slug: string | null; title: string | null; summary: string | null;
+  description: string | null; category: string | null; city: string | null; state: string | null; imageUrl: string | null;
+  coverAltText: string | null; coverConsent: boolean | null; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number | null; amountRaised: number | null; startDate: string | null; endDate: string | null;
+  featured: boolean; hidden: boolean; publishAt: string | null; pauseReason: string | null; missingForPublish: string[];
+};
+export type SahasUpsert = Partial<{
+  title: string; slug: string; summary: string; description: string; category: string; city: string; state: string;
+  imageUrl: string; coverAltText: string; coverConsent: boolean; collectsItems: boolean; collectsMoney: boolean;
+  targetAmount: number; startDate: string; endDate: string; featured: boolean;
+}> & { version?: number };
+export type SahasLineInput = Partial<{
+  itemName: string; category: string; quantityNeeded: number; unit: string; itemCondition: string; details: string;
+  handoverMode: "DROP_OFF" | "PICKUP" | "BOTH"; dropOffAddress: string; availableDays: string; pickupRadiusKm: number;
+  locationCity: string; locationLatitude: number; locationLongitude: number; contactName: string; contactPhone: string;
+}>;
+export type SahasAdminLine = {
+  id: number; itemName: string; category: string | null; quantityNeeded: number; quantityPledged: number; quantityReceived: number;
+  unit: string | null; itemCondition: string | null; details: string | null; handoverMode: "DROP_OFF" | "PICKUP" | "BOTH" | null;
+  dropOffAddress: string | null; availableDays: string | null; pickupRadiusKm: number | null; locationCity: string | null;
+  locationLatitude: number | null; locationLongitude: number | null; contactName: string | null; contactPhone: string | null;
+  status: string; missing: string[];
+};
+
+const SA = "/api/v1/admin/sahas-campaigns";
+export const sahasAdmin = {
+  list: () => request<SahasAdminRow[]>(SA),
+  get: (id: number) => request<SahasAdminDetail>(`${SA}/${id}`),
+  create: (body: SahasUpsert) => request<SahasAdminDetail>(SA, { method: "POST", body: JSON.stringify(body) }),
+  update: (id: number, body: SahasUpsert) => request<SahasAdminDetail>(`${SA}/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  publish: (id: number, version: number, publishAt: string | null, note: string | null) =>
+    request<SahasAdminDetail>(`${SA}/${id}/publish`, { method: "POST", body: JSON.stringify({ version, publishAt, note }) }),
+  transition: (id: number, action: "pause" | "resume" | "close" | "cancel", version: number, reason: string | null) =>
+    request<SahasAdminDetail>(`${SA}/${id}/${action}`, { method: "POST", body: JSON.stringify({ version, reason }) }),
+  uploadCover: async (id: number, file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${SA}/${id}/cover`, { method: "POST", credentials: "include", body: fd });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new ApiError(res.status, body?.detail || body?.message || "The photo didn't upload.", body);
+    return body as SahasAdminDetail;
+  },
+  items: (id: number) => request<SahasAdminLine[]>(`${SA}/${id}/items`),
+  addItem: (id: number, body: SahasLineInput) => request<SahasAdminLine>(`${SA}/${id}/items`, { method: "POST", body: JSON.stringify(body) }),
+  updateItem: (id: number, lineId: number, body: SahasLineInput) =>
+    request<SahasAdminLine>(`${SA}/${id}/items/${lineId}`, { method: "PUT", body: JSON.stringify(body) }),
+  removeItem: (id: number, lineId: number) => request<void>(`${SA}/${id}/items/${lineId}`, { method: "DELETE" }),
+  offers: (id: number, status?: string) => request<NgoDriveOfferResponse[]>(`${SA}/${id}/offers${status ? `?status=${encodeURIComponent(status)}` : ""}`),
+  review: (id: number, offerId: number, decision: "ACCEPT" | "DECLINE" | "ASK_TO_DROP_OFF", reason?: string, acceptedQuantity?: number) =>
+    request<NgoDriveOfferResponse>(`${SA}/${id}/offers/${offerId}/review`, { method: "POST", body: JSON.stringify({ decision, reason, acceptedQuantity }) }),
+  handover: (id: number, offerId: number, otp: string, quantity?: number) =>
+    request<unknown>(`${SA}/${id}/offers/${offerId}/handover`, { method: "POST", body: JSON.stringify({ otp, quantity }) }),
+  donations: (id: number) => request<SahasDonationRow[]>(`${SA}/${id}/donations`),
+  updates: (id: number) => request<SahasUpdate[]>(`${SA}/${id}/updates`),
+  postUpdate: (id: number, title: string, body: string) =>
+    request<SahasUpdate>(`${SA}/${id}/updates`, { method: "POST", body: JSON.stringify({ title, body }) }),
+  correctUpdate: (id: number, updateId: number, version: number, title: string, body: string) =>
+    request<SahasUpdate>(`${SA}/${id}/updates/${updateId}`, { method: "PUT", body: JSON.stringify({ title, body, version }) }),
+  outcome: (id: number) => request<SahasOutcome | null>(`${SA}/${id}/outcome`),
+  saveOutcome: (id: number, body: { summary?: string; leftoverNote?: string; distributed?: Record<number, number | null>; version?: number | null }) =>
+    request<SahasOutcome>(`${SA}/${id}/outcome`, { method: "PUT", body: JSON.stringify(body) }),
+  approveOutcome: (id: number, version: number) =>
+    request<SahasOutcome>(`${SA}/${id}/outcome/approve`, { method: "POST", body: JSON.stringify({ version }) }),
+};

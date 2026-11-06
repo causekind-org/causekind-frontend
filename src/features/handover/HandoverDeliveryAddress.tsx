@@ -3,16 +3,20 @@
 import { serverDate } from "@/lib/serverTime";
 import { formatIST } from "@/lib/formatIST";
 import { useState } from "react";
-import { Check, Copy, ExternalLink, Loader2, MapPin, Package, Phone, Send, Truck, UserRound, Wand2 } from "lucide-react";
+import { Check, Clock, Copy, ExternalLink, Loader2, MapPin, Package, Phone, Send, Truck, UserRound, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog, DialogContent, DialogHeader, DialogBody, DialogFooter,
+  DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import type { DeliveryAddressInput, DeliveryAddressSuggestion } from "@/lib/api";
 import { HandoverMapPinField } from "./HandoverMapPinField";
 import { Panel } from "./HandoverScheduleSummary";
 import { hasCoordinates, mapsHref } from "./adapters";
 import {
-  deliveryAddressPending, deliveryAddressState,
+  deliveryAddressPending, deliveryAddressState, handoverScope,
   type HandoverDelivery, type HandoverViewModel,
 } from "./model";
 import { handoverInput, handoverLabel, handoverPrimary, handoverSecondary } from "./handoverStyles";
@@ -43,26 +47,41 @@ const whenShort = (iso: string | null) =>
 /** The address step as the next action, while it's pending. */
 export function DeliveryAddressStep({ vm, actions }: { vm: HandoverViewModel; actions: DeliveryAddressActions }) {
   if (vm.role === "DONOR") return <DonorRequest vm={vm} actions={actions} />;
+  const state = deliveryAddressState(vm);
+  if (state === "awaiting") {
+    return <DoneeAwaitingRequest vm={vm} />;
+  }
   return <DeliveryAddressForm vm={vm} actions={actions} />;
+}
+
+function DoneeAwaitingRequest({ vm }: { vm: HandoverViewModel }) {
+  const inPerson = vm.schedule?.method === "DROP_OFF";
+  return (
+    <div className="rounded-lg border border-amber-200/80 bg-amber-50/70 p-4 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+      <div className="flex items-start gap-3">
+        <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+        <div className="space-y-1">
+          <p className="font-semibold text-stone-900 dark:text-stone-100 text-sm">
+            Waiting for delivery address request
+          </p>
+          <p className="text-stone-600 dark:text-stone-400">
+            {inPerson
+              ? "The donor will deliver this item to you. Once the donor clicks \"Request delivery address\", you'll be prompted to provide your delivery address here."
+              : "The donor will send this item by courier. Once the donor clicks \"Request delivery address\", you'll be prompted to provide your delivery address here."}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** The reference panel — renders recipient delivery address and donor courier details. */
 export function HandoverDeliveryPanel({ vm, actions }: { vm: HandoverViewModel; actions?: DeliveryAddressActions }) {
-  const [editing, setEditing] = useState(false);
   const d = vm.delivery;
   if (!d?.needed || deliveryAddressPending(vm)) return null;
   const state = deliveryAddressState(vm);
   const donor = vm.role === "DONOR";
   const canAct = !vm.closed && actions != null;
-
-  if (!donor && canAct && editing) {
-    return (
-      <Panel title="Your delivery address">
-        <DeliveryAddressForm vm={vm} actions={actions!} onDone={() => setEditing(false)}
-          onCancel={() => setEditing(false)} />
-      </Panel>
-    );
-  }
 
   return (
     <div className="space-y-4">
@@ -82,14 +101,10 @@ export function HandoverDeliveryPanel({ vm, actions }: { vm: HandoverViewModel; 
             <RequestButton actions={actions!} label={d.address ? "Ask them to check it" : "Request delivery address"} secondary={Boolean(d.address)} />
           </div>
         )}
-        {canAct && !donor && d.address && (
-          <Button variant="outline" onClick={() => setEditing(true)} className={`${handoverSecondary} mt-3 w-full`}>
-            Edit address
-          </Button>
-        )}
       </Panel>
 
-      <CourierDetailsCard vm={vm} actions={actions} />
+      {/* No courier when the donor delivers in person. */}
+      {vm.schedule?.method !== "DROP_OFF" && <CourierDetailsCard vm={vm} actions={actions} />}
     </div>
   );
 }
@@ -115,7 +130,9 @@ function DonorRequest({ vm, actions }: { vm: HandoverViewModel; actions: Deliver
       <p className="text-xs text-stone-500 dark:text-stone-400">
         {state === "requested"
           ? "Request sent. The recipient has been asked to provide their address."
-          : "The recipient will be notified to provide their delivery address for the courier."}
+          : vm.schedule?.method === "DROP_OFF"
+            ? "The recipient will be asked for the address you should bring it to."
+            : "The recipient will be notified to provide their delivery address for the courier."}
       </p>
     </div>
   );
@@ -165,6 +182,9 @@ function DeliveryAddressForm({ vm, actions, onDone, onCancel }: {
   const [busy, setBusy] = useState<"suggest" | "submit" | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const scope = handoverScope(vm.role);
 
   const phoneValid = /^\+?(?=(?:\D*\d){10,15}\D*$)[0-9\s-]+$/.test(phone.trim());
   const valid = name.trim() !== "" && phoneValid && address.trim().length >= 10;
@@ -198,12 +218,19 @@ function DeliveryAddressForm({ vm, actions, onDone, onCancel }: {
         contactPhone: phone.trim(),
         ...(lat != null && lng != null ? { latitude: lat, longitude: lng } : {}),
       });
+      setConfirmOpen(false);
       onDone?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Couldn't send your address.");
     } finally {
       setBusy(null);
     }
+  }
+
+  function handleSendClick() {
+    if (!valid || busy !== null) return;
+    setError(null);
+    setConfirmOpen(true);
   }
 
   return (
@@ -248,11 +275,11 @@ function DeliveryAddressForm({ vm, actions, onDone, onCancel }: {
       </div>
 
       <p className="text-xs text-stone-500 dark:text-stone-400">
-        Only the donor sees your delivery address, exclusively for this courier shipment.
+        Only the donor sees your address, and only for this delivery.
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <Button onClick={submit} disabled={!valid || busy !== null} className={`${handoverPrimary} w-full sm:w-auto`}>
-          {busy === "submit" ? <><Loader2 className="animate-spin" aria-hidden /> Sending</> : <><Send aria-hidden /> Send to donor</>}
+        <Button onClick={handleSendClick} disabled={!valid || busy !== null} className={`${handoverPrimary} w-full sm:w-auto`}>
+          <Send aria-hidden /> Send to donor
         </Button>
         {onCancel && (
           <Button variant="outline" onClick={onCancel} disabled={busy !== null} className={`${handoverSecondary} w-full sm:w-auto`}>
@@ -261,6 +288,78 @@ function DeliveryAddressForm({ vm, actions, onDone, onCancel }: {
         )}
       </div>
       {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+      <Dialog open={confirmOpen} onOpenChange={(open) => { if (busy !== "submit") setConfirmOpen(open); }}>
+        <DialogContent className={scope}>
+          <DialogHeader>
+            <DialogTitle>Confirm delivery address</DialogTitle>
+            <DialogDescription>
+              Are you sure the address is correct?
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogBody className="space-y-3">
+            <div className="rounded-lg border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-300">
+              <p className="font-semibold text-amber-950 dark:text-amber-200">
+                Notice: One-time address submission
+              </p>
+              <p className="mt-0.5 text-stone-600 dark:text-stone-300">
+                Please double check your details. Once sent, you cannot change this delivery address.
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-stone-200 bg-stone-50/60 p-3.5 space-y-2.5 text-sm dark:border-zinc-800 dark:bg-zinc-900/60">
+              <div>
+                <span className="text-2xs font-bold uppercase tracking-wider text-stone-400">Recipient Name</span>
+                <p className="font-medium text-stone-900 dark:text-stone-100">{name.trim()}</p>
+              </div>
+              <div>
+                <span className="text-2xs font-bold uppercase tracking-wider text-stone-400">Contact Phone</span>
+                <p className="font-medium text-stone-900 dark:text-stone-100">{phone.trim()}</p>
+              </div>
+              <div>
+                <span className="text-2xs font-bold uppercase tracking-wider text-stone-400">Full Delivery Address</span>
+                <p className="font-medium text-stone-900 dark:text-stone-100 whitespace-pre-wrap">{address.trim()}</p>
+              </div>
+              {lat != null && lng != null && (
+                <div className="text-xs text-stone-500 dark:text-stone-400 flex items-center gap-1 pt-1">
+                  <MapPin className="h-3.5 w-3.5 text-emerald-600" /> Map location pinned
+                </div>
+              )}
+            </div>
+
+            {error && <p role="alert" className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+          </DialogBody>
+
+          <DialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              disabled={busy === "submit"}
+              className={handoverSecondary}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={submit}
+              disabled={busy === "submit"}
+              className={handoverPrimary}
+            >
+              {busy === "submit" ? (
+                <>
+                  <Loader2 className="animate-spin" aria-hidden /> Sending…
+                </>
+              ) : (
+                <>
+                  <Check aria-hidden /> Yes, send to donor
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -22,12 +22,14 @@ import {
 } from "./api";
 import {
   DEFAULT_PRESET,
+  DEFAULT_TIP,
   MIN_AMOUNT,
   OTHER_PRESET,
   PRESET_AMOUNTS,
   SCAN_DEFAULTS,
   TIP_OPTIONS,
   chosenAmount,
+  chosenTip,
   normalizePhone,
   scanSchema,
   type ScanFormValues,
@@ -136,6 +138,7 @@ export function ScanDonation() {
   const [addressOpen, setAddressOpen] = useState(false);
   const utm = useRef<Utm>({ source: "", medium: "", campaign: "", content: "" });
   const viewTracked = useRef(false);
+  const lastTip = useRef(DEFAULT_TIP);
   const lastPreset = useRef(DEFAULT_PRESET);
   const resultHeading = useRef<HTMLHeadingElement>(null);
 
@@ -156,7 +159,8 @@ export function ScanDonation() {
   const otherAmount = watch("otherAmount");
   const wants80g = watch("wants80g");
   const amount = chosenAmount(preset, otherAmount);
-  const tip = Number(watch("tip"));
+  const tipChoice = watch("tip");
+  const tip = chosenTip(tipChoice, watch("otherTip"));
 
   useEffect(() => {
     utm.current = captureUtm(window.location.search);
@@ -269,7 +273,8 @@ export function ScanDonation() {
           <h1 ref={resultHeading} tabIndex={-1} className="text-2xl font-extrabold tracking-tight outline-none">
             Thank you, {stage.firstName}. Your {rupees(stage.amount)} will feed someone in need this Diwali.
           </h1>
-          {stage.wants80g && <p className="mt-4">Your 80G certificate will be emailed to you.</p>}
+          {!stage.wants80g && <p className="mt-4">Your donation certificate will be emailed to you.</p>}
+          {stage.wants80g && <p className="mt-4">Your 80G receipt and donation certificate will be emailed to you.</p>}
           <p className="mt-4 text-sm text-foreground/75 max-lg:text-white/85">
             Payment ID: <span className="break-all font-mono text-foreground max-lg:text-white">{stage.paymentId}</span>
           </p>
@@ -321,6 +326,13 @@ export function ScanDonation() {
     onChange: (e) => {
       if (e.target.value === OTHER_PRESET) setValue("otherAmount", lastPreset.current, { shouldValidate: true });
       else lastPreset.current = e.target.value;
+    },
+  });
+  // "Other" opens on the support just selected, ready to be changed.
+  const tipField = register("tip", {
+    onChange: (e) => {
+      if (e.target.value === OTHER_PRESET) setValue("otherTip", lastTip.current === "0" ? "" : lastTip.current);
+      else lastTip.current = e.target.value;
     },
   });
   const panField = register("pan", {
@@ -379,20 +391,33 @@ export function ScanDonation() {
 
           <fieldset>
             <legend className="mb-2 text-sm font-semibold">Support for CauseKind platform (optional)</legend>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {TIP_OPTIONS.map((value) => (
                 <AmountOption
                   key={value}
                   value={String(value)}
-                  label={value === 0 ? "No tip" : `₹${value}`}
-                  field={register("tip")}
+                  label={value === 0 ? "No thanks" : `₹${value}`}
+                  field={tipField}
                 />
               ))}
+              <AmountOption value={OTHER_PRESET} label="Other" field={tipField} />
             </div>
+            {tipChoice === OTHER_PRESET && (
+              <Field id="otherTip" label="Support amount in ₹" error={errors.otherTip?.message}>
+                <Input
+                  {...a11y("otherTip", errors.otherTip?.message)}
+                  {...register("otherTip", {
+                    onChange: (e) => setValue("otherTip", e.target.value.replace(/\D/g, "").slice(0, 5)),
+                  })}
+                  inputMode="numeric"
+                  className={inputClass}
+                />
+              </Field>
+            )}
             <FieldMessage id="tip-error" message={errors.tip?.message} />
             {tip > 0 && (
               <p className="mt-2 text-sm text-foreground/75 max-lg:text-white/85">
-                {rupees(amount)} donation + {rupees(tip)} platform support
+                {rupees(amount)} donation + {rupees(tip)} support to CauseKind, separate from your donation and not covered by 80G
               </p>
             )}
           </fieldset>
@@ -430,12 +455,6 @@ export function ScanDonation() {
             />
           </Field>
 
-          <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
-            <input id="wants80g" type="checkbox" {...wants80gField} className="size-5 shrink-0 accent-primary" />I want an
-            80G tax exemption certificate
-          </label>
-
-          {wants80g && (
             <Field id="pan" label="PAN" error={errors.pan?.message}>
               <Input
                 {...a11y("pan", errors.pan?.message)}
@@ -448,11 +467,10 @@ export function ScanDonation() {
                 className={cn(inputClass, "uppercase")}
               />
             </Field>
-          )}
 
-          <Collapsible.Root open={addressOpen || !!pincodeError} onOpenChange={setAddressOpen}>
+          <Collapsible.Root open onOpenChange={setAddressOpen}>
             <Collapsible.Trigger className="group flex min-h-11 w-full items-center justify-between rounded-xl text-sm font-semibold text-primary max-lg:text-orange-300 focus-visible:outline-2 focus-visible:outline-ring">
-              Add address (optional)
+              Address
               <ChevronDown className="size-5 transition-transform group-data-[state=open]:rotate-180" aria-hidden="true" />
             </Collapsible.Trigger>
             <Collapsible.Content className="space-y-4 pt-3">
@@ -492,6 +510,15 @@ export function ScanDonation() {
               </Field>
             </Collapsible.Content>
           </Collapsible.Root>
+          <label htmlFor="anonymous" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
+            <input id="anonymous" type="checkbox" {...register("anonymous")} className="size-5 shrink-0 accent-primary" />
+            Don&apos;t display my name publicly
+          </label>
+          <label htmlFor="wants80g" className="flex min-h-11 cursor-pointer items-center gap-3 text-sm font-medium">
+            <input id="wants80g" type="checkbox" {...wants80gField} className="size-5 shrink-0 accent-primary" />I want an
+            80G tax receipt
+          </label>
+
 
           {/* Honeypot: off-screen and out of the tab order, so only bots fill it. */}
           <div aria-hidden="true" className="absolute -left-[9999px] h-px w-px overflow-hidden">
@@ -501,7 +528,7 @@ export function ScanDonation() {
         </fieldset>
 
         <p className="text-sm text-foreground/75 max-lg:text-white/85">
-          Your details are used only for your donation receipt and 80G certificate.
+          Your donation goes to Sahas Charitable Trust. Your details are used only for your donation documents.
         </p>
 
         {stage.kind === "failed" && (

@@ -1,11 +1,11 @@
 "use client";
 
 import React from "react";
+import { CareNestLogo } from "@/components/Navbar";
 import Link from "@/components/AppLink";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
-import { CareNestLogo } from "@/components/Navbar";
 import { MapPin, Phone, Mail } from "lucide-react";
 import { SOCIAL_LINKS, type SocialLink } from "@/config/social";
 import { useTranslations } from "next-intl";
@@ -85,6 +85,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
     return [
       { href: "/requests", label: "In-kind requests" },
       { href: "/dashboard", label: "My dashboard" },
+      ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
     ];
@@ -93,6 +94,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
   if (isNgo) {
     return [
       { href: "/", label: "My dashboard" },
+      ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
     ];
@@ -109,6 +111,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
       label: isNgoLive ? "Register your NGO" : "Register your NGO · Coming soon",
       disabled: !isNgoLive,
     },
+    ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
     { href: "/faq", label: "Help & FAQ" },
     { href: "/blog", label: "Read our Blog" },
   ];
@@ -212,7 +215,7 @@ export function Footer({ role }: FooterProps) {
           <div className="col-span-2 md:col-span-1 flex flex-col items-center text-center md:items-start md:text-left space-y-3.5">
             <Link href="/" className="inline-block" aria-label={t("homeAria")}>
               <div className="inline-flex items-center bg-white px-3 py-1.5 rounded-xl [&_*]:dark:text-[#120c04]! [&_.ck-logo-kind-shimmer]:text-[#B4541A]!">
-                <CareNestLogo size="md" />
+                <CareNestLogo size="md" seasonal={false} />
               </div>
             </Link>
             <p className="text-[#D9CCBB] text-sm leading-relaxed font-medium max-w-xs mx-auto md:mx-0 md:max-w-none">

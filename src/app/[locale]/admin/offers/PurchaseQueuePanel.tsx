@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
-  adminListPurchases, adminProcessPurchaseDeadlines, adminPurchaseFallbackReceipt, adminResolvePurchaseIssue, adminReviewPurchaseProof,
+  adminListPurchases, adminProcessPurchaseDeadlines, adminPurchaseFallbackReceipt, adminReviewPurchaseProof,
   type PurchaseView,
 } from "@/lib/api";
 import { toast } from "@/lib/toast";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { purchaseMethodLabel } from "@/features/donation-offer-wizard/offerModel";
 import { formatLocal } from "@/features/purchase/purchaseModel";
+import { PurchaseIssueResolver } from "@/features/purchase/PurchaseIssueResolver";
 
 /**
  * Open purchase commitments (OFFER_REVIEW capability, enforced server-side).
@@ -93,6 +94,8 @@ export function PurchaseQueuePanel() {
               <div><dt className="text-stone-500">Ordered</dt><dd>{r.orderedQuantity ?? "—"} {r.retailer ? `· ${r.retailer}` : ""}</dd></div>
               <div><dt className="text-stone-500">Received</dt><dd>{r.receivedQuantity ?? 0}</dd></div>
             </dl>
+            {r.method === "BUY_AND_HAND_OVER" && r.details && <PlanVsActual view={r} />}
+
             {r.evidence.length > 0 && (
               <ul className="flex flex-wrap gap-3 text-xs">
                 {r.evidence.map(e => (
@@ -119,27 +122,23 @@ export function PurchaseQueuePanel() {
               </ul>
             )}
 
-            {(proofPending || issue || fallback) && (
+            {issue && <PurchaseIssueResolver view={r} onDone={() => void load()} />}
+
+            {(proofPending || fallback) && (
               <textarea rows={2} value={text} onChange={e => setReason(s => ({ ...s, [r.offerId]: e.target.value }))}
-                placeholder="Reason (recorded in the audit log, at least 10 characters)"
+                placeholder={proofPending ? "Note to the donor — what you checked, or what's missing (recorded in the audit log, at least 10 characters)" : "Reason (recorded in the audit log, at least 10 characters)"}
                 className="w-full rounded-lg border border-stone-300 p-2 text-sm dark:border-zinc-700 dark:bg-zinc-950" />
             )}
 
             <div className="flex flex-wrap gap-2">
               {proofPending && (
                 <>
-                  <button disabled={!reasonOk || !!acting} onClick={() => void act(`ok${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { approve: true, reason: text.trim() }), "Photo approved — handover can begin")}
-                    className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Approve photo</button>
-                  <button disabled={!reasonOk || !!acting} onClick={() => void act(`no${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { approve: false, reason: text.trim() }), "Photo rejected — donor asked to replace it")}
-                    className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Reject photo</button>
-                </>
-              )}
-              {issue && (
-                <>
-                  <button disabled={!reasonOk || !!acting} onClick={() => void act(`retry${r.offerId}`, () => adminResolvePurchaseIssue(r.offerId, { action: "RETRY_DELIVERY", reason: text.trim() }), "Marked for redelivery")}
-                    className="rounded-lg bg-[#b04a15] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Expect redelivery</button>
-                  <button disabled={!reasonOk || !!acting} onClick={() => void act(`close${r.offerId}`, () => adminResolvePurchaseIssue(r.offerId, { action: "CANCEL_REMAINDER", reason: text.trim() }), "Remainder closed")}
-                    className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Close remainder</button>
+                  <button disabled={!reasonOk || !!acting} onClick={() => void act(`ok${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { action: "APPROVE", reason: text.trim() }), "Purchase verified — the handover can be arranged")}
+                    className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Approve purchase</button>
+                  <button disabled={!reasonOk || !!acting} onClick={() => void act(`info${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { action: "REQUEST_INFO", reason: text.trim() }), "Donor asked for more information")}
+                    className="rounded-lg border border-[#b04a15] px-3 py-1.5 text-xs font-semibold text-[#b04a15] disabled:opacity-50">Request more information</button>
+                  <button disabled={!reasonOk || !!acting} onClick={() => void act(`no${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { action: "REJECT", reason: text.trim() }), "Evidence rejected — donor asked for a new photo")}
+                    className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Reject evidence</button>
                 </>
               )}
               {fallback && (
@@ -165,6 +164,54 @@ export function PurchaseQueuePanel() {
         <button disabled={page === 0 || loading} onClick={() => setPage(p => p - 1)} className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs disabled:opacity-40">Previous</button>
         <button disabled={rows.length < 25 || loading} onClick={() => setPage(p => p + 1)} className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs disabled:opacity-40">Next</button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The commitment beside what was actually bought. A different brand or model is
+ * allowed (the recipient accepted the donor, not a product); our team checks the
+ * item is suitable from the photo. The receipt is in the evidence list.
+ */
+function PlanVsActual({ view: r }: { view: PurchaseView }) {
+  const d = r.details!;
+  const money = (v: number | null) => (v == null ? "—" : `₹${Number(v).toLocaleString("en-IN")}`);
+  const rows: [string, string, string][] = [
+    ["Item", d.plannedItem ?? "—", d.actualItemName ?? "—"],
+    ["Brand / model", [d.plannedBrand, d.plannedModel].filter(Boolean).join(" ") || "Not decided", [d.actualBrand, d.actualModel].filter(Boolean).join(" ") || (d.actualItemName ? "None" : "—")],
+    ["Price", `${money(d.estimatedCost)} (estimate)`, money(d.actualPrice)],
+    ["Store", d.intendedStore ?? "—", r.retailer ?? "—"],
+    ["Quantity", `${r.acceptedQuantity ?? "—"} accepted`, d.purchasedQuantity != null ? `${d.purchasedQuantity} bought · ${r.orderedQuantity ?? "—"} donated` : "—"],
+  ];
+  return (
+    <div className="overflow-x-auto rounded-xl border border-stone-200 dark:border-zinc-700">
+      <table className="w-full min-w-[420px] text-left text-xs">
+        <thead className="bg-stone-50 text-stone-500 dark:bg-zinc-800">
+          <tr>
+            <th className="px-3 py-2 font-semibold">{d.channel === "OFFLINE" ? "Offline (shop)" : d.channel === "ONLINE" ? "Online" : "Purchase"}</th>
+            <th className="px-3 py-2 font-semibold">Planned</th>
+            <th className="px-3 py-2 font-semibold">Actually bought{d.purchasedOn ? ` · ${d.purchasedOn}` : ""}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([label, planned, actual]) => (
+            <tr key={label} className="border-t border-stone-100 dark:border-zinc-800">
+              <td className="px-3 py-1.5 text-stone-500">{label}</td>
+              <td className="px-3 py-1.5">{planned}</td>
+              <td className="px-3 py-1.5 font-semibold">{actual}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {(d.productUrl || d.purchaseNotes || d.reviewOutcome) && (
+        <div className="space-y-1 border-t border-stone-100 px-3 py-2 text-xs dark:border-zinc-800">
+          {d.productUrl && <a href={d.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="text-[#b04a15] underline">Planned product link</a>}
+          {d.purchaseNotes && <p className="text-stone-600 dark:text-stone-300">Donor: {d.purchaseNotes}</p>}
+          {d.reviewOutcome && d.reviewOutcome !== "APPROVED" && (
+            <p className="font-semibold text-amber-700">Last review: {d.reviewOutcome === "INFO_REQUIRED" ? "more information requested" : "evidence rejected"}{r.proofRejectionReason ? ` — ${r.proofRejectionReason}` : ""}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -42,7 +42,7 @@ export default function DonateMegaMenu({ onNavigate }: { onNavigate?: () => void
           </span>
 
           <span className="mt-3 block text-xs leading-relaxed text-stone-500 dark:text-stone-400"><LandingText>
-            Give money to Sahas Charitable Trust — 12AA and 80G certified, funding
+            Give money to Sahas Charitable Trust — 12A and 80G certified, funding
             education, healthcare and social welfare. Every rupee is accounted for.
           </LandingText></span>
 
