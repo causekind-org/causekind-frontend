@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AdminSahasPageContent } from "./AdminSahasPageContent";
 import {
   ApiError, sahasAdmin, type NgoDriveOfferResponse, type SahasAdminDetail, type SahasAdminLine, type SahasAdminRow,
   type SahasDonationRow, type SahasLineInput, type SahasOutcome, type SahasUpdate, type SahasUpsert,
@@ -111,7 +112,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
 
 // ── Editor ────────────────────────────────────────────────────────────────
 
-type Tab = "details" | "items" | "offers" | "payments" | "outcome";
+type Tab = "details" | "page" | "items" | "offers" | "payments" | "outcome";
 
 function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
   const [d, setD] = useState<SahasAdminDetail | null>(null);
@@ -132,15 +133,16 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
         {d.slug && d.status !== "DRAFT" && <a href={`/sahas/${d.slug}`} target="_blank" rel="noreferrer" className="ms-auto text-sm font-semibold text-[#b04a15]">View public page ↗</a>}
       </div>
       <div role="tablist" aria-label="Campaign sections" className="flex flex-wrap gap-2">
-        {(["details", "items", "offers", "payments", "outcome"] as Tab[]).map((t) => (
+        {(["details", "page", "items", "offers", "payments", "outcome"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
             className={`min-h-[42px] cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors ${tab === t ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-stone-300 bg-white text-stone-700 hover:border-[#b04a15] hover:text-[#b04a15] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300"}`}>
-            {t === "details" ? "Details and publishing" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : t === "payments" ? "Payments" : "Updates and outcome"}
+            {t === "details" ? "Details and publishing" : t === "page" ? "Page content" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : t === "payments" ? "Payments" : "Updates and outcome"}
           </button>
         ))}
       </div>
       {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
       {tab === "details" && <Details d={d} onSaved={setD} onError={setError} />}
+      {tab === "page" && <AdminSahasPageContent campaignId={d.id} onChanged={load} onError={setError} />}
       {tab === "items" && <Items d={d} onChanged={load} onError={setError} />}
       {tab === "offers" && <Offers campaignId={d.id} onError={setError} />}
       {tab === "payments" && <Payments campaignId={d.id} target={d.targetAmount} onError={setError} />}
