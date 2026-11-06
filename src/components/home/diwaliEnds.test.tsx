@@ -13,10 +13,12 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: null, isRestoring: f
 vi.mock("@/lib/api", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/api")>()),
   fundraisers: { live: () => Promise.resolve([]) },
+  sahasCampaigns: { live: () => Promise.resolve([]) },
 }));
 vi.mock("gsap/ScrollTrigger", () => ({ ScrollTrigger: { refresh: vi.fn() } }));
 
 import { DiwaliMobileLayer, DiwaliSeam } from "./DiwaliMobileLayer";
+import { HomeSahasCampaigns } from "./HomeSahasCampaigns";
 import { HomeFundraisers } from "./HomeFundraisers";
 
 beforeEach(() => {
@@ -43,25 +45,42 @@ describe("the Diwali decorations", () => {
   });
 });
 
-describe("the fundraisers row", () => {
+describe("the campaigns row", () => {
   it("wears the lantern during Diwali", async () => {
-    const { container } = render(<HomeFundraisers />);
-    expect(await screen.findByText("No fundraisers yet")).toBeInTheDocument();
+    const { container } = render(<HomeSahasCampaigns />);
+    expect(await screen.findByText("Explore Sahas Campaigns")).toBeInTheDocument();
     expect(container.querySelector(".ck-dw-campaigns > .ck-dw-hang")).not.toBeNull();
-    expect(screen.getByRole("heading", { name: "Light a diya for someone's need" })).toBeInTheDocument();
-    expect(screen.queryByText(/a reason to smile again/)).toBeNull();
+    expect(screen.getByRole("heading", { name: "Light a diya for community campaigns" })).toBeInTheDocument();
+    expect(screen.queryByText(/Support our/)).toBeNull();
     expect(container.querySelector(".ck-dw-diya")).not.toBeNull();
   });
 
   it("stays after Diwali, with its headline and without the festive pieces", async () => {
     diwaliState.on = false;
-    const { container } = render(<HomeFundraisers />);
-    expect(await screen.findByText("No fundraisers yet")).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Give someone a reason to smile again" })).toBeInTheDocument();
-    expect(screen.getByText(/Don't let their hope go quiet\./)).toBeInTheDocument();
+    const { container } = render(<HomeSahasCampaigns />);
+    expect(await screen.findByText("Explore Sahas Campaigns")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Support our community campaigns" })).toBeInTheDocument();
+    expect(screen.getByText(/Collective relief, education, and community initiatives/)).toBeInTheDocument();
     expect(screen.queryByText(/Light a diya/)).toBeNull();
     expect(container.querySelector(".ck-dw-hang")).toBeNull();
     expect(container.querySelector(".ck-dw-diya")).toBeNull();
+  });
+});
+
+describe("the fundraisers section", () => {
+  it("shows diwali headline during Diwali", async () => {
+    const { container } = render(<HomeFundraisers />);
+    expect(await screen.findByText("No fundraisers yet")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Light a diya for someone's need" })).toBeInTheDocument();
+    expect(screen.queryByText(/a reason to smile again/)).toBeNull();
+  });
+
+  it("shows everyday headline after Diwali", async () => {
+    diwaliState.on = false;
+    render(<HomeFundraisers />);
+    expect(await screen.findByText("No fundraisers yet")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Give someone a reason to smile again" })).toBeInTheDocument();
+    expect(screen.getByText(/Don't let their hope go quiet\./)).toBeInTheDocument();
   });
 
   it("points the empty card to a money donation", async () => {

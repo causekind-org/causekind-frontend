@@ -65,8 +65,8 @@ import { toast } from "@/lib/toast";
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
 import { DiwaliMobileLayer, DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
+import { HomeSahasCampaigns } from "@/components/home/HomeSahasCampaigns";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
-import { SahasSpotlight } from "@/components/home/SahasSpotlight";
 import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
@@ -308,7 +308,7 @@ export default function HomeClient({
       {/* One responsive front door. With cinematicLanding on, the film sits
           pinned underneath it and slides off it on scroll — see HeroFilm. */}
       {/* Live fundraisers follow the hero and leave with it, then the film. */}
-      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeFundraisers /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeFundraisers /></>}
+      {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeSahasCampaigns /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeSahasCampaigns /></>}
 
       <DiwaliSeam kind="edge" from="film" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
@@ -323,8 +323,8 @@ export default function HomeClient({
         </div>
       </section>
 
-      {/* Sahas campaigns spotlight after Who Are We / About CauseKind */}
-      <SahasSpotlight />
+      {/* Verified fundraisers section after Who Are We / About CauseKind */}
+      <HomeFundraisers />
 
       <DiwaliSeam kind="diya" diyas={3} />
       <DiwaliSeam kind="line" />

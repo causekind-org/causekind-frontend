@@ -1,6 +1,7 @@
 "use client";
 
 import { driveOfferDonated } from "@/features/ngo-drives/driveCertificate";
+import { deliveryHistoryNote, type DeliveryHistoryNote } from "@/features/purchase/purchaseModel";
 import { imageUrlsOf, resolveMediaUrl } from "@/lib/mediaUrl";
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState, useMemo, useRef } from "react";
@@ -20,8 +21,7 @@ import {
   getOfferCancellationOptions, type CancellationOption,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer,
   getMyNgoDriveOffers, cancelNgoDriveOffer, invalidateRequestCache, type NgoDriveOfferResponse,
-  dismissOfferRedonation, type RedonationNotice
-} from "@/lib/api";
+  dismissOfferRedonation, type RedonationNotice, downloadNonDeliveryConfirmation } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
 import { ListingDetailsPanel } from "@/components/listings/ListingDetailsPanel";
@@ -1464,9 +1464,13 @@ function DonorOfferSection({ offers, onReconfirm, onWithdraw, onCancelled = () =
  * too big). Thumbnail, title, when, and a small Certificate link — the full
  * all-green progress card said nothing a finished donation needs to say.
  */
-function DoneRow({ title, sub, thumb, href, tag, photos }: {
+function DoneRow({ title, sub, thumb, href, tag, photos, delivery, lateArrivalHref }: {
   title: string;
   sub: string;
+  /** A closed purchase: "3/5 items received · Issue raised for 2 items" and a reassuring note. */
+  delivery?: DeliveryHistoryNote | null;
+  /** The purchase page, where the recipient can say the package turned up after closure. */
+  lateArrivalHref?: string | null;
   thumb?: string | null;
   href?: string | null;
   /** How the donation happened, e.g. "Your offer" or "Matched for you". */
@@ -1537,6 +1541,15 @@ function DoneRow({ title, sub, thumb, href, tag, photos }: {
           )}
         </p>
         <p className="truncate text-2xs text-stone-400">{sub}</p>
+        {delivery && (
+          <p className="mt-0.5 text-2xs" data-testid="donee-delivery-note">
+            <span className={`font-bold ${delivery.tone === "pending" ? "text-amber-700 dark:text-amber-400" : "text-emerald-700 dark:text-emerald-400"}`}>{delivery.line}</span>
+            {delivery.note && <span className="text-stone-500 dark:text-stone-400"> · {delivery.note}</span>}
+            {delivery.lateArrival && lateArrivalHref && (
+              <> · <Link href={lateArrivalHref} className="font-semibold text-[var(--ck-role-accent)] underline"><UiText>Package arrived later?</UiText></Link></>
+            )}
+          </p>
+        )}
       </div>
       {href && (
         <Link href={href} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-2xs font-bold text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400">
@@ -1582,7 +1595,10 @@ function DonorHistoryCard({
   offerId,
   redonationNotice,
   onDismissRedonation,
+  deliveryNote,
 }: {
+  /** A closed purchase's delivery line and the donor's note, from deliveryHistoryNote. */
+  deliveryNote?: DeliveryHistoryNote | null;
   title: string;
   tag?: string;
   statusLabel: string;
@@ -1702,11 +1718,25 @@ function DonorHistoryCard({
               <TranslatedText text={title} />
             </h3>
 
+            {deliveryNote?.note && (
+              <p data-testid="donor-delivery-note" className="text-xs text-stone-600 dark:text-stone-400">
+                {deliveryNote.note}
+                {deliveryNote.damage && hubHref && (
+                  <> · <Link href={hubHref} className="font-semibold text-[var(--ck-role-accent)] underline"><UiText>View damage photos</UiText></Link></>
+                )}
+                {deliveryNote.confirmation && offerId && (
+                  <> · <button type="button" onClick={() => void downloadNonDeliveryConfirmation(offerId).catch(() => {})}
+                    className="font-semibold text-[var(--ck-role-accent)] underline"><UiText>Download non-delivery confirmation</UiText></button></>
+                )}
+              </p>
+            )}
             {/* Quantity Highlight */}
             {quantitySummary && (
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold ${
-                  isCompleted
+                  deliveryNote?.tone === "pending"
+                    ? "bg-amber-50 text-amber-900 dark:bg-amber-950/40 dark:text-amber-200"
+                    : isCompleted
                     ? "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
                     : "bg-stone-100 text-stone-700 dark:bg-zinc-800 dark:text-stone-300"
                 }`}>
@@ -1765,7 +1795,7 @@ function DonorHistoryCard({
               <div className="flex-1 space-y-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-bold text-amber-900 dark:text-amber-200">
-                    <UiText>Delivery update</UiText>
+                    {redonationNotice.promptType === "REDONATE" ? <UiText>Help complete this request</UiText> : <UiText>Delivery update</UiText>}
                   </span>
                   <button
                     type="button"
@@ -1787,7 +1817,15 @@ function DonorHistoryCard({
                   </button>
                 </div>
 
-                {redonationNotice.promptType === "QUANTITY" || (redonationNotice.missingQuantity != null && redonationNotice.missingQuantity > 0) ? (
+                {redonationNotice.promptType === "REDONATE" ? (
+                  <p className="text-stone-700 dark:text-stone-300">
+                    Thank you for offering to send the remaining items. The request still needs{" "}
+                    <span className="font-semibold text-stone-900 dark:text-stone-100">
+                      {redonationNotice.stillNeededQuantity} {redonationNotice.stillNeededQuantity === 1 ? "item" : "items"}
+                    </span>
+                    . Pledge them whenever you&apos;re ready; it works like any other pledge.
+                  </p>
+                ) : redonationNotice.promptType === "QUANTITY" || (redonationNotice.missingQuantity != null && redonationNotice.missingQuantity > 0) ? (
                   <>
                     <p className="text-stone-700 dark:text-stone-300">
                       The recipient reported that they received{" "}
@@ -1836,7 +1874,7 @@ function DonorHistoryCard({
                       className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-colors"
                     >
                       <Heart className="size-3.5 fill-white" aria-hidden />
-                      <UiText>Donate Remaining Items</UiText>
+                      {redonationNotice.promptType === "REDONATE" ? <UiText>Help complete this request</UiText> : <UiText>Donate Remaining Items</UiText>}
                       {redonationNotice.stillNeededQuantity != null && (
                         <span className="ml-0.5 rounded-full bg-amber-700/60 px-1.5 py-0.2 text-[10px] font-bold">
                           {redonationNotice.stillNeededQuantity} needed
@@ -2008,7 +2046,10 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         const methodLabel = isPurchase ? (isDirect ? "Direct delivery" : "Buy & handover") : "In-person handover";
         const acceptedQty = o.purchaseCommitment ? (o.itemDetails?.quantity ?? o.requestQuantity) : (o.itemDetails?.quantity ?? 1);
         const receivedQty = o.receivedQuantity != null ? o.receivedQuantity : acceptedQty;
-        const quantitySummary = isPurchase
+        const deliveryNote = isPurchase ? deliveryHistoryNote(o.deliverySummary, "DONOR") : null;
+        const quantitySummary = deliveryNote
+          ? deliveryNote.line
+          : isPurchase
           ? `${receivedQty} of ${acceptedQty} item${acceptedQty === 1 ? "" : "s"} delivered & confirmed`
           : `${receivedQty} item${receivedQty === 1 ? "" : "s"} delivered & confirmed`;
 
@@ -2017,6 +2058,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
           key: `o${o.id}`,
           offerId: o.id,
           redonationNotice: o.redonationNotice ?? null,
+          deliveryNote,
           at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
           isCompleted: true,
           statusTone: "completed" as const,
@@ -2308,6 +2350,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
                   offerId={e.offerId}
                   redonationNotice={e.redonationNotice}
                   onDismissRedonation={handleDismissRedonation}
+                  deliveryNote={"deliveryNote" in e ? e.deliveryNote : null}
                 />
               )}
             </div>
@@ -2497,6 +2540,8 @@ function DoneeHistorySection({ offers, matches, onlyOffersClosed, onlyMatchesClo
         sub: [ui("Received"), doneDate(o.closedAt ?? o.createdAt), qty != null ? dt("nReceived", { count: qty }) : "", dt("forQuotedLower", { title: o.requestTitle ?? "" })].filter(Boolean).join(" · "),
         thumb: o.media?.[0]?.mediaUrl ?? null,
         photos: (o.media ?? []).map(m => m.mediaUrl),
+        delivery: deliveryHistoryNote(o.deliverySummary, "DONEE"),
+        lateArrivalHref: o.flowType === "WILL_PURCHASE" ? `/offers/${o.id}/purchase` : null,
       };
     });
     const fromMatches = matches.filter(m => MATCH_RECEIVED_STATUSES.has(m.status)).map(m => {
@@ -2794,7 +2839,6 @@ function purchaseOfferMeta(offer: { flowType?: string | null; status: string; pu
   if (offer.status !== "ADMIN_APPROVED") return null;
   switch (offer.purchaseCommitment?.purchaseStatus) {
     case "PROOF_UPLOADED":
-      return { label: "Purchase being verified", explanation: "Our team is checking what you bought. The handover opens once it's verified.", severity: "info" as const };
     case "READY_FOR_HANDOVER":
       return { label: "Ready for handover", explanation: "Our team verified the purchase. Arrange the handover with the recipient.", action: "handover" as const, actionLabel: "Arrange handover", severity: "warning" as const };
     case "ORDER_PLACED":
@@ -3306,7 +3350,7 @@ function DoneeDashboard({
                             offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? (offer.flowType === "WILL_PURCHASE" ? ui("Waiting for donor confirmation") : ui("Donor is reconfirming")) :
                               offer.status === "ADMIN_APPROVED" && offer.purchaseCommitment?.fulfilmentMethod === "BUY_AND_HAND_OVER"
                                 ? (offer.purchaseCommitment.purchaseStatus === "READY_FOR_HANDOVER" ? ui("Ready for handover")
-                                  : offer.purchaseCommitment.purchaseStatus === "PROOF_UPLOADED" ? ui("Purchase being verified") : ui("Donor is buying it")) :
+                                  : offer.purchaseCommitment.purchaseStatus === "PROOF_UPLOADED" ? ui("Ready for handover") : ui("Donor is buying it")) :
                               offer.status === "DONOR_RECONFIRMED" ? ui("Under admin review") :
                                 isApproved ? ui("Approved") :
                                   isHandover ? ui("Handover in progress") :

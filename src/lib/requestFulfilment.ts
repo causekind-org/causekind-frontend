@@ -82,5 +82,5 @@ export function groupRequestsByFulfilment<T extends QuantityFields>(requests: T[
  * request, so a list of deliveries adds up to the request's total.
  */
 export function offerDeliveredQuantity(o: Pick<DonationOffer, "receivedQuantity" | "itemDetails">): number {
-  return o.receivedQuantity ?? o.itemDetails?.quantity ?? 0;
+  return o.receivedQuantity != null ? o.receivedQuantity : (o.itemDetails?.quantity ?? 0);
 }

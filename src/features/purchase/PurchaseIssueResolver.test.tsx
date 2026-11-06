@@ -12,7 +12,8 @@ vi.mock("@/lib/api", async (orig) => ({ ...(await orig<object>()), ...api }));
 import { PurchaseIssueResolver } from "./PurchaseIssueResolver";
 
 const issue = {
-  id: 7, type: "QUANTITY_MISMATCH", description: "Only 2 of 3 arrived. Third bag missing", affectedQuantity: 1,
+  // Damaged and not-arrived problems keep these options; a partial delivery is decided in Admin → Issues.
+  id: 7, type: "ITEM_DAMAGED", description: "3 of 3 arrived; 1 damaged, 2 usable. Third bag torn", affectedQuantity: 1,
   reportedByRole: "DONEE" as const, createdAt: "2026-11-04T10:00:00", response: null, respondedAt: null, resolution: null, resolvedAt: null,
 };
 const view = (p: Partial<PurchaseView> = {}): PurchaseView => ({
@@ -27,6 +28,12 @@ const reason = "Retailer confirmed the third bag was cancelled";
 
 describe("PurchaseIssueResolver", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("sends a partial delivery to Admin → Issues instead of the old options", () => {
+    render(<PurchaseIssueResolver view={view({ issues: [{ ...issue, type: "QUANTITY_MISMATCH" }] })} onDone={() => {}} />);
+    expect(screen.getByRole("link", { name: /Admin → Issues/ }).getAttribute("href")).toBe("/admin/dashboard?tab=issues&issue=pdi-7");
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+  });
 
   it("closes with the recipient's count and previews what is credited", async () => {
     const done = vi.fn();
