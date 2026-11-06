@@ -64,7 +64,7 @@ function SahasCampaign() {
   const firstOpen = items.find((i) => i.quantityLeft > 0);
 
   return (
-    <main className="min-h-screen bg-[#FBF7F2] pb-44 text-[#1F140D] lg:pb-16 dark:bg-zinc-950 dark:text-stone-100">
+    <main className="min-h-screen bg-[#FBF7F2] pb-[calc(var(--ck-bottom-chrome)+2rem)] text-[#1F140D] lg:pb-16 dark:bg-zinc-950 dark:text-stone-100">
       <div className="h-[260px] bg-[#EFE4D8] sm:h-[420px] dark:bg-zinc-800">
         {c.imageUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -217,15 +217,6 @@ function SahasCampaign() {
         </div>
       </div>
 
-      {open && (firstOpen || data.moneyOpen) && (
-        <div className="fixed inset-x-0 z-30 border-t border-[#EADFD3] bg-white p-3 lg:hidden dark:border-zinc-800 dark:bg-zinc-900"
-          style={{ bottom: "var(--ck-bottom-chrome, env(safe-area-inset-bottom, 0px))" }}>
-          <Link href={data.moneyOpen ? `/sahas/${c.slug}/donate` : `/sahas/${c.slug}/give/${firstOpen?.driveId}`}
-            className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] text-[15px] font-semibold text-white no-underline">
-            {data.moneyOpen ? <UiText>Donate money</UiText> : <UiText>Give items</UiText>}
-          </Link>
-        </div>
-      )}
     </main>
   );
 
