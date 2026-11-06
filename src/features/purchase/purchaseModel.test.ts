@@ -65,7 +65,7 @@ describe("purchaseStage", () => {
     const bought = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "ORDER_PLACED" });
     expect(purchaseStage(bought, "ADMIN_APPROVED")).toBe("AWAITING_ITEM_PHOTO");
     const photo = { ...bought, evidence: [{ id: 1, type: "ITEM_PHOTO" as const, url: "u", uploadedAt: "x", screeningAvailable: true, prohibited: false, uploadedByRole: "DONOR" as const }] };
-    expect(purchaseStage({ ...photo, status: "PROOF_UPLOADED" }, "ADMIN_APPROVED")).toBe("AWAITING_PROOF_REVIEW");
+    expect(purchaseStage({ ...photo, status: "PROOF_UPLOADED" }, "ADMIN_APPROVED")).toBe("READY_FOR_HANDOVER");
     expect(purchaseStage({ ...photo, status: "READY_FOR_HANDOVER" }, "ADMIN_APPROVED")).toBe("READY_FOR_HANDOVER");
   });
 

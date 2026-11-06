@@ -2839,7 +2839,6 @@ function purchaseOfferMeta(offer: { flowType?: string | null; status: string; pu
   if (offer.status !== "ADMIN_APPROVED") return null;
   switch (offer.purchaseCommitment?.purchaseStatus) {
     case "PROOF_UPLOADED":
-      return { label: "Purchase being verified", explanation: "Our team is checking what you bought. The handover opens once it's verified.", severity: "info" as const };
     case "READY_FOR_HANDOVER":
       return { label: "Ready for handover", explanation: "Our team verified the purchase. Arrange the handover with the recipient.", action: "handover" as const, actionLabel: "Arrange handover", severity: "warning" as const };
     case "ORDER_PLACED":
@@ -3351,7 +3350,7 @@ function DoneeDashboard({
                             offer.status === "DONOR_RECONFIRMATION_REQUIRED" ? (offer.flowType === "WILL_PURCHASE" ? ui("Waiting for donor confirmation") : ui("Donor is reconfirming")) :
                               offer.status === "ADMIN_APPROVED" && offer.purchaseCommitment?.fulfilmentMethod === "BUY_AND_HAND_OVER"
                                 ? (offer.purchaseCommitment.purchaseStatus === "READY_FOR_HANDOVER" ? ui("Ready for handover")
-                                  : offer.purchaseCommitment.purchaseStatus === "PROOF_UPLOADED" ? ui("Purchase being verified") : ui("Donor is buying it")) :
+                                  : offer.purchaseCommitment.purchaseStatus === "PROOF_UPLOADED" ? ui("Ready for handover") : ui("Donor is buying it")) :
                               offer.status === "DONOR_RECONFIRMED" ? ui("Under admin review") :
                                 isApproved ? ui("Approved") :
                                   isHandover ? ui("Handover in progress") :

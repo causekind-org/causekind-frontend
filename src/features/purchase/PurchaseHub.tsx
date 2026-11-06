@@ -347,11 +347,11 @@ export function PurchaseHub({
                 </Panel>
                 <Panel title="I've purchased the item" icon={<PackageCheck className="size-5 text-[var(--ck-role-accent)]" aria-hidden />}>
                   <p className="-mt-1 mb-5 text-[15px] text-[#3D4756] dark:text-stone-300">
-                    <strong>Tell us what you purchased.</strong> Enter the actual purchase details and upload a clear photograph of the item. Our team will verify the purchase before the handover.
+                    <strong>Tell us what you purchased.</strong> Enter the actual purchase details and upload a clear photograph of the item to proceed to the handover.
                   </p>
                   <PurchaseDetailsForm mode="new" acceptedQuantity={view.acceptedQuantity ?? 1} heldQuantity={view.acceptedQuantity ?? 1}
                     acceptedAt={view.acceptedAt} defaults={{ ...details, itemName: details?.plannedItem ?? offer.requestTitle }} busy={busy === "purchase"}
-                    onSubmit={v => run("purchase", () => submitPurchase(v), "Sent — our team will verify your purchase")} />
+                    onSubmit={v => run("purchase", () => submitPurchase(v), "Purchase confirmed — you can now arrange the handover")} />
                 </Panel>
               </>
             )}
@@ -897,15 +897,15 @@ const EVIDENCE_LABEL: Record<PurchaseProofType, string> = {
 const STEPS: Record<string, string[]> = {
   "direct-DONEE": ["You accepted", "Donor confirms", "Donor orders", "On the way", "You confirm it arrived"],
   "direct-DONOR": ["Recipient accepted", "You confirm", "You order", "On the way", "Recipient confirms"],
-  "physical-DONEE": ["Offer accepted", "Donor confirmed", "Purchase in progress", "Purchase verified", "Handover", "Completed"],
-  "physical-DONOR": ["Offer accepted", "You confirmed", "Purchase in progress", "Purchase verified", "Handover", "Completed"],
+  "physical-DONEE": ["Offer accepted", "Donor confirmed", "Purchase in progress", "Handover", "Completed"],
+  "physical-DONOR": ["Offer accepted", "You confirmed", "Purchase in progress", "Handover", "Completed"],
 };
 
 /** Index of the step in progress; steps before it are done. steps.length = everything done, -1 = no bar. */
 function stepIndex(stage: PurchaseStage, direct: boolean): number {
   const map: Partial<Record<PurchaseStage, number>> = direct
     ? { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, READY_TO_BUY: 2, IN_TRANSIT: 3, PARTIALLY_RECEIVED: 3, DELIVERED: 4, ISSUE_OPEN: 3, ISSUE_WINDOW: 4, COMPLETED: 5 }
-    : { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, AWAITING_APPROVAL: 1, READY_TO_BUY: 2, AWAITING_ITEM_PHOTO: 2, PURCHASE_INFO_REQUIRED: 2, AWAITING_PROOF_REVIEW: 3, READY_FOR_HANDOVER: 4, ISSUE_OPEN: 4, ISSUE_WINDOW: 5, COMPLETED: 6 };
+    : { AWAITING_ACCEPTANCE: 0, AWAITING_RECONFIRMATION: 1, AWAITING_APPROVAL: 1, READY_TO_BUY: 2, AWAITING_ITEM_PHOTO: 2, PURCHASE_INFO_REQUIRED: 2, AWAITING_PROOF_REVIEW: 2, READY_FOR_HANDOVER: 3, ISSUE_OPEN: 3, ISSUE_WINDOW: 4, COMPLETED: 5 };
   return map[stage] ?? -1;
 }
 

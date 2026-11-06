@@ -49,12 +49,10 @@ export function purchaseStage(view: PurchaseView, offerStatus: OfferStatus | str
   }
 
   if (view.method === "BUY_AND_HAND_OVER") {
-    if (view.status === "READY_FOR_HANDOVER") return "READY_FOR_HANDOVER";
+    if (view.status === "READY_FOR_HANDOVER" || view.status === "PROOF_UPLOADED") return "READY_FOR_HANDOVER";
     // Seen by the donor and our team only; the recipient just sees the purchase being checked.
     if (view.status === "ORDER_PLACED" && view.details?.reviewOutcome === "INFO_REQUIRED") return "PURCHASE_INFO_REQUIRED";
-    // Status, not "a photo exists": a rejected photo sends the purchase back to
-    // ORDER_PLACED, and the old photo must not read as "under review".
-    return view.status === "PROOF_UPLOADED" ? "AWAITING_PROOF_REVIEW" : "AWAITING_ITEM_PHOTO";
+    return "AWAITING_ITEM_PHOTO";
   }
 
   // A delivery report waits for the recipient even after an earlier partial receipt.
@@ -133,7 +131,7 @@ export function purchaseNextAction(stage: PurchaseStage, role: PurchaseRole, vie
           : "You're committed to buying this item. Once you've bought it, tap \"I've purchased the item\" and tell us what you bought, with a photo."
         : direct
           ? "Our team approved the offer. The donor can place the order now — you'll be notified when it's on its way."
-          : "The donor confirmed and is buying the item. You'll be notified once our team has verified the purchase and the handover can be arranged.";
+          : "The donor confirmed and is buying the item. You'll be notified once the purchase is recorded and the handover can be arranged.";
     case "PURCHASE_INFO_REQUIRED":
       return donor
         ? `Our team needs more information about your purchase: ${view.proofRejectionReason ?? ""} Update the details below and send them again.`
