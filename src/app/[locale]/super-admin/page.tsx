@@ -230,6 +230,7 @@ const MATCH_COLS: Column[] = [
 ];
 
 const NAV = [
+  { key: "calls",         label: "CRM",         icon: Phone },
   { key: "overview",      label: "Overview",    icon: LayoutDashboard },
   { key: "search",        label: "Search",      icon: Search },
   { key: "directory",     label: "User 360",    icon: UserSearch },
@@ -248,7 +249,6 @@ const NAV = [
   { key: "matches",       label: "Matches",     icon: Handshake },
   { key: "disputes",      label: "Disputes",    icon: Scale },
   { key: "whatsapp",      label: "WhatsApp",    icon: MessageCircle },
-  { key: "calls",         label: "Calls",       icon: Phone },
   { key: "admin-permissions", label: "Admin Access", icon: KeyRound },
   { key: "audit-log",     label: "Audit Log",   icon: History },
   { key: "sql",           label: "SQL Console", icon: Terminal },

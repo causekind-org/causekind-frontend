@@ -641,13 +641,13 @@ export default function AdminDashboardPage() {
   // sidebar and the mobile strip — the two were hand-duplicated before, which is
   // how "User Journey" ended up in one list and not the other.
   const REPORTS = [
+    { key: "calls"         as TabKey, label: "CRM",               icon: Phone,         color: "text-sky-400"    },
     { key: "match-history" as TabKey, label: "Match History",     icon: Handshake,     color: "text-teal-400"   },
     { key: "handover-photos" as TabKey, label: "Handover Photo Log", icon: Camera,      color: "text-amber-400"  },
     { key: "ai-logs"       as TabKey, label: "AI Screening Logs", icon: Bot,           color: "text-violet-400" },
     { key: "user-journey"  as TabKey, label: "User Journey",      icon: UserRound,     color: "text-sky-400"    },
     { key: "analytics"     as TabKey, label: "Analytics",         icon: TrendingUp,    color: "text-amber-400"  },
     { key: "whatsapp"      as TabKey, label: "WhatsApp",          icon: MessageCircle, color: "text-green-400"  },
-    { key: "calls"         as TabKey, label: "Calls",             icon: Phone,         color: "text-sky-400"    },
   ].filter(t => canSeeTab(t.key));
 
   const headerTitle = tab === "issues" ? "Issues"
@@ -663,7 +663,7 @@ export default function AdminDashboardPage() {
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
     : tab === "whatsapp" ? "WhatsApp"
-    : tab === "calls" ? "Calls"
+    : tab === "calls" ? "CRM"
     : tab === "fundraising" ? "Fundraising"
     : tab === "sahas" ? "Sahas campaigns"
     : "Approval Queue";
@@ -1297,7 +1297,7 @@ export default function AdminDashboardPage() {
           {/* ── WHATSAPP TAB — previously the standalone /admin/whatsapp page ── */}
           {tab === "whatsapp" && <WhatsAppPanel />}
 
-          {/* ── CALLS — staff call list ── */}
+          {/* ── CRM — staff call list ── */}
           {tab === "calls" && <CrmContactsPanel canManage={myPermissions?.CRM_MANAGE === true} />}
 
           {/* ── FUNDRAISING — the /admin/fundraising pages, rendered in the panel ── */}
