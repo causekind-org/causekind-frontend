@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { sameName } from "@/lib/panName";
 import { captureUtm, trackDonationSuccess, trackInitiateCheckout } from "@/features/scan-donation/tracking";
 import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
-import { ApiError, sahasCampaigns, uploadTrustDonationPanPhoto, type SahasCampaignDetail } from "@/lib/api";
+import { ApiError, readPanCard, sahasCampaigns, uploadTrustDonationPanPhoto, type SahasCampaignDetail } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
 import { SAHAS_NAME, formatDate, serif } from "@/features/sahas/sahasUi";
@@ -53,6 +54,9 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [pan, setPan] = useState("");
   const [address, setAddress] = useState("");
   const [panFile, setPanFile] = useState<File | null>(null);
+  const [cardRead, setCardRead] = useState<{ read: boolean; panNumber?: string | null; nameOnCard?: string | null } | null>(null);
+  const [cardReading, setCardReading] = useState(false);
+  const cardFile = useRef<File | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,13 +100,22 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(pan);
   const fileOk = panFile !== null && panFile.size <= MAX_PAN_FILE;
   const detailsOk = (user ? true : nameOk && emailOk) && phoneOk;
-  const taxOk = panOk && address.trim().length >= 10 && (!wants80g || fileOk);
+  // Checked here so the donor can fix it before paying. If the reader itself is down, the server's review still applies.
+  const donorName = user?.fullName ?? name;
+  const cardIssue = !wants80g || !panFile ? null
+    : cardReading ? ui("Checking your PAN card…")
+      : !cardRead ? null
+        : !cardRead.read || !cardRead.panNumber ? ui("We couldn't read this card. Upload a clear photo of the front of your PAN card.")
+          : pan.length === 10 && cardRead.panNumber.replace(/\s/g, "").toUpperCase() !== pan ? `${ui("The PAN you typed doesn't match this card. The card shows")} ${cardRead.panNumber}.`
+            : !cardRead.nameOnCard || !sameName(donorName, cardRead.nameOnCard) ? `${ui("The name on this card doesn't match your name. The card shows")} ${cardRead.nameOnCard ?? "—"}.`
+              : null;
+  const taxOk = panOk && address.trim().length >= 10 && (!wants80g || (fileOk && !cardIssue));
   const amountError = amount === "" ? null : value < MIN ? ui("Enter an amount of ₹1 or more.")
     : value > remaining ? `${ui("This campaign needs only")} ₹${remaining.toLocaleString("en-IN")}.` : null;
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
     : !phoneOk ? ui("Check your phone number") : !panOk ? ui("Check your PAN") : address.trim().length < 10 ? ui("Add your full address")
-      : wants80g && !fileOk ? ui("Add your PAN photo, up to 5 MB") : !agreed ? ui("Tick the box to agree") : null;
+      : wants80g && !fileOk ? ui("Add your PAN photo, up to 5 MB") : cardIssue ? ui("Check your PAN card") : !agreed ? ui("Tick the box to agree") : null;
   const hint = "m-0 text-xs font-normal text-red-700";
 
   const watch = (id: number, token: string, tries = 0) => {
@@ -120,6 +133,17 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       }
       if (tries < 40) poll.current = setTimeout(() => watch(id, token, tries + 1), 3000);
     }).catch(() => { if (tries < 20) poll.current = setTimeout(() => watch(id, token, tries + 1), 3000); });
+  };
+
+  const pickCard = async (file: File | null) => {
+    setPanFile(file); setCardRead(null); cardFile.current = file;
+    if (!file || file.size > MAX_PAN_FILE) return;
+    setCardReading(true);
+    try {
+      const r = await readPanCard(file);
+      if (cardFile.current === file) setCardRead(r);
+    } catch { /* reader unavailable: not the donor's fault */ }
+    finally { if (cardFile.current === file) setCardReading(false); }
   };
 
   const pay = async () => {
@@ -231,10 +255,11 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
           <span><UiText>PAN card photo or PDF</UiText></span>
           <label className="flex min-h-[44px] w-fit cursor-pointer items-center justify-center rounded-xl border border-[#b04a15] bg-white px-5 text-sm font-semibold text-[#b04a15] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#b04a15] dark:bg-zinc-900">
             {panFile ? <UiText>Change file</UiText> : <UiText>Upload PAN card</UiText>}
-            <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => setPanFile(e.target.files?.[0] ?? null)} />
+            <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => void pickCard(e.target.files?.[0] ?? null)} />
           </label>
           {panFile ? <span className="text-xs font-normal text-[#1E5B42]">✓ {panFile.name}</span> : <span className="text-xs font-normal text-[#6B5A4E]"><UiText>JPG, PNG or PDF, up to 5 MB</UiText></span>}
         </div>
+        {cardIssue && <p role="alert" className={hint}>{cardIssue} {!cardReading && <UiText>Fix this, or untick 80G to get a certificate only.</UiText>}</p>}
         {panFile && !fileOk && <p className={hint}><UiText>That file is over 5 MB. Choose a smaller one.</UiText></p>}
       </div>}
     </section>}
