@@ -19,9 +19,6 @@ export function SuperAdminRedirect() {
     if (user.role === "SUPER_ADMIN" && !pathname.startsWith("/super-admin")) {
       router.replace("/super-admin");
     }
-    if (user.role === "CRM_AGENT" && !pathname.endsWith("/admin/calls")) {
-      router.replace("/admin/calls");
-    }
   }, [user, isLoading, pathname, router]);
 
   return null;

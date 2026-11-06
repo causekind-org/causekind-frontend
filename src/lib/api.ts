@@ -4055,14 +4055,6 @@ export function superAdminSetAdminPermissions(adminId: number, changes: AdminCap
   });
 }
 
-export function superAdminApplyCrmAgentPreset(adminId: number) {
-  return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/crm-agent-preset`, { method: "POST" });
-}
-
-export function superAdminRemoveCrmAgent(adminId: number) {
-  return request<AdminCapabilityMap>(`/api/v1/super-admin/admins/${adminId}/crm-agent-preset`, { method: "DELETE" });
-}
-
 // ── Calling CRM ──────────────────────────────────────────────────────────────
 
 export type CrmRole = "DONOR" | "DONEE";

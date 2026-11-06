@@ -21,7 +21,6 @@ import { isNgoRole } from "@/lib/isNgoRole";
 export function homeForRole(role: string | null | undefined): string {
   if (role === "SUPER_ADMIN") return "/super-admin";
   if (role === "ADMIN") return "/admin/dashboard";
-  if (role === "CRM_AGENT") return "/admin/calls";
   if (isNgoRole(role)) return "/";
   return "/";
 }

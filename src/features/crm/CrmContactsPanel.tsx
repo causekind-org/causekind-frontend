@@ -170,7 +170,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                     <option value="" disabled>Call purpose</option>
                     <option value="SUPPORT">Support</option>
                     <option value="ONBOARDING">Onboarding</option>
-                    {c.role === "DONOR" && <option value="FUNDRAISING" disabled>Fundraising (needs calling basis)</option>}
+                    {c.role === "DONOR" && <option value="FUNDRAISING">Fundraising</option>}
                   </select>
                   <Button size="sm" disabled={!purposes[c.userId] || busyId === c.userId} onClick={() => reveal(c.userId)}>
                     <Phone className="size-4" aria-hidden /> Call
