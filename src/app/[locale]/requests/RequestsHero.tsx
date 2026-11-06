@@ -102,7 +102,7 @@ export function RequestsHero({ total, critical }: { total: number; critical: num
               <div className="hidden sm:block w-px h-10 bg-white/10" />
               <div className="hidden sm:block">
                 <p className="text-xl sm:text-3xl font-black text-[var(--ck-role-highlight)]">0%</p>
-                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5"><UiText>Platform Fees</UiText></p>
+                <p className="text-3xs font-bold text-white/35 uppercase tracking-wider mt-0.5"><UiText>Platform fee on items</UiText></p>
               </div>
             </div>
 

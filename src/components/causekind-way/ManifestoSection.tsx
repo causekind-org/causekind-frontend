@@ -52,11 +52,6 @@ export function ManifestoSection() {
 
       const directAct = stage.querySelector(".act-direct");
       const directWord = stage.querySelector(".direct-word");
-      const directLine = stage.querySelector(".direct-line-path") as SVGPathElement | null;
-      const obstacleWarehouses = stage.querySelector(".obstacle-warehouses");
-      const obstacleMiddlemen = stage.querySelector(".obstacle-middlemen");
-      const strikeWarehouses = stage.querySelector(".strike-warehouses");
-      const strikeMiddlemen = stage.querySelector(".strike-middlemen");
       const directCopy = stage.querySelector(".direct-copy");
 
       const dignifiedAct = stage.querySelector(".act-dignified");
@@ -72,10 +67,6 @@ export function ManifestoSection() {
       if (localCircle) {
         const len = localCircle.getTotalLength ? localCircle.getTotalLength() : 800;
         gsap.set(localCircle, { strokeDasharray: len, strokeDashoffset: len });
-      }
-      if (directLine) {
-        const len = directLine.getTotalLength ? directLine.getTotalLength() : 1200;
-        gsap.set(directLine, { strokeDasharray: len, strokeDashoffset: len });
       }
 
       // Initial letter scatter for LOCAL
@@ -120,7 +111,7 @@ export function ManifestoSection() {
       // 0  -> 12 : OPENING ("Giving should be...")
       // 12 -> 35 : ACT 1 (LOCAL letters assemble, 10km circle draws, copy reveals)
       // 35 -> 40 : TRANSITION 1 (LOCAL shrinks into manifesto list pill)
-      // 40 -> 60 : ACT 2 (DIRECT line strikes warehouses/middlemen, they fall, copy reveals)
+      // 40 -> 60 : ACT 2 (DIRECT word, copy reveals)
       // 60 -> 65 : TRANSITION 2 (DIRECT joins manifesto list)
       // 65 -> 82 : ACT 3 (DIGNIFIED letters rise upright, privacy bar slides over)
       // 82 -> 95 : FINALE (Manifesto lockup forms, statement + closing line)
@@ -181,53 +172,6 @@ export function ManifestoSection() {
         { opacity: 0, x: -50 },
         { opacity: 1, x: 0, duration: 6, ease: "power2.out" },
         39
-      );
-      masterTl.fromTo(
-        [obstacleWarehouses, obstacleMiddlemen],
-        { opacity: 0, x: 30 },
-        { opacity: 0.7, x: 0, duration: 4, stagger: 1 },
-        41
-      );
-
-      // Straight orange line shoots from left to right
-      if (directLine) {
-        masterTl.to(
-          directLine,
-          {
-            strokeDashoffset: 0,
-            duration: 9,
-            ease: "power1.inOut",
-          },
-          44
-        );
-      }
-
-      // Strike-through occurs when line hits
-      masterTl.to(strikeWarehouses, { scaleX: 1, duration: 2, ease: "power2.out" }, 47);
-      masterTl.to(strikeMiddlemen, { scaleX: 1, duration: 2, ease: "power2.out" }, 49);
-
-      // Obstacles fall with gravity and slight rotation
-      masterTl.to(
-        obstacleWarehouses,
-        {
-          y: 260,
-          rotation: 22,
-          opacity: 0,
-          duration: 6,
-          ease: "power3.in",
-        },
-        50
-      );
-      masterTl.to(
-        obstacleMiddlemen,
-        {
-          y: 280,
-          rotation: -18,
-          opacity: 0,
-          duration: 6,
-          ease: "power3.in",
-        },
-        51
       );
 
       masterTl.to(directCopy, { opacity: 1, y: 0, duration: 6, ease: "power2.out" }, 52);
@@ -371,21 +315,6 @@ export function ManifestoSection() {
         );
       });
 
-      // Mobile strike-through on obstacle words
-      const mobileWarehouses = section.querySelector(".mobile-strike-warehouses");
-      const mobileMiddlemen = section.querySelector(".mobile-strike-middlemen");
-      if (mobileWarehouses && mobileMiddlemen) {
-        gsap.to([mobileWarehouses, mobileMiddlemen], {
-          scaleX: 1,
-          duration: 0.6,
-          stagger: 0.2,
-          ease: "power2.out",
-          scrollTrigger: {
-            trigger: mobileWarehouses,
-            start: "top 75%",
-          },
-        });
-      }
     });
 
     // ─────────────────────────────────────────────────────────────
@@ -528,33 +457,6 @@ export function ManifestoSection() {
                 DIRECT
               </div>
 
-              {/* Obstacles knocked out */}
-              <div className="flex flex-col items-start gap-4 mr-6 xl:mr-12" aria-hidden="true">
-                <div className="obstacle-warehouses relative font-mono text-xl xl:text-2xl text-stone-400 dark:text-stone-600 font-semibold tracking-wide">
-                  <span>warehouses</span>
-                  <div className="strike-warehouses absolute top-1/2 left-0 right-0 h-[2px] bg-[#B5480F] scale-x-0 origin-left" />
-                </div>
-                <div className="obstacle-middlemen relative font-mono text-xl xl:text-2xl text-stone-400 dark:text-stone-600 font-semibold tracking-wide">
-                  <span>middlemen</span>
-                  <div className="strike-middlemen absolute top-1/2 left-0 right-0 h-[2px] bg-[#B5480F] scale-x-0 origin-left" />
-                </div>
-              </div>
-
-              {/* Laser line through DIRECT */}
-              <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true">
-                <svg className="w-full h-8 overflow-visible" viewBox="0 0 1000 30" fill="none">
-                  <line
-                    x1="0"
-                    y1="15"
-                    x2="1000"
-                    y2="15"
-                    className="direct-line-path"
-                    stroke="#B5480F"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </div>
             </div>
 
             {/* Editorial Pull-Copy */}
@@ -563,7 +465,7 @@ export function ManifestoSection() {
               <p className="font-serif text-lg lg:text-xl text-stone-700 dark:text-stone-300 leading-snug">
                 Items go straight from donor to the person or NGO who asked.{" "}
                 <span className="text-[#B5480F] dark:text-[#F4A25B] font-bold">
-                  No warehouses, no middlemen.
+                  Give items directly to recipients.
                 </span>
               </p>
             </div>
@@ -709,9 +611,9 @@ export function ManifestoSection() {
 
         {/* BOTTOM EDITORIAL FOOTER */}
         <div className="relative z-30 flex items-center justify-between w-full border-t border-stone-200/90 dark:border-stone-800/80 pt-3 text-3xs font-mono uppercase tracking-widest text-stone-400 dark:text-stone-500">
-          <span>01 / ZERO MIDDLEMEN</span>
-          <span className="hidden sm:inline">100% IN-KIND</span>
-          <span>02 / ZERO CASH</span>
+          <span>01 / GIVE ITEMS OR MONEY</span>
+          <span className="hidden sm:inline">WAYS TO GIVE</span>
+          <span>02 / OTP-CONFIRMED HANDOVERS</span>
         </div>
       </div>
 
@@ -759,27 +661,17 @@ export function ManifestoSection() {
         {/* Block 2: DIRECT */}
         <div className="mobile-manifesto-block border-l-2 border-[#B5480F] pl-5 sm:pl-6 py-2">
           <span className="font-mono text-3xs uppercase tracking-widest text-[#B5480F] dark:text-[#F4A25B] font-bold block mb-1">
-            02 / ZERO INTERMEDIARIES
+            02 / HANDOVER
           </span>
           <h3 className="font-serif font-black text-4xl sm:text-5xl tracking-tighter text-stone-950 dark:text-stone-50 mb-3">
             DIRECT.
           </h3>
           
-          <div className="flex items-center gap-4 text-xs font-mono text-stone-400 mb-3" aria-hidden="true">
-            <span className="relative">
-              warehouses
-              <span className="mobile-strike-warehouses absolute top-1/2 left-0 right-0 h-[1.5px] bg-[#B5480F] scale-x-0 origin-left" />
-            </span>
-            <span className="relative">
-              middlemen
-              <span className="mobile-strike-middlemen absolute top-1/2 left-0 right-0 h-[1.5px] bg-[#B5480F] scale-x-0 origin-left" />
-            </span>
-          </div>
 
           <p className="font-serif text-base sm:text-lg text-stone-700 dark:text-stone-300 leading-relaxed max-w-md">
             Items go straight from donor to the person or NGO who asked.{" "}
             <span className="text-[#B5480F] dark:text-[#F4A25B] font-bold">
-              No warehouses, no middlemen.
+              Give items directly to recipients.
             </span>
           </p>
         </div>

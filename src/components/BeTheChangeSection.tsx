@@ -285,11 +285,11 @@ export function BeTheChangeSection({
               data-tour={tourAnchors ? "guest-signals" : undefined}
             >
               <div className="relative z-10 flex flex-col gap-6 lg:gap-7">
-                <MarqueeStat value="100%" label="Admin-verified listings" />
+                <MarqueeStat value="AI + admin" label="Listing screening" />
                 {/* Read from the shared constant, never retyped: the match radius
                     is also enforced server-side, and two copies would drift. */}
                 <MarqueeStat value={`${MATCH_RADIUS_KM} km`} label="Match radius" />
-                <MarqueeStat value="Zero" label="Middlemen" />
+                <MarqueeStat value="Direct" label="Give items directly to recipients" />
               </div>
             </div>
 

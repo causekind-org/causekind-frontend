@@ -91,8 +91,8 @@ export default async function AboutPage({ params }: LocaleParams) {
               {/* Offset stats — NOT centered, left-aligned */}
               <div className="flex flex-wrap gap-x-6 gap-y-4 sm:gap-10 pt-4 border-t border-stone-200 dark:border-zinc-800">
                 <div>
-                  <p className="text-2xl md:text-3xl font-black text-[#b04a15]">100%</p>
-                  <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-1">Verified Handovers</p>
+                  <p className="text-2xl md:text-3xl font-black text-[#b04a15]">OTP</p>
+                  <p className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-1">Confirmed Handovers</p>
                 </div>
                 <div>
                   <p className="text-2xl md:text-3xl font-black text-[#1e3a60] dark:text-blue-400">10km</p>

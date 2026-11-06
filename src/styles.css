@@ -1372,6 +1372,18 @@ section:focus-within {
     opacity 0.3s ease;
 }
 
+/* Opaque base, so page text never reads through the capsule. */
+.ck-mobile-dock::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: #faf8f5;
+  pointer-events: none;
+}
+.dark .ck-mobile-dock::before { background: #18181b; }
+
 /* Decorative glass layer. Clipped to the capsule internally by .ck-glass; the
    interactive track is a SIBLING, so nothing that overflows the dock is inside
    this box. Never interactive, never in the a11y tree. */
@@ -4707,11 +4719,11 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
     width: var(--ck-fab-size);
     height: var(--ck-fab-size);
     right: 1rem;
-    bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
+    bottom: calc(var(--ck-bottom-chrome) + 0.5rem + var(--ck-page-cta-h, 0px));
   }
   .ck-support-panel {
     right: 1rem;
-    bottom: calc(var(--ck-bottom-chrome) + var(--ck-fab-size) + 1rem);
+    bottom: calc(var(--ck-bottom-chrome) + var(--ck-fab-size) + 1rem + var(--ck-page-cta-h, 0px));
   }
 }
 /* ── Wizards on phones (Give to a drive, Start a drive) ─────────────────────

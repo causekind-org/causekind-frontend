@@ -171,7 +171,7 @@ function ImpactCertificateSample() {
       <div className="relative z-10 mt-3 pt-2 border-t border-stone-200/80 dark:border-stone-800/80 flex items-center justify-between">
         <div className="flex items-center gap-1 text-4xs text-stone-400 font-semibold">
           <ShieldCheck className="w-3 h-3 text-emerald-600" />
-          <span>100% In-Person Handover</span>
+          <span>In-Person Handover</span>
         </div>
         <div className="w-6 h-6 rounded-md bg-stone-200/60 dark:bg-stone-800/80 flex items-center justify-center">
           <FileCheck className="w-3.5 h-3.5 text-stone-500" />

@@ -32,7 +32,9 @@ import {
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
   Sun, Moon, AlertTriangle, MessageCircle, KeyRound, History, Scale,
   Search, UserSearch, LifeBuoy, Send, ShieldCheck, SlidersHorizontal, Activity, Lock,
+  Phone,
 } from "lucide-react";
+import { CrmContactsPanel } from "@/features/crm/CrmContactsPanel";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
 type Th = {
@@ -228,6 +230,7 @@ const MATCH_COLS: Column[] = [
 ];
 
 const NAV = [
+  { key: "calls",         label: "CRM",         icon: Phone },
   { key: "overview",      label: "Overview",    icon: LayoutDashboard },
   { key: "search",        label: "Search",      icon: Search },
   { key: "directory",     label: "User 360",    icon: UserSearch },
@@ -571,6 +574,7 @@ export default function SuperAdminPage() {
                               onRowClick={(row) => setViewingListing(row)} />;
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
       case "whatsapp":      return <WhatsAppPanel />;
+      case "calls":         return <CrmContactsPanel canManage />;
       case "admin-permissions": return <AdminPermissionsPanel />;
       case "disputes":      return <DisputesPanel isDark={isDark} />;
       case "audit-log":     return <AuditLogPanel />;

@@ -1316,7 +1316,7 @@ export function SiteHeader() {
                       <div className="flex items-center gap-2 mb-3">
                         <span className="inline-flex items-center gap-1.5 text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 rounded-full bg-[var(--ck-role-accent)] text-white shadow-2xs">
                           <Heart className="w-3 h-3 fill-current" /><UiText>
-                          100% Direct Giving
+                          Direct Giving
                         </UiText></span>
                       </div>
                       <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><UiText>
@@ -1347,7 +1347,7 @@ export function SiteHeader() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Heart className="w-4 h-4 text-[var(--ck-role-accent)]" />
-                      <span className="font-medium"><UiText>100% Free Peer Giving</UiText></span>
+                      <span className="font-medium"><UiText>No platform fee on item donations</UiText></span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-amber-500" />

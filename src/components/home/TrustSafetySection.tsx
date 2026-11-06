@@ -82,9 +82,9 @@ const TRUST_CARDS: TrustCardData[] = [
 ];
 
 const TRUST_STATS = [
-  { value: "100%", label: "Admin-verified listings", color: "text-[var(--ck-role-accent,#B5480F)]" },
+  { value: "AI + admin", label: "Listing screening", color: "text-[var(--ck-role-accent,#B5480F)]" },
   { value: "10 km", label: "Local matching radius", color: "text-[var(--ck-role-accent)]" },
-  { value: "Zero", label: "Middlemen or warehouses", color: "text-stone-800 dark:text-stone-100" },
+  { value: "Direct", label: "Give items directly to recipients", color: "text-stone-800 dark:text-stone-100" },
 ];
 
 /**
@@ -211,19 +211,17 @@ function TrustSafetyFull({
   const statsContainerRef = useRef<HTMLDivElement>(null);
 
   // Animated stat values state for smooth render
-  const [stat1, setStat1] = useState(0);
   const [stat2, setStat2] = useState(0);
-  const [typedZero, setTypedZero] = useState("");
-  const localizedZero = useLandingTranslation("Zero");
+  const [typedWord, setTypedWord] = useState("");
+  const localizedWord = useLandingTranslation("Direct");
 
   useEffect(() => {
     // Check for prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (prefersReducedMotion) {
-      setStat1(100);
       setStat2(10);
-      setTypedZero("Zero");
+      setTypedWord("Direct");
       return;
     }
 
@@ -291,31 +289,29 @@ function TrustSafetyFull({
       );
 
       // Step F: Animate Counter Stats
-      const statObj = { count1: 0, count2: 0, count3: 0 };
+      const statObj = { count2: 0, count3: 0 };
       tl.to(
         statObj,
         {
-          count1: 100,
           count2: 10,
           count3: 0,
           duration: 1.2,
           ease: "power2.out",
           onUpdate: () => {
-            setStat1(Math.round(statObj.count1));
             setStat2(Math.round(statObj.count2));
           },
         },
         "-=0.5"
       );
 
-      // Typewriter for "Zero"
-      const word = "Zero";
+      // Typewriter for "Direct"
+      const word = "Direct";
       tl.call(
         () => {
           let charIndex = 0;
           const interval = setInterval(() => {
             charIndex++;
-            setTypedZero(word.substring(0, charIndex));
+            setTypedWord(word.substring(0, charIndex));
             if (charIndex >= word.length) clearInterval(interval);
           }, 80);
         },
@@ -437,13 +433,13 @@ function TrustSafetyFull({
           ref={statsContainerRef}
           className="grid grid-cols-3 gap-2.5 sm:gap-3 p-3 sm:p-4 rounded-xl bg-white/70 dark:bg-[#14100E]/70 border border-stone-200/80 dark:border-stone-800 backdrop-blur-sm shadow-xs"
         >
-          {/* Stat 1: 100% */}
+          {/* Stat 1: listing screening */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2">
             <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[var(--ck-role-accent,#B5480F)] font-mono tracking-tight">
-              {stat1}%
+              <LandingText>AI + admin</LandingText>
             </div>
             <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5"><LandingText>
-              Admin-verified listings
+              Listing screening
             </LandingText></div>
           </div>
 
@@ -460,10 +456,10 @@ function TrustSafetyFull({
           {/* Stat 3: Zero */}
           <div className="flex flex-col items-center text-center p-1.5 sm:p-2 border-l border-stone-200/60 dark:border-stone-800/60">
             <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-stone-800 dark:text-stone-100 font-mono tracking-tight min-h-[1.75rem] flex items-center justify-center">
-              {(typedZero && localizedZero !== "Zero" ? localizedZero : typedZero) || "\u00A0"}
+              {(typedWord && localizedWord !== "Direct" ? localizedWord : typedWord) || "\u00A0"}
             </div>
             <div className="text-[11px] sm:text-xs font-medium text-stone-600 dark:text-stone-400 mt-0.5"><LandingText>
-              Middlemen or warehouses
+              Give items directly to recipients
             </LandingText></div>
           </div>
         </div>

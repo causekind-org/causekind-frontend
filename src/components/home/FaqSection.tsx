@@ -45,7 +45,7 @@ const FAQ_ITEMS: FaqItem[] = [
     id: "faq-verify",
     question: "How do you verify people?",
     answer:
-      "Individuals are checked with ID and address. NGOs are checked with their official registration documents. Every request is reviewed by our team before it goes live.",
+      "Individuals are checked with ID and address. NGOs are checked with their official registration documents. Requests go through automatic screening, and an admin reviews any that need a closer look.",
   },
   {
     id: "faq-address",

@@ -230,7 +230,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
             className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip === null && tip === t ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}>{t === 0 ? ui("No thanks") : `₹${t}`}</button>
         ))}
         <button type="button" aria-pressed={customTip !== null} onClick={() => setCustomTip((c) => c ?? (tip ? String(tip) : ""))}
-          className={`min-h-[44px] rounded-[10px] border text-sm font-semibold ${customTip !== null ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}><UiText>Other</UiText></button>
+          className={`col-span-2 min-h-[44px] rounded-[10px] border text-sm font-semibold sm:col-span-1 ${customTip !== null ? "border-[#1F140D] bg-[#1F140D] text-white dark:border-stone-100 dark:bg-stone-100 dark:text-zinc-950" : "border-[#CDBBA8] bg-white dark:bg-zinc-900"}`}><UiText>Other</UiText></button>
       </div>
       {customTip !== null && <label className="flex flex-col gap-1.5 text-sm font-semibold"><UiText>Support amount (₹)</UiText><input inputMode="numeric" className={field} value={customTip} maxLength={5} onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, ""))} /></label>}
     </section>
@@ -285,7 +285,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
                 <p className={`m-0 ${short ? "lg:hidden" : ""}`}><UiText>Donations can&apos;t be refunded. If a payment is confirmed after the campaign closes or fills up, it is kept and reported as surplus.</UiText></p>
         </div>
       </div>
-      <label className="mt-1 flex items-start gap-2 font-semibold"><input type="checkbox" className="mt-1" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /> {short ? <UiText>I understand and agree to the fee and no-refund terms</UiText> : <UiText>I understand and agree</UiText>}</label>
+      <label className="mt-2 flex min-h-[44px] items-center gap-2.5 font-semibold"><input type="checkbox" className="size-4 shrink-0" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /> {short ? <UiText>I understand and agree to the fee and no-refund terms</UiText> : <UiText>I understand and agree</UiText>}</label>
     </section>
 
     {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}

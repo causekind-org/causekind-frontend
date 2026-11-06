@@ -38,6 +38,7 @@ import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
 import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
+import { CrmContactsPanel } from "@/features/crm/CrmContactsPanel";
 import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav";
 import { AdminFundraisingPanel } from "@/features/fundraising/AdminFundraisingPanel";
 import { AdminSahasPanel } from "@/features/sahas/AdminSahasPanel";
@@ -51,7 +52,7 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising" | "sahas";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "calls" | "fundraising" | "sahas";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -79,6 +80,8 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   "user-journey": "USER_READ",
   analytics: "PAYMENT_REVIEW",
   whatsapp: "WHATSAPP",
+  // Same capability AdminCapabilityFilter maps for /admin/crm.
+  calls: "CRM_ACCESS",
   // Fundraising pages render in the panel (2026-10-19); same capability as /admin/fundraising.
   fundraising: "CAMPAIGNS",
   // Sahas campaigns (2026-11-03): same capability as the backend's sahas-campaigns segment.
@@ -611,7 +614,7 @@ export default function AdminDashboardPage() {
   // wrong side of the mobile nav split below.
   const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
   const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
-    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising" || tab === "sahas" || tab === "issues";
+    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "calls" || tab === "fundraising" || tab === "sahas" || tab === "issues";
   const showIssues = canSeeTab("issues");
 
   const TABS = [
@@ -659,6 +662,7 @@ export default function AdminDashboardPage() {
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
     : tab === "whatsapp" ? "WhatsApp"
+    : tab === "calls" ? "CRM"
     : tab === "fundraising" ? "Fundraising"
     : tab === "sahas" ? "Sahas campaigns"
     : "Approval Queue";
@@ -687,6 +691,8 @@ export default function AdminDashboardPage() {
     ? "Donation and campaign performance"
     : tab === "whatsapp"
     ? "Templates, flows, sends, and the message log"
+    : tab === "calls"
+    ? "Registered donors and donees to call"
     : tab === "fundraising"
     ? "Applications, publication, updates and reports for donee fundraisers"
     : tab === "sahas"
@@ -734,6 +740,19 @@ export default function AdminDashboardPage() {
 
         {/* Queue count pills */}
         <div className="px-3.5 sm:px-5 pt-5 space-y-2 flex-1">
+          {canSeeTab("calls") && (
+            <button
+              onClick={() => selectTab("calls")}
+              aria-current={tab === "calls" ? "page" : undefined}
+              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-left transition-all border ${
+                tab === "calls" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
+              }`}
+              style={{ background: tab === "calls" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
+            >
+              <Phone className="w-4 h-4 shrink-0" style={{ color: tab === "calls" ? "#b04a15" : "#38bdf8" }} aria-hidden />
+              <span className={`text-sm font-semibold ${tab === "calls" ? "text-white" : "text-stone-400"}`}>CRM</span>
+            </button>
+          )}
           <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
           {TABS.map(({ key, label, count, icon: Icon, color }) => (
             <button
@@ -936,6 +955,18 @@ export default function AdminDashboardPage() {
             ref={navStripRef}
             className="lg:hidden flex items-center gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide"
           >
+            {canSeeTab("calls") && (
+              <button
+                data-active={tab === "calls" || undefined}
+                onClick={() => selectTab("calls")}
+                aria-current={tab === "calls" ? "page" : undefined}
+                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${
+                  tab === "calls" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
+                }`}
+              >
+                <Phone className="w-3.5 h-3.5" aria-hidden /> CRM
+              </button>
+            )}
             {TABS.map(({ key, label, count }) => (
               <button
                 key={key}
@@ -1289,6 +1320,9 @@ export default function AdminDashboardPage() {
 
           {/* ── WHATSAPP TAB — previously the standalone /admin/whatsapp page ── */}
           {tab === "whatsapp" && <WhatsAppPanel />}
+
+          {/* ── CRM — staff call list ── */}
+          {tab === "calls" && <CrmContactsPanel canManage={myPermissions?.CRM_MANAGE === true} />}
 
           {/* ── FUNDRAISING — the /admin/fundraising pages, rendered in the panel ── */}
           {tab === "fundraising" && <AdminFundraisingPanel path={frPath} go={setFrPath} />}

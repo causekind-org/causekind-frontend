@@ -309,7 +309,7 @@ describe("Footer Component", () => {
     it("renders all three promise items with uniform copper #B4541A dots and no teal or blue dots", () => {
       render(<Footer />);
       expect(screen.getByText("Our Trust Promise")).toBeInTheDocument();
-      expect(screen.getByText("Admin-verified listings")).toBeInTheDocument();
+      expect(screen.getByText("Listings screened by AI and admins")).toBeInTheDocument();
       expect(screen.getByText("OTP-confirmed handovers")).toBeInTheDocument();
       expect(screen.getByText("Verified delivery certificates")).toBeInTheDocument();
 
