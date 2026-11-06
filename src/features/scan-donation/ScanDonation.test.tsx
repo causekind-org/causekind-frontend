@@ -77,7 +77,18 @@ describe("ScanDonation", () => {
     await user.type(screen.getByLabelText("PIN code"), "411001");
     await waitFor(() => expect(donate).toBeEnabled());
     await user.click(screen.getByLabelText(/80G tax receipt/));
-    expect(donate).toBeEnabled();
+    await waitFor(() => expect(donate).toBeDisabled());
+    expect(screen.getByRole("alert")).toHaveTextContent("Add your PAN card");
+
+    const card = (panNumber: string, nameOnCard: string) => fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ read: true, panNumber, nameOnCard }) });
+    card("ZZZZZ9999Z", "Asha Rao");
+    await user.upload(screen.getByLabelText("PAN card photo"), new File(["x"], "pan.png", { type: "image/png" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("doesn't match this card"));
+    expect(donate).toBeDisabled();
+
+    card("ABCDE1234F", "ASHA RAO");
+    await user.upload(screen.getByLabelText("PAN card photo"), new File(["y"], "pan2.png", { type: "image/png" }));
+    await waitFor(() => expect(donate).toBeEnabled());
   });
 
   it("enforces the ₹10 minimum on Other amount", async () => {
