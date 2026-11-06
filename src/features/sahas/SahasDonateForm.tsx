@@ -41,6 +41,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const { user } = useAuth();
   const [about, setAbout] = useState(false);
   const [data, setData] = useState<SahasCampaignDetail | null | undefined>(undefined);
+  const [step, setStep] = useState(0);
   const [amount, setAmount] = useState("101");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -57,7 +58,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const poll = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [docs, setDocs] = useState<{ id: number; token: string; certificate: boolean; receipt: boolean; receiptOwed: boolean } | null>(null);
+  const [docs, setDocs] = useState<{ certificate: string | null; receipt: string | null; receiptOwed: boolean } | null>(null);
 
   useEffect(() => { sahasCampaigns.detail(slug).then(setData).catch(() => setData(null)); }, [slug]);
   const tracked = useRef(false);
@@ -110,7 +111,11 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       if (s.status === "COMPLETED") {
         setResult("success");
         if (!tracked.current) { tracked.current = true; trackDonationSuccess(value); }
-        setDocs({ id, token, certificate: s.certificateReady, receipt: s.receiptReady, receiptOwed: s.receiptOwed });
+        setDocs({
+          certificate: s.certificateReady && s.certificateLinkToken ? sahasCampaigns.donationFileUrl(id, "certificate", s.certificateLinkToken) : null,
+          receipt: s.receiptReady && s.receiptLinkToken ? sahasCampaigns.donationFileUrl(id, "receipt", s.receiptLinkToken) : null,
+          receiptOwed: s.receiptOwed,
+        });
         if (s.certificateReady && (s.receiptReady || !s.receiptOwed)) return;
       }
       if (tries < 40) poll.current = setTimeout(() => watch(id, token, tries + 1), 3000);
@@ -142,16 +147,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     }
   };
 
-  const download = async (kind: "certificate" | "receipt") => {
-    if (!docs) return;
-    try {
-      const url = URL.createObjectURL(await sahasCampaigns.donationDocument(docs.id, docs.token, kind));
-      const a = document.createElement("a");
-      a.href = url; a.download = `${kind}-${docs.id}.pdf`; a.click();
-      URL.revokeObjectURL(url);
-    } catch { setError(ui("The document isn't ready yet. It will reach you by email.")); }
-  };
-  const docButton = "flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white";
+  const docButton = "flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline";
 
   if (result) {
     return shell(
@@ -166,9 +162,10 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
             : result === "failed" ? <UiText>No money was taken. You can try again.</UiText>
               : <UiText>We&apos;re confirming your payment. You can leave this page; we&apos;ll email you.</UiText>}
         </p>
-        {result === "success" && docs?.certificate && <button type="button" className={docButton} onClick={() => void download("certificate")}><UiText>Download certificate</UiText></button>}
-        {result === "success" && docs?.receipt && <button type="button" className={docButton} onClick={() => void download("receipt")}><UiText>Download 80G receipt</UiText></button>}
+        {result === "success" && docs?.certificate && <a href={docs.certificate} className={docButton}><UiText>Download certificate</UiText></a>}
+        {result === "success" && docs?.receipt && <a href={docs.receipt} className={docButton}><UiText>Download 80G receipt</UiText></a>}
         {result === "success" && docs?.receiptOwed && !docs.receipt && <p className="m-0 text-sm"><UiText>Your 80G receipt is being prepared.</UiText></p>}
+        {result === "success" && docs?.certificate && /FBAN|FBAV|Instagram/.test(navigator.userAgent) && <p className="m-0 text-sm"><UiText>Trouble downloading? Your documents are in your email, or open this page in Chrome.</UiText></p>}
         {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
         {leave}
       </div>,
@@ -178,7 +175,13 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const box = onClose ? "flex flex-col gap-3" : "flex flex-col gap-3 rounded-2xl border border-[#EADFD3] bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900";
   const short = !!onClose && wants80g;
   const slid = !!onClose && agreed;
+  // One small question at a time: amount and support, who you are, tax details, then review and pay.
+  const STEPS = [ui("Your donation"), ui("Your details"), ui("PAN and address"), ui("Review and pay")];
+  const stepOk = [valid, detailsOk, taxOk, true][step];
+  const stepHead = <p className="m-0 text-xs font-semibold text-[#6B5A4E] dark:text-stone-400">{ui("Step")} {step + 1} {ui("of")} {STEPS.length} · {STEPS[step]}</p>;
   const fields = <>
+    {stepHead}
+    {step === 0 && <>
     <section className={box}>
       <div className="grid grid-cols-3 gap-2">
         {PRESETS.filter((p) => p <= remaining).map((p) => (
@@ -191,32 +194,6 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       </label>
       {amountError && <p role="alert" className={hint}>{amountError}</p>}
       <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">{ui("This campaign still needs")} ₹{remaining.toLocaleString("en-IN")}.</p>
-    </section>
-
-    <section className={box}>
-      {!user && <>
-        <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Full name</UiText><input className={field} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
-        <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Email</UiText><input type="email" className={field} value={email} maxLength={254} onChange={(e) => setEmail(e.target.value.trim())} autoComplete="email" /></label>
-        {email !== "" && !emailOk && <p className={hint}><UiText>Enter a valid email, like name@example.com.</UiText></p>}
-      </>}
-      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone</UiText><input type="tel" inputMode="tel" className={field} value={phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ""))} autoComplete="tel" /></label>
-      {!phoneOk && phone.length > 0 && <p className={hint}><UiText>Enter a valid phone number.</UiText></p>}
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
-      <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
-      {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
-      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
-      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
-      {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
-        <div className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200">
-          <span><UiText>PAN card photo or PDF</UiText></span>
-          <label className="flex min-h-[44px] w-fit cursor-pointer items-center justify-center rounded-xl border border-[#b04a15] bg-white px-5 text-sm font-semibold text-[#b04a15] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#b04a15] dark:bg-zinc-900">
-            {panFile ? <UiText>Change file</UiText> : <UiText>Upload PAN card</UiText>}
-            <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => setPanFile(e.target.files?.[0] ?? null)} />
-          </label>
-          {panFile ? <span className="text-xs font-normal text-[#1E5B42]">✓ {panFile.name}</span> : <span className="text-xs font-normal text-[#6B5A4E]"><UiText>JPG, PNG or PDF, up to 5 MB</UiText></span>}
-        </div>
-        {panFile && !fileOk && <p className={hint}><UiText>That file is over 5 MB. Choose a smaller one.</UiText></p>}
-      </div>}
     </section>
     <section className={box}>
       <div className="flex flex-col gap-0.5">
@@ -233,8 +210,46 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
       </div>
       {customTip !== null && <label className="flex flex-col gap-1.5 text-sm font-semibold"><UiText>Support amount (₹)</UiText><input inputMode="numeric" className={field} value={customTip} maxLength={5} onChange={(e) => setCustomTip(e.target.value.replace(/\D/g, ""))} /></label>}
     </section>
+    </>}
+    {step === 1 && <section className={box}>
+      {!user && <>
+        <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Full name</UiText><input className={field} value={name} maxLength={150} onChange={(e) => setName(e.target.value)} autoComplete="name" /></label>
+        <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Email</UiText><input type="email" className={field} value={email} maxLength={254} onChange={(e) => setEmail(e.target.value.trim())} autoComplete="email" /></label>
+        {email !== "" && !emailOk && <p className={hint}><UiText>Enter a valid email, like name@example.com.</UiText></p>}
+      </>}
+      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Phone</UiText><input type="tel" inputMode="tel" className={field} value={phone} maxLength={20} placeholder="+91 98765 43210" onChange={(e) => setPhone(e.target.value.replace(/[^0-9+\s-]/g, ""))} autoComplete="tel" /></label>
+      {!phoneOk && phone.length > 0 && <p className={hint}><UiText>Enter a valid phone number.</UiText></p>}
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} /> <UiText>Don&apos;t show my name publicly</UiText></label>
+    </section>}
+    {step === 2 && <section className={box}>
+      <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
+      {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
+      <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
+      <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={wants80g} onChange={(e) => setWants80g(e.target.checked)} /> <UiText>I want an 80G receipt</UiText></label>
+      {wants80g && <div className={`flex flex-col gap-3 ${onClose ? "rounded-xl bg-[#FBF7F2] p-3.5 dark:bg-zinc-900" : ""}`}>
+        <div className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200">
+          <span><UiText>PAN card photo or PDF</UiText></span>
+          <label className="flex min-h-[44px] w-fit cursor-pointer items-center justify-center rounded-xl border border-[#b04a15] bg-white px-5 text-sm font-semibold text-[#b04a15] focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[#b04a15] dark:bg-zinc-900">
+            {panFile ? <UiText>Change file</UiText> : <UiText>Upload PAN card</UiText>}
+            <input type="file" accept="image/*,application/pdf" className="sr-only" onChange={(e) => setPanFile(e.target.files?.[0] ?? null)} />
+          </label>
+          {panFile ? <span className="text-xs font-normal text-[#1E5B42]">✓ {panFile.name}</span> : <span className="text-xs font-normal text-[#6B5A4E]"><UiText>JPG, PNG or PDF, up to 5 MB</UiText></span>}
+        </div>
+        {panFile && !fileOk && <p className={hint}><UiText>That file is over 5 MB. Choose a smaller one.</UiText></p>}
+      </div>}
+    </section>}
   </>;
-  const footer = <>
+  const back = step > 0 && <button type="button" onClick={() => { setError(null); setStep(step - 1); }} className="min-h-[48px] rounded-xl border border-[#CDBBA8] px-5 text-[15px] font-semibold"><UiText>Back</UiText></button>;
+  const footer = step < 3 ? <>
+    {step === 0 && <div className="flex justify-between font-semibold"><span><UiText>You pay</UiText></span><span>₹{valid ? total.toLocaleString("en-IN") : "—"}</span></div>}
+    <div className="flex gap-2">
+      {back}
+      <button type="button" disabled={!stepOk} onClick={() => setStep(step + 1)}
+        className="min-h-[48px] flex-1 rounded-xl bg-gradient-to-r from-[#8e123c] via-[#a31a44] to-[#720d2d] text-[15px] font-bold text-white disabled:opacity-50 cursor-pointer">
+        {stepOk ? <UiText>Continue</UiText> : todo}
+      </button>
+    </div>
+  </> : <>
     <section className={onClose ? "flex flex-col gap-2 text-xs leading-relaxed" : "flex flex-col gap-2 rounded-2xl bg-[#F7F1EA] p-5 text-sm leading-relaxed dark:bg-zinc-900"}>
       <div className={`flex justify-between font-semibold ${onClose ? "text-base font-bold" : ""}`}><span><UiText>You pay</UiText></span><span>₹{valid ? total.toLocaleString("en-IN") : "—"}</span></div>
       {valid && tipValue > 0 && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">₹{value.toLocaleString("en-IN")} <UiText>donation</UiText> + ₹{tipValue.toLocaleString("en-IN")} <UiText>support to CauseKind</UiText></p>}
@@ -249,10 +264,13 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     </section>
 
     {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
+    <div className="flex gap-2">
+    {back}
     <button type="button" disabled={busy || !valid || !detailsOk || !taxOk || !agreed} onClick={() => void pay()}
-      className="min-h-[48px] rounded-xl bg-gradient-to-r from-[#8e123c] via-[#a31a44] to-[#720d2d] hover:from-[#720d2d] hover:to-[#8e123c] text-[15px] font-bold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer">
+      className="min-h-[48px] flex-1 rounded-xl bg-gradient-to-r from-[#8e123c] via-[#a31a44] to-[#720d2d] hover:from-[#720d2d] hover:to-[#8e123c] text-[15px] font-bold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer">
       {todo ?? `${ui("Pay")} ₹${total.toLocaleString("en-IN")}`}
     </button>
+    </div>
     <p className="m-0 text-center text-xs text-[#6B5A4E]"><UiText>Secured by Razorpay</UiText></p>
   </>;
 

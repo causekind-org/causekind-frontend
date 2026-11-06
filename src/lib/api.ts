@@ -7569,6 +7569,24 @@ export type SahasOutcome = {
 export type SahasCampaignDetail = {
   card: SahasCampaignCard; description: string | null; category: string | null; updatedAt: string;
   items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
+  /** Admin-edited page sections; older servers omit them. An empty section is not shown. */
+  page?: SahasPageContent | null;
+  /** Confirmed donations; null when the list is off. A null name is an anonymous donor. */
+  donors?: { count: number; top: SahasPublicDonor[]; recent: SahasPublicDonor[] } | null;
+};
+export type SahasPublicDonor = { name: string | null; amount: number };
+export type SahasPageStat = { value: string | null; label: string | null };
+export type SahasPageMedia = { file: string | null; url: string | null; caption: string | null; altText: string | null };
+export type SahasPageLink = { title: string | null; text: string | null; linkLabel: string | null; linkHref: string | null };
+export type SahasPageContent = {
+  heroBadge: string | null; heroStats: SahasPageStat[] | null; showDonors: boolean | null;
+  proofEyebrow: string | null; proofTitle: string | null; proofIntro: string | null; stats: SahasPageStat[] | null;
+  gallery: SahasPageMedia[] | null; videosTitle: string | null; videos: SahasPageMedia[] | null;
+  helpTitle: string | null; tiers: { amount: string | null; text: string | null }[] | null; helpNote: string | null;
+  trustTitle: string | null; trustSubtitle: string | null; trust: SahasPageLink[] | null; trustClosing: string | null;
+  moreTitle: string | null; moreSubtitle: string | null; showFundraisers: boolean | null; moreCards: SahasPageLink[] | null;
+  shareTitle: string | null; shareSubtitle: string | null; shareText: string | null;
+  faqTitle: string | null; faqs: { question: string | null; answer: string | null }[] | null;
 };
 export type SahasDonationInput = {
   amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber: string; tipAmount?: number; address: string; wants80g: boolean; utm?: { source: string; medium: string; campaign: string; content: string };
@@ -7590,15 +7608,10 @@ export const sahasCampaigns = {
   donationCheckout: (id: number, token: string) =>
     request<DonationOrder>(`/api/v1/sahas/campaigns/donations/${id}/checkout`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
   donationStatus: (id: number, token: string) =>
-    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null; certificateReady: boolean; receiptReady: boolean; receiptOwed: boolean }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
-  /** POST so the token stays out of URLs and logs. */
-  donationDocument: async (id: number, token: string, kind: "certificate" | "receipt") => {
-    const res = await fetch(`${BASE_URL}/api/v1/sahas/campaigns/donations/${id}/${kind}`, {
-      method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token }),
-    });
-    if (!res.ok) throw new ApiError(res.status, "The document isn't ready yet.", null);
-    return res.blob();
-  },
+    request<{ donationId: number; status: string; amount: number; documentsStatus: string | null; certificateReady: boolean; receiptReady: boolean; receiptOwed: boolean; certificateLinkToken: string | null; receiptLinkToken: string | null }>(`/api/v1/sahas/campaigns/donations/${id}/status`, { method: "POST", body: JSON.stringify({ token }), silent401: true }),
+  /** A plain link, because in-app browsers ignore downloads made from page memory. The token opens this one document, briefly. */
+  donationFileUrl: (id: number, kind: "certificate" | "receipt", linkToken: string) =>
+    `${BASE_URL}/api/v1/sahas/campaigns/donations/${id}/file/${kind}?t=${encodeURIComponent(linkToken)}`,
 };
 
 // ── Sahas campaigns admin (Phase D2, 2026-11-03): /api/v1/admin/sahas-campaigns ──
@@ -7645,6 +7658,17 @@ export const sahasAdmin = {
     request<SahasAdminDetail>(`${SA}/${id}/publish`, { method: "POST", body: JSON.stringify({ version, publishAt, note }) }),
   transition: (id: number, action: "pause" | "resume" | "close" | "cancel", version: number, reason: string | null) =>
     request<SahasAdminDetail>(`${SA}/${id}/${action}`, { method: "POST", body: JSON.stringify({ version, reason }) }),
+  page: (id: number) => request<{ version: number; content: SahasPageContent | null }>(`${SA}/${id}/page`),
+  savePage: (id: number, version: number, content: SahasPageContent) =>
+    request<{ version: number; content: SahasPageContent | null }>(`${SA}/${id}/page`, { method: "PUT", body: JSON.stringify({ version, content }) }),
+  uploadPageMedia: async (id: number, file: File): Promise<SahasPageMedia> => {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`${BASE_URL}${SA}/${id}/page/media`, { method: "POST", credentials: "include", body: fd });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error(body?.message ?? "Upload failed. Try again.");
+    return body as SahasPageMedia;
+  },
   uploadCover: async (id: number, file: File) => {
     const fd = new FormData();
     fd.append("file", file);

@@ -52,10 +52,12 @@ export function Chip({ children }: { children: React.ReactNode }) {
 /** Received (dark) and pledged-not-yet-received (light) against needed. Never a combined money+items bar. */
 export function ItemsBar({ needed, pledged, received, label }: { needed: number; pledged: number; received: number; label: string }) {
   const pct = (n: number) => (needed > 0 ? Math.min(100, (n / needed) * 100) : 0);
+  // A first donation is under a pixel of a large target; a small fill shows the campaign has started. The figures stay exact.
+  const filled = received > 0 ? Math.max(3, pct(received)) : 0;
   return (
     <div role="img" aria-label={label} className="flex h-2 overflow-hidden rounded-full bg-[#F3EEE8] dark:bg-zinc-800 shadow-inner">
-      <i className="block h-full bg-gradient-to-r from-[#b04a15] to-[#ea580c] rounded-full" style={{ width: `${pct(received)}%` }} />
-      <i className="block h-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] rounded-full" style={{ width: `${Math.min(100 - pct(received), pct(pledged))}%` }} />
+      <i className="block h-full bg-gradient-to-r from-[#b04a15] to-[#ea580c] rounded-full" style={{ width: `${filled}%` }} />
+      <i className="block h-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] rounded-full" style={{ width: `${Math.min(100 - filled, pct(pledged))}%` }} />
     </div>
   );
 }
