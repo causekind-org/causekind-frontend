@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { HeroSection } from "@/components/home/HeroSection";
+import { HomeSahasCampaigns } from "@/components/home/HomeSahasCampaigns";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
-import { SahasSpotlight } from "@/components/home/SahasSpotlight";
 import { DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
@@ -43,13 +43,13 @@ export function RoleHome({
   return (
     <div className={`ck-role-desktop-${role} relative z-10 w-full`}>
       <HeroSection />
-      <HomeFundraisers />
+      <HomeSahasCampaigns />
       <DiwaliSeam kind="edge" from="butter" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
       {/* The main page's About (flip cards), in the default donor colours. */}
       <WhoAreWeDesktop />
-      {/* Sahas campaigns section after About CauseKind */}
-      <SahasSpotlight />
+      {/* Verified fundraisers section after About CauseKind */}
+      <HomeFundraisers />
       <DiwaliSeam kind="diya" diyas={3} />
       <DiwaliSeam kind="line" />
       <SupportGallery />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatServerTime } from "@/lib/serverTime";
 import {
   getChatMessages,
@@ -22,7 +22,21 @@ interface Props {
   embedded?: boolean;
   /** Shown while the thread is empty. */
   emptyText?: string;
+  /** Header title when not embedded. */
+  title?: string;
+  /** Shortcuts shown above the input (e.g. the purchase hub's delivery-date templates). */
+  quickActions?: ReactNode;
+  /** Change it to fetch new messages now, e.g. after an action that posts to the thread. */
+  refreshKey?: number;
+  /** Shown instead of the input once the thread is read-only. */
+  lockedText?: string;
 }
+
+const ROLE_LABEL: Record<NonNullable<ChatMessage["senderRole"]>, string> = {
+  DONOR: "Donor",
+  DONEE: "Recipient",
+  ADMIN: "CauseKind team",
+};
 
 const POLL_INTERVAL_MS = 5_000;
 
@@ -37,7 +51,10 @@ const POLL_INTERVAL_MS = 5_000;
  */
 const EPOCH_SINCE = "1970-01-01T00:00:00";
 
-export default function ChatWindow({ offerId, currentUserEmail, locked = false, className = "", embedded = false, emptyText = "No messages yet." }: Props) {
+export default function ChatWindow({
+  offerId, currentUserEmail, locked = false, className = "", embedded = false, emptyText = "No messages yet.",
+  title = "Offer Messages", quickActions, refreshKey, lockedText,
+}: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -108,6 +125,23 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
     return () => clearInterval(interval);
   }, [offerId]);
 
+  // An action elsewhere on the page posted to this thread: catch up now, not on the next tick.
+  useEffect(() => {
+    if (refreshKey === undefined) return;
+    getChatMessagesSince(offerId, lastSentAt.current ?? EPOCH_SINCE)
+      .then((newMsgs) => {
+        if (newMsgs.length === 0) return;
+        setMessages((prev) => {
+          const existingIds = new Set(prev.map((m) => m.id));
+          const fresh = newMsgs.filter((m) => !existingIds.has(m.id));
+          if (fresh.length === 0) return prev;
+          lastSentAt.current = fresh[fresh.length - 1].sentAt;
+          return [...prev, ...fresh];
+        });
+      })
+      .catch(() => {});
+  }, [offerId, refreshKey]);
+
   // Real-time push — NotificationsProvider's single SSE connection rebroadcasts
   // "chat-message" events as a window CustomEvent; append instantly if it's for
   // this offer, instead of waiting for the next poll tick.
@@ -115,13 +149,14 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
     function onPush(e: Event) {
       const detail = (e as CustomEvent).detail as {
         offerId: number; id: number; threadId: number; senderId: number; senderName: string;
-        senderEmail: string; content: string; messageType: ChatMessage["messageType"];
+        senderEmail: string | null; content: string; messageType: ChatMessage["messageType"];
         recipientTarget: ChatMessage["recipientTarget"]; sentAt: string; source?: string;
       } | undefined;
       if (!detail || detail.source !== "OFFER" || detail.offerId !== offerId) return;
       const message: ChatMessage = {
         id: detail.id, threadId: detail.threadId, senderId: detail.senderId, senderName: detail.senderName,
-        senderEmail: detail.senderEmail, content: detail.content, messageType: detail.messageType,
+        // Pushes only reach the other participant, so a pushed message is never "mine".
+        senderEmail: detail.senderEmail, mine: false, content: detail.content, messageType: detail.messageType,
         recipientTarget: detail.recipientTarget, readAt: null, sentAt: detail.sentAt,
       };
       setMessages((prev) => {
@@ -166,7 +201,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
       {/* Header (the host card has its own when embedded) */}
       {!embedded && <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 px-4 py-3">
         <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-          Offer Messages
+          {title}
         </span>
         {locked && (
           <span className="rounded-full bg-gray-100 dark:bg-gray-800 px-2 py-0.5 text-xs text-gray-500">
@@ -181,14 +216,25 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
           <p className="text-center text-sm text-gray-400 py-6">{emptyText}</p>
         )}
         {messages.map((msg) => {
-          const isMe = msg.senderEmail === currentUserEmail;
-          const isSystem = msg.messageType === "SYSTEM";
-          if (isSystem) {
+          const isMe = msg.mine ?? (!!msg.senderEmail && msg.senderEmail === currentUserEmail);
+          const who = msg.senderRole ? `${ROLE_LABEL[msg.senderRole]} · ${msg.senderName}` : msg.senderName;
+          if (msg.messageType === "SYSTEM") {
             return (
-              <div key={msg.id} className="text-center">
+              <div key={msg.id} className="text-center" data-message-type="SYSTEM">
                 <span className="inline-block rounded-full bg-gray-100 dark:bg-gray-800 px-3 py-1 text-xs text-gray-500">
                   {msg.content}
                 </span>
+                <p className="mt-0.5 text-3xs text-gray-400">{formatServerTime(msg.sentAt)}</p>
+              </div>
+            );
+          }
+          if (msg.messageType === "DELIVERY_UPDATE") {
+            return (
+              <div key={msg.id} data-message-type="DELIVERY_UPDATE"
+                className="mx-auto max-w-[90%] rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-sm text-amber-950 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+                <p className="text-xs font-bold text-amber-800 dark:text-amber-300">Delivery update · {isMe ? "You" : who}</p>
+                <p className="mt-1 whitespace-pre-wrap">{msg.content}</p>
+                <p className="mt-1 text-3xs text-amber-700/80 dark:text-amber-300/70">{formatServerTime(msg.sentAt)}</p>
               </div>
             );
           }
@@ -196,7 +242,7 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
             <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
               <div className="max-w-[75%]">
                 {!isMe && (
-                  <p className="mb-0.5 text-xs text-gray-400">{msg.senderName}</p>
+                  <p className="mb-0.5 text-xs text-gray-400">{who}</p>
                 )}
                 <div
                   className={`rounded-2xl px-3.5 py-2 text-sm ${
@@ -217,9 +263,14 @@ export default function ChatWindow({ offerId, currentUserEmail, locked = false, 
         })}
       </div>
 
+      {locked && lockedText && (
+        <p className="border-t border-gray-100 px-4 py-3 text-xs text-gray-500 dark:border-gray-800">{lockedText}</p>
+      )}
+
       {/* Input */}
       {!locked && (
         <div className="border-t border-gray-100 dark:border-gray-800 px-3 py-2.5">
+          {quickActions && <div className="mb-2">{quickActions}</div>}
           {error && <p className="mb-1 text-xs text-red-500">{error}</p>}
           <div className="flex gap-2">
             <textarea

@@ -84,11 +84,11 @@ describe("Buy and hand over in the purchase hub", () => {
     const bought = screen.getByLabelText(/^Quantity purchased/);
     await userEvent.clear(bought); await userEvent.type(bought, "4");
     // The photo is required.
-    expect((screen.getByRole("button", { name: /Send for verification/ }) as HTMLButtonElement).disabled).toBe(true);
+    expect((screen.getByRole("button", { name: /Confirm purchase & proceed/i }) as HTMLButtonElement).disabled).toBe(true);
     const f = photo();
     await userEvent.upload(screen.getByLabelText(/Photo of the item you bought/), f);
     await userEvent.click(screen.getByLabelText(/I paid for this myself/));
-    await userEvent.click(screen.getByRole("button", { name: /Send for verification/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Confirm purchase & proceed/i }));
     await waitFor(() => expect(api.recordPurchaseOrder).toHaveBeenCalledWith(4, expect.objectContaining({
       itemName: "Laptop", brand: "Lenovo", model: "IdeaPad Slim 3", actualPrice: 95997, purchasedQuantity: 4, quantity: 3,
       retailer: "Croma, Vasai", prepaid: true,

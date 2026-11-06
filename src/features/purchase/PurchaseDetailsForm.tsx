@@ -171,7 +171,7 @@ export function PurchaseDetailsForm({
           ...(notes.trim() ? { notes: notes.trim() } : {}), photo, receipt,
         })}>
         {busy ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Upload className="size-4" aria-hidden />}
-        {mode === "new" ? "Send for verification" : "Send the updated details"}
+        {mode === "new" ? "Confirm purchase & proceed to handover" : "Send the updated details"}
       </button>
     </div>
   );
