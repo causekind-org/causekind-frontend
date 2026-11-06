@@ -35,7 +35,7 @@ const CLOSED_OFFER: ReadonlySet<string> = new Set([
 
 export function purchaseStage(view: PurchaseView, offerStatus: OfferStatus | string): PurchaseStage {
   if (!view.method) return "LEGACY";
-  if (offerStatus === "COMPLETED") return "COMPLETED";
+  if (offerStatus === "COMPLETED" || view.offerStatus === "COMPLETED") return "COMPLETED";
   if (view.status === "CANCELLED" || view.status === "EXPIRED" || CLOSED_OFFER.has(offerStatus)) return "CLOSED";
   if (view.status === "ISSUE_RAISED" || offerStatus === "ISSUE_RAISED") return "ISSUE_OPEN";
   if (view.status === "RECEIPT_CONFIRMED" || offerStatus === "ISSUE_WINDOW_OPEN") return "ISSUE_WINDOW";

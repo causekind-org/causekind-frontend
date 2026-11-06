@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { captureUtm } from "@/features/scan-donation/tracking";
 import { notFound, useParams } from "next/navigation";
 import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
@@ -12,6 +13,8 @@ import { Chip, ItemsBar, PhaseChip, SAHAS_NAME, SahasSurplus, formatDate, itemTo
 
 /** /sahas/[slug] — a Sahas campaign page (design board HF · Campaign detail). Items only until phase C3. */
 export default function SahasCampaignPage() {
+  // Keeps the ad's UTMs for this tab: the donate page opens without them in the URL.
+  useEffect(() => { captureUtm(window.location.search); }, []);
   if (!FEATURES.sahas) notFound();
   return <SahasCampaign />;
 }

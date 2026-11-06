@@ -167,14 +167,13 @@ describe("PurchaseHub after the order", () => {
     }));
   });
 
-  it("lets the donor answer the recipient's open problem once", async () => {
+  it("does not show reported problems panel to the donor on the purchase hub", () => {
     const issue = { id: 9, type: "ITEM_NOT_RECEIVED", description: "Nothing came", affectedQuantity: null, reportedByRole: "DONEE" as const,
       createdAt: "2026-10-16T12:00:00", response: null, respondedAt: null, resolution: null, resolvedAt: null };
     render(<PurchaseHub offer={{ ...offer, status: "ISSUE_RAISED" } as DonationOffer} role="DONOR" onChanged={() => {}}
       view={view({ status: "ISSUE_RAISED", deliveryReportedAt: null, issues: [issue] })} />);
-    await userEvent.type(screen.getByLabelText(/Your side of the story/), "Courier photo shows it at the gate");
-    await userEvent.click(screen.getByRole("button", { name: "Send response" }));
-    await waitFor(() => expect(api.respondToPurchaseIssue).toHaveBeenCalledWith(4, "Courier photo shows it at the gate"));
+    expect(screen.queryByText("Reported problems")).toBeNull();
+    expect(screen.queryByLabelText(/Your side of the story/)).toBeNull();
   });
 
   it("lets the recipient answer our team's question once", async () => {

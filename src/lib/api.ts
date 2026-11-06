@@ -1,3 +1,19 @@
+export type RedonationNotice = {
+  issueId: number;
+  requestId: number;
+  requestTitle: string;
+  itemTitle?: string | null;
+  issueType: string;
+  promptType: "QUANTITY" | "QUALITY";
+  requestedQuantity: number;
+  sentQuantity: number;
+  receivedQuantity: number;
+  missingQuantity: number;
+  stillNeededQuantity: number;
+  adminMessage?: string | null;
+  status: "ACTIVE" | "DISMISSED" | "FULFILLED";
+};
+
 import { filterVisibleListings, hideListingLocally } from "./listingActions";
 import { errorIdOf, toastErrorId } from "./errorId";
 
@@ -569,7 +585,6 @@ export type UserProfile = {
   id: number;
   email: string;
   fullName: string;
-  addressLandmark?: string | null;
   organizationName?: string;
   phone: string;
   city: string | null;
@@ -578,6 +593,7 @@ export type UserProfile = {
   longitude: number | null;
   /** Donee only: set when a name change leaves the ID document contradicting the profile. */
   documentWarning?: string;
+  addressLandmark?: string | null;
 };
 
 export function getProfile() {
@@ -746,14 +762,15 @@ export type TrustDonationPayload = {
   email: string;
   mobileNumber?: string;
   /**
-   * Required since 2026-09-18, and validated server-side too: five letters,
-   * four digits, one letter. The trust has to report every donor's PAN in
-   * Form 10BD, so a donation without one cannot go into that return. "" is now
-   * rejected by the API rather than meaning "no receipt wanted".
+   * Taken from every donor (2026-11-05): five letters, four digits, one letter.
+   * `wants80g` alone decides the 80G receipt; everyone gets the certificate.
    */
   panNumber: string;
-  /** Optional postal address, printed in the receipt's Address box. Max 300 chars. */
-  address?: string;
+  /** Required with the PAN. Max 300 chars. */
+  address: string;
+  wants80g: boolean;
+  /** Don't display the donor's name publicly. Documents still carry it. */
+  anonymous: boolean;
   /**
    * Optional tip to CauseKind, charged in the same payment. Deliberately
    * separate from `amount`: a tip to the platform is not a donation to the
@@ -2362,6 +2379,7 @@ export type DonationOffer = {
   receivedQuantity: number | null;
   /** ISO timestamp when the 48-hour issue reporting window closes, or null if not yet dual-confirmed. */
   windowExpiresAt?: string | null;
+  redonationNotice?: RedonationNotice | null;
 };
 
 /**
@@ -3061,6 +3079,11 @@ export function getMyDonationOffers(includeArchived = false) {
  * status, rejection reason, AI assessments, history and audit trail all stay, and
  * admins, support and the donee are unaffected. Reversible via {@link unhideOffer}.
  */
+
+export function dismissOfferRedonation(offerId: number) {
+  return request<void>(`/api/v1/offers/${offerId}/dismiss-redonation`, { method: "POST" });
+}
+
 export function hideOffer(offerId: number) {
   return request<CancellationOption>(`/api/v1/offers/${offerId}/hide`, { method: "POST" });
 }
@@ -3249,8 +3272,8 @@ export function adminReviewPurchaseProof(offerId: number, data: { action: "APPRO
  * `expectedBy` resets the delivery date on a retry; REQUEST_INFO asks `audience`.
  */
 export type PurchaseResolution =
-  | { action: "RETRY_DELIVERY"; reason: string; expectedBy?: string }
-  | { action: "CANCEL_REMAINDER"; reason: string; finalQuantity?: number }
+  | { action: "RETRY_DELIVERY" | "REQUEST_REMAINING_DONOR"; reason: string; expectedBy?: string }
+  | { action: "CANCEL_REMAINDER" | "CLOSED_NO_ACTION"; reason: string; finalQuantity?: number }
   | { action: "REQUEST_INFO"; reason: string; audience: PurchaseInfoAudience };
 
 export function replyToPurchaseInfoRequest(offerId: number, message: string) {
@@ -3292,6 +3315,13 @@ export type AdminIssueDetail = {
     resolvedAt: string | null; resolutionSummary: string | null; linkedRecords: string[];
   } | null;
   timeline: { at: string | null; kind: "ISSUE" | "STATUS" | "CASE"; actor: string | null; text: string; internal: boolean }[];
+  requestedQuantity?: number | null;
+  sentQuantity?: number | null;
+  receivedQuantity?: number | null;
+  missingQuantity?: number | null;
+  adminDecision?: string | null;
+  donorNotificationStatus?: string | null;
+  requestId?: number | null;
 };
 
 export function adminListIssues(params: { status?: "open" | "resolved" | "all"; source?: AdminIssueSource | ""; q?: string; page?: number; size?: number } = {}) {
@@ -6964,10 +6994,10 @@ export const fundraisers = {
     ? request<Donation>(`/api/v1/donations/guest/${donationId}/check`, { method: "POST", headers: { "X-Donation-Token": guestToken }, silent401: true })
     : request<Donation>(`/api/v1/donations/${donationId}/check`, { method: "POST" }),
   /** Same Razorpay order endpoint as legacy campaigns, plus "Hide my name". */
-  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string }, tipAmount = 0) =>
+  donate: (campaignId: number, amount: number, anonymous: boolean, tax?: { panNumber: string; address: string; wants80g: boolean; mobileNumber: string }, tipAmount = 0) =>
     request<FundraiserDonationStart>("/api/v1/donations", { method: "POST", body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...(tax ?? {}) }) }),
   /** The same donation without an account: the name and email come from the form, and the reply carries its token. */
-  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string }, tipAmount = 0) =>
+  donateAsGuest: (campaignId: number, amount: number, anonymous: boolean, guest: { fullName: string; email: string; mobileNumber: string }, tax?: { panNumber: string; address: string; wants80g: boolean; mobileNumber: string }, tipAmount = 0) =>
     request<FundraiserDonationStart>("/api/v1/donations/guest", { method: "POST", silent401: true, body: JSON.stringify({ campaignId, amount, anonymous, tipAmount, ...guest, ...(tax ?? {}) }) }),
   /** Fixes the donation's documents on the server and returns the payment details. Idempotent: same order every time. */
   checkout: (donationId: number, guestToken?: string | null) => guestToken
@@ -7260,11 +7290,12 @@ const qs = (o: Record<string, string | number | undefined | null>) => {
 };
 
 // Backend: SuperAdminMoneyController. cause + platformFee is the donation; platformSupport is on top of it.
-export type SaMoneyKind = "FUNDRAISER" | "SAHAS" | "TRUST" | "CAMPAIGN" | "SUPPORT_ONLY";
+export type SaMoneyKind = "FUNDRAISER" | "SAHAS" | "TRUST" | "QR" | "CAMPAIGN" | "SUPPORT_ONLY";
 export type SaMoneyRow = {
   id: string; at: string | null; kind: SaMoneyKind; campaignId: number | null; towards: string | null;
   donorName: string | null; donorEmail: string | null; anonymous: boolean;
   cause: number; platformFee: number; platformSupport: number; paid: number; paymentId: string | null;
+  adSource: string | null; adCampaign: string | null; adContent: string | null;
 };
 export const superAdminMoney = {
   rows: () => request<SaMoneyRow[]>("/api/v1/super-admin/money"),
@@ -7405,7 +7436,7 @@ export type SahasCampaignDetail = {
   items: SahasItemLine[]; updates: SahasUpdate[]; outcome: SahasOutcome | null; moneyOpen: boolean; campaignId: number;
 };
 export type SahasDonationInput = {
-  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber?: string; tipAmount?: number; address?: string;
+  amount: number; fullName?: string; email?: string; mobileNumber?: string; anonymous?: boolean; panNumber: string; tipAmount?: number; address: string; wants80g: boolean; utm?: { source: string; medium: string; campaign: string; content: string };
 };
 export type SahasDonationRow = {
   id: number; donor: string; anonymous: boolean; amount: number; platformFee: number | null; status: string;

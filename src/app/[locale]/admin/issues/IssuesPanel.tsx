@@ -318,7 +318,7 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
 
   const s = d.summary;
   // An open purchase problem is decided right here; everything else stays a read-only record.
-  const decidable = s.source === "PURCHASE" && s.open && s.entityType === "offer" && s.entityId != null;
+  const decidable = (s.source === "PURCHASE" || s.source === "OFFER_HANDOVER") && s.open && s.entityType === "offer" && s.entityId != null;
   const reportFacts: { label: string; value: ReactNode }[] = [
     { label: "Reported by", value: <PersonFact p={s.reportedBy} /> },
     { label: "About", value: <PersonFact p={s.against} /> },
@@ -345,6 +345,31 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
 
       <Card title="What was reported" icon={<AlertTriangle className="h-4 w-4 text-amber-600" aria-hidden />}>
         <p className="mb-4 whitespace-pre-line rounded-xl bg-stone-50 p-3 text-sm leading-relaxed text-stone-800">{s.description ?? "No description given."}</p>
+        {(d.requestedQuantity != null || d.sentQuantity != null || d.receivedQuantity != null || d.missingQuantity != null) && (
+          <dl className="mb-4 grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs sm:grid-cols-4">
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Requested</dt><dd className="text-base font-bold text-stone-900">{d.requestedQuantity ?? "—"}</dd></div>
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Claimed / Sent</dt><dd className="text-base font-bold text-stone-900">{d.sentQuantity ?? "—"}</dd></div>
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Confirmed Received</dt><dd className="text-base font-bold text-emerald-700">{d.receivedQuantity ?? "—"}</dd></div>
+            <div><dt className="text-2xs font-bold uppercase tracking-wide text-stone-500">Missing / Shortfall</dt><dd className="text-base font-bold text-amber-700">{d.missingQuantity ?? "—"}</dd></div>
+          </dl>
+        )}
+        {d.adminDecision && (
+          <div className="mb-4 rounded-xl border border-stone-200 bg-stone-50 p-3 text-xs">
+            <span className="font-bold text-stone-700">Admin Decision: </span>
+            <span className="font-semibold text-stone-900">
+              {d.adminDecision === "REQUEST_REMAINING_DONOR"
+                ? "Option A — Requested remaining items from donor (voluntary redonation active in donor history)"
+                : d.adminDecision === "CLOSED_NO_ACTION"
+                  ? "Option B — Closed without requesting additional items"
+                  : humanize(d.adminDecision)}
+            </span>
+            {d.donorNotificationStatus && (
+              <span className="ms-2 rounded-full bg-stone-200 px-2 py-0.5 text-2xs font-semibold text-stone-700">
+                Notification: {d.donorNotificationStatus}
+              </span>
+            )}
+          </div>
+        )}
         <FactGrid facts={reportFacts} />
         {d.response && (
           <div className="mt-4 rounded-xl border border-stone-200 p-3">

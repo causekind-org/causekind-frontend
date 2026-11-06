@@ -19,7 +19,8 @@ import {
   reopenItemRequest, cancelItemRequest, deleteItemRequestDraft, hideWithdrawnRequest,
   getOfferCancellationOptions, type CancellationOption,
   type ItemListing, type ItemRequest, type ItemMatch, type UserProfile, type DonationOffer,
-  getMyNgoDriveOffers, cancelNgoDriveOffer, invalidateRequestCache, type NgoDriveOfferResponse
+  getMyNgoDriveOffers, cancelNgoDriveOffer, invalidateRequestCache, type NgoDriveOfferResponse,
+  dismissOfferRedonation, type RedonationNotice
 } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";
 import { MyTasksCard } from "@/components/MyTasksCard";
@@ -1578,6 +1579,9 @@ function DonorHistoryCard({
   hubHref,
   photos,
   thumb,
+  offerId,
+  redonationNotice,
+  onDismissRedonation,
 }: {
   title: string;
   tag?: string;
@@ -1598,9 +1602,14 @@ function DonorHistoryCard({
   hubHref?: string | null;
   photos?: string[];
   thumb?: string | null;
+  offerId?: number;
+  redonationNotice?: RedonationNotice | null;
+  onDismissRedonation?: (offerId: number) => Promise<void> | void;
 }) {
   const allPhotos = (photos?.length ? photos : thumb ? [thumb] : []).filter(Boolean) as string[];
   const [viewing, setViewing] = useState<number | null>(null);
+  const [isLocallyDismissed, setIsLocallyDismissed] = useState(false);
+  const [isDismissing, setIsDismissing] = useState(false);
 
   const statusBg = isCompleted
     ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
@@ -1744,6 +1753,120 @@ function DonorHistoryCard({
             )}
           </div>
         </div>
+
+        {/* Optional Redonation Notice for completed offers with active admin follow-up */}
+        {redonationNotice && redonationNotice.status === "ACTIVE" && !isLocallyDismissed && (
+          <div
+            data-testid="history-redonation-banner"
+            className="rounded-xl border border-amber-200/90 bg-amber-50/70 p-3.5 sm:p-4 text-xs text-stone-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-stone-200 transition-all shadow-xs"
+          >
+            <div className="flex items-start gap-2.5">
+              <Info className="size-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" aria-hidden />
+              <div className="flex-1 space-y-1.5">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-amber-900 dark:text-amber-200">
+                    <UiText>Delivery update</UiText>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (offerId && onDismissRedonation) {
+                        setIsDismissing(true);
+                        try {
+                          await onDismissRedonation(offerId);
+                          setIsLocallyDismissed(true);
+                        } finally {
+                          setIsDismissing(false);
+                        }
+                      }
+                    }}
+                    disabled={isDismissing}
+                    className="inline-flex items-center gap-1 text-[11px] font-medium text-stone-500 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200 hover:underline disabled:opacity-50"
+                  >
+                    {isDismissing ? <UiText>Dismissing...</UiText> : <UiText>Not interested</UiText>}
+                  </button>
+                </div>
+
+                {redonationNotice.promptType === "QUANTITY" || (redonationNotice.missingQuantity != null && redonationNotice.missingQuantity > 0) ? (
+                  <>
+                    <p className="text-stone-700 dark:text-stone-300">
+                      The recipient reported that they received{" "}
+                      <span className="font-semibold text-stone-900 dark:text-stone-100">
+                        {redonationNotice.receivedQuantity ?? 0} out of{" "}
+                        {redonationNotice.sentQuantity ?? ((redonationNotice.receivedQuantity ?? 0) + (redonationNotice.missingQuantity ?? 0))}
+                      </span>{" "}
+                      {redonationNotice.requestTitle || title || "items"}.{" "}
+                      <span className="font-semibold text-amber-800 dark:text-amber-300">
+                        {redonationNotice.missingQuantity}{" "}
+                        {redonationNotice.missingQuantity === 1 ? "item is" : "items are"}
+                      </span>{" "}
+                      still missing from their request.
+                    </p>
+                    <p className="text-stone-600 dark:text-stone-400">
+                      The recipient&apos;s request for the remaining{" "}
+                      <span className="font-semibold text-stone-800 dark:text-stone-200">
+                        {redonationNotice.stillNeededQuantity ?? redonationNotice.missingQuantity}{" "}
+                        {(redonationNotice.stillNeededQuantity ?? redonationNotice.missingQuantity) === 1 ? "item" : "items"}
+                      </span>{" "}
+                      is still active. You can contribute the remaining item if you wish.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-stone-700 dark:text-stone-300">
+                      The recipient reported a quality issue with the items received. The issue has been reviewed by our admin team.
+                    </p>
+                    {redonationNotice.stillNeededQuantity != null && redonationNotice.stillNeededQuantity > 0 && (
+                      <p className="text-stone-600 dark:text-stone-400">
+                        The recipient&apos;s request for{" "}
+                        <span className="font-semibold text-stone-800 dark:text-stone-200">
+                          {redonationNotice.stillNeededQuantity} remaining{" "}
+                          {redonationNotice.stillNeededQuantity === 1 ? "item" : "items"}
+                        </span>{" "}
+                        is still active if you wish to contribute again.
+                      </p>
+                    )}
+                  </>
+                )}
+
+                {redonationNotice.requestId && (
+                  <div className="pt-1.5 flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/requests/${redonationNotice.requestId}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-colors"
+                    >
+                      <Heart className="size-3.5 fill-white" aria-hidden />
+                      <UiText>Donate Remaining Items</UiText>
+                      {redonationNotice.stillNeededQuantity != null && (
+                        <span className="ml-0.5 rounded-full bg-amber-700/60 px-1.5 py-0.2 text-[10px] font-bold">
+                          {redonationNotice.stillNeededQuantity} needed
+                        </span>
+                      )}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (offerId && onDismissRedonation) {
+                          setIsDismissing(true);
+                          try {
+                            await onDismissRedonation(offerId);
+                            setIsLocallyDismissed(true);
+                          } finally {
+                            setIsDismissing(false);
+                          }
+                        }
+                      }}
+                      disabled={isDismissing}
+                      className="inline-flex items-center gap-1 rounded-lg border border-stone-200 bg-white px-2.5 py-1.5 text-xs font-medium text-stone-600 hover:bg-stone-50 hover:text-stone-800 dark:border-zinc-700 dark:bg-zinc-800 dark:text-stone-300 dark:hover:bg-zinc-700"
+                    >
+                      <UiText>Dismiss</UiText>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer actions */}
         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 dark:border-zinc-800">
@@ -1892,6 +2015,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         return {
           kind: "donee" as const,
           key: `o${o.id}`,
+          offerId: o.id,
+          redonationNotice: o.redonationNotice ?? null,
           at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
           isCompleted: true,
           statusTone: "completed" as const,
@@ -1926,6 +2051,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
       return {
         kind: "donee" as const,
         key: `l${item.id}`,
+        offerId: undefined,
+        redonationNotice: undefined,
         at: Date.parse(when ?? "") || 0,
         isCompleted: true,
         statusTone: "completed" as const,
@@ -1976,6 +2103,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         return {
           kind: "donee" as const,
           key: `c${o.id}`,
+          offerId: o.id,
+          redonationNotice: o.redonationNotice ?? null,
           at: Date.parse(o.closedAt ?? o.createdAt ?? "") || 0,
           isCompleted: false,
           statusTone: (o.status === "DONEE_DECLINED" ? "declined" : "closed") as "declined" | "closed",
@@ -2012,6 +2141,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         return {
           kind: "donee" as const,
           key: `m${m.id}`,
+          offerId: undefined,
+          redonationNotice: undefined,
           at: matchEndedAt(m),
           isCompleted: isReceived,
           statusTone: (isReceived ? "completed" : m.status === "DONOR_REJECTED" ? "declined" : "closed") as "completed" | "declined" | "closed",
@@ -2063,6 +2194,16 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     { key: "donee", label: ui("Donee"), count: entries.filter(e => e.kind === "donee").length },
     { key: "drive", label: ui("NGO drives"), count: entries.filter(e => e.kind === "drive").length },
   ];
+
+  const handleDismissRedonation = async (offerId: number) => {
+    try {
+      await dismissOfferRedonation(offerId);
+      toast.success(ui("Notification dismissed"));
+      onChanged();
+    } catch {
+      toast.error(ui("Failed to dismiss notification"));
+    }
+  };
 
   const [highlightKey, setHighlightKey] = useState<string | null>(null);
   const focusedOffer = useRef<number | null>(null);
@@ -2164,6 +2305,9 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
                   hubHref={e.hubHref}
                   photos={e.photos}
                   thumb={e.thumb}
+                  offerId={e.offerId}
+                  redonationNotice={e.redonationNotice}
+                  onDismissRedonation={handleDismissRedonation}
                 />
               )}
             </div>

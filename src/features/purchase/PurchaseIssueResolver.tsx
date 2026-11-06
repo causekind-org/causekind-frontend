@@ -103,10 +103,10 @@ export function PurchaseIssueResolver({ view, onDone }: { view: PurchaseView; on
       </div>
 
       <dl className="grid grid-cols-2 gap-2 rounded-xl bg-stone-50 p-3 text-xs sm:grid-cols-4">
-        <div><dt className="text-stone-500">Ordered</dt><dd className="text-base font-bold">{ordered}</dd></div>
-        <div><dt className="text-stone-500">Counted so far</dt><dd className="text-base font-bold">{counted}</dd></div>
-        <div><dt className="text-stone-500">Reported affected</dt><dd className="text-base font-bold">{issue.affectedQuantity ?? "—"}</dd></div>
-        <div><dt className="text-stone-500">Not counted</dt><dd className="text-base font-bold">{Math.max(0, ordered - counted)}</dd></div>
+        <div><dt className="text-stone-500">Claimed / Ordered</dt><dd className="text-base font-bold">{ordered}</dd></div>
+        <div><dt className="text-stone-500">Received & Confirmed</dt><dd className="text-base font-bold text-emerald-700">{counted}</dd></div>
+        <div><dt className="text-stone-500">Reported affected</dt><dd className="text-base font-bold text-amber-700">{issue.affectedQuantity ?? "—"}</dd></div>
+        <div><dt className="text-stone-500">Not counted / Missing</dt><dd className="text-base font-bold text-stone-900">{Math.max(0, ordered - counted)}</dd></div>
       </dl>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
@@ -135,9 +135,9 @@ export function PurchaseIssueResolver({ view, onDone }: { view: PurchaseView; on
       )}
 
       <div role="radiogroup" aria-label="Decision" className="grid gap-2 sm:grid-cols-3">
-        {option("RETRY", "The rest is coming", "Donor sends the missing or replacement items; the recipient confirms again")}
-        {option("CLOSE", "Close and count what arrived", "Only counted items are donated; the rest goes back to the request")}
-        {option("ASK", "Ask for more information", "Keep it open and ask the recipient, the donor or both")}
+        {option("RETRY", "Option A: Request remaining items (The rest is coming)", "Donor receives an optional update in their donation history to voluntarily fulfill the missing quantity")}
+        {option("CLOSE", "Option B: Close and count what arrived", "Keeps the donation completed for what arrived. No notification or request sent to the donor")}
+        {option("ASK", "Option C: Ask for more information", "Keep it open and ask the recipient, the donor or both")}
       </div>
 
       {choice === "RETRY" && (
