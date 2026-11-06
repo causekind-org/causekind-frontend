@@ -9,6 +9,7 @@ import { FEATURES } from "@/lib/features";
 import { ApiError, sahasCampaigns, type SahasCampaignDetail, type SahasItemLine } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
 import { PageSkeleton } from "@/components/skeletons";
+import { MAIN_DONATE_ID, SahasDonors, SahasFloatingDonate, SahasGallery, SahasHeroTiles, SahasPageSections, SahasStory } from "@/features/sahas/SahasCampaignSections";
 import { Chip, ItemsBar, PhaseChip, SAHAS_NAME, SahasSurplus, formatDate, itemTotals, serif } from "@/features/sahas/sahasUi";
 
 /** /sahas/[slug] — a Sahas campaign page (design board HF · Campaign detail). Items only until phase C3. */
@@ -65,16 +66,11 @@ function SahasCampaign() {
 
   return (
     <main className="min-h-screen bg-[#FBF7F2] pb-[calc(var(--ck-bottom-chrome)+2rem)] text-[#1F140D] lg:pb-16 dark:bg-zinc-950 dark:text-stone-100">
-      <div className="h-[260px] bg-[#EFE4D8] sm:h-[420px] dark:bg-zinc-800">
-        {c.imageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.imageUrl} alt={c.coverAltText ?? ""} className="h-full w-full object-cover" />
-        )}
-      </div>
-
-      <div className="relative mx-auto -mt-16 flex max-w-6xl flex-col gap-10 px-4 sm:-mt-24 sm:px-6">
-        <section className="flex flex-col gap-8 rounded-[20px] border border-[#EADFD3] bg-white p-5 sm:p-8 lg:flex-row lg:items-end dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="flex min-w-0 flex-1 flex-col gap-3">
+      <div className="mx-auto flex max-w-6xl flex-col gap-14 px-4 pt-6 sm:px-6 sm:pt-8">
+        <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-9">
+          <SahasGallery cover={c.imageUrl} coverAlt={c.coverAltText} page={data.page} />
+          <div className="flex min-w-0 flex-col gap-4">
+          <div className="flex min-w-0 flex-col gap-3">
             <nav aria-label={ui("Breadcrumb")} className="text-sm text-[#6B5A4E] dark:text-stone-400">
               <Link href="/sahas" className="text-inherit hover:underline"><UiText>Sahas Campaigns</UiText></Link> › {c.title}
             </nav>
@@ -88,7 +84,7 @@ function SahasCampaign() {
             <span className="text-base text-[#4A3B30] dark:text-stone-300">{[[c.city, c.state].filter(Boolean).join(", "), dates].filter(Boolean).join(" · ")}</span>
           </div>
 
-          <aside aria-label={ui("Choose how to help")} className="flex w-full shrink-0 flex-col gap-4 lg:w-[340px]">
+          <aside aria-label={ui("Choose how to help")} className="flex w-full flex-col gap-4">
             {c.collectsMoney && (
               <div className="flex flex-col gap-3">
                 <h2 className="sr-only"><UiText>Donate money</UiText></h2>
@@ -98,10 +94,11 @@ function SahasCampaign() {
                 </div>
                 <SahasSurplus raised={c.amountRaised ?? 0} target={c.targetAmount ?? 0} />
                 <ItemsBar needed={c.targetAmount ?? 0} pledged={0} received={c.amountRaised ?? 0} label={`₹${c.amountRaised ?? 0} / ₹${c.targetAmount ?? 0}`} />
-                <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>Counts confirmed payments only.</UiText></p>
+                <SahasHeroTiles endDate={c.endDate} open={open} page={data.page} />
                 {data.moneyOpen && (c.amountRaised ?? 0) < (c.targetAmount ?? 0) ? (
-                  <Link href={`/sahas/${c.slug}/donate`} className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline hover:bg-[#9a3f10]"><UiText>Donate money</UiText></Link>
+                  <div id={MAIN_DONATE_ID}><Link href={`/sahas/${c.slug}/donate`} className="flex min-h-[48px] items-center justify-center rounded-xl bg-[#b04a15] px-5 text-[15px] font-semibold text-white no-underline hover:bg-[#9a3f10]"><UiText>Donate money</UiText></Link></div>
                 ) : <p className="m-0 rounded-xl bg-[#F7F1EA] p-3 text-sm dark:bg-zinc-800">{(c.targetAmount ?? 0) > 0 && (c.amountRaised ?? 0) >= (c.targetAmount ?? 0) ? <UiText>Target reached. Thank you.</UiText> : <UiText>Donations aren&apos;t open right now.</UiText>}</p>}
+                <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400"><UiText>Counts confirmed payments only.</UiText> {ui("Platform fee: 5% is deducted from your donation")}. <UiText>The rest goes to this campaign, through Sahas Charitable Trust.</UiText> <UiText>Donations can&apos;t be refunded.</UiText></p>
               </div>
             )}
             {c.collectsItems && <>
@@ -127,14 +124,15 @@ function SahasCampaign() {
             )}
             </>}
           </aside>
+          </div>
         </section>
 
-        <div className={`grid grid-cols-1 items-start gap-10 ${c.collectsMoney ? "lg:grid-cols-[minmax(0,1fr)_320px]" : ""}`}>
+        <div className={`grid grid-cols-1 items-start gap-10 ${data.donors ? "lg:grid-cols-[minmax(0,1fr)_320px]" : ""}`}>
           <div className="flex min-w-0 flex-col gap-9">
             {data.description && (
               <section className="flex flex-col gap-3">
                 <h2 className={`${serif} m-0 text-2xl`}><UiText>The need</UiText></h2>
-                <p className="m-0 whitespace-pre-line text-[17px] leading-relaxed text-[#2E2219] dark:text-stone-200 ck-user-text">{data.description}</p>
+                <SahasStory text={data.description} />
               </section>
             )}
 
@@ -207,15 +205,12 @@ function SahasCampaign() {
             )}
           </div>
 
-          {c.collectsMoney && (
-            <aside className="flex flex-col gap-3 text-sm leading-normal text-[#4A3B30] dark:text-stone-300">
-              <b className="text-base text-[#1F140D] dark:text-stone-100"><UiText>Where your money goes</UiText></b>
-              <p className="m-0">{ui("Platform fee: 5% is deducted from your donation")}. <UiText>The rest goes to this campaign, through Sahas Charitable Trust.</UiText></p>
-              <p className="m-0"><UiText>Donations can&apos;t be refunded.</UiText></p>
-            </aside>
-          )}
+          {data.donors && <SahasDonors donors={data.donors} />}
         </div>
+
+        <SahasPageSections page={data.page} slug={c.slug} title={c.title} />
       </div>
+      {c.collectsMoney && data.moneyOpen && (c.amountRaised ?? 0) < (c.targetAmount ?? 0) && <SahasFloatingDonate slug={c.slug} />}
 
     </main>
   );
