@@ -86,10 +86,10 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead><tr className="text-left text-xs text-stone-500">
               <th className="p-3 font-semibold">Campaign</th><th className="p-3 font-semibold">Status</th>
-              <th className="p-3 font-semibold">Collects</th><th className="p-3 font-semibold">Ends</th><th className="p-3 font-semibold">Home</th>
+              <th className="p-3 font-semibold">Collects</th><th className="p-3 font-semibold">Ends</th><th className="p-3 font-semibold">Home</th><th className="p-3 font-semibold"><span className="sr-only">Actions</span></th>
             </tr></thead>
             <tbody>
-              {shown.length === 0 && <tr><td colSpan={5} className="p-4 text-stone-500">No campaigns here.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={6} className="p-4 text-stone-500">No campaigns here.</td></tr>}
               {shown.map((r) => (
                 <tr key={r.id} className="border-t border-stone-100 dark:border-zinc-800">
                   <td className="p-3">
@@ -100,6 +100,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
                   <td className="p-3">{[r.collectsItems && "Items", r.collectsMoney && "Money"].filter(Boolean).join(" · ") || "—"}</td>
                   <td className="p-3">{r.endDate ?? "—"}</td>
                   <td className="p-3">{r.featured ? "Featured" : "—"}</td>
+                  <td className="p-3 text-right"><button type="button" onClick={() => onOpen(r.id)} className={secondary}>{r.status === "CANCELLED" || r.status === "COLLECTIONS_CLOSED" ? "View" : "Edit"}</button></td>
                 </tr>
               ))}
             </tbody>
@@ -213,7 +214,7 @@ function Details({ d, onSaved, onError }: { d: SahasAdminDetail; onSaved: (d: Sa
         )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {text("title", "Title", { maxLength: 120 })}
-          {text("slug", "Page address: short name, e.g. feeding-strays", { disabled: live, maxLength: 120 })}
+          {text("slug", live ? "Page address (can't change once published)" : "Page address: short name, e.g. feeding-strays", { disabled: live, maxLength: 120 })}
           {text("city", "City / area", { maxLength: 100 })}
           {text("state", "State", { maxLength: 100 })}
           {text("startDate", "Start date", { type: "date", max: endV || undefined })}
