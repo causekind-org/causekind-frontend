@@ -4074,6 +4074,7 @@ export type CrmContact = {
   ownerName: string | null;
   doNotCall: boolean;
   doNotCallReason: string | null;
+  identityReview: boolean;
 };
 
 export type CrmStaff = { id: number; fullName: string };
@@ -4089,6 +4090,73 @@ export function crmListContacts(filters: {
   });
   if (filters.role) params.set("role", filters.role);
   return request<SaPage<CrmContact>>(`/api/v1/admin/crm/contacts?${params}`);
+}
+
+export type CrmCallOutcome = "CONNECTED" | "NO_ANSWER" | "BUSY" | "SWITCHED_OFF" | "WRONG_NUMBER" | "CALLBACK";
+
+export type CrmActivity = {
+  id: number;
+  kind: "CALL" | "NOTE";
+  outcome: CrmCallOutcome | null;
+  purpose: CrmCallPurpose | null;
+  notes: string | null;
+  actorEmail: string;
+  occurredAt: string;
+};
+
+export type CrmFollowup = {
+  id: number;
+  userId: number;
+  contactName: string | null;
+  dueAt: string;
+  note: string | null;
+  createdBy: string;
+};
+
+export type CrmReport = {
+  days: number;
+  rows: { actorEmail: string; calls: number; outcomes: Record<string, number> }[];
+  openFollowups: number;
+  overdueFollowups: number;
+};
+
+export function crmHistory(userId: number) {
+  return request<SaPage<CrmActivity>>(`/api/v1/admin/crm/contacts/${userId}/activities`);
+}
+
+export function crmLogCall(userId: number, call: {
+  clientRequestId: string; outcome: CrmCallOutcome; purpose: CrmCallPurpose; notes: string; followUpAt: string | null;
+}) {
+  return request<CrmActivity>(`/api/v1/admin/crm/contacts/${userId}/calls`, {
+    method: "POST",
+    body: JSON.stringify(call),
+  });
+}
+
+export function crmAddNote(userId: number, body: string) {
+  return request<CrmActivity>(`/api/v1/admin/crm/contacts/${userId}/notes`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export function crmSaveFollowup(userId: number, dueAt: string) {
+  return request<void>(`/api/v1/admin/crm/contacts/${userId}/followups`, {
+    method: "POST",
+    body: JSON.stringify({ dueAt }),
+  });
+}
+
+export function crmFollowups() {
+  return request<CrmFollowup[]>("/api/v1/admin/crm/followups");
+}
+
+export function crmCloseFollowup(id: number, action: "done" | "cancel") {
+  return request<void>(`/api/v1/admin/crm/followups/${id}/${action}`, { method: "POST" });
+}
+
+export function crmReport(team: boolean) {
+  return request<CrmReport>(`/api/v1/admin/crm/reports/${team ? "team" : "mine"}`);
 }
 
 export function crmListStaff() {

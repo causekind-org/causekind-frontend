@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Loader2, Phone, PhoneOff } from "lucide-react";
+import { CrmContactActivity } from "./CrmContactActivity";
+import { CrmWorkSummary } from "./CrmWorkSummary";
 
 const ROLE_FILTERS: { label: string; value: CrmRole | null }[] = [
   { label: "All", value: null },
@@ -37,6 +39,8 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   const [busyId, setBusyId] = useState<number | null>(null);
   const [prompt, setPrompt] = useState<ReasonPrompt | null>(null);
   const [reason, setReason] = useState("");
+  const [openId, setOpenId] = useState<number | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     const timer = setTimeout(() => { setName(nameInput); setPage(0); }, 300);
@@ -107,6 +111,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
 
   return (
     <div className="space-y-3">
+      <CrmWorkSummary canManage={canManage} refreshKey={refreshKey} />
       <div className="flex flex-wrap items-center gap-2">
         {ROLE_FILTERS.map((f) => (
           <Button key={f.label} size="sm" variant={role === f.value ? "default" : "outline"}
@@ -150,6 +155,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                 <Badge variant="secondary">{c.role === "DONOR" ? "Donor" : "Donee"}</Badge>
                 {c.role === "DONEE" && !c.hasRequest && <Badge variant="outline">Never created a request</Badge>}
                 {c.doNotCall && <Badge variant="destructive">Do not call</Badge>}
+                {c.identityReview && <Badge variant="outline">Check number</Badge>}
               </div>
             </div>
 
@@ -187,6 +193,9 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                   Clear do not call
                 </Button>
               )}
+              <Button size="sm" variant="ghost" onClick={() => setOpenId(openId === c.userId ? null : c.userId)}>
+                {openId === c.userId ? "Close" : "Log call / history"}
+              </Button>
               {canManage ? (
                 <select aria-label={`Owner of ${c.fullName}`} className="h-8 rounded-md border bg-background px-2 text-sm"
                   value={c.ownerUserId ?? ""} disabled={busyId === c.userId}
@@ -207,6 +216,10 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                 <Button size="sm" disabled={!reason.trim() || busyId === c.userId} onClick={saveReason}>Save</Button>
                 <Button size="sm" variant="ghost" onClick={() => setPrompt(null)}>Cancel</Button>
               </div>
+            )}
+
+            {openId === c.userId && (
+              <CrmContactActivity userId={c.userId} role={c.role} onChanged={() => setRefreshKey((k) => k + 1)} />
             )}
           </CardContent>
         </Card>
