@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AdminSahasPageContent } from "./AdminSahasPageContent";
 import {
   ApiError, sahasAdmin, type NgoDriveOfferResponse, type SahasAdminDetail, type SahasAdminLine, type SahasAdminRow,
   type SahasDonationRow, type SahasLineInput, type SahasOutcome, type SahasUpdate, type SahasUpsert,
@@ -85,10 +86,10 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
           <table className="w-full min-w-[640px] border-collapse text-sm">
             <thead><tr className="text-left text-xs text-stone-500">
               <th className="p-3 font-semibold">Campaign</th><th className="p-3 font-semibold">Status</th>
-              <th className="p-3 font-semibold">Collects</th><th className="p-3 font-semibold">Ends</th><th className="p-3 font-semibold">Home</th>
+              <th className="p-3 font-semibold">Collects</th><th className="p-3 font-semibold">Ends</th><th className="p-3 font-semibold">Home</th><th className="p-3 font-semibold"><span className="sr-only">Actions</span></th>
             </tr></thead>
             <tbody>
-              {shown.length === 0 && <tr><td colSpan={5} className="p-4 text-stone-500">No campaigns here.</td></tr>}
+              {shown.length === 0 && <tr><td colSpan={6} className="p-4 text-stone-500">No campaigns here.</td></tr>}
               {shown.map((r) => (
                 <tr key={r.id} className="border-t border-stone-100 dark:border-zinc-800">
                   <td className="p-3">
@@ -99,6 +100,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
                   <td className="p-3">{[r.collectsItems && "Items", r.collectsMoney && "Money"].filter(Boolean).join(" · ") || "—"}</td>
                   <td className="p-3">{r.endDate ?? "—"}</td>
                   <td className="p-3">{r.featured ? "Featured" : "—"}</td>
+                  <td className="p-3 text-right"><button type="button" onClick={() => onOpen(r.id)} className={secondary}>{r.status === "CANCELLED" || r.status === "COLLECTIONS_CLOSED" ? "View" : "Edit"}</button></td>
                 </tr>
               ))}
             </tbody>
@@ -111,7 +113,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
 
 // ── Editor ────────────────────────────────────────────────────────────────
 
-type Tab = "details" | "items" | "offers" | "payments" | "outcome";
+type Tab = "details" | "page" | "items" | "offers" | "payments" | "outcome";
 
 function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
   const [d, setD] = useState<SahasAdminDetail | null>(null);
@@ -132,15 +134,16 @@ function CampaignEditor({ id, onBack }: { id: number; onBack: () => void }) {
         {d.slug && d.status !== "DRAFT" && <a href={`/sahas/${d.slug}`} target="_blank" rel="noreferrer" className="ms-auto text-sm font-semibold text-[#b04a15]">View public page ↗</a>}
       </div>
       <div role="tablist" aria-label="Campaign sections" className="flex flex-wrap gap-2">
-        {(["details", "items", "offers", "payments", "outcome"] as Tab[]).map((t) => (
+        {(["details", "page", "items", "offers", "payments", "outcome"] as Tab[]).map((t) => (
           <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => setTab(t)}
             className={`min-h-[42px] cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors ${tab === t ? "border-[#b04a15] bg-[#b04a15] text-white" : "border-stone-300 bg-white text-stone-700 hover:border-[#b04a15] hover:text-[#b04a15] dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-300"}`}>
-            {t === "details" ? "Details and publishing" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : t === "payments" ? "Payments" : "Updates and outcome"}
+            {t === "details" ? "Details and publishing" : t === "page" ? "Page content" : t === "items" ? "Items" : t === "offers" ? "Offers and handovers" : t === "payments" ? "Payments" : "Updates and outcome"}
           </button>
         ))}
       </div>
       {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
       {tab === "details" && <Details d={d} onSaved={setD} onError={setError} />}
+      {tab === "page" && <AdminSahasPageContent campaignId={d.id} onChanged={load} onError={setError} />}
       {tab === "items" && <Items d={d} onChanged={load} onError={setError} />}
       {tab === "offers" && <Offers campaignId={d.id} onError={setError} />}
       {tab === "payments" && <Payments campaignId={d.id} target={d.targetAmount} onError={setError} />}
@@ -211,7 +214,7 @@ function Details({ d, onSaved, onError }: { d: SahasAdminDetail; onSaved: (d: Sa
         )}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {text("title", "Title", { maxLength: 120 })}
-          {text("slug", "Page address: short name, e.g. feeding-strays", { disabled: live, maxLength: 120 })}
+          {text("slug", live ? "Page address (can't change once published)" : "Page address: short name, e.g. feeding-strays", { disabled: live, maxLength: 120 })}
           {text("city", "City / area", { maxLength: 100 })}
           {text("state", "State", { maxLength: 100 })}
           {text("startDate", "Start date", { type: "date", max: endV || undefined })}

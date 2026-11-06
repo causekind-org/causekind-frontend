@@ -45,7 +45,7 @@ export function offerDelivery(offer: DonationOffer): Delivery {
     requestId: offer.requestId,
     donorName: offer.donorName || "Donor",
     deliveredAt: firstValid(time(offer.closedAt), time(offer.createdAt)),
-    received: positive(offerDeliveredQuantity(offer)),
+    received: offer.receivedQuantity != null ? offer.receivedQuantity : positive(offerDeliveredQuantity(offer)),
     offered: positive(offer.itemDetails?.quantity),
     offer,
   };
@@ -69,8 +69,8 @@ export function matchDelivery(match: ItemMatch): Delivery {
 /** Every completed delivery toward one request, oldest first — the order they arrived. */
 export function deliveriesForRequest(requestId: number, offers: DonationOffer[], matches: ItemMatch[]): Delivery[] {
   return [
-    ...offers.filter(o => o.requestId === requestId && o.status === "COMPLETED").map(offerDelivery),
-    ...matches.filter(m => m.requestId === requestId && MATCH_DELIVERED_STATUSES.has(m.status)).map(matchDelivery),
+    ...offers.filter(o => o.requestId === requestId && o.status === "COMPLETED" && offerDeliveredQuantity(o) > 0).map(offerDelivery),
+    ...matches.filter(m => m.requestId === requestId && MATCH_DELIVERED_STATUSES.has(m.status) && (m.doneeConfirmedQty == null || m.doneeConfirmedQty > 0)).map(matchDelivery),
   ].sort((a, b) => a.deliveredAt - b.deliveredAt);
 }
 

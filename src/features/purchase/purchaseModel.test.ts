@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PurchaseView } from "@/lib/api";
-import { purchaseNextAction, purchaseStage } from "./purchaseModel";
+import { purchaseNextAction, purchaseStage, deliveryHistoryNote, damageBreakdown } from "./purchaseModel";
 import { serializePurchaseCommitment, isSafeWebLink } from "@/features/donation-offer-wizard/offerSerializer";
 import { emptyOfferModel, firstIncompleteOfferStep, declarationGroupsFor } from "@/features/donation-offer-wizard/offerModel";
 import { validateOfferStep } from "@/features/donation-offer-wizard/offerSchema";
@@ -65,7 +65,7 @@ describe("purchaseStage", () => {
     const bought = v({ method: "BUY_AND_HAND_OVER", acceptedAt: "x", orderedAt: "x", status: "ORDER_PLACED" });
     expect(purchaseStage(bought, "ADMIN_APPROVED")).toBe("AWAITING_ITEM_PHOTO");
     const photo = { ...bought, evidence: [{ id: 1, type: "ITEM_PHOTO" as const, url: "u", uploadedAt: "x", screeningAvailable: true, prohibited: false, uploadedByRole: "DONOR" as const }] };
-    expect(purchaseStage({ ...photo, status: "PROOF_UPLOADED" }, "ADMIN_APPROVED")).toBe("AWAITING_PROOF_REVIEW");
+    expect(purchaseStage({ ...photo, status: "PROOF_UPLOADED" }, "ADMIN_APPROVED")).toBe("READY_FOR_HANDOVER");
     expect(purchaseStage({ ...photo, status: "READY_FOR_HANDOVER" }, "ADMIN_APPROVED")).toBe("READY_FOR_HANDOVER");
   });
 
@@ -150,7 +150,7 @@ describe("purchase wizard model", () => {
 
   it("in ISSUE_WINDOW, requires donor delivery proof before transaction can finish", () => {
     const withoutProof = v({ status: "RECEIPT_CONFIRMED", evidence: [] });
-    expect(purchaseNextAction("ISSUE_WINDOW", "DONOR", withoutProof)).toMatch(/upload proof of the delivered item/i);
+    expect(purchaseNextAction("ISSUE_WINDOW", "DONOR", withoutProof)).toMatch(/upload proof of delivery/i);
 
     const withProof = v({
       status: "RECEIPT_CONFIRMED",
@@ -160,3 +160,86 @@ describe("purchase wizard model", () => {
   });
 });
 
+describe("delivery history note", () => {
+  const summary = (p: Partial<import("@/lib/api").DeliverySummary> = {}) => ({
+    pledged: 5, received: 3, shortfall: 2, redelivered: null, issueStatus: "OPEN" as const, outcome: "PARTIAL" as const, ...p,
+  });
+
+  it("shows 3/5 with the issue for 2 and a hopeful note for the donor", () => {
+    const n = deliveryHistoryNote(summary(), "DONOR")!;
+    expect(n.line).toBe("3/5 items received · Issue raised for 2 items");
+    expect(n.note).toBe("Our team is looking into this. Thank you for your support!");
+    expect(n.tone).toBe("pending");
+  });
+
+  it("reassures the recipient that the rest is back on their request", () => {
+    expect(deliveryHistoryNote(summary(), "DONEE")!.note).toMatch(/back on your request/);
+  });
+
+  it("marks items that arrived after the issue", () => {
+    const n = deliveryHistoryNote(summary({ received: 5, redelivered: 2, issueStatus: "RESOLVED" }), "DONEE")!;
+    expect(n.line).toBe("5/5 items received");
+    expect(n.note).toBe("Arrived after issue resolution (replacement/redelivery)");
+  });
+
+  it("keeps a closed issue neutral for the donor", () => {
+    expect(deliveryHistoryNote(summary({ issueStatus: "CLOSED" }), "DONOR")!.note).toBe("Issue closed");
+    expect(deliveryHistoryNote(summary({ issueStatus: "CLOSED" }), "DONEE")!.note).toMatch(/still open for other donors|stay open for other donors/);
+  });
+
+  it("has no issue line when everything arrived", () => {
+    expect(deliveryHistoryNote(summary({ received: 5, shortfall: null, issueStatus: null }), "DONOR"))
+      .toEqual({ line: "5/5 items received", note: null, tone: "ok" });
+  });
+});
+
+describe("damage wording", () => {
+  const damaged = (p: Partial<import("@/lib/api").DeliverySummary> = {}) => ({
+    pledged: 5, received: 3, shortfall: 2, redelivered: null, issueStatus: "OPEN" as const, outcome: "DAMAGED" as const,
+    damageReport: true, arrived: 5, minorDamage: 1, unusable: 2, missing: 0, ...p,
+  });
+
+  it("breaks 5 into 2 good, 1 usable with minor damage, 2 unusable", () => {
+    expect(damageBreakdown(5, 5, 3, 2)).toMatchObject({ good: 2, minor: 1, unusable: 2, missing: 0, counted: 3, notCounted: 2,
+      text: "Pledged 5 · Arrived 5 · Good 2 · Usable with minor damage 1 · Unusable 2 · Missing 0" });
+    expect(damageBreakdown(5, 4, 1, 1)).toMatchObject({ counted: 3, notCounted: 2, missing: 1 });
+    expect(damageBreakdown(5, 5, 5, 5)).toMatchObject({ counted: 0, notCounted: 5 });
+  });
+
+  it("reads '3/5 usable items received · 2 reported damaged' for the donor", () => {
+    const n = deliveryHistoryNote(damaged(), "DONOR")!;
+    expect(n.line).toBe("3/5 usable items received (1 received with minor damage) · 2 reported damaged");
+    expect(n.note).toBe("Our team is looking into this. Thank you for your support!");
+  });
+
+  it("names damaged and missing units separately", () => {
+    expect(deliveryHistoryNote(damaged({ arrived: 4, minorDamage: 0, unusable: 1, missing: 1 }), "DONEE")!.line)
+      .toBe("3/5 usable items received · 1 reported damaged · 1 missing");
+  });
+
+  it("marks a replacement, and lets the recipient keep items when closed", () => {
+    expect(deliveryHistoryNote(damaged({ received: 5, redelivered: 2, issueStatus: "RESOLVED" }), "DONOR")!.note).toBe("Replaced after damage report");
+    expect(deliveryHistoryNote(damaged({ issueStatus: "CLOSED" }), "DONEE")!.note).toMatch(/You may keep the damaged items/);
+    expect(deliveryHistoryNote(damaged({ issueStatus: "CLOSED" }), "DONOR")!.note).toBe("Issue closed");
+    expect(deliveryHistoryNote(damaged({ issueStatus: "REPLACEMENT_IN_PROGRESS", returnPickupStatus: "SCHEDULED" }), "DONEE")!.note)
+      .toMatch(/replacement is on its way.*return pickup/i);
+  });
+});
+
+describe("non-delivery wording", () => {
+  const nd = (p: Partial<import("@/lib/api").DeliverySummary> = {}) => ({
+    pledged: 5, received: 0, shortfall: 5, redelivered: null, issueStatus: "OPEN" as const, outcome: "NOT_ARRIVED" as const, nonDelivery: true, ...p,
+  });
+  it("reads '0/5 items received · Delivery not confirmed' with the donor's note", () => {
+    expect(deliveryHistoryNote(nd(), "DONOR")).toMatchObject({
+      line: "0/5 items received · Delivery not confirmed", note: "Our team is looking into this. Thank you for your support!", tone: "pending" });
+    expect(deliveryHistoryNote(nd(), "DONEE")!.note).toMatch(/back on your request/);
+  });
+  it("marks a redelivery, keeps closures neutral, and offers the PDF and late arrival", () => {
+    expect(deliveryHistoryNote(nd({ issueStatus: "RESOLVED", received: 5, redelivered: 5 }), "DONEE")!.note).toBe("Delivered after non-delivery report");
+    expect(deliveryHistoryNote(nd({ issueStatus: "DISPUTED" }), "DONOR")!.note).toBe("Issue closed");
+    expect(deliveryHistoryNote(nd({ issueStatus: "CLOSED", confirmationAvailable: true }), "DONOR")!.confirmation).toBe(true);
+    expect(deliveryHistoryNote(nd({ issueStatus: "CLOSED", lateArrivalOpen: true }), "DONEE")!.lateArrival).toBe(true);
+    expect(deliveryHistoryNote(nd({ issueStatus: "CLOSED", lateArrivalOpen: true }), "DONOR")!.lateArrival).toBeUndefined();
+  });
+});

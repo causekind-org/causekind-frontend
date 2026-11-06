@@ -1,4 +1,4 @@
-import type { OfferStatus, PurchaseView } from "@/lib/api";
+import type { DeliverySummary, OfferStatus, PurchaseView } from "@/lib/api";
 
 /**
  * What the purchase hub should ask of this viewer right now.
@@ -49,12 +49,10 @@ export function purchaseStage(view: PurchaseView, offerStatus: OfferStatus | str
   }
 
   if (view.method === "BUY_AND_HAND_OVER") {
-    if (view.status === "READY_FOR_HANDOVER") return "READY_FOR_HANDOVER";
+    if (view.status === "READY_FOR_HANDOVER" || view.status === "PROOF_UPLOADED") return "READY_FOR_HANDOVER";
     // Seen by the donor and our team only; the recipient just sees the purchase being checked.
     if (view.status === "ORDER_PLACED" && view.details?.reviewOutcome === "INFO_REQUIRED") return "PURCHASE_INFO_REQUIRED";
-    // Status, not "a photo exists": a rejected photo sends the purchase back to
-    // ORDER_PLACED, and the old photo must not read as "under review".
-    return view.status === "PROOF_UPLOADED" ? "AWAITING_PROOF_REVIEW" : "AWAITING_ITEM_PHOTO";
+    return "AWAITING_ITEM_PHOTO";
   }
 
   // A delivery report waits for the recipient even after an earlier partial receipt.
@@ -133,7 +131,7 @@ export function purchaseNextAction(stage: PurchaseStage, role: PurchaseRole, vie
           : "You're committed to buying this item. Once you've bought it, tap \"I've purchased the item\" and tell us what you bought, with a photo."
         : direct
           ? "Our team approved the offer. The donor can place the order now — you'll be notified when it's on its way."
-          : "The donor confirmed and is buying the item. You'll be notified once our team has verified the purchase and the handover can be arranged.";
+          : "The donor confirmed and is buying the item. You'll be notified once the purchase is recorded and the handover can be arranged.";
     case "PURCHASE_INFO_REQUIRED":
       return donor
         ? `Our team needs more information about your purchase: ${view.proofRejectionReason ?? ""} Update the details below and send them again.`
@@ -168,8 +166,8 @@ export function purchaseNextAction(stage: PurchaseStage, role: PurchaseRole, vie
         : "When the parcel arrives, take a photo of what came, then confirm it here — or report a problem if it's damaged, wrong or missing.";
     case "PARTIALLY_RECEIVED":
       return donor
-        ? "Part of the order arrived. Update tracking for the rest."
-        : "Confirm the rest when it arrives (with a photo), or ask to close the remainder.";
+        ? "Part of the order arrived. The recipient confirms the rest when it comes."
+        : "Tell us what has arrived in total: everything, or only part of it.";
     case "ISSUE_OPEN":
       return "A problem was reported. Our support team is reviewing it and will contact you both — you'll be notified of the decision.";
     case "ISSUE_WINDOW":
@@ -182,15 +180,163 @@ export function purchaseNextAction(stage: PurchaseStage, role: PurchaseRole, vie
       if (donor) {
         const hasDeliveryProof = view.evidence.some(e => e.type === "DELIVERY_PROOF");
         return hasDeliveryProof
-          ? "The recipient confirmed receipt and your delivery proof is on file. The donation completes when the issue window closes."
-          : "The recipient confirmed receipt. To finish the transaction and receive your certificate, please upload proof of the delivered item.";
+          ? "The recipient confirmed everything arrived and your delivery proof is on file. The donation is closing."
+          : "The recipient confirmed everything arrived. Upload proof of delivery to close the purchase and get your certificate.";
       }
-      return "Thanks for confirming. If everything is fine you can close the issue window now.";
-    case "COMPLETED":
+      return "Thanks for confirming. You're all set: the purchase closes as soon as the donor adds delivery proof.";
+    case "COMPLETED": {
+      const note = deliveryHistoryNote(deliverySummaryFromView(view), role);
+      if (note?.tone === "pending") return donor
+        ? "This purchase is closed. Our team is looking into the missing items. Nothing more is needed from you."
+        : "This purchase is closed. Our team is looking into the missing items, and they're back on your request for other donors.";
       return donor ? "This donation is complete. Your certificate is ready." : "This donation is complete. Thank you for confirming.";
+    }
     case "CLOSED":
       return "This purchase offer is closed.";
   }
+}
+
+/** A closed purchase's delivery as both histories show it. */
+export type DeliveryHistoryNote = {
+  line: string; note: string | null; tone: "ok" | "pending" | "neutral";
+  /** A damage report: the donor can open the photos from the purchase page. */
+  damage?: boolean;
+  /** The donor can download the non-delivery confirmation. */
+  confirmation?: boolean;
+  /** The recipient can still report "package arrived later". */
+  lateArrival?: boolean;
+};
+
+const items = (n: number) => `${n} item${n === 1 ? "" : "s"}`;
+
+/**
+ * "3/5 items received · Issue raised for 2 items" plus a note for this side.
+ * The donor's wording stays hopeful and never asks anything of them; a closed
+ * issue reads as a neutral "Issue closed" whatever the reason.
+ */
+export function deliveryHistoryNote(s: DeliverySummary | null | undefined, role: PurchaseRole): DeliveryHistoryNote | null {
+  const note = deliveryHistoryNoteText(s, role);
+  if (!note || !s) return note;
+  return {
+    ...note,
+    ...(s.damageReport ? { damage: true } : {}),
+    ...(role === "DONOR" && s.confirmationAvailable ? { confirmation: true } : {}),
+    ...(role === "DONEE" && s.lateArrivalOpen ? { lateArrival: true } : {}),
+  };
+}
+
+function deliveryHistoryNoteText(s: DeliverySummary | null | undefined, role: PurchaseRole): DeliveryHistoryNote | null {
+  if (!s || s.received == null || s.pledged == null) return null;
+  const donor = role === "DONOR";
+  const damage = !!s.damageReport;
+  const nothing = !!s.nonDelivery;
+  if (nothing) return nonDeliveryNote(s, donor);
+  if (s.arrivedAfterClosure) return { line: `${s.received}/${s.pledged} items received`, note: "Arrived after issue closure", tone: "ok" };
+  const minor = damage && (s.minorDamage ?? 0) > 0 ? ` (${s.minorDamage} received with minor damage)` : "";
+  const line = damage ? `${s.received}/${s.pledged} usable items received${minor}` : `${s.received}/${s.pledged} items received`;
+  if ((!s.shortfall && !damage) || !s.issueStatus) return { line, note: null, tone: "ok" };
+  const unusable = s.unusable ?? 0, missing = s.missing ?? 0;
+  const raised = damage
+    ? [unusable > 0 ? `${unusable} reported damaged` : "", missing > 0 ? `${missing} missing` : ""].filter(Boolean).join(" · ")
+    : `Issue raised for ${items(s.shortfall ?? 0)}`;
+  const pickup = !donor && s.returnPickupStatus === "SCHEDULED" ? " A return pickup of the damaged items is scheduled." : "";
+  switch (s.issueStatus) {
+    case "OPEN":
+    case "AWAITING_DONEE_INFO":
+    case "PACKAGE_FOUND":
+    case "LATE_ARRIVAL_REPORTED":
+    case "DONOR_REDONATING":
+      return {
+        line: raised ? `${line} · ${raised}` : line,
+        note: donor
+          ? "Our team is looking into this. Thank you for your support!"
+          : damage
+            ? "Our team is looking into the damaged items. Anything not counted is back on your request, so other donors can help too."
+            : "Our team is looking into the missing items. They're back on your request, so other donors can help too.",
+        tone: "pending",
+      };
+    case "REPLACEMENT_IN_PROGRESS":
+      return {
+        line: raised ? `${line} · ${raised}` : line,
+        note: donor ? "A replacement is being arranged. Thank you for your support!" : "A replacement is on its way." + pickup,
+        tone: "pending",
+      };
+    case "RESOLVED":
+      return (s.redelivered ?? 0) > 0
+        ? { line, note: (damage ? "Replaced after damage report" : "Arrived after issue resolution (replacement/redelivery)") + pickup, tone: "ok" }
+        : { line, note: donor ? "Issue resolved. Thank you for helping complete this request!" : "Issue resolved.", tone: "ok" };
+    case "CLOSED":
+    case "DISPUTED":
+      return {
+        line,
+        note: donor ? "Issue closed"
+          : "Issue closed. Any remaining items stay open for other donors on your request." + (damage ? " You may keep the damaged items." : ""),
+        tone: "neutral",
+      };
+  }
+}
+
+/** "0/5 items received · Delivery not confirmed" and where it stands. */
+function nonDeliveryNote(s: DeliverySummary, donor: boolean): DeliveryHistoryNote {
+  const line = `${s.received ?? 0}/${s.pledged} items received`;
+  switch (s.issueStatus) {
+    case "RESOLVED":
+      return (s.redelivered ?? 0) > 0
+        ? { line, note: "Delivered after non-delivery report", tone: "ok" }
+        : { line, note: donor ? "Issue resolved. Thank you for your support!" : "Issue resolved.", tone: "ok" };
+    case "CLOSED":
+    case "DISPUTED":
+      return { line, note: donor ? "Issue closed" : "Issue closed. The items stay open for other donors on your request.", tone: "neutral" };
+    case "REPLACEMENT_IN_PROGRESS":
+      return { line: `${line} · Delivery not confirmed`, note: donor ? "A redelivery is being arranged. Thank you for your support!" : "A redelivery is being arranged.", tone: "pending" };
+    default:
+      return {
+        line: `${line} · Delivery not confirmed`,
+        note: donor
+          ? "Our team is looking into this. Thank you for your support!"
+          : "Our team is looking into the missing delivery. The items are back on your request, so other donors can help too.",
+        tone: "pending",
+      };
+  }
+}
+
+/** The same summary, read from the purchase hub's view. */
+export function deliverySummaryFromView(view: PurchaseView): DeliverySummary {
+  const issue = view.issues.find(i => i.type === "QUANTITY_MISMATCH" || i.arrivedQuantity != null || i.nonDelivery);
+  const damage = issue?.arrivedQuantity != null;
+  return {
+    pledged: view.orderedQuantity ?? view.acceptedQuantity,
+    received: view.receivedQuantity,
+    shortfall: issue ? (issue.shortfallQuantity ?? issue.affectedQuantity) : null,
+    redelivered: issue?.redeliveredQuantity ?? null,
+    issueStatus: issue?.status ?? (issue ? (issue.resolvedAt ? "RESOLVED" : "OPEN") : null),
+    outcome: view.deliveryOutcome ?? null,
+    damageReport: damage,
+    arrived: damage ? issue!.arrivedQuantity : null,
+    minorDamage: damage ? issue!.minorDamageQuantity ?? 0 : null,
+    unusable: damage ? issue!.unusableQuantity ?? 0 : null,
+    missing: damage ? issue!.missingQuantity ?? 0 : null,
+    returnPickupStatus: issue?.returnPickupStatus ?? null,
+    nonDelivery: !!issue?.nonDelivery && issue.type === "ITEM_NOT_RECEIVED",
+    confirmationAvailable: !!issue?.confirmationGeneratedAt,
+    lateArrivalOpen: !!view.lateArrivalOpen,
+  };
+}
+
+/**
+ * The damage form's live summary, e.g. "Pledged 5 · Arrived 5 · Good 2 · Usable with
+ * minor damage 1 · Unusable 2 · Missing 0". Counted = good + minor; the rest is released.
+ */
+export function damageBreakdown(pledged: number, arrived: number, damaged: number, unusable: number) {
+  const minor = Math.max(0, damaged - unusable);
+  const good = Math.max(0, arrived - damaged);
+  const missing = Math.max(0, pledged - arrived);
+  return {
+    pledged, arrived, good, minor, unusable, missing,
+    counted: good + minor,
+    notCounted: unusable + missing,
+    text: `Pledged ${pledged} · Arrived ${arrived} · Good ${good} · Usable with minor damage ${minor} · Unusable ${unusable} · Missing ${missing}`,
+  };
 }
 
 /** Java LocalDateTime from a yyyy-mm-dd date input — end of that day, no zone. */

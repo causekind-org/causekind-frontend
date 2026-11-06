@@ -66,6 +66,9 @@ const logoLetterVariants = {
 /** How long the "NGO Approved" navbar pill stays after the NGO first sees its approval. */
 const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
+/** The wordmark per size; md is the header's (small on phones). The icon scales with it via `dimensions`. */
+const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl" } as const;
+
 export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
@@ -124,7 +127,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
            switch, unlike the flag asset it is standing in for. */
         <RakshaBandhanWordmark size={size} />
       ) : (
-        <span className="relative flex items-center font-extrabold text-base sm:text-xl" aria-hidden="true">
+        <span className={`relative flex items-center font-extrabold ${WORDMARK_SIZE[size]}`} aria-hidden="true">
           {/* "Cause" — stagger letter reveal */}
           <motion.span
             className="text-stone-900 dark:text-stone-100 tracking-tight flex"

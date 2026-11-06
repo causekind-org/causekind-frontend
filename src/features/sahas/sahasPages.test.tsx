@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { act, render, screen, waitFor, fireEvent } from "@testing-library/react";
 import type { SahasCampaignCard, SahasCampaignDetail } from "@/lib/api";
 
 /**
@@ -48,6 +48,38 @@ const detailOf = (phase: SahasCampaignCard["phase"]): SahasCampaignDetail => ({
 });
 
 beforeEach(() => { live.mockReset(); detail.mockReset(); });
+
+describe("campaign page sections", () => {
+  it("shows Anonymous for a donor with no public name, and hides empty sections", async () => {
+    detail.mockResolvedValue({ ...detailOf("OPEN"), donors: { count: 2, top: [{ name: null, amount: 501 }], recent: [{ name: "Asha", amount: 101 }] },
+      page: { stats: [{ value: "20+", label: "food drives held" }], proofTitle: "Past work", faqs: [] } });
+    render(<SahasCampaignPage />);
+    expect(await screen.findByText("Anonymous")).toBeTruthy();
+    expect(screen.getByText("Asha")).toBeTruthy();
+    expect(screen.getByText("20+")).toBeTruthy();
+    expect(screen.queryByText("FAQs")).toBeNull();
+  });
+
+  it("shows the small Donate button only after the main one scrolls off the top", async () => {
+    let report: (e: { isIntersecting: boolean; boundingClientRect: { top: number } }[]) => void = () => {};
+    vi.stubGlobal("IntersectionObserver", class { constructor(cb: typeof report) { report = cb; } observe() {} disconnect() {} });
+    detail.mockResolvedValue({ ...detailOf("OPEN"), moneyOpen: true, card: card({ collectsMoney: true, targetAmount: 1000, amountRaised: 10 }) });
+    render(<SahasCampaignPage />);
+    await screen.findAllByText("Donate money");
+    expect(screen.queryByText("Donate")).toBeNull();
+    act(() => report([{ isIntersecting: false, boundingClientRect: { top: -50 } }]));
+    expect(screen.getByText("Donate")).toBeTruthy();
+    act(() => report([{ isIntersecting: true, boundingClientRect: { top: 100 } }]));
+    expect(screen.queryByText("Donate")).toBeNull();
+    vi.unstubAllGlobals();
+  });
+
+  it("invites the first donor when nobody has given yet", async () => {
+    detail.mockResolvedValue({ ...detailOf("OPEN"), donors: { count: 0, top: [], recent: [] } });
+    render(<SahasCampaignPage />);
+    expect(await screen.findByText("Be the first to support this campaign")).toBeTruthy();
+  });
+});
 
 describe("Sahas hub", () => {
   it("lists open campaigns under Active and closed ones under Completed", async () => {

@@ -45,8 +45,18 @@ export function PurchaseIssueResolver({ view, onDone }: { view: PurchaseView; on
   const [busy, setBusy] = useState(false);
 
   if (!issue) return null;
+  // A partial delivery has its own three outcomes, decided where both contacts and the chat are.
+  if (direct && issue.type === "QUANTITY_MISMATCH") {
+    return (
+      <p className="rounded-2xl border border-stone-200 bg-white p-4 text-sm text-stone-700">
+        This is a partial delivery. Resolve it in{" "}
+        <a href={`/admin/dashboard?tab=issues&issue=pdi-${issue.id}`} className="font-bold text-[#b04a15] underline">Admin → Issues</a>,
+        where you&apos;ll find both contacts, the proofs and the chat.
+      </p>
+    );
+  }
 
-  const n = /^\d+$/.test(finalQty.trim()) ? Number(finalQty) : NaN;
+  const n =/^\d+$/.test(finalQty.trim()) ? Number(finalQty) : NaN;
   const qtyOk = !direct || (n >= 0 && n <= ordered);
   const finalN = direct ? n : counted;
   const changedCount = direct && qtyOk && finalN !== counted;

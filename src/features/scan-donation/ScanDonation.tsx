@@ -34,6 +34,8 @@ import {
   scanSchema,
   type ScanFormValues,
 } from "./schema";
+import { readPanCard, type PanRead } from "@/lib/api";
+import { sameName } from "@/lib/panName";
 import "./scan.css";
 import { captureUtm, trackDonationSuccess, trackInitiateCheckout, trackScanPageView, type Utm } from "./tracking";
 
@@ -161,6 +163,32 @@ export function ScanDonation() {
   const amount = chosenAmount(preset, otherAmount);
   const tipChoice = watch("tip");
   const tip = chosenTip(tipChoice, watch("otherTip"));
+
+  // 80G only: the card is read to check what was typed, so the donor fixes a mismatch before paying. It isn't stored.
+  const [card, setCard] = useState<File | null>(null);
+  const [cardRead, setCardRead] = useState<PanRead | null>(null);
+  const [cardReading, setCardReading] = useState(false);
+  const cardFile = useRef<File | null>(null);
+  const pickCard = async (file: File | null) => {
+    setCard(file); setCardRead(null); cardFile.current = file;
+    if (!file) return;
+    setCardReading(true);
+    try {
+      const r = await readPanCard(file);
+      if (cardFile.current === file) setCardRead(r);
+    } catch { /* reader unavailable: not the donor's fault */ }
+    finally { if (cardFile.current === file) setCardReading(false); }
+  };
+  const typedPan = watch("pan") ?? "";
+  const typedName = watch("name") ?? "";
+  const cardIssue = !wants80g ? null
+    : !card ? "Add your PAN card to get an 80G receipt."
+      : cardReading ? "Checking your PAN card…"
+        : !cardRead ? null
+          : !cardRead.read || !cardRead.panNumber ? "We couldn't read this card. Upload a clear photo of the front of your PAN card."
+            : cardRead.panNumber.replace(/\s/g, "").toUpperCase() !== typedPan ? `The PAN you typed doesn't match this card. The card shows ${cardRead.panNumber}.`
+              : !cardRead.nameOnCard || !sameName(typedName, cardRead.nameOnCard) ? `The name on this card doesn't match your name. The card shows ${cardRead.nameOnCard ?? "—"}.`
+                : null;
 
   useEffect(() => {
     utm.current = captureUtm(window.location.search);
@@ -518,6 +546,13 @@ export function ScanDonation() {
             <input id="wants80g" type="checkbox" {...wants80gField} className="size-5 shrink-0 accent-primary" />I want an
             80G tax receipt
           </label>
+          {wants80g && (
+            <div>
+              <Label htmlFor="pan-card" className="mb-1.5 block text-sm font-semibold">PAN card photo</Label>
+              <input id="pan-card" type="file" accept="image/*" className="block w-full text-sm" onChange={(e) => void pickCard(e.target.files?.[0] ?? null)} />
+              {cardIssue && <p role="alert" className="mt-1.5 text-sm text-destructive max-lg:text-red-300">{cardIssue}{card && !cardReading ? " Fix this, or untick 80G to get a certificate only." : ""}</p>}
+            </div>
+          )}
 
 
           {/* Honeypot: off-screen and out of the tab order, so only bots fill it. */}
@@ -537,7 +572,7 @@ export function ScanDonation() {
           </p>
         )}
 
-        <Button type="submit" disabled={!isValid || busy} className="h-14 w-full rounded-xl text-base font-bold">
+        <Button type="submit" disabled={!isValid || busy || !!cardIssue} className="h-14 w-full rounded-xl text-base font-bold">
           {busy && <Loader2 className="animate-spin" aria-hidden="true" />}
           {busy ? stage.label : stage.kind === "failed" ? "Try again" : `Donate ${rupees(amount + tip)}`}
         </Button>

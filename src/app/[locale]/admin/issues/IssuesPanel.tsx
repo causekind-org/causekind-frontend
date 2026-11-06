@@ -12,6 +12,7 @@ import {
 import { serverDate } from "@/lib/serverTime";
 import { useNotifications } from "@/hooks/useNotifications";
 import { PurchaseIssueResolverFor } from "@/features/purchase/PurchaseIssueResolver";
+import { IssueStatusBadge, PurchaseIssueCase } from "./PurchaseIssueCase";
 
 /**
  * Admin → Issues: every problem report and support case in the application,
@@ -56,7 +57,7 @@ export function humanize(value: string | null | undefined): string {
 function roleLabel(role: string | null | undefined): string {
   switch (role) {
     case "DONOR": return "Donor";
-    case "DONEE": return "Recipient";
+    case "DONEE": return "Donee";
     case "NGO": return "NGO";
     case "SYSTEM": return "System";
     default: return humanize(role);
@@ -71,7 +72,13 @@ function when(value: string | null | undefined): string {
 
 function personText(p: AdminIssuePerson | null | undefined): string {
   if (!p) return "—";
-  return `${p.name ?? "Unknown"} (${roleLabel(p.role)})`;
+  return `${roleLabel(p.role)}: ${p.name ?? "Unknown"}`;
+}
+
+/** Titles never stand alone: "Request: I need 5 laptops", "Drive: …", "Issue: …". */
+export function labelledTitle(source: AdminIssueSource, title: string | null | undefined): string {
+  const label = source === "DRIVE_OFFER" ? "Drive" : source === "SUPPORT" ? "Issue" : "Request";
+  return `${label}: ${title ?? "Untitled"}`;
 }
 
 /**
@@ -219,25 +226,25 @@ function SourceBadge({ source }: { source: AdminIssueSource }) {
   return <span className={`rounded-full border px-2 py-0.5 text-2xs font-bold ${SOURCE_TONE[source]}`}>{SOURCE_LABEL[source]}</span>;
 }
 
-function StatusPill({ open }: { open: boolean }) {
-  return open
-    ? <span className="rounded-full bg-amber-100 px-2 py-0.5 text-2xs font-bold text-amber-800">Open</span>
-    : <span className="rounded-full bg-green-100 px-2 py-0.5 text-2xs font-bold text-green-800">Resolved</span>;
+function StatusPill({ s }: { s: AdminIssueSummary }) {
+  return <IssueStatusBadge status={s.issueStatus ?? (s.open ? "OPEN" : "RESOLVED")} />;
 }
 
 function IssueCard({ s, onOpen }: { s: AdminIssueSummary; onOpen: () => void }) {
   const urgent = s.casePriority === "HIGH" || s.casePriority === "URGENT";
   return (
     <button onClick={onOpen} aria-label={`Open issue: ${s.title ?? s.key}`}
-      className="w-full space-y-2 rounded-2xl border border-stone-200 bg-white p-4 text-left transition-colors hover:border-[#b04a15]/50">
+      className="w-full space-y-2.5 rounded-3xl border border-stone-200 bg-white p-5 text-left shadow-sm transition-colors hover:border-[#b04a15]/50">
       <div className="flex flex-wrap items-center gap-1.5">
         <SourceBadge source={s.source} />
-        <span className="text-xs font-bold text-stone-700">{humanize(s.issueType)}</span>
-        <StatusPill open={s.open} />
+        <StatusPill s={s} />
+        <span className="text-xs font-bold text-stone-700">Issue: {humanize(s.issueType)}</span>
+        {s.flags?.includes("DONEE_REPEAT_CLAIMS") && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-2xs font-bold text-rose-800 ring-1 ring-rose-200">⚑ Donee: repeat claims</span>}
+        {s.flags?.includes("DONOR_REPEAT_ISSUES") && <span className="rounded-full bg-rose-50 px-2 py-0.5 text-2xs font-bold text-rose-800 ring-1 ring-rose-200">⚑ Donor: repeat issues</span>}
         {urgent && <span className="rounded-full bg-red-100 px-2 py-0.5 text-2xs font-bold text-red-700">{humanize(s.casePriority)} priority</span>}
         {s.caseNumber && <span className="ms-auto font-mono text-2xs text-stone-500">{s.caseNumber}</span>}
       </div>
-      <p className="text-[15px] font-bold text-stone-900">{s.title ?? "Untitled"}</p>
+      <p className="text-[15px] font-bold text-stone-900">{labelledTitle(s.source, s.title)}</p>
       {s.description && <p className="line-clamp-2 text-sm text-stone-600">{s.description}</p>}
       <p className="text-xs text-stone-500">
         Reported by {personText(s.reportedBy)}{s.against ? <> · about {personText(s.against)}</> : null}
@@ -319,6 +326,35 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
   const s = d.summary;
   // An open purchase problem is decided right here; everything else stays a read-only record.
   const decidable = (s.source === "PURCHASE" || s.source === "OFFER_HANDOVER") && s.open && s.entityType === "offer" && s.entityId != null;
+
+  if (d.purchase) {
+    const p = d.purchase;
+    return (
+      <article className="mx-auto max-w-5xl space-y-4" aria-label={`Issue ${s.caseNumber ?? s.key}`}>
+        {back}
+        <PurchaseIssueCase d={d} purchase={p} decidable={decidable} onDecided={() => setDecided(x => x + 1)}
+          extra={
+            <>
+              {decidable && !p.partialDelivery && (
+                <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#b04a15]" aria-hidden />}>
+                  <PurchaseIssueResolverFor offerId={s.entityId as number} onDone={() => setDecided(x => x + 1)} />
+                </Card>
+              )}
+              <details className="group rounded-3xl border border-stone-200 bg-white shadow-sm">
+                <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-4 text-sm font-black uppercase tracking-wide text-stone-500 sm:px-6">
+                  More details: transaction, evidence, support case, full history
+                  <span className="text-xs font-bold normal-case tracking-normal text-[#b04a15] group-open:hidden">Show</span>
+                  <span className="hidden text-xs font-bold normal-case tracking-normal text-[#b04a15] group-open:inline">Hide</span>
+                </summary>
+                <div className="space-y-4 border-t border-stone-100 p-4 sm:p-5">
+                  <IssueRecord d={d} />
+                </div>
+              </details>
+            </>
+          } />
+      </article>
+    );
+  }
   const reportFacts: { label: string; value: ReactNode }[] = [
     { label: "Reported by", value: <PersonFact p={s.reportedBy} /> },
     { label: "About", value: <PersonFact p={s.against} /> },
@@ -334,12 +370,12 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
       <header className="space-y-2">
         <div className="flex flex-wrap items-center gap-1.5">
           <SourceBadge source={s.source} />
-          <StatusPill open={s.open} />
-          <span className="text-xs font-bold text-stone-700">{humanize(s.issueType)}</span>
+          <StatusPill s={s} />
+          <span className="text-xs font-bold text-stone-700">Issue: {humanize(s.issueType)}</span>
           {s.caseNumber && <span className="font-mono text-xs text-stone-500">{s.caseNumber}</span>}
           {s.entityType && s.entityId != null && <span className="text-xs text-stone-500">· {s.entityType} #{s.entityId}</span>}
         </div>
-        <h2 className="text-xl font-black text-stone-900">{s.title ?? "Untitled"}</h2>
+        <h2 className="text-xl font-black text-stone-900">{labelledTitle(s.source, s.title)}</h2>
         <p className="flex items-center gap-1.5 text-xs text-stone-500"><Lock className="h-3.5 w-3.5" aria-hidden /> {decidable ? "The full record of this issue — decide it below." : "Read-only view — the full record of this issue."}</p>
       </header>
 
@@ -391,6 +427,15 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
         </Card>
       )}
 
+      <IssueRecord d={d} />
+    </article>
+  );
+}
+
+/** The transaction sections, evidence, support case and full timeline behind an issue. */
+function IssueRecord({ d }: { d: AdminIssueDetail }) {
+  return (
+    <>
       {d.sections.map(sec => (
         <Card key={sec.title} title={sec.title} icon={<UserRound className="h-4 w-4 text-stone-500" aria-hidden />}>
           {sec.facts.length ? <FactGrid facts={sec.facts.map(f => ({ label: f.label, value: <FactValue value={f.value} /> }))} />
@@ -450,6 +495,6 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
           </ol>
         )}
       </Card>
-    </article>
+    </>
   );
 }
