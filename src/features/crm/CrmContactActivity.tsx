@@ -3,8 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
-  crmAddNote, crmHistory, crmLogCall, crmSaveFollowup,
-  type CrmActivity, type CrmCallOutcome, type CrmCallPurpose,
+  crmAddNote, crmCallers, crmHistory, crmLogCall, crmSaveFollowup,
+  type CrmActivity, type CrmCallOutcome, type CrmCallPurpose, type CrmCaller,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +32,8 @@ export function CrmContactActivity({ userId, role, onChanged }: {
   const [items, setItems] = useState<CrmActivity[]>([]);
   const [outcome, setOutcome] = useState<CrmCallOutcome | "">("");
   const [purpose, setPurpose] = useState<CrmCallPurpose>("SUPPORT");
+  const [callers, setCallers] = useState<CrmCaller[]>([]);
+  const [callerId, setCallerId] = useState("");
   const [notes, setNotes] = useState("");
   const [followUpAt, setFollowUpAt] = useState("");
   const [note, setNote] = useState("");
@@ -43,6 +45,10 @@ export function CrmContactActivity({ userId, role, onChanged }: {
   }, [userId]);
 
   useEffect(load, [load]);
+
+  useEffect(() => {
+    crmCallers().then(setCallers).catch(() => toast.error("Could not load the caller names."));
+  }, []);
 
   async function run(action: () => Promise<unknown>) {
     setBusy(true);
@@ -60,9 +66,9 @@ export function CrmContactActivity({ userId, role, onChanged }: {
   }
 
   async function saveCall() {
-    if (!outcome) return;
+    if (!outcome || !callerId) return;
     const saved = await run(() => crmLogCall(userId, {
-      clientRequestId: requestId, outcome, purpose, notes,
+      clientRequestId: requestId, outcome, purpose, callerId: Number(callerId), notes,
       followUpAt: followUpAt ? new Date(followUpAt).toISOString() : null,
     }));
     if (saved) {
@@ -95,15 +101,21 @@ export function CrmContactActivity({ userId, role, onChanged }: {
             <option value="ONBOARDING">Onboarding</option>
             {role === "DONOR" && <option value="FUNDRAISING">Fundraising</option>}
           </select>
+          <select aria-label="Called by" className={selectClass} value={callerId}
+            onChange={(e) => setCallerId(e.target.value)}>
+            <option value="" disabled>Called by</option>
+            {callers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
           <label className="flex items-center gap-1.5 text-sm">
             Follow up (IST)
             <input type="datetime-local" className={selectClass} value={followUpAt}
               onChange={(e) => setFollowUpAt(e.target.value)} />
           </label>
         </div>
+        {callers.length === 0 && <p className="text-xs text-destructive">No caller names yet. An admin can add them under Follow-ups and report.</p>}
         <Textarea aria-label="Call notes" placeholder="What was said?" value={notes} onChange={(e) => setNotes(e.target.value)} />
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" disabled={!outcome || busy || (outcome === "CALLBACK" && !followUpAt)} onClick={saveCall}>Log call</Button>
+          <Button size="sm" disabled={!outcome || !callerId || busy || (outcome === "CALLBACK" && !followUpAt)} onClick={saveCall}>Log call</Button>
           <Button size="sm" variant="outline" disabled={!followUpAt || busy} onClick={saveFollowupOnly}>Set follow-up only</Button>
         </div>
       </div>
@@ -118,7 +130,7 @@ export function CrmContactActivity({ userId, role, onChanged }: {
           {items.map((a) => (
             <li key={a.id} className="text-xs">
               <span className="font-medium">{a.kind === "CALL" ? `Call: ${a.outcome}` : "Note"}</span>
-              {a.purpose && ` (${a.purpose})`} · {formatIst(a.occurredAt)} · {a.actorEmail}
+              {a.purpose && ` (${a.purpose})`} · {formatIst(a.occurredAt)} · {a.callerName ?? a.actorEmail}
               {a.notes && <p className="whitespace-pre-wrap text-muted-foreground">{a.notes}</p>}
             </li>
           ))}
