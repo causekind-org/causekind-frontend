@@ -4280,6 +4280,7 @@ export type CrmContact = {
   identityReview: boolean;
   lastCallOutcome: string | null;
   lastCallAt: string | null;
+  lastCallerName: string | null;
   nextFollowUpAt: string | null;
 };
 
@@ -4306,6 +4307,7 @@ export type CrmActivity = {
   outcome: CrmCallOutcome | null;
   purpose: CrmCallPurpose | null;
   notes: string | null;
+  callerName: string | null;
   actorEmail: string;
   occurredAt: string;
 };
@@ -4321,18 +4323,35 @@ export type CrmFollowup = {
 
 export type CrmReport = {
   days: number;
-  rows: { actorEmail: string; calls: number; outcomes: Record<string, number> }[];
+  rows: { caller: string; calls: number; outcomes: Record<string, number> }[];
   openFollowups: number;
   overdueFollowups: number;
   callsToday: number;
 };
+
+export type CrmCaller = { id: number; name: string };
+
+export function crmCallers() {
+  return request<CrmCaller[]>("/api/v1/admin/crm/callers");
+}
+
+export function crmAddCaller(name: string) {
+  return request<CrmCaller>("/api/v1/admin/crm/callers/manage", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function crmRemoveCaller(id: number) {
+  return request<void>(`/api/v1/admin/crm/callers/${id}/remove`, { method: "POST" });
+}
 
 export function crmHistory(userId: number) {
   return request<SaPage<CrmActivity>>(`/api/v1/admin/crm/contacts/${userId}/activities`);
 }
 
 export function crmLogCall(userId: number, call: {
-  clientRequestId: string; outcome: CrmCallOutcome; purpose: CrmCallPurpose; notes: string; followUpAt: string | null;
+  clientRequestId: string; outcome: CrmCallOutcome; purpose: CrmCallPurpose; callerId: number; notes: string; followUpAt: string | null;
 }) {
   return request<CrmActivity>(`/api/v1/admin/crm/contacts/${userId}/calls`, {
     method: "POST",

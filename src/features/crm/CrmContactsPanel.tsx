@@ -243,7 +243,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                   <td className="px-3 py-2.5">
                     {c.lastCallAt ? (
                       <>
-                        <p>{OUTCOME_LABELS[c.lastCallOutcome ?? ""] ?? c.lastCallOutcome}</p>
+                        <p>{OUTCOME_LABELS[c.lastCallOutcome ?? ""] ?? c.lastCallOutcome}{c.lastCallerName ? `, ${c.lastCallerName}` : ""}</p>
                         <p className="text-xs text-muted-foreground">{formatIst(c.lastCallAt)} IST</p>
                       </>
                     ) : <span className="text-xs text-muted-foreground">Not called</span>}
