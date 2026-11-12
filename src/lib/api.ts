@@ -7863,3 +7863,26 @@ export function crmAssignCaller(userId: number, callerId: number | null) {
     body: JSON.stringify({ callerId }),
   });
 }
+
+// ── Super admin: CRM staff logins ───────────────────────────────────────────
+
+export type CrmStaffAccount = { id: number; fullName: string; loginId: string; phone: string; active: boolean };
+
+export function superAdminCrmStaff() {
+  return request<CrmStaffAccount[]>("/api/v1/super-admin/crm-staff");
+}
+
+export function superAdminCreateCrmStaff(data: { fullName: string; loginId: string; phone: string; password: string }) {
+  return request<CrmStaffAccount>("/api/v1/super-admin/crm-staff", { method: "POST", body: JSON.stringify(data) });
+}
+
+export function superAdminResetCrmStaffPassword(id: number, password: string) {
+  return request<void>(`/api/v1/super-admin/crm-staff/${id}/password`, {
+    method: "POST",
+    body: JSON.stringify({ password }),
+  });
+}
+
+export function superAdminSetCrmStaffActive(id: number, active: boolean) {
+  return request<void>(`/api/v1/super-admin/crm-staff/${id}/${active ? "enable" : "disable"}`, { method: "POST" });
+}
