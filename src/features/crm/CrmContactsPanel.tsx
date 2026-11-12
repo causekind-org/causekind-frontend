@@ -3,15 +3,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
-  crmAssignCaller, crmCallers, crmClearDoNotCall, crmFollowups, crmListContacts, crmReport,
-  crmRevealPhone, crmSetDoNotCall,
-  type CrmCallPurpose, type CrmCaller, type CrmContact, type CrmFollowup, type CrmReport, type CrmRole, type SaPage,
+  crmAssignCaller, crmCallers, crmFollowups, crmListContacts, crmReport,
+  type CrmCaller, type CrmContact, type CrmFollowup, type CrmReport, type CrmRole, type SaPage,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Phone, PhoneOff, X } from "lucide-react";
-import { CrmContactActivity } from "./CrmContactActivity";
+import { Loader2, Phone } from "lucide-react";
+import { CrmContactBlade } from "./CrmContactBlade";
 import { CrmWorkSummary } from "./CrmWorkSummary";
 
 const ROLE_FILTERS: { label: string; value: CrmRole | null }[] = [
@@ -45,7 +44,7 @@ function NextAction({ contact }: { contact: CrmContact }) {
   return <span className="text-xs text-muted-foreground">None</span>;
 }
 
-/** The staff call list: a worklist table, with calling and logging in a side panel. */
+/** The staff call list: a worklist table; a contact opens as its own page. */
 export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   const [role, setRole] = useState<CrmRole | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -61,11 +60,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   const [report, setReport] = useState<CrmReport | null>(null);
   const [showSummary, setShowSummary] = useState(false);
   const [openId, setOpenId] = useState<number | null>(null);
-  const [revealed, setRevealed] = useState<Record<number, string>>({});
-  const [purposes, setPurposes] = useState<Record<number, CrmCallPurpose>>({});
   const [busyId, setBusyId] = useState<number | null>(null);
-  const [reasonFor, setReasonFor] = useState<"set" | "clear" | null>(null);
-  const [reason, setReason] = useState("");
   const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
@@ -93,12 +88,6 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
     crmCallers().then(setCallers).catch(() => {});
   }, [refreshKey]);
 
-  useEffect(() => {
-    if (openId === null) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpenId(null); };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [openId]);
 
   function changed() {
     setRefreshKey((k) => k + 1);
@@ -107,43 +96,8 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
 
   function open(userId: number) {
     setOpenId(userId);
-    setReasonFor(null);
-    setReason("");
   }
 
-  async function reveal(userId: number) {
-    const purpose = purposes[userId];
-    if (!purpose) return;
-    setBusyId(userId);
-    try {
-      const { phone } = await crmRevealPhone(userId, purpose);
-      setRevealed((prev) => ({ ...prev, [userId]: phone }));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not reveal this number.");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function saveReason(userId: number) {
-    if (!reasonFor || !reason.trim()) return;
-    setBusyId(userId);
-    try {
-      await (reasonFor === "clear" ? crmClearDoNotCall(userId, reason.trim()) : crmSetDoNotCall(userId, reason.trim()));
-      setRevealed((prev) => {
-        const next = { ...prev };
-        delete next[userId];
-        return next;
-      });
-      setReasonFor(null);
-      setReason("");
-      changed();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not save that.");
-    } finally {
-      setBusyId(null);
-    }
-  }
 
   async function assign(userId: number, callerId: number | null) {
     setBusyId(userId);
@@ -162,6 +116,11 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   const overdue = followups.filter((f) => new Date(f.dueAt).getTime() < now).length;
   const dueToday = followups.filter((f) => new Date(f.dueAt).getTime() >= now && istDay(new Date(f.dueAt)) === today).length;
   const selected = data?.items.find((c) => c.userId === openId) ?? null;
+
+  if (selected) {
+    return <CrmContactBlade key={selected.userId} contact={selected} canManage={canManage}
+      onBack={() => setOpenId(null)} onChanged={changed} />;
+  }
 
   const stats = [
     { label: "Overdue", value: overdue, alert: overdue > 0 },
@@ -279,66 +238,6 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
         </div>
       )}
 
-      {selected && (
-        <aside aria-label={`Call ${selected.fullName}`}
-          className="fixed inset-y-0 right-0 z-50 w-full max-w-md space-y-3 overflow-y-auto border-l bg-background p-4 shadow-xl">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-lg font-semibold">{selected.fullName}</p>
-              <p className="text-xs text-muted-foreground">
-                {[selected.maskedPhone, selected.maskedEmail, selected.city].filter(Boolean).join(" · ")}
-              </p>
-            </div>
-            <Button size="sm" variant="ghost" aria-label="Close" onClick={() => setOpenId(null)}><X className="size-4" aria-hidden /></Button>
-          </div>
-
-          {selected.doNotCall && selected.doNotCallReason && (
-            <p className="text-sm text-destructive">Do not call: {selected.doNotCallReason}</p>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2">
-            {!selected.doNotCall && (revealed[selected.userId] ? (
-              <a className="inline-flex items-center gap-1.5 text-sm font-medium underline" href={`tel:${revealed[selected.userId]}`}>
-                <Phone className="size-4" aria-hidden /> {revealed[selected.userId]}
-              </a>
-            ) : (
-              <>
-                <select aria-label={`Why are you calling ${selected.fullName}?`} className={selectClass}
-                  value={purposes[selected.userId] ?? ""}
-                  onChange={(e) => setPurposes((prev) => ({ ...prev, [selected.userId]: e.target.value as CrmCallPurpose }))}>
-                  <option value="" disabled>Call purpose</option>
-                  <option value="SUPPORT">Support</option>
-                  <option value="ONBOARDING">Onboarding</option>
-                  {selected.role === "DONOR" && <option value="FUNDRAISING">Fundraising</option>}
-                </select>
-                <Button size="sm" disabled={!purposes[selected.userId] || busyId === selected.userId} onClick={() => reveal(selected.userId)}>
-                  <Phone className="size-4" aria-hidden /> Show number
-                </Button>
-              </>
-            ))}
-            {!selected.doNotCall && (
-              <Button size="sm" variant="outline" onClick={() => { setReasonFor("set"); setReason(""); }}>
-                <PhoneOff className="size-4" aria-hidden /> Do not call
-              </Button>
-            )}
-            {selected.doNotCall && canManage && (
-              <Button size="sm" variant="outline" onClick={() => { setReasonFor("clear"); setReason(""); }}>Clear do not call</Button>
-            )}
-          </div>
-
-          {reasonFor && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Input className="w-full" maxLength={500} value={reason} autoFocus aria-label="Reason"
-                placeholder={reasonFor === "clear" ? "Why can we call again?" : "What did they say?"}
-                onChange={(e) => setReason(e.target.value)} />
-              <Button size="sm" disabled={!reason.trim() || busyId === selected.userId} onClick={() => saveReason(selected.userId)}>Save</Button>
-              <Button size="sm" variant="ghost" onClick={() => setReasonFor(null)}>Cancel</Button>
-            </div>
-          )}
-
-          <CrmContactActivity key={selected.userId} userId={selected.userId} role={selected.role} onChanged={changed} />
-        </aside>
-      )}
     </div>
   );
 }
