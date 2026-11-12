@@ -497,6 +497,11 @@ export default function SuperAdminPage() {
   const [viewingRequest, setViewingRequest] = useState<SuperAdminRow | null>(null);
 
   function handleNavClick(key: SectionKey) {
+    // The CRM lives in its own staff portal.
+    if (key === "calls") {
+      router.push("/crm");
+      return;
+    }
     if (key === "sql" && !sqlAck) {
       setSqlModalOpen(true);
       return;

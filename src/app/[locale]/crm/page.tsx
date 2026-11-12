@@ -34,7 +34,7 @@ export default function CrmPortalPage() {
         <span className="font-semibold">CauseKind CRM</span>
         <span className="ml-auto hidden truncate text-sm text-slate-200 sm:inline">{user?.email}</span>
         {user?.role === "SUPER_ADMIN" || canManage ? (
-          <Link href="/admin/dashboard" className="text-sm text-slate-200 hover:text-white">Admin</Link>
+          <Link href={user?.role === "SUPER_ADMIN" ? "/super-admin" : "/admin/dashboard"} className="text-sm text-slate-200 hover:text-white">{user?.role === "SUPER_ADMIN" ? "Super Admin" : "Admin"}</Link>
         ) : null}
         <button type="button" onClick={logout} aria-label="Sign out"
           className="flex h-8 items-center gap-1.5 rounded px-2 text-sm text-slate-200 hover:bg-white/10 hover:text-white">
