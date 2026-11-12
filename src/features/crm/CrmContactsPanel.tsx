@@ -3,9 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
 import {
-  crmAssignContact, crmClearDoNotCall, crmFollowups, crmListContacts, crmListStaff, crmReport,
+  crmAssignCaller, crmCallers, crmClearDoNotCall, crmFollowups, crmListContacts, crmReport,
   crmRevealPhone, crmSetDoNotCall,
-  type CrmCallPurpose, type CrmContact, type CrmFollowup, type CrmReport, type CrmRole, type CrmStaff, type SaPage,
+  type CrmCallPurpose, type CrmCaller, type CrmContact, type CrmFollowup, type CrmReport, type CrmRole, type SaPage,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   const [data, setData] = useState<SaPage<CrmContact> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [staff, setStaff] = useState<CrmStaff[]>([]);
+  const [callers, setCallers] = useState<CrmCaller[]>([]);
   const [followups, setFollowups] = useState<CrmFollowup[]>([]);
   const [report, setReport] = useState<CrmReport | null>(null);
   const [showSummary, setShowSummary] = useState(false);
@@ -90,8 +90,8 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
   }, [canManage, refreshKey]);
 
   useEffect(() => {
-    if (canManage) crmListStaff().then(setStaff).catch(() => {});
-  }, [canManage]);
+    crmCallers().then(setCallers).catch(() => {});
+  }, [refreshKey]);
 
   useEffect(() => {
     if (openId === null) return;
@@ -145,11 +145,11 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
     }
   }
 
-  async function assign(userId: number, ownerUserId: number | null) {
+  async function assign(userId: number, callerId: number | null) {
     setBusyId(userId);
     try {
-      await crmAssignContact(userId, ownerUserId);
-      load();
+      await crmAssignCaller(userId, callerId);
+      changed();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not assign this contact.");
     } finally {
@@ -224,7 +224,7 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                 <th className="px-3 py-2 font-semibold">Type</th>
                 <th className="px-3 py-2 font-semibold">Next action</th>
                 <th className="px-3 py-2 font-semibold">Last call</th>
-                <th className="px-3 py-2 font-semibold">Owner</th>
+                <th className="px-3 py-2 font-semibold">Assigned to</th>
                 <th className="px-3 py-2"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
@@ -249,14 +249,15 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
                     ) : <span className="text-xs text-muted-foreground">Not called</span>}
                   </td>
                   <td className="px-3 py-2.5">
-                    {canManage ? (
-                      <select aria-label={`Owner of ${c.fullName}`} className={selectClass}
-                        value={c.ownerUserId ?? ""} disabled={busyId === c.userId}
-                        onChange={(e) => assign(c.userId, e.target.value ? Number(e.target.value) : null)}>
-                        <option value="">Unassigned</option>
-                        {staff.map((s) => <option key={s.id} value={s.id}>{s.fullName}</option>)}
-                      </select>
-                    ) : (c.ownerName ?? "Unassigned")}
+                    <select aria-label={`Assigned caller for ${c.fullName}`} className={selectClass}
+                      value={c.assignedCallerId ?? ""} disabled={busyId === c.userId}
+                      onChange={(e) => assign(c.userId, e.target.value ? Number(e.target.value) : null)}>
+                      <option value="">Unassigned</option>
+                      {c.assignedCallerId && !callers.some((x) => x.id === c.assignedCallerId) && (
+                        <option value={c.assignedCallerId}>{c.assignedCallerName ?? "Removed name"}</option>
+                      )}
+                      {callers.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                    </select>
                   </td>
                   <td className="px-3 py-2.5 text-right">
                     <Button size="sm" variant={c.doNotCall ? "outline" : "default"} onClick={() => open(c.userId)}>

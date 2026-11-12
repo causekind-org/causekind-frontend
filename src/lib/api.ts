@@ -4275,6 +4275,8 @@ export type CrmContact = {
   hasRequest: boolean;
   ownerUserId: number | null;
   ownerName: string | null;
+  assignedCallerId: number | null;
+  assignedCallerName: string | null;
   doNotCall: boolean;
   doNotCallReason: string | null;
   identityReview: boolean;
@@ -4303,13 +4305,16 @@ export type CrmCallOutcome = "CONNECTED" | "NO_ANSWER" | "BUSY" | "SWITCHED_OFF"
 
 export type CrmActivity = {
   id: number;
-  kind: "CALL" | "NOTE";
+  kind: "CALL" | "NOTE" | "CHANGE" | "ACCESS";
   outcome: CrmCallOutcome | null;
   purpose: CrmCallPurpose | null;
   notes: string | null;
   callerName: string | null;
   actorEmail: string;
   occurredAt: string;
+  fieldName: string | null;
+  oldValue: string | null;
+  newValue: string | null;
 };
 
 export type CrmFollowup = {
@@ -7850,3 +7855,11 @@ export const sahasAdmin = {
   approveOutcome: (id: number, version: number) =>
     request<SahasOutcome>(`${SA}/${id}/outcome/approve`, { method: "POST", body: JSON.stringify({ version }) }),
 };
+
+/** Assign a contact to a caller name (null clears it). Any CRM staff member may do this; it is logged. */
+export function crmAssignCaller(userId: number, callerId: number | null) {
+  return request<void>(`/api/v1/admin/crm/contacts/${userId}/caller`, {
+    method: "PUT",
+    body: JSON.stringify({ callerId }),
+  });
+}

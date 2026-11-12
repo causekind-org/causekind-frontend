@@ -234,6 +234,12 @@ export default function AdminDashboardPage() {
   );
   // If the tab currently open gets revoked (or the default "campaigns" tab
   // itself is revoked), fall back to the first tab this admin can still see.
+  // Staff whose only access is the CRM work in the separate portal.
+  useEffect(() => {
+    if (myPermissions === null) return;
+    const visible = (Object.keys(TAB_CAPABILITY) as TabKey[]).filter(canSeeTab);
+    if (visible.length === 1 && visible[0] === "calls") router.replace("/crm");
+  }, [myPermissions, canSeeTab, router]);
   useEffect(() => {
     if (myPermissions === null || canSeeTab(tab)) return;
     const fallback = (Object.keys(TAB_CAPABILITY) as TabKey[]).find(canSeeTab);
@@ -1322,7 +1328,12 @@ export default function AdminDashboardPage() {
           {tab === "whatsapp" && <WhatsAppPanel />}
 
           {/* ── CRM — staff call list ── */}
-          {tab === "calls" && <CrmContactsPanel canManage={myPermissions?.CRM_MANAGE === true} />}
+          {tab === "calls" && (
+            <div className="space-y-3">
+              <a href="/crm" className="inline-block text-sm font-medium text-[#b04a15] hover:underline">Open the CRM portal →</a>
+              <CrmContactsPanel canManage={myPermissions?.CRM_MANAGE === true} />
+            </div>
+          )}
 
           {/* ── FUNDRAISING — the /admin/fundraising pages, rendered in the panel ── */}
           {tab === "fundraising" && <AdminFundraisingPanel path={frPath} go={setFrPath} />}

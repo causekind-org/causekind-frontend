@@ -21,6 +21,35 @@ const OUTCOMES: { value: CrmCallOutcome; label: string }[] = [
 
 const selectClass = "h-8 rounded-md border bg-background px-2 text-sm";
 
+type Kind = CrmActivity["kind"];
+
+const KIND_FILTERS: { label: string; value: Kind | null }[] = [
+  { label: "All", value: null },
+  { label: "Calls", value: "CALL" },
+  { label: "Notes", value: "NOTE" },
+  { label: "Changes", value: "CHANGE" },
+  { label: "Number views", value: "ACCESS" },
+];
+
+const KIND_LABEL: Record<Kind, string> = { CALL: "Call", NOTE: "Note", CHANGE: "Change", ACCESS: "Viewed" };
+
+const KIND_STYLE: Record<Kind, string> = {
+  CALL: "bg-orange-50 text-orange-900",
+  NOTE: "bg-muted text-foreground",
+  CHANGE: "bg-indigo-50 text-indigo-900",
+  ACCESS: "bg-emerald-50 text-emerald-900",
+};
+
+function title(a: CrmActivity) {
+  if (a.kind === "CALL") {
+    const outcome = OUTCOMES.find((o) => o.value === a.outcome)?.label ?? a.outcome;
+    return `Call logged: ${outcome}${a.purpose ? ` (${a.purpose.toLowerCase()})` : ""}`;
+  }
+  if (a.kind === "NOTE") return "Note added";
+  if (a.kind === "ACCESS") return "Phone number viewed";
+  return `${a.fieldName} changed`;
+}
+
 function formatIst(value: string) {
   return new Date(value).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }) + " IST";
 }
@@ -39,6 +68,8 @@ export function CrmContactActivity({ userId, role, onChanged }: {
   const [note, setNote] = useState("");
   const [requestId, setRequestId] = useState(() => crypto.randomUUID());
   const [busy, setBusy] = useState(false);
+  const [kindFilter, setKindFilter] = useState<Kind | null>(null);
+  const shown = kindFilter ? items.filter((a) => a.kind === kindFilter) : items;
 
   const load = useCallback(() => {
     crmHistory(userId).then((p) => setItems(p.items)).catch(() => toast.error("Could not load the history."));
@@ -125,17 +156,44 @@ export function CrmContactActivity({ userId, role, onChanged }: {
         <Button size="sm" variant="outline" disabled={!note.trim() || busy} onClick={saveNote}>Save note</Button>
       </div>
 
-      {items.length === 0 ? <p className="text-xs text-muted-foreground">No calls or notes yet.</p> : (
-        <ul className="space-y-1.5">
-          {items.map((a) => (
-            <li key={a.id} className="text-xs">
-              <span className="font-medium">{a.kind === "CALL" ? `Call: ${a.outcome}` : "Note"}</span>
-              {a.purpose && ` (${a.purpose})`} · {formatIst(a.occurredAt)} · {a.callerName ?? a.actorEmail}
-              {a.notes && <p className="whitespace-pre-wrap text-muted-foreground">{a.notes}</p>}
-            </li>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="mr-1 text-sm font-medium">Activity log</p>
+          {KIND_FILTERS.map((f) => (
+            <button key={f.label} type="button" onClick={() => setKindFilter(f.value)}
+              aria-pressed={kindFilter === f.value}
+              className={`rounded-full border px-2.5 py-0.5 text-xs ${
+                kindFilter === f.value ? "border-blue-700 bg-blue-50 text-blue-900" : "hover:bg-muted"
+              }`}>
+              {f.label}
+            </button>
           ))}
-        </ul>
-      )}
+        </div>
+        {shown.length === 0 ? <p className="text-xs text-muted-foreground">Nothing here yet.</p> : (
+          <ul className="divide-y rounded-md border">
+            {shown.map((a) => (
+              <li key={a.id} className="space-y-0.5 px-3 py-2 text-xs">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className={`rounded-full px-2 py-px text-[11px] ${KIND_STYLE[a.kind]}`}>{KIND_LABEL[a.kind]}</span>
+                  <span className="font-medium">{title(a)}</span>
+                  <span className="ml-auto text-muted-foreground">{formatIst(a.occurredAt)}</span>
+                </div>
+                {(a.kind === "CHANGE" || a.kind === "ACCESS") && (
+                  <p>
+                    {a.oldValue && <><span className="text-red-800 line-through">{a.oldValue}</span> → </>}
+                    <span className="text-green-800">{a.newValue}</span>
+                  </p>
+                )}
+                {a.notes && <p className="whitespace-pre-wrap text-muted-foreground">{a.notes}</p>}
+                <p className="text-muted-foreground">
+                  By {a.callerName ? `${a.callerName} (${a.actorEmail})` : a.actorEmail}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-[11px] text-muted-foreground">Entries are permanent. Nobody can edit or delete them.</p>
+      </div>
     </div>
   );
 }
