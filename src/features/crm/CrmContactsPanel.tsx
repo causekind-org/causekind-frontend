@@ -191,7 +191,10 @@ export function CrmContactsPanel({ canManage }: { canManage: boolean }) {
               {data.items.map((c) => (
                 <tr key={c.userId} className={`border-b last:border-0 ${openId === c.userId ? "bg-muted/50" : ""}`}>
                   <td className="px-3 py-2.5">
-                    <p className="font-medium">{c.fullName}</p>
+                    <button type="button" onClick={() => open(c.userId)}
+                      className="text-left font-medium text-blue-700 hover:underline">
+                      {c.fullName}
+                    </button>
                     <p className="text-xs tabular-nums text-muted-foreground">{[c.maskedPhone, c.city].filter(Boolean).join(" · ")}</p>
                   </td>
                   <td className="px-3 py-2.5">
