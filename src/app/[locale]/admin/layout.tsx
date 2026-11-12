@@ -20,6 +20,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (isLoading) return;
     if (!user) { router.push("/login"); return; }
     if (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN") { router.push("/"); return; }
+    // CRM staff logins work only in the CRM portal.
+    if (user.email?.endsWith("@crm.causekind")) { router.replace("/crm"); return; }
   }, [user, isLoading, router]);
 
   if (isLoading || !user || (user.role !== "ADMIN" && user.role !== "SUPER_ADMIN")) {

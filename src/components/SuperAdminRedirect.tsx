@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { isCrmPath } from "./AdminRedirect";
 
 /**
  * Super admins must only ever see the command center. If an authenticated
@@ -16,7 +17,7 @@ export function SuperAdminRedirect() {
 
   useEffect(() => {
     if (isLoading || !user) return;
-    if (user.role === "SUPER_ADMIN" && !pathname.startsWith("/super-admin")) {
+    if (user.role === "SUPER_ADMIN" && !pathname.startsWith("/super-admin") && !isCrmPath(pathname)) {
       router.replace("/super-admin");
     }
   }, [user, isLoading, pathname, router]);
