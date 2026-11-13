@@ -46,10 +46,10 @@ export function RoleHome({
       <HomeSahasCampaigns />
       <DiwaliSeam kind="edge" from="butter" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
+      {/* Verified fundraisers come first, then About CauseKind (swapped 2026-11-13). */}
+      <HomeFundraisers />
       {/* The main page's About (flip cards), in the default donor colours. */}
       <WhoAreWeDesktop />
-      {/* Verified fundraisers section after About CauseKind */}
-      <HomeFundraisers />
       <DiwaliSeam kind="diya" diyas={3} />
       <DiwaliSeam kind="line" />
       <SupportGallery />

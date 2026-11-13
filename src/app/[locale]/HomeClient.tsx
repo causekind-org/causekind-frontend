@@ -313,8 +313,14 @@ export default function HomeClient({
       <DiwaliSeam kind="edge" from="film" to="crimson" />
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
 
-      {/* SECTION 1 — WHO ARE WE (The CauseKind Orbit). Also the film's skip target. */}
-      <section id="who-we-are" ref={afterFilmRef} tabIndex={-1} aria-label={whoWeAreLabel} className="outline-none">
+      {/* Verified fundraisers come first, then Who Are We / About CauseKind (swapped 2026-11-13).
+          The wrapper is the film's skip target, so skipping the intro lands on the fundraisers. */}
+      <div ref={afterFilmRef as React.RefObject<HTMLDivElement>} tabIndex={-1} className="outline-none">
+        <HomeFundraisers />
+      </div>
+
+      {/* WHO ARE WE (The CauseKind Orbit). */}
+      <section id="who-we-are" aria-label={whoWeAreLabel} className="outline-none">
         <div className="hidden lg:block">
           <WhoAreWeDesktop />
         </div>
@@ -322,9 +328,6 @@ export default function HomeClient({
           <WhoAreWeSection />
         </div>
       </section>
-
-      {/* Verified fundraisers section after Who Are We / About CauseKind */}
-      <HomeFundraisers />
 
       <DiwaliSeam kind="diya" diyas={3} />
       <DiwaliSeam kind="line" />
