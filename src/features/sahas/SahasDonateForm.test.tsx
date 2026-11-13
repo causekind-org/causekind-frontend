@@ -64,6 +64,17 @@ describe("SahasDonateForm", () => {
     expect(input).toHaveProperty("value", "20");
   });
 
+  it("keeps the old amounts on other campaigns, even with an amounts list", async () => {
+    const diwali = campaign(TIERS);
+    diwali.card = { ...diwali.card, slug: "diwali-feed-hungry01" };
+    detail.mockResolvedValue(diwali);
+    render(<SahasDonateForm slug="diwali-feed-hungry01" />);
+    expect(await screen.findByLabelText("Amount (₹)")).toHaveProperty("value", "101");
+    expect(screen.getByRole("button", { name: "₹251" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "₹10" })).toBeNull();
+    expect(screen.queryByText("Can feed up to 10 stray dogs or cats")).toBeNull();
+  });
+
   it("keeps the old amounts when the campaign has no amounts list", async () => {
     detail.mockResolvedValue(campaign(null));
     render(<SahasDonateForm slug="feed-stray-animals" />);

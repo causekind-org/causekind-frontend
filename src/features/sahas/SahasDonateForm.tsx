@@ -15,12 +15,19 @@ const MIN = 1;
 const PRESETS = [101, 251, 501, 1001, 2001, 5001];
 /** Small amounts shown above the bundles, so anyone can give something. */
 const SMALL = [10, 20, 50, 100];
+/**
+ * Campaigns that show the small amounts and the clickable bundles (owner, 2026-11-13). Every other
+ * campaign keeps the PRESETS buttons, even when its page has an amounts list. Add a page address here
+ * to switch a campaign over.
+ */
+const BUNDLE_CAMPAIGNS = new Set(["feed-stray-animals"]);
 
 export type SahasBundle = { value: number; text: string };
 
 /** Clickable amounts from the admin's "How your contribution helps" list; rows without a rupee number are skipped. */
 export function bundlesOf(d: SahasCampaignDetail | null | undefined): SahasBundle[] {
-  return (d?.page?.tiers ?? [])
+  if (!d || !BUNDLE_CAMPAIGNS.has(d.card.slug)) return [];
+  return (d.page?.tiers ?? [])
     .map((t) => ({ value: Number((t.amount ?? "").replace(/\D/g, "")), text: (t.text ?? "").trim() }))
     .filter((b) => Number.isSafeInteger(b.value) && b.value >= MIN);
 }
