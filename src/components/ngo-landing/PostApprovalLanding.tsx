@@ -18,6 +18,7 @@ import {
 import { useRouter } from "next/navigation";
 import { triggerNgoLockedToast, type NgoStatusData } from "./useNgoStatus";
 import { NgoHeroRedesign } from "./NgoHeroRedesign";
+import { NgoJourneyMobileDeck } from "./NgoJourneyMobileDeck";
 import { NgoProofDueSection } from "./NgoProofDueSection";
 import { NgoSuccessStories } from "./NgoSuccessStories";
 import {
@@ -389,7 +390,8 @@ export function PostApprovalLanding({ status }: { status: NgoStatusData }) {
             </h2>
           </div>
 
-          <div className="flex flex-col gap-6">
+          <NgoJourneyMobileDeck steps={journeySteps} label="Drive journey steps" />
+          <div className="hidden flex-col gap-6">
             {journeySteps.map((step) => (
               <div
                 key={step.num}
