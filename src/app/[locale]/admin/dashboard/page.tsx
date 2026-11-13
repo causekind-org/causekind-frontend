@@ -757,6 +757,28 @@ export default function AdminDashboardPage() {
             </button>
           ))}
 
+          {showIssues && (
+            <div className="pt-2">
+              <button
+                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
+                aria-current={tab === "issues" ? "page" : undefined}
+                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
+                  tab === "issues" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
+                }`}
+                style={{ background: tab === "issues" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
+              >
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: tab === "issues" ? "#b04a15" : "#f59e0b" }} aria-hidden />
+                  <span className={`text-sm font-semibold ${tab === "issues" ? "text-white" : "text-stone-400"}`}>Issues</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {openIssues > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
+                  <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: openIssues > 0 ? "#f59e0b" : "#3d3d52" }}>{openIssues}</span>
+                </div>
+              </button>
+            </div>
+          )}
+
           {NGO_TABS.length > 0 && (
             <div className="pt-2 space-y-2">
               <button
@@ -797,28 +819,6 @@ export default function AdminDashboardPage() {
                   ))}
                 </div>
               )}
-            </div>
-          )}
-
-          {showIssues && (
-            <div className="pt-2">
-              <button
-                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
-                aria-current={tab === "issues" ? "page" : undefined}
-                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
-                  tab === "issues" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
-                }`}
-                style={{ background: tab === "issues" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
-              >
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: tab === "issues" ? "#b04a15" : "#f59e0b" }} aria-hidden />
-                  <span className={`text-sm font-semibold ${tab === "issues" ? "text-white" : "text-stone-400"}`}>Issues</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {openIssues > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                  <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: openIssues > 0 ? "#f59e0b" : "#3d3d52" }}>{openIssues}</span>
-                </div>
-              </button>
             </div>
           )}
 

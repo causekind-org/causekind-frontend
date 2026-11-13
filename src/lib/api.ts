@@ -5970,6 +5970,8 @@ export type NgoOverview = {
 export type NgoSuccessStory = {
   id: number; title: string; photoUrls: string[]; peopleReached?: number | null; quantityDistributed?: number | null;
   distributedOn?: string | null; location?: string | null; note?: string | null;
+  /** The drive's unit (e.g. KITS); the card reads "<qty> <unit> distributed". */
+  unit?: string | null;
 };
 export function getNgoOverview() {
   // Activity events must not reuse totals cached before the handover changed.
@@ -6309,6 +6311,8 @@ export type AdminNgoProfileChange = {
   request: NgoProfileChangeRequest; ngoUserId: number; organizationName: string; slug?: string | null;
   /** Signed previews of the ID proofs in the old and new representatives (document id → link). */
   idProofUrls?: Record<string, string> | null;
+  /** Admin who approved or refused it. */
+  decidedBy?: string | null;
 };
 /** How many profile changes wait for review (the admin sidebar badge). */
 export function adminGetNgoProfileChangesCount() {
@@ -6397,9 +6401,9 @@ export function deleteNgoActivityVideo(id: number, mediaId: number) {
   return request<void>(`/api/v1/ngo/activities/${id}/video/${mediaId}`, { method: "DELETE" });
 }
 
-export type AdminNgoActivity = { applicationUnderReview?: boolean; editOfLive?: boolean; activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
-export function getPendingNgoActivities() {
-  return request<AdminNgoActivity[]>("/api/v1/admin/ngo-activities");
+export type AdminNgoActivity = { applicationUnderReview?: boolean; editOfLive?: boolean; resubmitted?: boolean; decidedBy?: string | null; decidedAt?: string | null; activity: NgoActivity; ngoUserId: number; organizationName?: string | null };
+export function getPendingNgoActivities(status = "PENDING") {
+  return request<AdminNgoActivity[]>(`/api/v1/admin/ngo-activities?status=${encodeURIComponent(status)}`);
 }
 export function approveNgoActivity(id: number) {
   return request<NgoActivity>(`/api/v1/admin/ngo-activities/${id}/approve`, { method: "PATCH" });
@@ -6510,6 +6514,7 @@ export function adminRejectNgoDrive(id: number, reason: string) {
   return request<NgoDrive>(`/api/v1/admin/ngo-drives/${id}/reject`, { method: "PATCH", body: JSON.stringify({ reason }) });
 }
 export type AdminProofDrive = NgoDrive & {
+  proofDecision?: "APPROVED" | "REJECTED" | null; proofDecidedBy?: string | null; proofDecidedAt?: string | null; proofDecisionReason?: string | null;
   distributionProofUrls?: string | null; distributionProofSubmittedAt?: string | null; beneficiariesReached?: number | null;
   proofDistributedOn?: string | null; proofLocation?: string | null; proofQuantityDistributed?: number | null;
   proofNote?: string | null; proofConsentConfirmed?: boolean | null; proofFacesBlurred?: boolean | null;
@@ -6521,8 +6526,8 @@ export type AdminProofDrive = NgoDrive & {
   donors?: NgoDriveReportDonor[] | null;
   proofDonors?: Partial<NgoDriveReportDonor>[] | null;
 };
-export function adminGetNgoDriveProofs() {
-  return request<AdminProofDrive[]>("/api/v1/admin/ngo-drives/proofs");
+export function adminGetNgoDriveProofs(status = "PENDING") {
+  return request<AdminProofDrive[]>(`/api/v1/admin/ngo-drives/proofs?status=${encodeURIComponent(status)}`);
 }
 export function adminApproveNgoDriveProof(id: number) {
   return request<void>(`/api/v1/admin/ngo-drives/${id}/proof/approve`, { method: "PATCH" });
