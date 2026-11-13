@@ -925,6 +925,13 @@ export function NgoProfileView() {
           </div>
         )}
 
+        {application && ["UNDER_REVIEW", "PENDING_VERIFICATION", "NEEDS_INFORMATION"].includes(application.status) && (
+          // Before approval: the past activity sent with the application, so a refused one can be fixed here.
+          <div data-testid="profile-past-activity" className="rounded-2xl border border-[#EADBCE] dark:border-emerald-950/80 bg-[#FAF7F2] dark:bg-[#141E18] p-5 sm:p-6 shadow-sm min-w-0">
+            <PastActivitySection headingClassName="text-lg sm:text-xl font-serif font-bold text-stone-900 dark:text-stone-100 tracking-tight" />
+          </div>
+        )}
+
         {application?.status === "APPROVED" && (
           // About the NGO full width (horizontal on desktop), then Past activity full width below it.
           <div className="flex flex-col gap-4 sm:gap-6 min-w-0">

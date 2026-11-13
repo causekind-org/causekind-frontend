@@ -10,6 +10,11 @@ import { useAuth } from "@/hooks/useAuth";
  * (home, login, profile, etc.), bounce them to /admin/dashboard.
  * Mounted once in the root layout alongside SuperAdminRedirect.
  */
+/** The staff CRM portal, with or without a locale prefix. */
+export function isCrmPath(pathname: string) {
+  return pathname === "/crm" || pathname.startsWith("/crm/") || /^\/[a-z]{2}(-[A-Za-z]{2})?\/crm(\/|$)/.test(pathname);
+}
+
 export function AdminRedirect() {
   const { user, isLoading } = useAuth();
   const pathname = usePathname();
@@ -17,7 +22,8 @@ export function AdminRedirect() {
 
   useEffect(() => {
     if (isLoading || !user) return;
-    if (user.role === "ADMIN" && !pathname.startsWith("/admin")) {
+    // /crm is the staff CRM portal: admins (CRM staff logins included) work there too.
+    if (user.role === "ADMIN" && !pathname.startsWith("/admin") && !isCrmPath(pathname)) {
       router.replace("/admin/dashboard");
     }
   }, [user, isLoading, pathname, router]);

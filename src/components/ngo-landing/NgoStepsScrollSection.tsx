@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import { motion, useReducedMotion, useScroll, useSpring } from "framer-motion";
 import { NgoSectionHeader } from "./NgoSharedComponents";
+import { NgoJourneyMobileDeck } from "./NgoJourneyMobileDeck";
 
 const IMG = "/images/ngo-landing/";
 export const NGO_STEPS = [
@@ -42,7 +43,9 @@ export function NgoStepsScrollSection() {
     <section className="ngo-section ngo-band-dark" data-testid="ngo-steps">
       <div className="ngo-container">
         <NgoSectionHeader eyebrow="How CauseKind works" h2="From registration to receiving support." isDark />
-        <div className="grid grid-cols-1 items-start gap-12 lg:grid-cols-12">
+        <NgoJourneyMobileDeck label="How CauseKind works steps"
+          steps={NGO_STEPS.map((s) => ({ title: s.title, desc: s.desc, photo: IMG + s.photo, alt: s.alt }))} />
+        <div className="hidden min-[861px]:grid grid-cols-1 items-start gap-12 lg:grid-cols-12">
           <ol ref={listRef} className="relative lg:col-span-6">
             <span className="absolute bottom-6 left-6 top-6 w-[3px] rounded-full bg-white/15" aria-hidden />
             <motion.span className="absolute left-6 top-6 w-[3px] origin-top rounded-full bg-[#D9A441]" aria-hidden
