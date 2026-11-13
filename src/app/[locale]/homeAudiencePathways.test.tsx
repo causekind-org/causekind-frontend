@@ -84,6 +84,8 @@ vi.mock("@/lib/api", () => ({
   getItemRequests: vi.fn().mockResolvedValue([]),
   getMyItemRequests: vi.fn().mockResolvedValue([]),
   getNgoDrives: vi.fn().mockResolvedValue([]),
+  // The guest home now leads with live fundraisers (HomeFundraisers).
+  fundraisers: { live: vi.fn().mockResolvedValue([]) },
 }));
 
 vi.mock("@/components/Reveal", () => ({
