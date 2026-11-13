@@ -75,6 +75,23 @@ describe("SahasDonateForm", () => {
     expect(screen.queryByText("Can feed up to 10 stray dogs or cats")).toBeNull();
   });
 
+  it("still asks every donor for PAN and address on other campaigns", async () => {
+    const diwali = campaign(TIERS);
+    diwali.card = { ...diwali.card, slug: "diwali-feed-hungry01" };
+    detail.mockResolvedValue(diwali);
+    render(<SahasDonateForm slug="diwali-feed-hungry01" />);
+    await screen.findByLabelText("Amount (₹)");
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    fireEvent.change(screen.getByLabelText("Full name"), { target: { value: "Asha Rao" } });
+    fireEvent.change(screen.getByLabelText("Email"), { target: { value: "asha@example.com" } });
+    fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+919876543210" } });
+    fireEvent.click(screen.getByRole("button", { name: "Continue" }));
+    expect(screen.getByText(/PAN and address/)).toBeTruthy();
+    expect(screen.getByPlaceholderText("ABCDE1234F")).toBeTruthy();
+    expect(screen.getByLabelText("Address")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Check your PAN" })).toHaveProperty("disabled", true);
+  });
+
   it("keeps the old amounts when the campaign has no amounts list", async () => {
     detail.mockResolvedValue(campaign(null));
     render(<SahasDonateForm slug="feed-stray-animals" />);
