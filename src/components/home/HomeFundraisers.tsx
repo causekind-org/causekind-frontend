@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { ChevronLeft, ChevronRight, MapPin, ArrowRight, ShieldCheck, Heart } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, ArrowRight, ShieldCheck, Heart, Smile } from "lucide-react";
+
+// Empty-state tile icon. Swap to Sparkles to match the NGO drives page.
+const EmptyStateIcon = Smile;
 
 import Link from "@/components/AppLink";
 import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
@@ -345,7 +348,7 @@ export function HomeFundraisers() {
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2 max-w-2xl">
           <div className="inline-flex items-center gap-2 w-fit px-3 py-1 rounded-full bg-[#fbe8c2]/80 dark:bg-[#720d2d]/40 border border-[#d9a441]/40 text-xs font-bold uppercase tracking-[0.16em] text-[#8e123c] dark:text-[#f4a340] shadow-2xs">
-            <span role="img" aria-hidden="true" className="text-sm">🪔</span>
+            <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
             <span><LandingText>Verified Fundraisers</LandingText></span>
           </div>
 
@@ -450,7 +453,9 @@ export function HomeFundraisers() {
           href={DONATE_HREF}
           className="group relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed border-[#d9a441]/40 bg-[#fbe8c2]/20 dark:bg-[#1f0910]/40 text-center gap-3 no-underline transition-all hover:border-[#d9a441]"
         >
-          <span className="text-4xl" role="img" aria-label="Diya">🪔</span>
+          <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400 dark:text-stone-500">
+            <EmptyStateIcon className="w-6 h-6" aria-hidden="true" />
+          </div>
           <h3 className="font-bold text-lg text-[#720d2d] dark:text-[#f9dfc0]">
             <LandingText>No fundraisers yet</LandingText>
           </h3>
