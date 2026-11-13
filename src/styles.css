@@ -5428,3 +5428,19 @@ header[data-calm-header] .ck-logo-kind-shimmer {
   color: #b04a15;
 }
 .dark header[data-calm-header] .ck-logo-kind-shimmer { color: #ff8a4c; }
+
+/* Donate bottom sheet (DonateChoice): a 300ms slide instead of vaul's 500ms,
+   and next to no motion for visitors who ask for less. 1ms rather than "none"
+   so the close still fires animationend and the sheet unmounts. */
+.ck-donate-sheet[data-vaul-drawer],
+.ck-donate-sheet-overlay[data-vaul-overlay][data-vaul-snap-points] {
+  animation-duration: 0.3s;
+  transition-duration: 0.3s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-donate-sheet[data-vaul-drawer],
+  .ck-donate-sheet-overlay[data-vaul-overlay][data-vaul-snap-points] {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
