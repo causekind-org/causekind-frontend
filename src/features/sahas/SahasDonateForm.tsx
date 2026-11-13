@@ -234,13 +234,13 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const box = onClose ? "flex flex-col gap-3" : "flex flex-col gap-3 rounded-2xl border border-[#EADFD3] bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900";
   const short = !!onClose && wants80g;
   // One small question at a time: amount and support, who you are, tax details, then review and pay.
-  const STEPS = [ui("Your donation"), ui("Your details"), panOnly80g ? ui("80G receipt (optional)") : ui("PAN and address"), ui("Review and pay")];
+  const STEPS = [ui("Your donation"), ui("Your details"), panOnly80g ? ui("80G receipt (optional)") : ui("PAN and address")];
   const panFields = <>
     <label className="flex flex-col gap-1.5 text-sm font-semibold">PAN<input className={`${field} uppercase`} value={pan} maxLength={10} placeholder="ABCDE1234F" onChange={(e) => setPan(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))} /></label>
     {pan.length === 10 && !panOk && <p className={hint}><UiText>That PAN doesn&apos;t look right. It should be like ABCDE1234F.</UiText></p>}
     <label className="flex flex-col gap-1 text-xs sm:text-sm font-semibold text-[#3a0716] dark:text-stone-200"><UiText>Address</UiText><input className={field} value={address} maxLength={300} onChange={(e) => setAddress(e.target.value)} autoComplete="street-address" /></label>
   </>;
-  const stepOk = [valid, detailsOk, taxOk, true][step];
+  const stepOk = [valid, detailsOk, taxOk][step];
   const stepHead = <p className="m-0 text-xs font-semibold text-[#6B5A4E] dark:text-stone-400">{ui("Step")} {step + 1} {ui("of")} {STEPS.length} · {STEPS[step]}</p>;
   const fields = <>
     {stepHead}
@@ -313,7 +313,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     </section>}
   </>;
   const back = step > 0 && <button type="button" onClick={() => { setError(null); setStep(step - 1); }} className="min-h-[48px] rounded-xl border border-[#CDBBA8] px-5 text-[15px] font-semibold"><UiText>Back</UiText></button>;
-  const footer = step < 3 ? <>
+  const footer = step < 2 ? <>
     {step === 0 && <div className="flex justify-between font-semibold"><span><UiText>You pay</UiText></span><span>₹{valid ? total.toLocaleString("en-IN") : "—"}</span></div>}
     <div className="flex gap-2">
       {back}

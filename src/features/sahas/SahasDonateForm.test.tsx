@@ -108,8 +108,8 @@ describe("SahasDonateForm", () => {
     fireEvent.change(screen.getByLabelText("Email"), { target: { value: "asha@example.com" } });
     fireEvent.change(screen.getByLabelText("Phone"), { target: { value: "+919876543210" } });
     fireEvent.click(screen.getByRole("button", { name: "Continue" }));
-    // Without the 80G tick this step is already complete.
-    expect(screen.getByRole("button", { name: "Continue" })).toHaveProperty("disabled", false);
+    // Without the 80G tick this last step pays straight away.
+    expect(screen.getByRole("button", { name: /^Pay ₹/ })).toHaveProperty("disabled", false);
     expect(screen.queryByPlaceholderText("ABCDE1234F")).toBeNull();
     expect(screen.queryByLabelText("Address")).toBeNull();
     fireEvent.click(screen.getByLabelText("I want an 80G receipt"));
