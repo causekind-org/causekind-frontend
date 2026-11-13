@@ -81,7 +81,6 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const [cardRead, setCardRead] = useState<{ read: boolean; panNumber?: string | null; nameOnCard?: string | null } | null>(null);
   const [cardReading, setCardReading] = useState(false);
   const cardFile = useRef<File | null>(null);
-  const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Result | null>(null);
@@ -151,7 +150,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   // Says what's left to do, so a disabled button is never a mystery.
   const todo = !valid ? ui("Enter an amount") : !user && !nameOk ? ui("Add your full name") : !user && !emailOk ? ui("Add a valid email")
     : !phoneOk ? ui("Check your phone number") : needTax && !panOk ? ui("Check your PAN") : needTax && address.trim().length < 10 ? ui("Add your full address")
-      : wants80g && !fileOk ? ui("Add your PAN photo, up to 5 MB") : cardIssue ? ui("Check your PAN card") : !agreed ? ui("Tick the box to agree") : null;
+      : wants80g && !fileOk ? ui("Add your PAN photo, up to 5 MB") : cardIssue ? ui("Check your PAN card") : null;
   const hint = "m-0 text-xs font-normal text-red-700";
 
   const watch = (id: number, token: string, tries = 0) => {
@@ -234,7 +233,6 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
 
   const box = onClose ? "flex flex-col gap-3" : "flex flex-col gap-3 rounded-2xl border border-[#EADFD3] bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900";
   const short = !!onClose && wants80g;
-  const slid = !!onClose && agreed;
   // One small question at a time: amount and support, who you are, tax details, then review and pay.
   const STEPS = [ui("Your donation"), ui("Your details"), panOnly80g ? ui("80G receipt (optional)") : ui("PAN and address"), ui("Review and pay")];
   const panFields = <>
@@ -328,25 +326,17 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     <section className={onClose ? "flex flex-col gap-2 text-xs leading-relaxed" : "flex flex-col gap-2 rounded-2xl bg-[#F7F1EA] p-5 text-sm leading-relaxed dark:bg-zinc-900"}>
       <div className={`flex justify-between font-semibold ${onClose ? "text-base font-bold" : ""}`}><span><UiText>You pay</UiText></span><span>₹{valid ? total.toLocaleString("en-IN") : "—"}</span></div>
       {valid && tipValue > 0 && <p className="m-0 text-xs text-[#6B5A4E] dark:text-stone-400">₹{value.toLocaleString("en-IN")} <UiText>donation</UiText> + ₹{tipValue.toLocaleString("en-IN")} <UiText>support to CauseKind</UiText></p>}
-      {/* In the popup the terms slide away once agreed, leaving room for the form. */}
-      <div aria-hidden={slid} className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none ${slid ? "grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}>
-        <div className="flex min-h-0 flex-col gap-2 overflow-hidden">
-                <p className={`m-0 ${short ? "lg:hidden" : ""}`}>{ui("Platform fee: 5% is deducted from your donation")}{valid ? ` (₹${fee.toLocaleString("en-IN")})` : ""}. <UiText>The rest goes to this campaign, through Sahas Charitable Trust.</UiText></p>
-                <p className={`m-0 ${short ? "lg:hidden" : ""}`}><UiText>Donations can&apos;t be refunded. If a payment is confirmed after the campaign closes or fills up, it is kept and reported as surplus.</UiText></p>
-        </div>
-      </div>
-      <label className="mt-2 flex min-h-[44px] items-center gap-2.5 font-semibold"><input type="checkbox" className="size-4 shrink-0" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} /> {short ? <UiText>I understand and agree to the fee and no-refund terms</UiText> : <UiText>I understand and agree</UiText>}</label>
     </section>
 
     {error && <p role="alert" className="m-0 text-sm text-red-700">{error}</p>}
     <div className="flex gap-2">
     {back}
-    <button type="button" disabled={busy || !valid || !detailsOk || !taxOk || !agreed} onClick={() => void pay()}
+    <button type="button" disabled={busy || !valid || !detailsOk || !taxOk} onClick={() => void pay()}
       className="min-h-[48px] flex-1 rounded-xl bg-gradient-to-r from-[#8e123c] via-[#a31a44] to-[#720d2d] hover:from-[#720d2d] hover:to-[#8e123c] text-[15px] font-bold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.99] disabled:opacity-50 cursor-pointer">
       {todo ?? `${ui("Pay")} ₹${total.toLocaleString("en-IN")}`}
     </button>
     </div>
-    <p className="m-0 text-center text-xs text-[#6B5A4E]"><UiText>Secured by Razorpay</UiText></p>
+    <p className="m-0 text-center text-xs text-[#6B5A4E]">{ui("5% platform fee")}{valid ? ` (₹${fee.toLocaleString("en-IN")})` : ""} · <UiText>No refunds</UiText> · <UiText>Secured by Razorpay</UiText></p>
   </>;
 
   if (!onClose) {
