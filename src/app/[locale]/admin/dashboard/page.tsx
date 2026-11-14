@@ -196,10 +196,6 @@ export default function AdminDashboardPage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
 
-  useEntityUpdates(["CAMPAIGN", "REQUEST", "LISTING", "MATCH", "OFFER"], () => {
-    loadData();
-  });
-
   // ── Approval queue state ──
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [requests, setRequests] = useState<ItemRequest[]>([]);
@@ -209,6 +205,48 @@ export default function AdminDashboardPage() {
   const [ngoAwaiting, setNgoAwaiting] = useState(0);
   const [offersInFlight, setOffersInFlight] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [rejectedListings, setRejectedListings] = useState<ItemListing[]>([]);
+  const [rejectedRequests, setRejectedRequests] = useState<ItemRequest[]>([]);
+
+  // ── Data loading ── (declared before the live-update subscription that calls it)
+  const loadData = useCallback(() => {
+    setLoading(true);
+    // Queue tabs show no NGO work; it is reviewed only in the NGO tabs.
+    const queue = { excludeNgo: true };
+    Promise.all([
+      adminGetCampaigns("PENDING_APPROVAL", queue),
+      adminGetItemRequests("PENDING_VERIFICATION", queue),
+      Promise.all([
+        adminGetItemListings("SUBMITTED", queue),
+        adminGetItemListings("MANUAL_REVIEW", queue),
+      ]).then(([submitted, manual]) => [...submitted, ...manual]),
+      adminGetMatches("PENDING_APPROVAL", queue),
+      // Offers tab manages its own list/loading inside OffersQueuePanel — here we only
+      // need counts: needs-action for the tab badge, plus open offers so the header
+      // doesn't claim "all clear" while an offer is mid-pipeline with the parties.
+      adminGetAllOffers(undefined, queue).then(all => ({
+        needsAction: all.filter(o => ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)).length,
+        open: all.filter(o => !["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED", "DRAFT"].includes(o.status)).length,
+      })),
+      // Rejected items were previously fetched by nothing at all, so an AI
+      // auto-reject was final AND invisible — no queue contained it and no admin
+      // could act on it. These two make it reviewable.
+      adminGetItemListings("REJECTED", queue),
+      adminGetItemRequests("REJECTED", queue),
+    ]).then(([c, r, l, m, offerCounts, rejL, rejR]) => {
+      setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
+      setOffersNeedingAction(offerCounts.needsAction);
+      setOffersInFlight(offerCounts.open);
+      setRejectedListings(rejL as ItemListing[]);
+      setRejectedRequests(rejR as ItemRequest[]);
+    }).catch(() => toast.error("Failed to load approval queue"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEntityUpdates(["CAMPAIGN", "REQUEST", "LISTING", "MATCH", "OFFER"], () => {
+    loadData();
+  });
+
 
   const [tab, setTab] = useState<TabKey>("campaigns");
   // Which fundraising page the panel shows when tab === "fundraising".
@@ -362,47 +400,12 @@ export default function AdminDashboardPage() {
   // Rejected queues + the pending reinstate confirmation. Reinstating republishes
   // something that was blocked for a stated safety reason, so it is never a
   // single click.
-  const [rejectedListings, setRejectedListings] = useState<ItemListing[]>([]);
-  const [rejectedRequests, setRejectedRequests] = useState<ItemRequest[]>([]);
   const [reinstateTarget, setReinstateTarget] = useState<
     { kind: "listing" | "request"; id: number; title: string } | null
   >(null);
   const [reinstating, setReinstating] = useState(false);
 
   // ── Data loading ──
-  const loadData = useCallback(() => {
-    setLoading(true);
-    // Queue tabs show no NGO work; it is reviewed only in the NGO tabs.
-    const queue = { excludeNgo: true };
-    Promise.all([
-      adminGetCampaigns("PENDING_APPROVAL", queue),
-      adminGetItemRequests("PENDING_VERIFICATION", queue),
-      Promise.all([
-        adminGetItemListings("SUBMITTED", queue),
-        adminGetItemListings("MANUAL_REVIEW", queue),
-      ]).then(([submitted, manual]) => [...submitted, ...manual]),
-      adminGetMatches("PENDING_APPROVAL", queue),
-      // Offers tab manages its own list/loading inside OffersQueuePanel — here we only
-      // need counts: needs-action for the tab badge, plus open offers so the header
-      // doesn't claim "all clear" while an offer is mid-pipeline with the parties.
-      adminGetAllOffers(undefined, queue).then(all => ({
-        needsAction: all.filter(o => ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(o.status)).length,
-        open: all.filter(o => !["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED", "DRAFT"].includes(o.status)).length,
-      })),
-      // Rejected items were previously fetched by nothing at all, so an AI
-      // auto-reject was final AND invisible — no queue contained it and no admin
-      // could act on it. These two make it reviewable.
-      adminGetItemListings("REJECTED", queue),
-      adminGetItemRequests("REJECTED", queue),
-    ]).then(([c, r, l, m, offerCounts, rejL, rejR]) => {
-      setCampaigns(c); setRequests(r); setListings(l as ItemListing[]); setMatches(m);
-      setOffersNeedingAction(offerCounts.needsAction);
-      setOffersInFlight(offerCounts.open);
-      setRejectedListings(rejL as ItemListing[]);
-      setRejectedRequests(rejR as ItemRequest[]);
-    }).catch(() => toast.error("Failed to load approval queue"))
-      .finally(() => setLoading(false));
-  }, []);
 
   async function loadAllMatches(status?: string) {
     setAllMatchesLoading(true);
@@ -2423,6 +2426,46 @@ function StatusPill({ value }: { value?: string | null }) {
   );
 }
 
+/** One rejected listing or request in {@link RejectedReviewSection}. */
+function RejectedRow({ id, title, subtitle, reason, kind, onReinstate }: {
+  id: number; title: string; subtitle: string; reason: string | null; kind: "listing" | "request";
+  onReinstate: (kind: "listing" | "request", id: number, title: string) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-100">{title}</p>
+        <p className="mt-0.5 truncate text-2xs text-stone-400">{subtitle}</p>
+        {reason && (
+          <p className="mt-1.5 rounded-lg bg-red-50 p-2 text-2xs font-semibold leading-relaxed text-red-700 dark:bg-red-950/20 dark:text-red-400">
+            {displayReason(reason)}
+          </p>
+        )}
+      </div>
+      <button
+        type="button"
+        onClick={() => onReinstate(kind, id, title)}
+        className="shrink-0 rounded-full bg-green-600 px-3 py-1.5 text-2xs font-black text-white transition-colors hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
+      >
+        Make live again
+      </button>
+    </div>
+  );
+}
+
+/** A titled group of rows in {@link RejectedReviewSection}. */
+function RejectedGroup({ title, note, children }: { title: string; note: string; children: ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div>
+        <p className="text-2xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">{title}</p>
+        <p className="text-2xs text-stone-400">{note}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
 /**
  * Rejected items an admin can put back live.
  *
@@ -2443,39 +2486,6 @@ function RejectedReviewSection({
   const byAdmin = listings.filter(l => !l.rejectedByAi);
   if (listings.length === 0 && requests.length === 0) return null;
 
-  const Row = ({ id, title, subtitle, reason, kind }: {
-    id: number; title: string; subtitle: string; reason: string | null; kind: "listing" | "request";
-  }) => (
-    <div className="flex items-start justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-bold text-stone-900 dark:text-stone-100">{title}</p>
-        <p className="mt-0.5 truncate text-2xs text-stone-400">{subtitle}</p>
-        {reason && (
-          <p className="mt-1.5 rounded-lg bg-red-50 p-2 text-2xs font-semibold leading-relaxed text-red-700 dark:bg-red-950/20 dark:text-red-400">
-            {displayReason(reason)}
-          </p>
-        )}
-      </div>
-      <button
-        type="button"
-        onClick={() => onReinstate(kind, id, title)}
-        className="shrink-0 rounded-full bg-green-600 px-3 py-1.5 text-2xs font-black text-white transition-colors hover:bg-green-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600"
-      >
-        Make live again
-      </button>
-    </div>
-  );
-
-  const Group = ({ title, note, children }: { title: string; note: string; children: ReactNode }) => (
-    <div className="space-y-2">
-      <div>
-        <p className="text-2xs font-black uppercase tracking-wider text-stone-500 dark:text-stone-400">{title}</p>
-        <p className="text-2xs text-stone-400">{note}</p>
-      </div>
-      {children}
-    </div>
-  );
-
   return (
     <section className="mb-5 space-y-4 rounded-2xl border border-amber-300 bg-amber-50/50 p-3 dark:border-amber-900 dark:bg-amber-950/10">
       <div>
@@ -2486,32 +2496,32 @@ function RejectedReviewSection({
       </div>
 
       {byAi.length > 0 && (
-        <Group title={`Rejected by AI (${byAi.length})`} note="Automated decision — check before trusting it.">
+        <RejectedGroup title={`Rejected by AI (${byAi.length})`} note="Automated decision — check before trusting it.">
           {byAi.map(l => (
-            <Row key={l.id} kind="listing" id={l.id} title={l.title}
+            <RejectedRow onReinstate={onReinstate} key={l.id} kind="listing" id={l.id} title={l.title}
               subtitle={`${l.category}${l.subcategory ? ` · ${l.subcategory}` : ""} · ${l.donorName}`}
               reason={l.rejectionReason} />
           ))}
-        </Group>
+        </RejectedGroup>
       )}
 
       {byAdmin.length > 0 && (
-        <Group title={`Rejected by an admin (${byAdmin.length})`} note="A human decided this — override only with reason.">
+        <RejectedGroup title={`Rejected by an admin (${byAdmin.length})`} note="A human decided this — override only with reason.">
           {byAdmin.map(l => (
-            <Row key={l.id} kind="listing" id={l.id} title={l.title}
+            <RejectedRow onReinstate={onReinstate} key={l.id} kind="listing" id={l.id} title={l.title}
               subtitle={`${l.category}${l.subcategory ? ` · ${l.subcategory}` : ""} · ${l.donorName}`}
               reason={l.rejectionReason} />
           ))}
-        </Group>
+        </RejectedGroup>
       )}
 
       {requests.length > 0 && (
-        <Group title={`Rejected requests (${requests.length})`} note="Approval still requires verification to be satisfied.">
+        <RejectedGroup title={`Rejected requests (${requests.length})`} note="Approval still requires verification to be satisfied.">
           {requests.map(r => (
-            <Row key={r.id} kind="request" id={r.id} title={r.title}
+            <RejectedRow onReinstate={onReinstate} key={r.id} kind="request" id={r.id} title={r.title}
               subtitle={`${r.category} · ${r.city}`} reason={r.rejectionReason} />
           ))}
-        </Group>
+        </RejectedGroup>
       )}
     </section>
   );

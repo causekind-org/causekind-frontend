@@ -110,43 +110,44 @@ export function useWizardDraft<T>(options: WizardDraftOptions<T>) {
 
   /** Sends whatever is queued. Recurses if newer data arrived mid-flight. */
   const pump = useCallback(async (): Promise<void> => {
-    if (inFlightRef.current) return;
-    const next = queuedRef.current;
-    if (next == null) return;
+    // A loop, not recursion: each pass is what the recursive call did.
+    for (;;) {
+      if (inFlightRef.current) return;
+      const next = queuedRef.current;
+      if (next == null) return;
 
-    queuedRef.current = null;
-    inFlightRef.current = true;
-    flightRevisionRef.current = revisionRef.current;
-    const sendingKey = opsRef.current.snapshotKey(next);
-    const sendingRevision = flightRevisionRef.current;
+      queuedRef.current = null;
+      inFlightRef.current = true;
+      flightRevisionRef.current = revisionRef.current;
+      const sendingKey = opsRef.current.snapshotKey(next);
+      const sendingRevision = flightRevisionRef.current;
 
-    if (!unmountedRef.current) setStatus("saving");
+      if (!unmountedRef.current) setStatus("saving");
 
-    let succeeded = false;
-    try {
-      const id = await ensureDraft();
-      await opsRef.current.updateDraft(id, next);
-      succeeded = true;
+      let succeeded = false;
+      try {
+        const id = await ensureDraft();
+        await opsRef.current.updateDraft(id, next);
+        succeeded = true;
 
-      savedKeyRef.current = sendingKey;
-      // Only claim "saved" if nothing newer has been queued in the meantime.
-      if (!unmountedRef.current && sendingRevision === revisionRef.current && queuedRef.current == null) {
-        setStatus("saved");
+        savedKeyRef.current = sendingKey;
+        // Only claim "saved" if nothing newer has been queued in the meantime.
+        if (!unmountedRef.current && sendingRevision === revisionRef.current && queuedRef.current == null) {
+          setStatus("saved");
+        }
+      } catch {
+        // Put it back so an explicit retry has something to send, but never
+        // clobber a newer snapshot that arrived while this request was failing.
+        if (queuedRef.current == null) queuedRef.current = next;
+        if (!unmountedRef.current) setStatus("error");
+      } finally {
+        inFlightRef.current = false;
       }
-    } catch {
-      // Put it back so an explicit retry has something to send, but never
-      // clobber a newer snapshot that arrived while this request was failing.
-      if (queuedRef.current == null) queuedRef.current = next;
-      if (!unmountedRef.current) setStatus("error");
-    } finally {
-      inFlightRef.current = false;
-    }
 
-    // Only chain on success. Recursing after a failure would spin forever
-    // against a down server, because the failed snapshot is put back in the
-    // queue. A retry there has to be user- or edit-initiated.
-    if (succeeded && queuedRef.current != null) {
-      await pump();
+      // Only chain on success. Recursing after a failure would spin forever
+      // against a down server, because the failed snapshot is put back in the
+      // queue. A retry there has to be user- or edit-initiated.
+      if (!(succeeded && queuedRef.current != null)) return;
     }
   }, [ensureDraft]);
 

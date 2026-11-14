@@ -94,7 +94,7 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     const { rerender } = render(<NgoDetailsPage />);
 
     const regNo = await screen.findByLabelText(/Registration Number/i);
-    await userEvent.type(regNo, "TR-1");
+    await userEvent.setup({ delay: null }).type(regNo, "TR-1");
     signedIn({ ...NGO });
     rerender(<NgoDetailsPage />);
 
@@ -285,8 +285,9 @@ describe("NGO wizard: resubmission mode", () => {
 
     await openStep(/Organization Details/i);
     const reg = await screen.findByLabelText(/Registration Number/i);
-    await userEvent.clear(reg);
-    await userEvent.type(reg, "TR/NEW");
+    const user = userEvent.setup({ delay: null });
+    await user.clear(reg);
+    await user.type(reg, "TR/NEW");
     expect(screen.getByTestId("correction-note")).toHaveAttribute("data-updated", "true");
     expect(screen.getByTestId("correction-note")).toHaveTextContent("Does not match the certificate");
     expect(screen.queryByTestId("to-fix-org-details")).toBeNull();

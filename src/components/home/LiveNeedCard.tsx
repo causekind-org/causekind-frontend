@@ -109,8 +109,8 @@ export function LiveNeedCard({
       {/* Card Meta & CTA. The block above grows, so every footer in
           the row sits on the same line however long a title wraps. */}
       <div className="mt-5 pt-4 border-t border-stone-100 dark:border-zinc-800/80 space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-y-1 text-xs text-stone-500 dark:text-stone-400">
-          <div className="flex items-center gap-1.5 truncate font-semibold">
+        <div className="flex flex-nowrap items-center justify-between gap-x-3 text-xs text-stone-500 dark:text-stone-400">
+          <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden whitespace-nowrap font-semibold">
             <MapPin className="w-3.5 h-3.5 text-stone-400 dark:text-stone-500 shrink-0" />
             <span className="truncate">
               <TranslatedText text={need.city} />
@@ -136,11 +136,11 @@ export function LiveNeedCard({
         </div>
 
         {(showCta || viewHref) && (
-        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="flex flex-row flex-nowrap items-center justify-between gap-3">
         {viewHref && (
           <Link
             href={viewHref}
-            className="inline-flex items-center gap-1 text-xs font-medium text-stone-800 dark:text-stone-200 hover:underline"
+            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-stone-800 dark:text-stone-200 hover:underline"
           >
             <span><LandingText><UiText>View need</UiText></LandingText></span>
             <ArrowUpRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
@@ -149,7 +149,7 @@ export function LiveNeedCard({
         {showCta && (
         <Link
           href={href}
-          className="ml-auto flex w-fit items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
+          className={`${viewHref ? "" : "ml-auto "}flex w-auto whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]`}
         >
           {locked && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
           <span><LandingText>{ctaLabel}</LandingText></span>

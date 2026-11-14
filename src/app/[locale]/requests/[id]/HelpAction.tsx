@@ -32,7 +32,7 @@ export default function HelpAction({ requestId }: { requestId: number }) {
     if (new URLSearchParams(window.location.search).get("intent") === "offer") router.replace(offerPath);
   }, [isLoading, user, router, offerPath]);
   const primary =
-    "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-5 text-base font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950 sm:w-auto";
+    "inline-flex min-h-12 w-auto whitespace-nowrap items-center justify-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-5 text-base font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950";
 
   if (isLoading) {
     return <div className="h-12 w-full animate-pulse rounded-lg bg-stone-200 motion-reduce:animate-none dark:bg-white/10 sm:w-40" aria-hidden="true" />;
@@ -40,14 +40,9 @@ export default function HelpAction({ requestId }: { requestId: number }) {
 
   if (!user) {
     return (
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <Link href={loginUrlFor(`/requests/${requestId}?intent=offer`)} className={primary}>
-          <Lock className="h-4 w-4" aria-hidden="true" /> <UiText>Log in to offer this item</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
-        </Link>
-        <p className="text-xs text-stone-500 dark:text-stone-400">
-          <UiText>You&apos;ll sign in or create a donor account, then come straight back to this request.</UiText>
-        </p>
-      </div>
+      <Link href={loginUrlFor(`/requests/${requestId}?intent=offer`)} className={primary}>
+        <Lock className="h-4 w-4" aria-hidden="true" /> <UiText>Log in to offer this item</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
+      </Link>
     );
   }
 

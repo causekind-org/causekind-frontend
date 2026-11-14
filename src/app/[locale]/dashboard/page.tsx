@@ -3689,31 +3689,6 @@ export default function DashboardPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  // NGO_DRIVE_OFFER / NGO_DRIVE: a drive handover completing updates Matches > NGO, History and the stats live.
-  useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER", "NGO_DRIVE_OFFER", "NGO_DRIVE"], () => {
-    invalidateRequestCache();
-    refreshListings();
-    refreshMatches();
-    getMyItemRequests().then(setItemRequests).catch(() => {});
-    Promise.all([
-      getMyDonationOffers().catch(() => []),
-      getMyNgoDriveOffers().catch(() => [])
-    ]).then(([offers, drives]) => {
-      const mapped = drives.map(d => ({
-        ...d,
-        _type: "DRIVE_OFFER",
-        requestId: d.driveId,
-        requestTitle: d.driveTitle,
-        requestCategory: "NGO Drive",
-        requestCity: d.ngoName,
-        // The NGO's decline reason is shown where the card shows any reason.
-        rejectionReason: d.ngoDeclineReason || d.rejectionReason,
-        flowType: null
-      }));
-      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => serverDate(b.createdAt || b.submittedAt || 0).getTime() - serverDate(a.createdAt || a.submittedAt || 0).getTime()));
-    });
-  });
-
   const [itemListings, setItemListings] = useState<ItemListing[]>([]);
   const [itemRequests, setItemRequests] = useState<ItemRequest[]>([]);
   const [matches, setMatches] = useState<ItemMatch[]>([]);
@@ -3751,6 +3726,31 @@ export default function DashboardPage() {
   const refreshRequests = async () => {
     try { const fresh = await getMyItemRequests(); setItemRequests(fresh); } catch { /* silent */ }
   };
+
+  // NGO_DRIVE_OFFER / NGO_DRIVE: a drive handover completing updates Matches > NGO, History and the stats live.
+  useEntityUpdates(["OFFER", "REQUEST", "LISTING", "MATCH", "HANDOVER", "NGO_DRIVE_OFFER", "NGO_DRIVE"], () => {
+    invalidateRequestCache();
+    refreshListings();
+    refreshMatches();
+    getMyItemRequests().then(setItemRequests).catch(() => {});
+    Promise.all([
+      getMyDonationOffers().catch(() => []),
+      getMyNgoDriveOffers().catch(() => [])
+    ]).then(([offers, drives]) => {
+      const mapped = drives.map(d => ({
+        ...d,
+        _type: "DRIVE_OFFER",
+        requestId: d.driveId,
+        requestTitle: d.driveTitle,
+        requestCategory: "NGO Drive",
+        requestCity: d.ngoName,
+        // The NGO's decline reason is shown where the card shows any reason.
+        rejectionReason: d.ngoDeclineReason || d.rejectionReason,
+        flowType: null
+      }));
+      setDonationOffers([...offers, ...mapped].sort((a: any, b: any) => serverDate(b.createdAt || b.submittedAt || 0).getTime() - serverDate(a.createdAt || a.submittedAt || 0).getTime()));
+    });
+  });
 
   /** Refetch after a cancellation — the status changed server-side, and the
    *  cancel endpoint returns the policy result rather than the updated offer. */

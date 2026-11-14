@@ -340,6 +340,7 @@ export function RequestDirectory(props: Props) {
                           href={registerUrlPreserving(`/requests/${item.data.id}/offer`)}
                           ctaLabel={ui("Log in to offer this item")}
                           locked
+                          viewHref={`/requests/${item.data.id}`}
                           onCardClick={() => onOffer(item.data)}
                         />
                       </li>
