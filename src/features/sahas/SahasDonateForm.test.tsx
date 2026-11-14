@@ -14,7 +14,7 @@ vi.mock("@/components/AppLink", () => ({
 }));
 vi.mock("@/components/skeletons", () => ({ PageSkeleton: () => <div>loading</div> }));
 vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: null }) }));
-vi.mock("@/features/scan-donation/tracking", () => ({ captureUtm: vi.fn(), trackDonationSuccess: vi.fn(), trackInitiateCheckout: vi.fn() }));
+vi.mock("@/features/scan-donation/tracking", () => ({ captureUtm: vi.fn(), trackDonationSuccess: vi.fn(), trackInitiateCheckout: vi.fn(), trackSahasDonateStep: vi.fn() }));
 
 const detail = vi.fn();
 vi.mock("@/lib/api", async () => {
