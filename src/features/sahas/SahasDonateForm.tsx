@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { sameName } from "@/lib/panName";
-import { captureUtm, trackDonationSuccess, trackInitiateCheckout } from "@/features/scan-donation/tracking";
+import { captureUtm, trackDonationSuccess, trackInitiateCheckout, trackSahasDonateStep } from "@/features/scan-donation/tracking";
 import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
@@ -317,7 +317,7 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
     {step === 0 && <div className="flex justify-between font-semibold"><span><UiText>You pay</UiText></span><span>₹{valid ? total.toLocaleString("en-IN") : "—"}</span></div>}
     <div className="flex gap-2">
       {back}
-      <button type="button" disabled={!stepOk} onClick={() => setStep(step + 1)}
+      <button type="button" disabled={!stepOk} onClick={() => { trackSahasDonateStep(slug, step + 1, value); setStep(step + 1); }}
         className="min-h-[48px] flex-1 rounded-xl bg-gradient-to-r from-[#8e123c] via-[#a31a44] to-[#720d2d] text-[15px] font-bold text-white disabled:opacity-50 cursor-pointer">
         {stepOk ? <UiText>Continue</UiText> : todo}
       </button>
