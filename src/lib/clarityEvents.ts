@@ -4,6 +4,8 @@
  * trackers stay easy to keep in sync at the same call sites.
  */
 
+import { trackGA } from "@/lib/gaEvents";
+
 type ClarityFn = (...args: unknown[]) => void;
 
 function getClarity(): ClarityFn | undefined {
@@ -11,8 +13,12 @@ function getClarity(): ClarityFn | undefined {
   return (window as unknown as { clarity?: ClarityFn }).clarity;
 }
 
+/** Events that tracking.ts already sends to GA with their params. */
+const GA_SKIP = new Set(["scan_page_view", "initiate_checkout", "donation_success", "site_click", "time_on_page", "sahas_donate_step"]);
+
 /** Fire a custom Clarity event by name. Safe to call before Clarity has loaded. */
 export function trackClarity(event: string): void {
+  if (!GA_SKIP.has(event)) trackGA(event);
   const clarity = getClarity();
   if (typeof clarity !== "function") return;
   clarity("event", event);

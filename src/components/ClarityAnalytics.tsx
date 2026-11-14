@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
+import { isInternalTraffic } from "@/lib/internalTraffic";
 
 const CLARITY_PROJECT_ID = "ykpnfnuc02";
 
@@ -23,7 +24,7 @@ export default function ClarityAnalytics() {
   const consent = useCookieConsent();
   const consentAccepted = TESTING_BYPASS || consent === "accepted";
 
-  if (TRACKING_DISABLED || !consentAccepted) return null;
+  if (TRACKING_DISABLED || isInternalTraffic() || !consentAccepted) return null;
 
   return (
     <Script
