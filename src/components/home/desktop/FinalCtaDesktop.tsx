@@ -163,7 +163,7 @@ export function FinalCtaDesktop({
 
             {/* Subtext */}
             <p className="mt-2.5 text-xs sm:text-sm text-stone-300 max-w-xl leading-relaxed font-normal">
-              Join free in a minute. Give, ask, or help your community — whichever side you're on.
+              Join free in a minute. Give, ask, or help your community — whichever side you&apos;re on.
             </p>
 
             {/* ════════ 3 ACTION BUTTONS (1 Row on Desktop, Stacked on Mobile) ════════ */}

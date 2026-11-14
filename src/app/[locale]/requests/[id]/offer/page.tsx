@@ -581,7 +581,7 @@ export default function OfferWizardPage() {
   if (requestLoadFailed) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-3 sm:gap-4 px-4 text-center">
-        <p className="text-gray-600 dark:text-gray-400"><UiText>This request couldn't be loaded — it may have been withdrawn or is no longer accepting offers.</UiText></p>
+        <p className="text-gray-600 dark:text-gray-400"><UiText>This request couldn&apos;t be loaded — it may have been withdrawn or is no longer accepting offers.</UiText></p>
         <button
           onClick={() => router.push("/requests")}
           className="rounded-xl bg-[#b04a15] px-3.5 sm:px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#c45520] transition-colors"

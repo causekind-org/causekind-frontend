@@ -4,7 +4,7 @@ import { LandingText } from "@/components/LandingTranslation";
 
 import Link from "next/link";
 import { motion, type MotionProps } from "framer-motion";
-import { MapPin, Lock, ArrowRight } from "lucide-react";
+import { MapPin, Lock, ArrowRight, ArrowUpRight } from "lucide-react";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
@@ -39,11 +39,14 @@ export function LiveNeedCard({
   ctaLabel,
   locked = false,
   showCta = true,
+  viewHref,
   onCardClick,
   motionProps,
   className = "",
 }: {
   need: LiveNeedCardData;
+  /** "View need ↗" link to the request detail, left of the CTA. Omitted, no link. */
+  viewHref?: string;
   href: string;
   ctaLabel: string;
   locked?: boolean;
@@ -132,15 +135,28 @@ export function LiveNeedCard({
           </div>
         </div>
 
+        {(showCta || viewHref) && (
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        {viewHref && (
+          <Link
+            href={viewHref}
+            className="inline-flex items-center gap-1 text-xs font-medium text-stone-800 dark:text-stone-200 hover:underline"
+          >
+            <span><LandingText><UiText>View need</UiText></LandingText></span>
+            <ArrowUpRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+          </Link>
+        )}
         {showCta && (
         <Link
           href={href}
-          className="flex w-full items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
+          className="ml-auto flex w-fit items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]"
         >
           {locked && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
           <span><LandingText>{ctaLabel}</LandingText></span>
           <ArrowRight className="w-3 h-3 transition-transform duration-200 group-hover/btn:translate-x-1 shrink-0" />
         </Link>
+        )}
+        </div>
         )}
       </div>
       </div>

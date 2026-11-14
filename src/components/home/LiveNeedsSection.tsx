@@ -358,6 +358,7 @@ export function LiveNeedsSection({
                   ctaLabel={isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}
                   locked={!isDonor && !isDrive}
                   showCta={isDrive || !isDonee}
+                  viewHref={isDrive ? undefined : `/requests/${need.id}`}
                 />
               );
             })}

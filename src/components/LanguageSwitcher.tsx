@@ -16,6 +16,11 @@ const EDGE_GAP = 8;
  * (styled by the caller to match its neighbours) showing a globe and the
  * short language code instead of the native name.
  */
+/** Remembers the chosen language for the server render (outside the component: a global write). */
+function persistLocaleCookie(code: Locale) {
+  document.cookie = `ck_locale=${code}; path=/; max-age=31536000; SameSite=Lax`;
+}
+
 export function LanguageSwitcher({ dropUp = false, pillClassName }: { dropUp?: boolean; pillClassName?: string } = {}) {
   const languageLabel = useLandingTranslation("Select language");
   const router = useRouter();
@@ -53,7 +58,7 @@ export function LanguageSwitcher({ dropUp = false, pillClassName }: { dropUp?: b
   }, [open]);
 
   function select(code: Locale) {
-    document.cookie = `ck_locale=${code}; path=/; max-age=31536000; SameSite=Lax`;
+    persistLocaleCookie(code);
     setLocale(code);
     setOpen(false);
     router.refresh();

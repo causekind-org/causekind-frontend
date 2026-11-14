@@ -1334,5 +1334,8 @@
       "q3": "What items can I ask for?",
       "a3": "You can request physical goods like blankets, books, medical supplies, food packets, etc. CauseKind does not facilitate direct monetary donations for drives."
     }
+  },
+  "ui": {
+    "view_need_cbed6bbc": "عرض الحاجة"
   }
 }

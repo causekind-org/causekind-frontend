@@ -185,7 +185,11 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
 
     // Fix the two items.
     await openStep(/Organization Details/i);
-    await userEvent.type(await screen.findByLabelText(/Registration Number/i), "TR/2026/1002");
+    // One paste, not 12 keystrokes: each keystroke re-renders the whole wizard,
+    // which pushed this test past its timeout under full-suite load.
+    const user = userEvent.setup({ delay: null });
+    await user.click(await screen.findByLabelText(/Registration Number/i));
+    await user.paste("TR/2026/1002");
     await openStep(/Legal Documents/i);
     await screen.findAllByText(/Step 2 of 6/i);
     fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, {

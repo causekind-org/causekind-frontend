@@ -1,7 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { loginUrlFor } from "@/lib/safeRedirect";
 
@@ -9,7 +11,7 @@ import { UiText } from "@/components/UiText";
 /**
  * "I can help", resolved against who is looking.
  *
- * - Guest → login with `?next=/requests/{id}/offer`. Login, Google sign-in and
+ * - Guest → login with `?next=/requests/{id}?intent=offer`; back here, a donor is sent on to the offer page (location check first). Login, Google sign-in and
  *   registration all return there through `resolvePostAuthDestination`.
  * - Donor → straight into the existing offer wizard. Nothing is created until
  *   they submit it there.
@@ -21,7 +23,14 @@ import { UiText } from "@/components/UiText";
  */
 export default function HelpAction({ requestId }: { requestId: number }) {
   const { user, isLoading } = useAuth();
+  const router = useRouter();
   const offerPath = `/requests/${requestId}/offer`;
+  // Guests return here after login with ?intent=offer; a donor goes straight on
+  // to the offer page, which always opens the location check first.
+  useEffect(() => {
+    if (isLoading || user?.role !== "DONOR") return;
+    if (new URLSearchParams(window.location.search).get("intent") === "offer") router.replace(offerPath);
+  }, [isLoading, user, router, offerPath]);
   const primary =
     "inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg bg-[var(--ck-role-accent)] px-5 text-base font-semibold text-white hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] focus-visible:ring-offset-2 dark:focus-visible:ring-offset-zinc-950 sm:w-auto";
 
@@ -32,8 +41,8 @@ export default function HelpAction({ requestId }: { requestId: number }) {
   if (!user) {
     return (
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-        <Link href={loginUrlFor(offerPath)} className={primary}>
-          <UiText>I can help</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        <Link href={loginUrlFor(`/requests/${requestId}?intent=offer`)} className={primary}>
+          <Lock className="h-4 w-4" aria-hidden="true" /> <UiText>Log in to offer this item</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
         </Link>
         <p className="text-xs text-stone-500 dark:text-stone-400">
           <UiText>You&apos;ll sign in or create a donor account, then come straight back to this request.</UiText>
@@ -45,7 +54,7 @@ export default function HelpAction({ requestId }: { requestId: number }) {
   if (user.role === "DONOR") {
     return (
       <Link href={offerPath} className={primary}>
-        <UiText>I can help</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        <UiText>Offer this item</UiText> <ArrowRight className="h-4 w-4" aria-hidden="true" />
       </Link>
     );
   }

@@ -218,7 +218,7 @@ export function DoneeOfferCard({
         {purchase && !direct && pending && (
           <p className="text-xs text-stone-600 dark:text-stone-300">
             {planned || commitment?.productUrl
-              ? <UiText>You're accepting this donor's commitment, not a specific product. If they buy a different suitable item, our team checks it.</UiText>
+              ? <UiText>You&apos;re accepting this donor&apos;s commitment, not a specific product. If they buy a different suitable item, our team checks it.</UiText>
               : <UiText>The donor will buy the item from a shop. Product details will be shared after purchase.</UiText>}
           </p>
         )}
