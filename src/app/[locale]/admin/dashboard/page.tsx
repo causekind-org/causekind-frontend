@@ -37,21 +37,24 @@ import { AiReviewPanel } from "@/components/admin/AiReviewPanel";
 import { UserJourneyPanel } from "@/components/admin/UserJourneyPanel";
 import { PhotoStrip } from "@/components/admin/PhotoStrip";
 import { AnalyticsPanel } from "@/components/admin/AnalyticsPanel";
-import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
+import { CampaignHistoryList } from "@/components/admin/CampaignHistoryList";
+import { ListingHistoryList } from "@/components/admin/ListingHistoryList";
+import { MatchHistoryList } from "@/components/admin/MatchHistoryList";
+import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
 import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav";
 import { AdminFundraisingPanel } from "@/features/fundraising/AdminFundraisingPanel";
 import { AdminSahasPanel } from "@/features/sahas/AdminSahasPanel";
 import { FEATURES } from "@/lib/features";
 import {
   AlertTriangle, Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
-  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageCircle, MessageSquare,
+  Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageSquare,
   Package, Phone, RefreshCw, Search, ShieldCheck, Tag, TrendingUp, Truck, UserRound, X,
   type LucideIcon,
   Camera,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 
-type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "whatsapp" | "fundraising" | "sahas";
+type TabKey = "campaigns" | "requests" | "ngo-applications" | "ngo-drives" | "drive-offers" | "drive-proofs" | "ngo-activities" | "ngo-profile-changes" | "listings" | "matches" | "offers" | "issues" | "match-history" | "handover-photos" | "ai-logs" | "user-journey" | "analytics" | "fundraising" | "sahas";
 
 /** Which AdminCapability (see backend AdminCapability enum) gates each tab —
  * used to hide tabs an admin has had revoked rather than just 403ing on click. */
@@ -78,7 +81,6 @@ const TAB_CAPABILITY: Record<TabKey, string> = {
   "ai-logs": "LISTING_REVIEW",
   "user-journey": "USER_READ",
   analytics: "PAYMENT_REVIEW",
-  whatsapp: "WHATSAPP",
   // Fundraising pages render in the panel (2026-10-19); same capability as /admin/fundraising.
   fundraising: "CAMPAIGNS",
   // Sahas campaigns (2026-11-03): same capability as the backend's sahas-campaigns segment.
@@ -121,10 +123,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const ALL_MATCH_STATUSES = [
-  "ALL", "PENDING_APPROVAL", "AWAITING_DONEE_CONFIRMATION", "DONEE_ACCEPTED",
-  "BOTH_PARTIES_ACCEPTED", "LOGISTICS_CONFIRMED", "IN_TRANSIT", "COMPLETED",
-  "REJECTED", "CANCELLED",
+  "ALL", "DONOR_REVIEW", "PENDING_APPROVAL", "AWAITING_DONEE_CONFIRMATION", "DONEE_ACCEPTED",
+  "BOTH_PARTIES_ACCEPTED", "LOGISTICS_CONFIRMED", "HANDOVER_SCHEDULED", "IN_TRANSIT", "HANDOVER_AT_RISK",
+  "COMPLETED", "CERTIFICATE_ISSUED", "FAILED", "REJECTED", "CANCELLED",
 ];
+// Filter pills used to print raw enum names ("AWAITING DONEE CONFIRMATION").
+const matchStatusLabel = (s: string) => s === "ALL" ? "All"
+  : s.charAt(0) + s.slice(1).toLowerCase().replace(/_/g, " ");
 
 const AI_REC_FILTERS = ["ALL", "APPROVE", "REJECT", "MANUAL_REVIEW", "REQUEST_INFORMATION"];
 const REC_BADGE: Record<string, string> = {
@@ -211,6 +216,12 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   const [tab, setTab] = useState<TabKey>("campaigns");
+  // Campaigns tab: 0 = pending queue, 1 = approved, 2 = rejected (read-only history).
+  const [campaignView, setCampaignView] = useState(0);
+  // Listings tab: 0 = pending queue (+ rejected review), 1 = waiting on donor, 2 = approved.
+  const [listingView, setListingView] = useState(0);
+  // Matches tab: 0 = approval queue, 1 = in progress, 2 = completed, 3 = stopped.
+  const [matchView, setMatchView] = useState(0);
   // Which fundraising page the panel shows when tab === "fundraising".
   const [frPath, setFrPath] = useState("/admin/fundraising");
   const openFundraising = useCallback((href: string) => { setFrPath(href); setTab("fundraising"); }, []);
@@ -345,6 +356,9 @@ export default function AdminDashboardPage() {
   const [allMatches, setAllMatches] = useState<ItemMatch[]>([]);
   const [allMatchesLoaded, setAllMatchesLoaded] = useState(false);
   const [allMatchesLoading, setAllMatchesLoading] = useState(false);
+  // A failed load used to fall through to "No matches found for this filter" — a false empty.
+  const [allMatchesError, setAllMatchesError] = useState(false);
+  const [assessmentsError, setAssessmentsError] = useState(false);
   const [matchHistoryStatus, setMatchHistoryStatus] = useState("ALL");
   const [matchExpandedId, setMatchExpandedId] = useState<number | null>(null);
   const [matchStatusHistory, setMatchStatusHistory] = useState<Record<number, StatusHistoryEntry[]>>({});
@@ -406,21 +420,23 @@ export default function AdminDashboardPage() {
 
   async function loadAllMatches(status?: string) {
     setAllMatchesLoading(true);
+    setAllMatchesError(false);
     try {
       const data = await adminGetMatches(status === "ALL" || !status ? undefined : status);
       setAllMatches(data);
       setAllMatchesLoaded(true);
-    } catch { toast.error("Failed to load match history"); }
+    } catch { setAllMatchesError(true); toast.error("Failed to load match history"); }
     finally { setAllMatchesLoading(false); }
   }
 
   async function loadAiLogs() {
     setAssessmentsLoading(true);
+    setAssessmentsError(false);
     try {
       const data = await adminGetAllAiAssessments();
       setAssessments(data);
       setAssessmentsLoaded(true);
-    } catch { toast.error("Failed to load AI assessment logs"); }
+    } catch { setAssessmentsError(true); toast.error("Failed to load AI assessment logs"); }
     finally { setAssessmentsLoading(false); }
   }
 
@@ -611,7 +627,7 @@ export default function AdminDashboardPage() {
   // wrong side of the mobile nav split below.
   const isDriveTab = tab === "ngo-drives" || tab === "drive-offers" || tab === "drive-proofs";
   const isReportTab = tab === "match-history" || tab === "handover-photos" || tab === "ai-logs"
-    || tab === "user-journey" || tab === "analytics" || tab === "whatsapp" || tab === "fundraising" || tab === "sahas" || tab === "issues";
+    || tab === "user-journey" || tab === "analytics" || tab === "fundraising" || tab === "sahas" || tab === "issues";
   const showIssues = canSeeTab("issues");
 
   const TABS = [
@@ -643,7 +659,6 @@ export default function AdminDashboardPage() {
     { key: "ai-logs"       as TabKey, label: "AI Screening Logs", icon: Bot,           color: "text-violet-400" },
     { key: "user-journey"  as TabKey, label: "User Journey",      icon: UserRound,     color: "text-sky-400"    },
     { key: "analytics"     as TabKey, label: "Analytics",         icon: TrendingUp,    color: "text-amber-400"  },
-    { key: "whatsapp"      as TabKey, label: "WhatsApp",          icon: MessageCircle, color: "text-green-400"  },
   ].filter(t => canSeeTab(t.key));
 
   const headerTitle = tab === "issues" ? "Issues"
@@ -658,9 +673,13 @@ export default function AdminDashboardPage() {
     : tab === "ai-logs" ? "AI Screening Logs"
     : tab === "user-journey" ? "User Journey"
     : tab === "analytics" ? "Analytics"
-    : tab === "whatsapp" ? "WhatsApp"
     : tab === "fundraising" ? "Fundraising"
     : tab === "sahas" ? "Sahas campaigns"
+    : tab === "campaigns" ? "Campaigns"
+    : tab === "requests" ? "Requests"
+    : tab === "listings" ? "Listings"
+    : tab === "matches" ? "Matches"
+    : tab === "offers" ? "Offers"
     : "Approval Queue";
 
   const headerSubtitle = tab === "issues"
@@ -685,14 +704,22 @@ export default function AdminDashboardPage() {
     ? "One user's complete story — every step on record, from registration to today"
     : tab === "analytics"
     ? "Donation and campaign performance"
-    : tab === "whatsapp"
-    ? "Templates, flows, sends, and the message log"
     : tab === "fundraising"
     ? "Applications, publication, updates and reports for donee fundraisers"
     : tab === "sahas"
     ? "Campaigns organised by Sahas Charitable Trust: items, publishing, offers and handovers"
     : tab === "ai-logs"
     ? `${assessments.length} assessment${assessments.length !== 1 ? "s" : ""} across all listings`
+    : tab === "campaigns" && !loading
+    ? (campaigns.length > 0 ? `${campaigns.length} campaign${campaigns.length !== 1 ? "s" : ""} waiting for approval` : "No campaigns waiting — switch to Approved or Rejected to see past decisions")
+    : tab === "listings" && !loading
+    ? (listings.length > 0 ? `${listings.length} donor listing${listings.length !== 1 ? "s" : ""} need review` : "No listings need review — switch view to see ones waiting on the donor or already approved")
+    : tab === "matches" && !loading
+    ? (matches.length > 0 ? `${matches.length} donor–donee match${matches.length !== 1 ? "es" : ""} waiting for approval` : "No matches waiting — switch view to follow ones in progress, completed or stopped")
+    : tab === "offers" && !loading
+    ? (offersNeedingAction > 0 ? `${offersNeedingAction} offer${offersNeedingAction !== 1 ? "s" : ""} waiting for your approval` : "Donor offers on requests — approve, follow and step in when a handover goes wrong")
+    : tab === "requests" && !loading
+    ? (requests.length > 0 ? `${requests.length} request${requests.length !== 1 ? "s" : ""} need verification` : "No requests need verification — use the filters to see held, verified or rejected ones")
     : loading ? "Loading..." : total > 0
       ? `${total} item${total !== 1 ? "s" : ""} awaiting your review`
       : offersInFlight > 0
@@ -702,7 +729,7 @@ export default function AdminDashboardPage() {
   return (
     <div className="min-h-screen flex bg-[#12101a]">
       {/* ── DARK LEFT SIDEBAR ────────────────────────────────────────────────── */}
-      <aside className="hidden lg:flex w-[296px] shrink-0 flex-col min-h-screen fixed left-0 top-0 bottom-0 z-10 border-r border-white/[0.07] overflow-y-auto"
+      <aside className="hidden lg:flex w-[296px] shrink-0 flex-col min-h-screen fixed left-0 top-0 bottom-0 z-10 border-r border-white/[0.07] overflow-hidden"
         style={{ background: "linear-gradient(180deg, #17141f 0%, #12101a 100%)" }}>
 
         {/* Brand strip */}
@@ -719,22 +746,11 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Admin identity card */}
-        <div className="px-3.5 sm:px-5 pt-5 pb-2">
-          <div className="rounded-xl px-4 py-3.5 border border-white/[0.07]"
-            style={{ background: "rgba(176,74,21,0.08)" }}>
-            <p className="text-3xs font-bold uppercase tracking-widest text-[#b04a15]/70 mb-1">Signed in as</p>
-            <p className="text-sm font-semibold text-stone-200 truncate">{user.email}</p>
-            <div className="inline-flex items-center gap-1.5 mt-2 bg-[#b04a15]/20 rounded-full px-2 py-0.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse" />
-              <span className="text-3xs font-black text-[#b04a15] uppercase tracking-wide">Admin</span>
-            </div>
-          </div>
-        </div>
-
+        {/* Only this middle part scrolls; brand and footer stay put (same as super-admin). */}
+        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
         {/* Queue count pills */}
         <div className="px-3.5 sm:px-5 pt-5 space-y-2 flex-1">
-          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Pending Review</p>
+          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Review queues</p>
           {TABS.map(({ key, label, count, icon: Icon, color }) => (
             <button
               key={key}
@@ -801,7 +817,8 @@ export default function AdminDashboardPage() {
           )}
 
           {showIssues && (
-            <div className="pt-2">
+            <div className="pt-4">
+              <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-2">Support</p>
               <button
                 onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
                 aria-current={tab === "issues" ? "page" : undefined}
@@ -853,8 +870,12 @@ export default function AdminDashboardPage() {
           ))}
         </div>
 
+        </div>
+
         {/* Sign out */}
-        <div className="px-3.5 sm:px-5 pb-7 pt-5 border-t border-white/[0.07] mt-auto">
+        <div className="shrink-0 px-3.5 sm:px-5 pb-5 pt-4 border-t border-white/[0.07] bg-[#12101a]">
+          {/* Same footer shape as the super-admin console: who you are, then sign out. */}
+          <p className="text-3xs px-4 mb-2 truncate font-mono text-stone-500">{user.email}</p>
           <button
             onClick={() => { logout(); router.push("/login"); }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-stone-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
@@ -1070,6 +1091,19 @@ export default function AdminDashboardPage() {
             ) : (
               <>
                 {tab === "campaigns" && (
+                  <div className="mb-5 space-y-3">
+                    <AdminStatusTabs label="Campaign status" selected={campaignView} onSelect={setCampaignView}
+                      options={[{ label: `Pending (${campaigns.length})` }, { label: "Approved" }, { label: "Rejected" }]} />
+                    <p className="text-xs text-stone-500">
+                      Legacy money campaigns from donees. New fundraisers are reviewed under{" "}
+                      <button type="button" className="font-semibold text-[#b04a15] underline underline-offset-2"
+                        onClick={() => openFundraising("/admin/fundraising")}>Fundraising → Applications</button>.
+                    </p>
+                  </div>
+                )}
+                {tab === "campaigns" && campaignView === 1 && <CampaignHistoryList status="APPROVED" />}
+                {tab === "campaigns" && campaignView === 2 && <CampaignHistoryList status="REJECTED" />}
+                {tab === "campaigns" && campaignView === 0 && (
                   campaigns.length === 0
                     ? <AllClearState label="No pending campaigns" />
                     : campaigns.map(c => (
@@ -1090,6 +1124,14 @@ export default function AdminDashboardPage() {
                 )}
 
                 {tab === "listings" && (
+                  <div className="mb-5">
+                    <AdminStatusTabs label="Listing status" selected={listingView} onSelect={setListingView}
+                      options={[{ label: `Needs review (${listings.length})` }, { label: "Waiting on donor" }, { label: "Approved" }]} />
+                  </div>
+                )}
+                {tab === "listings" && listingView === 1 && <ListingHistoryList status="NEEDS_INFORMATION" />}
+                {tab === "listings" && listingView === 2 && <ListingHistoryList status="ELIGIBLE_FOR_MATCHING" />}
+                {tab === "listings" && listingView === 0 && (
                   <RejectedReviewSection
                     listings={rejectedListings}
                     requests={rejectedRequests}
@@ -1097,7 +1139,7 @@ export default function AdminDashboardPage() {
                   />
                 )}
 
-                {tab === "listings" && (
+                {tab === "listings" && listingView === 0 && (
                   listings.length === 0
                     ? <AllClearState label="No pending item listings" />
                     : listings.map(l => (
@@ -1140,8 +1182,17 @@ export default function AdminDashboardPage() {
                 )}
 
                 {tab === "matches" && (
+                  <div className="mb-5">
+                    <AdminStatusTabs label="Match status" selected={matchView} onSelect={setMatchView}
+                      options={[{ label: `Needs approval (${matches.length})` }, { label: "In progress" }, { label: "Completed" }, { label: "Rejected / cancelled" }]} />
+                  </div>
+                )}
+                {tab === "matches" && matchView === 1 && <MatchHistoryList view="ACTIVE" />}
+                {tab === "matches" && matchView === 2 && <MatchHistoryList view="DONE" />}
+                {tab === "matches" && matchView === 3 && <MatchHistoryList view="STOPPED" />}
+                {tab === "matches" && matchView === 0 && (
                   matches.length === 0
-                    ? <AllClearState label="No pending contact share requests" />
+                    ? <AllClearState label="No matches waiting for approval" />
                     : matches.map(m => (
                       <ApprovalCard
                         key={m.id} id={m.id}
@@ -1183,13 +1234,18 @@ export default function AdminDashboardPage() {
                         ? "bg-[#b04a15] text-white border-[#b04a15]"
                         : "bg-white border-stone-200 text-stone-600 hover:border-[#b04a15]/50"
                     }`}>
-                    {s.replace(/_/g, " ")}
+                    {matchStatusLabel(s)}
                   </button>
                 ))}
               </div>
 
               {allMatchesLoading ? (
                 <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-stone-400" /></div>
+              ) : allMatchesError ? (
+                <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+                  <p className="text-sm font-semibold text-red-700">Couldn&apos;t load match history.</p>
+                  <button onClick={() => loadAllMatches(matchHistoryStatus)} className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white">Retry</button>
+                </div>
               ) : allMatches.length === 0 ? (
                 <p className="text-center py-20 text-stone-400">No matches found for this filter.</p>
               ) : (
@@ -1213,12 +1269,15 @@ export default function AdminDashboardPage() {
               {/* Stats */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {[
-                  { label: "Approve", value: assessments.filter(a => a.recommendation === "APPROVE").length, color: "emerald" },
-                  { label: "Reject", value: assessments.filter(a => a.recommendation === "REJECT").length, color: "red" },
-                  { label: "Manual Review", value: assessments.filter(a => a.recommendation === "MANUAL_REVIEW").length, color: "orange" },
-                  { label: "High Fraud Risk", value: assessments.filter(a => a.fraudRisk === "HIGH").length, color: "rose" },
-                ].map(({ label, value, color }) => (
-                  <AiStatCard key={label} label={label} value={value} color={color} />
+                  { label: "Approve", value: assessments.filter(a => a.recommendation === "APPROVE").length, color: "emerald", apply: () => { setAiRecFilter("APPROVE"); setAiFraudFilter("ALL"); } },
+                  { label: "Reject", value: assessments.filter(a => a.recommendation === "REJECT").length, color: "red", apply: () => { setAiRecFilter("REJECT"); setAiFraudFilter("ALL"); } },
+                  { label: "Manual Review", value: assessments.filter(a => a.recommendation === "MANUAL_REVIEW").length, color: "orange", apply: () => { setAiRecFilter("MANUAL_REVIEW"); setAiFraudFilter("ALL"); } },
+                  { label: "High Fraud Risk", value: assessments.filter(a => a.fraudRisk === "HIGH").length, color: "rose", apply: () => { setAiRecFilter("ALL"); setAiFraudFilter("HIGH"); } },
+                ].map(({ label, value, color, apply }) => (
+                  // The cards were dead numbers; clicking one now applies the matching filter.
+                  <button key={label} type="button" onClick={apply} className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40">
+                    <AiStatCard label={label} value={value} color={color} />
+                  </button>
                 ))}
               </div>
 
@@ -1239,7 +1298,7 @@ export default function AdminDashboardPage() {
                       className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
                         aiRecFilter === f ? "bg-[#b04a15] text-white border-[#b04a15]" : "border-stone-300 text-stone-600 hover:border-[#b04a15]/50"
                       }`}>
-                      {f === "ALL" ? "All" : f.replace(/_/g, " ")}
+                      {f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase().replace(/_/g, " ")}
                     </button>
                   ))}
                 </div>
@@ -1249,7 +1308,7 @@ export default function AdminDashboardPage() {
                       className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
                         aiFraudFilter === f ? "bg-stone-800 text-white border-stone-800" : "border-stone-300 text-stone-600 hover:border-stone-500"
                       }`}>
-                      {f === "ALL" ? "Any Fraud" : `Fraud: ${f}`}
+                      {f === "ALL" ? "Any fraud risk" : `Fraud: ${f.charAt(0) + f.slice(1).toLowerCase()}`}
                     </button>
                   ))}
                 </div>
@@ -1264,6 +1323,11 @@ export default function AdminDashboardPage() {
 
               {assessmentsLoading ? (
                 <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-stone-400" /></div>
+              ) : assessmentsError ? (
+                <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+                  <p className="text-sm font-semibold text-red-700">Couldn&apos;t load AI screening logs.</p>
+                  <button onClick={loadAiLogs} className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white">Retry</button>
+                </div>
               ) : filteredAssessments.length === 0 ? (
                 <p className="py-20 text-center text-stone-400">No AI assessments found.</p>
               ) : (
@@ -1287,8 +1351,6 @@ export default function AdminDashboardPage() {
           {/* ── ANALYTICS TAB — previously the standalone /admin/analytics page ── */}
           {tab === "analytics" && <AnalyticsPanel />}
 
-          {/* ── WHATSAPP TAB — previously the standalone /admin/whatsapp page ── */}
-          {tab === "whatsapp" && <WhatsAppPanel />}
 
           {/* ── FUNDRAISING — the /admin/fundraising pages, rendered in the panel ── */}
           {tab === "fundraising" && <AdminFundraisingPanel path={frPath} go={setFrPath} />}
@@ -1365,7 +1427,11 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
           <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-stone-500">
             <span>Donor: <strong className="text-stone-700">{m.donorName}</strong>{m.donorCity && ` · ${m.donorCity}`}</span>
             <span>Donee: <strong className="text-stone-700">{m.doneeName}</strong>{m.doneeCity && ` · ${m.doneeCity}`}</span>
-            <span>Created: {serverDate(m.createdAt).toLocaleDateString("en-IN")}</span>
+            {/* en-IN numeric read "9/10/2026" — ambiguous between 9 Oct and 10 Sep. */}
+            <span>Created: {serverDate(m.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
+            {m.donorId != null && m.donorId === m.doneeId && (
+              <span className="rounded-full bg-rose-50 px-2 py-0.5 font-bold text-rose-700 ring-1 ring-rose-200">⚑ Same account is donor and donee</span>
+            )}
           </div>
         </div>
         {expanded ? <ChevronUp className="w-4 h-4 text-stone-400 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-stone-400 shrink-0 mt-1" />}
@@ -1470,7 +1536,8 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
               </span>
             )}
             <span className="text-2xs text-stone-400">{Math.round(a.confidence)}% conf</span>
-            <span className="text-2xs text-stone-400">{serverDate(a.createdAt).toLocaleDateString()}</span>
+            {/* Bare toLocaleDateString() printed "10/9/2026" — browser-locale and ambiguous. */}
+            <span className="text-2xs text-stone-400">{serverDate(a.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>
           </div>
         </div>
         {a.evidenceNotes && (

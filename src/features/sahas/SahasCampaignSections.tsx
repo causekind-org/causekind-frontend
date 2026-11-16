@@ -262,7 +262,6 @@ function Share({ page, title }: { page: SahasPageContent; title: string | null }
       <h2 className={heading}>{page.shareTitle}</h2>
       {page.shareSubtitle && <p className="m-0 text-[#4A3B30] dark:text-stone-300">{page.shareSubtitle}</p>}
       <div className="flex flex-wrap justify-center gap-2">
-        <button type="button" className="flex min-h-[44px] cursor-pointer items-center rounded-xl border-0 bg-[#b04a15] px-5 text-sm font-semibold text-white" onClick={() => open((l, w) => `https://wa.me/?text=${w}%20${l}`)}>WhatsApp</button>
         <button type="button" className={btn} onClick={() => open((l) => `https://www.facebook.com/sharer/sharer.php?u=${l}`)}>Facebook</button>
         <button type="button" className={btn} onClick={() => open((l, w) => `https://x.com/intent/post?text=${w}&url=${l}`)}>X</button>
         <button type="button" className={btn} onClick={() => { void navigator.clipboard?.writeText(url()).then(() => setCopied(true)); }}>{copied ? ui("Link copied") : ui("Copy link")}</button>

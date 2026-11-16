@@ -63,12 +63,21 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
   };
 
   const shown = (rows ?? []).filter((r) => (filter === "ALL" || r.status === filter)
-    && (!q || `${r.title ?? ""} ${r.slug ?? ""}`.toLowerCase().includes(q.toLowerCase())));
+    && (!q || `${r.title ?? ""} ${r.slug ?? ""}`.toLowerCase().includes(q.toLowerCase())))
+    // Work first: drafts, then live by soonest end date, then paused/closed, cancelled last.
+    // Unsorted, the 7 cancelled campaigns sat in between the live ones under "All".
+    .sort((x, y) => {
+      const rank: Record<string, number> = { DRAFT: 0, APPROVED: 1, PAUSED: 2, COLLECTIONS_CLOSED: 3, CANCELLED: 4 };
+      const d = (rank[x.status] ?? 3) - (rank[y.status] ?? 3);
+      if (d !== 0) return d;
+      return (x.endDate ?? "9999").localeCompare(y.endDate ?? "9999");
+    });
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
-        <div><h2 className="m-0 text-xl font-bold">Sahas campaigns</h2><p className="m-0 text-sm text-stone-500">Campaigns organised by Sahas Charitable Trust</p></div>
+        {/* The dashboard header already says "Sahas campaigns" — a second title here repeated it. */}
+        <p className="m-0 text-sm text-stone-500">{rows ? `${rows.length} campaign${rows.length !== 1 ? "s" : ""}` : ""}</p>
         <button type="button" className={`${primary} ms-auto`} onClick={create} disabled={creating}>New campaign</button>
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -77,6 +86,7 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
           <button key={s} type="button" aria-pressed={filter === s} onClick={() => setFilter(s)}
             className={`min-h-[36px] rounded-full border px-3 text-xs font-semibold ${filter === s ? "border-stone-900 bg-stone-900 text-white" : "border-stone-200 bg-white text-stone-600"}`}>
             {s === "ALL" ? "All" : STATUS_LABEL[s]}
+            {rows && <span className="ms-1.5 tabular-nums opacity-70">{s === "ALL" ? rows.length : rows.filter((r) => r.status === s).length}</span>}
           </button>
         ))}
       </div>
@@ -98,7 +108,13 @@ function CampaignList({ onOpen }: { onOpen: (id: number) => void }) {
                   </td>
                   <td className="p-3"><StatusChip status={r.status} publishAt={r.publishAt} /></td>
                   <td className="p-3">{[r.collectsItems && "Items", r.collectsMoney && "Money"].filter(Boolean).join(" · ") || "—"}</td>
-                  <td className="p-3">{r.endDate ?? "—"}</td>
+                  <td className="p-3 whitespace-nowrap">
+                    {r.endDate ? new Date(`${r.endDate}T00:00:00`).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}
+                    {/* A live campaign past its end date still reads "Live"; flag it so it gets closed. */}
+                    {r.endDate && r.status === "APPROVED" && new Date(`${r.endDate}T23:59:59`) < new Date() && (
+                      <div className="text-xs font-semibold text-amber-700">Past end date</div>
+                    )}
+                  </td>
                   <td className="p-3">{r.featured ? "Featured" : "—"}</td>
                   <td className="p-3 text-right"><button type="button" onClick={() => onOpen(r.id)} className={secondary}>{r.status === "CANCELLED" || r.status === "COLLECTIONS_CLOSED" ? "View" : "Edit"}</button></td>
                 </tr>

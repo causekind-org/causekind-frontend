@@ -1,11 +1,11 @@
 "use client";
 
-import { Share2, MessageCircle } from "lucide-react";
+import { Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 /**
  * ShareButton — uses Web Share API when available (mobile native sheet),
- * falls back to WhatsApp share link on desktop/unsupported browsers.
+ * falls back to copying the link on desktop/unsupported browsers.
  */
 export function ShareButton({
   title,
@@ -27,9 +27,10 @@ export function ShareButton({
     if (typeof navigator !== "undefined" && navigator.share) {
       navigator.share({ title, text, url }).catch(() => {});
     } else {
-      const wa = `https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`;
-      window.open(wa, "_blank", "noopener,noreferrer");
-      toast.success("Opening WhatsApp to share");
+      void navigator.clipboard?.writeText(url).then(
+        () => toast.success("Link copied"),
+        () => toast.error("Couldn't copy the link"),
+      );
     }
   }
 
@@ -37,7 +38,7 @@ export function ShareButton({
     <button
       onClick={handleShare}
       aria-label="Share this"
-      title="Share on WhatsApp"
+      title="Share"
       className={`group flex items-center gap-1 text-stone-400 hover:text-[var(--ck-role-accent)] transition-colors ${className}`}
     >
       <Share2 className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />

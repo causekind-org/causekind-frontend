@@ -9,13 +9,13 @@ import {
 } from "@/lib/api";
 import { EntityTable, type Column } from "@/components/super-admin/EntityTable";
 import { SqlConsole } from "@/components/super-admin/SqlConsole";
-import { WhatsAppPanel } from "@/components/admin/WhatsAppPanel";
 import { AdminPermissionsPanel } from "@/components/super-admin/AdminPermissionsPanel";
 import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
 import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
 import { CommandPalette } from "@/components/super-admin/CommandPalette";
+import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
 import { CasesPanel } from "@/components/super-admin/CasesPanel";
 import { InterventionsPanel } from "@/components/super-admin/InterventionsPanel";
 import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPanel";
@@ -30,12 +30,9 @@ import type { SaInterventionEntity } from "@/lib/api";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package, HandCoins,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
-  Sun, Moon, AlertTriangle, MessageCircle, KeyRound, History, Scale,
+  Sun, Moon, AlertTriangle, KeyRound, History, Scale,
   Search, UserSearch, LifeBuoy, Send, ShieldCheck, SlidersHorizontal, Activity, Lock,
-  Phone,
 } from "lucide-react";
-import { CrmContactsPanel } from "@/features/crm/CrmContactsPanel";
-import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
 type Th = {
@@ -231,29 +228,27 @@ const MATCH_COLS: Column[] = [
 ];
 
 const NAV = [
-  { key: "calls",         label: "CRM",         icon: Phone },
-  { key: "crm-staff",     label: "CRM staff logins", icon: KeyRound },
-  { key: "overview",      label: "Overview",    icon: LayoutDashboard },
-  { key: "search",        label: "Search",      icon: Search },
-  { key: "directory",     label: "User 360",    icon: UserSearch },
-  { key: "cases",         label: "Support cases", icon: LifeBuoy },
-  { key: "interventions", label: "Interventions", icon: SlidersHorizontal },
-  { key: "communications", label: "Communications", icon: Send },
-  { key: "governance",     label: "Governance",     icon: Lock },
-  { key: "operations",     label: "Operational health", icon: Activity },
-  { key: "fundraisers",   label: "Fundraisers", icon: HandCoins },
-  { key: "users",         label: "Users (raw)", icon: Users },
-  { key: "campaigns",     label: "Campaigns",   icon: Megaphone },
-  { key: "donations",     label: "Donations",   icon: CreditCard },
-  { key: "money",         label: "Money",       icon: HandCoins },
-  { key: "item-requests", label: "Requests",    icon: ClipboardList },
-  { key: "item-listings", label: "Listings",    icon: Package },
-  { key: "matches",       label: "Matches",     icon: Handshake },
-  { key: "disputes",      label: "Disputes",    icon: Scale },
-  { key: "whatsapp",      label: "WhatsApp",    icon: MessageCircle },
-  { key: "admin-permissions", label: "Admin Access", icon: KeyRound },
-  { key: "audit-log",     label: "Audit Log",   icon: History },
-  { key: "sql",           label: "SQL Console", icon: Terminal },
+  { key: "crm-staff",     label: "CRM staff logins", icon: KeyRound, group: "Work", hint: "Logins for CRM call staff" },
+  { key: "overview",      label: "Overview",    icon: LayoutDashboard, group: "Work", hint: "Platform counts at a glance — click a number to open it" },
+  { key: "search",        label: "Search",      icon: Search, group: "Work", hint: "Find any user, item or record" },
+  { key: "directory",     label: "User 360",    icon: UserSearch, group: "Work", hint: "Everything about one user, plus restrictions" },
+  { key: "cases",         label: "Support cases", icon: LifeBuoy, group: "Work", hint: "Support cases and information requests" },
+  { key: "interventions", label: "Interventions", icon: SlidersHorizontal, group: "Work", hint: "Hold, resume or reassess a request, offer or match" },
+  { key: "communications", label: "Communications", icon: Send, group: "People & access", hint: "Messages sent by staff, with delivery log" },
+  { key: "governance",     label: "Governance",     icon: Lock, group: "Platform", hint: "Super-admin guard, permission history, reveal log" },
+  { key: "operations",     label: "Operational health", icon: Activity, group: "Platform", hint: "Health checks and runtime config" },
+  { key: "fundraisers",   label: "Fundraisers", icon: HandCoins, group: "Money", hint: "Fundraiser campaigns and payouts" },
+  { key: "users",         label: "Users (raw)", icon: Users, group: "Records", hint: "Raw user table — edit fields directly" },
+  { key: "campaigns",     label: "Campaigns",   icon: Megaphone, group: "Records", hint: "Raw campaign table" },
+  { key: "donations",     label: "Donations",   icon: CreditCard, group: "Money", hint: "Every money donation record" },
+  { key: "money",         label: "Money",       icon: HandCoins, group: "Money", hint: "Payments, refunds and payout status" },
+  { key: "item-requests", label: "Requests",    icon: ClipboardList, group: "Records", hint: "Raw in-kind request table" },
+  { key: "item-listings", label: "Listings",    icon: Package, group: "Records", hint: "Raw donor listing table" },
+  { key: "matches",       label: "Matches",     icon: Handshake, group: "Records", hint: "Raw match table" },
+  { key: "disputes",      label: "Disputes",    icon: Scale, group: "Records", hint: "Disputes raised on handovers" },
+  { key: "admin-permissions", label: "Admin Access", icon: KeyRound, group: "People & access", hint: "What each admin is allowed to do" },
+  { key: "audit-log",     label: "Audit Log",   icon: History, group: "Platform", hint: "Every staff action, who and when" },
+  { key: "sql",           label: "SQL Console", icon: Terminal, group: "Platform", hint: "Raw SQL against the live database — careful" },
 ] as const;
 
 /**
@@ -274,6 +269,9 @@ const PLANNED_NAV = [
 ] as const;
 
 type SectionKey = (typeof NAV)[number]["key"];
+
+/** Sidebar headings, in display order. Every NAV entry carries one of these. */
+const NAV_GROUPS = ["Work", "People & access", "Money", "Records", "Platform"] as const;
 
 // ── Count-up tile ─────────────────────────────────────────────────────────────
 function useCountUp(target: number, ms = 900) {
@@ -457,6 +455,26 @@ export default function SuperAdminPage() {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const [section, setSection] = useState<SectionKey>("overview");
+
+  // Keep the open panel in ?section= so refresh and shared links land on it.
+  // window.location instead of useSearchParams: avoids a Suspense boundary
+  // for a page that is client-only anyway.
+  // `urlRead` gates the writer: without it the writer stamps "overview" into
+  // the URL before the reader's state lands, and StrictMode's second mount
+  // pass then reads that back — every refresh returned to Overview.
+  const [urlRead, setUrlRead] = useState(false);
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("section");
+    if (wanted && NAV.some((n) => n.key === wanted)) setSection(wanted as SectionKey);
+    setUrlRead(true);
+  }, []);
+  useEffect(() => {
+    if (!urlRead) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("section") === section) return;
+    url.searchParams.set("section", section);
+    window.history.replaceState(window.history.state, "", url);
+  }, [section, urlRead]);
   // Set when a user is chosen from search or ⌘K, so the directory opens straight
   // into their 360 instead of making the agent find them a second time.
   const [focusUserId, setFocusUserId] = useState<number | undefined>(undefined);
@@ -499,11 +517,6 @@ export default function SuperAdminPage() {
   const [viewingRequest, setViewingRequest] = useState<SuperAdminRow | null>(null);
 
   function handleNavClick(key: SectionKey) {
-    // The CRM lives in its own staff portal.
-    if (key === "calls") {
-      router.push("/crm");
-      return;
-    }
     if (key === "sql" && !sqlAck) {
       setSqlModalOpen(true);
       return;
@@ -561,6 +574,7 @@ export default function SuperAdminPage() {
   const content = useMemo(() => {
     switch (section) {
       case "overview":      return <OverviewSection th={th} onOpen={openFromOverview} />;
+      case "crm-staff":     return <CrmStaffPanel />;
       case "search":        return <GlobalSearchPanel onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} />;
       case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} isDark={isDark} />;
       case "cases":         return <CasesPanel isDark={isDark} />;
@@ -580,9 +594,6 @@ export default function SuperAdminPage() {
       case "item-listings": return <EntityTable entity="item-listings" title="Item Listings" columns={LISTING_COLS}   isDark={isDark}
                               onRowClick={(row) => setViewingListing(row)} />;
       case "matches":       return <EntityTable entity="matches"       title="Matches"       columns={MATCH_COLS}    isDark={isDark} />;
-      case "whatsapp":      return <WhatsAppPanel />;
-      case "calls":         return <CrmContactsPanel canManage />;
-      case "crm-staff":     return <CrmStaffPanel />;
       case "admin-permissions": return <AdminPermissionsPanel />;
       case "disputes":      return <DisputesPanel isDark={isDark} />;
       case "audit-log":     return <AuditLogPanel />;
@@ -640,9 +651,13 @@ export default function SuperAdminPage() {
           </div>
 
           <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
-            {NAV.map(({ key, label, icon: Icon }) => (
+            {NAV_GROUPS.map((group) => (
+              <div key={group} className="pt-2 first:pt-0 space-y-1">
+                <p className={`px-3 pb-0.5 text-[9px] font-black uppercase tracking-wider ${th.textDimmer}`}>{group}</p>
+            {NAV.filter((n) => n.group === group).map(({ key, label, icon: Icon, hint }) => (
               <button
                 key={key}
+                title={hint}
                 onClick={() => handleNavClick(key)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                   section === key ? th.navActive : th.navInactive
@@ -654,6 +669,8 @@ export default function SuperAdminPage() {
                   <span className={`ml-auto text-4xs font-black uppercase ${th.sqlLabel}`}>danger</span>
                 )}
               </button>
+            ))}
+              </div>
             ))}
 
             {/* Every rebuild phase now has a home, so this stopped being a list
@@ -700,6 +717,15 @@ export default function SuperAdminPage() {
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <span className={`text-xs font-mono ${th.textMuted}`}>root@causekind</span>
+              {(() => {
+                const cur = NAV.find((n) => n.key === section);
+                return cur ? (
+                  <span className="hidden sm:flex items-baseline gap-2 ml-3 min-w-0">
+                    <span className={`text-sm font-bold ${th.textPrimary}`}>{cur.label}</span>
+                    <span className={`text-xs truncate ${th.textDim}`}>{cur.hint}</span>
+                  </span>
+                ) : null;
+              })()}
             </div>
             <div className="flex items-center gap-2">
               {ThemeToggle}

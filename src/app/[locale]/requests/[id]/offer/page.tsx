@@ -252,8 +252,7 @@ function shareRequest(title: string, requestId: number, text: string, openingMsg
   if (typeof navigator !== "undefined" && navigator.share) {
     navigator.share({ title, text, url }).catch(() => {});
   } else {
-    window.open(`https://wa.me/?text=${encodeURIComponent(`${text}\n${url}`)}`, "_blank", "noopener,noreferrer");
-    toast.success(openingMsg);
+    void navigator.clipboard?.writeText(url).then(() => toast.success(openingMsg));
   }
 }
 
@@ -973,7 +972,7 @@ export default function OfferWizardPage() {
               <span className="inline-flex items-center gap-1.5"><Package className="h-3.5 w-3.5" /> {rt("stillNeeded", { count: stillNeeded })}</span>
               <span className="text-gray-300 dark:text-gray-700">•</span>
               <button
-                onClick={() => shareRequest(request.title, request.id, rt("shareText", { title: request.title }), ui("Opening WhatsApp to share"))}
+                onClick={() => shareRequest(request.title, request.id, rt("shareText", { title: request.title }), ui("Link copied"))}
                 className="inline-flex items-center gap-1.5 font-semibold text-[#b04a15] transition-colors hover:text-[#c45520] dark:text-[#e07b3a]"
               >
                 <Share2 className="h-3.5 w-3.5" /> <UiText>Share this Request</UiText>

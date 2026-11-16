@@ -31,6 +31,11 @@ export function NgoActivityModerationPanel({ onChange, onCount }: {
   async function decide(id: number, approve: boolean) {
     const reason = (reasons[id] ?? "").trim();
     if (!approve && !reason) { toast.error("Add a reason so the NGO can fix it."); return; }
+    // Approving publishes the photos on the NGO's public page. Without the NGO's consent
+    // confirmation that can expose people who never agreed, so make it a deliberate choice.
+    const item = items?.find(x => x.activity.id === id);
+    if (approve && item && !item.activity.consentGiven
+      && !window.confirm("The NGO has NOT confirmed consent from the people in these photos. Publish anyway?")) return;
     setBusy(id);
     try {
       if (approve) await approveNgoActivity(id); else await rejectNgoActivity(id, reason);
@@ -61,7 +66,9 @@ export function NgoActivityModerationPanel({ onChange, onCount }: {
               {editOfLive && <p className="mt-1 inline-flex rounded-full bg-sky-100 px-2 py-0.5 text-2xs font-bold text-sky-800">Edit of a live activity</p>}
               <p className="font-semibold ck-user-text">{a.title}</p>
               {a.description && <p className="mt-1 text-sm ck-user-text">{a.description}</p>}
-              <p className="mt-1 text-xs">Consent confirmed: {a.consentGiven ? "yes" : "no"}</p>
+              <p className={`mt-1 text-xs ${a.consentGiven ? "" : "font-bold text-red-700"}`}>
+                Consent confirmed: {a.consentGiven ? "yes" : "no — check before approving"}
+              </p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {a.media.map(m => m.url && (m.mediaType === "VIDEO"
                   ? <video key={m.id} controls preload="metadata" src={m.url} className="h-28 rounded-md bg-black" aria-label="Activity video" />

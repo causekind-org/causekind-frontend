@@ -13,6 +13,10 @@ const FILTERS: { label: string; status?: CampaignFlowStatus }[] = [
   { label: "Changes requested", status: "CHANGES_REQUESTED" },
   { label: "Approved — setup incomplete", status: "APPROVED_SETUP_INCOMPLETE" },
   { label: "Live", status: "APPROVED" },
+  // Without these three, a paused or closed fundraiser left every tab and could not be found here.
+  { label: "Paused", status: "PAUSED" },
+  { label: "Collections closed", status: "COLLECTIONS_CLOSED" },
+  { label: "Outcome reporting", status: "OUTCOME_REPORTING" },
   { label: "Declined", status: "PUBLICATION_DECLINED" },
   { label: "Drafts", status: "DRAFT" },
   { label: "Cancelled", status: "CANCELLED" },

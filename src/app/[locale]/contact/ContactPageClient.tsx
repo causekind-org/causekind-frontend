@@ -14,7 +14,6 @@ const INK = "#1e3a60";
 const SUPPORT_EMAIL = "support@causekind.com";
 const SUPPORT_PHONE_DISPLAY = "+91 77199 38619";
 const SUPPORT_PHONE_TEL = "+917719938619";
-const WHATSAPP_URL = "https://wa.me/917719938619";
 
 const ADDRESS_LINES = [
   "3rd Floor, Apoorva Bldg, Flat no. 19,",
@@ -169,12 +168,6 @@ export function ContactPageClient() {
           href={`tel:${SUPPORT_PHONE_TEL}`}
           copyValue={SUPPORT_PHONE_TEL}
           delay={80}
-        />
-        <CopyableChannel
-          label="WhatsApp"
-          display="Chat with us"
-          href={WHATSAPP_URL}
-          delay={160}
         />
       </div>
 

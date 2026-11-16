@@ -11,13 +11,11 @@ import {
   HandHeart,
   Building2,
   ArrowRight,
-  MessageCircle,
   Sparkles,
   ShieldCheck,
   CheckCircle2,
 } from "lucide-react";
 import { CONTACT_INFO, LANDING_ROUTES, HOME_ROLE_COLORS } from "@/lib/landingConstants";
-import { WhatsAppTellAFriendButton } from "@/components/home/WhatsAppTellAFriend";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -106,11 +104,6 @@ export function FinalCtaDesktop({
 
     return () => mm.revert();
   }, [reduce, variant]);
-
-  // WhatsApp Notify URL with pre-filled message
-  const whatsappNotifyUrl = `https://wa.me/917887890208?text=${encodeURIComponent(
-    "Hi CauseKind! Please notify me when online donations and fundraising launch."
-  )}`;
 
   return (
     <section
@@ -222,14 +215,6 @@ export function FinalCtaDesktop({
               )}
             </div>
 
-            {/* ════════ TELL A FRIEND ON WHATSAPP ════════ */}
-            <div className="mt-5 sm:mt-6 flex flex-col items-center gap-2">
-              <p className="text-xs sm:text-[13px] font-semibold text-stone-300">
-                Know someone who&apos;d love this?
-              </p>
-              <WhatsAppTellAFriendButton variant="outline" />
-            </div>
-
             {/* Small reassurance line */}
             <p className="mt-3 text-[11px] sm:text-xs font-medium text-stone-400">
               Free for everyone · Verified · Local
@@ -242,15 +227,6 @@ export function FinalCtaDesktop({
               <span>Fundraising, online donations and CSR partnerships are coming soon.</span>
             </div>
 
-            <a
-              href={whatsappNotifyUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/90 hover:bg-emerald-600 text-white text-xs font-semibold shadow-xs hover:shadow-emerald-500/20 transition-all duration-200 active:scale-95 flex-shrink-0"
-            >
-              <MessageCircle className="w-3.5 h-3.5" aria-hidden="true" />
-              <span>Get updates on WhatsApp</span>
-            </a>
           </div>
         </div>
       </div>
