@@ -136,20 +136,25 @@ export function LiveNeedCard({
         </div>
 
         {(showCta || viewHref) && (
-        <div className="flex flex-row flex-nowrap items-center justify-between gap-3">
+        <div className="flex min-w-0 flex-row flex-wrap items-center justify-between gap-3">
+        {/* One row when both fit. When they don't, the button wraps to its own line
+            and fills it: the link's box takes (almost) all free space on a shared
+            line (grow 9999 vs the button's 1), but a wrapped button is alone. */}
         {viewHref && (
-          <Link
-            href={viewHref}
-            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-medium text-stone-800 dark:text-stone-200 hover:underline"
-          >
-            <span><LandingText><UiText>View need</UiText></LandingText></span>
-            <ArrowUpRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-          </Link>
+          <div className="flex min-w-0 flex-[9999_1_auto] items-center">
+            <Link
+              href={viewHref}
+              className="inline-flex items-center gap-1 whitespace-nowrap text-xs font-medium text-stone-800 dark:text-stone-200 hover:underline"
+            >
+              <span><LandingText><UiText>View need</UiText></LandingText></span>
+              <ArrowUpRight className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+            </Link>
+          </div>
         )}
         {showCta && (
         <Link
           href={href}
-          className={`${viewHref ? "" : "ml-auto "}flex w-auto whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]`}
+          className={`${viewHref ? "grow " : "ml-auto "}flex min-w-0 max-w-full whitespace-nowrap items-center justify-center gap-2 rounded-full bg-[var(--ck-home-surface,#fff7ed)]/70 hover:bg-[var(--ck-home-hover,#b04a15)] dark:bg-zinc-800/80 dark:hover:bg-[var(--ck-home-hover,#b04a15)] border border-[var(--ck-home-soft,#fed7aa)]/50 hover:border-transparent dark:border-zinc-700/60 py-2.5 px-3.5 text-xs font-bold text-[var(--ck-home-ink,#b04a15)] hover:text-white dark:text-[var(--ck-home-highlight,#fdba74)] dark:hover:text-white transition-all duration-200 shadow-2xs group/btn active:scale-[0.98]`}
         >
           {locked && <Lock className="w-3.5 h-3.5 shrink-0 opacity-80 group-hover/btn:opacity-100" />}
           <span><LandingText>{ctaLabel}</LandingText></span>
