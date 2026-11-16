@@ -60,7 +60,12 @@ function roleStyle(role: string | null) {
   return (role && ROLE_STYLE[role]) || DEFAULT_ROLE_STYLE;
 }
 
-const ROLE_FILTERS = ["ALL", "DONOR", "DONEE"] as const;
+// NGO partners and staff were only reachable under "All" — 8 of 19 users had no filter of their own.
+const ROLE_FILTERS = ["ALL", "DONOR", "DONEE", "NGO_PARTNER", "OTHER"] as const;
+const KNOWN_ROLES = ["DONOR", "DONEE", "NGO_PARTNER"];
+const roleLabel = (r?: string | null) => !r ? "—"
+  : r === "NGO_PARTNER" ? "NGO" : r === "SUPER_ADMIN" ? "Super admin"
+  : r.charAt(0) + r.slice(1).toLowerCase().replace(/_/g, " ");
 type RoleFilter = (typeof ROLE_FILTERS)[number];
 
 /**
@@ -183,11 +188,14 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
   // Alphabetical by name so a long directory stays scannable, with an
   // optional donor/donee filter for when the admin only wants one side.
   const visibleUsers = allUsers
-    .filter((u) => roleFilter === "ALL" || u.role === roleFilter)
+    .filter((u) => roleFilter === "ALL" || u.role === roleFilter
+      || (roleFilter === "OTHER" && !KNOWN_ROLES.includes(u.role ?? "")))
     .slice()
     .sort((a, b) => (a.fullName ?? "").localeCompare(b.fullName ?? ""));
   const donorCount = allUsers.filter((u) => u.role === "DONOR").length;
   const doneeCount = allUsers.filter((u) => u.role === "DONEE").length;
+  const ngoCount = allUsers.filter((u) => u.role === "NGO_PARTNER").length;
+  const otherCount = allUsers.length - donorCount - doneeCount - ngoCount;
 
   return (
     <div className="max-w-3xl">
@@ -248,9 +256,11 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
             {/* Role filter — lets the admin isolate donors or donees instead of scanning a mixed list */}
             <div className="mb-3 flex flex-wrap gap-1.5">
               {ROLE_FILTERS.map((rf) => {
-                const label = rf === "ALL" ? `All · ${allUsers.length}` : rf === "DONOR" ? `Donors · ${donorCount}` : `Donees · ${doneeCount}`;
+                const label = rf === "ALL" ? `All · ${allUsers.length}` : rf === "DONOR" ? `Donors · ${donorCount}`
+                  : rf === "DONEE" ? `Donees · ${doneeCount}` : rf === "NGO_PARTNER" ? `NGOs · ${ngoCount}` : `Staff & other · ${otherCount}`;
+                if (rf === "OTHER" && otherCount === 0) return null;
                 const active = roleFilter === rf;
-                const activeBg = rf === "DONOR" ? "#b04a15" : rf === "DONEE" ? "#0d9488" : "#57534e";
+                const activeBg = rf === "DONOR" ? "#b04a15" : rf === "DONEE" ? "#0d9488" : rf === "NGO_PARTNER" ? "#1e6b4f" : "#57534e";
                 return (
                   <button
                     key={rf}
@@ -270,7 +280,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
               <CardContent className="p-0">
                 <div className="flex items-center justify-between border-b border-stone-100 px-4 py-2.5 dark:border-zinc-800">
                   <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400">
-                    {roleFilter === "ALL" ? "All users" : roleFilter === "DONOR" ? "Donors" : "Donees"} · A–Z
+                    {roleFilter === "ALL" ? "All users" : roleFilter === "DONOR" ? "Donors" : roleFilter === "DONEE" ? "Donees" : roleFilter === "NGO_PARTNER" ? "NGOs" : "Staff & other"} · A–Z
                   </p>
                   <p className="text-xs text-stone-400">{visibleUsers.length}</p>
                 </div>
@@ -292,7 +302,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                           <span className="block truncate text-sm font-semibold">{u.fullName}</span>
                           <span className="block truncate text-xs text-stone-500">{u.email}{u.city ? ` · ${u.city}` : ""}</span>
                         </span>
-                        <Badge variant="secondary" className={`shrink-0 ${rs.badge}`}>{u.role ?? "—"}</Badge>
+                        <Badge variant="secondary" className={`shrink-0 ${rs.badge}`}>{roleLabel(u.role)}</Badge>
                       </button>
                     );
                   })
@@ -323,7 +333,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                     <h2 className="text-base sm:text-xl font-black text-stone-900 dark:text-stone-100">{journey.user.fullName}</h2>
                     <p className="text-sm text-stone-500">{journey.user.email}{journey.user.phone ? ` · ${journey.user.phone}` : ""}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary">{journey.user.role ?? "USER"}</Badge>
+                      <Badge variant="secondary">{roleLabel(journey.user.role)}</Badge>
                       {journey.user.city && <Badge variant="outline">{journey.user.city}</Badge>}
                       {journey.user.suspended && (
                         <Badge variant="destructive" className="gap-1">

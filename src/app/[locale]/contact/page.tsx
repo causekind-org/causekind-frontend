@@ -2,7 +2,7 @@ import { ContactPageClient } from "./ContactPageClient";
 
 export const metadata = {
   title: "Contact",
-  description: "Reach the CauseKind team directly by email, phone, or WhatsApp — no bots, no middlemen.",
+  description: "Reach the CauseKind team directly by email or phone — no bots, no middlemen.",
   alternates: { canonical: "/contact" },
 };
 
@@ -11,7 +11,7 @@ export default function ContactPage() {
     "@context": "https://schema.org",
     "@type": "ContactPage",
     "name": "Contact — CauseKind",
-    "description": "Reach the CauseKind team directly by email, phone, or WhatsApp — no bots, no middlemen.",
+    "description": "Reach the CauseKind team directly by email or phone — no bots, no middlemen.",
     "url": "https://www.causekind.com/contact",
     "mainEntity": {
       "@type": "Organization",

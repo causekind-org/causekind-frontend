@@ -206,7 +206,7 @@ export function IssuesPanel({ issueKey, onOpenCount }: {
       )}
 
       {data && data.items.length > 0 && (
-        <ul className="space-y-3">
+        <ul className={`space-y-3 transition-opacity ${loading ? "opacity-50" : ""}`} aria-busy={loading}>
           {data.items.map(s => <li key={s.key}><IssueCard s={s} onOpen={() => setSelected(s.key)} /></li>)}
         </ul>
       )}
@@ -320,7 +320,7 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
       <ArrowLeft className="h-4 w-4" aria-hidden /> All issues
     </button>
   );
-  if (error) return <div className="space-y-4">{back}<div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error}</div></div>;
+  if (error) return <div className="space-y-4">{back}<div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{error} <button onClick={() => setDecided(x => x + 1)} className="ms-2 font-bold underline">Try again</button></div></div>;
   if (!d || d.summary.key !== issueKey) return <div className="space-y-4">{back}<div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-stone-300" aria-label="Loading issue" /></div></div>;
 
   const s = d.summary;
@@ -420,6 +420,16 @@ function IssueDetailView({ issueKey, nonce, onBack }: { issueKey: string; nonce:
           </div>
         )}
       </Card>
+
+      {s.open && !decidable && (
+        // Only purchase and offer-handover problems have an admin decision endpoint
+        // (AdminPurchaseController.resolve-issue). Everything else is settled by a
+        // super admin, so say so instead of leaving the admin looking for a button.
+        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+          <p className="font-bold">Who decides this</p>
+          <p className="mt-1">This kind of issue is settled by a super admin in Disputes and Support cases. You can follow it here, and it will move to Resolved once they act.</p>
+        </div>
+      )}
 
       {decidable && (
         <Card title="Decide this problem" icon={<ShieldCheck className="h-4 w-4 text-[#b04a15]" aria-hidden />}>

@@ -82,7 +82,6 @@ import { SOCIAL_LINKS } from "@/config/social";
 export const CONTACT_INFO = {
   email: "support@causekind.com",
   phone: "+91 7719938619",
-  whatsappUrl: SOCIAL_LINKS.find((s) => s.id === "whatsapp")?.url ?? "https://api.whatsapp.com/send/?phone=917719938619",
   socials: {
     instagram: SOCIAL_LINKS.find((s) => s.id === "instagram")?.url ?? "https://instagram.com/causekind",
     linkedin: SOCIAL_LINKS.find((s) => s.id === "linkedin")?.url ?? "https://www.linkedin.com/company/causekind/",

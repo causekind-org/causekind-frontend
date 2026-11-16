@@ -24,7 +24,7 @@ const CAPABILITY_GROUPS: { label: string; capabilities: string[] }[] = [
   },
   {
     label: "Communications",
-    capabilities: ["WHATSAPP", "COMMUNICATION_MODERATE"],
+    capabilities: ["COMMUNICATION_MODERATE"],
   },
   {
     label: "Calling CRM",
@@ -50,7 +50,6 @@ const CAPABILITY_LABELS: Record<string, string> = {
   LISTING_REVIEW: "Listings",
   OFFER_REVIEW: "Offers & disputes",
   MATCH_INTERVENE: "Matches",
-  WHATSAPP: "WhatsApp",
   CRM_ACCESS: "Call list",
   CRM_MANAGE: "Manage call list",
   USER_READ: "View users",

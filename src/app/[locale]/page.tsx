@@ -83,9 +83,8 @@ export default async function HomePage() {
         "logo": "https://www.causekind.com/logo-filled.webp",
         "image": "https://www.causekind.com/logo-filled.webp",
         "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs.",
-        // CauseKind's own profiles, from the footer's config. WhatsApp is a
-        // click-to-chat link, not a profile, so it is excluded.
-        "sameAs": SOCIAL_LINKS.filter((l) => l.id !== "whatsapp").map((l) => l.url),
+        // CauseKind's own profiles, from the footer's config.
+        "sameAs": SOCIAL_LINKS.map((l) => l.url),
         "contactPoint": {
           "@type": "ContactPoint",
           "contactType": "customer support",
