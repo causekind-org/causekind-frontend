@@ -63,6 +63,8 @@ const nextConfig: NextConfig = {
       },
       // The "Giving safely" checklist page was removed; old links land on the FAQ.
       { source: "/give-safely", destination: "/faq", permanent: true },
+      // A real 308 at the edge; the /help page's permanentRedirect stays as a fallback.
+      { source: "/help", destination: "/faq", permanent: true },
     ];
   },
 };

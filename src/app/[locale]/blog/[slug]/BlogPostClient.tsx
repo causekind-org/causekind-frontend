@@ -363,82 +363,8 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
   const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 2);
-
-  // Schema.org BlogPosting markup so Google's Rich Results can pick up this
-  // post — otherwise the page renders fine but carries zero structured data.
-  const postSchemaData = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BlogPosting",
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": `https://www.causekind.com/blog/${post.slug}`,
-        },
-        "headline": post.title,
-        "description": post.description,
-        "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
-        "author": {
-          "@type": "Person",
-          "name": post.author,
-          "image": post.authorImage,
-          "url": "https://www.causekind.com/about",
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "CauseKind",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://www.causekind.com/logo-filled.webp",
-          },
-        },
-        // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
-        // to the 1st of the month. Outputting the full ISO string ensures a valid timezone.
-        "datePublished": !isNaN(new Date(post.publishedDate).getTime())
-          ? new Date(post.publishedDate).toISOString()
-          : undefined,
-        "url": `https://www.causekind.com/blog/${post.slug}`,
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://www.causekind.com"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Blog",
-            "item": "https://www.causekind.com/blog"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": post.title,
-            "item": `https://www.causekind.com/blog/${post.slug}`
-          }
-        ]
-      },
-      {
-        "@type": "Organization",
-        "name": "CauseKind",
-        "url": "https://www.causekind.com",
-        "logo": "https://www.causekind.com/logo-filled.webp",
-        "image": "https://www.causekind.com/logo-filled.webp",
-        "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
-      }
-    ]
-  };
-
   return (
     <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-4 md:pt-16 lg:pt-24`}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(postSchemaData) }}
-      />
       {/* Main Content Area */}
       <main className="pb-24">
         <article lang={translation ? `${locale}-x-mtfrom-en` : "en"}>

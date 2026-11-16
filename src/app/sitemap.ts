@@ -1,6 +1,11 @@
 import { MetadataRoute } from 'next';
 import { blogPosts } from '@/data/blogData';
 import { IN_KIND_CATEGORIES } from '@/lib/inKindCategories';
+import { initiatives } from '@/lib/initiatives';
+
+// Fixed, not new Date(): a lastmod that changes on every request tells crawlers
+// nothing. Bump it when the static pages' content actually changes.
+const STATIC_LASTMOD = new Date('2026-11-16T00:00:00+05:30');
 
 /**
  * Every URL here must be canonical and final — the same www host the canonical
@@ -34,14 +39,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '/refund',
     '/faq',
     '/contact',
-    '/items',
-    '/offers',
     '/requests',
+    '/ngo',
+    '/donate/money',
+    '/fundraisers',
+    '/sahas',
+    '/razorpay',
+    ...initiatives.map((i) => `/initiatives/${i.slug}`),
   ];
 
   const sitemapEntries: MetadataRoute.Sitemap = routes.map((route) => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date(),
+    lastModified: STATIC_LASTMOD,
     changeFrequency: route === '' ? 'daily' : 'weekly',
     priority: route === '' ? 1.0 : 0.8,
   }));
@@ -60,7 +69,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   IN_KIND_CATEGORIES.forEach((category) => {
     sitemapEntries.push({
       url: `${baseUrl}/requests/category/${category.slug}`,
-      lastModified: new Date(),
+      lastModified: STATIC_LASTMOD,
       // Editorial copy, not the request list beneath it — the page's own content
       // changes rarely even though what it links to changes constantly.
       changeFrequency: 'monthly',
@@ -72,7 +81,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   blogPosts.forEach((post) => {
     sitemapEntries.push({
       url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.publishedDate),
+      lastModified: new Date(post.dateModified ?? post.datePublished),
       changeFrequency: 'monthly',
       priority: 0.6,
     });
@@ -83,7 +92,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const slug of await publicNgoSlugs()) {
     sitemapEntries.push({
       url: `${baseUrl}/ngos/${slug}`,
-      lastModified: new Date(),
+      lastModified: STATIC_LASTMOD,
       changeFrequency: 'weekly',
       priority: 0.6,
     });

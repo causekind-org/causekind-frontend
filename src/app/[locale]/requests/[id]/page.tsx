@@ -58,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const mt = await getTranslations("requestsArea");
   if (res.kind !== "ok") return { title: mt("metaRequestTitle"), robots: { index: false } };
   return {
-    title: `${res.req.title} — CauseKind`,
+    title: res.req.title,
     description: mt("metaRequestDescription", { city: res.req.city || mt("india") }),
     alternates: { canonical: `/requests/${res.req.id}` },
   };

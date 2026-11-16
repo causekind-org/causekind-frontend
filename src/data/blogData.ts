@@ -7,7 +7,16 @@ export interface BlogPost {
   image: string;
   author: string;
   authorImage: string;
+  /** Display string shown on the page, e.g. "June 2026". */
   publishedDate: string;
+  /** ISO 8601 with +05:30, used in JSON-LD, Open Graph and the sitemap. */
+  datePublished: string;
+  /** ISO 8601 with +05:30; set when the article is meaningfully revised. */
+  dateModified?: string;
+  /** Optional search title (max 60 chars, without the " | CauseKind" suffix). */
+  seoTitle?: string;
+  /** Optional meta description (max 160 chars). */
+  seoDescription?: string;
   readTime: string;
   peopleActed?: number;
   icon?: string;
@@ -30,6 +39,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "QR Codes & Impact Certificates for Verified Giving",
+    seoDescription: "How QR-based validation, geographic matching and digital impact certificates close the trust gaps in in-kind giving in India, and how CauseKind uses them.",
     readTime: "8 min read",
       },
   {
@@ -41,6 +53,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "January 2026",
+    datePublished: "2026-01-01T00:00:00+05:30",
+    seoTitle: "What Students Need in Jan-Feb That Nobody Donates",
+    seoDescription: "Board exams start in February and March. Learn which study materials students need in January and early February, and why standard giving often misses them.",
     readTime: "8 min read",
       },
   {
@@ -52,6 +67,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "Why CSR Budgets Do Less - and How In-Kind Helps",
+    seoDescription: "Large companies in India must spend 2% of profits on CSR, but where does the cash go? See why in-kind corporate giving can make a CSR budget do more real good.",
     readTime: "9 min read",
       },
   {
@@ -63,6 +81,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "Monsoon Giving: In-Kind Donations Most Needed",
+    seoDescription: "June to September is the most neglected season for giving in India. A complete guide to what monsoon giving looks like, what to donate, and how to help.",
     readTime: "8 min read",
       },
   {
@@ -74,6 +95,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "5 Things You Can Donate Right Now",
+    seoDescription: "An old school bag, outgrown clothes or an unused laptop could be what a child nearby needs. The 5 most needed items and how to donate them locally.",
     readTime: "5 min read",
       },
   {
@@ -85,6 +109,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "Donate Unused Household Items: Clutter to Impact",
+    seoDescription: "Unused household items can be a lifeline for someone in your community. See how an old school bag, smartphone or outgrown clothes create verified impact.",
     readTime: "6 min read",
       },
   {
@@ -96,6 +123,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "Section 80G Explained: Save Tax on Donations",
+    seoDescription: "A jargon-free guide to Section 80G in India: how charitable donations can reduce the tax you pay, and how to plan your giving smartly through the year.",
     readTime: "7 min read",
       },
   {
@@ -107,6 +137,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "The Ripple Effect of Opportunity",
+    seoDescription: "Nandini had never owned a blazer before. A story of how a single sponsorship can create a ripple effect of opportunity that reaches far beyond one person.",
     readTime: "8 min read",
       },
   {
@@ -118,6 +151,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "Wipe & Donate Old Phones and Laptops Safely",
+    seoDescription: "The device in your drawer is not clutter, it is someone's education. Learn how to securely wipe your old smartphone or laptop and donate it to a student.",
     readTime: "9 min read",
       },
   {
@@ -129,6 +165,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "August 2026",
+    datePublished: "2026-08-01T00:00:00+05:30",
+    seoTitle: "How to Verify an NGO Before Donating in India",
+    seoDescription: "Verify an NGO before you donate in India with a step-by-step guide to checking FCRA registration, 80G status, NITI Aayog Darpan listing and MCA filings.",
     readTime: "8 min read",
       },
   {
@@ -140,6 +179,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "August 2026",
+    datePublished: "2026-08-01T00:00:00+05:30",
+    seoTitle: "If Every Urban Indian Donated One Item a Month",
+    seoDescription: "What if every urban Indian donated one item a month? We ran the numbers: 2.4 billion items a year reaching communities in need, with nothing extraordinary.",
     readTime: "7 min read",
       },
   {
@@ -151,6 +193,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "August 2026",
+    datePublished: "2026-08-01T00:00:00+05:30",
+    seoTitle: "Why People Who Want to Give Never Do",
+    seoDescription: "Most people who want to give never do. Behavioural science explains why, and how removing friction and closing the intention-action gap changes giving.",
     readTime: "8 min read",
       },
   {
@@ -162,6 +207,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "August 2026",
+    datePublished: "2026-08-01T00:00:00+05:30",
+    seoTitle: "The Last Chapter: An Impact Story",
+    seoDescription: "A woman in an old-age home receives a donated novel: the third book of a series she began forty years ago. A story about finishing what you once started.",
     readTime: "8 min read",
       },
   {
@@ -173,6 +221,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "January 2026",
+    datePublished: "2026-01-01T00:00:00+05:30",
+    seoTitle: "In-Kind Donations in India: The Complete Guide",
+    seoDescription: "Everything about in-kind donations in India: what to donate, how to find verified recipients, how local matching works, and how to donate goods safely.",
     readTime: "12 min read",
     faq: [
       { question: "What is an in-kind donation in India?", answer: "An in-kind donation in India is a non-cash contribution of physical goods - such as clothes, books, electronics, food, or stationery - given directly to a person or organisation in need, instead of donating money." },
@@ -191,6 +242,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "January 2026",
+    datePublished: "2026-01-01T00:00:00+05:30",
+    seoTitle: "7 Benefits of In-Kind Donations Over Cash",
+    seoDescription: "Why in-kind donations can do more than cash in India: 7 key benefits for donors and recipients, and how to give goods locally through CauseKind.",
     readTime: "7 min read",
       },
   {
@@ -202,6 +256,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "February 2026",
+    datePublished: "2026-02-01T00:00:00+05:30",
+    seoTitle: "How to Organise an Item Donation Drive in India",
+    seoDescription: "A step-by-step guide to organising an item donation drive in India for offices, housing societies, schools or communities, from planning through to delivery.",
     readTime: "8 min read",
       },
   {
@@ -213,6 +270,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "February 2026",
+    datePublished: "2026-02-01T00:00:00+05:30",
+    seoTitle: "Monetary vs In-Kind Donation: Which to Choose?",
+    seoDescription: "Cash or goods: which donation does more good? An honest comparison of monetary and in-kind donations in India, when each works best and how to choose.",
     readTime: "6 min read",
     faq: [
       { question: "Is in-kind donation better than cash donation?", answer: "Neither is universally better. In-kind donation is better for specific, immediate, local needs where you know exactly what is required. Cash donation is better for complex, large-scale, or geographically distant needs where an organisation needs flexibility to determine priorities." },
@@ -228,6 +288,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "March 2026",
+    datePublished: "2026-03-01T00:00:00+05:30",
+    seoTitle: "How Local Donation Matching Works (10 km)",
+    seoDescription: "How local donation matching works: CauseKind matches donors with verified recipients within 10 km of them. Why proximity changes giving in India.",
     readTime: "6 min read",
       },
   {
@@ -239,6 +302,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "April 2026",
+    datePublished: "2026-04-01T00:00:00+05:30",
+    seoTitle: "How to Donate Clothes in India: Complete Guide",
+    seoDescription: "How to donate clothes in India: what to give and what not to, how to prepare clothes, where to donate, and how to match them with verified people nearby.",
     readTime: "10 min read",
     faq: [
       { question: "Where can I donate clothes in India?", answer: "You can donate clothes in India through CauseKind's verified In-Kind platform (matches your clothes to specific recipients within 10 km), registered NGOs, Goonj collection points, Robin Hood Army chapters, or housing society collection drives. Always verify the organisation before donating." },
@@ -257,6 +323,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "April 2026",
+    datePublished: "2026-04-01T00:00:00+05:30",
+    seoTitle: "Where to Donate Clothes Near You in India",
+    seoDescription: "Where to donate clothes near you in India: verified options in Mumbai, Delhi, Pune, Bangalore, Hyderabad, Chennai and more, or match with someone nearby.",
     readTime: "6 min read",
       },
   {
@@ -268,6 +337,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "May 2026",
+    datePublished: "2026-05-01T00:00:00+05:30",
+    seoTitle: "What Clothes Should Not Be Donated in India",
+    seoDescription: "Not everything in your wardrobe belongs in a donation bag. A guide to which clothes should never be donated in India, and why it matters to NGOs.",
     readTime: "6 min read",
     faq: [
       { question: "Can I donate used underwear in India?", answer: "No. Used undergarments should never be donated. This is a hygiene and dignity requirement with no exceptions. Donate new, sealed undergarments instead." },
@@ -284,6 +356,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "May 2026",
+    datePublished: "2026-05-01T00:00:00+05:30",
+    seoTitle: "How to Prepare Clothes for Donation: Checklist",
+    seoDescription: "Prepare clothes for donation in India step by step: washing, sorting, labelling and packing, so every item you give is genuinely useful and ready to wear.",
     readTime: "5 min read",
       },
   {
@@ -295,6 +370,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "June 2026",
+    datePublished: "2026-06-01T00:00:00+05:30",
+    seoTitle: "What Happens After You Donate Clothes?",
+    seoDescription: "What happens to donated clothes in India? Follow the full journey from your wardrobe to a verified recipient, and what it means for the person receiving it.",
     readTime: "6 min read",
       },
   {
@@ -306,6 +384,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "July 2026",
+    datePublished: "2026-07-01T00:00:00+05:30",
+    seoTitle: "How to Donate Laptops & Electronics in India",
+    seoDescription: "How to donate laptops, phones and electronics in India: wiping your data, what condition devices need to be in, and how to get them to a student.",
     readTime: "10 min read",
     faq: [
       { question: "Can I donate my old laptop in India?", answer: "Yes - if it powers on, connects to Wi-Fi, and holds battery charge for 3+ hours. Wipe all personal data with a factory reset before donating, and include the charger. Donate through CauseKind to match with a verified student within 10 km." },
@@ -323,6 +404,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "July 2026",
+    datePublished: "2026-07-01T00:00:00+05:30",
+    seoTitle: "Erase Personal Data Before Donating a Device",
+    seoDescription: "Wipe personal data from Android phones, Apple devices, Windows laptops and Chromebooks before donating in India. Protect your privacy, step by step.",
     readTime: "8 min read",
       },
   {
@@ -334,6 +418,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "August 2026",
+    datePublished: "2026-08-01T00:00:00+05:30",
+    seoTitle: "Donating Laptops to Students in India",
+    seoDescription: "How donating your old laptop to a student in India changes their education: what it enables, who needs one, and how to give it to a verified need.",
     readTime: "7 min read",
       },
   {
@@ -345,6 +432,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "August 2026",
+    datePublished: "2026-08-01T00:00:00+05:30",
+    seoTitle: "Donate or Recycle Electronics? Which Helps More",
+    seoDescription: "Donate or recycle old electronics in India? When to give a working device to a student, and when responsible e-waste recycling is the better choice for you.",
     readTime: "6 min read",
     faq: [
       { question: "Should I donate or recycle my old phone in India?", answer: "If your phone powers on, connects to Wi-Fi, and holds battery charge for 3+ hours, donate it through CauseKind to a verified student. If it is non-functional, recycle it through an authorised e-waste recycler. Never throw electronics in general waste." },
@@ -360,6 +450,9 @@ export const blogPosts: BlogPost[] = [
     author: "CauseKind",
     authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
     publishedDate: "August 2026",
+    datePublished: "2026-08-01T00:00:00+05:30",
+    seoTitle: "What Condition Should a Donated Device Be In?",
+    seoDescription: "What condition must a phone or laptop be in to donate in India? Clear standards for what is acceptable, what needs repair first and what not to donate.",
     readTime: "6 min read",
     faq: [
       { question: "Can I donate a phone with a cracked screen in India?", answer: "It depends on the severity. If the crack is cosmetic and does not affect touch sensitivity or screen readability, the device is donatable. If the crack significantly affects usability, repair the screen before donating or do not donate." },

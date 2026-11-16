@@ -116,9 +116,21 @@ export const maxDuration = 60;
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.causekind.com"),
-  title: "CauseKind — Give With Purpose",
+  // Pages set only their own part; the template appends the brand once.
+  title: { default: "CauseKind — Give With Purpose", template: "%s | CauseKind" },
   description: "Discover and support verified charity campaigns.",
-  icons: { icon: "/logo-filled.webp" },
+  // Site-wide share defaults; pages override title/description/images as needed.
+  openGraph: {
+    type: "website",
+    siteName: "CauseKind",
+    locale: "en_IN",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "CauseKind" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/og-default.png"],
+  },
+  // Icons come from the file conventions: src/app/favicon.ico, icon.png, apple-icon.png.
 };
 
 // English is built ahead of time; every other language is built on its first

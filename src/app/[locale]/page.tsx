@@ -7,6 +7,7 @@ import {
 } from "@/lib/api";
 import type { Metadata } from "next";
 import HomeClient from "./HomeClient";
+import { SOCIAL_LINKS } from "@/config/social";
 import { loadGoogleReviews } from "@/lib/googleReviewsServer";
 
 // Self-referencing canonical on the apex route. Resolves against metadataBase
@@ -14,7 +15,20 @@ import { loadGoogleReviews } from "@/lib/googleReviewsServer";
 // non-www domain redirects to — and stops the two hostnames competing as
 // separate URLs for the same page.
 export const metadata: Metadata = {
+  title: { absolute: "Donate Items to Verified People & NGOs in India | CauseKind" },
+  description:
+    "Give clothes, books, electronics and household items directly to verified people and NGOs near you. Simple, local, in-kind giving with CauseKind.",
   alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    siteName: "CauseKind",
+    locale: "en_IN",
+    url: "/",
+    title: "Donate Items to Verified People & NGOs in India | CauseKind",
+    description:
+      "Give clothes, books, electronics and household items directly to verified people and NGOs near you. Simple, local, in-kind giving with CauseKind.",
+    images: [{ url: "/og-default.png", width: 1200, height: 630, alt: "CauseKind" }],
+  },
 };
 
 export const revalidate = 60; // ISR cache for 60 seconds
@@ -68,7 +82,16 @@ export default async function HomePage() {
         "url": "https://www.causekind.com",
         "logo": "https://www.causekind.com/logo-filled.webp",
         "image": "https://www.causekind.com/logo-filled.webp",
-        "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
+        "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs.",
+        // CauseKind's own profiles, from the footer's config. WhatsApp is a
+        // click-to-chat link, not a profile, so it is excluded.
+        "sameAs": SOCIAL_LINKS.filter((l) => l.id !== "whatsapp").map((l) => l.url),
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "email": "support@causekind.com",
+          "url": "https://www.causekind.com/contact"
+        }
       },
       {
         "@type": "WebSite",
@@ -77,11 +100,6 @@ export default async function HomePage() {
         "name": "CauseKind",
         "publisher": {
           "@id": "https://www.causekind.com/#organization"
-        },
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://www.causekind.com/blog?q={search_term_string}",
-          "query-input": "required name=search_term_string"
         }
       }
     ]
