@@ -2016,8 +2016,8 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
   const dt = useTranslations("dashFlow");
   const dc = useDashCopy();
 
-  const [filter, setFilter] = useState<"all" | "completed" | "closed">("all");
-  const [kind, setKind] = useState<"all" | "donee" | "drive">("all");
+  // One single-select chip row: All · Donee · NGO drives · Completed · Closed / Cancelled.
+  const [filter, setFilter] = useState<"all" | "donee" | "drive" | "completed" | "closed">("all");
   const [query, setQuery] = useState("");
 
   const entries = useMemo(() => {
@@ -2217,24 +2217,20 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
 
   const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const filtered = entries.filter(e => {
-    const matchesFilter = filter === "all" ? true : filter === "completed" ? e.isCompleted : !e.isCompleted;
+    const matchesFilter = filter === "all" ? true : filter === "completed" ? e.isCompleted
+      : filter === "closed" ? !e.isCompleted : e.kind === filter;
     if (!matchesFilter) return false;
-    if (kind !== "all" && e.kind !== kind) return false;
     if (words.length === 0) return true;
     const t = e.text.toLowerCase();
     return words.every(w => t.includes(w));
   });
 
-  const filterOptions: FilterOption<"all" | "completed" | "closed">[] = [
-    { key: "all", label: ui("All"), count: entries.length },
-    { key: "completed", label: ui("Completed"), count: entries.filter(e => e.isCompleted).length },
-    { key: "closed", label: ui("Closed / Cancelled"), count: entries.filter(e => !e.isCompleted).length },
-  ];
-
-  const kindOptions: FilterOption<"all" | "donee" | "drive">[] = [
+  const filterOptions: FilterOption<"all" | "donee" | "drive" | "completed" | "closed">[] = [
     { key: "all", label: ui("All"), count: entries.length },
     { key: "donee", label: ui("Donee"), count: entries.filter(e => e.kind === "donee").length },
     { key: "drive", label: ui("NGO drives"), count: entries.filter(e => e.kind === "drive").length },
+    { key: "completed", label: ui("Completed"), count: entries.filter(e => e.isCompleted).length },
+    { key: "closed", label: ui("Closed / Cancelled"), count: entries.filter(e => !e.isCompleted).length },
   ];
 
   const handleDismissRedonation = async (offerId: number) => {
@@ -2259,7 +2255,6 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
     focusedOffer.current = focusOfferId ?? null;
     setQuery("");
     setFilter("all");
-    setKind("all");
     setHighlightKey(focusKey);
     const raf = requestAnimationFrame(() => document.getElementById(`history-entry-${focusKey}`)?.scrollIntoView?.({ behavior: "smooth", block: "center" }));
     const timer = setTimeout(() => setHighlightKey(null), 3000);
@@ -2297,16 +2292,6 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
             idPrefix="donor-history-filter"
           />
         )}
-        {entries.length > 0 && (
-          <DashboardFilterChips
-            label={ui("Show donee or NGO drive donations")}
-            options={kindOptions}
-            value={kind}
-            onChange={setKind}
-            tone="donor"
-            idPrefix="donor-history-kind"
-          />
-        )}
       </CardHeader>
       <CardContent className="space-y-3 pt-3 sm:pt-4">
         {entries.length === 0 ? (
@@ -2314,7 +2299,7 @@ function DonorHistorySection({ offers, fulfilledItems, matches, pastMatches, onC
         ) : filtered.length === 0 ? (
           <p className="py-6 text-center text-sm text-stone-500">
             {dt("nothingMatches", { query: query.trim() || filter })}{" "}
-            <button type="button" onClick={() => { setQuery(""); setFilter("all"); setKind("all"); }} className="font-semibold text-[var(--ck-role-accent)] hover:underline"><UiText>Clear filters</UiText></button>
+            <button type="button" onClick={() => { setQuery(""); setFilter("all"); }} className="font-semibold text-[var(--ck-role-accent)] hover:underline"><UiText>Clear filters</UiText></button>
           </p>
         ) : (
           filtered.map(e => (
