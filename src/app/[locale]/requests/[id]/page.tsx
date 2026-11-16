@@ -57,10 +57,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const res = await load(id);
   const mt = await getTranslations("requestsArea");
   if (res.kind !== "ok") return { title: mt("metaRequestTitle"), robots: { index: false } };
+  // A person's request shows a first name, a city and a free-text need, so it
+  // stays out of search. Only an explicit "NGO" is indexable: a missing or
+  // unknown requesterType falls on the private side.
+  const indexable = res.req.requesterType === "NGO";
   return {
     title: res.req.title,
     description: mt("metaRequestDescription", { city: res.req.city || mt("india") }),
     alternates: { canonical: `/requests/${res.req.id}` },
+    ...(indexable ? {} : { robots: { index: false, follow: true } }),
   };
 }
 

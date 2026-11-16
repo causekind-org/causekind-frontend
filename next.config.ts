@@ -1,5 +1,8 @@
 import type { NextConfig } from "next";
+import { execFileSync } from "node:child_process";
+import path from "node:path";
 import createNextIntlPlugin from "next-intl/plugin";
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from "next/constants";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
@@ -52,6 +55,31 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
+      /*
+       * Private, auth and utility pages stay out of search. Sources match the
+       * URL the visitor requests (no locale prefix; the proxy adds that after).
+       * None of these may go into robots.txt Disallow: a crawler has to fetch
+       * the page to see the noindex.
+       *
+       * /ngo itself is public. Only its three private areas are listed, by
+       * name, so the landing page and /ngos/<slug> can never match.
+       */
+      ...[
+        "/:section(login|register|forgot-password|reset-password|thank-you|certificate)",
+        "/drives/:id/:step(give|proof)",
+        "/sahas/:slug/donate",
+        "/sahas/:slug/give/:path*",
+      ].map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, follow" }] })),
+      ...[
+        "/:section(dashboard|profile|admin|super-admin|donee|crm|items|offers|matches|ngo-drive-offers|fundraising)/:path*",
+        "/ngo/:area(requests|drives|handovers)/:path*",
+        "/requests/new",
+        "/requests/:id/offer",
+        "/campaigns/new",
+        "/fundraisers/:id/:step(donate|report)",
+        "/fundraisers/donations/:path*",
+        "/fundraisers/:page(my-donations|reports)",
+      ].map((source) => ({ source, headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] })),
     ];
   },
   async redirects() {
@@ -69,4 +97,28 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withNextIntl(nextConfig);
+/**
+ * Regenerates src/lib/staticSlugs.ts before anything is compiled.
+ *
+ * The "prebuild"/"predev" npm scripts already do this, but they only run when
+ * the build is started through npm. This config is loaded by every `next build`
+ * and `next dev`, however they are started, so the list the proxy 404s against
+ * can never be older than the blog, initiative and category data.
+ *
+ * Only in the build and dev phases: `next start` must not write to the source
+ * tree. The generator writes only when the content changed, so running after
+ * "prebuild" is a no-op, as are the repeat config loads a build makes. It runs
+ * as a child process because it is an ES module and this file may be compiled
+ * to CommonJS; a non-zero exit throws here and stops the build.
+ */
+function regenerateStaticSlugs(phase: string) {
+  if (phase !== PHASE_PRODUCTION_BUILD && phase !== PHASE_DEVELOPMENT_SERVER) return;
+  execFileSync(process.execPath, [path.join(process.cwd(), "scripts", "generate-static-slugs.mjs")], {
+    stdio: "inherit",
+  });
+}
+
+export default function config(phase: string) {
+  regenerateStaticSlugs(phase);
+  return withNextIntl(nextConfig);
+}
