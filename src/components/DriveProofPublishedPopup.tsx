@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { PartyPopper } from "lucide-react";
+import { BadgeCheck, PartyPopper } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { getMyNgoDriveOffers, getMyNotifications, markNotificationRead, type SavedNotification } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
-import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogBody, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const TYPE = "proof_published";
 const MAX_LISTED = 3;
@@ -35,7 +35,7 @@ export function DriveProofPublishedPopup() {
       const offerId = Number(/[?&]offer=(\d+)/.exec(n.link ?? "")?.[1]);
       const o = offers.find((x) => x.id === offerId);
       return {
-        id: n.id, href: n.link ?? "/dashboard?tab=history",
+        id: n.id, href: Number.isFinite(offerId) && offerId > 0 ? `/dashboard?tab=history&offer=${offerId}` : "/dashboard?tab=history",
         title: o?.driveTitle ?? n.body ?? n.title, ngoName: o?.ngoName ?? "",
         reached: o?.driveBeneficiariesReached ?? null,
         photo: resolveMediaUrl(o?.proofPhotoUrls?.[0]) ?? null,
@@ -59,37 +59,47 @@ export function DriveProofPublishedPopup() {
   const listed = rows.slice(0, MAX_LISTED);
   return (
     <Dialog open onOpenChange={(o) => { if (!o) close(); }}>
-      <DialogContent data-testid="drive-proof-popup" className="max-h-[90vh] w-[calc(100vw-2rem)] max-w-md overflow-y-auto rounded-2xl">
-        <div className="flex flex-col items-center gap-2 text-center">
-          <span className="flex size-14 items-center justify-center rounded-full bg-[var(--ck-role-accent)]/15 text-[var(--ck-role-accent)]">
-            <PartyPopper className="size-7" aria-hidden />
+      <DialogContent data-testid="drive-proof-popup" className="max-w-md rounded-2xl">
+        <DialogHeader className="flex items-center gap-3 space-y-0" data-testid="drive-proof-popup-header">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--ck-role-accent)]/15 text-[var(--ck-role-accent)]">
+            <PartyPopper className="size-5" aria-hidden />
           </span>
-          <DialogTitle className="font-serif text-xl font-bold">Your donation was distributed</DialogTitle>
+          <DialogTitle className="font-serif text-lg font-bold">Your donation was distributed</DialogTitle>
           <DialogDescription className="sr-only">The NGO shared proof of where your items went.</DialogDescription>
-        </div>
-        <ul className="space-y-3">
-          {listed.map((r) => (
-            <li key={r.id} data-testid="drive-proof-popup-row" className="flex items-center gap-3 rounded-xl border border-stone-200 p-3 dark:border-zinc-700">
-              {r.photo && (
-                // eslint-disable-next-line @next/next/no-img-element -- signed storage link
-                <img src={r.photo} alt="" className="size-14 shrink-0 rounded-lg object-cover" />
-              )}
-              <div className="min-w-0 text-sm">
-                <p className="break-words font-semibold text-stone-900 dark:text-stone-100">{r.title}</p>
-                {r.ngoName && <p className="text-xs text-stone-600 dark:text-stone-300">{r.ngoName}</p>}
-                {r.reached != null && <p className="text-xs text-stone-600 dark:text-stone-300">{r.reached} people reached</p>}
-              </div>
-            </li>
-          ))}
-        </ul>
-        {rows.length > MAX_LISTED && <p className="text-center text-xs text-stone-500">and {rows.length - MAX_LISTED} more</p>}
-        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <button type="button" onClick={close} className="min-h-11 rounded-lg border border-stone-300 px-4 text-sm font-semibold dark:border-zinc-700">Later</button>
+        </DialogHeader>
+        <DialogBody data-testid="drive-proof-popup-body">
+          <ul className="space-y-3">
+            {listed.map((r) => (
+              <li key={r.id}>
+                <Link href={r.href} onClick={close} data-testid="drive-proof-popup-row"
+                  className="flex items-center gap-3 rounded-xl border border-stone-200 p-3 transition-colors hover:bg-stone-50 focus-visible:outline-2 focus-visible:outline-[var(--ck-role-accent)] dark:border-zinc-700 dark:hover:bg-zinc-800">
+                  {r.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- signed storage link
+                    <img src={r.photo} alt="" className="size-16 shrink-0 rounded-lg object-cover" />
+                  ) : <span className="size-16 shrink-0 rounded-lg bg-stone-100 dark:bg-zinc-800" aria-hidden />}
+                  <div className="min-w-0 flex-1 text-sm">
+                    <p className="line-clamp-2 break-words font-semibold text-stone-900 dark:text-stone-100">{r.title}</p>
+                    {r.ngoName && (
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-600 dark:text-stone-300">
+                        <span className="truncate">{r.ngoName}</span>
+                        <BadgeCheck className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" aria-label="Verified NGO" />
+                      </p>
+                    )}
+                    {r.reached != null && <p className="text-xs text-stone-600 dark:text-stone-300">{r.reached.toLocaleString("en-IN")} people reached</p>}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          {rows.length > MAX_LISTED && <p className="mt-3 text-center text-xs text-stone-500">and {rows.length - MAX_LISTED} more</p>}
+        </DialogBody>
+        <DialogFooter data-testid="drive-proof-popup-footer" className="gap-3">
+          <button type="button" onClick={close} className="min-h-11 w-full rounded-lg border border-stone-300 px-4 text-sm font-semibold sm:w-auto dark:border-zinc-700">Later</button>
           <Link href={listed[0].href} onClick={close}
-            className="inline-flex min-h-11 items-center justify-center rounded-lg bg-[var(--ck-role-accent)] px-5 text-sm font-bold text-white hover:brightness-110">
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--ck-role-accent)] px-5 text-sm font-bold text-white hover:brightness-110 sm:w-auto">
             See the proof
           </Link>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

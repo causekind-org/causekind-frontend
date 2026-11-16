@@ -852,7 +852,7 @@ function RegisterContent() {
       {googleNgo404 ? (
         <div className="text-center py-4 space-y-4">
           <p className="text-stone-700 dark:text-stone-300">
-            Google sign-up for NGOs isn't available yet. Please sign up with email and password.
+            Google sign-up for NGOs isn&apos;t available yet. Please sign up with email and password.
           </p>
           <button
             type="button"

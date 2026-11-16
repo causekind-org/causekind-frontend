@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { DriveProofPublishedPopup } from "./DriveProofPublishedPopup";
 import { getMyNgoDriveOffers, getMyNotifications, markNotificationRead } from "@/lib/api";
 
@@ -39,6 +39,25 @@ describe("Your donation was distributed popup", () => {
     expect(await screen.findAllByTestId("drive-proof-popup-row")).toHaveLength(3);
     expect(screen.getByText("and 2 more")).toBeInTheDocument();
     await waitFor(() => expect(markNotificationRead).toHaveBeenCalledTimes(5));
+  });
+
+  it("layout: padded header, scrolling body and footer; Later + See the proof; each card links to its offer", async () => {
+    vi.mocked(getMyNotifications).mockResolvedValue([note(7), note(8)] as never);
+    render(<DriveProofPublishedPopup />);
+    await screen.findByTestId("drive-proof-popup");
+    expect(screen.getByTestId("drive-proof-popup-header").className).toMatch(/px-5/);
+    expect(screen.getByTestId("drive-proof-popup-body").className).toMatch(/overflow-y-auto/);
+    expect(screen.getByTestId("drive-proof-popup-body").className).toMatch(/px-5/);
+    const footer = screen.getByTestId("drive-proof-popup-footer");
+    expect(footer.className).toMatch(/px-5/);
+    expect(footer.className).toMatch(/sm:justify-end/);
+    expect(within(footer).getByRole("button", { name: "Later" }).className).toMatch(/w-full.*sm:w-auto/);
+    expect(within(footer).getByRole("link", { name: "See the proof" })).toHaveAttribute("href", "/dashboard?tab=history&offer=7");
+    const rows = screen.getAllByTestId("drive-proof-popup-row");
+    expect(rows.map((r) => r.getAttribute("href"))).toEqual(["/dashboard?tab=history&offer=7", "/dashboard?tab=history&offer=8"]);
+    expect(rows[0].querySelector("img")?.className).toMatch(/size-16.*object-cover/);
+    expect(within(rows[0]).getByText("Drive 7").className).toMatch(/line-clamp-2/);
+    expect(within(rows[0]).getByLabelText("Verified NGO")).toBeInTheDocument();
   });
 
   it("nothing for read notices or other types", async () => {

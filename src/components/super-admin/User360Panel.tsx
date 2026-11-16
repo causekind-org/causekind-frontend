@@ -532,7 +532,7 @@ function PanRevealCard({ userId, t }: { userId: number; t: SaTheme }) {
     <section className={`rounded-xl border p-4 ${t.card}`}>
       <h3 className={`mb-3 text-sm font-bold ${t.heading}`}>PAN</h3>
       <p className={`mb-2 text-xs ${t.muted}`}>
-        Captured on this user's most recent trust donation. Government ID — requires a stated
+        Captured on this user&apos;s most recent trust donation. Government ID — requires a stated
         reason, and every read is logged (see Governance).
       </p>
 

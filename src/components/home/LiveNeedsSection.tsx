@@ -322,7 +322,7 @@ export function LiveNeedsSection({
               card, so six needs cost one card of height, not six. */}
           <LandingAttributes><div
             ref={needsRowRef}
-            className="grid gap-4 sm:gap-5 md:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-4 sm:gap-5 md:grid-cols-2 xl:grid-cols-3"
             role="region"
             aria-label="Open needs"
             tabIndex={-1}
@@ -358,6 +358,7 @@ export function LiveNeedsSection({
                   ctaLabel={isDrive ? "See this drive" : isDonor ? "Offer this item" : "Log in to offer this item"}
                   locked={!isDonor && !isDrive}
                   showCta={isDrive || !isDonee}
+                  viewHref={isDrive ? undefined : `/requests/${need.id}`}
                 />
               );
             })}

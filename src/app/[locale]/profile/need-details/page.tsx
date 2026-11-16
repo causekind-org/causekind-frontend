@@ -114,6 +114,8 @@ function NeedProfileEditor() {
    * blanks as blanks). Resolves true once the server has these exact values.
    * Saves queue behind each other, so a fast typist never races two writes.
    */
+  // saveNow's quiet follow-up save calls it through this ref: it can't name itself before it exists.
+  const saveNowRef=useRef<()=>Promise<boolean>>(async()=>true);
   const saveNow=useCallback(async():Promise<boolean>=>{
     if(timer.current){clearTimeout(timer.current);timer.current=null;}
     if(inFlight.current) await inFlight.current;
@@ -135,9 +137,10 @@ function NeedProfileEditor() {
     inFlight.current=run;
     const ok=await run;
     // Typed during the save: those edits get their own (quiet) save.
-    if(ok && unsaved()) timer.current=setTimeout(()=>void saveNow(),AUTOSAVE_MS);
+    if(ok && unsaved()) timer.current=setTimeout(()=>void saveNowRef.current(),AUTOSAVE_MS);
     return ok;
   },[]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(()=>{ saveNowRef.current=saveNow; },[saveNow]);
 
   /** A field changed: update the form and (re)arm the quiet autosave. */
   function change(patch: Partial<RequestVerification>, key: string){

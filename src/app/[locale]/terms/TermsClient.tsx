@@ -322,9 +322,9 @@ export default function TermsClient() {
               {/* 01 */}
               <Section id="introduction" num="01" title="Introduction & Acceptance" icon={FileText}>
                 <P>
-                  Welcome to <Lead>www.causekind.com</Lead> ("CauseKind", "Platform", "We", "Us", "Our"). CauseKind is a
+                  Welcome to <Lead>www.causekind.com</Lead> (&quot;CauseKind&quot;, &quot;Platform&quot;, &quot;We&quot;, &quot;Us&quot;, &quot;Our&quot;). CauseKind is a
                   charitable-giving platform that connects donors with verified causes and people in need. These Terms
-                  &amp; Conditions ("Terms") govern Your ("You", "Your", "User") access to and use of the Platform and
+                  &amp; Conditions (&quot;Terms&quot;) govern Your (&quot;You&quot;, &quot;Your&quot;, &quot;User&quot;) access to and use of the Platform and
                   all content, features, and services offered on it.
                 </P>
                 <P>
@@ -389,7 +389,7 @@ export default function TermsClient() {
                 <Bullets
                   items={[
                     "Campaigners are solely responsible for the accuracy, legality, and genuineness of their Campaigns, including descriptions, images, goals, and beneficiary details.",
-                    <>CauseKind may review or verify Campaigns ("admin-verified"), but such review is <Lead>not exhaustive, error-free, or a guarantee</Lead>. Verification does not constitute an endorsement.</>,
+                    <>CauseKind may review or verify Campaigns (&quot;admin-verified&quot;), but such review is <Lead>not exhaustive, error-free, or a guarantee</Lead>. Verification does not constitute an endorsement.</>,
                     "We reserve the right to approve, reject, suspend, edit, or remove any Campaign at Our sole discretion, including those that are misleading, unlawful, or violate these Terms.",
                     "Campaigners must use received funds and materials only for the stated purpose and may be required to provide updates or proof of utilization.",
                   ]}
@@ -400,7 +400,7 @@ export default function TermsClient() {
               <Section id="payments" num="07" title="Donations & Payments" icon={IndianRupee}>
                 <Bullets
                   items={[
-                    <>Donations are processed through third-party payment gateways (e.g., <Lead>Razorpay</Lead>). Your payments are subject to the gateway's own terms; We are not responsible for failures, delays, or errors by the gateway.</>,
+                    <>Donations are processed through third-party payment gateways (e.g., <Lead>Razorpay</Lead>). Your payments are subject to the gateway&apos;s own terms; We are not responsible for failures, delays, or errors by the gateway.</>,
                     <><Lead>CauseKind does not charge a platform fee on donations.</Lead> However, payment gateway charges, bank fees, currency-conversion fees, or applicable taxes may apply and are borne by You.</>,
                     "You confirm that funds used for donations are from lawful sources and comply with all applicable laws, including foreign-contribution and anti-money-laundering laws.",
                     "A donation, once successfully made, is treated as a contribution to the chosen cause and is processed accordingly.",
@@ -494,7 +494,7 @@ export default function TermsClient() {
               {/* 15 */}
               <Section id="disclaimer" num="15" title="Disclaimer of Warranties" icon={AlertTriangle}>
                 <P>
-                  The Platform and all services are provided on an <Lead>"as is"</Lead> and <Lead>"as available"</Lead>{" "}
+                  The Platform and all services are provided on an <Lead>&quot;as is&quot;</Lead> and <Lead>&quot;as available&quot;</Lead>{" "}
                   basis, without warranties of any kind, express or implied, including merchantability, fitness for a
                   particular purpose, accuracy, or uninterrupted availability. CauseKind does not warrant that Campaigns
                   are genuine, that beneficiaries will use donations as represented, or that the Platform will be

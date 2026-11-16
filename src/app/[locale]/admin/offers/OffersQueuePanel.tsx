@@ -826,7 +826,7 @@ export function OffersQueuePanel() {
                                   )}
                                 </div>
                                 {entry.note && (
-                                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 italic">"{entry.note}"</p>
+                                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 italic">&quot;{entry.note}&quot;</p>
                                 )}
                               </div>
                             </div>
@@ -869,7 +869,7 @@ export function OffersQueuePanel() {
                                   className="rounded-lg bg-green-600 hover:bg-green-700 text-white px-3 py-2 text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1">
                                   <Check className="w-3 h-3" />
                                   Mark Complete
-                                  <span className="block font-normal opacity-80 text-4xs hidden sm:block">Donor's account accepted</span>
+                                  <span className="block font-normal opacity-80 text-4xs hidden sm:block">Donor&apos;s account accepted</span>
                                 </button>
                                 <button
                                   onClick={() => { setCancelId(offer.id); setCancelReason(""); }}
@@ -877,11 +877,11 @@ export function OffersQueuePanel() {
                                   className="rounded-lg bg-red-700 hover:bg-red-800 text-white px-3 py-2 text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1">
                                   <X className="w-3 h-3" />
                                   Cancel Donation
-                                  <span className="block font-normal opacity-80 text-4xs hidden sm:block">Donee's account accepted</span>
+                                  <span className="block font-normal opacity-80 text-4xs hidden sm:block">Donee&apos;s account accepted</span>
                                 </button>
                               </div>
                               <p className="text-3xs text-red-400 mt-1.5">
-                                "Mark Complete" sides with the donor. "Cancel Donation" sides with the donee and releases the reservation.
+                                &quot;Mark Complete&quot; sides with the donor. &quot;Cancel Donation&quot; sides with the donee and releases the reservation.
                               </p>
                             </div>
                           </div>

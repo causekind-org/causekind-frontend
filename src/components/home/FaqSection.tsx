@@ -188,7 +188,7 @@ export function FaqSection() {
                 Still have questions?
               </h3>
               <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                We're happy to help.
+                We&apos;re happy to help.
               </p>
 
               {/* Quick Contact Buttons */}

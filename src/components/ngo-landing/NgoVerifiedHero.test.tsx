@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { configure, render, screen, waitFor } from "@testing-library/react";
 import { NgoLandingView } from "./NgoLandingView";
 import { getMyNgoApplication, getNgoDraft, getNgoOverview } from "@/lib/api";
@@ -12,7 +12,13 @@ vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { id: 101, email: "n
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }), usePathname: () => "/", useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/lib/api", () => ({ getMyNgoApplication: vi.fn(), getNgoDraft: vi.fn(), getNgoOverview: vi.fn() }));
 
-const noActivity = { activeRequests: 0, itemsPledged: 0, dropoffsToConfirm: 0, photosDue: 0, photosDueRequestName: "", verifiedDeliveries: 0, handovers: [] };
+// NgoLandingView loads these with React.lazy. Importing them once up front means the
+// slow first transform happens here, not inside a findBy* window during the tests.
+beforeAll(async () => {
+  await Promise.all([import("./PostApprovalLanding"), import("./PreApprovalLanding")]);
+}, 60000);
+
+const noActivity ={ activeRequests: 0, itemsPledged: 0, dropoffsToConfirm: 0, photosDue: 0, photosDueRequestName: "", verifiedDeliveries: 0, handovers: [] };
 
 beforeEach(() => {
   vi.clearAllMocks(); localStorage.clear(); sessionStorage.clear();

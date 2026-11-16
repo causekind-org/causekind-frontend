@@ -154,7 +154,7 @@ export function AnalyticsPanel() {
     return (
       <div className="flex flex-col items-center justify-center gap-3 text-center py-20 px-4">
         <XCircle className="size-8 text-red-400" />
-        <p className="text-sm text-stone-600">Couldn't load analytics data — the server may be having an issue. Try refreshing.</p>
+        <p className="text-sm text-stone-600">Couldn&apos;t load analytics data — the server may be having an issue. Try refreshing.</p>
       </div>
     );
   }

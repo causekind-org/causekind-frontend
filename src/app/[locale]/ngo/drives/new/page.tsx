@@ -455,6 +455,25 @@ const [altContact, setAltContact] = useState("");
     setWeightKg(str(d.weightKg)); setMaterial(typeof d.material === "string" ? d.material : "");
     setNeedsAssembly(Boolean(d.needsAssembly));
   }
+  /** The wizard URL with ?step= set (edit and type kept). */
+  const stepUrl = useCallback((next: NgoDriveStep) => {
+    const params = new URLSearchParams(window.location.search);
+    params.set("step", STEP_SLUGS[next]);
+    return `${window.location.pathname}?${params.toString()}`;
+  }, []);
+
+  const showStep = useCallback((next: NgoDriveStep, history: "push" | "replace" | "none", dir?: number) => {
+    setStep(prev => {
+      setDirection(dir ?? (STEP_ORDER.indexOf(next) >= STEP_ORDER.indexOf(prev) ? 1 : -1));
+      return next;
+    });
+    setFieldErrors({});
+    if (history === "push") window.history.pushState(null, "", stepUrl(next));
+    else if (history === "replace") window.history.replaceState(null, "", stepUrl(next));
+    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+    if (headingRef.current) headingRef.current.focus();
+  }, [reduced, stepUrl]);
+
   useEffect(() => {
     if (!user || draftLoaded || editId === null) return;
     let active = true;
@@ -723,25 +742,6 @@ const [altContact, setAltContact] = useState("");
     if (lockReason) toast.error(lockReason);
     router.replace("/dashboard/ngo");
   }, [authLoading, user, settled, lockReason, router]);
-
-  /** The wizard URL with ?step= set (edit and type kept). */
-  const stepUrl = useCallback((next: NgoDriveStep) => {
-    const params = new URLSearchParams(window.location.search);
-    params.set("step", STEP_SLUGS[next]);
-    return `${window.location.pathname}?${params.toString()}`;
-  }, []);
-
-  const showStep = useCallback((next: NgoDriveStep, history: "push" | "replace" | "none", dir?: number) => {
-    setStep(prev => {
-      setDirection(dir ?? (STEP_ORDER.indexOf(next) >= STEP_ORDER.indexOf(prev) ? 1 : -1));
-      return next;
-    });
-    setFieldErrors({});
-    if (history === "push") window.history.pushState(null, "", stepUrl(next));
-    else if (history === "replace") window.history.replaceState(null, "", stepUrl(next));
-    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
-    if (headingRef.current) headingRef.current.focus();
-  }, [reduced, stepUrl]);
 
   // Each step is a history entry, so the browser's Back goes to the previous step.
   const goToStep = useCallback((next: NgoDriveStep, dir: number) => showStep(next, "push", dir), [showStep]);
