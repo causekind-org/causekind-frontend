@@ -72,6 +72,8 @@ export function generateStaticParams() {
   return blogPosts.map((post) => ({ slug: post.slug }));
 }
 
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+
 export default async function BlogPostPage({ params }: PageProps) {
   const { slug } = await params;
   const post = blogPosts.find((p) => p.slug === slug);
@@ -136,6 +138,11 @@ export default async function BlogPostPage({ params }: PageProps) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
         />
       )}
+      <Breadcrumbs items={[
+        { name: "Home", href: "/" },
+        { name: "Blog", href: "/blog" },
+        { name: post.title, href: `/blog/${slug}` },
+      ]} />
       <BlogPostClient slug={slug} content={blogContent[slug] ?? ""} />
     </>
   );

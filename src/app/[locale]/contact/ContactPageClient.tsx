@@ -16,7 +16,7 @@ const SUPPORT_PHONE_DISPLAY = "+91 77199 38619";
 const SUPPORT_PHONE_TEL = "+917719938619";
 
 const ADDRESS_LINES = [
-  "3rd Floor, Apoorva Bldg, Flat no. 19,",
+  "3rd Floor, Apoorva CHS, 19,",
   "Vartak School Road, Veer Savarkar Nagar,",
   "Anand Nagar, Vasai West, Vasai-Virar,",
   "Maharashtra 401202",

@@ -314,7 +314,7 @@ export function Footer({ role }: FooterProps) {
                 </div>
                 <span className="leading-relaxed max-w-xs mx-auto md:max-w-none md:mx-0">
                   {/* A postal address: shown as written, never translated. */}
-                  3rd Floor, Apoorva Bldg, Flat no. 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
+                  3rd Floor, Apoorva CHS, 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
                 </span>
               </div>
 

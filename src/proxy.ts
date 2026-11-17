@@ -75,13 +75,44 @@ function isUnknownStaticSlug(pathname: string): boolean {
   return false;
 }
 
-function localeResponse(request: NextRequest): NextResponse {
+/**
+ * Public detail pages whose existence the backend decides. A well-formed id
+ * that does not exist (/campaigns/999999) passes isImpossibleId, and the
+ * page's own notFound() runs after the 200 has been sent. So the proxy asks
+ * the same public endpoint the page uses, and only a definite 404 from it
+ * becomes a 404 here: a timeout, network error or 5xx falls through to the
+ * page, so a backend hiccup never turns a real page into "not found".
+ */
+const DETAIL_ENDPOINTS: Record<string, (id: string) => string> = {
+  campaigns: (id) => `/api/v1/campaigns/${id}`,
+  fundraisers: (id) => `/api/v1/fundraising/public/campaigns/${id}`,
+  drives: (id) => `/api/v1/drives/${id}`,
+};
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+
+async function isMissingDetail(pathname: string): Promise<boolean> {
+  const parts = pathname.split("/");
+  if (parts.length !== 3) return false;
+  const endpoint = DETAIL_ENDPOINTS[parts[1]!];
+  if (!endpoint || !/^d+$/.test(parts[2]!)) return false;
+  try {
+    const res = await fetch(API_ORIGIN + endpoint(parts[2]!), {
+      signal: AbortSignal.timeout(1500),
+      headers: { accept: "application/json" },
+    });
+    return res.status === 404;
+  } catch {
+    return false;
+  }
+}
+
+function localeResponse(request: NextRequest, missingDetail = false): NextResponse {
   const { pathname } = request.nextUrl;
   if (pathname.startsWith("/api/") || /\.[^/]+$/.test(pathname)) return NextResponse.next();
   const cookie = request.cookies.get("ck_locale")?.value;
   const locale = locales.includes(cookie as Locale) ? cookie : defaultLocale;
   const url = request.nextUrl.clone();
-  if (isImpossibleId(pathname) || isUnknownStaticSlug(pathname)) {
+  if (missingDetail || isImpossibleId(pathname) || isUnknownStaticSlug(pathname)) {
     // No route matches this path, so Next answers with a real 404.
     url.pathname = `/${locale}/__not-found__`;
     return NextResponse.rewrite(url);
@@ -94,7 +125,7 @@ export async function proxy(request: NextRequest) {
   const gated = await stagingGate(request, getClientIp(request));
   if (gated) return gated;
 
-  const response = localeResponse(request);
+  const response = localeResponse(request, await isMissingDetail(request.nextUrl.pathname));
 
   if (INTERNAL_IPS.length === 0) return response;
 

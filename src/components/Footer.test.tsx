@@ -332,7 +332,7 @@ describe("Footer Component", () => {
       expect(heading).toHaveClass("text-center");
       expect(heading).toHaveClass("md:text-left");
 
-      const address = screen.getByText(/3rd Floor, Apoorva Bldg/i);
+      const address = screen.getByText(/3rd Floor, Apoorva CHS, 19,/i);
       expect(address).toBeInTheDocument();
       expect(address).toHaveClass("max-w-xs");
       expect(address).toHaveClass("mx-auto");

@@ -98,7 +98,58 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     });
   }
 
+  // Public request pages: NGO requests only. A person's request is noindex
+  // (F-24) and must never be listed, so anything not explicitly "NGO" is skipped.
+  for (const id of await publicNgoRequestIds()) {
+    sitemapEntries.push({
+      url: `${baseUrl}/requests/${id}`,
+      lastModified: STATIC_LASTMOD,
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    });
+  }
+
+  // Live public fundraisers.
+  for (const id of await publicFundraiserIds()) {
+    sitemapEntries.push({
+      url: `${baseUrl}/fundraisers/${id}`,
+      lastModified: STATIC_LASTMOD,
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    });
+  }
+
   return sitemapEntries;
+}
+
+const SITEMAP_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+
+async function publicNgoRequestIds(): Promise<number[]> {
+  try {
+    const res = await fetch(`${SITEMAP_API}/api/v1/item-requests/public`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const body = (await res.json()) as unknown;
+    if (!Array.isArray(body)) return [];
+    return body
+      .filter((r): r is { id: number; requesterType: string } => !!r && typeof r === 'object' && (r as { requesterType?: unknown }).requesterType === 'NGO' && Number.isInteger((r as { id?: unknown }).id))
+      .map((r) => r.id);
+  } catch {
+    return [];
+  }
+}
+
+async function publicFundraiserIds(): Promise<number[]> {
+  try {
+    const res = await fetch(`${SITEMAP_API}/api/v1/fundraising/public/campaigns`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const body = (await res.json()) as unknown;
+    if (!Array.isArray(body)) return [];
+    return body
+      .map((c) => (c && typeof c === 'object' ? (c as { id?: unknown }).id : undefined))
+      .filter((id): id is number => Number.isInteger(id));
+  } catch {
+    return [];
+  }
 }
 
 async function publicNgoSlugs(): Promise<string[]> {
