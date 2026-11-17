@@ -7,7 +7,8 @@ import {
   mcCampaigns, mcCancel, mcCreateCampaign, mcDeleteCampaign, mcDeleteTemplate, mcEstimate,
   mcPause, mcPreview, mcReport, mcResume, mcSaveTemplate, mcSchedule, mcSegments, mcSendNow,
   mcSendTest, mcTemplates, mcUpdateCampaign, mcVariableCheck,
-  type McCampaign, type McReport, type McTemplate, type McVariableCheck,
+  mcOverview, mcSuppressionLookup, mcSuppress, mcUnsuppress,
+  type McCampaign, type McOverview, type McReport, type McSuppression, type McTemplate, type McVariableCheck,
 } from "@/lib/api";
 import { Loader2, Mail, Pause, Play, Plus, Send, Trash2, X } from "lucide-react";
 
@@ -42,7 +43,7 @@ const errText = (e: unknown) => (e instanceof Error ? e.message : "Something wen
 
 export function MailCenterPanel({ isDark }: { isDark: boolean }) {
   const t = saTheme(isDark);
-  const [view, setView] = useState<"campaigns" | "templates">("campaigns");
+  const [view, setView] = useState<"overview" | "campaigns" | "templates" | "suppression">("campaigns");
   const [campaigns, setCampaigns] = useState<McCampaign[]>([]);
   const [templates, setTemplates] = useState<McTemplate[]>([]);
   const [segments, setSegments] = useState<string[]>([]);
@@ -75,10 +76,10 @@ export function MailCenterPanel({ isDark }: { isDark: boolean }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        {(["campaigns", "templates"] as const).map((v) => (
+        {(["overview", "campaigns", "templates", "suppression"] as const).map((v) => (
           <button key={v} type="button" onClick={() => { setView(v); setEditing(null); }}
             className={`min-h-9 rounded-full border px-4 text-xs font-bold capitalize ${view === v ? t.chipActive : t.chipInactive}`}>
-            {v}
+            {v === "suppression" ? "Blocked addresses" : v}
           </button>
         ))}
         {view === "campaigns" && !editing && (
@@ -96,6 +97,10 @@ export function MailCenterPanel({ isDark }: { isDark: boolean }) {
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className={`h-6 w-6 animate-spin ${t.muted}`} /></div>
+      ) : view === "overview" ? (
+        <OverviewView isDark={isDark} />
+      ) : view === "suppression" ? (
+        <SuppressionView isDark={isDark} />
       ) : view === "templates" ? (
         <TemplatesView isDark={isDark} templates={templates} variables={variables} onChanged={load} />
       ) : editing ? (
@@ -205,7 +210,11 @@ function ReportBox({ isDark, id }: { isDark: boolean; id: number }) {
   }, [load]);
   if (error) return <p className="mt-3 text-xs text-red-500">Couldn&apos;t load the report.</p>;
   if (!r) return <Loader2 className={`mt-3 h-4 w-4 animate-spin ${t.muted}`} />;
-  const tiles: [string, number][] = [["People", r.total], ["Sent", r.sent], ["Waiting", r.pending + r.sending], ["Failed", r.failed]];
+  const tiles: [string, number][] = [
+    ["People", r.total], ["Sent", r.sent], ["Waiting", r.pending + r.sending], ["Failed", r.failed],
+    ["Delivered", r.delivered], ["Bounced", r.bounced], ["Spam reports", r.complained],
+    ["Opened (approx.)", r.opened], ["Clicked", r.clicked],
+  ];
   return (
     <div className="mt-4 space-y-2">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -495,6 +504,122 @@ function TemplatesView({ isDark, templates, variables, onChanged }: {
             className={`min-h-8 rounded-lg border px-2.5 ${t.btn}`}><Trash2 className="h-3.5 w-3.5" aria-hidden /></button>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ overview
+
+function OverviewView({ isDark }: { isDark: boolean }) {
+  const t = saTheme(isDark);
+  const [o, setO] = useState<McOverview | null>(null);
+  const [error, setError] = useState(false);
+  const load = useCallback(() => { setError(false); mcOverview().then(setO).catch(() => setError(true)); }, []);
+  useEffect(() => { load(); }, [load]);
+  if (error) return <SaLoadError what="the overview" onRetry={load} />;
+  if (!o) return <Loader2 className={`h-5 w-5 animate-spin ${t.muted}`} />;
+
+  const pct = (n: number, of: number) => (of === 0 ? "—" : `${Math.round((100 * n) / of)}%`);
+  const bounceBad = o.bouncePct7d > o.bouncePausePct;
+  const complaintBad = o.complaintPct7d > o.complaintPausePct;
+  const tiles: [string, string][] = [
+    ["Sent (30 days)", String(o.sent30d)],
+    ["Delivered", pct(o.delivered30d, o.sent30d)],
+    ["Opened (approx.)", pct(o.opened30d, o.sent30d)],
+    ["Clicked", pct(o.clicked30d, o.sent30d)],
+    ["Sent today (24 h)", `${o.sentLast24h} / ${o.dailyCap}`],
+    ["Sending · Scheduled · Paused", `${o.sending} · ${o.scheduled} · ${o.paused}`],
+  ];
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {tiles.map(([label, value]) => (
+          <div key={label} className={`rounded-2xl border p-4 ${t.card}`}>
+            <p className={`text-3xs font-black uppercase tracking-wider ${t.dim}`}>{label}</p>
+            <p className={`mt-1 text-xl font-black tabular-nums ${t.heading}`}>{value}</p>
+          </div>
+        ))}
+      </div>
+      <div className={`rounded-2xl border p-4 ${t.card}`}>
+        <p className={`text-sm font-bold ${t.heading}`}>Sender health (last 7 days, {o.sent7d} emails)</p>
+        <p className={`mt-1 text-xs ${t.muted}`}>
+          Amazon blocks the account at 5% bounces or 0.1% spam reports — and that would also stop OTP emails,
+          so nobody could log in. Sending pauses on its own well before that.
+        </p>
+        <ul className="mt-3 space-y-1 text-sm">
+          <li className={bounceBad ? "text-red-500" : "text-emerald-500"}>
+            Bounces: {o.bouncePct7d.toFixed(2)}% (pauses above {o.bouncePausePct}%)
+          </li>
+          <li className={complaintBad ? "text-red-500" : "text-emerald-500"}>
+            Spam reports: {o.complaintPct7d.toFixed(3)}% (pauses above {o.complaintPausePct}%)
+          </li>
+        </ul>
+        {o.sent7d < 200 && <p className={`mt-2 text-xs ${t.dim}`}>Too few emails yet for these numbers to mean much.</p>}
+      </div>
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ blocked addresses
+
+function SuppressionView({ isDark }: { isDark: boolean }) {
+  const t = saTheme(isDark);
+  const [email, setEmail] = useState("");
+  const [note, setNote] = useState("");
+  const [result, setResult] = useState<McSuppression | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const field = `w-full rounded-xl border px-3 py-2.5 text-sm ${t.input}`;
+
+  const run = async (fn: () => Promise<McSuppression>, confirmText?: string) => {
+    if (confirmText && !window.confirm(confirmText)) return;
+    setBusy(true); setError(null);
+    try { setResult(await fn()); } catch (e) { setError(errText(e)); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="max-w-xl space-y-4">
+      <p className={`text-xs ${t.muted}`}>
+        Look up one address to see if CauseKind is blocked from emailing it. Addresses get blocked automatically when an
+        email bounces for good or the person reports it as spam. There is no full list on purpose — it is people&apos;s private data.
+      </p>
+      <div className="flex gap-2">
+        <input type="email" className={field} placeholder="someone@example.com" value={email}
+          onChange={(e) => setEmail(e.target.value)} aria-label="Email address to look up" />
+        <button type="button" disabled={busy || !email.includes("@")} onClick={() => run(() => mcSuppressionLookup(email))}
+          className={`min-h-10 rounded-xl border px-4 text-xs font-bold ${t.btnAccent}`}>Look up</button>
+      </div>
+      {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
+      {result && (
+        <div className={`space-y-3 rounded-2xl border p-4 ${t.card}`}>
+          <p className={`text-sm font-bold ${t.heading}`}>{result.email}</p>
+          {result.suppressed ? (
+            <p className="text-sm text-red-500">
+              Blocked for all email (reason: {result.reason}, from {result.source}
+              {result.since ? `, since ${new Date(result.since).toLocaleDateString("en-IN")}` : ""}).
+              This also stops OTPs and receipts to this address.
+            </p>
+          ) : (
+            <p className="text-sm text-emerald-500">Not blocked.</p>
+          )}
+          <p className={`text-xs ${t.muted}`}>
+            {result.optedOut ? "Has unsubscribed from campaign emails." : "Has not unsubscribed from campaign emails."}
+          </p>
+          {result.suppressed ? (
+            <button type="button" disabled={busy}
+              onClick={() => run(() => mcUnsuppress(result.email),
+                "Unblock this address? Only do this if the problem is fixed — Amazon may still refuse to deliver until it is removed in the AWS console too.")}
+              className={`min-h-9 rounded-xl border px-4 text-xs font-bold ${t.btn}`}>Unblock</button>
+          ) : (
+            <div className="flex gap-2">
+              <input className={field} placeholder="Why (optional)" value={note} maxLength={200} onChange={(e) => setNote(e.target.value)} />
+              <button type="button" disabled={busy}
+                onClick={() => run(() => mcSuppress(result.email, note), "Block this address from ALL CauseKind email, including OTPs?")}
+                className={`min-h-9 rounded-xl border px-4 text-xs font-bold text-red-500 ${t.btn}`}>Block</button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
