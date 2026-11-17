@@ -76,18 +76,9 @@ describe("ScanDonation", () => {
     await user.type(screen.getByLabelText("State"), "Maharashtra");
     await user.type(screen.getByLabelText("PIN code"), "411001");
     await waitFor(() => expect(donate).toBeEnabled());
+    // Ticking 80G asks for nothing more: no PAN photo since 2026-11-17.
     await user.click(screen.getByLabelText(/80G tax receipt/));
-    await waitFor(() => expect(donate).toBeDisabled());
-    expect(screen.getByRole("alert")).toHaveTextContent("Add your PAN card");
-
-    const card = (panNumber: string, nameOnCard: string) => fetchMock.mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ read: true, panNumber, nameOnCard }) });
-    card("ZZZZZ9999Z", "Asha Rao");
-    await user.upload(screen.getByLabelText("PAN card photo"), new File(["x"], "pan.png", { type: "image/png" }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("doesn't match this card"));
-    expect(donate).toBeDisabled();
-
-    card("ABCDE1234F", "ASHA RAO");
-    await user.upload(screen.getByLabelText("PAN card photo"), new File(["y"], "pan2.png", { type: "image/png" }));
+    expect(screen.queryByLabelText("PAN card photo")).toBeNull();
     await waitFor(() => expect(donate).toBeEnabled());
   });
 

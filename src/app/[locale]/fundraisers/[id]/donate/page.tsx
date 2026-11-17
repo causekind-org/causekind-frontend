@@ -7,33 +7,11 @@ import Link from "@/components/AppLink";
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
 import { loginUrlFor } from "@/lib/safeRedirect";
-import { fundraisers, ApiError, readPanCard, uploadDonationPanPhoto, type FundraiserDetail } from "@/lib/api";
+import { fundraisers, ApiError, type FundraiserDetail } from "@/lib/api";
 
-/** Same lenient rule as /donate/money: one shared name part of 2+ letters (owner, 2026-10-08). */
-function panNameMatches(formName: string, cardName: string): boolean {
-  const parts = (s: string) => s.toUpperCase().replace(/[^A-Z\s]/g, " ").split(/\s+/).filter((p) => p.length >= 2);
-  const card = new Set(parts(cardName));
-  return parts(formName).some((p) => card.has(p));
-}
 const PAN_RE = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-/**
- * The server takes only JPEG, PNG and WebP (415 otherwise — HEIC, AVIF, GIF… failed at "Pay", 2026-10-31).
- * Anything else the browser can decode is re-encoded as JPEG here; null when it can't be read at all.
- */
-async function toAcceptedImage(file: File): Promise<File | null> {
-  // PDFs (e-PAN, scans) are accepted as they are (owner, 2026-11-02).
-  if (["image/jpeg", "image/png", "image/webp", "application/pdf"].includes(file.type)) return file;
-  try {
-    const bmp = await createImageBitmap(file);
-    const canvas = document.createElement("canvas");
-    canvas.width = bmp.width; canvas.height = bmp.height;
-    canvas.getContext("2d")!.drawImage(bmp, 0, 0);
-    const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.9));
-    return blob ? new File([blob], file.name.replace(/\.[^.]*$/, "") + ".jpg", { type: "image/jpeg" }) : null;
-  } catch { return null; }
-}
 import { Icon, formatINR } from "@/features/fundraising/ui";
 import { guestTokenFor, rememberGuestToken } from "@/features/fundraising/guestDonation";
 import s from "@/features/fundraising/fundraising.module.css";
@@ -63,9 +41,7 @@ type Prior =
 type CheckoutResult =
   | { order: Awaited<ReturnType<typeof fundraisers.checkout>> }
   | { redirect: number }
-  | { prior: Prior }
-  /** The PAN photo didn't upload; checkout hasn't started, so retry or continue without 80G. */
-  | { photoFailed: number; reason: string | null };
+  | { prior: Prior };
 
 /**
  * Starts or resumes the donation, then asks the server for the payment details (server checkout is idempotent:
@@ -74,35 +50,21 @@ type CheckoutResult =
  * paid or still confirming → its result page; failed → an explicit "Start a new payment"; status unknown or
  * unreadable → explained, and a new payment needs an explicit click. {@code fresh} is that explicit click.
  */
-/** 80G details for this donation; the photo must be on the server before checkout or the donation is certificate-only. */
-/** PAN and address come from every donor; a photo is there only when 80G is ticked. */
-type Tax = { panNumber: string; address: string; mobileNumber: string; photo: File | null };
+/** PAN and address come from every donor; the 80G receipt only when ticked (no PAN photo since 2026-11-17). */
+type Tax = { panNumber: string; address: string; mobileNumber: string; wants80g: boolean };
 /** Someone donating without an account (2026-11-04); null for a signed-in donor. */
 type Guest = { fullName: string; email: string; mobileNumber: string };
 
 async function checkoutReusingDonation(campaignId: number, amount: number, support: number, anonymous: boolean, fresh: boolean,
-                                       tax: Tax | null, guest: Guest | null, skipPhoto = false): Promise<CheckoutResult> {
+                                       tax: Tax | null, guest: Guest | null): Promise<CheckoutResult> {
   const key = pendingKey(campaignId);
   // The details are frozen on the donation, so different ones (or a different kind of donor) need a new donation.
   const who = guest ? JSON.stringify(guest) : null;
-  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; address?: string | null; phone?: string | null; wants?: boolean; photo: boolean; who?: string | null };
+  type Saved = { donationId: number; amount: number; support?: number; anonymous: boolean; pan: string | null; address?: string | null; phone?: string | null; wants?: boolean; who?: string | null };
   let saved: Saved | null = null;
   try { saved = JSON.parse(sessionStorage.getItem(key) ?? "null"); } catch { /* storage unavailable */ }
   const remember = (s: Saved) => { try { sessionStorage.setItem(key, JSON.stringify(s)); } catch { /* fine */ } };
-  /** Upload the PAN photo (once) before checkout fixes the documents. */
-  const ensurePhoto = async (s: Saved): Promise<CheckoutResult | null> => {
-    if (!tax?.photo || s.photo || skipPhoto) return null;
-    try { await uploadDonationPanPhoto(s.donationId, tax.photo, guestTokenFor(s.donationId) ?? undefined); }
-    catch (e) {
-      // 409 = already uploaded on an earlier try; anything else stops before checkout.
-      if (!(e instanceof ApiError) || e.status !== 409) return { photoFailed: s.donationId, reason: e instanceof ApiError ? e.message : null };
-    }
-    remember({ ...s, photo: true });
-    return null;
-  };
-  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.address ?? null) === (tax?.address ?? null) && (saved.phone ?? null) === (tax?.mobileNumber ?? null) && !!saved.wants === !!tax?.photo && (saved.who ?? null) === who) {
-    const stop = await ensurePhoto(saved);
-    if (stop) return stop;
+  if (!fresh && saved && saved.amount === amount && (saved.support ?? 0) === support && saved.anonymous === anonymous && saved.pan === (tax?.panNumber ?? null) && (saved.address ?? null) === (tax?.address ?? null) && (saved.phone ?? null) === (tax?.mobileNumber ?? null) && !!saved.wants === !!tax?.wants80g && (saved.who ?? null) === who) {
     try { return { order: await fundraisers.checkout(saved.donationId, guestTokenFor(saved.donationId)) }; }
     catch (e) {
       if (!(e instanceof ApiError) || (e.status !== 404 && e.status !== 409)) throw e;
@@ -118,15 +80,13 @@ async function checkoutReusingDonation(campaignId: number, amount: number, suppo
       }
     }
   }
-  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address, mobileNumber: tax.mobileNumber, wants80g: !!tax.photo } : undefined;
+  const taxDetails = tax ? { panNumber: tax.panNumber, address: tax.address, mobileNumber: tax.mobileNumber, wants80g: tax.wants80g } : undefined;
   const started = guest
     ? await fundraisers.donateAsGuest(campaignId, amount, anonymous, guest, taxDetails, support)
     : await fundraisers.donate(campaignId, amount, anonymous, taxDetails, support);
   if (started.guestToken) rememberGuestToken(started.donationId, started.guestToken);
-  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, address: tax?.address ?? null, phone: tax?.mobileNumber ?? null, wants: !!tax?.photo, photo: false, who };
+  const fresh_: Saved = { donationId: started.donationId, amount, support, anonymous, pan: tax?.panNumber ?? null, address: tax?.address ?? null, phone: tax?.mobileNumber ?? null, wants: !!tax?.wants80g, who };
   remember(fresh_);
-  const stop = await ensurePhoto(fresh_);
-  if (stop) return stop;
   return { order: await fundraisers.checkout(started.donationId, started.guestToken) };
 }
 
@@ -155,18 +115,9 @@ export default function DonatePage() {
   const [customSupport, setCustomSupport] = useState<string | null>(null);
   // 80G (CA approved, 2026-10-30): only when the server offers it.
   const [want80G, setWant80G] = useState(false);
-  const [panFile, setPanFile] = useState<File | null>(null);
-  const [panPreview, setPanPreview] = useState<string | null>(null);
-  const [panTypeError, setPanTypeError] = useState(false);
-  useEffect(() => () => { if (panPreview) URL.revokeObjectURL(panPreview); }, [panPreview]);
   const [pan, setPan] = useState("");
-  const [panName, setPanName] = useState<string | null>(null);
-  const [panReading, setPanReading] = useState(false);
-  const [panReadNote, setPanReadNote] = useState<string | null>(null);
   const [address, setAddress] = useState("");
   const [taxTried, setTaxTried] = useState(false);
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const [photoReason, setPhotoReason] = useState<string | null>(null);
   // Fallback errors are stored as markers and translated here, at render; server messages show as sent.
   const errorText = error === ERR_UNAVAILABLE ? ui("This fundraiser isn't available.")
     : error === ERR_OPEN ? ui("We couldn't open payment right now. Nothing was charged. Try again in a moment.")
@@ -195,51 +146,25 @@ export default function DonatePage() {
   const guest: Guest | null = user ? null : { fullName: donorName, email: donorEmail, mobileNumber: guestPhone.trim() };
   const nameInvalid = !user && !donorName;
   const emailInvalid = !user && !EMAIL_RE.test(donorEmail);
-  const nameMismatch = !!panName && !panNameMatches(donorName, panName);
   const ticked80G = offer80G && want80G;
   const phoneClean = guestPhone.replace(/[\s-]/g, "");
   const taxProblems = [
     ...(!/^\+?[0-9]{7,15}$/.test(phoneClean) ? [ui("Enter your phone number")] : []),
     ...(!PAN_RE.test(panClean) ? [ui("Enter a valid PAN, like ABCDE1234F")] : []),
     ...(!address.trim() ? [ui("Enter your address")] : []),
-    ...(ticked80G && !panFile ? [ui("Add a photo of your PAN card")] : []),
-    ...(ticked80G && nameMismatch ? [user ? ui("The name on the PAN card doesn't match your account name") : ui("The name on the PAN card doesn't match the name you entered")] : []),
   ];
   const tax: Tax | null = taxProblems.length === 0
-    ? { panNumber: panClean, address: address.trim(), mobileNumber: phoneClean, photo: ticked80G ? panFile : null } : null;
+    ? { panNumber: panClean, address: address.trim(), mobileNumber: phoneClean, wants80g: ticked80G } : null;
 
-  async function choosePanPhoto(picked: File | null) {
-    if (!picked) return; // cancelled the picker: keep the photo already chosen
-    const file = await toAcceptedImage(picked);
-    if (!file) {
-      setPanFile(null); setPanPreview(null); setPanName(null);
-      setPanTypeError(true);
-      return;
-    }
-    setPanTypeError(false);
-    setPanFile(file); setPanName(null); setPanReadNote(null);
-    setPanPreview(file.type === "application/pdf" ? null : URL.createObjectURL(file));
-    setPanReading(true);
-    try {
-      const r = await readPanCard(file);
-      if (r.panNumber) setPan(r.panNumber);
-      if (r.nameOnCard) setPanName(r.nameOnCard);
-      if (!r.read) setPanReadNote(ui("We couldn't read the card. Type your PAN below."));
-    } catch {
-      setPanReadNote(ui("We couldn't read the card. Type your PAN below."));
-    } finally { setPanReading(false); }
-  }
-
-  async function pay(fresh = false, skipPhoto = false) {
-    setBusy(true); setError(null); setPrior(null); setPhotoFailed(false);
+  async function pay(fresh = false) {
+    setBusy(true); setError(null); setPrior(null);
     try {
       const ok = await loadRazorpay();
       const Rzp = rzpCtor();
       if (!ok || !Rzp) { setError(ERR_OPEN); setBusy(false); return; }
-      const result = await checkoutReusingDonation(Number(id), value, supportValue, anonymous, fresh, tax, guest, skipPhoto);
+      const result = await checkoutReusingDonation(Number(id), value, supportValue, anonymous, fresh, tax, guest);
       if ("redirect" in result) { router.push(`/fundraisers/donations/${result.redirect}`); return; }
       if ("prior" in result) { setPrior(result.prior); setBusy(false); return; }
-      if ("photoFailed" in result) { setPhotoFailed(true); setPhotoReason(result.reason); setBusy(false); return; }
       const order = result.order;
       const rzp = new Rzp({
         key: order.razorpayKeyId, amount: order.amountInPaise, currency: order.currency,
@@ -342,17 +267,16 @@ export default function DonatePage() {
               {offer80G && (
                 <section className={s.card} aria-labelledby="t80" style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
                   <h2 id="t80" style={{ fontSize: 17, fontWeight: 700 }}><UiText>80G tax receipt</UiText> <span className={s.muted} style={{ fontWeight: 500 }}><UiText>(optional)</UiText></span></h2>
-                  <p className={s.small}><strong><UiText>You&apos;ll get an 80G tax receipt only if you add a photo of your PAN card before paying.</UiText></strong> <UiText>Without it, you still get a donation certificate.</UiText></p>
+                  <p className={s.small}><strong><UiText>Tick the box below to get an 80G tax receipt. It uses the PAN and address you entered above.</UiText></strong> <UiText>Without it, you still get a donation certificate.</UiText></p>
                   {/* 80G rules shown where the PAN is given (owner, 2026-10-31). Factual only — no deduction promises. */}
                   <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fdf6f1", border: "1px solid #ecd9cb" }}>
                     <p className={s.small} style={{ fontWeight: 700, marginBottom: 6 }}><UiText>How the 80G receipt works</UiText></p>
                     <ul className={s.small} style={{ margin: 0, paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
-                      <li>{user ? <UiText>The name on your PAN card must match the name on your CauseKind account.</UiText> : <UiText>The name on your PAN card must match the name you entered above.</UiText>}</li>
+                      <li>{user ? <UiText>The name on your PAN must match the name on your CauseKind account.</UiText> : <UiText>The name on your PAN must match the name you entered above.</UiText>}</li>
                       <li><UiText>The receipt is issued in the PAN holder&apos;s name, for the amount you donate.</UiText></li>
                       <li><UiText>Sahas Charitable Trust reports your donation, PAN and address to the Income Tax Department (Form 10BD).</UiText></li>
                       <li><UiText>After the financial year ends, the Trust sends your Form 10BE certificate, by 31 May.</UiText></li>
                       <li><UiText>You must add your PAN before paying. It can&apos;t be added to a donation later.</UiText></li>
-                      <li><UiText>We check that the photo is a PAN card. A card we can&apos;t match is reviewed by our team before the receipt is issued.</UiText></li>
                     </ul>
                   </div>
                   <label style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -361,50 +285,6 @@ export default function DonatePage() {
                   </label>
                   {want80G && (
                     <>
-                      {/* Upload card instead of the bare file input (owner, 2026-10-31). */}
-                      <div>
-                        <span className={s.lbl}><UiText>Photo of your PAN card</UiText></span>
-                        <input id="panph" type="file" accept="image/*,application/pdf" style={{ display: "none" }}
-                          onChange={(e) => { const f = e.target.files?.[0] ?? null; e.target.value = ""; void choosePanPhoto(f); }} />
-                        {!panFile ? (
-                          <label htmlFor="panph" style={{ display: "flex", alignItems: "center", gap: 16, padding: "18px 20px", border: "2px dashed #d9b9a3", borderRadius: 12, background: "#fffaf6", cursor: "pointer" }}>
-                            <svg width="52" height="36" viewBox="0 0 52 36" aria-hidden="true" style={{ flex: "none" }}>
-                              <rect x="1" y="1" width="50" height="34" rx="5" fill="#fff" stroke="#b04a15" strokeWidth="2" />
-                              <rect x="7" y="9" width="11" height="14" rx="2" fill="#f3dccd" />
-                              <rect x="22" y="10" width="22" height="3" rx="1.5" fill="#d9b9a3" /><rect x="22" y="16" width="16" height="3" rx="1.5" fill="#d9b9a3" />
-                              <rect x="7" y="27" width="30" height="3" rx="1.5" fill="#b04a15" />
-                            </svg>
-                            <span style={{ flex: 1 }}>
-                              <strong style={{ color: "#7a3410" }}><UiText>Upload a photo or PDF of your PAN card</UiText></strong><br />
-                              <span className={`${s.small} ${s.muted}`}><UiText>A photo of the front side, a scan, or your e-PAN PDF. JPG, PNG or PDF. We read the PAN for you.</UiText></span>
-                            </span>
-                            <span className={`${s.btn} ${s.bp}`} style={{ flex: "none" }}><UiText>Choose photo</UiText></span>
-                          </label>
-                        ) : null}
-                        {!panFile && panTypeError && (
-                          <p role="alert" className={s.errText}><Icon name="alert" /><UiText>We can&apos;t use that file. Please choose a JPG, PNG or PDF of your PAN card (on iPhone: Settings → Camera → Formats → Most Compatible).</UiText></p>
-                        )}
-                        {panFile && (
-                          <div style={{ display: "flex", alignItems: "center", gap: 14, padding: 12, borderRadius: 12, flexWrap: "wrap",
-                            border: `1px solid ${panReading ? "#e4d6ca" : panName ? "#a9d3b8" : "#e8c98a"}`, background: panReading ? "#fff" : panName ? "#f1f8f3" : "#fffbf3" }}>
-                            {!panPreview && (
-                              <div aria-hidden="true" style={{ width: 96, height: 62, borderRadius: 6, border: "1px solid #e4d6ca", background: "#fff", flex: "none", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#b04a15" }}>PDF</div>
-                            )}
-                            {panPreview && (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={panPreview} alt={ui("Your PAN card photo")} style={{ width: 96, height: 62, objectFit: "cover", borderRadius: 6, border: "1px solid #e4d6ca", flex: "none" }} />
-                            )}
-                            <div style={{ flex: "1 1 200px", minWidth: 0 }} role="status">
-                              {panReading
-                                ? <strong><UiText>Checking your card…</UiText></strong>
-                                : panName
-                                  ? <><strong style={{ color: "#1d5b3a" }}><Icon name="check" /> <UiText>PAN card read</UiText></strong><br /><span className={s.small}><UiText>Name on card:</UiText> <strong>{panName}</strong></span></>
-                                  : <><strong style={{ color: "#7a4a00" }}><Icon name="alert" /> {panReadNote ?? ui("We couldn't read the card. Type your PAN below.")}</strong></>}
-                            </div>
-                            <label htmlFor="panph" className={`${s.btn} ${s.bs}`} style={{ flex: "none", cursor: "pointer" }}><UiText>Change photo</UiText></label>
-                          </div>
-                        )}
-                      </div>
                       {taxTried && taxProblems.length > 0 && (
                         <ul role="alert" className={s.errText} style={{ margin: 0, paddingLeft: 18 }}>{taxProblems.map((p) => <li key={p}>{p}</li>)}</ul>
                       )}
@@ -444,7 +324,7 @@ export default function DonatePage() {
                   ...(supportValue > 0 ? [[ui("Support to CauseKind (not part of your donation)"), formatINR(supportValue)] as [string, string]] : []),
                   [ui("Shown publicly as"), anonymous ? ui("Anonymous") : (donorName || ui("Your name"))],
                   ...(user ? [] : [[ui("Documents sent to"), donorEmail] as [string, string]]),
-                  ...(offer80G ? [[ui("80G receipt"), tax?.photo ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
+                  ...(offer80G ? [[ui("80G receipt"), tax?.wants80g ? `${ui("Yes")} (PAN ${tax.panNumber})` : ui("No — donation certificate only")] as [string, string]] : []),
                 ].map(([k, v], i) => (
                   <div key={i} className={s.tabular} style={{ display: "flex", justifyContent: "space-between", gap: 16, padding: "12px 0", borderTop: i ? "1px solid #efe7de" : 0 }}><span>{k}</span><span style={{ textAlign: "right" }}>{v}</span></div>
                 ))}
@@ -454,21 +334,11 @@ export default function DonatePage() {
                 <h2 id="pt" style={{ fontSize: 15, fontWeight: 700 }}><UiText>Before you pay</UiText></h2>
                 <p className={s.small}><UiText>Your donation is received by</UiText> <strong><UiText>Sahas Charitable Trust</UiText></strong><UiText>, which transfers it to the beneficiary.</UiText></p>
                 <p className={s.small}><strong><UiText>Donations are not refundable.</UiText></strong></p>
-                {tax?.photo
+                {tax?.wants80g
                   ? <p className={s.small}><UiText>You&apos;ll get your 80G receipt and donation certificate by email.</UiText></p>
                   : <p className={s.small}><UiText>You&apos;ll get a donation certificate by email.</UiText>{!offer80G && <> <UiText>80G receipts aren&apos;t available right now.</UiText></>}</p>}
               </section>
               {error && <p role="alert" className={s.errText}><Icon name="alert" />{errorText}</p>}
-              {photoFailed && (
-                <div role="alert" style={{ padding: "14px 16px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000", display: "flex", flexDirection: "column", gap: 10 }}>
-                  <p><strong><UiText>Your PAN photo didn&apos;t upload.</UiText></strong> <UiText>Nothing has been charged. Try again, or pay without an 80G receipt — you can&apos;t add it later.</UiText></p>
-                  {photoReason && photoReason !== "The PAN photo didn't upload." && <p className={s.small}><UiText>Reason:</UiText> {photoReason}</p>}
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                    <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy}><UiText>Try again</UiText></button>
-                    <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void pay(false, true)} disabled={busy}><UiText>Continue without 80G</UiText></button>
-                  </div>
-                </div>
-              )}
               {prior && (
                 <div role="status" style={{ padding: "14px 16px", borderRadius: 10, background: "#fdf3e1", color: "#4a3000", display: "flex", flexDirection: "column", gap: 10 }}>
                   {prior.kind === "failed" && <p><strong><UiText>Your last payment for this fundraiser didn&apos;t go through.</UiText></strong> <UiText>You weren&apos;t charged for it.</UiText></p>}
@@ -484,7 +354,7 @@ export default function DonatePage() {
               )}
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 <button type="button" className={`${s.btn} ${s.bs}`} onClick={() => setStep(1)}><UiText>Back</UiText></button>
-                <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy || prior !== null || photoFailed}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value + supportValue) })}</button>
+                <button type="button" className={`${s.btn} ${s.bp}`} onClick={() => void pay()} disabled={busy || prior !== null}>{busy ? ui("Opening checkout…") : t("payAmount", { amount: formatINR(value + supportValue) })}</button>
               </div>
             </>
           )}
