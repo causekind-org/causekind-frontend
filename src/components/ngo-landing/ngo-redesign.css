@@ -2,7 +2,10 @@
    CauseKind NGO Landing Page Redesign - Design System Tokens & Aesthetics
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+/* Fraunces and Inter are self-hosted through next/font (see ./fonts.ts and the
+   root layout). The remote Google Fonts @import that used to sit here was
+   dropped by the production CSS bundler and never loaded. next/font registers
+   the faces under these same family names, so the tokens below are unchanged. */
 
 :root {
   --ngo-font-heading: 'Fraunces', Georgia, serif;

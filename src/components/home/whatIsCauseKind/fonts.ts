@@ -10,6 +10,8 @@ const grotesk = Archivo({
   subsets: ["latin"],
   axes: ["wdth"],
   display: "swap",
+  // Below the fold on every page that uses it: load on use, no preload.
+  preload: false,
   variable: "--font-wk-grotesk",
 });
 

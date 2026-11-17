@@ -165,28 +165,9 @@ export default async function RootLayout({
           suppressHydrationWarning
           dangerouslySetInnerHTML={{ __html: ROLE_THEME_BOOT_SCRIPT }}
         />
-        {/* Material Symbols, subset and pinned.
-
-            This was requesting the FULL variable axis range
-            (opsz 20-48, wght 100-700, FILL 0-1, GRAD -50..200) — the entire
-            icon font — as a render-blocking third-party stylesheet on EVERY
-            route, while the font is used on exactly one: /blog/[slug].
-
-            `icon_names` narrows it to the eight glyphs actually referenced
-            there (grep `material-symbols-outlined` in BlogPostClient.tsx —
-            all eight are string literals, so this list is verifiable, not a
-            guess). The axes are pinned to the single instance used rather
-            than a range. `display=swap` stops it blocking text paint, and
-            the preconnect saves a connection setup on the gstatic origin the
-            stylesheet then pulls the font file from.
-
-            If a new Material Symbol is added to the blog, it must be added to
-            icon_names or it renders as its literal ligature text. */}
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=check,expand_more,format_bold,link,mail,pause,play_arrow,replay&display=swap"
-        />
+        {/* No icon-font stylesheet here any more. The eight Material Symbols
+            the blog reader used are inline SVGs in BlogPostClient.tsx
+            (MaterialIcon), so no route pays for a third-party font request. */}
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
         <StoredImageFallback />

@@ -21,6 +21,44 @@ import { blogPosts } from "../../../../data/blogData";
 
 
 
+/**
+ * The eight Material Symbols (Outlined, weight 400, fill 0, grade 0, optical
+ * size 24) this page uses, as their official outline paths. They replace the
+ * Material Symbols icon font, which cost a third-party stylesheet on every
+ * route and put the ligature names ("expand_more") in the HTML as text.
+ */
+const MATERIAL_ICON_PATHS = {
+  check: "M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z",
+  expand_more: "M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z",
+  format_bold: "M272-200v-560h221q65 0 120 40t55 111q0 51-23 78.5T602-491q25 11 55.5 41t30.5 90q0 89-65 124.5T501-200H272Zm121-112h104q48 0 58.5-24.5T566-372q0-11-10.5-35.5T494-432H393v120Zm0-228h93q33 0 48-17t15-38q0-24-17-39t-44-15h-95v109Z",
+  link: "M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z",
+  mail: "M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z",
+  pause: "M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Zm400-80h80v-400h-80v400Zm-320 0h80v-400h-80v400Zm0-400v400-400Zm320 0v400-400Z",
+  play_arrow: "M320-200v-560l440 280-440 280Zm80-280Zm0 134 210-134-210-134v268Z",
+  replay: "M339.5-108.5q-65.5-28.5-114-77t-77-114Q120-365 120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80q-75 0-140.5-28.5Z",
+} as const;
+
+/**
+ * Always a 24px box. The icon font's own rule set `font-size: var(--text-2xl)`
+ * unlayered, which beat the Tailwind `text-lg` / `text-sm` utilities on every
+ * icon, so 24px is what each of them actually rendered at.
+ */
+function MaterialIcon({ name, className = "" }: { name: keyof typeof MATERIAL_ICON_PATHS; className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="24"
+      height="24"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+      className={`ck-msym inline-block align-middle shrink-0 ${className}`}
+    >
+      <path d={MATERIAL_ICON_PATHS[name]} />
+    </svg>
+  );
+}
+
 // The route's `params` promise is unwrapped by the server component in
 // page.tsx, which needs the slug anyway to build the post's metadata. This
 // component just receives the resolved value.
@@ -78,9 +116,9 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-lg leading-none shrink-0"
+          className="inline-block align-middle leading-none text-[#b04a15] dark:text-[#e07b3a] shrink-0"
         >
-          expand_more
+          <MaterialIcon name="expand_more" className="block" />
         </motion.span>
       </button>
 
@@ -115,7 +153,7 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
                 >
                   <span className="truncate">{opt.label}</span>
                   {opt.value === value && (
-                    <span className="material-symbols-outlined text-sm leading-none shrink-0">check</span>
+                    <MaterialIcon name="check" />
                   )}
                 </button>
               </motion.li>
@@ -440,7 +478,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                   {/* Bold Mode Toggle */}
                   <div className="flex items-center justify-between mb-8">
                     <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">
-                      <span className="material-symbols-outlined text-lg leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
+                      <MaterialIcon name="format_bold" className="text-[#b04a15] dark:text-[#e07b3a]" />
                       {t("boldText")}
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -475,9 +513,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                           title={narrationState === "playing" ? "Pause" : "Play"}
                           className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-xl leading-none">
-                            {narrationState === "playing" ? "pause" : "play_arrow"}
-                          </span>
+                          <MaterialIcon name={narrationState === "playing" ? "pause" : "play_arrow"} />
                         </button>
                         <button
                           type="button"
@@ -486,7 +522,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                           title="Restart"
                           className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-lg leading-none">replay</span>
+                          <MaterialIcon name="replay" />
                         </button>
                         <span className="font-label-sm text-2xs text-[#78716c] dark:text-[#a8a29e]">
                           {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
@@ -507,7 +543,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       title="Share via Email"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-xl leading-none">mail</span>
+                      <MaterialIcon name="mail" />
                     </button>
                     <button
                       onClick={handleCopyLink}
@@ -515,7 +551,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       title="Copy Link"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-xl leading-none">link</span>
+                      <MaterialIcon name="link" />
                     </button>
                     {copied && (
                       <span className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-semibold animate-pulse absolute left-28 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 px-2.5 py-1.5 rounded-lg shadow-sm">Copied!</span>

@@ -14,7 +14,7 @@ import { UiText, useUiText } from "@/components/UiText";
  * as jargon to a giver, so the door says "A person".
  */
 // The mock-up's type, scoped to this window only (owner, 2026-10-08).
-const doorDisplay = Bricolage_Grotesque({ subsets: ["latin"], weight: ["600", "800"], display: "swap" });
+const doorDisplay = Bricolage_Grotesque({ subsets: ["latin"], weight: ["800"], display: "swap" });
 const doorBody = Source_Sans_3({ subsets: ["latin"], weight: ["400", "600", "700"], display: "swap" });
 
 /** Gradient end colour per door (data). The copy is in useDoorCopy() — ui() needs literals. */
