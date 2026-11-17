@@ -8,6 +8,7 @@ import {
   mcPause, mcPreview, mcReport, mcResume, mcSaveTemplate, mcSchedule, mcSegments, mcSendNow,
   mcSendTest, mcTemplates, mcUpdateCampaign, mcVariableCheck,
   mcOverview, mcSuppressionLookup, mcSuppress, mcUnsuppress,
+  mcAudiences, mcCreateAudience, mcAddMembers, mcDeleteAudience, type McAudience,
   type McCampaign, type McOverview, type McReport, type McSuppression, type McTemplate, type McVariableCheck,
 } from "@/lib/api";
 import { Loader2, Mail, Pause, Play, Plus, Send, Trash2, X } from "lucide-react";
@@ -36,14 +37,19 @@ const STATUS_STYLE: Record<string, string> = {
   CANCELLED: "bg-stone-500/15 text-stone-500",
 };
 
-type Draft = { id: number | null; name: string; subject: string; preheader: string; html: string; segments: string[] };
-const EMPTY: Draft = { id: null, name: "", subject: "", preheader: "", html: "<p>Hello {{first_name}},</p>\n<p></p>", segments: [] };
+type Draft = {
+  id: number | null; name: string; subject: string; preheader: string; html: string;
+  segments: string[]; dailyLimit: string;
+};
+const EMPTY: Draft = { id: null, name: "", subject: "", preheader: "", html: "<p>Hello {{first_name}},</p>\n<p></p>", segments: [], dailyLimit: "" };
+const audienceKey = (id: number) => `AUDIENCE:${id}`;
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : "Something went wrong");
 
 export function MailCenterPanel({ isDark }: { isDark: boolean }) {
   const t = saTheme(isDark);
-  const [view, setView] = useState<"overview" | "campaigns" | "templates" | "suppression">("campaigns");
+  const [view, setView] = useState<"overview" | "campaigns" | "audiences" | "templates" | "suppression">("campaigns");
+  const [audiences, setAudiences] = useState<McAudience[]>([]);
   const [campaigns, setCampaigns] = useState<McCampaign[]>([]);
   const [templates, setTemplates] = useState<McTemplate[]>([]);
   const [segments, setSegments] = useState<string[]>([]);
@@ -57,8 +63,9 @@ export function MailCenterPanel({ isDark }: { isDark: boolean }) {
     setLoading(true);
     setLoadError(false);
     try {
-      const [c, tp, s] = await Promise.all([mcCampaigns(), mcTemplates(), mcSegments()]);
+      const [c, tp, s, au] = await Promise.all([mcCampaigns(), mcTemplates(), mcSegments(), mcAudiences()]);
       setCampaigns(c);
+      setAudiences(au);
       setTemplates(tp);
       setSegments(s.segments);
       setVariables(s.variables);
@@ -76,10 +83,10 @@ export function MailCenterPanel({ isDark }: { isDark: boolean }) {
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        {(["overview", "campaigns", "templates", "suppression"] as const).map((v) => (
+        {(["overview", "campaigns", "audiences", "templates", "suppression"] as const).map((v) => (
           <button key={v} type="button" onClick={() => { setView(v); setEditing(null); }}
             className={`min-h-9 rounded-full border px-4 text-xs font-bold capitalize ${view === v ? t.chipActive : t.chipInactive}`}>
-            {v === "suppression" ? "Blocked addresses" : v}
+            {v === "suppression" ? "Blocked addresses" : v === "audiences" ? "Saved lists" : v}
           </button>
         ))}
         {view === "campaigns" && !editing && (
@@ -99,18 +106,22 @@ export function MailCenterPanel({ isDark }: { isDark: boolean }) {
         <div className="flex justify-center py-12"><Loader2 className={`h-6 w-6 animate-spin ${t.muted}`} /></div>
       ) : view === "overview" ? (
         <OverviewView isDark={isDark} />
+      ) : view === "audiences" ? (
+        <AudiencesView isDark={isDark} audiences={audiences} onChanged={load} />
       ) : view === "suppression" ? (
         <SuppressionView isDark={isDark} />
       ) : view === "templates" ? (
         <TemplatesView isDark={isDark} templates={templates} variables={variables} onChanged={load} />
       ) : editing ? (
         <CampaignEditor isDark={isDark} draft={editing} segments={segments} variables={variables} templates={templates}
+          audiences={audiences}
           onClose={() => { setEditing(null); load(); }} />
       ) : (
         <CampaignList isDark={isDark} campaigns={campaigns} openReport={openReport} setOpenReport={setOpenReport}
           onEdit={(c) => setEditing({
             id: c.id, name: c.name, subject: c.subject, preheader: c.preheader ?? "", html: c.html,
             segments: c.segments.split(",").filter(Boolean),
+            dailyLimit: c.dailyLimit ? String(c.dailyLimit) : "",
           })}
           onChanged={load} />
       )}
@@ -235,8 +246,9 @@ function ReportBox({ isDark, id }: { isDark: boolean; id: number }) {
 
 // ------------------------------------------------------------------ editor
 
-function CampaignEditor({ isDark, draft, segments, variables, templates, onClose }: {
-  isDark: boolean; draft: Draft; segments: string[]; variables: string[]; templates: McTemplate[]; onClose: () => void;
+function CampaignEditor({ isDark, draft, segments, variables, templates, audiences, onClose }: {
+  isDark: boolean; draft: Draft; segments: string[]; variables: string[]; templates: McTemplate[];
+  audiences: McAudience[]; onClose: () => void;
 }) {
   const t = saTheme(isDark);
   const [d, setD] = useState<Draft>(draft);
@@ -276,7 +288,9 @@ function CampaignEditor({ isDark, draft, segments, variables, templates, onClose
   const save = async (): Promise<number | null> => {
     if (!d.name.trim() || !d.subject.trim() || !d.html.trim()) { setError("Name, subject and message are all needed."); return null; }
     if (d.segments.length === 0) { setError("Choose at least one audience."); return null; }
-    const body = { name: d.name, subject: d.subject, preheader: d.preheader, html: d.html, segments: d.segments };
+    const perDay = d.dailyLimit.trim() === "" ? null : Number(d.dailyLimit);
+    if (perDay != null && (!Number.isInteger(perDay) || perDay < 1)) { setError("“Per day” must be a whole number, or empty."); return null; }
+    const body = { name: d.name, subject: d.subject, preheader: d.preheader, html: d.html, segments: d.segments, dailyLimit: perDay };
     const saved = d.id == null ? await mcCreateCampaign(body) : await mcUpdateCampaign(d.id, body);
     setD((p) => ({ ...p, id: saved.id }));
     return saved.id;
@@ -349,9 +363,31 @@ function CampaignEditor({ isDark, draft, segments, variables, templates, onClose
                 </button>
               );
             })}
+            {audiences.map((a) => {
+              const k = audienceKey(a.id);
+              const on = d.segments.includes(k);
+              return (
+                <button key={k} type="button" aria-pressed={on}
+                  onClick={() => set({ segments: on ? d.segments.filter((x) => x !== k) : [...d.segments, k] })}
+                  className={`min-h-9 rounded-full border px-3.5 text-xs font-bold ${on ? t.chipActive : t.chipInactive}`}>
+                  {a.name} · {a.memberCount}
+                </button>
+              );
+            })}
           </div>
           {estimate != null && (
             <p className={`mt-1.5 text-xs ${t.muted}`}>About <b>{estimate}</b> people, after removing unsubscribed and bouncing addresses.</p>
+          )}
+        </div>
+
+        <div>
+          <label className={label} htmlFor="mc-perday">Send in rounds: at most this many per day (optional)</label>
+          <input id="mc-perday" inputMode="numeric" className={`${field} max-w-[12rem]`} placeholder="e.g. 500"
+            value={d.dailyLimit} onChange={(e) => set({ dailyLimit: e.target.value.replace(/[^0-9]/g, "") })} />
+          {d.dailyLimit && estimate != null && Number(d.dailyLimit) > 0 && (
+            <p className={`mt-1 text-xs ${t.muted}`}>
+              About {Math.ceil(estimate / Number(d.dailyLimit))} day(s) to reach everyone. Leave empty to send as fast as allowed.
+            </p>
           )}
         </div>
 
@@ -372,7 +408,7 @@ function CampaignEditor({ isDark, draft, segments, variables, templates, onClose
             onFocus={() => setLastField("html")} onChange={(e) => set({ html: e.target.value })} />
           <div className="mt-2 flex flex-wrap items-center gap-1.5">
             <span className={`text-xs ${t.muted}`}>Insert into {lastField === "subject" ? "Subject" : "Message"}:</span>
-            {variables.map((v) => (
+            {[...variables, ...audienceColumns(audiences, d.segments)].map((v) => (
               <button key={v} type="button" onClick={() => insertVariable(v)}
                 className={`rounded-full border px-2.5 py-1 font-mono text-3xs ${t.badgeAccent}`}>{`{{${v}}}`}</button>
             ))}
@@ -620,6 +656,190 @@ function SuppressionView({ isDark }: { isDark: boolean }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ------------------------------------------------------------------ saved lists
+
+/** Extra columns of the saved lists chosen for a campaign (usable as variables). */
+function audienceColumns(audiences: McAudience[], chosen: string[]): string[] {
+  const out = new Set<string>();
+  for (const a of audiences) {
+    if (!chosen.includes(audienceKey(a.id)) || !a.columns) continue;
+    a.columns.split(",").filter(Boolean).forEach((c) => out.add(c));
+  }
+  return [...out];
+}
+
+/** Small RFC-4180 CSV parser: quoted fields, "" escapes, commas and newlines inside quotes. */
+export function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let cell = "";
+  let quoted = false;
+  const src = text.replace(/^\uFEFF/, "");
+  for (let i = 0; i < src.length; i++) {
+    const ch = src[i];
+    if (quoted) {
+      if (ch === '"' && src[i + 1] === '"') { cell += '"'; i++; }
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') quoted = true;
+    else if (ch === ",") { row.push(cell); cell = ""; }
+    else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && src[i + 1] === "\n") i++;
+      row.push(cell); cell = "";
+      if (row.some((c) => c.trim() !== "")) rows.push(row);
+      row = [];
+    } else cell += ch;
+  }
+  row.push(cell);
+  if (row.some((c) => c.trim() !== "")) rows.push(row);
+  return rows;
+}
+
+const CHUNK = 2000;
+const MAX_ROWS = 50_000;
+
+function AudiencesView({ isDark, audiences, onChanged }: { isDark: boolean; audiences: McAudience[]; onChanged: () => void }) {
+  const t = saTheme(isDark);
+  const [name, setName] = useState("");
+  const [consent, setConsent] = useState("");
+  const [rows, setRows] = useState<string[][] | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [emailCol, setEmailCol] = useState(0);
+  const [nameCol, setNameCol] = useState(-1);
+  const [progress, setProgress] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const field = `w-full rounded-xl border px-3 py-2.5 text-sm ${t.input}`;
+  const label = `mb-1 block text-3xs font-black uppercase tracking-wider ${t.dim}`;
+
+  const header = rows?.[0] ?? [];
+  const body = rows ? rows.slice(1) : [];
+
+  const onFile = async (f: File | undefined) => {
+    setError(null); setProgress(null); setRows(null);
+    if (!f) return;
+    if (!f.name.toLowerCase().endsWith(".csv")) { setError("Please choose a .csv file. In Excel: File → Save As → CSV."); return; }
+    const parsed = parseCsv(await f.text());
+    if (parsed.length < 2) { setError("The file has no rows under the header line."); return; }
+    if (parsed.length - 1 > MAX_ROWS) { setError(`This file has ${parsed.length - 1} rows. A saved list holds at most ${MAX_ROWS}. Split it into parts.`); return; }
+    const h = parsed[0].map((x) => x.trim().toLowerCase());
+    const e = h.findIndex((x) => x.includes("email") || x.includes("e-mail"));
+    const n = h.findIndex((x) => x === "name" || x.includes("full name") || x === "first name");
+    setRows(parsed);
+    setFileName(f.name);
+    setEmailCol(e >= 0 ? e : 0);
+    setNameCol(n);
+    if (!name) setName(f.name.replace(/\.csv$/i, ""));
+  };
+
+  const upload = async () => {
+    if (!rows) return;
+    if (!name.trim()) { setError("Give the list a name."); return; }
+    if (consent.trim().length < 10) { setError("Say how these people agreed to get emails from CauseKind."); return; }
+    setBusy(true); setError(null);
+    const extraCols = header.map((h, i) => ({ h, i })).filter(({ i }) => i !== emailCol && i !== nameCol);
+    try {
+      const a = await mcCreateAudience(name.trim(), consent.trim(), extraCols.map((c) => c.h));
+      let added = 0, invalid = 0, duplicates = 0;
+      for (let start = 0; start < body.length; start += CHUNK) {
+        const chunk = body.slice(start, start + CHUNK).map((r) => ({
+          email: (r[emailCol] ?? "").trim(),
+          name: nameCol >= 0 ? (r[nameCol] ?? "").trim() : undefined,
+          extra: Object.fromEntries(extraCols.map(({ h, i }) => [h, (r[i] ?? "").trim()])),
+        }));
+        const res = await mcAddMembers(a.id, chunk);
+        added += res.added; invalid += res.invalid; duplicates += res.duplicates;
+        setProgress(`Uploading… ${Math.min(start + CHUNK, body.length)} of ${body.length}`);
+      }
+      setProgress(`Saved “${a.name}”: ${added} people added, ${invalid} invalid addresses skipped, ${duplicates} duplicates skipped.`);
+      setRows(null); setName(""); setConsent(""); setFileName("");
+      onChanged();
+    } catch (e) {
+      setError(errText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <div className={`space-y-4 rounded-2xl border p-4 ${t.card}`}>
+        <h3 className={`text-base font-black ${t.heading}`}>Upload a list</h3>
+        <p className={`text-xs ${t.muted}`}>
+          A CSV file with a header row and an email column. Every other column (for example “City”) becomes a
+          variable like {"{{city}}"}. Up to {MAX_ROWS.toLocaleString("en-IN")} people per list.
+        </p>
+        <input type="file" accept=".csv,text/csv" aria-label="Choose CSV file" onChange={(e) => onFile(e.target.files?.[0])}
+          className={`block w-full text-xs ${t.muted}`} />
+        {rows && (
+          <>
+            <p className={`text-xs ${t.text}`}>{fileName}: {body.length} rows found.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className={label} htmlFor="mc-emailcol">Email column</label>
+                <select id="mc-emailcol" className={field} value={emailCol} onChange={(e) => setEmailCol(Number(e.target.value))}>
+                  {header.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className={label} htmlFor="mc-namecol">Name column (optional)</label>
+                <select id="mc-namecol" className={field} value={nameCol} onChange={(e) => setNameCol(Number(e.target.value))}>
+                  <option value={-1}>— none —</option>
+                  {header.map((h, i) => <option key={i} value={i}>{h || `Column ${i + 1}`}</option>)}
+                </select>
+              </div>
+            </div>
+            <p className={`text-xs ${t.muted}`}>
+              First row: {body[0]?.[emailCol] ?? "—"}{nameCol >= 0 ? ` · ${body[0]?.[nameCol] ?? ""}` : ""}
+            </p>
+          </>
+        )}
+        <div>
+          <label className={label} htmlFor="mc-aname">List name</label>
+          <input id="mc-aname" className={field} value={name} maxLength={120} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div>
+          <label className={label} htmlFor="mc-consent">How did these people agree to get emails from CauseKind?</label>
+          <textarea id="mc-consent" rows={2} className={field} value={consent} maxLength={500}
+            placeholder="e.g. Signed up at the Pune donation drive on 10 Nov 2026 and ticked “send me updates”."
+            onChange={(e) => setConsent(e.target.value)} />
+          <p className={`mt-1 text-xs ${t.dim}`}>
+            Required. Emailing people who never agreed causes spam reports, and too many can get the email account blocked.
+          </p>
+        </div>
+        {error && <p role="alert" className="text-sm text-red-500">{error}</p>}
+        {progress && <p className="text-sm text-emerald-500">{progress}</p>}
+        <button type="button" disabled={busy || !rows} onClick={upload}
+          className={`inline-flex min-h-10 items-center gap-1.5 rounded-xl border px-5 text-xs font-bold ${t.btnAccent}`}>
+          {busy && <Loader2 className="h-4 w-4 animate-spin" />} Save list
+        </button>
+      </div>
+
+      <div className="space-y-3">
+        <h3 className={`text-base font-black ${t.heading}`}>Saved lists</h3>
+        {audiences.length === 0 && <p className={`text-sm ${t.muted}`}>No saved lists yet.</p>}
+        {audiences.map((a) => (
+          <div key={a.id} className={`rounded-2xl border p-4 ${t.card}`}>
+            <div className="flex items-start gap-3">
+              <div className="min-w-0 flex-1">
+                <p className={`truncate text-sm font-bold ${t.heading}`}>{a.name}</p>
+                <p className={`text-xs ${t.muted}`}>{a.memberCount} people{a.columns ? ` · variables: ${a.columns.split(",").map((c) => `{{${c}}}`).join(", ")}` : ""}</p>
+                <p className={`mt-1 text-xs ${t.dim}`}>Consent: {a.consentBasis}</p>
+              </div>
+              <button type="button" aria-label="Delete list"
+                onClick={async () => {
+                  if (!window.confirm(`Delete “${a.name}” and its ${a.memberCount} people?`)) return;
+                  try { await mcDeleteAudience(a.id); onChanged(); } catch (e) { setError(errText(e)); }
+                }}
+                className={`min-h-8 rounded-lg border px-2.5 ${t.btn}`}><Trash2 className="h-3.5 w-3.5" aria-hidden /></button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

@@ -7795,6 +7795,7 @@ export interface McCampaign {
   html: string;
   text: string | null;
   segments: string;
+  dailyLimit: number | null;
   status: McStatus;
   scheduledAt: string | null;
   pauseReason: string | null;
@@ -7821,6 +7822,23 @@ export interface McCampaignInput {
   html: string;
   text?: string;
   segments: string[];
+  dailyLimit?: number | null;
+}
+
+export interface McAudience {
+  id: number;
+  name: string;
+  consentBasis: string;
+  columns: string | null;
+  memberCount: number;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface McMemberRow {
+  email: string;
+  name?: string;
+  extra?: Record<string, string>;
 }
 
 export interface McReport {
@@ -7900,6 +7918,13 @@ export const mcSuppressionLookup = (email: string) =>
 export const mcSuppress = (email: string, note: string) => mcPost<McSuppression>("/suppression", { email, note });
 export const mcUnsuppress = (email: string) =>
   request<McSuppression>(`${MC}/suppression?email=${encodeURIComponent(email)}`, { method: "DELETE" });
+
+export const mcAudiences = () => request<McAudience[]>(`${MC}/audiences`);
+export const mcCreateAudience = (name: string, consentBasis: string, columns: string[]) =>
+  mcPost<McAudience>("/audiences", { name, consentBasis, columns });
+export const mcAddMembers = (id: number, rows: McMemberRow[]) =>
+  mcPost<{ added: number; invalid: number; duplicates: number; total: number }>(`/audiences/${id}/members`, { rows });
+export const mcDeleteAudience = (id: number) => request<void>(`${MC}/audiences/${id}`, { method: "DELETE" });
 
 export const mcTemplates = () => request<McTemplate[]>(`${MC}/templates`);
 export const mcSaveTemplate = (id: number | null, b: Omit<McCampaignInput, "segments"> & { name: string }) =>
