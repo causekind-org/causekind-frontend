@@ -6,7 +6,6 @@ import Link from "@/components/AppLink";
 import { FEATURES } from "@/lib/features";
 import { sahasCampaigns, type SahasCampaignCard } from "@/lib/api";
 import { UiText, useUiText } from "@/components/UiText";
-import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { SahasDonateDialog } from "@/features/sahas/SahasDonateDialog";
 import { SAHAS_NAME, serif, PhaseChip, ItemsBar, formatDate } from "@/features/sahas/sahasUi";
 
@@ -16,20 +15,18 @@ const RESUME_AFTER_TOUCH_MS = 2500;
 const RESUME_AFTER_ARROW_MS = 4000;
 
 /**
- * Diwali-themed single campaign card for the spotlight carousel.
+ * Single campaign card for the spotlight carousel.
  * Donors can only donate money directly from the card.
  */
 function SpotlightCard({
   c,
   locale,
   copy = false,
-  diwali,
   onDonate,
 }: {
   c: SahasCampaignCard;
   locale: string;
   copy?: boolean;
-  diwali: boolean;
   onDonate: (slug: string) => void;
 }) {
   const ui = useUiText();
@@ -59,7 +56,7 @@ function SpotlightCard({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#fbe8c2] via-[#f5d9ad] to-[#f4a340]/40 dark:from-zinc-900 dark:to-zinc-800">
-            <span className="text-5xl" role="img" aria-label="Diwali Diya">🪔</span>
+            <span className="text-5xl" role="img" aria-label="Diya">🪔</span>
           </div>
         )}
 
@@ -165,12 +162,10 @@ function SpotlightCard({
 function SingleFeaturedCard({
   c,
   locale,
-  diwali,
   onDonate,
 }: {
   c: SahasCampaignCard;
   locale: string;
-  diwali: boolean;
   onDonate: (slug: string) => void;
 }) {
   const ui = useUiText();
@@ -198,7 +193,7 @@ function SingleFeaturedCard({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#fbe8c2] via-[#f7dfbc] to-[#f4a340]/40 dark:from-zinc-900 dark:to-zinc-800">
-              <span className="text-7xl" role="img" aria-label="Diwali Diya">🪔</span>
+              <span className="text-7xl" role="img" aria-label="Diya">🪔</span>
             </div>
           )}
 
@@ -209,7 +204,7 @@ function SingleFeaturedCard({
           <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center gap-2 pointer-events-none">
             <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 px-3 py-1 text-xs font-bold text-white shadow-sm border border-amber-300/40">
               <Sparkles className="w-3.5 h-3.5 text-amber-200" aria-hidden="true" />
-              <UiText context="sahas card">{c.featured ? "Featured Campaign" : "Diwali Spotlight"}</UiText>
+              <UiText context="sahas card">{c.featured ? "Featured Campaign" : "Campaign Spotlight"}</UiText>
             </span>
             {c.collectsMoney && (
               <span className="rounded-full bg-black/65 backdrop-blur-xs border border-amber-400/30 px-3 py-1 text-xs font-semibold text-[#fef3c7]">
@@ -309,12 +304,11 @@ function SingleFeaturedCard({
 
 /**
  * Sahas Spotlight Section:
- * Redesigned according to the Diwali theme with continuous gliding/marquee scroll
+ * Continuous gliding/marquee scroll
  * when 2 or more campaigns are open, or a single rich featured card when 1 is open.
  */
 export function SahasSpotlight() {
   const locale = "en";
-  const diwali = useDiwaliCampaign();
   const [cards, setCards] = useState<SahasCampaignCard[] | null>(null);
   const [donatingSlug, setDonatingSlug] = useState<string | null>(null);
 
@@ -425,7 +419,7 @@ export function SahasSpotlight() {
       {/* Subtle festive background glow behind the section */}
       <div className="absolute -top-10 left-1/2 -translate-x-1/2 w-3/4 max-w-3xl h-44 bg-gradient-to-r from-amber-500/10 via-[#8e123c]/10 to-amber-500/10 blur-3xl pointer-events-none -z-10 rounded-full" />
 
-      {/* Header section with Diwali festive dress */}
+      {/* Header section */}
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2 max-w-2xl">
           <div className="inline-flex items-center gap-2 w-fit px-3 py-1 rounded-full bg-[#fbe8c2]/80 dark:bg-[#720d2d]/40 border border-[#d9a441]/40 text-xs font-bold uppercase tracking-[0.16em] text-[#8e123c] dark:text-[#f4a340] shadow-2xs">
@@ -483,7 +477,7 @@ export function SahasSpotlight() {
 
       {/* Content: Single Card vs Continuous Scrolling Row */}
       {count === 1 ? (
-        <SingleFeaturedCard c={cards[0]} locale={locale} diwali={diwali} onDonate={setDonatingSlug} />
+        <SingleFeaturedCard c={cards[0]} locale={locale} onDonate={setDonatingSlug} />
       ) : (
         <div className="relative -mx-4 px-4 sm:-mx-6 sm:px-6">
           <div
@@ -509,14 +503,14 @@ export function SahasSpotlight() {
             {/* Run 1: original cards */}
             {cards.map((c) => (
               <div key={c.slug} className="w-[320px] sm:w-[350px] md:w-[370px] shrink-0">
-                <SpotlightCard c={c} locale={locale} diwali={diwali} onDonate={setDonatingSlug} />
+                <SpotlightCard c={c} locale={locale} onDonate={setDonatingSlug} />
               </div>
             ))}
 
             {/* Run 2: duplicate run for continuous infinite gliding */}
             {cards.map((c) => (
               <div key={`copy-${c.slug}`} className="w-[320px] sm:w-[350px] md:w-[370px] shrink-0" aria-hidden="true">
-                <SpotlightCard c={c} locale={locale} copy diwali={diwali} onDonate={setDonatingSlug} />
+                <SpotlightCard c={c} locale={locale} copy onDonate={setDonatingSlug} />
               </div>
             ))}
           </div>

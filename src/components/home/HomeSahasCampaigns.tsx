@@ -7,7 +7,6 @@ import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import Link from "@/components/AppLink";
 import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
 import { useAuth } from "@/hooks/useAuth";
-import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { sahasCampaigns, type SahasCampaignCard } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
@@ -25,12 +24,10 @@ const RESUME_AFTER_ARROW_MS = 4000;
 function CampaignCard({
   card,
   copy = false,
-  diwali,
   onDonate,
 }: {
   card: SahasCampaignCard;
   copy?: boolean;
-  diwali: boolean;
   onDonate: (slug: string) => void;
 }) {
   const raised = card.amountRaised ?? 0;
@@ -58,11 +55,7 @@ function CampaignCard({
             className="transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          diwali ? (
-            <span className="ck-dw-diya" />
-          ) : (
-            <span className="text-4xl" role="img" aria-label="Diwali Diya">🪔</span>
-          )
+          <span className="text-4xl" role="img" aria-label="Diya">🪔</span>
         )}
         {card.featured && (
           <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-xs">
@@ -123,12 +116,11 @@ function CampaignCard({
 
 /**
  * Sahas Campaigns Section straight after the hero on the home page.
- * Keeps the beautiful Diwali layout (lantern, diya, scalloped edges, gliding cards,
- * 2-column desktop grid) while featuring verified Sahas community campaigns.
+ * Gliding cards on phones, a 2-column grid on desktop, featuring verified Sahas
+ * community campaigns.
  */
 export function HomeSahasCampaigns() {
   const { user } = useAuth();
-  const diwali = useDiwaliCampaign();
   const isDonee = user?.role?.replace(/^ROLE_/, "") === "DONEE";
   const [cards, setCards] = useState<SahasCampaignCard[] | null>(null);
   const [donatingSlug, setDonatingSlug] = useState<string | null>(null);
@@ -268,24 +260,15 @@ export function HomeSahasCampaigns() {
 
   return (
     <section className="ck-dw-campaigns" aria-labelledby="ck-dw-campaigns-title">
-      {diwali && <span className="ck-dw-hang ck-dw-hang-right" aria-hidden />}
       <div className="ck-dw-c-head">
         <p className="ck-dw-c-eyebrow !text-xs !font-black !tracking-[0.2em] !text-[#8e123c] dark:!text-[#f4a340]">
           <LandingText>Sahas Campaigns</LandingText>
         </p>
         <h2 id="ck-dw-campaigns-title" className="ck-dw-c-title">
-          {diwali ? (
-            <><LandingText>Light a diya</LandingText> <em><LandingText>for community campaigns</LandingText></em></>
-          ) : (
-            <><LandingText>Support our</LandingText> <em><LandingText>community campaigns</LandingText></em></>
-          )}
+          <><LandingText>Support our</LandingText> <em><LandingText>community campaigns</LandingText></em></>
         </h2>
         <p className="ck-dw-c-sub">
-          {diwali ? (
-            <LandingText>Dedicated relief, education, and festive initiatives by Sahas Charitable Trust. 100% verified causes bringing real hope and impact.</LandingText>
-          ) : (
-            <LandingText>Collective relief, education, and community initiatives organized with Sahas Charitable Trust. Every campaign is verified before going live.</LandingText>
-          )}
+          <LandingText>Collective relief, education, and community initiatives organized with Sahas Charitable Trust. Every campaign is verified before going live.</LandingText>
         </p>
       </div>
 
@@ -312,15 +295,15 @@ export function HomeSahasCampaigns() {
         ) : cards.length > 0 ? (
           <>
             {cards.map((card) => (
-              <CampaignCard key={card.slug} card={card} diwali={diwali} onDonate={setDonatingSlug} />
+              <CampaignCard key={card.slug} card={card} onDonate={setDonatingSlug} />
             ))}
             {looping && cards.map((card) => (
-              <CampaignCard key={`copy-${card.slug}`} card={card} copy diwali={diwali} onDonate={setDonatingSlug} />
+              <CampaignCard key={`copy-${card.slug}`} card={card} copy onDonate={setDonatingSlug} />
             ))}
           </>
         ) : (
           <Link href="/sahas" className="ck-dw-card ck-dw-c-empty">
-            <span className="ck-dw-c-photo">{diwali && <span className="ck-dw-diya" />}</span>
+            <span className="ck-dw-c-photo" />
             <span className="ck-dw-c-body">
               <span className="ck-dw-c-name"><LandingText>Explore Sahas Campaigns</LandingText></span>
               <span className="ck-dw-c-by"><LandingText>Community relief and support initiatives organized by Sahas Charitable Trust.</LandingText></span>

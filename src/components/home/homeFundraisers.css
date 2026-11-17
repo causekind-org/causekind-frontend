@@ -1,10 +1,11 @@
-/* ── Fundraisers row, everyday dress ──────────────────────────────────────────
-   The row's layout lives in diwaliMobile.css / diwaliDesktop.css and is
-   permanent; its colours come from the --dw-* variables. While the Diwali theme
-   is on (.ck-diwali on the home root, until 13 Nov 00:00 IST — src/lib/diwali.ts)
-   those are the festive maroons and butter. Off it, this file maps them onto the
-   everyday CauseKind palette and drops the scalloped edge. */
-.ck-home-page:not(.ck-diwali) .ck-dw-campaigns {
+/* ── Home fundraisers / Sahas campaigns row ───────────────────────────────────
+   Shared by HomeFundraisers and HomeSahasCampaigns. The class names keep their
+   old ck-dw-* prefix (they began as the Diwali 2026 row); the festive theme is
+   gone and this is the everyday look. Shown on phones and desktop, hidden on
+   tablets, as before. */
+.ck-dw-campaigns { display: none; }
+
+.ck-dw-campaigns {
   --dw-butter: #f6f1e8;
   --dw-card: #ffffff;
   --dw-cream: #efe7da;
@@ -15,7 +16,7 @@
   --dw-white: #ffffff;
   --dw-saffron: var(--ck-home-highlight, #f29a65);
 }
-.dark .ck-home-page:not(.ck-diwali) .ck-dw-campaigns {
+.dark .ck-dw-campaigns {
   --dw-butter: #0f0f11;
   --dw-card: #18181b;
   --dw-cream: #27272a;
@@ -23,13 +24,96 @@
   --dw-peach: #e7e5e4;
   --dw-heading: #fafaf9;
 }
-.dark .ck-home-page:not(.ck-diwali) .ck-dw-c-bar { background: #3f3f46; }
 
-.ck-home-page:not(.ck-diwali) .ck-dw-campaigns::before,
-.ck-home-page:not(.ck-diwali) .ck-dw-campaigns::after { content: none; }
+@media (max-width: 767.98px), (min-width: 1024px) {
+  .ck-dw-campaigns { display: block; position: relative; padding: 1.5rem 0 2.25rem; background: var(--dw-butter); color: #2a1208; }
+  .ck-dw-c-head { padding: 1rem 1.25rem 1.1rem; }
+  .ck-dw-c-eyebrow { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--dw-burgundy); }
+  .ck-dw-c-title { margin-top: 0.4rem; font-family: var(--font-source-serif-4), Georgia, serif; font-size: clamp(1.8rem, 8.2vw, 2.5rem); font-weight: 700; line-height: 1.08; letter-spacing: -0.015em; color: var(--dw-heading); }
+  .ck-dw-c-title em { color: #b5480f; font-weight: 600; }
+  .ck-dw-c-sub { margin-top: 0.6rem; max-width: 34ch; font-size: 0.9rem; line-height: 1.5; color: #5d4030; }
+  .ck-dw-c-row { display: flex; gap: 0.875rem; overflow-x: auto; padding: 0.25rem 1.25rem 1rem; scroll-snap-type: x mandatory; scroll-padding-inline: 1.25rem; scrollbar-width: none; }
+  .ck-dw-c-row::-webkit-scrollbar { display: none; }
+  /* Gliding: no snap to fight the motion, and the cards fade in and out at the edges. */
+  .ck-dw-c-row[data-loop] {
+    scroll-snap-type: none;
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+  }
+  .ck-dw-c-row { position: relative; }
+  .ck-dw-c-pager { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.75rem; color: var(--dw-heading); }
+  .ck-dw-c-arrow { display: flex; align-items: center; justify-content: center; flex: none; width: 2.75rem; height: 2.75rem; border: 1px solid currentColor; border-radius: 999px; }
+  .ck-dw-c-arrow:disabled { opacity: 0.3; cursor: not-allowed; }
+  .ck-dw-c-dot { display: flex; align-items: center; justify-content: center; flex: none; width: 2rem; height: 2.75rem; }
+  .ck-dw-c-dot span { width: 0.5rem; height: 0.5rem; border-radius: 999px; background: currentColor; opacity: 0.3; }
+  .ck-dw-c-dot[aria-current] span { opacity: 1; }
+  .ck-dw-card { flex: 0 0 min(78vw, 300px); scroll-snap-align: start; display: flex; flex-direction: column; overflow: hidden; border-radius: 1.25rem; background: var(--dw-card); color: #2a1208; text-decoration: none; box-shadow: 0 14px 30px -20px rgb(28 20 16 / 0.35); transition: transform 0.2s ease; }
+  .ck-dw-card:only-child { flex-basis: 100%; }
+  .ck-dw-card:active { transform: scale(0.98); }
+  .ck-dw-c-photo { position: relative; display: flex; align-items: center; justify-content: center; aspect-ratio: 16 / 9; background: var(--dw-cream); }
+  .ck-dw-c-photo img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ck-dw-c-body { flex: 1; display: flex; flex-direction: column; gap: 0.45rem; padding: 0.875rem 0.95rem 1rem; }
+  .dark .ck-dw-card, .dark .ck-dw-campaigns { color: var(--dw-peach); }
+  .dark .ck-dw-c-sub { color: var(--dw-peach); }
+  .dark .ck-dw-c-title em { color: var(--dw-saffron); }
+  .ck-dw-c-chip { font-size: 0.66rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--dw-burgundy); }
+  .dark .ck-dw-c-chip, .dark .ck-dw-c-eyebrow { color: var(--dw-saffron); }
+  .ck-dw-c-name { font-family: var(--font-source-serif-4), Georgia, serif; font-size: 1.1rem; font-weight: 700; line-height: 1.25; color: var(--dw-heading); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ck-dw-c-by { font-size: 0.78rem; opacity: 0.75; }
+  .ck-dw-c-bar { display: block; height: 7px; margin-top: 0.15rem; border-radius: 99px; background: var(--dw-peach); overflow: hidden; }
+  .dark .ck-dw-c-bar { background: #3f3f46; }
+  .ck-dw-c-bar > span { display: block; height: 100%; border-radius: inherit; background: var(--dw-burgundy); }
+  .ck-dw-c-sums { font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+  .ck-dw-c-sums strong { color: var(--dw-heading); font-size: 0.98rem; }
+  .ck-dw-c-cta { display: flex; align-items: center; justify-content: center; min-height: 2.75rem; margin-top: 0.3rem; border-radius: 0.75rem; background: var(--dw-burgundy); color: var(--dw-white); font-size: 0.86rem; font-weight: 800; }
+  .ck-dw-card.is-skeleton { min-height: 22rem; opacity: 0.55; pointer-events: none; }
+  .ck-dw-c-all { display: flex; width: fit-content; align-items: center; min-height: 2.75rem; margin: 0 auto; padding-inline: 1.1rem; border: 1px solid var(--dw-burgundy); border-radius: 999px; font-size: 0.85rem; font-weight: 700; color: var(--dw-heading); }
+  .ck-dw-c-empty .ck-dw-c-name { -webkit-line-clamp: unset; }
 
-.ck-home-page:not(.ck-diwali) .ck-dw-card { box-shadow: 0 14px 30px -20px rgb(28 20 16 / 0.35); }
+  /* Every card the same shape, whatever its photo's size: the photo fills a fixed
+     frame, and each line of text keeps its row, with Donate at the foot. */
+  .ck-dw-c-row { align-items: stretch; }
+  .ck-dw-c-photo { overflow: hidden; }
+  .ck-dw-c-photo img { position: absolute; inset: 0; object-position: center 30%; }
+  .ck-dw-c-chip,
+  .ck-dw-c-by { min-height: 1.5em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .ck-dw-c-chip,
+  .ck-dw-c-by { flex: none; display: block; }
+  .ck-dw-c-name { flex: none; min-height: 2.5em; }
+  .ck-dw-c-empty .ck-dw-c-name { min-height: 0; }
+  /* The empty card's message is a sentence, not a byline: let it wrap, or its
+     width pushes the lone card past the row and the edge is clipped. */
+  .ck-dw-c-empty .ck-dw-c-by { white-space: normal; overflow: visible; }
+  .ck-dw-c-body { min-width: 0; }
+  .ck-dw-c-cta { margin-top: auto; }
+}
+
+/* Desktop: heading and pager on the left, the cards beside them. */
 @media (min-width: 1024px) {
-  .ck-home-page:not(.ck-diwali) .ck-dw-web .ck-dw-card:hover { box-shadow: 0 26px 44px -24px rgb(28 20 16 / 0.4); }
-  .ck-home-page:not(.ck-diwali) .ck-dw-web .ck-dw-c-all:hover { background: rgb(176 74 21 / 0.08); }
+  .ck-dw-web .ck-dw-campaigns {
+    display: grid;
+    grid-template-columns: minmax(18rem, 25rem) minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    column-gap: clamp(2rem, 4vw, 4.5rem);
+    align-items: start;
+    padding: clamp(3.5rem, 7vh, 5.5rem) max(clamp(2rem, 4vw, 5.5rem), calc((100vw - 1500px) / 2)) clamp(3.5rem, 7vh, 5.5rem);
+  }
+  .ck-dw-web .ck-dw-c-head { grid-area: 1 / 1; padding: 0; }
+  .ck-dw-web .ck-dw-c-title { font-size: clamp(2.5rem, 3.6vw, 3.6rem); }
+  .ck-dw-web .ck-dw-c-sub { font-size: 1.02rem; }
+  .ck-dw-web .ck-dw-c-row { grid-area: 1 / 2 / 4 / 3; gap: 1.25rem; padding: 0.5rem 0.25rem 1.5rem; scroll-padding-inline: 0.25rem; }
+  .ck-dw-web .ck-dw-c-pager { grid-area: 2 / 1; justify-content: flex-start; margin: 1.5rem 0 1.25rem; }
+  .ck-dw-web .ck-dw-c-arrow { transition: background-color 0.2s ease, color 0.2s ease; }
+  .ck-dw-web .ck-dw-c-arrow:not(:disabled):hover { background: var(--dw-burgundy); border-color: var(--dw-burgundy); color: var(--dw-white); }
+  .ck-dw-web .ck-dw-c-all { grid-area: 3 / 1; align-self: start; margin: 0; transition: background-color 0.2s ease; }
+  .ck-dw-web .ck-dw-c-all:hover { background: rgb(176 74 21 / 0.08); }
+  .ck-dw-web .ck-dw-card { flex-basis: clamp(17.5rem, 22vw, 21rem); transition: transform 0.25s ease, box-shadow 0.25s ease; }
+  .ck-dw-web .ck-dw-card:hover { transform: translateY(-5px); box-shadow: 0 26px 44px -24px rgb(28 20 16 / 0.4); }
+  .ck-dw-web .ck-dw-card:hover .ck-dw-c-cta { background: var(--dw-maroon); }
+  /* A lone fundraiser reads across, photo beside its details. */
+  .ck-dw-web .ck-dw-card:only-child { flex: 1 1 100%; flex-direction: row; max-width: 52rem; min-height: 20rem; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-photo { flex: 0 0 52%; aspect-ratio: auto; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-photo img { position: absolute; inset: 0; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-body { justify-content: center; gap: 0.7rem; padding: 1.75rem; }
+  .ck-dw-web .ck-dw-card:only-child .ck-dw-c-name { font-size: 1.45rem; }
 }

@@ -120,19 +120,7 @@ vi.mock("@/lib/navratri", async (importOriginal) => ({
   isNavratriCampaignActive: () => false,
 }));
 
-// Diwali (until 13 Nov 2026 00:00 IST) is pinned per case, so these keep
-// passing whatever the date the suite runs on.
-const diwaliState = vi.hoisted(() => ({ on: true }));
-vi.mock("@/lib/diwali", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/diwali")>()),
-  isDiwaliCampaignActive: () => diwaliState.on,
-}));
-
 describe("hero", () => {
-  beforeEach(() => {
-    diwaliState.on = true;
-  });
-
   it("renders the signup prompt with an older message bundle", () => {
     messageState.missingGivingPrompt = true;
     try {
@@ -149,19 +137,7 @@ describe("hero", () => {
       .toHaveAttribute("src", expect.stringContaining("causekind-hero-handoff.webp"));
   });
 
-  it("adds the decorative Diwali posters under a single headline", () => {
-    const { container } = render(<HeroSection />);
-    const media = container.querySelector(".ck-diwali-media");
-    expect(media).toHaveAttribute("aria-hidden", "true");
-    expect(media?.querySelector("img")?.getAttribute("src")).toContain("diwali-hero-poster.webp");
-    expect(media?.querySelector('source[media="(max-width: 767px)"]')?.getAttribute("srcset"))
-      .toContain("diwali-hero-mobile-poster.webp");
-    expect(media?.querySelector("video")).toBeNull();
-    expect(container.querySelectorAll("h1")).toHaveLength(1);
-  });
-
-  it("goes back to the everyday hero once Diwali has ended", () => {
-    diwaliState.on = false;
+  it("shows the everyday hero (Diwali theme retired)", () => {
     const { container } = render(<HeroSection />);
     expect(container.querySelector(".ck-hero-diwali")).toBeNull();
     expect(container.querySelector(".ck-diwali-media")).toBeNull();
