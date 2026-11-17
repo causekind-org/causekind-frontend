@@ -55,6 +55,13 @@ const nextConfig: NextConfig = {
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
+      {
+        // Returning visitors skip the download for a day, then revalidate. Not
+        // "immutable": file names here can be reused (diwali-hero.mp4 is a
+        // seasonal name), and immutable would pin the old clip for a year.
+        source: "/videos/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      },
       /*
        * Private, auth and utility pages stay out of search. Sources match the
        * URL the visitor requests (no locale prefix; the proxy adds that after).

@@ -21,11 +21,11 @@ import { registerUrlPreserving } from "@/lib/postAuthDestination";
 
 const HERO_IMAGE = "/images/causekind-hero-handoff.webp";
 const mobileDisplay = Anton({ weight: "400", subsets: ["latin"], display: "swap", variable: "--font-hero-mobile" });
-const HERO_FOREGROUND = "/images/causekind-hero-foreground.png";
+const HERO_FOREGROUND = "/images/causekind-hero-foreground.webp";
 const DIWALI_VIDEO = "/videos/diwali-hero.mp4";
-const DIWALI_POSTER = "/images/diwali-hero-poster.jpg";
+const DIWALI_POSTER = "/images/diwali-hero-poster.webp";
 const DIWALI_MOBILE_VIDEO = "/videos/diwali-hero-mobile.mp4";
-const DIWALI_MOBILE_POSTER = "/images/diwali-hero-mobile-poster.jpg";
+const DIWALI_MOBILE_POSTER = "/images/diwali-hero-mobile-poster.webp";
 const DIWALI_MOBILE_QUERY = "(max-width: 767px)";
 const DIWALI_DESKTOP_QUERY = "(min-width: 1024px)";
 

@@ -31,7 +31,7 @@ export type Photo = {
 export const PHOTOS: Photo[] = [
   {
     id: "notebooks",
-    src: "/images/WhatsApp Image 2026-09-25 at 4.41.50 PM.webp",
+    src: "/images/drive-children-notebooks.webp",
     w: 1600,
     h: 1200,
     alt: "Children at a CauseKind drive holding new notebooks and pens, under the CauseKind banner.",
@@ -43,7 +43,7 @@ export const PHOTOS: Photo[] = [
   },
   {
     id: "rations-hand",
-    src: "/images/dajsldkasldkaskd.webp",
+    src: "/images/drive-ration-handover.webp",
     w: 720,
     h: 1280,
     alt: "A volunteer hands ration packets to a woman at an outdoor CauseKind drive.",
@@ -55,7 +55,7 @@ export const PHOTOS: Photo[] = [
   },
   {
     id: "family",
-    src: "/images/WhatsApp Image 2026-09-25 at 4.54.05 PM.webp",
+    src: "/images/drive-mother-child-ration.webp",
     w: 960,
     h: 1280,
     alt: "A woman holding her young child and ration packets at a CauseKind drive, volunteers behind her.",
@@ -66,7 +66,7 @@ export const PHOTOS: Photo[] = [
   },
   {
     id: "bench",
-    src: "/images/WhatsApp Image 2026-09-25 at 4.41.47 PM.webp",
+    src: "/images/drive-volunteers-bench.webp",
     w: 1600,
     h: 1200,
     alt: "Volunteers sitting on a bench with a young boy beneath the CauseKind banner.",
@@ -77,7 +77,7 @@ export const PHOTOS: Photo[] = [
   },
   {
     id: "community",
-    src: "/images/WhatsApp Image 2026-09-25 at 4.41.46 PM.webp",
+    src: "/images/drive-group-photo.webp",
     w: 1600,
     h: 1200,
     alt: "A large group of volunteers and neighbourhood children together under the CauseKind banner.",
@@ -89,7 +89,7 @@ export const PHOTOS: Photo[] = [
   },
   {
     id: "local",
-    src: "/images/WhatsApp Image 2026-09-25 at 4.56.04 PM.webp",
+    src: "/images/drive-volunteer-team.webp",
     w: 1080,
     h: 810,
     alt: "A team of CauseKind volunteers standing in front of the banner at an outdoor drive.",

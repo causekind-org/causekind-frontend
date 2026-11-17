@@ -552,7 +552,7 @@ function SupportMandala() {
     <div ref={layerRef} className={styles.mandala} aria-hidden>
       <div className={styles.mandalaBox}>
         <Image
-          src="/images/diwali-support-mandala-poster.jpg"
+          src="/images/diwali-support-mandala-poster.webp"
           alt=""
           fill
           sizes="(min-width: 1024px) 100vw, 1px"
@@ -563,7 +563,7 @@ function SupportMandala() {
             ref={videoRef}
             className={styles.mandalaMedia}
             src="/videos/diwali-support-mandala.mp4"
-            poster="/images/diwali-support-mandala-poster.jpg"
+            poster="/images/diwali-support-mandala-poster.webp"
             autoPlay
             muted
             loop

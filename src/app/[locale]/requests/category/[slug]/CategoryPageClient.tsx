@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "@/components/AppLink";
 import {
   ArrowLeft,
@@ -150,10 +151,22 @@ export default function CategoryPageClient({ cat }: Props) {
         onMouseLeave={() => setIsHeroHovered(false)}
       >
         {/* Parallax background image */}
-        <div
-          className="ck-cat-hero__bg"
-          style={{ backgroundImage: `url(${visual.fallbackImage})` }}
-        />
+        {/* A real <Image>, not a CSS background: the browser can discover it
+            from the HTML and load it with priority. object-position mirrors the old background-position. */}
+        <div className="ck-cat-hero__bg">
+          <Image
+            src={visual.fallbackImage}
+            alt=""
+            fill
+            priority
+            // Served as-is: these files are already 22-61 KB at 1600x900, and the
+            // optimizer re-encodes them larger (measured: +34 KB on desktop).
+            unoptimized
+            sizes="100vw"
+            className="object-cover"
+            style={{ objectPosition: "center 35%" }}
+          />
+        </div>
 
         {/* Gradient overlay */}
         <div

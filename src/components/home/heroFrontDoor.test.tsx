@@ -153,9 +153,9 @@ describe("hero", () => {
     const { container } = render(<HeroSection />);
     const media = container.querySelector(".ck-diwali-media");
     expect(media).toHaveAttribute("aria-hidden", "true");
-    expect(media?.querySelector("img")?.getAttribute("src")).toContain("diwali-hero-poster.jpg");
+    expect(media?.querySelector("img")?.getAttribute("src")).toContain("diwali-hero-poster.webp");
     expect(media?.querySelector('source[media="(max-width: 767px)"]')?.getAttribute("srcset"))
-      .toContain("diwali-hero-mobile-poster.jpg");
+      .toContain("diwali-hero-mobile-poster.webp");
     expect(media?.querySelector("video")).toBeNull();
     expect(container.querySelectorAll("h1")).toHaveLength(1);
   });

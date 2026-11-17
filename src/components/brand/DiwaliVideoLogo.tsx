@@ -100,7 +100,7 @@ export function DiwaliVideoLogo() {
       <span className="absolute [clip-path:inset(0_-100vmax)]" style={{ top: -(expandedFrame?.topSpace ?? 0), bottom: -(expandedFrame?.bottomSpace ?? 0), left: -(expandedFrame?.sideSpace ?? 0), right: -(expandedFrame?.sideSpace ?? 0) }}>
       {/* eslint-disable-next-line @next/next/no-img-element -- Preserve the keyed PNG alpha without an optimization request. */}
       <img
-        src={`${ASSET_ROOT}/causekind-diwali-c99c327b${expandedFrame ? "-full-frame" : ""}-poster.png`}
+        src={`${ASSET_ROOT}/causekind-diwali-c99c327b${expandedFrame ? "-full-frame" : ""}-poster.webp`}
         alt=""
         width={expandedFrame ? 1296 : 1088}
         height={expandedFrame ? 736 : 288}

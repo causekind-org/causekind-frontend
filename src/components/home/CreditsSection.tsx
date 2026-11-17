@@ -43,7 +43,7 @@ export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "don
       <div className={`mx-auto grid max-w-[1040px] grid-cols-1 border-y ${line} md:grid-cols-2${variant === "donee" ? ` ${DONEE_HEADING_GAP}` : ""}`}>
         <div className={`flex items-center gap-5 border-b ${line} py-8 md:border-b-0 md:border-r md:py-10 md:pr-10`}>
           <LandingAttributes><Image
-            src="/images/money-donation/sahas-logo-transparent.png"
+            src="/images/money-donation/sahas-logo-transparent.webp"
             alt="Sahas Charitable Trust logo"
             width={84}
             height={84}
@@ -62,7 +62,7 @@ export function CreditsSection({ variant = "donor" }: { variant?: "donor" | "don
         <div className="flex items-center gap-5 py-8 md:py-10 md:pl-12">
           <span className="flex shrink-0 items-center rounded-xl dark:bg-white dark:px-2 dark:py-1">
             <LandingAttributes><Image
-              src="/images/partners/rmh-advisors-logo.png"
+              src="/images/partners/rmh-advisors-logo.webp"
               alt="RMH Advisors logo"
               width={150}
               height={70}

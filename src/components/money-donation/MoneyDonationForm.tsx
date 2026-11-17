@@ -389,7 +389,7 @@ export function MoneyDonationForm() {
             <div className="flex max-w-3xl flex-col gap-2">
               <div className="inline-flex w-max items-center gap-2.5 rounded-full border border-amber-300/60 bg-amber-100/90 py-1 pl-2.5 pr-3.5 text-[0.6875rem] font-bold uppercase tracking-wider text-amber-900 shadow-[0_0_12px_rgba(217,119,6,0.15)] dark:border-amber-700/50 dark:bg-amber-950/60 dark:text-amber-200">
                 <Image
-                  src="/images/money-donation/sahas-logo-transparent.png"
+                  src="/images/money-donation/sahas-logo-transparent.webp"
                   alt=""
                   width={20}
                   height={20}
