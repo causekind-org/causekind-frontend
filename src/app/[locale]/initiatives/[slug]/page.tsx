@@ -20,19 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-import { Breadcrumbs } from "@/components/Breadcrumbs";
-
 export default async function InitiativePage({ params }: Props) {
   const initiative = getInitiative((await params).slug);
   if (!initiative) notFound();
-  // There is no /initiatives index page, so the trail is Home > this initiative.
-  return (
-    <>
-      <Breadcrumbs items={[
-        { name: "Home", href: "/" },
-        { name: initiative.title, href: `/initiatives/${(await params).slug}` },
-      ]} />
-      <InitiativeStory initiative={initiative} />
-    </>
-  );
+  return <InitiativeStory initiative={initiative} />;
 }

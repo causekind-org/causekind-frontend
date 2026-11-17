@@ -3,7 +3,6 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { categoryBySlug, IN_KIND_CATEGORIES } from "@/lib/inKindCategories";
 import CategoryPageClient from "./CategoryPageClient";
-import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SeoLinkSection } from "@/components/SeoLinkSection";
 
 // Server-rendered intro + guide links for the two categories that have blog guides.
@@ -74,16 +73,9 @@ export default async function CategoryPage({ params }: Params) {
   setRequestLocale(locale);
   const cat = categoryBySlug(slug);
   if (!cat) notFound();
-  const tn = await getTranslations("nav");
-  const tc = await getTranslations("categoryStrip.categories");
 
   return (
     <>
-      <Breadcrumbs items={[
-        { name: tn("home"), href: "/" },
-        { name: tn("requests"), href: "/requests" },
-        { name: tc(categoryMessageKey(cat.slug)), href: `/requests/category/${cat.slug}` },
-      ]} />
       <CategoryPageClient cat={cat} />
       {CATEGORY_GUIDES[cat.slug] && (
         <SeoLinkSection
