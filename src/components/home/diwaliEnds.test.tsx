@@ -49,7 +49,7 @@ describe("the campaigns row", () => {
   it("wears the lantern during Diwali", async () => {
     const { container } = render(<HomeSahasCampaigns />);
     expect(await screen.findByText("Explore Sahas Campaigns")).toBeInTheDocument();
-    expect(container.querySelector(".ck-dw-campaigns > .ck-dw-hang")).not.toBeNull();
+    expect(container.querySelector(".ck-sahas-reels > .ck-dw-hang")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Light a diya for community campaigns" })).toBeInTheDocument();
     expect(screen.queryByText(/Support our/)).toBeNull();
     expect(container.querySelector(".ck-dw-diya")).not.toBeNull();

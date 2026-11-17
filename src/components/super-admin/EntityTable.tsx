@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { serverDate } from "@/lib/serverTime";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
@@ -264,8 +265,11 @@ export function EntityTable({
 
   const tableCols = columns.filter(c => c.inTable !== false);
 
+  // A failed load used to leave "No rows found." on screen.
+  const [loadFailed, setLoadFailed] = useState(false);
   const load = useCallback(async (q?: string) => {
     setLoading(true);
+    setLoadFailed(false);
     try {
       const raw = await superAdminList(entity, q);
       // Enrichment is best-effort display polish — its endpoint failing
@@ -273,6 +277,7 @@ export function EntityTable({
       setRows(enrich ? await enrich(raw).catch(() => raw) : raw);
       setSelected(new Set());
     } catch (e) {
+      setLoadFailed(true);
       toast.error(e instanceof Error ? e.message : "Failed to load");
     } finally {
       setLoading(false);
@@ -504,6 +509,12 @@ export function EntityTable({
                     </td>
                   </tr>
                 ))
+              ) : loadFailed ? (
+                <tr>
+                  <td colSpan={tableCols.length + 4} className="px-4">
+                    <SaLoadError what="these rows" onRetry={() => void load()} />
+                  </td>
+                </tr>
               ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan={tableCols.length + 4} className={`px-4 py-10 sm:py-16 text-center text-sm ${t.empty}`}>

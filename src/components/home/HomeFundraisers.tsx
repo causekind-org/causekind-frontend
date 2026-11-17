@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, MapPin, ArrowRight, ShieldCheck, Heart } from "lucide-react";
 
 import Link from "@/components/AppLink";
@@ -19,99 +19,85 @@ const CATEGORY: Record<FundraisingCategory, string> = {
   OTHER: "Other",
 };
 
-/** Glide speed in pixels per millisecond for continuous scrolling */
-const GLIDE_SPEED = 0.04;
-const RESUME_AFTER_TOUCH_MS = 2500;
-const RESUME_AFTER_ARROW_MS = 4000;
+/** Days left until `endDate`, or null when there is none or it has passed. */
+function daysLeft(endDate: string | null): number | null {
+  if (!endDate) return null;
+  const d = Math.ceil((new Date(endDate).getTime() - Date.now()) / 86_400_000);
+  return d >= 0 ? d : null;
+}
 
-/** Card for the fundraisers carousel */
-function FundraiserCardItem({
-  card,
-  copy = false,
-  diwali,
-}: {
-  card: FundraiserCard;
-  copy?: boolean;
-  diwali: boolean;
-}) {
+/**
+ * The spotlight: the first live fundraiser, shown large. Layout A of the
+ * "Verified Fundraisers Section Layouts" canvas (owner's pick, 2026-11-16).
+ */
+function SpotlightCard({ card, diwali }: { card: FundraiserCard; diwali: boolean }) {
   const pct = card.target ? Math.min(100, Math.round((card.raised / card.target) * 100)) : 0;
-
+  const days = daysLeft(card.endDate);
   return (
-    <article
-      className="group relative flex flex-col h-full overflow-hidden rounded-2xl border-2 border-[#e6d5c3]/50 dark:border-[#e6d5c3]/40 bg-white dark:bg-zinc-900 shadow-[0_10px_28px_-8px_rgba(28,25,23,0.12)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.7)] hover:border-[#e6d5c3] hover:shadow-[0_20px_42px_-10px_rgba(176,74,21,0.22)] hover:-translate-y-1 transition-all duration-300 text-[#1F140D] dark:text-stone-100"
-      aria-hidden={copy ? true : undefined}
-    >
-      {/* Photo */}
-      <Link
-        href={`/fundraisers/${card.id}`}
-        tabIndex={copy ? -1 : undefined}
-        className="relative aspect-[16/10] w-full overflow-hidden bg-[#efe4d8] dark:bg-zinc-800 block"
-      >
+    <article className="group grid grid-cols-1 overflow-hidden rounded-3xl border border-[#ece4da] bg-white text-[#1c1917] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] dark:border-zinc-800 dark:bg-zinc-900 dark:text-stone-100">
+      <Link href={`/fundraisers/${card.id}`} className="relative block aspect-[16/10] overflow-hidden bg-[#d8cdbf] lg:aspect-auto lg:min-h-[400px] dark:bg-zinc-800">
         {card.coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={card.coverUrl}
-            alt={card.coverAltText ?? card.title ?? ""}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
+          <img src={card.coverUrl} alt={card.coverAltText ?? card.title ?? ""} loading="lazy"
+            className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 dark:from-zinc-900 dark:to-zinc-800">
-            {diwali ? <span className="ck-dw-diya" /> : <Heart className="size-12 text-brand-500/70" strokeWidth={1.6} aria-hidden="true" />}
-          </div>
+          <span className="absolute inset-0 flex items-center justify-center">
+            {diwali ? <span className="ck-dw-diya" /> : <Heart className="size-16 text-[#b04a15]/60" strokeWidth={1.6} aria-hidden="true" />}
+          </span>
         )}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute top-3 left-3 right-3 flex flex-wrap items-center gap-1.5 pointer-events-none">
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/65 backdrop-blur-xs border border-white/20 px-2.5 py-0.5 text-xs font-bold text-white">
+        <span className="absolute left-4 top-4 flex flex-wrap gap-2">
+          <span className="rounded-full bg-[#b04a15] px-3 py-1 text-xs font-bold text-white">
             <LandingText>{card.category ? CATEGORY[card.category] : "Fundraiser"}</LandingText>
           </span>
           {card.location && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-black/65 backdrop-blur-xs border border-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
-              <MapPin className="w-3 h-3 text-white/80" aria-hidden="true" />
-              <TranslatedText text={card.location} />
+            <span className="inline-flex items-center gap-1 rounded-full bg-black/75 px-3 py-1 text-xs font-semibold text-white">
+              <MapPin className="size-3.5" aria-hidden="true" /><TranslatedText text={card.location} />
             </span>
           )}
-        </div>
+        </span>
       </Link>
 
-      {/* Body */}
-      <div className="flex flex-1 flex-col p-4 sm:p-5 gap-3">
-        <h3 className="m-0 text-lg sm:text-xl font-bold font-serif leading-snug line-clamp-2 text-[#1c1917] dark:text-[#fffaf1] group-hover:text-[#b04a15] dark:group-hover:text-[#ff8a4c] transition-colors">
-          <Link href={`/fundraisers/${card.id}`} tabIndex={copy ? -1 : undefined} className="text-inherit no-underline hover:underline">
+      <div className="flex flex-col gap-4 p-6 sm:p-8 lg:p-10">
+        {card.organiser && (
+          <span className="text-sm text-stone-600 dark:text-stone-400">
+            <LandingText>Organised by</LandingText> <b className="text-stone-900 dark:text-stone-100">{card.organiser}</b>
+          </span>
+        )}
+        <h3 className="m-0 font-serif text-2xl font-bold leading-tight sm:text-[34px]">
+          <Link href={`/fundraisers/${card.id}`} className="text-inherit no-underline hover:text-[#b04a15]">
             {card.title && <TranslatedText text={card.title} />}
           </Link>
         </h3>
 
-        {card.organiser && (
-          <p className="m-0 text-xs font-medium text-[#7a4e28] dark:text-[#f9dfc0]/75">
-            <LandingText>By </LandingText> {card.organiser}
-          </p>
-        )}
-
-        {/* Progress bar */}
-        <div className="mt-auto rounded-xl border border-[#e6d5c3]/35 bg-[#f7ebe4]/35 dark:bg-zinc-800/60 p-3 flex flex-col gap-1.5 shadow-2xs">
-          <div className="flex justify-between items-baseline text-xs sm:text-sm font-medium">
-            <span className="tabular-nums">
-              <b className="font-extrabold text-[#933c10] dark:text-[#ff8a4c]">{formatINR(card.raised)}</b>{" "}
-              <span className="text-[#6B5A4E] dark:text-stone-400"><LandingText>raised of</LandingText> {formatINR(card.target)}</span>
+        <div className="mt-auto flex flex-col gap-2">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <span className="text-[15px] tabular-nums">
+              <b className="text-[28px] font-extrabold">{formatINR(card.raised)}</b>{" "}
+              <LandingText>raised of</LandingText> {formatINR(card.target)}
             </span>
-            <span className="text-xs font-bold text-[#b04a15] dark:text-[#ff8a4c] tabular-nums">
-              {pct}%
+            <span className="text-sm text-stone-600 tabular-nums dark:text-stone-400">
+              {card.donationCount} <LandingText>{card.donationCount === 1 ? "donor" : "donors"}</LandingText>
+              {days !== null && <> · {days} <LandingText>{days === 1 ? "day left" : "days left"}</LandingText></>}
             </span>
           </div>
-          <div className="w-full bg-[#f7ebe4] dark:bg-zinc-800 rounded-full h-2 overflow-hidden">
-            <div className="bg-brand-500 h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
-          </div>
+          <span className="h-2.5 overflow-hidden rounded-full bg-[#f1e7dc] dark:bg-zinc-800" role="progressbar"
+            aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+            <span className="block h-full rounded-full bg-[#b04a15]" style={{ width: `${Math.max(pct, 1)}%` }} />
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] text-stone-600 dark:text-stone-400">
+            <ShieldCheck className="size-4 text-emerald-700 dark:text-emerald-400" aria-hidden="true" />
+            <LandingText>Reviewed by the CauseKind team before going public</LandingText>
+          </span>
         </div>
 
-        {/* CTA */}
-        <div className="pt-1">
-          <Link
-            href={`/fundraisers/${card.id}`}
-            tabIndex={copy ? -1 : undefined}
-            className="flex min-h-[44px] w-full items-center justify-center rounded-xl bg-brand-500 hover:bg-brand-600 border border-[#e6d5c3]/40 px-5 text-sm font-bold text-white shadow-xs hover:shadow-md transition-all active:scale-[0.99] no-underline"
-          >
+        <div className="flex flex-wrap gap-3">
+          <Link href={`/fundraisers/${card.id}`}
+            className="flex min-h-[52px] items-center justify-center rounded-xl bg-[#b04a15] px-8 font-bold text-white no-underline hover:bg-[#933c10]">
             <LandingText>Donate</LandingText>
+          </Link>
+          <Link href="/fundraisers"
+            className="flex min-h-[52px] items-center justify-center rounded-xl border-[1.5px] border-[#e2d6c8] px-6 font-bold text-stone-900 no-underline hover:border-[#b04a15] dark:border-zinc-700 dark:text-stone-100">
+            <LandingText>Browse all</LandingText>
           </Link>
         </div>
       </div>
@@ -119,221 +105,70 @@ function FundraiserCardItem({
   );
 }
 
-/** Featured wide card when only 1 fundraiser exists */
-function SingleFeaturedFundraiserCard({
-  card,
-  diwali,
-}: {
-  card: FundraiserCard;
-  diwali: boolean;
-}) {
+/** A compact card in the "More fundraisers" rail under the spotlight. */
+function RailCard({ card }: { card: FundraiserCard }) {
   const pct = card.target ? Math.min(100, Math.round((card.raised / card.target) * 100)) : 0;
-
   return (
-    <article className="group relative overflow-hidden rounded-2xl sm:rounded-3xl border-2 border-[#e6d5c3]/60 dark:border-[#e6d5c3]/45 bg-white dark:bg-zinc-900 shadow-[0_20px_50px_-15px_rgba(28,25,23,0.14)] dark:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.8)] text-[#1F140D] dark:text-stone-100">
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-        <div className="relative aspect-[16/10] sm:aspect-[16/9] lg:aspect-auto lg:min-h-[230px] w-full bg-[#efe4d8] dark:bg-zinc-800 overflow-hidden">
-          {card.coverUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={card.coverUrl}
-              alt={card.coverAltText ?? card.title ?? ""}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-              loading="lazy"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 dark:from-zinc-900 dark:to-zinc-800">
-              {diwali ? <span className="ck-dw-diya" /> : <Heart className="size-16 text-brand-500/70" strokeWidth={1.6} aria-hidden="true" />}
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30 pointer-events-none" />
-          <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center gap-2 pointer-events-none">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500 px-3 py-1 text-xs font-bold text-white shadow-sm border border-white/20">
-              <Heart className="w-3.5 h-3.5 text-white fill-white" aria-hidden="true" />
-              <LandingText>{card.category ? CATEGORY[card.category] : "Verified Fundraiser"}</LandingText>
-            </span>
-            {card.location && (
-              <span className="rounded-full bg-black/65 backdrop-blur-xs border border-white/20 px-3 py-1 text-xs font-semibold text-white inline-flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-white/80" aria-hidden="true" />
-                <TranslatedText text={card.location} />
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-col p-5 sm:p-6 lg:px-8 lg:py-6 gap-3 justify-between">
-          <div className="flex flex-col gap-3">
-            {card.organiser && (
-              <span className="text-xs sm:text-sm font-semibold text-[#7a4e28] dark:text-[#f9dfc0]/75">
-                <LandingText>Organised by </LandingText> {card.organiser}
-              </span>
-            )}
-            <h3 className="font-serif m-0 text-xl sm:text-2xl lg:text-[1.65rem] font-bold leading-tight text-[#1c1917] dark:text-[#fffaf1]">
-              <Link href={`/fundraisers/${card.id}`} className="text-inherit no-underline hover:text-[#b04a15] dark:hover:text-[#ff8a4c] transition-colors">
-                {card.title && <TranslatedText text={card.title} />}
-              </Link>
-            </h3>
-          </div>
-
-          <div className="rounded-xl border border-[#e6d5c3]/40 bg-[#f7ebe4]/40 dark:bg-zinc-800/60 p-3.5 sm:p-4 flex flex-col gap-2 shadow-2xs">
-            <div className="flex justify-between items-baseline gap-2">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#b04a15] dark:text-[#ff8a4c]">
-                  <LandingText>Fundraiser Progress</LandingText>
-                </span>
-                <div className="text-xl sm:text-2xl font-extrabold text-[#933c10] dark:text-[#f9dfc0] tabular-nums mt-0.5">
-                  {formatINR(card.raised)}{" "}
-                  <span className="text-sm sm:text-base font-semibold text-[#6B5A4E] dark:text-stone-400">
-                    <LandingText>raised of</LandingText> {formatINR(card.target)}
-                  </span>
-                </div>
-              </div>
-              <div className="inline-flex items-center gap-1 rounded-full bg-[#b04a15]/10 dark:bg-[#ff8a4c]/20 px-3 py-1 text-xs sm:text-sm font-bold text-[#b04a15] dark:text-[#ff8a4c] border border-[#b04a15]/20 dark:border-[#ff8a4c]/30 tabular-nums">
-                {pct}% <LandingText>achieved</LandingText>
-              </div>
-            </div>
-            <div className="w-full bg-[#f7ebe4] dark:bg-zinc-800 rounded-full h-2.5 overflow-hidden">
-              <div className="bg-brand-500 h-full rounded-full transition-all duration-300" style={{ width: `${pct}%` }} />
-            </div>
-            <div className="flex items-center gap-1.5 text-xs font-medium text-[#7a4e28] dark:text-[#f9dfc0]/75 pt-1">
-              <ShieldCheck className="w-4 h-4 text-[#b04a15] dark:text-[#ff8a4c] shrink-0" aria-hidden="true" />
-              <span><LandingText>100% verified fundraiser · Reviewed by our team before going public</LandingText></span>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 pt-1">
-            <Link
-              href={`/fundraisers/${card.id}`}
-              className="flex min-h-[44px] items-center justify-center rounded-xl bg-brand-500 hover:bg-brand-600 border border-[#e6d5c3]/50 px-6 text-[15px] font-bold text-white shadow-[0_4px_16px_rgba(176,74,21,0.28)] hover:shadow-[0_8px_24px_rgba(176,74,21,0.32)] hover:scale-[1.01] transition-all active:scale-[0.99] no-underline"
-            >
-              <LandingText>Donate to Fundraiser</LandingText>
-            </Link>
-            <Link
-              href="/fundraisers"
-              className="flex min-h-[44px] items-center justify-center rounded-xl border-2 border-[#e6d5c3]/80 hover:border-[#b04a15] dark:border-[#e6d5c3]/60 dark:hover:border-[#ff8a4c] px-5 text-sm sm:text-[15px] font-bold text-[#933c10] dark:text-[#f9dfc0] hover:bg-[#b04a15]/10 dark:hover:bg-[#ff8a4c]/15 no-underline transition-all"
-            >
-              <LandingText>Browse all</LandingText> →
-            </Link>
-          </div>
-        </div>
-      </div>
-    </article>
+    <Link href={`/fundraisers/${card.id}`}
+      className="grid w-[300px] shrink-0 snap-start grid-cols-[72px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-[#ece4da] bg-white p-2.5 text-[#1c1917] no-underline transition-colors hover:border-[#b04a15]/50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-stone-100">
+      <span className="relative h-[72px] overflow-hidden rounded-xl bg-[#d8cdbf] dark:bg-zinc-800">
+        {card.coverUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={card.coverUrl} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+        )}
+      </span>
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="text-xs font-bold text-[#b04a15] dark:text-[#ff8a4c]">
+          <LandingText>{card.category ? CATEGORY[card.category] : "Fundraiser"}</LandingText>
+        </span>
+        <span className="line-clamp-2 text-[15px] font-bold leading-snug">{card.title && <TranslatedText text={card.title} />}</span>
+        <span className="h-1 overflow-hidden rounded-full bg-[#f1e7dc] dark:bg-zinc-800">
+          <span className="block h-full bg-[#b04a15]" style={{ width: `${Math.max(pct, 1)}%` }} />
+        </span>
+      </span>
+    </Link>
   );
 }
 
 /**
- * Verified Fundraisers Section on the Home Page (positioned in the body after Who We Are).
- * Displays individual medical, education, and emergency fundraisers reviewed by our team.
+ * Verified Fundraisers section on the home page. One spotlight fundraiser,
+ * then a scrollable "More fundraisers" rail when there are more; with just
+ * one, a "start a fundraiser" banner fills the space instead.
  */
 export function HomeFundraisers() {
   const { user } = useAuth();
   const diwali = useDiwaliCampaign();
   const isDonee = user?.role?.replace(/^ROLE_/, "") === "DONEE";
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
-
-  const rowRef = useRef<HTMLDivElement>(null);
-  const hovered = useRef(false);
-  const focused = useRef(false);
-  const touching = useRef(false);
-  const pauseUntil = useRef(0);
+  const railRef = useRef<HTMLDivElement>(null);
+  const previousLabel = useLandingTranslation("Previous fundraisers");
+  const nextLabel = useLandingTranslation("More fundraisers");
 
   useEffect(() => {
     if (isDonee) return;
     let live = true;
-    fundraisers
-      .live()
-      .then((next) => {
-        if (live) setCards(next);
-      })
-      .catch(() => {
-        if (live) setCards([]);
-      });
-    return () => {
-      live = false;
-    };
+    fundraisers.live()
+      .then((next) => { if (live) setCards(next); })
+      .catch(() => { if (live) setCards([]); });
+    return () => { live = false; };
   }, [isDonee]);
 
-  const count = cards?.length ?? 0;
-  const isMulti = count > 1;
-
-  const runWidth = useCallback(() => {
-    const row = rowRef.current;
-    if (!row || row.children.length <= count) return 0;
-    const secondRun = row.children[count] as HTMLElement | undefined;
-    const firstRun = row.children[0] as HTMLElement | undefined;
-    return secondRun && firstRun ? secondRun.offsetLeft - firstRun.offsetLeft : 0;
-  }, [count]);
-
-  const move = useCallback(
-    (direction: 1 | -1) => {
-      const row = rowRef.current;
-      if (!row || !isMulti) return;
-      pauseUntil.current = performance.now() + RESUME_AFTER_ARROW_MS;
-      const step = ((row.children[1] as HTMLElement)?.offsetLeft ?? 0) - ((row.children[0] as HTMLElement)?.offsetLeft ?? 0) || 360;
-      const run = runWidth();
-      let left = row.scrollLeft % (run || 1);
-      if (direction < 0 && left < step / 2 && run) left += run;
-      row.scrollTo({
-        left: left + direction * step,
-        behavior: "smooth",
-      });
-    },
-    [isMulti, runWidth]
-  );
-
-  // RequestAnimationFrame continuous gliding scroll
-  useEffect(() => {
-    const row = rowRef.current;
-    if (!isMulti || !row || typeof window === "undefined" || typeof IntersectionObserver === "undefined") return;
-
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reducedMotion) return;
-
-    let frame = 0;
-    let last = performance.now();
-    let position = row.scrollLeft;
-
-    const tick = (now: number) => {
-      const elapsed = Math.min(now - last, 50);
-      last = now;
-
-      if (!hovered.current && !focused.current && !touching.current && now >= pauseUntil.current) {
-        if (Math.abs(row.scrollLeft - position) > 2) position = row.scrollLeft;
-        position += elapsed * GLIDE_SPEED;
-        const run = runWidth();
-        if (run && position >= run) {
-          position -= run;
-        }
-        row.scrollLeft = position;
-      }
-
-      frame = requestAnimationFrame(tick);
-    };
-
-    const io = new IntersectionObserver(([entry]) => {
-      cancelAnimationFrame(frame);
-      if (entry.isIntersecting) {
-        last = performance.now();
-        frame = requestAnimationFrame(tick);
-      }
-    });
-
-    io.observe(row);
-
-    return () => {
-      cancelAnimationFrame(frame);
-      io.disconnect();
-    };
-  }, [isMulti, runWidth]);
+  const scrollRail = (direction: 1 | -1) => {
+    const rail = railRef.current;
+    if (!rail) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    rail.scrollBy({ left: direction * 314, behavior: reduced ? "auto" : "smooth" });
+  };
 
   if (isDonee) return null;
+  const count = cards?.length ?? 0;
+  const rest = cards ? cards.slice(1) : [];
 
   return (
     <section
       aria-labelledby="fundraisers-spotlight-h"
       className="relative mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-16 text-[#1F140D] dark:text-stone-100"
     >
-      {/* Header */}
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2 max-w-2xl">
           <div className="inline-flex items-center gap-2 w-fit px-3 py-1 rounded-full bg-[#f7ebe4]/80 dark:bg-brand-500/20 border border-[#e6d5c3]/40 text-xs font-bold uppercase tracking-[0.16em] text-[#b04a15] dark:text-[#ff8a4c] shadow-2xs">
@@ -361,81 +196,54 @@ export function HomeFundraisers() {
           </p>
         </div>
 
-        {/* Navigation controls & View all link */}
-        <div className="flex items-center gap-3 ms-auto">
-          {isMulti && (
-            <div className="hidden sm:flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => move(-1)}
-                aria-label="Previous fundraiser"
-                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#e6d5c3]/60 bg-white/90 dark:bg-zinc-800/90 text-[#933c10] dark:text-[#ff8a4c] hover:border-[#933c10] hover:bg-[#933c10] hover:text-white dark:hover:border-[#ff8a4c] dark:hover:bg-[#ff8a4c] dark:hover:text-zinc-950 transition-all shadow-xs cursor-pointer"
-              >
-                <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-              </button>
-              <button
-                type="button"
-                onClick={() => move(1)}
-                aria-label="Next fundraiser"
-                className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-[#e6d5c3]/60 bg-white/90 dark:bg-zinc-800/90 text-[#933c10] dark:text-[#ff8a4c] hover:border-[#933c10] hover:bg-[#933c10] hover:text-white dark:hover:border-[#ff8a4c] dark:hover:bg-[#ff8a4c] dark:hover:text-zinc-950 transition-all shadow-xs cursor-pointer"
-              >
-                <ChevronRight className="h-5 w-5" aria-hidden="true" />
-              </button>
-            </div>
-          )}
-
-          <Link
-            href="/fundraisers"
-            className="group inline-flex items-center gap-1.5 min-h-[44px] text-[15px] font-bold text-[#b04a15] hover:text-brand-700 dark:text-[#ff8a4c] dark:hover:text-[#ffb08a] no-underline transition-all"
-          >
-            <span><LandingText>View all fundraisers</LandingText></span>
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-          </Link>
-        </div>
+        <Link
+          href="/fundraisers"
+          className="group ms-auto inline-flex items-center gap-1.5 min-h-[44px] text-[15px] font-bold text-[#b04a15] hover:text-brand-700 dark:text-[#ff8a4c] dark:hover:text-[#ffb08a] no-underline transition-all"
+        >
+          <span><LandingText>View all fundraisers</LandingText></span>
+          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+        </Link>
       </div>
 
-      {/* Content: 1 card vs Continuous carousel vs Empty */}
       {cards === null ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-72 rounded-2xl bg-stone-200/40 animate-pulse border border-[#ece4da] dark:bg-zinc-800/40 dark:border-zinc-700" />
-          ))}
-        </div>
-      ) : count === 1 ? (
-        <SingleFeaturedFundraiserCard card={cards[0]} diwali={diwali} />
-      ) : count > 1 ? (
-        <div className="relative -mx-4 px-4 sm:-mx-6 sm:px-6">
-          <div
-            ref={rowRef}
-            onMouseEnter={() => { hovered.current = true; }}
-            onMouseLeave={() => { hovered.current = false; }}
-            onFocusCapture={() => { focused.current = true; }}
-            onBlurCapture={() => { focused.current = false; }}
-            onTouchStart={() => {
-              touching.current = true;
-              pauseUntil.current = performance.now() + RESUME_AFTER_TOUCH_MS;
-            }}
-            onTouchEnd={() => {
-              touching.current = false;
-              pauseUntil.current = performance.now() + RESUME_AFTER_TOUCH_MS;
-            }}
-            className="flex gap-6 overflow-x-auto py-3 pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [mask-image:linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)] [-webkit-mask-image:linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
-            style={{
-              scrollBehavior: "auto",
-              WebkitOverflowScrolling: "touch",
-            }}
-          >
-            {cards.map((card) => (
-              <div key={card.id} className="w-[300px] sm:w-[330px] md:w-[350px] shrink-0">
-                <FundraiserCardItem card={card} diwali={diwali} />
+        <div className="h-[420px] animate-pulse rounded-3xl border border-[#ece4da] bg-stone-200/40 dark:border-zinc-700 dark:bg-zinc-800/40" />
+      ) : count > 0 ? (
+        <div className="flex flex-col gap-6">
+          <SpotlightCard card={cards[0]} diwali={diwali} />
+          {rest.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-bold uppercase tracking-[0.14em] text-stone-600 dark:text-stone-400">
+                  <LandingText>More fundraisers</LandingText>
+                </span>
+                {rest.length > 2 && (
+                  <span className="hidden gap-2 sm:flex">
+                    <button type="button" aria-label={previousLabel} onClick={() => scrollRail(-1)}
+                      className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-[#e2d6c8] bg-white text-stone-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100">
+                      <ChevronLeft className="size-4" aria-hidden="true" />
+                    </button>
+                    <button type="button" aria-label={nextLabel} onClick={() => scrollRail(1)}
+                      className="flex size-10 cursor-pointer items-center justify-center rounded-full border border-[#e2d6c8] bg-white text-stone-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-stone-100">
+                      <ChevronRight className="size-4" aria-hidden="true" />
+                    </button>
+                  </span>
+                )}
               </div>
-            ))}
-            {cards.map((card) => (
-              <div key={`copy-${card.id}`} className="w-[300px] sm:w-[330px] md:w-[350px] shrink-0" aria-hidden="true">
-                <FundraiserCardItem card={card} copy diwali={diwali} />
+              <div ref={railRef}
+                className="flex snap-x snap-mandatory gap-3.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {rest.map((card) => <RailCard key={card.id} card={card} />)}
               </div>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <Link href="/fundraising/start"
+              className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border-[1.5px] border-dashed border-[#d6c6b4] px-5 py-4 text-stone-900 no-underline hover:border-[#b04a15] dark:border-zinc-700 dark:text-stone-100">
+              <span>
+                <b><LandingText>Need help with a medical bill, fees or rent?</LandingText></b>{" "}
+                <span className="text-stone-600 dark:text-stone-400"><LandingText>Start a verified fundraiser. It&apos;s free.</LandingText></span>
+              </span>
+              <span className="font-bold text-[#b04a15] dark:text-[#ff8a4c]"><LandingText>Start a fundraiser</LandingText> →</span>
+            </Link>
+          )}
         </div>
       ) : (
         <Link

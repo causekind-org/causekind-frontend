@@ -16,6 +16,7 @@ import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
 import { CommandPalette } from "@/components/super-admin/CommandPalette";
 import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
+import { SaLoadError } from "@/components/super-admin/SaLoadError";
 import { CasesPanel } from "@/components/super-admin/CasesPanel";
 import { InterventionsPanel } from "@/components/super-admin/InterventionsPanel";
 import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPanel";
@@ -371,17 +372,21 @@ function StatTile({
 function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => void }) {
   const [data, setData] = useState<SuperAdminOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
 
+  // No .catch() before: a failed load was an unhandled rejection, and the
+  // fallback text had no way to try again.
   useEffect(() => {
-    superAdminOverview().then(setData).finally(() => setLoading(false));
-  }, []);
+    setLoading(true);
+    superAdminOverview().then(setData).catch(() => setData(null)).finally(() => setLoading(false));
+  }, [reloadKey]);
 
   if (loading) return (
     <div className="flex justify-center py-20">
       <Loader2 className="w-7 h-7 animate-spin" style={{ color: th.accent }} />
     </div>
   );
-  if (!data) return <p className={`text-sm ${th.textDim}`}>Failed to load overview.</p>;
+  if (!data) return <SaLoadError what="the overview" onRetry={() => setReloadKey((k) => k + 1)} />;
 
   const c = data.counts;
   return (

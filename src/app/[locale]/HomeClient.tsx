@@ -69,7 +69,6 @@ import { HomeSahasCampaigns } from "@/components/home/HomeSahasCampaigns";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
 import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
-import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
@@ -78,7 +77,7 @@ import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import type { GoogleReviewsData } from "@/data/googleReviews";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { CreditsSection } from "@/components/home/CreditsSection";
-import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
+import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
@@ -319,14 +318,20 @@ export default function HomeClient({
         <HomeFundraisers />
       </div>
 
+      {/* LIVE NEEDS ("Real people. Real needs.") — straight after the verified
+          fundraisers, on every width (owner, 2026-11-16; was after How it works on
+          desktop and further down on mobile). */}
+      {showLiveNeeds && (
+        <div className="ck-home-paper relative z-10 space-y-8 lg:space-y-12">
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+          {showNgoDrives && <NgoDrivesSection />}
+        </div>
+      )}
+
       {/* WHO ARE WE (The CauseKind Orbit). */}
       <section id="who-we-are" aria-label={whoWeAreLabel} className="outline-none">
-        <div className="hidden lg:block">
-          <WhoAreWeDesktop />
-        </div>
-        <div className="lg:hidden">
-          <WhoAreWeSection />
-        </div>
+        {/* Layout C "Two ways to give" (owner, 2026-11-16) replaces the orbit, all widths. */}
+        <AboutTwoWays />
       </section>
 
       <DiwaliSeam kind="diya" diyas={3} />
@@ -342,15 +347,6 @@ export default function HomeClient({
         <div className="lg:hidden">
           <DiwaliSeam kind="edge" to="butter" />
           <HowItWorksSection />
-        </div>
-      )}
-
-      {/* SECTION 6 — LIVE NEEDS (Desktop) */}
-      {showLiveNeeds && (
-        <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
-          <DiwaliSeam kind="edge" from="butter" lanterns="right" art="oval" />
-          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-          {showNgoDrives && <NgoDrivesSection />}
         </div>
       )}
 
@@ -563,15 +559,6 @@ export default function HomeClient({
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* SECTION 6 — LIVE NEEDS */}
-        {showLiveNeeds && (isRoleHome ? <DiwaliSeam kind="line" lanterns="right" art="oval" /> : <DiwaliSeam kind="edge" from="butter" lanterns="right" art="oval" />)}
-        {showLiveNeeds && (
-          <div className="space-y-8">
-            <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-            {showNgoDrives && <NgoDrivesSection />}
           </div>
         )}
 

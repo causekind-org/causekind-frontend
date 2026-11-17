@@ -11,6 +11,7 @@ import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { DonorTwoDoors } from "@/components/home/DonorTwoDoors";
 import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
+import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { CreditsSection } from "@/components/home/CreditsSection";
 import { HowReceivingWorksSection } from "@/components/home/HowReceivingWorksSection";
 import { MyRequestsSection } from "@/components/home/MyRequestsSection";
@@ -48,15 +49,15 @@ export function RoleHome({
       <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
       {/* Verified fundraisers come first, then About CauseKind (swapped 2026-11-13). */}
       <HomeFundraisers />
-      {/* The main page's About (flip cards), in the default donor colours. */}
-      <WhoAreWeDesktop />
-      <DiwaliSeam kind="diya" diyas={3} />
-      <DiwaliSeam kind="line" />
-      <SupportGallery />
-      <DiwaliSeam kind="line" webLanterns="right" art="oval" />
+      {/* Live needs straight after the fundraisers (owner, 2026-11-16). */}
       <div className="ck-home-paper relative z-10">
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
       </div>
+      {/* The main page's About (flip cards), in the default donor colours. */}
+      <AboutTwoWays />
+      <DiwaliSeam kind="diya" diyas={3} />
+      <DiwaliSeam kind="line" />
+      <SupportGallery />
       <div className="ck-home-paper relative z-10">
         <NgoDrivesSection />
       </div>
