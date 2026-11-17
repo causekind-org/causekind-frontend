@@ -4,8 +4,7 @@ import { UiText, useUiText } from "@/components/UiText";
 
 import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useRef, useCallback } from "react";
-// @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
-import StaggeredMenu from "@/components/StaggeredMenu";
+import type { ComponentType } from "react";
 import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
@@ -66,6 +65,12 @@ const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 
 /** The wordmark per size; md is the header's (small on phones). The icon scales with it via `dimensions`. */
 const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl" } as const;
+
+/** Calls `onMount` once its own effects run, i.e. after the earlier siblings'. */
+function AfterMount({ onMount }: { onMount: () => void }) {
+  useEffect(() => { onMount(); }, [onMount]);
+  return null;
+}
 
 export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
@@ -300,6 +305,31 @@ export function SiteHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // The mobile menu (StaggeredMenu + gsap) is code-split out of the shared
+  // bundle and fetched once the browser is idle, so it is ready before the
+  // first tap. It mounts closed and only then receives the real `open` value:
+  // StaggeredMenu ignores `open` on its first mount, so mounting it already
+  // open (a tap before the code arrived) would leave the panel hidden.
+  const [StaggeredMenu, setStaggeredMenu] = useState<ComponentType<any> | null>(null);
+  const [menuMounted, setMenuMounted] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
+    const load = () => import("@/components/StaggeredMenu").then((m) => { if (!cancelled) setStaggeredMenu(() => m.default); });
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    let idleId: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (w.requestIdleCallback) idleId = w.requestIdleCallback(load, { timeout: 2000 });
+    else timer = setTimeout(load, 1200);
+    return () => { cancelled = true; if (idleId !== undefined) w.cancelIdleCallback?.(idleId); if (timer) clearTimeout(timer); };
+  }, []);
+  useEffect(() => {
+    // A tap before the idle load fired: fetch now (import() is cached, so this
+    // never downloads twice).
+    // @ts-expect-error — untyped JS module, see above
+    if (isSidebarOpen && !StaggeredMenu) import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
+  }, [isSidebarOpen, StaggeredMenu]);
+  const markMenuMounted = useCallback(() => setMenuMounted(true), []);
   // Closing the menu makes it inert, which pushes focus out to <body>. Without
   // this a keyboard user loses their place entirely, so send focus back to the
   // control they opened it with.
@@ -1351,8 +1381,9 @@ export function SiteHeader() {
           sign-out live in the footer slot; a compact profile line is the header.
           The decorative profile-completion & latest-impact cards were dropped
           in favour of StaggeredMenu's cleaner list. ── */}
-      <StaggeredMenu
-        open={isSidebarOpen}
+      {StaggeredMenu && !menuMounted && <AfterMount onMount={markMenuMounted} />}
+      {StaggeredMenu && <StaggeredMenu
+        open={menuMounted && isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
         accentColor={roleColors.accent}
@@ -1435,7 +1466,7 @@ export function SiteHeader() {
             )}
           </div>
         }
-      />
+      />}
     </>
   );
 }

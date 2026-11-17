@@ -88,7 +88,7 @@ export function RakshaBandhanWordmark({
         decoding="async"
       />
 
-      <video
+      <video aria-hidden="true"
         // `preload="none"` with `display:none` under reduced motion: a viewer who
         // asked for less motion should not pay 320 KB for an animation they will
         // never see. Not a guarantee — engines differ on whether a hidden

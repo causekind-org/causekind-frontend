@@ -524,7 +524,7 @@ export function ImpactCarousel() {
                   boxShadow: '0 18px 40px -12px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.15)',
                 }}
               >
-                <video
+                <video aria-hidden="true"
                   ref={(el) => { videoRefs.current[i] = el; }}
                   // No src until the section is approached — see `clipsArmed`.
                   // `undefined` rather than "" : an empty src resolves to the

@@ -81,7 +81,7 @@ function HorizontalCampaignCard({
         {/* Reel media: real video when available, else static image */}
         {campaign.videoUrl ? (
           // eslint-disable-next-line jsx-a11y/media-has-caption
-          <video
+          <video aria-hidden="true"
             src={campaign.videoUrl}
             autoPlay
             muted

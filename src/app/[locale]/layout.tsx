@@ -17,10 +17,8 @@ import { isTranslationLocale } from "@/lib/translation/server";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
 import { NeedProfileGateProvider } from "@/hooks/useNeedProfileGate";
-import { GoogleProvider } from "@/components/GoogleProvider";
 import { SiteHeader, SiteFooter } from "@/components/Navbar";
 import { MobileBottomNav, FloatingSupportButton } from "@/components/MobileUI";
-import { ScrollProgress } from "@/components/ScrollProgress";
 import { Toaster } from "sonner";
 import { SuperAdminRedirect } from "@/components/SuperAdminRedirect";
 import { AdminRedirect } from "@/components/AdminRedirect";
@@ -51,7 +49,7 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // Client boundary holding the deferred, client-only overlays and prompts.
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
-import { DeferredOverlays } from "@/components/DeferredOverlays";
+import { DeferredOverlays, DeferredScrollProgress } from "@/components/DeferredOverlays";
 import { HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
 import { DonateChoice } from "@/components/donate/DonateChoice";
 import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
@@ -182,7 +180,6 @@ export default async function RootLayout({
           <SiteTracking />
         </HiddenOnVolunteerPage>
         <NextIntlClientProvider messages={messages}>
-          <GoogleProvider>
             <AuthProvider>
               <NotificationsProvider>
                 <NeedProfileGateProvider>
@@ -209,7 +206,7 @@ export default async function RootLayout({
                   sparkCount={8}
                   duration={400}
                 >
-                  <ScrollProgress />
+                  <DeferredScrollProgress />
                   <HiddenOnVolunteerPage><SiteHeader /></HiddenOnVolunteerPage>
                   {/* Pages are prerendered now, so a page that reads useSearchParams
                       without its own boundary would fail the build. This
@@ -248,7 +245,6 @@ export default async function RootLayout({
                 </NeedProfileGateProvider>
               </NotificationsProvider>
             </AuthProvider>
-          </GoogleProvider>
         </NextIntlClientProvider>
       </body>
     </html>
