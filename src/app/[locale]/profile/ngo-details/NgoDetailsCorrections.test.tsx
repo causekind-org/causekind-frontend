@@ -94,7 +94,7 @@ describe("NGO wizard: prefill from signup (point 2)", () => {
     const { rerender } = render(<NgoDetailsPage />);
 
     const regNo = await screen.findByLabelText(/Registration Number/i);
-    await userEvent.type(regNo, "TR-1");
+    await userEvent.setup({ delay: null }).type(regNo, "TR-1");
     signedIn({ ...NGO });
     rerender(<NgoDetailsPage />);
 
@@ -185,7 +185,11 @@ describe("NGO wizard: per-item corrections (point 9)", () => {
 
     // Fix the two items.
     await openStep(/Organization Details/i);
-    await userEvent.type(await screen.findByLabelText(/Registration Number/i), "TR/2026/1002");
+    // One paste, not 12 keystrokes: each keystroke re-renders the whole wizard,
+    // which pushed this test past its timeout under full-suite load.
+    const user = userEvent.setup({ delay: null });
+    await user.click(await screen.findByLabelText(/Registration Number/i));
+    await user.paste("TR/2026/1002");
     await openStep(/Legal Documents/i);
     await screen.findAllByText(/Step 2 of 6/i);
     fireEvent.change(document.querySelector<HTMLInputElement>('input[type="file"]')!, {
@@ -281,8 +285,9 @@ describe("NGO wizard: resubmission mode", () => {
 
     await openStep(/Organization Details/i);
     const reg = await screen.findByLabelText(/Registration Number/i);
-    await userEvent.clear(reg);
-    await userEvent.type(reg, "TR/NEW");
+    const user = userEvent.setup({ delay: null });
+    await user.clear(reg);
+    await user.type(reg, "TR/NEW");
     expect(screen.getByTestId("correction-note")).toHaveAttribute("data-updated", "true");
     expect(screen.getByTestId("correction-note")).toHaveTextContent("Does not match the certificate");
     expect(screen.queryByTestId("to-fix-org-details")).toBeNull();
@@ -307,5 +312,33 @@ describe("NGO wizard: resubmission mode", () => {
     expect(screen.getAllByRole("button", { name: /Replace/ }).length).toBeGreaterThan(0);
     // Unchanged saved values are not fixes.
     expect(screen.getByTestId("to-fix-org-details")).toHaveTextContent("2 to fix");
+  }, 30000);
+
+  it("flagging representative 2's mobile keeps every representative and field, and empties only that mobile", async () => {
+    signedIn(NGO);
+    const file = (id: number, name: string) => ({ documentId: id, name, size: 1024, mimeType: "application/pdf" });
+    const rep1 = { fullName: "Ananya Sharma", designation: "Secretary", mobileNumber: "+919876543210", email: "contact@hope.test", panNumber: "ABCPS1234K", idProof: file(16, "ananya-id.pdf"), emailVerified: true };
+    const rep2 = { fullName: "Ravi Kumar", designation: "Treasurer", mobileNumber: "", email: "ravi@hope.test", panNumber: "ABCPK5678L", idProof: file(18, "ravi-id.pdf"), emailVerified: true };
+    vi.mocked(getMyNgoApplication).mockResolvedValue({
+      applicationId: "CK-NGO-2026-AAAA0001", organizationName: "Hope Welfare Trust", status: "NEEDS_INFORMATION",
+      correctionItems: [{ field: "representatives.1.mobileNumber", note: "Number does not work" }],
+    } as never);
+    vi.mocked(getNgoDraft).mockResolvedValue({
+      currentStep: "authorized-rep", organizationName: "Hope Welfare Trust", legalStructure: "trust", registrationNumber: "TR/1",
+      registeredOfficeAddress: "12 Shanti Nagar, Pune", yearOfEstablishment: "2019", panNumber: "AAATH1234K",
+      officialEmail: "contact@hope.test", organizationPhone: "+919811111111", aboutUs: "We run a community kitchen. ".repeat(6),
+      representativeName: "Ananya Sharma", designation: "Secretary", mobileNumber: "+919876543210",
+      representatives: [rep1, rep2],
+      documents: { "trust-reg-cert": file(11, "reg.pdf"), pan: file(13, "pan.pdf"), "trust-deed": file(12, "deed.pdf"), "bank-proof": file(14, "bank.pdf"), "cert-12a": file(17, "12a.pdf") },
+      authorizationLetter: file(15, "letter.pdf"),
+    } as never);
+    render(<NgoDetailsPage />);
+    expect(await screen.findByDisplayValue("Ravi Kumar", {}, { timeout: 10000 })).toBeInTheDocument();
+    for (const v of ["Ananya Sharma", "ABCPS1234K", "Treasurer", "ABCPK5678L", "ravi@hope.test", "contact@hope.test"])
+      expect(screen.getAllByDisplayValue(v).length).toBeGreaterThan(0);
+    expect(screen.getAllByDisplayValue("9876543210").length).toBeGreaterThan(0);
+    expect(screen.queryByDisplayValue("9812300099")).toBeNull();
+    for (const f of ["ananya-id.pdf", "ravi-id.pdf", "letter.pdf"]) expect(screen.getByText(f)).toBeInTheDocument();
+    expect(screen.getAllByTestId("correction-note").map(n => n.textContent)).toContain("Admin note: Number does not work");
   }, 30000);
 });

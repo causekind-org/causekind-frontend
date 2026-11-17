@@ -194,6 +194,10 @@ export default function RequestsClient({
   const { user, isLoading: authLoading, isRestoring } = useAuth();
   const router   = useRouter();
 
+  // Declared before the live-update subscription that reads them.
+  const [requests,  setRequests]  = useState<ItemRequest[]>([]);
+  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   useEntityUpdates(["REQUEST"], () => {
     if (!user || user.role === "DONEE") return;
     getItemRequests(undefined, gpsCoords?.lat, gpsCoords?.lng)
@@ -215,7 +219,6 @@ export default function RequestsClient({
   // authLoading -> guest -> DONEE -> donor, and every data effect in this
   // component is gated on `user`, so a guest fetches nothing from here.
 
-  const [requests,  setRequests]  = useState<ItemRequest[]>([]);
   const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading,   setLoading]   = useState(true);
   const [search,    setSearch]    = useState("");
@@ -274,7 +277,6 @@ export default function RequestsClient({
   const [aiGenerated,   setAiGenerated]   = useState(false);
 
   // ── GPS and Profile load ───────────────────────────────────────────────────
-  const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsBlocked, setGpsBlocked] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
 

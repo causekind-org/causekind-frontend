@@ -190,7 +190,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
     <section
       id="ngo-hero"
       ref={heroRef}
-      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-screen pt-[120px] pb-[96px] flex items-center"
+      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-screen pt-[120px] pb-[96px] flex items-center max-md:min-h-0 max-md:items-start max-md:pt-6 max-md:pb-16"
     >
       {/* Animated Mesh Layer */}
       <div className="ngo-hero-bg" aria-hidden="true" />

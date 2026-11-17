@@ -132,3 +132,39 @@ describe("Cover, logo and photos", () => {
     expect(uploadNgoProfilePhoto).not.toHaveBeenCalled();
   });
 });
+
+describe("A past activity the admin refused", () => {
+  const refused = () => activity({ status: "REJECTED", rejectionReason: "Blur the children's faces" });
+
+  it("is amber with the reason and Edit and resubmit, in the wizard grid and on /profile", async () => {
+    vi.mocked(getMyNgoActivities).mockResolvedValue([refused()] as never);
+    vi.mocked(updateNgoActivity).mockResolvedValue(activity({ status: "PENDING", rejectionReason: "Blur the children's faces", title: "Blanket drive, blurred" }) as never);
+    render(<PastActivitySection required />);
+    const card = await screen.findByTestId("past-activity-card");
+    expect(card).toHaveAttribute("data-rejected", "true");
+    expect(within(card).getByTestId("activity-rejected")).toHaveTextContent("Not approved: Blur the children's faces");
+    fireEvent.click(within(card).getByRole("button", { name: "Edit and resubmit Blanket drive" }));
+    const form = screen.getByTestId("past-activity-form");
+    expect(within(form).getByLabelText(/Activity name/)).toHaveValue("Blanket drive");
+    fireEvent.change(within(form).getByLabelText(/Activity name/), { target: { value: "Blanket drive, blurred" } });
+    fireEvent.click(within(form).getByRole("button", { name: "Save changes" }));
+    await waitFor(() => expect(updateNgoActivity).toHaveBeenCalledWith(3, expect.objectContaining({ title: "Blanket drive, blurred" })));
+    expect(await screen.findByText("Under review")).toBeInTheDocument();
+    expect(screen.queryByTestId("activity-rejected")).toBeNull();
+  });
+
+  it("the notification link (?activity=<id>) opens that activity's edit form", async () => {
+    window.history.replaceState(null, "", "/profile?activity=3");
+    vi.mocked(getMyNgoActivities).mockResolvedValue([refused()] as never);
+    render(<PastActivitySection carousel />);
+    expect(await screen.findByTestId("past-activity-form")).toBeInTheDocument();
+    expect(screen.getAllByTestId("activity-rejected").length).toBeGreaterThan(0);
+    window.history.replaceState(null, "", "/");
+  });
+
+  it("the admin queue labels a fixed one Resubmitted", async () => {
+    vi.mocked(getPendingNgoActivities).mockResolvedValue([{ activity: activity({ rejectionReason: "Blur" }), ngoUserId: 1, organizationName: "Hope", resubmitted: true }] as never);
+    render(<NgoActivityModerationPanel />);
+    expect(await screen.findByTestId("activity-resubmitted")).toHaveTextContent("Resubmitted");
+  });
+});

@@ -83,7 +83,7 @@ export function MobileBottomNav() {
     // entry becomes "Donate now" rather than "Sign up", and a guest arguably
     // should see that. Revisit this condition then rather than assuming it
     // still says what you want.
-    ...(!user || user.role === "DONEE" || user.role === "DONOR"
+    ...(!user || user.role === "DONEE" || user.role === "DONOR" || user.role === "NGO_PARTNER" || user.role === "NGO"
       ? []
       : [{ href: centerHref, icon: Plus, label: centerLabel }]),
     // Requests is public now — browsing needs no account, only offering does.

@@ -357,7 +357,7 @@ export default function CategoryPageClient({ cat }: Props) {
                   transition={{ duration: 0.3 }}
                 >
                   <blockquote className="text-2xl sm:text-3xl font-medium text-stone-800 dark:text-stone-100 leading-snug mb-8">
-                    "{IMPACT_STORIES[currentStoryIndex].quote}"
+                    &quot;{IMPACT_STORIES[currentStoryIndex].quote}&quot;
                   </blockquote>
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-[var(--ck-role-accent)] flex items-center justify-center text-white font-bold text-lg shadow-md">

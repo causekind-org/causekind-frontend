@@ -42,6 +42,8 @@ import { AdminRedirect } from "@/components/AdminRedirect";
 import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
 import MetaPixel from "@/components/MetaPixel";
 import ClarityAnalytics from "@/components/ClarityAnalytics";
+import GoogleAnalyticsGated from "@/components/GoogleAnalyticsGated";
+import SiteTracking from "@/components/SiteTracking";
 import { SiteBottomBlur } from "@/components/SiteBottomBlur";
 import { RoleClickSpark } from "@/components/RoleClickSpark";
 import { RoleThemeBridge } from "@/components/RoleThemeBridge";
@@ -183,6 +185,8 @@ export default async function RootLayout({
           <MetaPixel />
           <ClarityAnalytics />
           <GoogleTagManagerGated />
+          <GoogleAnalyticsGated />
+          <SiteTracking />
         </HiddenOnVolunteerPage>
         <NextIntlClientProvider messages={messages}>
           <GoogleProvider>

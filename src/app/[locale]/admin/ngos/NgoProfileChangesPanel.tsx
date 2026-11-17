@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AdminSearchBox, NoSearchResults } from "@/components/admin/AdminSearchBox";
+import { AdminSearchBox, NoSearchResults, matchesQuery } from "@/components/admin/AdminSearchBox";
+import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
+import { DecisionLine, reviewTabs, tabOptions, useAdminStatusTabs } from "@/components/admin/useAdminStatusTabs";
 import {
   adminApproveNgoProfileChange, adminGetNgoProfileChanges, adminRejectNgoProfileChange, type AdminNgoProfileChange,
 } from "@/lib/api";
@@ -42,17 +44,20 @@ function ShowValue({ field, value, idProofUrls }: { field: string; value?: strin
 }
 
 /** Admin: NGO requests to change a verified profile field (old vs new). Approving applies it; rejecting needs a reason. */
+const CHANGE_TABS = reviewTabs("Waiting", "Not approved");
+const changeStatus = (x: AdminNgoProfileChange) => x.request.status;
+
 export function NgoProfileChangesPanel({ onChange }: { onChange?: () => void } = {}) {
   const [items, setItems] = useState<AdminNgoProfileChange[] | null>(null);
-  const [status, setStatus] = useState<"PENDING" | "APPROVED" | "REJECTED">("PENDING");
-  const [query, setQuery] = useState("");
+  const { index: statusIndex, setIndex: setStatusIndex, tab, query, setQuery } = useAdminStatusTabs(CHANGE_TABS);
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [error, setError] = useState("");
 
+  // Every request once: the tab counts and lists come from the same rows.
   const load = useCallback(() => {
-    adminGetNgoProfileChanges(status, query).then(setItems).catch(() => { setItems([]); setError("We couldn't load profile changes."); });
-  }, [status, query]);
+    adminGetNgoProfileChanges("ALL").then(setItems).catch(() => { setItems([]); setError("We couldn't load profile changes."); });
+  }, []);
   useEffect(() => { load(); }, [load]);
 
   async function decide(id: number, approve: boolean) {
@@ -71,24 +76,20 @@ export function NgoProfileChangesPanel({ onChange }: { onChange?: () => void } =
     }
   }
 
+  const shownChanges = (list: AdminNgoProfileChange[]) => list.filter(x => tab.matches(changeStatus(x))
+    && matchesQuery(query, x.organizationName, x.request.field, x.request.newValue, x.request.oldValue));
+
   return (
     <section aria-label="NGO profile changes" className="rounded-xl border border-stone-200 bg-white p-5 dark:border-zinc-700 dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Profile changes</h2>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        {(["PENDING", "APPROVED", "REJECTED"] as const).map((s) => (
-          <button key={s} type="button" aria-pressed={status === s} onClick={() => setStatus(s)}
-            className={`rounded-full border px-3 py-1 text-xs font-bold ${status === s ? "border-emerald-700 bg-emerald-700 text-white" : "border-stone-300"}`}>
-            {s === "PENDING" ? "Waiting" : s === "APPROVED" ? "Approved" : "Not approved"}
-          </button>
-        ))}
-      </div>
+      <div className="mt-3"><AdminStatusTabs label="Profile change status" options={tabOptions(CHANGE_TABS, items ?? [], changeStatus)} selected={statusIndex} onSelect={setStatusIndex} /></div>
       <div className="mt-3"><AdminSearchBox value={query} onChange={setQuery} label="Search profile changes" placeholder="Search NGO name or value" /></div>
       {error && <p role="alert" className="mt-3 text-xs font-semibold text-red-600">{error}</p>}
       {items == null ? <p className="mt-4 text-sm text-stone-500">Loading…</p>
-        : items.length === 0 ? (query ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : <p className="mt-4 text-sm text-stone-500">Nothing here.</p>)
+        : shownChanges(items).length === 0 ? (query && items.some(x => tab.matches(changeStatus(x))) ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : <p className="mt-4 text-sm text-stone-500">Nothing here.</p>)
         : (
           <ul className="mt-4 space-y-3">
-            {items.map(({ request: r, organizationName, slug, idProofUrls }) => (
+            {shownChanges(items).map(({ request: r, organizationName, slug, idProofUrls, decidedBy }) => (
               <li key={r.id} data-testid="admin-profile-change" className="rounded-lg border border-stone-200 p-4 dark:border-zinc-700">
                 <p className="text-sm font-bold ck-user-text">{organizationName}{slug && <a href={`/ngos/${slug}`} className="ml-2 text-xs font-semibold text-emerald-700 underline">public page</a>}</p>
                 <p className="mt-1 text-xs font-bold uppercase tracking-wide text-stone-500">{FIELD_LABELS[r.field] ?? (r.field.startsWith("documents.") ? `Document: ${documentLabel(r.field.slice(10))}` : r.field)}</p>
@@ -97,7 +98,7 @@ export function NgoProfileChangesPanel({ onChange }: { onChange?: () => void } =
                   <div><dt className="text-xs text-stone-500">Requested</dt><dd className="ck-user-text"><ShowValue field={r.field} value={r.newValue} idProofUrls={idProofUrls} /></dd></div>
                 </dl>
                 {r.reason && <p className="mt-2 text-xs text-stone-600">NGO&apos;s reason: {r.reason}</p>}
-                {r.status === "REJECTED" && r.adminReason && <p className="mt-2 text-xs text-red-600">Not approved: {r.adminReason}</p>}
+                <DecisionLine status={r.status} by={decidedBy} at={r.decidedAt} reason={r.adminReason} />
                 {r.status === "PENDING" && (
                   <div className="mt-3 flex flex-wrap items-end gap-2">
                     <button type="button" disabled={busy === r.id} onClick={() => void decide(r.id, true)}

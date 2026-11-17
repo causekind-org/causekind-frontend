@@ -36,7 +36,13 @@ function NotifWrapper({ link, className, children }: { link?: string | null; cla
 // Each notification type gets its own visual layout so the tray is scannable:
 // match = action card with a CTA chip, approved = emerald accent-bar row,
 // rejected = red alert card, fulfilled = celebration gradient, info = compact row.
-function NotifItem({ n }: { n: AppNotification }) {
+/** The offer a "Your donation was distributed" notice points at (its link: /dashboard?tab=history&offer=<id>). */
+export function proofOfferId(link?: string | null): number | null {
+  const id = Number(/[?&]offer=(\d+)/.exec(link ?? "")?.[1]);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+export function NotifItem({ n }: { n: AppNotification }) {
   const when = (
     <span className="text-3xs text-stone-400 dark:text-stone-500 font-medium shrink-0 whitespace-nowrap">
       {timeAgo(n.receivedAt)}
@@ -115,6 +121,36 @@ function NotifItem({ n }: { n: AppNotification }) {
           </div>
         </div>
       </NotifWrapper>
+    );
+  }
+
+  // proof_published: the whole card opens History at that offer; two actions under the text.
+  if (n.type === "proof_published") {
+    const offerId = proofOfferId(n.link);
+    const history = offerId ? `/dashboard?tab=history&offer=${offerId}` : "/dashboard?tab=history";
+    return (
+      <div data-testid="notification-proof-published" className="relative mx-1.5 mb-1 sm:mx-2 sm:mb-1.5 rounded-xl border border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-emerald-950/25 px-3 py-2.5 sm:px-3.5 sm:py-3 hover:border-emerald-400 dark:hover:border-emerald-700 transition-colors">
+        <div className="flex items-start gap-2.5">
+          <PartyPopper className="w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" aria-hidden />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-baseline justify-between gap-2">
+              <Link href={history} data-testid="notification-proof-main" className="text-sm font-bold text-stone-900 dark:text-stone-100 leading-tight after:absolute after:inset-0 after:rounded-xl">{n.title}</Link>
+              {when}
+            </div>
+            <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5 leading-relaxed">{n.body}</p>
+            <div className="relative z-10 mt-2 flex flex-wrap gap-2">
+              <Link href={history} className="inline-flex min-h-8 items-center gap-1 rounded-full bg-[var(--ck-role-accent)] px-3 text-2xs font-bold text-white hover:brightness-110">
+                See the proof <ArrowRight className="w-3 h-3" aria-hidden />
+              </Link>
+              {offerId && (
+                <Link href={`/certificate?offerId=${offerId}&type=ngo_drive`} className="inline-flex min-h-8 items-center rounded-full border border-stone-300 bg-white px-3 text-2xs font-bold text-stone-700 hover:bg-stone-50 dark:border-zinc-600 dark:bg-zinc-900 dark:text-stone-200">
+                  Certificate
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 

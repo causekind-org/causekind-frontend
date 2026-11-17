@@ -1313,7 +1313,7 @@ useEffect(() => {
                 sm:text-[11px]
               "
             >
-              <UiText>We'll show you the most urgent local needs in your area.</UiText>
+              <UiText>We&apos;ll show you the most urgent local needs in your area.</UiText>
             </p>
 
           </header>

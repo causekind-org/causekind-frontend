@@ -1351,6 +1351,8 @@ function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, a
   replaceable?: boolean;
   onUpload: (f: File) => Promise<boolean>;
 }) {
+  // Before the early return, so the hook order is the same on every render.
+  const ref = useRef<HTMLInputElement>(null);
   if (done && !replaceable) {
     return (
       <Panel title={title} icon={<Upload className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
@@ -1359,7 +1361,6 @@ function EvidencePanel({ title, hint, type, done, doneText = "Uploaded", busy, a
       </Panel>
     );
   }
-  const ref = useRef<HTMLInputElement>(null);
   return (
     <Panel title={title} icon={<Upload className="size-4 text-[var(--ck-role-accent)]" aria-hidden />}>
       <p className="mb-3 text-sm text-stone-600 dark:text-stone-300">{hint}</p>

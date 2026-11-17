@@ -1335,6 +1335,11 @@ section:focus-within {
   .ck-main-bottom-pad:has(.ck-home-page):has(+ #footer) {
     padding-bottom: 0;
   }
+  /* NGO landing (phones): the CTA band meets the footer, no cream strip. */
+  @media (max-width: 767px) {
+    .ck-main-bottom-pad:has(.ck-ngo-landing-page):has(+ #footer) { padding-bottom: 0; }
+    .ck-main-bottom-pad:has(.ck-ngo-landing-page) + #footer { padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem); }
+  }
   .ck-main-bottom-pad:has(.ck-home-page) + #footer {
     padding-bottom: calc(var(--ck-bottom-chrome) + 0.5rem);
   }

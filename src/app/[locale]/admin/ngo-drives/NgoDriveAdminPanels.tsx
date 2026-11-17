@@ -19,6 +19,7 @@ import { formatAgeRange } from "@/features/ngo-drives/driveOfferAge";
 import { formatIST, formatISTDate } from "@/lib/formatIST";
 import { AdminSearchBox, NoSearchResults, matchesQuery } from "@/components/admin/AdminSearchBox";
 import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
+import { DecisionLine, reviewTabs, tabOptions, useAdminStatusTabs } from "@/components/admin/useAdminStatusTabs";
 import { readUrlParam, statusIndexFromUrl, writeUrlParams } from "@/components/admin/adminUrlState";
 
 /** ?q= search state for a panel; cleared from the URL when the panel unmounts. */
@@ -405,19 +406,23 @@ export function NgoDriveOffersPanel() {
 
 /* ── Distribution proofs ─────────────────────────────────────────────────── */
 
+const PROOF_TABS = reviewTabs("Waiting for review", "Rejected");
+const proofStatus = (d: AdminProofDrive) => d.proofDecision ?? "PENDING";
+
 export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
   const [drives, setDrives] = useState<AdminProofDrive[]>([]);
   const [loading, setLoading] = useState(true);
   const [reasons, setReasons] = useState<Record<number, string>>({});
   const [busy, setBusy] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
-  const [query, setQuery] = useUrlQuery();
+  const { index: statusIndex, setIndex: setStatusIndex, tab, query, setQuery } = useAdminStatusTabs(PROOF_TABS);
   const [enlarged, setEnlarged] = useState<string | null>(null);
   const { fail, clear, view: errorView } = useErrors();
 
+  // Every proof (waiting and decided) once: the tab counts and lists come from the same rows.
   const load = useCallback(async () => {
     setLoading(true);
-    try { setDrives(await adminGetNgoDriveProofs()); }
+    try { setDrives(await adminGetNgoDriveProofs("ALL")); }
     catch (e) { setDrives([]); fail(e, "Could not load distribution proofs."); }
     finally { setLoading(false); }
   }, [fail]);
@@ -435,7 +440,8 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
     finally { setBusy(null); }
   }
 
-  const shownProofs = drives.filter(x => matchesQuery(query, x.ngoName, x.ngoUser?.fullName, x.title, x.id));
+  const inTab = drives.filter(x => tab.matches(proofStatus(x)));
+  const shownProofs = inTab.filter(x => matchesQuery(query, x.ngoName, x.ngoUser?.fullName, x.title, x.id));
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
       {enlarged && (
@@ -447,12 +453,16 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
       )}
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
+      <AdminStatusTabs label="Proof status" options={tabOptions(PROOF_TABS, drives, proofStatus)} selected={statusIndex} onSelect={setStatusIndex} />
       <AdminSearchBox value={query} onChange={setQuery} label="Search distribution proofs" placeholder="Search NGO name, drive title or drive ID" />
-      {loading ? <p role="status">Loading distribution proofs…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No distribution proofs are waiting for review.</p>
+      {loading ? <p role="status">Loading distribution proofs…</p> : inTab.length === 0 ? <p className="text-sm text-stone-500">{statusIndex === 0 ? "No distribution proofs are waiting for review." : "Nothing here."}</p>
         : shownProofs.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
       {shownProofs.map(d => (
-        <article key={d.id} className={card} data-testid="proof-card">
+        <article key={`${d.id}-${d.proofDecidedAt ?? "waiting"}`} className={card} data-testid="proof-card">
           <ProofDetails d={d} onEnlarge={setEnlarged} />
+          {d.proofDecision ? (
+            <DecisionLine status={d.proofDecision} by={d.proofDecidedBy} at={d.proofDecidedAt} reason={d.proofDecisionReason} rejectedText="Rejected" />
+          ) : <>
           <label className="mt-4 block text-sm">Reason (required to reject)
             <textarea className={field} rows={2} maxLength={500} value={reasons[d.id] ?? ""} disabled={busy === d.id}
               onChange={e => setReasons(prev => ({ ...prev, [d.id]: e.target.value }))} />
@@ -461,6 +471,7 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
             <button className={primary} disabled={busy === d.id} onClick={() => void decide(d, true)}>Approve</button>
             <button className={`${button} border-red-300 text-red-700`} disabled={busy === d.id} onClick={() => void decide(d, false)}>Reject</button>
           </div>
+          </>}
         </article>
       ))}
     </div>

@@ -25,6 +25,12 @@ vi.mock("@/lib/api", async (importOriginal) => ({
   getMyNgoApplication: vi.fn(),
   getMyProfile: vi.fn().mockResolvedValue(null),
   getMyMatches: vi.fn().mockResolvedValue([]),
+  // The header also asks for these; unmocked they went to the real backend URL.
+  getNgoDraft: vi.fn().mockResolvedValue(null),
+  getNgoOverview: vi.fn().mockResolvedValue({
+    activeRequests: 0, itemsPledged: 0, dropoffsToConfirm: 0, photosDue: 0,
+    photosDueRequestName: "", verifiedDeliveries: 0, handovers: [],
+  }),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -97,11 +103,9 @@ describe("Navbar - NGO Profile Button States", () => {
 
     render(<SiteHeader />);
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Complete Profile/i })).toBeInTheDocument();
-    });
+    expect(await screen.findByRole("button", { name: /Complete Profile/i })).toBeInTheDocument();
 
-    const link = screen.getByRole("link", { name: /Complete Profile/i });
+    const link = await screen.findByRole("link", { name: /Complete Profile/i });
     expect(link).toHaveAttribute("href", "/profile/ngo-details");
     expect(screen.queryByText(/Application Under Review/i)).not.toBeInTheDocument();
   });
@@ -128,9 +132,7 @@ describe("Navbar - NGO Profile Button States", () => {
 
     render(<SiteHeader />);
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Application Under Review/i })).toBeInTheDocument();
-    });
+    expect(await screen.findByRole("button", { name: /Application Under Review/i })).toBeInTheDocument();
 
     const link = screen.getByRole("link", { name: /Application Under Review/i });
     expect(link).toHaveAttribute("href", "/profile/ngo-details");
@@ -166,9 +168,7 @@ describe("Navbar - NGO Profile Button States", () => {
 
     render(<SiteHeader />);
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Complete Profile/i })).toBeInTheDocument();
-    });
+    expect(await screen.findByRole("button", { name: /Complete Profile/i })).toBeInTheDocument();
 
     vi.mocked(getMyNgoApplication).mockResolvedValue({ applicationId: "CK-NGO-TEST-99", organizationName: "Test NGO", status: "UNDER_REVIEW" } as never);
     // Simulate submission event dispatched when user completes Step 6
@@ -181,9 +181,7 @@ describe("Navbar - NGO Profile Button States", () => {
     });
 
     // Navbar should immediately switch to "Application Under Review" without page reload
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Application Under Review/i })).toBeInTheDocument();
-    });
+    expect(await screen.findByRole("button", { name: /Application Under Review/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Complete Profile/i })).not.toBeInTheDocument();
   });
   it("labels approved organizations accurately", async () => {
@@ -250,9 +248,7 @@ describe("Navbar - NGO Profile Button States", () => {
 
     const { unmount } = render(<SiteHeader />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Drives")).toBeInTheDocument();
-    });
+    expect(await screen.findByText("Drives")).toBeInTheDocument();
     expect(screen.queryByText("nav.donate")).not.toBeInTheDocument();
 
     const drivesLink = screen.getByText("Drives").closest("a");
@@ -271,9 +267,7 @@ describe("Navbar - NGO Profile Button States", () => {
     });
 
     render(<SiteHeader />);
-    await waitFor(() => {
-      expect(screen.getByText("nav.donate")).toBeInTheDocument();
-    });
+    expect(await screen.findByText("nav.donate")).toBeInTheDocument();
     expect(screen.queryByText("Drives")).not.toBeInTheDocument();
     
     const donateLink = screen.getByText("nav.donate").closest("a");

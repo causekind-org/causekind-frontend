@@ -874,18 +874,19 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            {isRakshaBandhanCampaignActive() ? (
-              <CareNestLogo size="md" hideIcon={true} />
-            ) : (
+            {isDiwaliCampaignActive() ? (
               // Both are rendered and styles.css shows one: whitecause over the
               // transparent home-hero header and in dark mode, blackcause on the
-              // cream bar everywhere else.
+              // cream bar everywhere else. Gated on the Diwali switch like the
+              // desktop logo: ungated, it stayed on phones after 13 Nov.
               <span aria-label="CauseKind" className="flex items-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/images/diwali/blackcause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-dark block h-10 w-auto" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/images/diwali/whitecause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-light hidden h-10 w-auto" />
               </span>
+            ) : (
+              <CareNestLogo size="md" hideIcon={true} />
             )}
           </Link>
           {/* With the bar gone there is nothing behind this button but the
@@ -912,13 +913,13 @@ export function SiteHeader() {
         </div>
 
         {/* Desktop Header */}
-        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 px-10">
+        <div className="relative z-[1] hidden lg:flex w-full max-w-[1440px] mx-auto items-center justify-between py-5 px-10 lg:max-[1440px]:px-6 lg:max-[1440px]:gap-3">
           <Link href="/" className="flex items-center gap-2">
             <CareNestLogo />
           </Link>
 
           {/* Center navigation capsule */}
-          <nav className="glass-liquid hidden lg:flex items-center gap-1 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
+          <nav className="glass-liquid hidden lg:flex flex-nowrap whitespace-nowrap items-center gap-1 lg:max-[1440px]:gap-0.5 bg-white/55 dark:bg-zinc-900/55 backdrop-blur-xl border border-white/60 dark:border-white/10 ring-1 ring-[#e5e2d5]/50 dark:ring-stone-800/60 rounded-full p-1 shadow-[0_4px_20px_-6px_rgba(28,25,23,0.12),inset_0_1px_0_rgba(255,255,255,0.55)] dark:shadow-[0_4px_20px_-6px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]">
             {navLinks.map((link) => {
               // FAQ and Contact live inside the "About Us" dropdown on desktop
               // instead of as separate pills — skip them here.
@@ -942,7 +943,7 @@ export function SiteHeader() {
                       type="button"
                       onClick={() => setOpenMegaMenu((prev) => (prev === "about" ? null : "about"))}
                       aria-expanded={isAboutMegaMenuOpen}
-                      className={`group relative text-sm px-4 py-2 transition-all duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none cursor-pointer ${
+                      className={`group relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-all duration-300 rounded-full flex items-center gap-1.5 font-semibold outline-none cursor-pointer ${
                         groupActive || isAboutMegaMenuOpen
                           ? "text-[var(--ck-role-accent)]"
                           : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
@@ -1003,7 +1004,7 @@ export function SiteHeader() {
                       data-tour="nav-requests"
                       onFocus={handleInKindMouseEnter}
                       aria-expanded={isInKindMegaMenuOpen}
-                      className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold ${
+                      className={`relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-colors duration-300 rounded-full flex items-center gap-1.5 font-semibold ${
                         active || isInKindMegaMenuOpen
                           ? "text-[var(--ck-role-accent)]"
                           : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
@@ -1043,7 +1044,7 @@ export function SiteHeader() {
                   onMouseLeave={() => setHoveredHref(null)}
                   onFocus={() => { setHoveredHref(link.href); setOpenMegaMenu(null); }}
                   onBlur={() => setHoveredHref(null)}
-                  className={`relative text-sm px-4 py-2 transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
+                  className={`relative text-sm px-4 py-2 lg:max-[1440px]:px-2.5 whitespace-nowrap transition-colors duration-300 rounded-full flex items-center gap-2 font-semibold ${active
                       ? "text-[var(--ck-role-accent)]"
                       : "text-stone-500 hover:text-[var(--ck-role-accent)] dark:text-stone-400 dark:hover:text-[var(--ck-role-accent)]"
                     }`}
@@ -1074,7 +1075,7 @@ export function SiteHeader() {
           </nav>
 
           {/* Right buttons */}
-          <div className="flex items-center gap-3 sm:gap-4">
+          <div className="flex shrink-0 items-center gap-3 sm:gap-4 lg:max-[1440px]:gap-1.5">
             <GlobalSearch />
             {user && <span data-tour="search" className="inline-flex"><SearchTrigger /></span>}
             <span data-tour="bell" className="inline-flex"><NotificationBell /></span>
@@ -1115,13 +1116,13 @@ export function SiteHeader() {
                 entry point on the same flag hid a shipped feature. The old
                 Donate3DButton pointed at /donate — the Coming Soon screen. */}
             {!isNgoDashboard && (
-              <DonateNowButton size="sm" label={ui("Donate")} showArrow={false} />
+              <DonateNowButton size="sm" label={ui("Donate")} showArrow={false} className="whitespace-nowrap" />
             )}
 
             {/* The NGO status pill is only ever for a signed-in NGO account. */}
             {isNgo && !(ngoApplicationState === "APPROVED" && ngoApprovedPillExpired) && (
               <Link href="/profile/ngo-details">
-                <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800">
+                <Button size="sm" className="rounded-full bg-ngo-700 px-4 py-2 text-xs font-bold text-white hover:bg-ngo-800 whitespace-nowrap">
                   {ngoApplicationLabel}
                 </Button>
               </Link>
@@ -1134,10 +1135,12 @@ export function SiteHeader() {
               <button
                 type="button"
                 onClick={() => (user ? requestLogout() : router.push("/login"))}
-                className="inline-flex items-center gap-1.5 h-10 rounded-full px-5 text-sm font-bold text-white bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
+                aria-label={user ? t("nav.signOut") : t("nav.logIn")}
+                data-testid="nav-auth-button"
+                className="inline-flex shrink-0 items-center gap-1.5 h-10 rounded-full px-5 lg:max-[1440px]:px-4 max-[1279px]:px-3 whitespace-nowrap text-sm font-bold text-white bg-[var(--ck-role-accent)] hover:bg-[var(--ck-role-hover)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ck-role-accent)]"
               >
                 {user ? <LogOut className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <LogIn className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
-                {user ? t("nav.signOut") : t("nav.logIn")}
+                <span className="max-[1279px]:sr-only">{user ? t("nav.signOut") : t("nav.logIn")}</span>
               </button>
               <LoginNudgeBubble user={user} />
             </div>

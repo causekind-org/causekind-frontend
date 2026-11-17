@@ -169,6 +169,22 @@ function ActivityEditNote({ activity, onDismiss }: { activity: NgoActivity; onDi
   );
 }
 
+/** A refused activity: amber, the admin's reason, and the way back to the admin. Never shown to donors. */
+export function ActivityRejectedNote({ activity, onEdit }: { activity: NgoActivity; onEdit?: (a: NgoActivity) => void }) {
+  if (activity.status !== "REJECTED" || !activity.rejectionReason) return null;
+  return (
+    <div data-testid="activity-rejected" role="status" className="mt-2 rounded-lg border border-amber-300 bg-amber-50 p-2.5 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+      <p className="ck-user-text font-semibold">Not approved: {activity.rejectionReason}</p>
+      {onEdit && (
+        <button type="button" onClick={() => onEdit(activity)} aria-label={`Edit and resubmit ${activity.title}`}
+          className="mt-2 inline-flex min-h-11 items-center rounded-lg bg-amber-600 px-3 text-xs font-bold text-white hover:bg-amber-700">
+          Edit and resubmit
+        </button>
+      )}
+    </div>
+  );
+}
+
 function ActivityEditButton({ title, onClick }: { title: string; onClick: () => void }) {
   return (
     <button type="button" onClick={onClick} aria-label={`Edit ${title}`} className="inline-flex min-h-11 items-center gap-1 text-xs font-semibold text-stone-600 hover:text-emerald-700 dark:text-stone-300">
@@ -197,7 +213,8 @@ export function PastActivityCard({ activity, onDelete, onEdit, onDismissNote }: 
   const [detail, setDetail] = useState(false);
   const photos = activity.media.filter((m) => m.mediaType === "IMAGE" && m.url);
   return (
-    <article data-testid="past-activity-card" className="rounded-xl border border-stone-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900">
+    <article data-testid="past-activity-card" data-rejected={activity.status === "REJECTED" ? "true" : undefined}
+      className={`rounded-xl border p-4 ${activity.status === "REJECTED" ? "border-amber-400 bg-amber-50/60 dark:border-amber-700 dark:bg-amber-950/20" : "border-stone-200 bg-white dark:border-zinc-700 dark:bg-zinc-900"}`}>
       {photos.length > 0 && (
         <div className="mb-3 grid grid-cols-3 gap-2">
           {photos.map((m, i) => (
@@ -223,9 +240,7 @@ export function PastActivityCard({ activity, onDelete, onEdit, onDismissNote }: 
       )}
       {detail && <ActivityDetailDialog a={activity as unknown as PublicNgoActivity} photos={photos.map((m) => m.url!)}
         onClose={() => setDetail(false)} onPhoto={(i) => { setDetail(false); setPreview(i); }} />}
-      {activity.status === "REJECTED" && activity.rejectionReason && (
-        <p className="mt-2 text-xs font-semibold text-red-600 dark:text-red-400">Not approved: {activity.rejectionReason}</p>
-      )}
+      <ActivityRejectedNote activity={activity} onEdit={onEdit} />
       <ActivityEditNote activity={activity} onDismiss={onDismissNote} />
       {(onDelete || onEdit) && (
         <div className="mt-3 flex justify-end gap-3">
@@ -279,6 +294,15 @@ export function PastActivitySection({ onCountChange, required = false, headingCl
     }
   }, []);
   useEffect(() => { void load(); }, [load]);
+  // A "needs changes" notification links here with ?activity=<id>: open that activity's edit form once.
+  const deepLinked = useRef(false);
+  useEffect(() => {
+    if (!items || deepLinked.current || typeof window === "undefined") return;
+    const id = Number(new URLSearchParams(window.location.search).get("activity"));
+    deepLinked.current = true;
+    const target = id ? items.find((x) => x.id === id) : undefined;
+    if (target) setEditing(target);
+  }, [items]);
   useEffect(() => { if (items) report.current?.(items.filter(activityHasPhoto).length); }, [items]);
 
   async function remove(a: NgoActivity) {
@@ -321,7 +345,10 @@ export function PastActivitySection({ onCountChange, required = false, headingCl
         ) : <p className="text-xs text-stone-500">No past activity added yet.</p>
       ) : carousel ? (
         <ActivityHeroCarousel activities={items as unknown as PublicNgoActivity[]} label="Past activity"
-          notice={(a) => <ActivityEditNote activity={items.find((x) => x.id === a.id)!} onDismiss={(x) => void dismissNote(x)} />}
+          notice={(a) => {
+            const own = items.find((x) => x.id === a.id)!;
+            return <><ActivityRejectedNote activity={own} onEdit={setEditing} /><ActivityEditNote activity={own} onDismiss={(x) => void dismissNote(x)} /></>;
+          }}
           chip={(a) => (a.status === "PENDING" ? <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-3xs font-bold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Under review</span> : null)}
           actions={(a) => {
             const own = items.find((x) => x.id === a.id)!;
