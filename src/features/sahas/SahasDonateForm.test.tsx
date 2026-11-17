@@ -115,7 +115,8 @@ describe("SahasDonateForm", () => {
     fireEvent.click(screen.getByLabelText("I want an 80G receipt"));
     expect(screen.getByPlaceholderText("ABCDE1234F")).toBeTruthy();
     expect(screen.getByLabelText("Address")).toBeTruthy();
-    expect(screen.getByText("Upload PAN card")).toBeTruthy();
+    // No PAN photo since 2026-11-17: PAN and address are enough.
+    expect(screen.queryByText("Upload PAN card")).toBeNull();
     expect(screen.getByRole("button", { name: "Check your PAN" })).toHaveProperty("disabled", true);
   });
 });
