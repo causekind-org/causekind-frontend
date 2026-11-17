@@ -7780,3 +7780,92 @@ export function superAdminResetCrmStaffPassword(id: number, password: string) {
 export function superAdminSetCrmStaffActive(id: number, active: boolean) {
   return request<void>(`/api/v1/super-admin/crm-staff/${id}/${active ? "enable" : "disable"}`, { method: "POST" });
 }
+
+// ---------------------------------------------------------------------------
+// Super Admin Mail Center (/api/v1/super-admin/mail-center)
+// ---------------------------------------------------------------------------
+
+export type McStatus = "DRAFT" | "SCHEDULED" | "SENDING" | "PAUSED" | "SENT" | "FAILED" | "CANCELLED";
+
+export interface McCampaign {
+  id: number;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  html: string;
+  text: string | null;
+  segments: string;
+  status: McStatus;
+  scheduledAt: string | null;
+  pauseReason: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface McTemplate {
+  id: number;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  html: string;
+  text: string | null;
+  updatedAt: string;
+}
+
+export interface McCampaignInput {
+  name: string;
+  subject: string;
+  preheader?: string;
+  html: string;
+  text?: string;
+  segments: string[];
+}
+
+export interface McReport {
+  campaign: McCampaign;
+  total: number;
+  pending: number;
+  sending: number;
+  sent: number;
+  failed: number;
+  sentLast24h: number;
+  dailyCap: number;
+}
+
+export interface McVariableCheck {
+  unknown: string[];
+  available: string[];
+  sample: Record<string, string>;
+  subject: string;
+}
+
+const MC = "/api/v1/super-admin/mail-center";
+const mcPost = <T,>(path: string, body?: unknown) =>
+  request<T>(`${MC}${path}`, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+
+export const mcSegments = () => request<{ segments: string[]; variables: string[] }>(`${MC}/segments`);
+export const mcEstimate = (segments: string[]) => mcPost<{ recipients: number }>("/audiences/estimate", { segments });
+
+export const mcCampaigns = () => request<McCampaign[]>(`${MC}/campaigns`);
+export const mcCreateCampaign = (b: McCampaignInput) => mcPost<McCampaign>("/campaigns", b);
+export const mcUpdateCampaign = (id: number, b: McCampaignInput) =>
+  request<McCampaign>(`${MC}/campaigns/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcDeleteCampaign = (id: number) => request<void>(`${MC}/campaigns/${id}`, { method: "DELETE" });
+export const mcVariableCheck = (id: number) => mcPost<McVariableCheck>(`/campaigns/${id}/variable-check`);
+export const mcPreview = (id: number) => mcPost<{ subject: string; html: string; to: string }>(`/campaigns/${id}/preview`);
+export const mcSendTest = (id: number, email: string) => mcPost<void>(`/campaigns/${id}/test`, { email });
+export const mcSendNow = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/send`);
+export const mcSchedule = (id: number, at: string) => mcPost<McCampaign>(`/campaigns/${id}/schedule`, { at });
+export const mcPause = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/pause`);
+export const mcResume = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/resume`);
+export const mcCancel = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/cancel`);
+export const mcReport = (id: number) => request<McReport>(`${MC}/campaigns/${id}/report`);
+
+export const mcTemplates = () => request<McTemplate[]>(`${MC}/templates`);
+export const mcSaveTemplate = (id: number | null, b: Omit<McCampaignInput, "segments"> & { name: string }) =>
+  id == null
+    ? mcPost<McTemplate>("/templates", b)
+    : request<McTemplate>(`${MC}/templates/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcDeleteTemplate = (id: number) => request<void>(`${MC}/templates/${id}`, { method: "DELETE" });

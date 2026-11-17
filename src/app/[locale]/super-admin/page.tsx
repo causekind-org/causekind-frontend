@@ -23,6 +23,7 @@ import { GovernancePanel } from "@/components/super-admin/GovernancePanel";
 import { OperationsPanel } from "@/components/super-admin/OperationsPanel";
 import { FundraisersPanel } from "@/components/super-admin/fundraisers/FundraisersPanel";
 import { MoneyPanel } from "@/components/super-admin/MoneyPanel";
+import { MailCenterPanel } from "@/components/super-admin/MailCenterPanel";
 import { DonationDetailModal } from "@/components/super-admin/DonationDetailModal";
 import { ListingDetailModal } from "@/components/super-admin/ListingDetailModal";
 import { RequestDetailModal } from "@/components/super-admin/RequestDetailModal";
@@ -31,7 +32,7 @@ import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package, HandCoins,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
   Sun, Moon, AlertTriangle, KeyRound, History, Scale,
-  Search, UserSearch, LifeBuoy, Send, ShieldCheck, SlidersHorizontal, Activity, Lock,
+  Search, UserSearch, LifeBuoy, Send, ShieldCheck, SlidersHorizontal, Activity, Lock, Mail,
 } from "lucide-react";
 
 // ── Theme tokens ──────────────────────────────────────────────────────────────
@@ -234,6 +235,7 @@ const NAV = [
   { key: "directory",     label: "User 360",    icon: UserSearch, group: "Work", hint: "Everything about one user, plus restrictions" },
   { key: "cases",         label: "Support cases", icon: LifeBuoy, group: "Work", hint: "Support cases and information requests" },
   { key: "interventions", label: "Interventions", icon: SlidersHorizontal, group: "Work", hint: "Hold, resume or reassess a request, offer or match" },
+  { key: "mail-center",   label: "Mail Center", icon: Mail, group: "People & access", hint: "Write, schedule and send email campaigns" },
   { key: "communications", label: "Communications", icon: Send, group: "People & access", hint: "Messages sent by staff, with delivery log" },
   { key: "governance",     label: "Governance",     icon: Lock, group: "Platform", hint: "Super-admin guard, permission history, reveal log" },
   { key: "operations",     label: "Operational health", icon: Activity, group: "Platform", hint: "Health checks and runtime config" },
@@ -579,6 +581,7 @@ export default function SuperAdminPage() {
       case "directory":     return <UserDirectoryPanel initialUserId={focusUserId} isDark={isDark} />;
       case "cases":         return <CasesPanel isDark={isDark} />;
       case "interventions": return <InterventionsPanel initialTarget={focusIntervention} isDark={isDark} />;
+      case "mail-center":    return <MailCenterPanel isDark={isDark} />;
       case "communications": return <CommunicationsPanel isDark={isDark} />;
       case "governance": return <GovernancePanel isDark={isDark} />;
       case "operations": return <OperationsPanel isDark={isDark} />;
