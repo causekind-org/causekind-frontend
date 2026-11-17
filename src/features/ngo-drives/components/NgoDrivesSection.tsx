@@ -7,7 +7,6 @@ import { getNgoDrives, type PublicNgoDrive } from "@/lib/api";
 import { NgoDriveCard, NgoDriveCardSkeleton } from "./NgoDriveCard";
 import { FEATURES } from "@/lib/features";
 import { sortNgoDrives } from "../ngoDriveFilters";
-import { DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { LiveBoardHeader } from "@/components/home/LiveBoardHeader";
 import { CategoryChipsRow } from "@/components/home/CategoryChipsRow";
 import { LiveBoardBanner } from "@/components/home/LiveBoardBanner";
@@ -117,7 +116,6 @@ function NgoDrivesBoard({ initialDrives, className = "" }: NgoDrivesSectionProps
 
   return (
     <>
-    <DiwaliSeam kind="line" lanterns="right" art="oval" />
     <section
       id="ngo-drives-section"
       aria-labelledby="ngo-drives-heading"

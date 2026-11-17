@@ -9,7 +9,6 @@ const EmptyStateIcon = Smile;
 import Link from "@/components/AppLink";
 import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
 import { useAuth } from "@/hooks/useAuth";
-import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { fundraisers, type FundraiserCard, type FundraisingCategory } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
@@ -31,11 +30,9 @@ const RESUME_AFTER_ARROW_MS = 4000;
 function FundraiserCardItem({
   card,
   copy = false,
-  diwali,
 }: {
   card: FundraiserCard;
   copy?: boolean;
-  diwali: boolean;
 }) {
   const pct = card.target ? Math.min(100, Math.round((card.raised / card.target) * 100)) : 0;
 
@@ -60,7 +57,7 @@ function FundraiserCardItem({
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 dark:from-zinc-900 dark:to-zinc-800">
-            {diwali ? <span className="ck-dw-diya" /> : <Heart className="size-12 text-brand-500/70" strokeWidth={1.6} aria-hidden="true" />}
+            <Heart className="size-12 text-brand-500/70" strokeWidth={1.6} aria-hidden="true" />
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-transparent to-transparent pointer-events-none" />
@@ -125,10 +122,8 @@ function FundraiserCardItem({
 /** Featured wide card when only 1 fundraiser exists */
 function SingleFeaturedFundraiserCard({
   card,
-  diwali,
 }: {
   card: FundraiserCard;
-  diwali: boolean;
 }) {
   const pct = card.target ? Math.min(100, Math.round((card.raised / card.target) * 100)) : 0;
 
@@ -146,7 +141,7 @@ function SingleFeaturedFundraiserCard({
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 dark:from-zinc-900 dark:to-zinc-800">
-              {diwali ? <span className="ck-dw-diya" /> : <Heart className="size-16 text-brand-500/70" strokeWidth={1.6} aria-hidden="true" />}
+              <Heart className="size-16 text-brand-500/70" strokeWidth={1.6} aria-hidden="true" />
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/30 pointer-events-none" />
@@ -230,7 +225,6 @@ function SingleFeaturedFundraiserCard({
  */
 export function HomeFundraisers() {
   const { user } = useAuth();
-  const diwali = useDiwaliCampaign();
   const isDonee = user?.role?.replace(/^ROLE_/, "") === "DONEE";
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
 
@@ -348,19 +342,11 @@ export function HomeFundraisers() {
             id="fundraisers-spotlight-h"
             className="font-serif m-0 text-2xl sm:text-3xl lg:text-[2.1rem] font-bold tracking-tight text-[#933c10] dark:text-[#f9dfc0] leading-[1.15]"
           >
-            {diwali ? (
-              <><LandingText>Light a diya</LandingText> <em><LandingText>for someone&apos;s need</LandingText></em></>
-            ) : (
-              <><LandingText>Give someone</LandingText> <em><LandingText>a reason to smile again</LandingText></em></>
-            )}
+            <><LandingText>Give someone</LandingText> <em><LandingText>a reason to smile again</LandingText></em></>
           </h2>
 
           <p className="m-0 text-[15px] sm:text-base leading-relaxed text-[#5a4030] dark:text-[#f9dfc0]/85 font-normal">
-            {diwali ? (
-              <LandingText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</LandingText>
-            ) : (
-              <LandingText>Don&apos;t let their hope go quiet. Every fundraiser here was reviewed by our team before it went public.</LandingText>
-            )}
+            <LandingText>Don&apos;t let their hope go quiet. Every fundraiser here was reviewed by our team before it went public.</LandingText>
           </p>
         </div>
 
@@ -405,7 +391,7 @@ export function HomeFundraisers() {
           ))}
         </div>
       ) : count === 1 ? (
-        <SingleFeaturedFundraiserCard card={cards[0]} diwali={diwali} />
+        <SingleFeaturedFundraiserCard card={cards[0]} />
       ) : count > 1 ? (
         <div className="relative -mx-4 px-4 sm:-mx-6 sm:px-6">
           <div
@@ -430,12 +416,12 @@ export function HomeFundraisers() {
           >
             {cards.map((card) => (
               <div key={card.id} className="w-[300px] sm:w-[330px] md:w-[350px] shrink-0">
-                <FundraiserCardItem card={card} diwali={diwali} />
+                <FundraiserCardItem card={card} />
               </div>
             ))}
             {cards.map((card) => (
               <div key={`copy-${card.id}`} className="w-[300px] sm:w-[330px] md:w-[350px] shrink-0" aria-hidden="true">
-                <FundraiserCardItem card={card} copy diwali={diwali} />
+                <FundraiserCardItem card={card} copy />
               </div>
             ))}
           </div>
