@@ -7837,6 +7837,37 @@ export interface McReport {
   failed: number;
   sentLast24h: number;
   dailyCap: number;
+  delivered: number;
+  bounced: number;
+  complained: number;
+  opened: number;
+  clicked: number;
+}
+
+export interface McOverview {
+  sent30d: number;
+  delivered30d: number;
+  opened30d: number;
+  clicked30d: number;
+  sent7d: number;
+  bouncePct7d: number;
+  complaintPct7d: number;
+  bouncePausePct: number;
+  complaintPausePct: number;
+  sentLast24h: number;
+  dailyCap: number;
+  scheduled: number;
+  sending: number;
+  paused: number;
+}
+
+export interface McSuppression {
+  email: string;
+  suppressed: boolean;
+  reason?: string;
+  source?: string;
+  since?: string;
+  optedOut: boolean;
 }
 
 export interface McVariableCheck {
@@ -7867,6 +7898,13 @@ export const mcPause = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/paus
 export const mcResume = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/resume`);
 export const mcCancel = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/cancel`);
 export const mcReport = (id: number) => request<McReport>(`${MC}/campaigns/${id}/report`);
+
+export const mcOverview = () => request<McOverview>(`${MC}/overview`);
+export const mcSuppressionLookup = (email: string) =>
+  request<McSuppression>(`${MC}/suppression?email=${encodeURIComponent(email)}`);
+export const mcSuppress = (email: string, note: string) => mcPost<McSuppression>("/suppression", { email, note });
+export const mcUnsuppress = (email: string) =>
+  request<McSuppression>(`${MC}/suppression?email=${encodeURIComponent(email)}`, { method: "DELETE" });
 
 export const mcTemplates = () => request<McTemplate[]>(`${MC}/templates`);
 export const mcSaveTemplate = (id: number | null, b: Omit<McCampaignInput, "segments"> & { name: string }) =>
