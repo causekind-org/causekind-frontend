@@ -72,10 +72,11 @@ const FILTER_OPTIONS = [
   { key: "PENDING",   label: "Needs Action",    statuses: ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"] },
   { key: "SCREENING", label: "AI Screening",    statuses: SCREENING_STATUSES },
   { key: "PARTIES",   label: "With Parties",    statuses: ["PENDING_DONEE_REVIEW", "SOFT_RESERVED_PRIMARY", "SOFT_RESERVED_BACKUP", "DONEE_ACCEPTED", "DONOR_RECONFIRMATION_REQUIRED", "NEEDS_INFORMATION"] },
-  { key: "ALL",       label: "All Offers",      statuses: [] as string[] },
   { key: "APPROVED",  label: "Approved",        statuses: ["ADMIN_APPROVED"] },
   { key: "IN_FLIGHT", label: "In Progress",     statuses: ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_WINDOW_OPEN", "ISSUE_RAISED"] },
   { key: "CLOSED",    label: "Closed",          statuses: ["COMPLETED", "ADMIN_REJECTED", "WITHDRAWN", "DONEE_DECLINED", "CANCELLED"] },
+  // Last, and not called "All offers": that name belongs to the item-offers/purchases toggle above.
+  { key: "ALL",       label: "Everything",      statuses: [] as string[] },
 ];
 
 // ── Reusable donation-offers queue — embedded in the admin dashboard's "Offers" tab
@@ -83,6 +84,7 @@ const FILTER_OPTIONS = [
 export function OffersQueuePanel() {
   const [offers, setOffers] = useState<DonationOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEntityUpdates(["OFFER"], () => {
     load();
@@ -112,10 +114,19 @@ export function OffersQueuePanel() {
   // picture anyway, and switching pills becomes instant instead of a refetch.
   async function load() {
     setLoading(true);
+    setLoadError(null);
     try {
-      const all = await adminGetAllOffers(undefined, { excludeNgo: true });
+      // A cold NeonDB wake can stall this request; without a ceiling the spinner
+      // spun forever with no way out. 25s, then show an error with Retry.
+      const all = await Promise.race([
+        adminGetAllOffers(undefined, { excludeNgo: true }),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 25000)),
+      ]);
       setOffers(all.sort((a, b) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime()));
-    } catch {
+    } catch (e) {
+      setLoadError(e instanceof Error && e.message === "timeout"
+        ? "Offers took too long to load — the server may be waking up."
+        : "Could not load offers.");
       toast.error("Failed to load offers");
     } finally {
       setLoading(false);
@@ -261,7 +272,7 @@ export function OffersQueuePanel() {
   // "All clear" only when truly nothing is open — an offer mid-pipeline that
   // doesn't need admin action yet must still be visible in the summary.
   const openCount = offers.length - countFor("CLOSED");
-  const headline = pendingCount > 0
+  const headline = loading ? "Loading offers…" : loadError ? loadError : pendingCount > 0
     ? `${pendingCount} offer${pendingCount > 1 ? "s" : ""} waiting for your approval`
     : openCount > 0
       ? `Nothing needs you right now — ${openCount} offer${openCount > 1 ? "s" : ""} moving through the pipeline`
@@ -269,7 +280,7 @@ export function OffersQueuePanel() {
 
   const purchaseToggle = (
     <div className="flex gap-2">
-      <button onClick={() => setShowPurchases(false)} className={`rounded-full px-4 py-1.5 text-xs font-bold ${!showPurchases ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>All offers</button>
+      <button onClick={() => setShowPurchases(false)} className={`rounded-full px-4 py-1.5 text-xs font-bold ${!showPurchases ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>Item offers</button>
       <button onClick={() => setShowPurchases(true)} className={`rounded-full px-4 py-1.5 text-xs font-bold ${showPurchases ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>Purchases</button>
     </div>
   );
@@ -315,7 +326,14 @@ export function OffersQueuePanel() {
         <div className="flex justify-center py-16"><Loader2 className="animate-spin w-8 h-8 text-[#b04a15]" /></div>
       )}
 
-      {!loading && visible.length === 0 && (
+      {!loading && loadError && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+          <p className="text-sm font-semibold text-red-700">{loadError}</p>
+          <button onClick={load} className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white">Retry</button>
+        </div>
+      )}
+
+      {!loading && !loadError && visible.length === 0 && (
         <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 p-6 sm:p-12 text-center shadow-sm">
           <Check className="w-10 h-10 text-green-500 mx-auto mb-3" />
           <h3 className="font-bold text-stone-700 dark:text-stone-300">All clear</h3>

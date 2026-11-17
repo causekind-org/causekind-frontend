@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { VolunteerHandoverPage } from "@/features/ngo-drives/volunteer/VolunteerHandoverPage";
 
 export const metadata: Metadata = {
-  title: "Pickup handover | CauseKind",
+  title: "Pickup handover",
   robots: { index: false, follow: false },
   referrer: "no-referrer",
 };

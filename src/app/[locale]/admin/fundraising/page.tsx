@@ -19,6 +19,14 @@ const FILTERS: { label: string; status?: FundraisingStatus }[] = [
   { label: "Withdrawn", status: "WITHDRAWN" },
 ];
 
+/** States still waiting on an admin decision. The backend's no-status query returns
+ * everything except drafts and withdrawn — approved and declined included — so "Open"
+ * (and the sidebar badge) counted finished applications as waiting. */
+const OPEN_APPLICATION_STATES: FundraisingStatus[] = ["SUBMITTED", "IN_REVIEW", "INFORMATION_REQUESTED", "RESUBMITTED"];
+const fetchQueue = (status?: FundraisingStatus) => status
+  ? fundraising.admin.queue(status)
+  : fundraising.admin.queue().then((rows) => rows.filter((r) => OPEN_APPLICATION_STATES.includes(r.status)));
+
 /** F10 — Admin application queue (canvas F10-AdminQueue.dc.html). */
 export default function AdminFundraisingQueuePage() {
   const [filter, setFilter] = useState(0);
@@ -29,11 +37,11 @@ export default function AdminFundraisingQueuePage() {
 
   const load = useCallback(() => {
     setRows(null); setFailed(false);
-    fundraising.admin.queue(FILTERS[filter].status).then(setRows)
+    fetchQueue(FILTERS[filter].status).then(setRows)
       .catch((e) => { setServerOff(e instanceof ApiError && e.status === 404); setFailed(true); });
   }, [filter]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
-  const counts = useTabCounts(FILTERS.map((f) => f.status), fundraising.admin.queue, rows);
+  const counts = useTabCounts(FILTERS.map((f) => f.status), fetchQueue, rows);
 
   if (!FEATURES.fundraising) {
     return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off (NEXT_PUBLIC_FUNDRAISING_ENABLED).</p></main></div>;

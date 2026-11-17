@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ScanDonation } from "@/features/scan-donation/ScanDonation";
 
 export const metadata: Metadata = {
-  title: "Feed a hungry person this Diwali | CauseKind",
+  title: "Feed a hungry person this Diwali",
   robots: { index: false, follow: false },
 };
 

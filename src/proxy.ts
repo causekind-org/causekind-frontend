@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { stagingGate } from "./stagingGate";
 import { defaultLocale, locales, type Locale } from "./i18n/config";
+import { BLOG_SLUGS, CATEGORY_SLUGS, INITIATIVE_SLUGS } from "./lib/staticSlugs";
 
 /**
  * Marks requests from known internal/office IPs so client trackers (Meta
@@ -27,18 +28,64 @@ function getClientIp(request: NextRequest): string | null {
 }
 
 /**
+ * Detail routes whose id is a database Long (Campaign, fundraising campaign,
+ * NgoDrive, ItemListing, ItemRequest), with the static children that share the
+ * segment. /sahas and /ngos are slug routes and are deliberately absent.
+ */
+const NUMERIC_ID_ROUTES: Record<string, readonly string[]> = {
+  campaigns: ["new"],
+  fundraisers: ["donations", "my-donations", "reports"],
+  drives: [],
+  items: ["new"],
+  requests: ["new", "category"],
+};
+
+/**
+ * True when the URL names a numeric-id page with an id that cannot exist, such
+ * as /campaigns/nope-000. Those pages decide "not found" after the response has
+ * started streaming, so without this they answer 200. No backend call is made;
+ * a well-formed id that does not exist is not caught here.
+ */
+function isImpossibleId(pathname: string): boolean {
+  const [, section, id] = pathname.split("/");
+  if (!section || !id) return false;
+  const staticChildren = NUMERIC_ID_ROUTES[section];
+  if (!staticChildren) return false;
+  return !/^\d+$/.test(id) && !staticChildren.includes(id);
+}
+
+/**
  * Serves each page from its locale's copy under src/app/[locale] without the
  * locale ever showing in the URL: /about is /en/about or /hi/about inside.
  * Each copy is cached on its own, so pages no longer render per request just
  * to find out the visitor's language.
  */
+/**
+ * True for /blog/<slug>, /initiatives/<slug> or /requests/category/<slug> with
+ * a slug that has no page. These routes know their full slug list, but their
+ * notFound() runs inside the root layout's <Suspense>, after the 200 is sent.
+ * (dynamicParams = false was tried first: it also 404s every valid slug in a
+ * non-English locale, because only the "en" copies are pre-generated.)
+ */
+function isUnknownStaticSlug(pathname: string): boolean {
+  const parts = pathname.split("/");
+  if (parts.length === 3 && parts[1] === "blog") return !BLOG_SLUGS.includes(parts[2]!);
+  if (parts.length === 3 && parts[1] === "initiatives") return !INITIATIVE_SLUGS.includes(parts[2]!);
+  if (parts.length === 4 && parts[1] === "requests" && parts[2] === "category") return !CATEGORY_SLUGS.includes(parts[3]!);
+  return false;
+}
+
 function localeResponse(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
-  // API routes and public files (anything with an extension) are not pages.
   if (pathname.startsWith("/api/") || /\.[^/]+$/.test(pathname)) return NextResponse.next();
   const cookie = request.cookies.get("ck_locale")?.value;
   const locale = locales.includes(cookie as Locale) ? cookie : defaultLocale;
   const url = request.nextUrl.clone();
+  if (isImpossibleId(pathname) || isUnknownStaticSlug(pathname)) {
+    // No route matches this path, so Next answers with a real 404.
+    url.pathname = `/${locale}/__not-found__`;
+    return NextResponse.rewrite(url);
+  }
   url.pathname = `/${locale}${pathname === "/" ? "" : pathname}`;
   return NextResponse.rewrite(url);
 }

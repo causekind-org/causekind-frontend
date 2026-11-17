@@ -7,7 +7,7 @@ import CampaignsClient from "./CampaignsClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Campaigns — CauseKind",
+  title: "Campaigns",
   description: "Browse active CauseKind campaigns and support verified community needs across India.",
   alternates: { canonical: "/campaigns" },
 };

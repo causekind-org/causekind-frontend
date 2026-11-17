@@ -391,7 +391,6 @@ describe("Footer Component", () => {
         { label: "CauseKind on LinkedIn", href: "https://www.linkedin.com/company/causekind/" },
         { label: "CauseKind on YouTube", href: "https://www.youtube.com/@causekind_org" },
         // Row 2
-        { label: "CauseKind on WhatsApp", href: "https://api.whatsapp.com/send/?phone=917719938619" },
         { label: "CauseKind on Facebook", href: "https://www.facebook.com/people/CauseKind/61590465683967/" },
         { label: "CauseKind on X", href: "https://x.com/causekind_" },
       ];

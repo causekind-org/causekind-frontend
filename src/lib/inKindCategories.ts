@@ -12,6 +12,10 @@ import { ALL_REQUEST_CATEGORIES, CATEGORY_VISUALS } from "./categoryVisuals";
  * never the other way round — see `categoryBySlug`.
  */
 export type InKindCategory = {
+  /** English search title (the root template appends " | CauseKind"). */
+  seoTitle: string;
+  /** English meta description, 140-160 characters. */
+  seoDescription: string;
   /** Canonical name — must appear verbatim in ALL_REQUEST_CATEGORIES. */
   name: string;
   /** URL segment only. Never sent to the backend. */
@@ -28,6 +32,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Medical aid",
     slug: "medical-aid",
+    seoTitle: "Donate Medical Aid Near You",
+    seoDescription: "Donate wheelchairs, walkers, BP monitors and in-date medical consumables directly to verified people and NGOs near you. See current requests on CauseKind.",
     tagline: "Mobility, comfort and health-related support.",
     intro:
       "Medical needs are the most time-sensitive on CauseKind. A wheelchair that arrives three weeks late is a person who stayed indoors for three weeks. These are also the items where condition matters most — a mobility aid that fails under load is worse than none at all.",
@@ -59,6 +65,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Education",
     slug: "education",
+    seoTitle: "Donate Books & Stationery",
+    seoDescription: "Donate books, textbooks, stationery and school bags directly to verified students, families and NGOs near you. See current requests on CauseKind.",
     tagline: "Books, stationery and the tools of a school day.",
     intro:
       "Education requests cluster around the start of a term and around exams. A school bag in June is worth more than the same bag in October. Match the syllabus and the year where you can — the right textbook for the wrong board helps nobody.",
@@ -90,6 +98,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Livelihood",
     slug: "livelihood",
+    seoTitle: "Donate Livelihood Tools Near You",
+    seoDescription: "Donate sewing machines, tools and work equipment that help people earn a living. Give directly to verified people and NGOs near you on CauseKind.",
     tagline: "Tools that let someone earn rather than receive.",
     intro:
       "Livelihood is the category with the longest tail. A sewing machine is not a one-time gift — it is income every month for years. These requests are usually specific, because the person asking already knows the trade and knows exactly which tool is missing.",
@@ -121,6 +131,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Relief",
     slug: "relief",
+    seoTitle: "Donate Relief Supplies Near You",
+    seoDescription: "Donate blankets, tarpaulins, mosquito nets, solar lamps and sealed hygiene items directly to verified people and NGOs near you. See requests on CauseKind.",
     tagline: "Essentials for families in the middle of an emergency.",
     intro:
       "Relief requests come from households that have lost most of what they owned — to a flood, a fire, an eviction, a sudden illness. Speed and basic dignity beat quality here. A clean blanket today is worth more than an excellent one next month.",
@@ -152,6 +164,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Household",
     slug: "household",
+    seoTitle: "Donate Household Items Near You",
+    seoDescription: "Donate kitchen utensils, appliances and everyday household items directly to verified families and NGOs near you. See current requests on CauseKind.",
     tagline: "The daily-use items that make a room a home.",
     intro:
       "Household requests often follow a move, a marriage or a first independent home. They are rarely dramatic and almost always practical: something to cook in, something to sleep on, something to store things in.",
@@ -182,6 +196,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Furniture",
     slug: "furniture",
+    seoTitle: "Donate Furniture Near You",
+    seoDescription: "Donate beds, tables, chairs, cupboards and other usable furniture directly to verified families and NGOs near you. See current requests on CauseKind.",
     tagline: "Beds, chairs, tables and storage that still have decades left.",
     intro:
       "Furniture is the category where transport decides everything. A donee with no vehicle cannot accept a wardrobe, however good it is. Be honest about size and weight up front — a listing that says 'two people can lift this' gets matched far faster than one that does not.",
@@ -212,6 +228,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Clothing",
     slug: "clothing",
+    seoTitle: "Donate Clothes Near You",
+    seoDescription: "Donate clean, wearable clothes for children, women and men directly to verified people and NGOs near you. See current clothing requests on CauseKind.",
     tagline: "Clean, wearable clothes for every age and season.",
     intro:
       "Clothing is the most donated category and the one most often misused as a way to empty a wardrobe. The test is simple and worth applying honestly: would you be comfortable wearing this in public tomorrow? If not, it belongs in textile recycling, not on CauseKind.",
@@ -242,6 +260,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Electronics",
     slug: "electronics",
+    seoTitle: "Donate Laptops & Electronics",
+    seoDescription: "Donate working laptops, phones and tablets to verified students and NGOs near you. See current requests and how to wipe your data first on CauseKind.",
     tagline: "Working phones, laptops and appliances with real life left.",
     intro:
       "Electronics carry two risks nothing else does: your data, and a device that dies a week after handover. Both are solvable in ten minutes on your side and unsolvable on theirs. Wipe it, test it, and include the charger.",
@@ -272,6 +292,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
   {
     name: "Sports",
     slug: "sports",
+    seoTitle: "Donate Sports Equipment Near You",
+    seoDescription: "Donate bats, balls, bicycles, sports shoes and indoor games in playable condition directly to verified people and NGOs near you. See requests on CauseKind.",
     tagline: "Gear, cycles and fitness equipment for kids and adults.",
     intro:
       "Sports requests come from schools, coaching groups and individual young players who have the ability and not the kit. Sizing and safety carry the weight here — outgrown gear that still fits someone smaller is exactly right, worn-out protective gear never is.",

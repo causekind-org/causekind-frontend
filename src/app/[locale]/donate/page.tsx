@@ -7,7 +7,7 @@ import DonateClient from "./DonateClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Donate — CauseKind",
+  title: "Donate",
   description: "Give in kind to verified requests near you. Zero platform fees, matched within 10 km, and tracked through to confirmed delivery.",
   alternates: { canonical: "/donate" },
 };

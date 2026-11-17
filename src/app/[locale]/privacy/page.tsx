@@ -7,7 +7,7 @@ import PrivacyClient from "./PrivacyClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Privacy Policy — CauseKind",
+  title: "Privacy Policy",
   description: "How CauseKind collects, uses, stores and protects your personal information.",
   alternates: { canonical: "/privacy" },
 };

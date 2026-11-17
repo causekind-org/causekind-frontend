@@ -31,7 +31,8 @@ function useCounts(enabled: boolean, refreshKey: string | null) {
     if (!enabled) return;
     const n = (p: Promise<unknown[]>) => p.then((x) => x.length).catch(() => 0);
     Promise.all([
-      n(fundraising.admin.queue()),
+      // Only undecided applications count as waiting (see OPEN_APPLICATION_STATES in admin/fundraising/page.tsx).
+      n(fundraising.admin.queue().then((rows) => rows.filter((r) => ["SUBMITTED", "IN_REVIEW", "INFORMATION_REQUESTED", "RESUBMITTED"].includes(r.status)))),
       // Publication review needs the team for both: pages waiting for review, and approved pages waiting on payment setup.
       Promise.all([n(fundraisingCampaigns.admin.queue()), n(fundraisingCampaigns.admin.queue("APPROVED_SETUP_INCOMPLETE"))]).then(([w, s]) => w + s),
       n(fundraisingManage.admin.queue()),

@@ -4,7 +4,7 @@
  */
 
 export interface SocialLink {
-  id: "instagram" | "linkedin" | "youtube" | "whatsapp" | "facebook" | "x";
+  id: "instagram" | "linkedin" | "youtube" | "facebook" | "x";
   name: string;
   url: string;
   ariaLabel: string;
@@ -28,12 +28,6 @@ export const SOCIAL_LINKS: readonly SocialLink[] = [
     name: "YouTube",
     url: "https://www.youtube.com/@causekind_org",
     ariaLabel: "CauseKind on YouTube",
-  },
-  {
-    id: "whatsapp",
-    name: "WhatsApp",
-    url: "https://api.whatsapp.com/send/?phone=917719938619",
-    ariaLabel: "CauseKind on WhatsApp",
   },
   {
     id: "facebook",

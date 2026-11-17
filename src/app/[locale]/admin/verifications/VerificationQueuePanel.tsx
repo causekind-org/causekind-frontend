@@ -60,11 +60,15 @@ const STATUS_FILTERS = [
   { key: "ALL", label: "All" },
   { key: "ON_HOLD", label: "On Hold" },
   { key: "PENDING_VERIFICATION", label: "Needs Review" },
+  { key: "VERIFIED_PRIVATE_MATCHING", label: "Verified" },
+  { key: "REJECTED", label: "Rejected" },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING_VERIFICATION: "Needs Review",
   ON_HOLD: "On Hold",
+  VERIFIED_PRIVATE_MATCHING: "Verified",
+  REJECTED: "Rejected",
 };
 
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
@@ -489,7 +493,7 @@ export function VerificationQueuePanel() {
                           className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1e3a60] text-white text-xs font-bold disabled:opacity-50">
                           <Play className="w-3.5 h-3.5" /> Resume Review
                         </button>
-                      ) : (
+                      ) : r.status === "PENDING_VERIFICATION" ? (
                         <>
                           <button onClick={() => handleApprove(r.id)} disabled={acting === r.id}
                             className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-600 text-white text-xs font-bold disabled:opacity-50">
@@ -513,6 +517,13 @@ export function VerificationQueuePanel() {
                               : <><RefreshCw className="w-3.5 h-3.5" /> Re-run AI</>}
                           </button>
                         </>
+                      ) : (
+                        // "All", "Verified" and "Rejected" show decided requests too. Before
+                        // this, they all showed Approve/Reject/Hold, which the backend refuses
+                        // for anything past verification.
+                        <p className="text-xs text-stone-500">
+                          Already decided ({STATUS_LABELS[r.status] ?? r.status.replace(/_/g, " ").toLowerCase()}) — no review action needed.
+                        </p>
                       )}
                     </div>
                   </div>

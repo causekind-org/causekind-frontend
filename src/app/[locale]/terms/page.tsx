@@ -7,7 +7,7 @@ import TermsClient from "./TermsClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Terms of Service — CauseKind",
+  title: "Terms of Service",
   description: "The terms governing your use of the CauseKind platform.",
   alternates: { canonical: "/terms" },
 };

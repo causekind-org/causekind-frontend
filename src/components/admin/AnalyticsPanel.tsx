@@ -4,8 +4,6 @@ import { serverDate } from "@/lib/serverTime";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import {
-  LineChart,
-  Line,
   BarChart,
   Bar,
   PieChart,
@@ -90,7 +88,7 @@ export function AnalyticsPanel() {
     completedDonations.forEach((d) => {
       const date = serverDate(d.createdAt);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const label = date.toLocaleString("en-IN", { month: "short", year: "2-digit" });
+      const label = date.toLocaleString("en-IN", { month: "short", year: "numeric" }) /* "Oct 26" read as 26 October */;
       if (!map[key]) map[key] = { key, month: label, amount: 0, count: 0 };
       map[key].amount += Number(d.amount);
       map[key].count += 1;
@@ -109,7 +107,8 @@ export function AnalyticsPanel() {
       });
     return Object.entries(map)
       .sort(([, a], [, b]) => b - a)
-      .map(([name, value]) => ({ name, value }));
+      // Legend showed raw enums ("MEDICAL") with no sizes.
+      .map(([name, value]) => ({ name: `${name.charAt(0)}${name.slice(1).toLowerCase().replace(/_/g, " ")} (${value})`, value }));
   }, [campaigns]);
 
   const topCampaigns = useMemo(() => {
@@ -232,7 +231,9 @@ export function AnalyticsPanel() {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={monthlyTrend} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                {/* Bars, not a line: each month is a separate total, and a line between two
+                    months implied a steady trend that never happened. */}
+                <BarChart data={monthlyTrend} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
                   <YAxis
@@ -250,15 +251,8 @@ export function AnalyticsPanel() {
                       color: "hsl(var(--foreground))",
                     }}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="#b04a15"
-                    strokeWidth={2.5}
-                    dot={{ r: 4, fill: "#b04a15", strokeWidth: 0 }}
-                    activeDot={{ r: 6, fill: "#b04a15" }}
-                  />
-                </LineChart>
+                  <Bar dataKey="amount" fill="#b04a15" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                </BarChart>
               </ResponsiveContainer>
             )}
           </CardContent>

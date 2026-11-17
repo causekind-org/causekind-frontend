@@ -13,6 +13,8 @@ const serif = Fraunces({
   style: ["normal", "italic"],
   axes: ["SOFT", "opsz"],
   display: "swap",
+  // Below the fold on every page that uses it: load on use, no preload.
+  preload: false,
   variable: "--font-sg-serif",
 });
 
@@ -20,6 +22,8 @@ const hand = Caveat({
   subsets: ["latin"],
   weight: "variable",
   display: "swap",
+  // Below the fold on every page that uses it: load on use, no preload.
+  preload: false,
   variable: "--font-sg-hand",
 });
 
@@ -27,6 +31,8 @@ const mono = IBM_Plex_Mono({
   subsets: ["latin"],
   weight: ["500"],
   display: "swap",
+  // Below the fold on every page that uses it: load on use, no preload.
+  preload: false,
   variable: "--font-sg-mono",
 });
 

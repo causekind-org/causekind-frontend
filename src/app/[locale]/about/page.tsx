@@ -9,7 +9,7 @@ import { Reveal } from "@/components/Reveal";
 import { CauseKindWaySections } from "@/components/about/CauseKindWaySections";
 
 export const metadata = {
-  title: "About Us — CauseKind",
+  title: "About Us",
   description: "Learn about CauseKind's mission, story, and how we facilitate verified in-kind donations.",
   alternates: { canonical: "/about" },
 };

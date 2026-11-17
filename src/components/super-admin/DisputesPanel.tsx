@@ -16,7 +16,7 @@ const STATUS_TABS = [
 ] as const;
 type StatusTab = (typeof STATUS_TABS)[number]["key"];
 
-// Same theme-token shape as WhatsAppPanel.tsx — chipActive/chipInactive is the
+// Same theme-token shape as the other super-admin panels — chipActive/chipInactive is the
 // exact filled-vs-outline pill pattern reused here for the status tabs, so the
 // contrast bug (unselected pill text matching its own background) can't recur:
 // unselected pills never have a filled background, only a muted text color

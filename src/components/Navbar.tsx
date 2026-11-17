@@ -7,9 +7,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
 import StaggeredMenu from "@/components/StaggeredMenu";
 import Link from "@/components/AppLink";
-import { DiwaliVideoLogo } from "@/components/brand/DiwaliVideoLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
-import { isDiwaliCampaignActive } from "@/lib/diwali";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -77,17 +75,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
-
-  // The diya sits with the heart, so the Diwali logo keeps its icon on mobile
-  // too, whatever `hideIcon` asked for. Gated like the tie, so it leaves on 13 Nov.
-  // The footer passes seasonal={false} to keep the everyday logo.
-  if (seasonal && isDiwaliCampaignActive()) {
-    return (
-      <span className="flex items-center" aria-label="CauseKind">
-        <DiwaliVideoLogo />
-      </span>
-    );
-  }
 
   return (
     <motion.span
@@ -874,20 +861,7 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            {isDiwaliCampaignActive() ? (
-              // Both are rendered and styles.css shows one: whitecause over the
-              // transparent home-hero header and in dark mode, blackcause on the
-              // cream bar everywhere else. Gated on the Diwali switch like the
-              // desktop logo: ungated, it stayed on phones after 13 Nov.
-              <span aria-label="CauseKind" className="flex items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/diwali/blackcause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-dark block h-10 w-auto" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/diwali/whitecause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-light hidden h-10 w-auto" />
-              </span>
-            ) : (
-              <CareNestLogo size="md" hideIcon={true} />
-            )}
+            <CareNestLogo size="md" hideIcon={true} />
           </Link>
           {/* With the bar gone there is nothing behind this button but the
               hero, so it brings its own surface: `glass-pill` is the same

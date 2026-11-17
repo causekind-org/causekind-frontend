@@ -4,7 +4,7 @@ import Image from 'next/image';
 export function SahasLogo({ size = 32, className = '' }: { size?: number; className?: string }) {
   return (
     <Image
-      src="/images/money-donation/sahas-logo-transparent.png"
+      src="/images/money-donation/sahas-logo-transparent.webp"
       alt="Sahas Charitable Trust logo"
       width={size}
       height={size}
