@@ -11,7 +11,6 @@ import {
   TrendingUp,
   Heart,
   MapPin,
-  Sparkles,
   ArrowRight,
 } from "lucide-react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
@@ -82,51 +81,6 @@ export default function CategoryPageClient({ cat }: Props) {
   const [isHeroHovered, setIsHeroHovered] = useState(false);
   
   // Impact Story Carousel state
-  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
-
-  const imageKey = cat.name.toLowerCase().replace(' ', '_');
-  
-  const ALL_IMAGES = [
-    "medical_aid",
-    "education",
-    "livelihood",
-    "relief",
-    "household",
-    "furniture",
-    "clothing",
-    "electronics",
-    "sports"
-  ];
-  const catIndex = ALL_IMAGES.indexOf(imageKey);
-  const getImg = (offset: number) => {
-    const idx = catIndex === -1 ? 0 : catIndex;
-    const mappedIdx = (idx + offset) % ALL_IMAGES.length;
-    return `/images/stories/${ALL_IMAGES[mappedIdx]}.webp`;
-  };
-
-  const IMPACT_STORIES = [
-    {
-      quote: rt("story1", { category: catName }),
-      author: "Priya Sharma",
-      initial: "P",
-      image: getImg(0),
-    },
-    {
-      quote: rt("story2", { category: catName }),
-      author: "Rahul Verma",
-      initial: "R",
-      image: getImg(1),
-    },
-    {
-      quote: rt("story3", { category: catName }),
-      author: "Anjali Gupta",
-      initial: "A",
-      image: getImg(2),
-    }
-  ];
-
-  const nextStory = () => setCurrentStoryIndex((i) => (i + 1) % IMPACT_STORIES.length);
-  const prevStory = () => setCurrentStoryIndex((i) => (i - 1 + IMPACT_STORIES.length) % IMPACT_STORIES.length);
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6">
@@ -344,87 +298,6 @@ export default function CategoryPageClient({ cat }: Props) {
               <p className="text-sm sm:text-base text-stone-500 dark:text-stone-400 leading-relaxed">{s.desc}</p>
             </div>
           ))}
-        </div>
-      </motion.section>
-
-      {/* ── Impact Story Carousel ── */}
-      <motion.section
-        className="mt-16 ck-cat-impact-story relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-stone-900 border border-stone-200/50 dark:border-white/5 shadow-xl"
-        variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-      >
-        <div className="grid md:grid-cols-5 min-h-[400px]">
-          <div className="md:col-span-3 p-10 sm:p-14 flex flex-col justify-between relative z-10 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--ck-role-accent)]/10 text-[var(--ck-role-accent)] text-xs font-bold uppercase tracking-wider mb-8 w-fit border border-[var(--ck-role-accent)]/20">
-                <Sparkles className="w-3.5 h-3.5" /> <UiText>Impact Stories</UiText>
-              </div>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStoryIndex}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <blockquote className="text-2xl sm:text-3xl font-medium text-stone-800 dark:text-stone-100 leading-snug mb-8">
-                    &quot;{IMPACT_STORIES[currentStoryIndex].quote}&quot;
-                  </blockquote>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[var(--ck-role-accent)] flex items-center justify-center text-white font-bold text-lg shadow-md">
-                      {IMPACT_STORIES[currentStoryIndex].initial}
-                    </div>
-                    <div>
-                      <p className="font-bold text-stone-900 dark:text-stone-100 text-lg">{IMPACT_STORIES[currentStoryIndex].author}</p>
-                      <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">{rt("receivedCategory", { category: catName })}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-            
-            <div className="flex items-center gap-3 mt-8 pt-6 border-t border-stone-200 dark:border-stone-800">
-              <button 
-                onClick={prevStory}
-                className="w-10 h-10 rounded-full flex items-center justify-center border border-stone-300 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <div className="flex gap-1.5">
-                {IMPACT_STORIES.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentStoryIndex(idx)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      idx === currentStoryIndex ? "bg-[var(--ck-role-accent)] w-6" : "bg-stone-300 dark:bg-stone-700"
-                    }`}
-                    aria-label={rt("goToStory", { n: idx + 1 })}
-                  />
-                ))}
-              </div>
-              <button 
-                onClick={nextStory}
-                className="w-10 h-10 rounded-full flex items-center justify-center border border-stone-300 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="md:col-span-2 relative h-64 md:h-auto overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={currentStoryIndex}
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${IMPACT_STORIES[currentStoryIndex].image})` }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              />
-            </AnimatePresence>
-          </div>
         </div>
       </motion.section>
 
