@@ -52,7 +52,7 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
 import { DeferredOverlays } from "@/components/DeferredOverlays";
-import { HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
+import { HiddenOnStaffPage, HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
 import { DonateChoice } from "@/components/donate/DonateChoice";
 import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
 import { MatchActionDock } from "@/components/matches/MatchActionDock";
@@ -182,10 +182,12 @@ export default async function RootLayout({
             banner coming back — see the TESTING_BYPASS note in each
             component. Remove this comment once the banner is restored. */}
         <HiddenOnVolunteerPage>
-          <MetaPixel />
-          <ClarityAnalytics />
-          <GoogleTagManagerGated />
-          <GoogleAnalyticsGated />
+          <HiddenOnStaffPage>
+            <MetaPixel />
+            <ClarityAnalytics />
+            <GoogleTagManagerGated />
+            <GoogleAnalyticsGated />
+          </HiddenOnStaffPage>
           <SiteTracking />
         </HiddenOnVolunteerPage>
         <NextIntlClientProvider messages={messages}>
