@@ -94,7 +94,7 @@ async function isMissingDetail(pathname: string): Promise<boolean> {
   const parts = pathname.split("/");
   if (parts.length !== 3) return false;
   const endpoint = DETAIL_ENDPOINTS[parts[1]!];
-  if (!endpoint || !/^d+$/.test(parts[2]!)) return false;
+  if (!endpoint || !/^\d+$/.test(parts[2]!)) return false;
   try {
     const res = await fetch(API_ORIGIN + endpoint(parts[2]!), {
       signal: AbortSignal.timeout(1500),
