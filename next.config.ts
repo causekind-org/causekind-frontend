@@ -45,7 +45,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "http", hostname: "localhost", port: "8080" },
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "**.amazonaws.com" },
+      // Our own buckets only. "**.amazonaws.com" let the optimizer fetch from
+      // any S3 bucket, including an attacker's (GHSA-2464-fhr4-w9xw, SVG RCE).
+      { protocol: "https", hostname: "causekind-item-images.s3.ap-south-1.amazonaws.com" },
+      { protocol: "https", hostname: "causekind-staging-images.s3.ap-southeast-1.amazonaws.com" },
     ],
   },
   async headers() {
