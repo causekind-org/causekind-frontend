@@ -352,7 +352,7 @@ describe("Footer Component", () => {
   });
 
   describe("Social Icons", () => {
-    it("renders single row on mobile and 3-column grid on desktop with exactly 6 platforms and dark theme button styling", () => {
+    it("renders single row on mobile and 3-column grid on desktop with exactly 5 platforms and dark theme button styling", () => {
       render(<Footer />);
 
       const socialContainer = screen.getByLabelText("Social media links");
@@ -368,7 +368,7 @@ describe("Footer Component", () => {
       expect(socialContainer).toHaveClass("md:w-fit");
 
       const socialLinks = within(socialContainer).getAllByRole("link");
-      expect(socialLinks).toHaveLength(6);
+      expect(socialLinks).toHaveLength(5);
 
       // Verify button sizes and dark theme styling
       socialLinks.forEach((link) => {
