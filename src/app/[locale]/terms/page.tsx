@@ -8,7 +8,7 @@ import TermsClient from "./TermsClient";
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
   title: "Terms of Service",
-  description: "The terms governing your use of the CauseKind platform.",
+  description: "Terms for using CauseKind: eligibility, accounts, campaigns and verification, donations, refunds, item listings and matches, 80G tax certificates and disputes.",
   alternates: { canonical: "/terms" },
 };
 

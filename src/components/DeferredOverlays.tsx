@@ -103,6 +103,17 @@ const NgoCampaignPrompt = dynamic(
   { ssr: false },
 );
 
+// The reading-progress bar starts at scaleX(0) (invisible), so loading it after
+// hydration changes nothing on first paint and keeps it out of the shared chunk.
+const ScrollProgress = dynamic(
+  () => import("@/components/ScrollProgress").then((m) => m.ScrollProgress),
+  { ssr: false },
+);
+
+export function DeferredScrollProgress() {
+  return <ScrollProgress />;
+}
+
 export function DeferredOverlays() {
   return (
     <>

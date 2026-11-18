@@ -76,7 +76,9 @@ export default async function HomePage() {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
+        // NGO is a schema.org subtype of Organization, so the existing @id
+        // references from WebSite/publisher still resolve.
+        "@type": "NGO",
         "@id": "https://www.causekind.com/#organization",
         "name": "CauseKind",
         "url": "https://www.causekind.com",
@@ -90,7 +92,32 @@ export default async function HomePage() {
           "contactType": "customer support",
           "email": "support@causekind.com",
           "url": "https://www.causekind.com/contact"
-        }
+        },
+        // Exactly as on the Google Business Profile listing.
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "3rd Floor, Apoorva CHS, 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West",
+          "addressLocality": "Vasai-Virar",
+          "addressRegion": "Maharashtra",
+          "postalCode": "401202",
+          "addressCountry": "IN"
+        },
+        "telephone": "+917719938619",
+        "email": "support@causekind.com",
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "09:00",
+            "closes": "18:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "Saturday",
+            "opens": "08:00",
+            "closes": "15:00"
+          }
+        ]
       },
       {
         "@type": "WebSite",

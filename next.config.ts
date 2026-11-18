@@ -23,6 +23,9 @@ const nextConfig: NextConfig = {
    * the Radix set, which is not on the default list.
    */
   experimental: {
+    // Branded 404 for unmatched URLs (src/app/global-not-found.tsx). The root
+    // layout lives under [locale], so a plain not-found.tsx never sees them.
+    globalNotFound: true,
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",

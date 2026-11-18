@@ -5,11 +5,8 @@ import Lenis from "lenis";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-/** The active Lenis instance, or null on touch devices / reduced motion (native scroll). */
-let activeLenis: Lenis | null = null;
-export function getLenis(): Lenis | null {
-  return activeLenis;
-}
+import { getLenis, setLenis } from "@/lib/lenisInstance";
+export { getLenis };
 
 export function SmoothScroll() {
   useEffect(() => {
@@ -52,7 +49,7 @@ export function SmoothScroll() {
       touchMultiplier: 1.5,
     });
 
-    activeLenis = lenis;
+    setLenis(lenis);
 
     // Synchronize Lenis scroll with GSAP ScrollTrigger
     lenis.on("scroll", ScrollTrigger.update);
@@ -66,7 +63,7 @@ export function SmoothScroll() {
 
     return () => {
       gsap.ticker.remove(updateTicker);
-      if (activeLenis === lenis) activeLenis = null;
+      if (getLenis() === lenis) setLenis(null);
       lenis.destroy();
     };
   }, []);

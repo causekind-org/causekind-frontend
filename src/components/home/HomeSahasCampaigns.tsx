@@ -83,7 +83,7 @@ function CampaignCard({
         </span>
         {card.collectsMoney && target > 0 && (
           <>
-            <span className="ck-dw-c-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+            <span className="ck-dw-c-bar" role="progressbar" aria-label={`${card.title}: ${pct}% funded`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
               <span style={{ width: `${pct}%` }} />
             </span>
             <span className="ck-dw-c-sums">

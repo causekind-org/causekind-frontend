@@ -8,6 +8,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 // rendered document carries clean HTML and there is never an unsanitized
 // frame. Next splits by route, so the cost lands on the blog page alone.
 import DOMPurify from "isomorphic-dompurify";
+import Image from "next/image";
 import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -420,10 +421,20 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
             {/* Image card */}
             <AnimatedWrapper delay={0} duration={0.6} direction="up">
               <div className="relative w-full aspect-[16/10] md:aspect-auto md:h-[420px] rounded-2xl overflow-hidden shadow-xl mb-6 md:mb-10">
-                <div
-                  className="absolute inset-0 bg-cover bg-center w-full h-full scale-100 md:scale-105 transform origin-center"
-                  style={{ backgroundImage: `url('${post.image}')` }}
-                />
+                {/* Same box, scale and crop as the former CSS background
+                    (bg-cover bg-center = object-cover object-center), now a
+                    real <img> in the server HTML: preloaded as the LCP image,
+                    resized per device, and described for search and screen readers. */}
+                <div className="absolute inset-0 w-full h-full scale-100 md:scale-105 transform origin-center">
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    priority
+                    sizes="(min-width: 1280px) 1232px, 100vw"
+                    className="object-cover object-center"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 {/* Category badge overlaid bottom-left — links back to the
                     listing page pre-filtered to this category */}
@@ -472,9 +483,9 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
               <div className="sticky top-[120px] flex flex-col gap-8">
                 {/* Reading Tools Panel */}
                 <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-3 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
-                  <h3 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
+                  <h2 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
                     {t("readingTools")}
-                  </h3>
+                  </h2>
                   {/* Bold Mode Toggle */}
                   <div className="flex items-center justify-between mb-8">
                     <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">

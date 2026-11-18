@@ -1,120 +1,45 @@
-"use client";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import DriveDetailClient from "./DriveDetailClient";
 
-import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { DriveOfferSentModal, offerSentKey, type DriveOfferSent } from "@/features/ngo-drives/components/DriveOfferSentModal";
-import { useAuth } from "@/hooks/useAuth";
-import { getNgoDrive, getMyNgoDriveOffers, type PublicNgoDrive, type NgoDriveOfferResponse } from "@/lib/api";
-import { useEntityUpdates } from "@/hooks/useEntityUpdates";
-import { PageSkeleton } from "@/components/skeletons";
-import { DriveLoadError, DriveNotFound } from "@/features/ngo-drives/components/DriveLoadState";
-import { errorMessage, giveState, isNotFound } from "@/features/ngo-drives/driveGiveState";
-import { DriveDetailView } from "@/features/ngo-drives/components/DriveDetailView";
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+type Props = { params: Promise<{ id: string }> };
 
-import { useUiText } from "@/components/UiText";
-export default function DriveDetailPage() {
-  const ui = useUiText();
-  const params = useParams();
-  const id = Number(params.id);
-  const { user, isLoading: authLoading } = useAuth();
-
-  const [drive, setDrive] = useState<PublicNgoDrive | null>(null);
-  const [loadError, setLoadError] = useState<{ notFound: boolean; message: string } | null>(null);
-  const [offers, setOffers] = useState<NgoDriveOfferResponse[]>([]);
-  const [offersError, setOffersError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const isDonor = (user?.role ?? "").toUpperCase() === "DONOR";
-  // Right after the donor submits an offer: the success popup, once.
-  const router = useRouter();
-  const [sent, setSent] = useState<DriveOfferSent | null>(null);
-  useEffect(() => {
-    if (Number.isNaN(id)) return;
-    try {
-      if (new URLSearchParams(window.location.search).get("offerSent") !== "1") return;
-      const raw = sessionStorage.getItem(offerSentKey(id));
-      if (raw) setSent(JSON.parse(raw) as DriveOfferSent);
-    } catch { /* no popup */ }
-  }, [id]);
-  const closeSent = useCallback(() => {
-    setSent(null);
-    try { sessionStorage.removeItem(offerSentKey(id)); } catch { /* ignore */ }
-    router.replace(`/drives/${id}`);
-  }, [id, router]);
-
-  const loadDrive = useCallback(async () => {
-    if (Number.isNaN(id)) return;
-    setLoadError(null);
-    try {
-      setDrive(await getNgoDrive(id));
-    } catch (e) {
-      setLoadError({ notFound: isNotFound(e), message: errorMessage(e, ui("Please check your connection and try again.")) });
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  // The donor's own offers are loaded separately: if they fail, the drive still shows.
-  const loadOffers = useCallback(async () => {
-    if (!isDonor) {
-      setOffers([]);
-      return;
-    }
-    setOffersError(null);
-    try {
-      setOffers(await getMyNgoDriveOffers());
-    } catch (e) {
-      setOffersError(errorMessage(e, ui("We couldn't check your offers.")));
-    }
-  }, [isDonor]);
-
-  useEffect(() => {
-    void loadDrive();
-  }, [loadDrive]);
-
-  useEffect(() => {
-    if (!authLoading) void loadOffers();
-  }, [authLoading, loadOffers]);
-
-  // Live updates only reach the NGO and that offer's donor; every other viewer reloads the
-  // numbers when they come back to the tab, so progress never stays stale.
-  useEffect(() => {
-    const refresh = () => { if (document.visibilityState === "visible") void loadDrive(); };
-    window.addEventListener("focus", refresh);
-    document.addEventListener("visibilitychange", refresh);
-    return () => { window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
-  }, [loadDrive]);
-
-  useEntityUpdates(["NGO_DRIVE", "NGO_DRIVE_OFFER"], () => {
-    void loadDrive();
-    void loadOffers();
-  });
-
-  if (loading || authLoading) return <PageSkeleton><div className="h-96" /></PageSkeleton>;
-  if (loadError?.notFound) return <DriveNotFound backHref="/requests" backLabel={ui("Back to browse")} />;
-  if (loadError || !drive) {
-    return (
-      <DriveLoadError
-        message={loadError?.message ?? ui("Something went wrong.")}
-        onRetry={() => {
-          setLoading(true);
-          void loadDrive();
-        }}
-      />
-    );
+/**
+ * Server wrapper: title, description and canonical from the public drive.
+ * Only a definite 404 from the API is "not found" (the proxy turns that into a
+ * real 404 status); any other failure keeps a generic title and renders the
+ * page, which handles its own loading and errors as before.
+ */
+async function loadDrive(id: string): Promise<{ title?: string; description?: string; city?: string } | "missing" | null> {
+  if (!/^\d+$/.test(id)) return "missing";
+  try {
+    const res = await fetch(`${API}/api/v1/drives/${id}`, { next: { revalidate: 300 } });
+    if (res.status === 404) return "missing";
+    return res.ok ? await res.json() : null;
+  } catch {
+    return null;
   }
+}
 
-  const state = giveState(drive, user, offers);
+const clip = (s: string) => (s.length > 155 ? `${s.slice(0, 152).trimEnd()}…` : s);
 
-  return (
-    <>
-      <DriveDetailView
-        drive={drive}
-        mode="live"
-        giveStateResult={state}
-        offersError={offersError}
-        onRetryOffers={() => void loadOffers()}
-      />
-      {sent && <DriveOfferSentModal sent={sent} onClose={closeSent} />}
-    </>
-  );
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const c = await loadDrive(id);
+  if (c === "missing") notFound();
+  const canonical = `/drives/${id}`;
+  if (!c?.title) return { title: "NGO drive", alternates: { canonical } };
+  const about = (c.description ?? "").replace(/\s+/g, " ").trim();
+  return {
+    title: c.title,
+    description: clip(about || `${c.title}${c.city ? `, ${c.city}` : ""}. An NGO drive on CauseKind.`),
+    alternates: { canonical },
+  };
+}
+
+export default async function DriveDetailPage({ params }: Props) {
+  const { id } = await params;
+  if ((await loadDrive(id)) === "missing") notFound();
+  return <DriveDetailClient />;
 }
