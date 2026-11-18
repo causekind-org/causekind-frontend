@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { slugForCategory } from "@/lib/inKindCategories";
 
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useReducer, useRef, useState } from "react";
@@ -823,7 +824,7 @@ export default function OfferWizardPage() {
             <div className="mb-4 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">
               <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]"><UiText>Requests</UiText></Link>
               <span>/</span>
-              <Link href={`/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
+              <Link href={slugForCategory(request.category) ? `/requests/category/${slugForCategory(request.category)}` : `/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
                 {request.category}
               </Link>
               <span>/</span>

@@ -51,6 +51,18 @@ function backHref(raw: string | string[] | undefined): string {
   return "/requests";
 }
 
+/**
+ * The <title> only: about 50 characters before " | CauseKind", cut at a word
+ * boundary with an ellipsis. The page's visible H1 keeps the full title.
+ */
+function capTitle(title: string, max = 50): string {
+  const t = title.replace(/s+/g, " ").trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[s,;:.-–—]+$/, "")}…`;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;
   setRequestLocale(locale);
@@ -62,7 +74,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // unknown requesterType falls on the private side.
   const indexable = res.req.requesterType === "NGO";
   return {
-    title: res.req.title,
+    title: capTitle(res.req.title),
     description: mt("metaRequestDescription", { city: res.req.city || mt("india") }),
     alternates: { canonical: `/requests/${res.req.id}` },
     ...(indexable ? {} : { robots: { index: false, follow: true } }),
