@@ -2,6 +2,7 @@ import { MetadataRoute } from 'next';
 import { blogPosts } from '@/data/blogData';
 import { IN_KIND_CATEGORIES } from '@/lib/inKindCategories';
 import { initiatives } from '@/lib/initiatives';
+import { FEATURES } from '@/lib/features';
 
 // Fixed, not new Date(): a lastmod that changes on every request tells crawlers
 // nothing. Bump it when the static pages' content actually changes.
@@ -32,8 +33,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '',
     '/about',
     '/blog',
-    '/campaigns',
-    '/donate',
+    // Money campaigns and the old /donate page only show "Coming soon" while
+    // FEATURES.money is off; they rejoin the sitemap when it is turned on.
+    ...(FEATURES.money ? ['/campaigns', '/donate'] : []),
     '/privacy',
     '/terms',
     '/refund',

@@ -56,11 +56,11 @@ function backHref(raw: string | string[] | undefined): string {
  * boundary with an ellipsis. The page's visible H1 keeps the full title.
  */
 function capTitle(title: string, max = 50): string {
-  const t = title.replace(/s+/g, " ").trim();
+  const t = title.replace(/\s+/g, " ").trim();
   if (t.length <= max) return t;
   const cut = t.slice(0, max - 1);
   const space = cut.lastIndexOf(" ");
-  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[s,;:.-–—]+$/, "")}…`;
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,;:.\-–—]+$/, "")}…`;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {

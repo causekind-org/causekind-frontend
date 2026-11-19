@@ -6,7 +6,7 @@ import CategoryPageClient from "./CategoryPageClient";
 import { SeoLinkSection } from "@/components/SeoLinkSection";
 
 // Server-rendered intro + guide links for the two categories that have blog guides.
-const CATEGORY_GUIDES: Record<string, { intro: string; links: { name: string; href: string }[] }> = {
+const CATEGORY_GUIDES: Record<string, { heading?: string; intro: string; links: { name: string; href: string }[] }> = {
   clothing: {
     intro: "Donate clean, wearable clothes for children, women and men directly to verified people and NGOs near you. See the current clothing requests above, or read a guide first.",
     links: [
@@ -16,6 +16,11 @@ const CATEGORY_GUIDES: Record<string, { intro: string; links: { name: string; hr
       { name: "How to prepare clothes for donation", href: "/blog/how-to-prepare-clothes-for-donation-india" },
       { name: "What happens after clothes are donated", href: "/blog/what-happens-after-clothes-are-donated-india" },
     ],
+  },
+  furniture: {
+    heading: "Donating furniture",
+    intro: "Donate furniture that still has years of use left, such as chairs, tables, beds and wardrobes. Transport decides everything with furniture, so be clear about size and weight in your listing; it helps a family or NGO near you collect it.",
+    links: [],
   },
   electronics: {
     intro: "Donate working laptops, phones and tablets to verified students and NGOs near you. Wipe your personal data first: the guides below show how.",
@@ -80,7 +85,7 @@ export default async function CategoryPage({ params }: Params) {
       {CATEGORY_GUIDES[cat.slug] && (
         <SeoLinkSection
           id={`${cat.slug}-guides`}
-          heading="Guides"
+          heading={CATEGORY_GUIDES[cat.slug]!.heading ?? "Guides"}
           intro={CATEGORY_GUIDES[cat.slug]!.intro}
           links={CATEGORY_GUIDES[cat.slug]!.links}
         />
