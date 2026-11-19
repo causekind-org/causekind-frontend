@@ -190,12 +190,18 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
     <section
       id="ngo-hero"
       ref={heroRef}
-      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-screen pt-[120px] pb-[96px] flex items-center max-md:min-h-0 max-md:items-start max-md:pt-6 max-md:pb-16"
+      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-screen pt-[120px] pb-[96px] flex items-center ck-ngo-hero-stage max-md:-mt-[var(--ck-nav-h,4.25rem)] max-md:min-h-[100svh] max-md:items-end max-md:pt-[calc(var(--ck-nav-h,4.25rem)+1.5rem)] max-md:pb-[calc(7rem+env(safe-area-inset-bottom))]"
     >
       {/* Animated Mesh Layer */}
       <div className="ngo-hero-bg" aria-hidden="true" />
       {/* Noise Grain Overlay at 12% */}
       <div className="ngo-hero-grain" aria-hidden="true" />
+      {/* Mobile (<768px): full-bleed photo with a dark bottom gradient, the same
+          pattern as the guest homepage hero; text and buttons sit over it. */}
+      <div data-testid="ngo-hero-mobile-photo" className="absolute inset-0 z-0 md:hidden" aria-hidden="true">
+        <Image src="/images/ngo-landing/ngo-hero-mobile.webp" alt="" fill priority sizes="100vw" className="object-cover object-[center_top]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+      </div>
 
       <div className="ngo-container relative z-10 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 items-center">
@@ -522,7 +528,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             {/* ------------------------------------------------------------- */}
             {/* MOBILE PHOTO GRID (< 860px / lg)                               */}
             {/* ------------------------------------------------------------- */}
-            <div className="block lg:hidden w-full max-w-[480px] mx-auto mt-8">
+            <div data-testid="ngo-hero-mobile-collage" className="hidden md:block lg:hidden w-full max-w-[480px] mx-auto mt-8">
               <div className="grid grid-cols-2 gap-3 w-full relative z-10 ngo-cluster-mobile-float">
                 {[
                   { src: "ngo-school-supplies-girl-portrait.webp", alt: "A volunteer handing notebooks and a pencil box to a smiling schoolgirl", caption: "School kit handover", ratio: "aspect-[4/5]" },

@@ -417,7 +417,10 @@ export function SiteHeader() {
     let observedHero: Element | null = null;
     const update = () => {
       frame = 0;
-      const hero = document.querySelector(".ck-lead-hero-stage");
+      // The NGO landing (also "/") reuses the same see-through header over its mobile photo.
+      // Its photo exists below 768px only, so it counts only there.
+      const hero = document.querySelector(".ck-lead-hero-stage")
+        ?? (window.matchMedia("(max-width: 767px)").matches ? document.querySelector(".ck-ngo-hero-stage") : null);
       if (hero && hero !== observedHero) {
         resize.disconnect();
         resize.observe(hero);
@@ -836,6 +839,7 @@ export function SiteHeader() {
       <header data-calm-header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
+        data-ngo-hero={pathname === "/" && overMobileHero && isNgoPartner ? "" : undefined}
         style={{
           // Slide only. Animating opacity here made Chrome flatten the glass
           // (backdrop-filter) buttons inside, and on the way back they could

@@ -68,3 +68,24 @@ describe("verified toast", () => {
     expect(screen.queryByRole("button", { name: /Close verified welcome notification/i })).toBeNull();
   });
 });
+
+describe("mobile hero (full-bleed photo, no collage)", () => {
+  it.each([
+    ["APPROVED", /Start a Drive/i],
+    ["UNDER_REVIEW", /Start a Drive/i],
+  ])("status %s: mobile photo + existing content, collage desktop-only", async (status, cta) => {
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status, organizationName: "Hope Foundation" } as never);
+    const { container } = render(<NgoLandingView />);
+    await screen.findAllByRole(status === "APPROVED" ? "link" : "button", { name: cta });
+
+    const photo = await screen.findByTestId("ngo-hero-mobile-photo");
+    expect(photo.className).toContain("md:hidden");
+    expect(photo.querySelector("img")?.getAttribute("src")).toContain("ngo-hero-mobile.webp");
+    expect(container.querySelector("#ngo-hero")?.className).toContain("ck-ngo-hero-stage");
+
+    // The collage is hidden below 768px; the desktop cluster is unchanged.
+    expect(screen.getByTestId("ngo-hero-mobile-collage").className).toContain("hidden md:block lg:hidden");
+    expect(container.querySelector('[class^="hidden lg:block"]')).not.toBeNull();
+    if (status === "APPROVED") expect(screen.getByText("Verified by CauseKind")).toBeInTheDocument();
+  });
+});
