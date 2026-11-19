@@ -7,6 +7,12 @@ interface RevealProps {
   delay?: number;
   className?: string;
   direction?: "up" | "down" | "left" | "right" | "none";
+  /**
+   * First-screen text: visible in the server HTML (opacity 1 from the start)
+   * and only slides in, so it can paint before hydration and is not held back
+   * as the LCP element. Below-the-fold content keeps the fade.
+   */
+  eager?: boolean;
 }
 
 const offsets: Record<string, { x?: number; y?: number }> = {
@@ -17,7 +23,7 @@ const offsets: Record<string, { x?: number; y?: number }> = {
   none:  {},
 };
 
-export function Reveal({ children, delay = 0, className = "", direction = "up" }: RevealProps) {
+export function Reveal({ children, delay = 0, className = "", direction = "up", eager = false }: RevealProps) {
   /*
    * Reduced motion gets the destination, not the journey.
    *
@@ -43,7 +49,7 @@ export function Reveal({ children, delay = 0, className = "", direction = "up" }
   return (
     <motion.div
       className={className}
-      initial={{ opacity: 0, ...offsets[direction] }}
+      initial={{ opacity: eager ? 1 : 0, ...offsets[direction] }}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
       viewport={{ once: true, amount: 0.08 }}
       transition={{

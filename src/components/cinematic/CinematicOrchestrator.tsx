@@ -29,7 +29,7 @@ import { LandingText } from "@/components/LandingTranslation";
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { loadGsap, refreshScrollTrigger } from "@/lib/gsapLoader";
 import { getLenis } from "@/components/SmoothScroll";
 import { SkipFilmButton } from "@/components/cinematic/SkipFilmButton";
 import styles from "@/sections/landing/cinematic/cinematic.module.css";
@@ -122,7 +122,7 @@ export function CinematicOrchestrator({
       lenis.scrollTo(targetY, { immediate: true, force: true });
     } else window.scrollTo({ top: targetY, behavior: "instant" });
     requestAnimationFrame(() => { html.style.overflow = ""; });
-    ScrollTrigger.refresh();
+    refreshScrollTrigger();
     setNav(false);
     setActive(false);
   }, [setNav]);
@@ -134,7 +134,7 @@ export function CinematicOrchestrator({
       root.style.display = "";
       collapsed.current = false;
       getLenis()?.resize();
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -149,6 +149,12 @@ export function CinematicOrchestrator({
     if (!root || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const lead = leadInRef?.current;
     // The film's last frame has fully scrolled off the top of the screen.
+    // ScrollTrigger loads after the browser is idle (lib/gsapLoader); the nav
+    // and film state stay at their defaults until then.
+    let cancelled = false;
+    let kill: (() => void) | null = null;
+    void loadGsap().then(({ ScrollTrigger }) => {
+    if (cancelled) return;
     const gone = ScrollTrigger.create({
       trigger: root,
       start: "bottom top",
@@ -165,9 +171,11 @@ export function CinematicOrchestrator({
         setActive(self.isActive);
       },
     });
+    kill = () => { st.kill(); gone.kill(); };
+    });
     return () => {
-      st.kill();
-      gone.kill();
+      cancelled = true;
+      kill?.();
       setNav(false);
       setActive(false);
     };
@@ -184,7 +192,7 @@ export function CinematicOrchestrator({
     const lenis = getLenis();
     if (lenis) lenis.scrollTo(targetY, { immediate: true, force: true });
     else window.scrollTo({ top: targetY, behavior: "instant" });
-    ScrollTrigger.refresh();
+    refreshScrollTrigger();
     // Normally the jump makes the trigger inactive and onToggle restores the
     // nav; this covers a trigger that never fired (chapters still loading).
     setNav(false);

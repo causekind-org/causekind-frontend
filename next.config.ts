@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
     // not a downgraded image — so a value missing here is a blank picture, not
     // a slightly heavier one.
     qualities: [75, 90, 95, 100],
+    // AVIF first (smaller), WebP fallback; browsers pick via the Accept header.
+    formats: ["image/avif", "image/webp"],
     remotePatterns: [
       { protocol: "http", hostname: "localhost", port: "8080" },
       { protocol: "https", hostname: "images.unsplash.com" },

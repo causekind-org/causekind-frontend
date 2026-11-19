@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import Link from "@/components/AppLink";
@@ -123,7 +123,7 @@ export function HomeSahasCampaigns() {
     return () => { live = false; };
   }, [isDonee]);
 
-  useEffect(() => { if (cards) ScrollTrigger.refresh(); }, [cards]);
+  useEffect(() => { if (cards) refreshScrollTrigger(); }, [cards]);
 
   const syncEdges = () => {
     const row = rowRef.current;

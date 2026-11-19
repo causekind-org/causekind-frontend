@@ -15,8 +15,7 @@ import { CreditsSection } from "@/components/home/CreditsSection";
 import { HowReceivingWorksSection } from "@/components/home/HowReceivingWorksSection";
 import { MyRequestsSection } from "@/components/home/MyRequestsSection";
 import { HandoverTipsSection } from "@/components/home/HandoverTipsSection";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import type { PublicItemRequest, PlatformStats } from "@/lib/api";
 
 export function RoleHome({ 
@@ -34,7 +33,7 @@ export function RoleHome({
   useEffect(() => {
     // Refresh ScrollTrigger when RoleHome mounts
     setTimeout(() => {
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     }, 150);
   }, []);
 

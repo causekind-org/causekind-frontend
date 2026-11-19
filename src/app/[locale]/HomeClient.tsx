@@ -83,12 +83,8 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -170,17 +166,17 @@ export default function HomeClient({
     getItemRequests()
       .then((data) => {
         setItemRequests(data);
-        ScrollTrigger.refresh();
+        refreshScrollTrigger();
       })
       .catch(() => {
-        ScrollTrigger.refresh();
+        refreshScrollTrigger();
       });
   }, [user]);
 
   useEffect(() => {
     // Refresh ScrollTrigger after initial mount and layout settling
     const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     }, 150);
     return () => clearTimeout(timer);
   }, [initialPublicRequests, stats, loading, error]);

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { useInView, useReducedMotion } from "framer-motion";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import {
   ArrowRight,
   ChevronLeft,
@@ -150,7 +150,7 @@ export function LiveNeedsSection({
   useEffect(() => {
     // Refresh ScrollTrigger when filtered card count changes layout height
     const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     }, 60);
     return () => clearTimeout(timer);
   }, [selectedCategory, displayedNeeds.length]);

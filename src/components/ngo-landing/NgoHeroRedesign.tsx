@@ -530,7 +530,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                   { src: "ngo-ration-distribution-landscape.webp", alt: "Volunteers handing a grain sack and ration box to villagers", caption: "Ration distribution", ratio: "col-span-2 aspect-[3/2]" },
                 ].map((p, i) => (
                   <div key={p.src} className={`${p.ratio} relative rounded-[20px] overflow-hidden border border-white/25 shadow-lg`}>
-                    <Image src={`/images/ngo-landing/${p.src}`} alt={p.alt} fill sizes="(max-width: 860px) 50vw, 240px" priority={i === 0} loading={i === 0 ? undefined : "lazy"} className="object-cover" />
+                    <Image src={`/images/ngo-landing/${p.src}`} alt={p.alt} fill sizes={p.ratio.includes("col-span-2") ? "(max-width: 520px) 100vw, 480px" : "(max-width: 520px) 50vw, 240px"} priority={i === 0} loading={i === 0 ? undefined : "lazy"} className="object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
                     <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-black/50 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium shadow-md">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
