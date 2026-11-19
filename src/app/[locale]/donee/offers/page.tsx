@@ -100,7 +100,7 @@ function PhotoLightbox({ urls, index, onClose, onNavigate }: {
 
 export default function DoneeOffersPage() {
   return (
-    <Suspense fallback={<main className="min-h-screen bg-gray-50 dark:bg-gray-950" />}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-gray-950" />}>
       <DoneeOffersView />
     </Suspense>
   );
@@ -160,7 +160,7 @@ function DoneeOffersView() {
   const visible = focused ? [focused] : offers;
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <div className="mx-auto max-w-2xl px-4 pt-5 sm:pt-8">
         {/* Bare control — no pill, no border, no background. The arrow slides
             back on hover and the label follows it, so the motion says "return"
@@ -373,6 +373,6 @@ function DoneeOffersView() {
           onNavigate={(index) => setLightbox(lb => (lb ? { ...lb, index } : lb))}
         />
       )}
-    </main>
+    </div>
   );
 }

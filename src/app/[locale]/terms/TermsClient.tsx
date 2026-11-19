@@ -290,7 +290,7 @@ export default function TermsClient() {
           </aside>
 
           {/* Content */}
-          <main className="min-w-0">
+          <div className="min-w-0">
             {/* Mobile "jump to" */}
             <details className="mb-8 rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
               <summary className="cursor-pointer text-sm font-bold text-stone-800 dark:text-stone-100">
@@ -655,7 +655,7 @@ export default function TermsClient() {
                 </p>
               </div>
             </Reveal>
-          </main>
+          </div>
         </div>
       </div>
     </div>

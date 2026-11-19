@@ -889,7 +889,7 @@ export default function AdminDashboardPage() {
       </aside>
 
       {/* ── CREAM RIGHT PANEL ────────────────────────────────────────────────── */}
-      <main className="flex-1 lg:pl-[296px] min-w-0 flex flex-col bg-[#faf7f2]">
+      <div className="flex-1 lg:pl-[296px] min-w-0 flex flex-col bg-[#faf7f2]">
 
         {/* Mobile top bar */}
         <div className={`lg:hidden sticky top-0 z-20 flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.07] transition-shadow duration-300 ${
@@ -1399,7 +1399,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

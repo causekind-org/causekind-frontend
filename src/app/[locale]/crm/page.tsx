@@ -62,10 +62,10 @@ export default function CrmPortalPage() {
             );
           })}
         </aside>
-        <main className="min-w-0 flex-1 p-4">
+        <div className="min-w-0 flex-1 p-4">
           {view === "contacts" && <CrmContactsPanel canManage={manager} />}
           {view === "followups" && <CrmWorkSummary canManage={manager} refreshKey={0} onChanged={() => {}} />}
-        </main>
+        </div>
       </div>
     </div>
   );

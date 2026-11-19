@@ -57,7 +57,7 @@ export default function ReportFundraiserPage() {
 
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
-      <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, maxWidth: 720, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, maxWidth: 720, display: "flex", flexDirection: "column", gap: 20 }}>
         <Link href={`/fundraisers/${id}`} className={s.small} style={{ textDecoration: "none" }}><UiText>← Back to the fundraiser</UiText></Link>
         {sent ? (
           <section className={s.card} role="status" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 10 }}>
@@ -102,7 +102,7 @@ export default function ReportFundraiserPage() {
             </div>
           </form>
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -47,7 +47,7 @@ function DocumentsQueue() {
 
   return (
     <div className={a.root}>
-      <main className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
         <div><h1 className={a.serif} style={{ fontSize: 28 }}>Donation documents</h1>
           <p className={a.muted}>Fundraiser donations whose certificate or receipt needs a person. Payment is already confirmed for all of these.</p></div>
         <nav className={a.tabs} aria-label="Filter">
@@ -64,7 +64,7 @@ function DocumentsQueue() {
         ) : rows === null ? <p className={a.muted} aria-busy="true">Loading…</p>
           : rows.length === 0 ? <div className={a.card} style={{ padding: 20 }}>Nothing needs attention here.</div>
           : rows.map((r) => <QueueCard key={r.id} r={r} onDone={load} />)}
-      </main>
+      </div>
     </div>
   );
 }

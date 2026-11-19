@@ -55,7 +55,7 @@ function SahasHub() {
   };
 
   return (
-    <main className="min-h-screen bg-[#FBF7F2] text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
+    <div className="min-h-screen bg-[#FBF7F2] text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
       <div className="flex w-full flex-col gap-5 px-4 py-8 sm:px-6 lg:px-10 lg:py-12 xl:px-16">
         <nav aria-label={ui("Breadcrumb")} className="text-sm text-[#6B5A4E] dark:text-stone-400">
           <Link href="/" className="text-inherit hover:underline"><UiText>Home</UiText></Link> › <UiText>Sahas Campaigns</UiText>
@@ -107,6 +107,6 @@ function SahasHub() {
           <SahasHubList cards={shown} locale={locale} />
         )}
       </div>
-    </main>
+    </div>
   );
 }

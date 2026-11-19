@@ -12,7 +12,7 @@ export const metadata = {
  */
 export default function NotFound() {
   return (
-    <main className="relative overflow-hidden min-h-[60vh] flex items-center justify-center px-4 py-20">
+    <div className="relative overflow-hidden min-h-[60vh] flex items-center justify-center px-4 py-20">
       <div className="pointer-events-none absolute -top-32 left-[20%] w-[500px] h-[500px] rounded-full bg-[#b04a15]/8 blur-3xl" />
       <div className="relative max-w-md text-center">
         <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#b04a15]/10 text-[#b04a15] text-xs font-bold">
@@ -39,6 +39,6 @@ export default function NotFound() {
           </Link>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

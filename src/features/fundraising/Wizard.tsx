@@ -136,7 +136,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
           <button type="button" className={`${s.btn} ${s.bs}`} onClick={saveAndExit}><UiText>Save and exit</UiText></button>
         </div>
       </header>
-      <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
         <Stepper current={step} onPick={(i) => { if (i !== step) void go(i); }} />
         {fixing && step < 7 && (
           <div style={{ maxWidth: 860, display: "flex", gap: 12, alignItems: "center", justifyContent: "space-between", padding: "12px 16px", borderRadius: 10, background: "#eaf0f8", color: "#1e3a60", flexWrap: "wrap" }}>
@@ -163,7 +163,7 @@ export function Wizard({ initial, onLeftDraft }: { initial: FundraisingApplicati
           }} />} />}
         {step === 6 && <BankDetails app={app} set={set} onBack={() => go(5)} onNext={() => go(7)} />}
         {step === 7 && <Review app={app} set={set} flush={async () => (await flush()) && (await draft.flush())} goTo={go} fix={(to) => { setFixing(true); void go(to); }} onSubmitted={onLeftDraft} page={draft.page} reloadPage={draft.reload} />}
-      </main>
+      </div>
     </>
   );
 }

@@ -37,7 +37,7 @@ export function CrmLogin() {
   return (
     <div className="flex min-h-screen flex-col bg-muted/40">
       <header className="flex h-12 items-center bg-[#1e2a44] px-4 font-semibold text-white">CauseKind CRM</header>
-      <main className="flex flex-1 items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center p-4">
         <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg border bg-background p-6 shadow-sm">
           <div>
             <h1 className="text-xl font-semibold">Sign in to the CRM</h1>
@@ -59,7 +59,7 @@ export function CrmLogin() {
           </Button>
           <p className="text-xs text-muted-foreground">Forgot your password? Ask your super admin to reset it.</p>
         </form>
-      </main>
+      </div>
     </div>
   );
 }

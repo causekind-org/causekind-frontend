@@ -8,14 +8,14 @@ import { useRef } from 'react';
 import type { Initiative } from '@/lib/initiatives';
 
 export function InitiativeStory({ initiative }: { initiative: Initiative }) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] });
   const imageY = useTransform(scrollYProgress, [0, 1], reduce ? ['0%', '0%'] : ['-6%', '6%']);
   const scale = useTransform(scrollYProgress, [0, 0.35], reduce ? [1, 1] : [1.06, 1]);
 
   return (
-    <main ref={ref} className="bg-background text-foreground">
+    <div ref={ref} className="bg-background text-foreground">
       <section className="relative min-h-[calc(100svh-3.5rem)] overflow-hidden bg-stone-950 text-white">
         <motion.div style={{ y: imageY, scale }} className="absolute inset-0 origin-center">
           <Image src={initiative.image} alt={initiative.imageAlt} fill priority sizes="100vw" className="object-cover opacity-75" />
@@ -63,6 +63,6 @@ export function InitiativeStory({ initiative }: { initiative: Initiative }) {
         <p className="mx-auto mt-5 max-w-xl text-pretty leading-relaxed text-stone-600 dark:text-stone-300">Choose how you would like to help CauseKind connect people with practical, accountable support.</p>
         <Link href="/donate/money#donate-form" className="mt-8 inline-flex min-h-11 items-center gap-2 rounded-full bg-brand-500 px-6 py-3 font-bold text-white shadow-[0_10px_24px_rgba(176,74,21,0.22)] transition-[transform,background-color] hover:-translate-y-0.5 hover:bg-brand-600 active:scale-[0.96]">Donate through CauseKind <ArrowRight className="h-4 w-4" /></Link>
       </section>
-    </main>
+    </div>
   );
 }

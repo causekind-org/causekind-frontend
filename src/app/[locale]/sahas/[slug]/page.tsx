@@ -38,22 +38,22 @@ function SahasCampaign() {
   if (state === "loading") return <PageSkeleton><div className="h-96" /></PageSkeleton>;
   if (state === "missing" || (state === "ready" && !data)) {
     return (
-      <main className="min-h-[60vh] bg-[#FBF7F2] px-4 py-16 dark:bg-zinc-950">
+      <div className="min-h-[60vh] bg-[#FBF7F2] px-4 py-16 dark:bg-zinc-950">
         <div className="mx-auto max-w-md text-center">
           <h1 className={`${serif} text-2xl`}><UiText>Campaign not found</UiText></h1>
           <Link href="/sahas" className="mt-4 inline-block font-semibold text-[#b04a15]"><UiText>See all Sahas campaigns</UiText></Link>
         </div>
-      </main>
+      </div>
     );
   }
   if (state === "error" || !data) {
     return (
-      <main className="min-h-[60vh] bg-[#FBF7F2] px-4 py-16 dark:bg-zinc-950">
+      <div className="min-h-[60vh] bg-[#FBF7F2] px-4 py-16 dark:bg-zinc-950">
         <div role="alert" className="mx-auto flex max-w-md flex-col items-center gap-3 text-center">
           <b><UiText>Couldn&apos;t load this campaign</UiText></b>
           <button type="button" onClick={load} className="min-h-[44px] rounded-xl border border-[#b04a15] px-4 text-sm font-semibold text-[#b04a15]"><UiText>Try again</UiText></button>
         </div>
-      </main>
+      </div>
     );
   }
 
@@ -65,7 +65,7 @@ function SahasCampaign() {
   const firstOpen = items.find((i) => i.quantityLeft > 0);
 
   return (
-    <main className="min-h-screen bg-[#FBF7F2] pb-[calc(var(--ck-bottom-chrome)+2rem)] text-[#1F140D] lg:pb-16 dark:bg-zinc-950 dark:text-stone-100">
+    <div className="min-h-screen bg-[#FBF7F2] pb-[calc(var(--ck-bottom-chrome)+2rem)] text-[#1F140D] lg:pb-16 dark:bg-zinc-950 dark:text-stone-100">
       <div className="mx-auto flex max-w-6xl flex-col gap-14 px-4 pt-6 sm:px-6 sm:pt-8">
         <section className="grid grid-cols-1 items-start gap-6 lg:grid-cols-2 lg:gap-9">
           <SahasGallery cover={c.imageUrl} coverAlt={c.coverAltText} page={data.page} />
@@ -212,7 +212,7 @@ function SahasCampaign() {
       </div>
       {c.collectsMoney && data.moneyOpen && (c.amountRaised ?? 0) < (c.targetAmount ?? 0) && <SahasFloatingDonate slug={c.slug} />}
 
-    </main>
+    </div>
   );
 
   function itemRow(i: SahasItemLine) {

@@ -53,7 +53,7 @@ export function ManageWorkspace({ c }: { c: FundraisingCampaign }) {
   ];
 
   return (
-    <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 22 }}>
+    <div className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 22 }}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <Link href="/fundraising" className={s.small} style={{ textDecoration: "none" }}><UiText>← Your fundraisers</UiText></Link>
@@ -96,7 +96,7 @@ export function ManageWorkspace({ c }: { c: FundraisingCampaign }) {
       )}
 
       {closing && data && <ClosureDialog c={c} o={data.o} onDone={() => { setClosing(false); load(); }} onCancel={() => setClosing(false)} />}
-    </main>
+    </div>
   );
 }
 

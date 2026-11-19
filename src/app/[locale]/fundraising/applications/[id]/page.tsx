@@ -31,13 +31,13 @@ function ApplicationScreen({ id }: { id: number }) {
 
   if (missing) {
     return (
-      <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
+      <div className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
         <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Application not found</UiText></h1>
         <p className={s.muted} style={{ marginTop: 8 }}><Link href="/fundraising"><UiText>Back to your fundraisers</UiText></Link></p>
-      </main>
+      </div>
     );
   }
-  if (!app) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }} />;
+  if (!app) return <div className={s.wrap} aria-busy="true" style={{ minHeight: 400 }} />;
   if (app.status === "DRAFT") {
     return <WizardWithSubmit app={app} onSubmitted={(a) => { setSubmittedNow(true); setApp(a); }} />;
   }

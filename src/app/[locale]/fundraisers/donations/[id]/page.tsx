@@ -66,7 +66,7 @@ export default function DonationResultPage() {
 
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
-      <main className={s.wrap} style={{ paddingTop: 56, paddingBottom: 72, maxWidth: 640, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div className={s.wrap} style={{ paddingTop: 56, paddingBottom: 72, maxWidth: 640, display: "flex", flexDirection: "column", gap: 16 }}>
         {status === "COMPLETED" ? (
           <>
             {icon("#e6f2ea", "#1d5b3a", "check")}
@@ -112,7 +112,7 @@ export default function DonationResultPage() {
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}><button type="button" className={`${s.btn} ${s.bs}`} onClick={() => void check()} disabled={checking}>{checking ? ui("Checking…") : ui("Check status")}</button>{back}</div>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

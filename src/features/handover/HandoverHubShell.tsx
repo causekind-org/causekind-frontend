@@ -85,7 +85,7 @@ export function HandoverHubShell({
   return (
     // Only has to clear the dock now — the chat launcher floats, so it needs no
     // page gutter of its own.
-    <main data-ck-role-theme={drive ? "ngo" : undefined} className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-[calc(var(--ck-bottom-chrome)+1.5rem)] lg:pb-10`}>
+    <div data-ck-role-theme={drive ? "ngo" : undefined} className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-[calc(var(--ck-bottom-chrome)+1.5rem)] lg:pb-10`}>
       <div className="mx-auto max-w-6xl px-4 pt-5">
         {/* ── Context header ─────────────────────────────────────────────── */}
         <header className="mb-5">
@@ -201,7 +201,7 @@ export function HandoverHubShell({
         />
       )}
 
-    </main>
+    </div>
   );
 }
 

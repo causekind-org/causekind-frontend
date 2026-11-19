@@ -772,11 +772,11 @@ export default function SuperAdminPage() {
               middle of any viewport wider than 72rem, with dead page
               background beyond it. <main> now spans the full column and only
               the content inside it is capped. */}
-          <main className="flex-1 min-h-0 overflow-y-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-3.5 sm:p-7 max-w-6xl w-full">
               {content}
             </div>
-          </main>
+          </div>
         </div>
       </div>
 

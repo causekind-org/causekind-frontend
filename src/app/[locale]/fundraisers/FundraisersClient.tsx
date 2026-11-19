@@ -45,7 +45,7 @@ export default function FundraisersPage() {
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
 
   if (!FEATURES.fundraising) {
-    return <div className={`${s.root} ${s.publicTheme}`}><main className={s.wrap} style={{ paddingTop: 64 }}><h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Fundraisers aren&apos;t available yet</UiText></h1></main></div>;
+    return <div className={`${s.root} ${s.publicTheme}`}><div className={s.wrap} style={{ paddingTop: 64 }}><h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Fundraisers aren&apos;t available yet</UiText></h1></div></div>;
   }
 
   const term = q.trim().toLowerCase();
@@ -53,7 +53,7 @@ export default function FundraisersPage() {
 
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
-      <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 720 }}>
           <h1 className={s.serif} style={{ fontSize: 40, lineHeight: 1.1 }}><UiText>Fundraisers</UiText></h1>
           <p className={s.muted}><UiText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</UiText> <UiText>Looking to give items instead?</UiText> <Link href="/requests" className="underline underline-offset-2"><UiText>Donate items</UiText></Link></p>
@@ -118,7 +118,7 @@ export default function FundraisersPage() {
           </div>
         )}
         <p className={`${s.muted} ${s.small}`}><UiText>Totals on cards count only payments our server has confirmed. No featured or paid placement.</UiText></p>
-      </main>
+      </div>
     </div>
   );
 }

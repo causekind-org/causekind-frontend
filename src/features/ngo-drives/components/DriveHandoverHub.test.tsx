@@ -112,8 +112,8 @@ describe("drive handover: the shared hub", () => {
     render(<DriveHandoverHub role="DONOR" userEmail="donor@test" onChanged={vi.fn()}
       offer={offer({ handoverPhotos: ["https://x.test/h.png"], receiptPhotos: ["https://x.test/r.png"] })}
       handover={{ method: "DROP_OFF", scheduledDateTime: "2030-01-07T10:00:00", rescheduleCount: 0 } as never} />);
-    expect(document.querySelector("main")).toHaveAttribute("data-ck-role-theme", "ngo");
-    expect(document.querySelector("main")?.className).toContain("handover-ngo-drive");
+    expect(document.querySelector(".handover-ngo-drive")).toHaveAttribute("data-ck-role-theme", "ngo");
+    expect(document.querySelector(".handover-ngo-drive")?.className).toContain("handover-ngo-drive");
     expect(screen.getAllByRole("heading", { level: 1 })[0]).toHaveTextContent("Winter blankets");
     expect(screen.getByText(/Hope Trust · 3 pieces of Blankets/)).toBeInTheDocument();
     expect(screen.getByTestId("drive-photo-sets")).toHaveTextContent("From you");

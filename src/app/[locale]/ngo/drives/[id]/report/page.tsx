@@ -54,7 +54,7 @@ export default function NgoDriveReportPage() {
   ];
 
   return (
-    <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
+    <div data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
       {/* One container for hero and cards, so the title, tiles and cards share both edges. */}
       <div className="bg-gradient-to-br from-ngo-900 to-ngo-800 text-white" data-testid="report-hero">
         <div className={CONTAINER + " py-8 sm:py-10"}>
@@ -116,6 +116,6 @@ export default function NgoDriveReportPage() {
       </div>
       <FilePreviewDialog files={(photos?.urls ?? []).map((u, i) => ({ name: df("handoverPhoto", { n: i + 1 }), url: u, mimeType: "image/jpeg" }))}
         index={photos?.index ?? null} onIndexChange={(i) => setPhotos((p) => (p ? { ...p, index: i } : p))} onClose={() => setPhotos(null)} />
-    </main>
+    </div>
   );
 }

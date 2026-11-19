@@ -227,7 +227,7 @@ export default function RefundClient() {
             </div>
           </aside>
 
-          <main className="min-w-0">
+          <div className="min-w-0">
             <details className="mb-8 rounded-2xl border border-stone-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 lg:hidden">
               <summary className="cursor-pointer text-sm font-bold text-stone-800 dark:text-stone-100">
                 On this page
@@ -308,7 +308,7 @@ export default function RefundClient() {
                 </p>
               </div>
             </Reveal>
-          </main>
+          </div>
         </div>
       </div>
     </div>

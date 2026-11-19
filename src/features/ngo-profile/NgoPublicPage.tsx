@@ -175,7 +175,7 @@ export function NgoPublicPage({ slug }: { slug: string }) {
     .map((l) => safeExternalUrl(l)).filter((l): l is string => Boolean(l));
 
   return (
-    <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
+    <div data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 pb-16 dark:bg-zinc-950">
       <FilePreviewDialog files={(ngo.documents ?? []).map(d => ({ name: d.label, url: d.url }))} index={previewIndex}
         onIndexChange={setPreviewIndex} onClose={() => setPreviewIndex(null)} />
       {manage && <OwnerEditDialog kind={editing} manage={manage} onSaved={onOwnerSaved} onClose={() => setEditing(null)} />}
@@ -346,6 +346,6 @@ export function NgoPublicPage({ slug }: { slug: string }) {
 
         </aside>
       </div>
-    </main>
+    </div>
   );
 }

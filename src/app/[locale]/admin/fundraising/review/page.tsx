@@ -31,11 +31,11 @@ export default function AdminFundraisingReviewPage() {
   }, []);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
 
   return (
     <div className={a.root}>
-      <main style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 18 }}>
+      <div style={{ padding: "20px 28px 48px", display: "flex", flexDirection: "column", gap: 18 }}>
         <nav className={a.switch} aria-label="Fundraising review">
           <Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link>
           <Link href="/admin/fundraising/campaigns" className={a.switchBtn}>Publication review</Link>
@@ -70,7 +70,7 @@ export default function AdminFundraisingReviewPage() {
               : rows && rows.length > 0 ? <section className={a.card} style={{ padding: 22 }}><p className={a.muted}>Pick an item to review.</p></section> : null}
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -29,13 +29,13 @@ function CampaignScreen({ id }: { id: number }) {
 
   if (missing) {
     return (
-      <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
+      <div className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
         <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Campaign not found</UiText></h1>
         <p className={s.muted} style={{ marginTop: 8 }}><Link href="/fundraising"><UiText>Back to your fundraisers</UiText></Link></p>
-      </main>
+      </div>
     );
   }
-  if (!c) return <main className={s.wrap} aria-busy="true" style={{ minHeight: 400 }} />;
+  if (!c) return <div className={s.wrap} aria-busy="true" style={{ minHeight: 400 }} />;
   // Older fundraisers keep documents private until the donee agrees once (owner, 2026-10-30).
   const optIn = <ShowDocumentsOptIn c={c} onDone={setC} />;
   if (["APPROVED", "PAUSED", "COLLECTIONS_CLOSED", "OUTCOME_REPORTING"].includes(c.status)) return <>{optIn}<ManageWorkspace c={c} /></>;
