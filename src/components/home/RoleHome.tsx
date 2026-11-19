@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HomeSahasCampaigns } from "@/components/home/HomeSahasCampaigns";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
+import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
@@ -45,12 +46,13 @@ export function RoleHome({
       <HomeSahasCampaigns />
       {/* Verified fundraisers come first, then About CauseKind (swapped 2026-11-13). */}
       <HomeFundraisers />
-      {/* The main page's About (flip cards), in the default donor colours. */}
-      <WhoAreWeDesktop />
-      <SupportGallery />
+      {/* Live needs straight after the fundraisers (owner, 2026-11-16). */}
       <div className="ck-home-paper relative z-10">
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
       </div>
+      {/* About: Layout C "Two ways to give" (owner, 2026-11-16). */}
+      <AboutTwoWays />
+      <SupportGallery />
       <div className="ck-home-paper relative z-10">
         <NgoDrivesSection />
       </div>

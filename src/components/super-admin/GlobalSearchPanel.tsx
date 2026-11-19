@@ -30,6 +30,8 @@ export function useGlobalSearch(minLength = 2, limit = 5) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SaSearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  // A failed search used to show nothing at all, as if the query were still typing.
+  const [failed, setFailed] = useState(false);
   // Guards against a slow early request landing after a fast later one and
   // painting stale results over the current query.
   const requestId = useRef(0);
@@ -44,17 +46,18 @@ export function useGlobalSearch(minLength = 2, limit = 5) {
 
     const id = ++requestId.current;
     setLoading(true);
+    setFailed(false);
     const timer = setTimeout(() => {
       superAdminSearch(trimmed, undefined, limit)
         .then((res) => { if (id === requestId.current) setResults(res); })
-        .catch(() => { if (id === requestId.current) setResults(null); })
+        .catch(() => { if (id === requestId.current) { setResults(null); setFailed(true); } })
         .finally(() => { if (id === requestId.current) setLoading(false); });
     }, 250);
 
     return () => clearTimeout(timer);
   }, [query, minLength, limit]);
 
-  return { query, setQuery, results, loading };
+  return { query, setQuery, results, loading, failed };
 }
 
 export function GlobalSearchPanel({
@@ -67,7 +70,7 @@ export function GlobalSearchPanel({
   isDark: boolean;
 }) {
   const t = saTheme(isDark);
-  const { query, setQuery, results, loading } = useGlobalSearch(2, 10);
+  const { query, setQuery, results, loading, failed } = useGlobalSearch(2, 10);
 
   // Kept in step with CommandPalette's destinationOf — the same hit must lead to
   // the same place whether it was found here or through ⌘K.
@@ -102,6 +105,12 @@ export function GlobalSearchPanel({
         <div className="flex justify-center py-16">
           <Loader2 className={`size-6 animate-spin ${t.dim}`} />
         </div>
+      )}
+
+      {!loading && failed && (
+        <p role="alert" className="py-10 text-center text-sm font-semibold text-red-600">
+          Search failed. Change the query or try again in a moment.
+        </p>
       )}
 
       {!loading && query.trim().length >= 2 && results?.groups.length === 0 && (
