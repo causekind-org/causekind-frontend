@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { NGO_DRIVE_FAQ_CATEGORY_KEY, NGO_DRIVE_FAQ_KEYS } from "@/features/ngo-drives/ngoDriveFaq";
+import { NGO_DRIVE_FAQ_CATEGORY_KEY } from "@/features/ngo-drives/ngoDriveFaq";
+import { FAQ_ITEMS, FAQ_TABS } from "./faqItems";
 import { CursorGlowHero } from "@/components/CursorGlowHero";
 import { Reveal } from "@/components/Reveal";
 import { ArrowLeft, ArrowRight, Plus } from "lucide-react";
@@ -16,49 +17,32 @@ type FaqItem = { q: string; a: string; num: string };
 export function FaqPageClient() {
   const t = useTranslations("faq");
   const [activeCategory, setActiveCategory] = useState(0);
-  // /faq?category=ngo-drives (the drive page's link) opens the NGO drives category.
+  // /faq?category=<tab id> opens that tab (e.g. the drive page links to
+  // ?category=ngo-drives); no parameter, or ?category=all, opens "All".
   useEffect(() => {
     try {
-      if (new URLSearchParams(window.location.search).get("category") === "ngo-drives") setActiveCategory(3);
+      const id = new URLSearchParams(window.location.search).get("category");
+      const i = FAQ_TABS.findIndex((tab) => tab.id === id);
+      if (i > 0) setActiveCategory(i);
     } catch { /* no window */ }
   }, []);
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
-  // Real, already-approved FAQ copy (next-intl `faq` namespace) grouped into
-  // categories for this page — no invented content, just a new presentation.
-  const categories: { label: string; items: FaqItem[] }[] = [
-    {
-      label: "Trust & Safety",
-      items: [
-        { num: "01", q: t("q1"), a: t("a1") },
-        { num: "02", q: t("q2"), a: t("a2") },
-        { num: "03", q: t("q7"), a: t("a7") },
-        { num: "04", q: t("q8"), a: t("a8") },
-      ],
-    },
-    {
-      label: "Giving & Receiving",
-      items: [
-        { num: "05", q: t("q3"), a: t("a3") },
-        { num: "06", q: t("q6"), a: t("a6") },
-        { num: "07", q: t("q9"), a: t("a9") },
-        { num: "08", q: t("q10"), a: t("a10") },
-        { num: "09", q: t("q11"), a: t("a11") },
-      ],
-    },
-    {
-      label: "Money & Tracking",
-      items: [
-        { num: "10", q: t("q4"), a: t("a4") },
-        { num: "11", q: t("q5"), a: t("a5") },
-        { num: "12", q: t("q13"), a: t("a13") },
-      ],
-    },
-    {
-      label: t(NGO_DRIVE_FAQ_CATEGORY_KEY),
-      items: NGO_DRIVE_FAQ_KEYS.map((k, i) => ({ num: String(13 + i), q: t(k.q), a: t(k.a) })),
-    },
-  ];
+  // One list (faqItems.ts), tagged by tab. "All" shows every question; each
+  // other tab filters by its category, numbered from 01 within the tab.
+  const labels: Record<string, string> = {
+    all: "All",
+    "trust-safety": "Trust & Safety",
+    "giving-receiving": "Giving & Receiving",
+    "money-tracking": "Money & Tracking",
+    "ngo-drives": t(NGO_DRIVE_FAQ_CATEGORY_KEY),
+  };
+  const categories: { label: string; items: FaqItem[] }[] = FAQ_TABS.map((tab) => ({
+    label: labels[tab.id],
+    items: FAQ_ITEMS
+      .filter((item) => tab.category === null || item.category === tab.category)
+      .map((item, i) => ({ num: String(i + 1).padStart(2, "0"), q: t(item.q), a: t(item.a) })),
+  }));
 
   const activeItems = categories[activeCategory].items;
 
