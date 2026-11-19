@@ -21,9 +21,11 @@ type AnimatedWrapperProps = {
   /** amount of element visible before triggering: a fraction 0–1, or the
    *  framer-motion keywords "some" (any part visible) / "all" (fully visible) */
   threshold?: number | "some" | "all";
+  /** First-screen text: starts at opacity 1 and only moves (see Reveal). */
+  eager?: boolean;
 };
 
-function buildVariants(direction: Direction, duration: number, delay: number): Variants {
+function buildVariants(direction: Direction, duration: number, delay: number, eager = false): Variants {
   const offsets: Record<Direction, { x?: number; y?: number; scale?: number }> = {
     up:    { y: 30, scale: 0.97 },
     down:  { y: -30, scale: 0.97 },
@@ -31,7 +33,7 @@ function buildVariants(direction: Direction, duration: number, delay: number): V
     right: { x: -30, scale: 0.97 },
     none:  { scale: 0.97 },
   };
-  const hidden = { opacity: 0, ...offsets[direction] };
+  const hidden = { opacity: eager ? 1 : 0, ...offsets[direction] };
   const visible = {
     opacity: 1,
     x: 0,
@@ -57,6 +59,7 @@ export const AnimatedWrapper: React.FC<AnimatedWrapperProps> = ({
   direction = "up",
   inView = false,
   threshold = 0.15,
+  eager = false,
 }) => {
   // Respect the OS-level motion preference: skip the slide/scale entrance
   // (and the scroll observer work behind whileInView) and just fade content
@@ -64,7 +67,7 @@ export const AnimatedWrapper: React.FC<AnimatedWrapperProps> = ({
   const prefersReducedMotion = useReducedMotion();
   const resolvedVariants = prefersReducedMotion
     ? { hidden: { opacity: 1 }, visible: { opacity: 1 } }
-    : variants ?? buildVariants(direction, duration, delay);
+    : variants ?? buildVariants(direction, duration, delay, eager);
 
   if (prefersReducedMotion) {
     return <div className={className}>{children}</div>;

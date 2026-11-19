@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import {
@@ -55,6 +56,8 @@ export function UserDirectoryPanel({
   const [data, setData] = useState<SaPage<SaUserSummary> | null>(null);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [queryInput, setQueryInput] = useState("");
   const [filters, setFilters] = useState<SaDirectoryFilters>({});
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -68,11 +71,12 @@ export function UserDirectoryPanel({
   useEffect(() => {
     if (selected !== null) return;   // list is hidden; don't fetch behind the 360
     setLoading(true);
+    setFailed(false);
     superAdminDirectory(filters, page, 25)
       .then(setData)
-      .catch(() => toast.error("Couldn't load the directory."))
+      .catch(() => { setFailed(true); toast.error("Couldn't load the directory."); })
       .finally(() => setLoading(false));
-  }, [filters, page, selected]);
+  }, [filters, page, selected, reloadKey]);
 
   if (selected !== null) {
     return <User360Panel userId={selected} isDark={isDark} onBack={() => setSelected(null)} />;
@@ -180,6 +184,8 @@ export function UserDirectoryPanel({
         <div className="flex justify-center py-20">
           <Loader2 className={`size-8 animate-spin ${t.dim}`} />
         </div>
+      ) : failed ? (
+        <SaLoadError what="the user directory" onRetry={() => setReloadKey((k) => k + 1)} />
       ) : !data || data.items.length === 0 ? (
         <p className={`py-10 text-center text-sm ${t.muted}`}>No users match these filters.</p>
       ) : (

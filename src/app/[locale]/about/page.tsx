@@ -70,7 +70,7 @@ export default async function AboutPage({ params }: LocaleParams) {
 
       {/* ── Section 1: Our Story — PHOTO RIGHT (7/5 split reversed) ── */}
       <div className="mx-auto max-w-7xl px-6 sm:px-10 py-10 md:py-14">
-        <Reveal>
+        <Reveal eager>
         <div className="grid gap-6 md:gap-10 lg:grid-cols-[3fr_2fr] items-center">
 
           {/* Story text — LEFT, with oversized decorative number */}

@@ -4,8 +4,7 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 
 import React, { useEffect, useId, useRef } from "react";
 import Image from "next/image";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { loadGsap, isInViewport } from "@/lib/gsapLoader";
 import { Quote } from "lucide-react";
 import { FOUNDER } from "@/lib/landingConstants";
 import { useRevealOnce, stagger } from "@/components/home/mobile/primitives";
@@ -25,9 +24,6 @@ function FoundersDoneeHeading() {
   );
 }
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 /**
  * "donor" is the main landing page's terracotta and must stay as it was.
@@ -344,11 +340,20 @@ function FoundersNoteFull({
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return;
 
-    const mm = gsap.matchMedia();
+    // gsap loads after the browser is idle (lib/gsapLoader); until then the
+    // section shows its normal resting state.
+    let mm: { revert: () => void } | null = null;
+    let cancelled = false;
+    void loadGsap().then(({ gsap }) => {
+    if (cancelled) return;
+    // Already visible when gsap arrives: keep the final state, no entrance.
+    if (isInViewport(sectionRef.current)) return;
+    const m = gsap.matchMedia();
+    mm = m;
     // Tablet only for the "mobile" variant — phones render FoundersNoteMobile.
     const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(min-width: 768px) and (max-width: 1023px)";
 
-    mm.add(mediaQuery, () => {
+    m.add(mediaQuery, () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
@@ -426,7 +431,9 @@ function FoundersNoteFull({
       }
     });
 
-    return () => mm.revert();
+    });
+
+    return () => { cancelled = true; mm?.revert(); };
   }, [svgSignature, variant]);
 
   return (

@@ -9,15 +9,21 @@ import { useRef } from "react";
  */
 
 const triggers: { onToggle: (self: { isActive: boolean }) => void }[] = [];
-vi.mock("gsap/ScrollTrigger", () => ({
-  ScrollTrigger: {
+// gsap now arrives through lib/gsapLoader (after idle); resolve it at once here.
+vi.mock("@/lib/gsapLoader", () => {
+  const ScrollTrigger = {
     create: (opts: { onToggle: (self: { isActive: boolean }) => void }) => {
       triggers.push(opts);
       return { kill: () => {} };
     },
     refresh: () => {},
-  },
-}));
+  };
+  return {
+    loadGsap: () => Promise.resolve({ gsap: {}, ScrollTrigger }),
+    refreshScrollTrigger: () => {},
+    gsapIfLoaded: () => null,
+  };
+});
 vi.mock("@/components/SmoothScroll", () => ({ getLenis: () => null }));
 vi.mock("next/dynamic", () => ({ default: () => () => null }));
 
@@ -34,11 +40,13 @@ function Page() {
 }
 
 describe("Skip intro", () => {
-  it("shows on a first visit while the film plays, and skips to the next section", () => {
+  it("shows on a first visit while the film plays, and skips to the next section", async () => {
     window.localStorage.clear();
     window.scrollTo = vi.fn() as unknown as typeof window.scrollTo;
     render(<Page />);
     expect(screen.queryByRole("button", { name: /skip/i })).toBeNull();
+    // Let the (mocked) gsap load resolve so the triggers are created.
+    await act(async () => { await Promise.resolve(); });
 
     act(() => triggers.at(-1)!.onToggle({ isActive: true }));
     const button = screen.getByRole("button", { name: /skip/i });

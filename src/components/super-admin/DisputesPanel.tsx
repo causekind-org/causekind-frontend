@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import {
@@ -84,15 +85,19 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
   const [resolvingId, setResolvingId] = useState<number | null>(null);
   const [drafts, setDrafts] = useState<Record<number, string>>({});
 
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setFailed(false);
     superAdminListDisputes(tab)
       .then((data) => { if (active) setDisputes(data); })
-      .catch(() => { if (active) setDisputes([]); })
+      .catch(() => { if (active) { setDisputes([]); setFailed(true); } })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [tab]);
+  }, [tab, reloadKey]);
 
   async function refresh() {
     try { setDisputes(await superAdminListDisputes(tab)); } catch { /* keeps the current list */ }
@@ -136,6 +141,8 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
         <div className="flex justify-center py-16">
           <Loader2 className={`w-6 h-6 animate-spin ${t.icon}`} />
         </div>
+      ) : failed ? (
+        <SaLoadError what="disputes" onRetry={() => setReloadKey((k) => k + 1)} />
       ) : disputes.length === 0 ? (
         <p className={`text-sm text-center py-16 ${t.dim}`}>No disputes in this view.</p>
       ) : (

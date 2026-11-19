@@ -3,8 +3,7 @@ import { LandingText, LandingAttributes, useLandingTranslation } from "@/compone
 
 
 import React, { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { loadGsap, isInViewport } from "@/lib/gsapLoader";
 import {
   Heart,
   HandHeart,
@@ -17,9 +16,6 @@ import { galleryFonts } from "@/components/home/supportGallery/fonts";
 import m from "./TrustSafetyMobile.module.css";
 import { DONEE_PILL_EYEBROW } from "./DoneeSectionHeading";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 interface TrustCardData {
   id: "donor" | "donee" | "ngo";
@@ -211,8 +207,10 @@ function TrustSafetyFull({
   const statsContainerRef = useRef<HTMLDivElement>(null);
 
   // Animated stat values state for smooth render
-  const [stat2, setStat2] = useState(0);
-  const [typedWord, setTypedWord] = useState("");
+  // Start at the final values: the section reads complete before gsap loads
+  // (and stays so when it is already on screen); the timeline counts up from 0.
+  const [stat2, setStat2] = useState(10);
+  const [typedWord, setTypedWord] = useState("Direct");
   const localizedWord = useLandingTranslation("Direct");
 
   useEffect(() => {
@@ -225,12 +223,21 @@ function TrustSafetyFull({
       return;
     }
 
-    const mm = gsap.matchMedia();
+    // gsap loads after the browser is idle (lib/gsapLoader); until then the
+    // section shows its normal resting state.
+    let mm: { revert: () => void } | null = null;
+    let cancelled = false;
+    void loadGsap().then(({ gsap }) => {
+    if (cancelled) return;
+    // Already visible when gsap arrives: keep the final state, no entrance.
+    if (isInViewport(sectionRef.current)) return;
+    const m = gsap.matchMedia();
+    mm = m;
     // The "mobile" variant of this layout now only serves tablets; phones get
     // TrustSafetyMobile, so its timeline must not run below 768px.
     const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(min-width: 768px) and (max-width: 1023px)";
 
-    mm.add(mediaQuery, () => {
+    m.add(mediaQuery, () => {
       // 1. Initial State Setup
       // Master ScrollTrigger Timeline
       const tl = gsap.timeline({
@@ -320,7 +327,9 @@ function TrustSafetyFull({
       );
     });
 
-    return () => mm.revert();
+    });
+
+    return () => { cancelled = true; mm?.revert(); };
   }, [variant]);
 
   return (

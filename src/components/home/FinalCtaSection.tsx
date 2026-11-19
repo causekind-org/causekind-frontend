@@ -6,8 +6,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { FEATURES } from "@/lib/features";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { loadGsap, isInViewport } from "@/lib/gsapLoader";
 import {
   Heart,
   HandHeart,
@@ -20,9 +19,6 @@ import {
 import { CONTACT_INFO, LANDING_ROUTES, HOME_ROLE_COLORS } from "@/lib/landingConstants";
 import { TRUST_PILL_EYEBROW } from "@/components/home/DoneeSectionHeading";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 
 export function FinalCtaSection({
@@ -53,10 +49,20 @@ function FinalCtaCard({
   useEffect(() => {
     if (reduce) return;
 
-    const mm = gsap.matchMedia();
+    // gsap loads after the browser is idle (lib/gsapLoader); until then the
+    // section shows its normal resting state.
+    let mm: { revert: () => void } | null = null;
+    let cancelled = false;
+    void loadGsap().then(({ gsap }) => {
+    if (cancelled) return;
+    // Already visible when gsap arrives: the aurora drift still runs, the
+    // from-hidden entrance is skipped.
+    const skipEntrance = isInViewport(cardRef.current);
+    const m = gsap.matchMedia();
+    mm = m;
     const mediaQuery = variant === "desktop" ? "(min-width: 1024px)" : "(max-width: 1023px)";
 
-    mm.add(mediaQuery, () => {
+    m.add(mediaQuery, () => {
       // 1. Aurora background gradient blobs drift
       gsap.to(".aurora-blob-1", {
         x: 40,
@@ -88,6 +94,7 @@ function FinalCtaCard({
         ease: "sine.inOut",
       });
 
+      if (skipEntrance) return;
       // 2. Entrance Animation via ScrollTrigger
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -121,7 +128,9 @@ function FinalCtaCard({
       );
     });
 
-    return () => mm.revert();
+    });
+
+    return () => { cancelled = true; mm?.revert(); };
   }, [reduce, variant]);
 
   return (

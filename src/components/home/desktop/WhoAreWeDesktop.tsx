@@ -5,8 +5,6 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 import React, { useEffect, useRef, useState, useCallback, useId } from "react";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Gift,
   HeartHandshake,
@@ -237,9 +235,6 @@ function MobileEcosystem() {
   );
 }
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 // Orbit Planet configuration
 interface PlanetData {

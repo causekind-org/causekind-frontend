@@ -39,6 +39,11 @@
 }
 
 .ngo-theme-wrapper {
+  /* CLS: use next/font's own family names. They carry a size-adjusted local
+     fallback ("Fraunces Fallback" / "Inter Fallback"), so text no longer
+     reflows when the web font swaps in. Same faces once loaded. */
+  --ngo-font-heading: var(--font-ngo-heading-face, 'Fraunces'), Georgia, serif;
+  --ngo-font-body: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--ngo-bg);
   color: var(--ngo-ink);
   font-family: var(--ngo-font-body);

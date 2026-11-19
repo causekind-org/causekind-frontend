@@ -1,5 +1,6 @@
 "use client";
 
+import { SaLoadError } from "./SaLoadError";
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import { toast } from "@/lib/toast";
@@ -17,13 +18,15 @@ export function AuditLogPanel() {
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
   const [actorFilter, setActorFilter] = useState("");
 
   function load() {
     setLoading(true);
+    setFailed(false);
     superAdminAuditLog(page, 25, actorFilter ? { actorEmail: actorFilter } : undefined)
       .then(res => { setEntries(res.content); setTotalPages(res.totalPages); })
-      .catch(() => toast.error("Failed to load audit log."))
+      .catch(() => { setFailed(true); toast.error("Failed to load audit log."); })
       .finally(() => setLoading(false));
   }
 
@@ -44,6 +47,8 @@ export function AuditLogPanel() {
 
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>
+      ) : failed ? (
+        <SaLoadError what="the audit log" onRetry={load} />
       ) : entries.length === 0 ? (
         <p className="text-sm text-muted-foreground py-10 text-center">No audit entries found.</p>
       ) : (

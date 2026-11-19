@@ -56,7 +56,7 @@ export default function FundraisersPage() {
       <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 720 }}>
           <h1 className={s.serif} style={{ fontSize: 40, lineHeight: 1.1 }}><UiText>Fundraisers</UiText></h1>
-          <p className={s.muted}><UiText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</UiText> <UiText>Looking to give items instead?</UiText> <Link href="/requests"><UiText>Donate items</UiText></Link></p>
+          <p className={s.muted}><UiText>Money raised for a specific person&apos;s need. Each one was reviewed by our team before it went public.</UiText> <UiText>Looking to give items instead?</UiText> <Link href="/requests" className="underline underline-offset-2"><UiText>Donate items</UiText></Link></p>
           <p className={s.small} style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
             <Link href="/fundraisers/my-donations"><UiText>Your fundraiser donations</UiText></Link>
             <Link href="/fundraisers/reports"><UiText>Your reports</UiText></Link>

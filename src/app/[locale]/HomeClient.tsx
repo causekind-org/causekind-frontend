@@ -66,8 +66,8 @@ import { toast } from "@/lib/toast";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HomeSahasCampaigns } from "@/components/home/HomeSahasCampaigns";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
+import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
-import { WhoAreWeSection } from "@/components/home/WhoAreWeSection";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
 import { TrustSafetySection } from "@/components/home/TrustSafetySection";
@@ -76,7 +76,6 @@ import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import type { GoogleReviewsData } from "@/data/googleReviews";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { CreditsSection } from "@/components/home/CreditsSection";
-import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
 import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
@@ -84,12 +83,8 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -171,17 +166,17 @@ export default function HomeClient({
     getItemRequests()
       .then((data) => {
         setItemRequests(data);
-        ScrollTrigger.refresh();
+        refreshScrollTrigger();
       })
       .catch(() => {
-        ScrollTrigger.refresh();
+        refreshScrollTrigger();
       });
   }, [user]);
 
   useEffect(() => {
     // Refresh ScrollTrigger after initial mount and layout settling
     const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     }, 150);
     return () => clearTimeout(timer);
   }, [initialPublicRequests, stats, loading, error]);
@@ -311,14 +306,20 @@ export default function HomeClient({
         <HomeFundraisers />
       </div>
 
+      {/* LIVE NEEDS ("Real people. Real needs.") — straight after the verified
+          fundraisers, on every width (owner, 2026-11-16; was after How it works on
+          desktop and further down on mobile). */}
+      {showLiveNeeds && (
+        <div className="ck-home-paper relative z-10 space-y-8 lg:space-y-12">
+          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
+          {showNgoDrives && <NgoDrivesSection />}
+        </div>
+      )}
+
       {/* WHO ARE WE (The CauseKind Orbit). */}
       <section id="who-we-are" aria-label={whoWeAreLabel} className="outline-none">
-        <div className="hidden lg:block">
-          <WhoAreWeDesktop />
-        </div>
-        <div className="lg:hidden">
-          <WhoAreWeSection />
-        </div>
+        {/* Layout C "Two ways to give" (owner, 2026-11-16) replaces the orbit, all widths. */}
+        <AboutTwoWays />
       </section>
 
       <SupportGallery />
@@ -330,14 +331,6 @@ export default function HomeClient({
       {!isRoleHome && (
         <div className="lg:hidden">
           <HowItWorksSection />
-        </div>
-      )}
-
-      {/* SECTION 6 — LIVE NEEDS (Desktop) */}
-      {showLiveNeeds && (
-        <div className="ck-home-paper hidden lg:block relative z-10 space-y-12">
-          <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-          {showNgoDrives && <NgoDrivesSection />}
         </div>
       )}
 
@@ -543,14 +536,6 @@ export default function HomeClient({
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* SECTION 6 — LIVE NEEDS */}
-        {showLiveNeeds && (
-          <div className="space-y-8">
-            <LiveNeedsComponent initialRequests={initialPublicRequests} stats={stats} />
-            {showNgoDrives && <NgoDrivesSection />}
           </div>
         )}
 

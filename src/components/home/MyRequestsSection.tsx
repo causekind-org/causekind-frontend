@@ -6,7 +6,7 @@ import { serverDate } from "@/lib/serverTime";
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "@/components/AppLink";
 import { ArrowRight, Inbox, MapPin, Plus, RotateCw } from "lucide-react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import { NewRequestLink } from "@/components/NewRequestLink";
 import { getMyItemRequests, type ItemRequest } from "@/lib/api";
 import { requestBucket } from "@/lib/dashboardFilters";
@@ -153,7 +153,7 @@ export function MyRequestsSection() {
   // reveals (founder's note, reviews) still fire at the right point.
   useEffect(() => {
     if (requests === null && !failed) return;
-    const t = setTimeout(() => ScrollTrigger.refresh(), 50);
+    const t = setTimeout(() => refreshScrollTrigger(), 50);
     return () => clearTimeout(t);
   }, [requests, failed]);
 

@@ -7780,3 +7780,155 @@ export function superAdminResetCrmStaffPassword(id: number, password: string) {
 export function superAdminSetCrmStaffActive(id: number, active: boolean) {
   return request<void>(`/api/v1/super-admin/crm-staff/${id}/${active ? "enable" : "disable"}`, { method: "POST" });
 }
+
+// ---------------------------------------------------------------------------
+// Super Admin Mail Center (/api/v1/super-admin/mail-center)
+// ---------------------------------------------------------------------------
+
+export type McStatus = "DRAFT" | "SCHEDULED" | "SENDING" | "PAUSED" | "SENT" | "FAILED" | "CANCELLED";
+
+export interface McCampaign {
+  id: number;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  html: string;
+  text: string | null;
+  segments: string;
+  dailyLimit: number | null;
+  status: McStatus;
+  scheduledAt: string | null;
+  pauseReason: string | null;
+  createdBy: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+}
+
+export interface McTemplate {
+  id: number;
+  name: string;
+  subject: string;
+  preheader: string | null;
+  html: string;
+  text: string | null;
+  updatedAt: string;
+}
+
+export interface McCampaignInput {
+  name: string;
+  subject: string;
+  preheader?: string;
+  html: string;
+  text?: string;
+  segments: string[];
+  dailyLimit?: number | null;
+}
+
+export interface McAudience {
+  id: number;
+  name: string;
+  consentBasis: string;
+  columns: string | null;
+  memberCount: number;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+export interface McMemberRow {
+  email: string;
+  name?: string;
+  extra?: Record<string, string>;
+}
+
+export interface McReport {
+  campaign: McCampaign;
+  total: number;
+  pending: number;
+  sending: number;
+  sent: number;
+  failed: number;
+  sentLast24h: number;
+  dailyCap: number;
+  delivered: number;
+  bounced: number;
+  complained: number;
+  opened: number;
+  clicked: number;
+}
+
+export interface McOverview {
+  sent30d: number;
+  delivered30d: number;
+  opened30d: number;
+  clicked30d: number;
+  sent7d: number;
+  bouncePct7d: number;
+  complaintPct7d: number;
+  bouncePausePct: number;
+  complaintPausePct: number;
+  sentLast24h: number;
+  dailyCap: number;
+  scheduled: number;
+  sending: number;
+  paused: number;
+}
+
+export interface McSuppression {
+  email: string;
+  suppressed: boolean;
+  reason?: string;
+  source?: string;
+  since?: string;
+  optedOut: boolean;
+}
+
+export interface McVariableCheck {
+  unknown: string[];
+  available: string[];
+  sample: Record<string, string>;
+  subject: string;
+}
+
+const MC = "/api/v1/super-admin/mail-center";
+const mcPost = <T,>(path: string, body?: unknown) =>
+  request<T>(`${MC}${path}`, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+
+export const mcSegments = () => request<{ segments: string[]; variables: string[] }>(`${MC}/segments`);
+export const mcEstimate = (segments: string[]) => mcPost<{ recipients: number }>("/audiences/estimate", { segments });
+
+export const mcCampaigns = () => request<McCampaign[]>(`${MC}/campaigns`);
+export const mcCreateCampaign = (b: McCampaignInput) => mcPost<McCampaign>("/campaigns", b);
+export const mcUpdateCampaign = (id: number, b: McCampaignInput) =>
+  request<McCampaign>(`${MC}/campaigns/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcDeleteCampaign = (id: number) => request<void>(`${MC}/campaigns/${id}`, { method: "DELETE" });
+export const mcVariableCheck = (id: number) => mcPost<McVariableCheck>(`/campaigns/${id}/variable-check`);
+export const mcPreview = (id: number) => mcPost<{ subject: string; html: string; to: string }>(`/campaigns/${id}/preview`);
+export const mcSendTest = (id: number, email: string) => mcPost<void>(`/campaigns/${id}/test`, { email });
+export const mcSendNow = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/send`);
+export const mcSchedule = (id: number, at: string) => mcPost<McCampaign>(`/campaigns/${id}/schedule`, { at });
+export const mcPause = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/pause`);
+export const mcResume = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/resume`);
+export const mcCancel = (id: number) => mcPost<McCampaign>(`/campaigns/${id}/cancel`);
+export const mcReport = (id: number) => request<McReport>(`${MC}/campaigns/${id}/report`);
+
+export const mcOverview = () => request<McOverview>(`${MC}/overview`);
+export const mcSuppressionLookup = (email: string) =>
+  request<McSuppression>(`${MC}/suppression?email=${encodeURIComponent(email)}`);
+export const mcSuppress = (email: string, note: string) => mcPost<McSuppression>("/suppression", { email, note });
+export const mcUnsuppress = (email: string) =>
+  request<McSuppression>(`${MC}/suppression?email=${encodeURIComponent(email)}`, { method: "DELETE" });
+
+export const mcAudiences = () => request<McAudience[]>(`${MC}/audiences`);
+export const mcCreateAudience = (name: string, consentBasis: string, columns: string[]) =>
+  mcPost<McAudience>("/audiences", { name, consentBasis, columns });
+export const mcAddMembers = (id: number, rows: McMemberRow[]) =>
+  mcPost<{ added: number; invalid: number; duplicates: number; total: number }>(`/audiences/${id}/members`, { rows });
+export const mcDeleteAudience = (id: number) => request<void>(`${MC}/audiences/${id}`, { method: "DELETE" });
+
+export const mcTemplates = () => request<McTemplate[]>(`${MC}/templates`);
+export const mcSaveTemplate = (id: number | null, b: Omit<McCampaignInput, "segments"> & { name: string }) =>
+  id == null
+    ? mcPost<McTemplate>("/templates", b)
+    : request<McTemplate>(`${MC}/templates/${id}`, { method: "PUT", body: JSON.stringify(b) });
+export const mcDeleteTemplate = (id: number) => request<void>(`${MC}/templates/${id}`, { method: "DELETE" });

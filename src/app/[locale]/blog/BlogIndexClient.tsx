@@ -271,17 +271,17 @@ function BlogListingContent() {
         <section className="mb-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8">
             <div className="max-w-2xl">
-              <AnimatedWrapper delay={0} duration={0.5} direction="up">
+              <AnimatedWrapper eager delay={0} duration={0.5} direction="up">
                 <span className="inline-block py-1 px-3 bg-orange-100 dark:bg-orange-950/40 text-[#b04a15] dark:text-orange-400 rounded-lg font-bold text-xs uppercase tracking-wider mb-3">
                   {t("badge")}
                 </span>
               </AnimatedWrapper>
-              <AnimatedWrapper delay={0.1} duration={0.6} direction="up">
+              <AnimatedWrapper eager delay={0.1} duration={0.6} direction="up">
                 <h1 className="font-extrabold text-3xl md:text-5xl text-stone-900 dark:text-stone-100 mb-3 tracking-tight">
                   {t("headline")}
                 </h1>
               </AnimatedWrapper>
-              <AnimatedWrapper delay={0.22} duration={0.6} direction="up">
+              <AnimatedWrapper eager delay={0.22} duration={0.6} direction="up">
                 <p className="text-stone-600 dark:text-stone-400 text-base md:text-lg">
                   {t("subtitle")}
                 </p>
@@ -370,7 +370,7 @@ function BlogListingContent() {
           </div>
 
           {/* Manifesto strip — recurring editorial pull-quote motif */}
-          <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
+          <AnimatedWrapper eager delay={0.15} duration={0.6} direction="up">
             <div className="border-y border-stone-200 dark:border-stone-800 py-6 mb-10 flex items-center gap-6">
               <span className="hidden sm:flex items-center flex-shrink-0">
                 <BookOpen className="w-4 h-4 text-[#b04a15] dark:text-orange-400" strokeWidth={2} />
@@ -458,7 +458,7 @@ function BlogListingContent() {
                           alt={tr.title}
                           fill
                           priority
-                          sizes="(min-width: 768px) 66vw, 50vw"
+                          sizes="(min-width: 1280px) 820px, (min-width: 768px) 66vw, 100vw"
                           className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
                           src={featured.image}
                         />
@@ -597,7 +597,7 @@ function BlogListingContent() {
                       <Image
                         alt={tr.title}
                         fill
-                        sizes={isLarge ? "(min-width: 1024px) 66vw, 100vw" : "(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"}
+                        sizes={isLarge ? "(min-width: 1280px) 820px, (min-width: 1024px) 66vw, 100vw" : "(min-width: 1280px) 400px, (min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"}
                         className="object-cover group-hover:scale-[1.02] transition-transform duration-700"
                         src={post.image}
                       />
