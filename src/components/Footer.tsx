@@ -259,7 +259,7 @@ export function Footer({ role }: FooterProps) {
                   {link.href && !link.disabled ? (
                     <Link
                       href={link.href}
-                      className="hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
+                      className="inline-block py-1 -my-1 hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
                     >
                       {label(link.label)}
                     </Link>
@@ -371,7 +371,7 @@ export function Footer({ role }: FooterProps) {
                 )}
                 <Link
                   href={item.href}
-                  className="font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
+                  className="inline-block py-2.5 -my-2.5 font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
                 >
                   {label(item.label)}
                 </Link>

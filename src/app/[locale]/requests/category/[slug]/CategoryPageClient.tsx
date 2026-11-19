@@ -338,7 +338,7 @@ export default function CategoryPageClient({ cat }: Props) {
           
           <div className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto">
             <Link 
-              href={`/give?category=${encodeURIComponent(cat.name)}`}
+              href="/items/new"
               className="group relative inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full bg-white text-stone-900 font-bold text-lg hover:scale-[1.03] active:scale-[0.97] transition-all shadow-xl"
             >
               <UiText>List an item</UiText>

@@ -228,7 +228,7 @@ function LoginNudgeBubble({ user }: { user: AuthUser | null }) {
         <button
           onClick={dismiss}
           aria-label={ui("Dismiss")}
-          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+          className="absolute top-2.5 right-2.5 w-5 h-5 box-content p-3 -m-3 bg-clip-content rounded-full flex items-center justify-center text-stone-500 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <X className="w-3 h-3" />
         </button>
@@ -1442,7 +1442,7 @@ export function SiteHeader() {
         footer={
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Theme</UiText></span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-500"><UiText>Theme</UiText></span>
               <button
                 onClick={toggleTheme}
                 aria-label={t("nav.toggleTheme")}
@@ -1453,7 +1453,7 @@ export function SiteHeader() {
               </button>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Language</UiText></span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-500"><UiText>Language</UiText></span>
               <LanguageSwitcher dropUp />
             </div>
             {user && (

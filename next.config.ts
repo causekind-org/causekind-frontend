@@ -68,6 +68,19 @@ const nextConfig: NextConfig = {
         source: "/videos/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
       },
+      // Same one-day policy for the other public asset folders and the loose
+      // blog/hero images at the public root (also not "immutable": names reused).
+      ...[
+        "/images/:path*",
+        "/brand/:path*",
+        "/categories/:path*",
+        "/certificates/:path*",
+        "/screenshots/:path*",
+        "/:file([^/]+\.(?:webp|avif|png|jpg|jpeg|svg|mp4|webm))",
+      ].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      })),
       /*
        * Private, auth and utility pages stay out of search. Sources match the
        * URL the visitor requests (no locale prefix; the proxy adds that after).
@@ -104,6 +117,8 @@ const nextConfig: NextConfig = {
       },
       // The "Giving safely" checklist page was removed; old links land on the FAQ.
       { source: "/give-safely", destination: "/faq", permanent: true },
+      // /give never existed as a page; old links land on the requests board.
+      { source: "/give", destination: "/requests", permanent: true },
       // A real 308 at the edge; the /help page's permanentRedirect stays as a fallback.
       { source: "/help", destination: "/faq", permanent: true },
     ];
