@@ -122,7 +122,7 @@ export function MobileVisualStory({ requests, fulfilledNeeds = [] }: { requests:
               <li key={need.id}>
                 <span className={styles.itemIcon}><Package aria-hidden="true" /></span>
                 <div>
-                  <h3><T>{need.title}</T></h3>
+                  <p className={styles.needTitle}><T>{need.title}</T></p>
                   <p><T>{need.city}</T> · <T>{need.category}</T></p>
                   <Link className={styles.textLink} href={canGive ? (guest ? loginUrlFor(`/requests/${need.id}/offer`) : `/requests/${need.id}/offer`) : "/requests"}>
                     <T>{canGive ? "I can help" : "See needs"}</T><ArrowRight aria-hidden="true" />

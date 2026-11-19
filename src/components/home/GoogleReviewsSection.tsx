@@ -186,6 +186,10 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
           <LandingAttributes><img
             src={review.avatarUrl}
             alt={review.name}
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
             referrerPolicy="no-referrer"
             onError={() => setFailedAvatarUrl(review.avatarUrl ?? null)}
             className="w-10 h-10 shrink-0 rounded-full object-cover"

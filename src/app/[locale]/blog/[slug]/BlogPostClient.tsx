@@ -405,7 +405,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   return (
     <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-4 md:pt-16 lg:pt-24`}>
       {/* Main Content Area */}
-      <main className="pb-24">
+      <div className="pb-24">
         <article lang={translation ? `${locale}-x-mtfrom-en` : "en"}>
           {/* Back button */}
           <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 mb-4 md:mb-6">
@@ -685,9 +685,9 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                           <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
                             {tr.category}
                           </span>
-                          <h4 className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                          <p className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
                             {tr.title}
-                          </h4>
+                          </p>
                         </Link>
                       </motion.div>
                     );
@@ -698,7 +698,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
           </div>
         </article>
 
-      </main>
+      </div>
 
     </div>
   );

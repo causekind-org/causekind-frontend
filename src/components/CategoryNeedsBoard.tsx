@@ -596,9 +596,9 @@ function NeedCardCompact({
         </div>
 
         {/* Title */}
-        <h3 className="ck-need-card__title group-hover:text-[var(--ck-role-accent)] transition-colors">
+        <p className="ck-need-card__title group-hover:text-[var(--ck-role-accent)] transition-colors">
           {title}
-        </h3>
+        </p>
 
         {/* Meta row: city + qty */}
         <div className="flex items-center gap-2 mt-auto pb-4">
