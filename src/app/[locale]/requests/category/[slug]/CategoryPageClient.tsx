@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "@/components/AppLink";
 import {
@@ -13,7 +13,7 @@ import {
   MapPin,
   ArrowRight,
 } from "lucide-react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence, useInView, useReducedMotion, type Variants } from "framer-motion";
 import type { InKindCategory } from "@/lib/inKindCategories";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
@@ -49,9 +49,32 @@ const staggerContainer: Variants = {
 };
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.94 },
+  hidden: { opacity: 0, scale: 0.94, transition: { duration: 0 } },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } },
 };
+
+const fadeUpBlock: Variants = {
+  hidden: { opacity: 0, y: 20, transition: { duration: 0 } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+/**
+ * Same rule as components/Reveal: content is visible in the server HTML and
+ * on first render (initial={false}). After hydration, a section that starts
+ * clearly below the fold (top > viewport + 100px) is hidden instantly while
+ * off screen and animates in when scrolled to. Sections on or near the first
+ * screen are never reset. Reduced motion: never hidden.
+ */
+function useFoldReveal(ref: React.RefObject<HTMLElement | null>): "hidden" | "visible" {
+  const inView = useInView(ref, { once: true, amount: 0.2 });
+  const reduce = useReducedMotion();
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (reduce || !ref.current) return;
+    if (ref.current.getBoundingClientRect().top > window.innerHeight + 100) setArmed(true);
+  }, [reduce, ref]);
+  return armed && !inView ? "hidden" : "visible";
+}
 
 /* ── Gradient map per-category accent ──────────────────────────────────── */
 
@@ -82,10 +105,19 @@ export default function CategoryPageClient({ cat }: Props) {
   
   // Impact Story Carousel state
 
+  const guidelinesRef = useRef<HTMLElement>(null);
+  const howRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+  const exploreRef = useRef<HTMLDivElement>(null);
+  const guidelinesAnim = useFoldReveal(guidelinesRef);
+  const howAnim = useFoldReveal(howRef);
+  const ctaAnim = useFoldReveal(ctaRef);
+  const exploreAnim = useFoldReveal(exploreRef);
+
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6">
+    <div className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6">
       {/* ── Back link ── */}
-      <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35 }}>
+      <motion.div initial={false}>
         <Link
           href="/requests"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 transition-colors hover:text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] rounded dark:text-stone-400"
@@ -98,9 +130,7 @@ export default function CategoryPageClient({ cat }: Props) {
       {/* ── Hero Section (Cinematic + Smooth Frosted Hover Reveal) ── */}
       <motion.header
         className="ck-cat-hero mt-5"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }}
+        initial={false}
         onMouseEnter={() => setIsHeroHovered(true)}
         onMouseLeave={() => setIsHeroHovered(false)}
       >
@@ -142,7 +172,7 @@ export default function CategoryPageClient({ cat }: Props) {
         <motion.div
           className="relative z-10 flex flex-col gap-2.5 max-w-2xl"
           variants={staggerContainer}
-          initial="hidden"
+          initial={false}
           animate="visible"
         >
           {/* Floating 3D icon */}
@@ -197,18 +227,19 @@ export default function CategoryPageClient({ cat }: Props) {
 
       {/* ── Guidelines Bento Card ── */}
       <motion.section
+        ref={guidelinesRef}
         className="mt-12"
         variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        initial={false}
+        animate={guidelinesAnim}
       >
-        <div className="mb-5">
+        <div className="mb-6">
           <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
             <UiText>Donation Guidelines</UiText>
           </h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            <UiText>Verified criteria to ensure your items are ready for immediate, dignified use.</UiText>
+          {/* Body text, not a caption: readable size, darker grey, ~65ch line length. */}
+          <p className="mt-2 max-w-[65ch] text-base leading-relaxed text-stone-700 dark:text-stone-300 break-words">
+            {cat.guideIntro}
           </p>
         </div>
         
@@ -267,11 +298,11 @@ export default function CategoryPageClient({ cat }: Props) {
 
       {/* ── How It Works ── */}
       <motion.section
+        ref={howRef}
         className="mt-16"
         variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        initial={false}
+        animate={howAnim}
       >
         <div className="mb-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100">
@@ -303,11 +334,11 @@ export default function CategoryPageClient({ cat }: Props) {
 
       {/* ── Quick Donate CTA Banner ── */}
       <motion.section
+        ref={ctaRef}
         className="ck-cat-cta-banner mt-16 relative overflow-hidden rounded-[2.5rem] shadow-2xl p-8 sm:p-14 text-center border border-white/20"
         variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        initial={false}
+        animate={ctaAnim}
       >
         {/* Dynamic Image Background */}
         <div 
@@ -359,11 +390,11 @@ export default function CategoryPageClient({ cat }: Props) {
 
       {/* ── Cross-Navigation ── */}
       <motion.div
+        ref={exploreRef}
         className="mt-2"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.5 }}
+        variants={fadeUpBlock}
+        initial={false}
+        animate={exploreAnim}
       >
         <CategoryExplorer
           exclude={cat.name}
@@ -371,6 +402,6 @@ export default function CategoryPageClient({ cat }: Props) {
           blurb={ui("Each one has its own guidance on what genuinely helps.")}
         />
       </motion.div>
-    </main>
+    </div>
   );
 }

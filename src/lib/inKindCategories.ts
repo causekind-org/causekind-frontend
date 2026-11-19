@@ -21,6 +21,8 @@ export type InKindCategory = {
   /** URL segment only. Never sent to the backend. */
   slug: string;
   tagline: string;
+  /** Server-rendered intro under "Donation Guidelines" on the category page. */
+  guideIntro: string;
   intro: string;
   goodToDonate: string[];
   avoid: string[];
@@ -35,6 +37,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Medical Aid Near You",
     seoDescription: "Donate wheelchairs, walkers, BP monitors and in-date medical consumables directly to verified people and NGOs near you. See current requests on CauseKind.",
     tagline: "Mobility, comfort and health-related support.",
+    guideIntro:
+      "Donate Medical Aid Near You: medical aid covers mobility, comfort and health-related support. People here ask for things like wheelchairs, walkers and crutches, hospital beds and pressure-relief mattresses, and everyday devices such as nebulisers, blood pressure monitors and glucometers. Hearing aids, spectacles and mobility ramps are also useful. Consumables such as adult diapers or dressings help most when they are unopened and still in date. Before you give, check that the device has all its parts and still works properly. Please do not offer prescription medicines of any kind, opened or expired consumables, or devices with cracked frames, seized wheels or missing safety straps. Anything that needs a prescription fitting, such as used orthotics, also should not be offered.",
     intro:
       "Medical needs are the most time-sensitive on CauseKind. A wheelchair that arrives three weeks late is a person who stayed indoors for three weeks. These are also the items where condition matters most — a mobility aid that fails under load is worse than none at all.",
     goodToDonate: [
@@ -68,6 +72,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Books & Stationery",
     seoDescription: "Donate books, textbooks, stationery and school bags directly to verified students, families and NGOs near you. See current requests on CauseKind.",
     tagline: "Books, stationery and the tools of a school day.",
+    guideIntro:
+      "Donate Books & Stationery: education requests are for books, stationery and the tools of a school day. Students ask for textbooks and guides for their current syllabus, unused notebooks, pens, geometry boxes and art supplies, and school bags with working zips and intact straps. Uniforms in common sizes help when they are cleaned and pressed, and calculators, drawing boards and lab equipment are often needed too. Story books and reference books are welcome in any local language. To make sure your donation is used, avoid textbooks from an older syllabus or a different board, books with heavy highlighting, missing pages or filled-in exercises, half-used notebooks and dried-out pens, and uniforms with a school crest that will not match the student's school.",
     intro:
       "Education requests cluster around the start of a term and around exams. A school bag in June is worth more than the same bag in October. Match the syllabus and the year where you can — the right textbook for the wrong board helps nobody.",
     goodToDonate: [
@@ -101,6 +107,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Livelihood Tools Near You",
     seoDescription: "Donate sewing machines, tools and work equipment that help people earn a living. Give directly to verified people and NGOs near you on CauseKind.",
     tagline: "Tools that let someone earn rather than receive.",
+    guideIntro:
+      "Donate Livelihood Tools Near You: livelihood requests are for tools that let someone earn rather than receive. People ask for sewing machines, overlockers and tailoring equipment, hand tools and power tools for carpentry, masonry or repair, and commercial-grade kitchen equipment for food vendors. Small traders often need carts, crates and weighing scales, and working laptops help with freelance or data-entry work. Salon, embroidery and craft equipment is useful as well. A tool only helps if it is complete, so please avoid items missing the bit, blade, foot or attachment that makes them usable, machines that need a part no longer made, and power tools with damaged cords or missing guards. Hobby-grade equipment is not suitable when the request is clearly for daily commercial use.",
     intro:
       "Livelihood is the category with the longest tail. A sewing machine is not a one-time gift — it is income every month for years. These requests are usually specific, because the person asking already knows the trade and knows exactly which tool is missing.",
     goodToDonate: [
@@ -134,6 +142,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Relief Supplies Near You",
     seoDescription: "Donate blankets, tarpaulins, mosquito nets, solar lamps and sealed hygiene items directly to verified people and NGOs near you. See requests on CauseKind.",
     tagline: "Essentials for families in the middle of an emergency.",
+    guideIntro:
+      "Donate Relief Supplies Near You: relief requests are for essentials that families need in the middle of an emergency. The most useful items are blankets, bedsheets, towels and mats, tarpaulins, mosquito nets and basic shelter material, and cooking vessels, stoves and water containers. Torches, batteries, power banks and solar lamps help when power is out, and sealed hygiene items such as soap, sanitary pads and toothbrushes are always needed. Sturdy footwear and weather-appropriate outerwear also make a real difference. Please do not send perishable or home-cooked food, anything damp, mildewed or stored in a flooded space, or single fragile items that will not survive transport. Used personal hygiene products of any kind should not be offered.",
     intro:
       "Relief requests come from households that have lost most of what they owned — to a flood, a fire, an eviction, a sudden illness. Speed and basic dignity beat quality here. A clean blanket today is worth more than an excellent one next month.",
     goodToDonate: [
@@ -167,6 +177,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Household Items Near You",
     seoDescription: "Donate kitchen utensils, appliances and everyday household items directly to verified families and NGOs near you. See current requests on CauseKind.",
     tagline: "The daily-use items that make a room a home.",
+    guideIntro:
+      "Donate Household Items Near You: household requests are for the daily-use items that make a room a home. Families ask for cookware, pressure cookers, utensils and cutlery, bedding, pillows, curtains and floor mats, and storage containers, shelves and organisers. Small appliances such as fans, irons and mixers are welcome when they are in working order, and buckets, mops and basic cleaning equipment are often needed. Check items before you list them: avoid chipped or cracked crockery, non-stick pans with a flaking coating, pillows and mattresses with stains or a lasting smell, and appliances that trip a socket or run hot. If a set is incomplete, say clearly what is missing so the receiver knows what they are getting.",
     intro:
       "Household requests often follow a move, a marriage or a first independent home. They are rarely dramatic and almost always practical: something to cook in, something to sleep on, something to store things in.",
     goodToDonate: [
@@ -199,6 +211,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Furniture Near You",
     seoDescription: "Donate beds, tables, chairs, cupboards and other usable furniture directly to verified families and NGOs near you. See current requests on CauseKind.",
     tagline: "Beds, chairs, tables and storage that still have decades left.",
+    guideIntro:
+      "Donate Furniture Near You: furniture requests are for beds, chairs, tables and storage that still have years of use left. People ask for beds, cots and mattresses that are clean and structurally sound, chairs, tables and desks with all legs true, and wardrobes, cupboards and shelving units. Sofas are welcome when the frame is intact and the upholstery is unstained, and flat-pack items are useful if you still have the fittings. Please avoid anything with woodworm, termite damage or signs of pests, water-damaged particleboard that will not survive another move, mattresses with stains, tears or a bed-bug history, and glass tops with chips or edge cracks. Be clear about size and weight so the receiver can plan how to collect it.",
     intro:
       "Furniture is the category where transport decides everything. A donee with no vehicle cannot accept a wardrobe, however good it is. Be honest about size and weight up front — a listing that says 'two people can lift this' gets matched far faster than one that does not.",
     goodToDonate: [
@@ -231,6 +245,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Clothes Near You",
     seoDescription: "Donate clean, wearable clothes for children, women and men directly to verified people and NGOs near you. See current clothing requests on CauseKind.",
     tagline: "Clean, wearable clothes for every age and season.",
+    guideIntro:
+      "Donate Clothes Near You: clothing requests are for clean, wearable clothes for every age and season. Everyday wear in good repair, washed and folded, is always useful, and children's and infant clothing is needed often. Season-appropriate outerwear such as sweaters, jackets and shawls helps in colder months, and footwear with life left in the sole should be paired and tied together. Uniforms, workwear and modest-wear in common sizes are also requested. Please avoid torn, stained, faded or stretched-out garments, underwear and swimwear unless they are brand new and sealed, odd shoes or shoes with worn-through soles, and heavily seasonal items sent long before or after their season.",
     intro:
       "Clothing is the most donated category and the one most often misused as a way to empty a wardrobe. The test is simple and worth applying honestly: would you be comfortable wearing this in public tomorrow? If not, it belongs in textile recycling, not on CauseKind.",
     goodToDonate: [
@@ -263,6 +279,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Laptops & Electronics",
     seoDescription: "Donate working laptops, phones and tablets to verified students and NGOs near you. See current requests and how to wipe your data first on CauseKind.",
     tagline: "Working phones, laptops and appliances with real life left.",
+    guideIntro:
+      "Donate Laptops & Electronics: electronics requests are for working phones, laptops and appliances with real life left in them. Students and families ask for phones and tablets that hold a charge and are fully factory reset, laptops in working order with their charger, and televisions, monitors and speakers that power on cleanly. Kitchen appliances such as mixers, kettles and induction plates are useful too, along with cables, chargers and adapters that are clearly labelled. Before you give, sign out of your accounts: a device still locked to you cannot be used. Avoid swollen, leaking or badly worn batteries, cracked screens, frayed cables or damaged charging ports, and say so if a device has not been powered on for a long time.",
     intro:
       "Electronics carry two risks nothing else does: your data, and a device that dies a week after handover. Both are solvable in ten minutes on your side and unsolvable on theirs. Wipe it, test it, and include the charger.",
     goodToDonate: [
@@ -295,6 +313,8 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Sports Equipment Near You",
     seoDescription: "Donate bats, balls, bicycles, sports shoes and indoor games in playable condition directly to verified people and NGOs near you. See requests on CauseKind.",
     tagline: "Gear, cycles and fitness equipment for kids and adults.",
+    guideIntro:
+      "Donate Sports Equipment Near You: sports requests are for gear, cycles and fitness equipment for children and adults. People ask for bats, balls, racquets and team equipment in playable condition, bicycles with sound brakes, true wheels and inflated tyres, and fitness equipment such as dumbbells, mats and resistance bands. Sports shoes and kit that have been outgrown rather than worn out are welcome, as are carrom boards, chess sets and other indoor games. Safety comes first: please avoid helmets and protective gear that have taken an impact, cracked bats, delaminated racquets or perished rubber, and cycles that need repairs worth more than the cycle. Do not give anything where a failure during use could cause an injury.",
     intro:
       "Sports requests come from schools, coaching groups and individual young players who have the ability and not the kit. Sizing and safety carry the weight here — outgrown gear that still fits someone smaller is exactly right, worn-out protective gear never is.",
     goodToDonate: [
