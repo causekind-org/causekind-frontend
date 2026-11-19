@@ -101,7 +101,8 @@ export default async function BlogPostPage({ params }: PageProps) {
     "@type": "BlogPosting",
     "mainEntityOfPage": {
       "@type": "WebPage",
-      "@id": `https://www.causekind.com/blog/${post.slug}`
+      "@id": `https://www.causekind.com/blog/${post.slug}`,
+      "name": post.title
     },
     "headline": post.title,
     "description": post.description,
@@ -114,6 +115,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     "publisher": {
       "@type": "Organization",
       "name": "CauseKind",
+      "url": "https://www.causekind.com",
       "logo": {
         "@type": "ImageObject",
         "url": "https://www.causekind.com/logo-filled.webp"

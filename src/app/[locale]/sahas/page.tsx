@@ -9,8 +9,22 @@ export const metadata: Metadata = {
 };
 
 export default function SahasHubPage() {
+  // CollectionPage JSON-LD: the hub lists Sahas campaigns. Same name and
+  // description as the metadata above.
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Sahas Charitable Trust Campaigns | CauseKind",
+    description: "Give to campaigns run by Sahas Charitable Trust, a registered non-profit based in Palghar, Maharashtra.",
+    url: "https://www.causekind.com/sahas",
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+      />
       <SahasHubClient />
       {/* Server-rendered so the page has real text in its first HTML; it sits
           below the campaigns, so the top of the page is unchanged. */}

@@ -168,6 +168,8 @@ export default async function RootLayout({
             (MaterialIcon), so no route pays for a third-party font request. */}
       </head>
       <body className={`${plusJakarta.variable} ${nunito.variable} ${sourceSerif4.variable} ${inter.variable} ${lora.variable} ${robotoMono.variable} antialiased`} suppressHydrationWarning>
+        {/* Skip link: first focusable element, hidden until focused. */}
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[2147483647] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-bold focus:text-stone-900 focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-[#b04a15]">Skip to content</a>
         <StoredImageFallback />
         {/* TEMP: MetaPixel + GTM mounted for testing, ahead of the consent
             banner coming back — see the TESTING_BYPASS note in each
@@ -213,7 +215,7 @@ export default async function RootLayout({
                   {/* Pages are prerendered now, so a page that reads useSearchParams
                       without its own boundary would fail the build. This
                       catches those; only that page renders in the browser. */}
-                  <main tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad"><Suspense fallback={null}>{children}</Suspense></main>
+                  <main id="main" tabIndex={-1} className="min-h-[calc(100svh-3.5rem)] ck-main-bottom-pad"><Suspense fallback={null}>{children}</Suspense></main>
                   <HiddenOnVolunteerPage><SiteFooter /></HiddenOnVolunteerPage>
                   {process.env.GOOGLE_TRANSLATE_API_KEY?.trim() && <><TranslationAttribution /><AutoPageTranslator /></>}
                   <HiddenOnVolunteerPage><MobileBottomNav /></HiddenOnVolunteerPage>

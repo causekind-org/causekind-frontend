@@ -79,8 +79,21 @@ export default async function CategoryPage({ params }: Params) {
   const cat = categoryBySlug(slug);
   if (!cat) notFound();
 
+  // CollectionPage JSON-LD from the same title/description as the metadata.
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `${cat.seoTitle} | CauseKind`,
+    description: cat.seoDescription,
+    url: `https://www.causekind.com/requests/category/${cat.slug}`,
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd).replace(/</g, "\\u003c") }}
+      />
       <CategoryPageClient cat={cat} />
       {CATEGORY_GUIDES[cat.slug] && (
         <SeoLinkSection
