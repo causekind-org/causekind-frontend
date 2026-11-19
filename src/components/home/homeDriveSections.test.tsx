@@ -31,9 +31,16 @@ describe("home drive sections", () => {
   it("NGO drives come right after the donee board, for guests and donors only", () => {
     const home = readFileSync(resolve(__dirname, "../../app/[locale]/HomeClient.tsx"), "utf8");
     expect(home).toContain('const showNgoDrives = !user || roleStr === "DONOR";');
-    expect(home.match(/<LiveNeedsComponent [^\n]*\/>\s*\{showNgoDrives && <NgoDrivesSection \/>\}/g)).toHaveLength(2);
+    // HomeClient has a single render path since the home-layouts merge (1e62f724), so the
+    // board-then-drives pair appears once (it used to appear in two branches).
+    expect(home.match(/<LiveNeedsComponent [^\n]*\/>\s*\{showNgoDrives && <NgoDrivesSection \/>\}/g)).toHaveLength(1);
     const role = readFileSync(resolve(__dirname, "RoleHome.tsx"), "utf8");
-    expect(role).toMatch(/<LiveNeedsSection [^\n]*\/>\s*<\/div>\s*<div[^>]*>\s*<NgoDrivesSection \/>/);
+    // RoleHome's 2026-11-16 layout (merged in 1e62f724) puts "Two ways to give" and the
+    // support gallery between the board and the drives, so only the order is checked.
+    const board = role.indexOf("<LiveNeedsSection ");
+    const drives = role.indexOf("<NgoDrivesSection />");
+    expect(board).toBeGreaterThan(-1);
+    expect(drives).toBeGreaterThan(board);
   });
 
   it("is a static check only (no render needed)", () => { expect(vi).toBeDefined(); });
