@@ -160,7 +160,7 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
              <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-current' : 'fill-transparent text-stone-300'}`} />
           ))}
         </div>
-        <div className="flex items-center gap-1 opacity-70">
+        <div className="flex items-center gap-1">
            <span translate="no" className="text-xs font-normal whitespace-nowrap text-[#5E5E5E] dark:text-white">Google Maps</span>
         </div>
       </div>
@@ -186,6 +186,10 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
           <LandingAttributes><img
             src={review.avatarUrl}
             alt={review.name}
+            width={40}
+            height={40}
+            loading="lazy"
+            decoding="async"
             referrerPolicy="no-referrer"
             onError={() => setFailedAvatarUrl(review.avatarUrl ?? null)}
             className="w-10 h-10 shrink-0 rounded-full object-cover"
@@ -198,7 +202,7 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
         <div className="flex flex-col">
           {review.authorUrl ? <a href={review.authorUrl} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-stone-900 dark:text-stone-100 hover:underline">{review.name}</a> : <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{review.name}</span>}
           <span className="text-xs text-stone-500 dark:text-stone-400">{review.date}</span>
-          {review.reviewUrl && <LandingAttributes><a href={review.reviewUrl} target="_blank" rel="noopener noreferrer" aria-label={`View ${review.name}'s review on Google Maps (opens in a new tab)`} className="text-xs underline text-stone-600 dark:text-stone-300"><LandingText>View Review</LandingText></a></LandingAttributes>}
+          {review.reviewUrl && <LandingAttributes><a href={review.reviewUrl} target="_blank" rel="noopener noreferrer" aria-label={`View Review: ${review.name} on Google Maps (opens in a new tab)`} className="text-xs underline text-stone-600 dark:text-stone-300"><LandingText>View Review</LandingText></a></LandingAttributes>}
         </div>
       </div>
     </div>

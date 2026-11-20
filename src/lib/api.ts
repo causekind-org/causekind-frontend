@@ -6170,10 +6170,8 @@ export function getNgoFileLink(kind: "document" | "photo", id: number) {
  * region, CORS or the site's CSP for the bucket host. The caller may revoke it.
  */
 export async function getNgoFilePreviewUrl(kind: "document" | "photo", id: number): Promise<string> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const response = await fetch(`${BASE_URL}/api/v1/ngo-registration/files/${kind}/${id}/content`, {
     credentials: "include",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) throw new ApiError(response.status, "This file can't be shown right now.", null);
   return URL.createObjectURL(await response.blob());
@@ -6210,9 +6208,8 @@ export function updateNgoProfileCosmetic(body: { aboutUs?: string; organizationP
 }
 export async function uploadNgoProfilePhoto(type: "cover" | "logo" | "office_photo", file: File): Promise<NgoProfileManage> {
   const body = new FormData(); body.append("file", file);
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const res = await fetch(`${BASE_URL}/api/v1/ngo/profile/photos?type=${type}`, {
-    method: "POST", body, credentials: "include", headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    method: "POST", body, credentials: "include",
   });
   if (!res.ok) {
     const r = await res.json().catch(() => null);
@@ -6514,10 +6511,8 @@ export async function updateNgoDrive(id: number, payload: CreateNgoDrivePayload)
 /** Uploads a drive wizard photo: url is stored with the drive, previewUrl is for showing it now. */
 export async function uploadNgoDriveReferencePhoto(file: File): Promise<{ url: string; previewUrl: string }> {
   const body = new FormData(); body.append("file", file);
-  const token = typeof window !== "undefined" ? localStorage.getItem("ck_token") : null;
   const response = await fetch(`${BASE_URL}/api/v1/ngo-drives/uploads/reference-photo`, {
     method: "POST", body, credentials: "include",
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
   if (!response.ok) {
     const result = await response.json().catch(() => null);

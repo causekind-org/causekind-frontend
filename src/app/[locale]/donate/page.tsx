@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import DonateClient from "./DonateClient";
+import { SeoLinkSection } from "@/components/SeoLinkSection";
+import { FEATURES } from "@/lib/features";
 
 // Server wrapper so this route can carry its own metadata — a "use client"
 // module cannot export it, which previously left this page inheriting the root
@@ -7,11 +9,25 @@ import DonateClient from "./DonateClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Donate — CauseKind",
+  title: "Donate",
   description: "Give in kind to verified requests near you. Zero platform fees, matched within 10 km, and tracked through to confirmed delivery.",
   alternates: { canonical: "/donate" },
+  // Same as /campaigns: "Coming soon" while FEATURES.money is off, so noindex;
+  // /donate/money is live and stays indexed.
+  ...(FEATURES.money ? {} : { robots: { index: false, follow: true } }),
 };
 
 export default function Page() {
-  return <DonateClient />;
+  return (
+    <>
+      <DonateClient />
+      <SeoLinkSection
+        id="donate-browse"
+        heading="Where to give"
+        intro="Give in kind to verified requests near you, with zero platform fees, or give money instead. Browse by category, or see every open request."
+        withCategories
+        links={[{ name: "All requests", href: "/requests" }, { name: "Donate money", href: "/donate/money" }]}
+      />
+    </>
+  );
 }

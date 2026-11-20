@@ -1,5 +1,6 @@
 "use client";
 import { useTranslations } from "next-intl";
+import { slugForCategory } from "@/lib/inKindCategories";
 
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useReducer, useRef, useState } from "react";
@@ -648,13 +649,13 @@ export default function OfferWizardPage() {
   }
   if (request && offersChecked && step !== 3 && !activeOfferSubmitted && !passedLocation && !draftHasLocation) {
     return (
-      <main className="min-h-screen bg-[#faf8f5] px-4 py-6 sm:py-10 dark:bg-zinc-950">
+      <div className="min-h-screen bg-[#faf8f5] px-4 py-6 sm:py-10 dark:bg-zinc-950">
         <OfferLocationGate
           requestId={requestId} requestTitle={request.title}
           onPass={(loc) => { setPassedLocation(loc); window.scrollTo({ top: 0 }); }}
           onDecline={leaveOffer}
         />
-      </main>
+      </div>
     );
   }
 
@@ -668,7 +669,7 @@ export default function OfferWizardPage() {
     // ClickSpark's page-sized wrapper (see WizardNavigation) — an ancestor of
     // this <main>, so this class never clipped it and never could.
     return (
-      <main
+      <div
         data-donation-offer-wizard
         className="min-h-screen overflow-x-clip bg-[#faf8f5] dark:bg-zinc-950"
       >
@@ -710,12 +711,12 @@ export default function OfferWizardPage() {
             />
           </div>
         )}
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <AlertDialog open={blockedByOther} onOpenChange={setBlockedByOther}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -823,7 +824,7 @@ export default function OfferWizardPage() {
             <div className="mb-4 flex items-center gap-1.5 text-2xs font-semibold uppercase tracking-wide text-gray-400">
               <Link href="/requests" className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]"><UiText>Requests</UiText></Link>
               <span>/</span>
-              <Link href={`/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
+              <Link href={slugForCategory(request.category) ? `/requests/category/${slugForCategory(request.category)}` : `/requests?category=${encodeURIComponent(request.category)}`} className="hover:text-[#b04a15] dark:hover:text-[#e07b3a]">
                 {request.category}
               </Link>
               <span>/</span>
@@ -1006,7 +1007,7 @@ export default function OfferWizardPage() {
           />
         )}
       </div>
-    </main>
+    </div>
   );
 }
 

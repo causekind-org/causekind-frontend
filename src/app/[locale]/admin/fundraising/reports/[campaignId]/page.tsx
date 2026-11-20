@@ -35,8 +35,8 @@ export default function AdminReportCasePage() {
   const load = useCallback(() => { fundraisingReports.admin.get(id).then(setC).catch(() => setErr("Couldn't load this case")); }, [id]);
   useEffect(() => { if (FEATURES.fundraising) load(); }, [load]);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
-  if (!c) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}>{err ? <p role="alert" className={a.err}>{err}</p> : <div className={a.skel} style={{ width: "40%" }} />}</main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
+  if (!c) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}>{err ? <p role="alert" className={a.err}>{err}</p> : <div className={a.skel} style={{ width: "40%" }} />}</div></div>;
 
   const live = c.campaignStatus === "APPROVED";
   const paused = c.campaignStatus === "PAUSED";
@@ -54,7 +54,7 @@ export default function AdminReportCasePage() {
 
   return (
     <div className={a.root}>
-      <main className={a.wrap} style={{ paddingTop: 24, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className={a.wrap} style={{ paddingTop: 24, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
         <Link href="/admin/fundraising/reports" className={a.small} style={{ textDecoration: "none" }}>← Reports</Link>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-end", flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -123,7 +123,7 @@ export default function AdminReportCasePage() {
             <p className={`${a.small} ${a.muted}`}>{openReports} open report{openReports === 1 ? "" : "s"}. Existing donations are never changed by a pause or closure.</p>
           </section>
         </div>
-      </main>
+      </div>
 
       {dialog && <CaseDialog c={c} dialog={dialog} onClose={() => setDialog(null)} onDone={done} />}
     </div>

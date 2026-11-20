@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -411,18 +410,6 @@ body {
   to {
     opacity: 1;
     transform: scale(1);
-  }
-}
-
-@keyframes slide-right {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
   }
 }
 
@@ -1836,23 +1823,6 @@ section:focus-within {
   }
 }
 
-@keyframes donate-navbar-heart-float {
-  0% {
-    transform: translateY(0) scale(1) rotate(0deg);
-    opacity: 1;
-  }
-
-  55% {
-    transform: translateY(-14px) scale(0.8) rotate(-10deg);
-    opacity: 0.7;
-  }
-
-  100% {
-    transform: translateY(-28px) scale(0.15) rotate(18deg);
-    opacity: 0;
-  }
-}
-
 /* ── Donation success confetti ── */
 @keyframes confetti-fall {
   0% {
@@ -2094,10 +2064,6 @@ body.mobile-menu-open {
 }
 
 /* ── Auth panel slide (login ↔ register transition) ── */
-@keyframes auth-panel-slide-enter-right {
-  from { transform: translateX(-60px); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
 /* ── Masonry in-kind card hover lift ── */
 @keyframes inkind-card-float {
   0%, 100% { transform: translateY(0); }
@@ -2490,15 +2456,6 @@ body.mobile-menu-open {
   }
 
 
-  /* -- Mobile logo dark-mode swap --
-     In dark mode the header bg is dark everywhere, so the blackcause logo
-     (dark ''Cause'' text) is invisible. Show whitecause instead. */
-  .dark .ck-dlogo-mobile-dark { display: none !important; }
-  .dark .ck-dlogo-mobile-light { display: block !important; }
-  /* Over the home hero the header is transparent on the dark video, so the
-     light logo shows there too, at every width the mobile header exists. */
-  header[data-home-hero="top"] .ck-dlogo-mobile-dark { display: none !important; }
-  header[data-home-hero="top"] .ck-dlogo-mobile-light { display: block !important; }
   .ck-showcase-hero {
     padding: 0;
     margin-top: calc(-1 * var(--ck-nav-h, 4.25rem));
@@ -2862,24 +2819,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
 }
 
 /* ── Reading Tools and Font/Theme Modes (from globals.css) ── */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: var(--text-2xl);
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-  vertical-align: middle;
-  -webkit-font-feature-settings: 'liga';
-  font-feature-settings: 'liga';
-}
-
 /* ── Typography utility classes for blog reading page ── */
 .font-display-lg {
   font-family: var(--font-source-serif-4, var(--font-plus-jakarta-sans, serif));
@@ -4086,66 +4025,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   .ck-rb-wordmark-static { display: block; }
 }
 
-/* Diwali logo. One 5.1s cycle per firecracker, offset by --ck-dlogo-delay so they
-   take turns: a rocket climbs for the first 16%, then the sparks fly. */
-.ck-dlogo-flame {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: ck-dlogo-flicker 1.3s ease-in-out infinite;
-}
-.ck-dlogo-glow {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: ck-dlogo-glow 1.3s ease-in-out infinite;
-}
-.ck-dlogo-burst { width: 0; height: 0; }
-.ck-dlogo-rocket {
-  position: absolute;
-  left: -0.6px;
-  width: 1.2px;
-  height: 5px;
-  border-radius: 1px;
-  opacity: 0;
-  animation: ck-dlogo-rocket 5.1s ease-out var(--ck-dlogo-delay) infinite;
-}
-.ck-dlogo-spark {
-  position: absolute;
-  left: -2.5px;
-  top: -0.6px;
-  width: 5px;
-  height: 1.3px;
-  border-radius: 1px;
-  opacity: 0;
-  animation: ck-dlogo-spark 5.1s cubic-bezier(0.16, 1, 0.3, 1) var(--ck-dlogo-delay) infinite;
-}
-
-@keyframes ck-dlogo-flicker {
-  0%, 100% { transform: scale(1, 1) skewX(0deg); }
-  30%      { transform: scale(0.93, 1.08) skewX(-3deg); }
-  60%      { transform: scale(1.04, 0.95) skewX(2deg); }
-}
-@keyframes ck-dlogo-glow {
-  0%, 100% { opacity: 0.75; transform: scale(1); }
-  40%      { opacity: 1; transform: scale(1.1); }
-}
-@keyframes ck-dlogo-rocket {
-  0%        { opacity: 0; transform: translateY(20px); }
-  3%        { opacity: 1; }
-  15%       { opacity: 1; transform: translateY(0); }
-  17%, 100% { opacity: 0; transform: translateY(0); }
-}
-@keyframes ck-dlogo-spark {
-  0%, 15%   { opacity: 0; transform: rotate(var(--ck-dlogo-angle)) translateX(0); }
-  17%       { opacity: 1; transform: rotate(var(--ck-dlogo-angle)) translateX(0); }
-  32%       { opacity: 1; }
-  44%, 100% { opacity: 0; transform: rotate(var(--ck-dlogo-angle)) translateX(var(--ck-dlogo-reach)); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ck-dlogo-flame, .ck-dlogo-glow { animation: none; }
-  .ck-dlogo-burst { display: none; }
-}
-
 /* Landing-page accents inherit the signed-in recipient palette. Fallbacks in
    shared sections preserve their public appearance outside this page. Tokens
    live on html while home is mounted so the header and portalled dialogs inherit. */
@@ -5209,142 +5088,6 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   }
 }
 
-/* ── Diwali hero (phones and desktop) ─────────────────────────────────────────
-   The rangoli video in place of the handover photo. Tablets (768–1023px) keep
-   the everyday hero, so nothing here applies to them. Unlayered, so it outranks
-   the Tailwind utilities on the shared markup. */
-.ck-diwali-media {
-  display: none;
-  pointer-events: none;
-}
-.ck-diwali-fill {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-
-@media (max-width: 767px), (min-width: 1024px) {
-  .ck-hero-diwali .ck-hero-photo-shell { display: none; }
-  .ck-diwali-media { display: block; }
-}
-
-/* Phones: the 9:16 video anchored to the top at full width, so the rangoli is
-   never cropped at the sides. The copy starts below the rangoli, which ends 60%
-   down the file, on the ground colour sampled from the video's foot. */
-@media (max-width: 767px) {
-  .ck-showcase-hero.ck-hero-diwali { background: #0e0800; }
-  .ck-hero-diwali .ck-lead-hero-stage,
-  .dark .ck-hero-diwali .ck-lead-hero-stage { background: transparent; }
-  .ck-hero-diwali .ck-diwali-scrim { display: none; }
-  .ck-diwali-media {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 0;
-    width: 100%;
-    aspect-ratio: 9 / 16;
-  }
-  .ck-diwali-media::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0;
-    height: 18%;
-    background: linear-gradient(to bottom, transparent, #0e0800);
-  }
-  .ck-diwali-box { position: absolute; inset: 0; }
-  .ck-showcase-hero.ck-hero-diwali .ck-hero-copy {
-    margin-top: 0;
-    padding-top: calc(100vw * 16 / 9 * 0.6);
-  }
-  .ck-showcase-hero.ck-hero-diwali .ck-hero-headline {
-    font-size: clamp(1.9rem, 8.6vw, 3rem);
-  }
-}
-
-/* Desktop: the rangoli is the hero, whole and uncovered. --ck-diwali-h is the top
-   row's height: the first screen, unless that would bring the diyas within 24px
-   of the buttons (--ck-diwali-copy-end). The diyas span the file's right 86.8% of
-   its height. The video fills the row exactly; the original category strip and
-   trust band follow below it. */
-@media (min-width: 1024px) {
-  .ck-hero-diwali {
-    --ck-diwali-copy-end: calc(var(--ck-hero-side-gutter, 0px) + clamp(0.75rem, 1.2vw, 1.75rem) + 632.6px + 24px);
-    --ck-diwali-h: clamp(
-      560px,
-      calc(100svh - max(var(--ck-nav-h, 0px), 5.5rem) - 1rem),
-      calc((100vw - var(--ck-diwali-copy-end)) / 0.868)
-    );
-  }
-  .ck-hero-diwali .ck-lead-hero-stage {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-    min-height: var(--ck-diwali-h);
-  }
-  .ck-diwali-media {
-    position: absolute;
-    top: 0;
-    left: calc(-1 * var(--ck-hero-side-gutter, 0px));
-    right: calc(-1 * var(--ck-hero-side-gutter, 0px));
-    z-index: 0;
-    height: var(--ck-diwali-h);
-    overflow: hidden;
-  }
-  .ck-diwali-box {
-    position: absolute;
-    top: 0;
-    right: 0;
-    height: 100%;
-    aspect-ratio: 16 / 9;
-    /* The file's own cream melts into the page's. */
-    mask-image: linear-gradient(to right, transparent, #000 20%), linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
-    mask-composite: intersect;
-  }
-  .ck-diwali-fill { object-position: right center; }
-  /* Dark mode keeps only the file's dark circle, so the copy sits on the dark page. */
-  .dark .ck-diwali-box {
-    mask-image: radial-gradient(circle calc(var(--ck-diwali-h) * 16 / 9 * 0.35) at 84.7% 47.3%, #000 98%, transparent 100%), linear-gradient(to bottom, #000 calc(100% - 2.5rem), transparent);
-    mask-composite: intersect;
-  }
-  .ck-showcase-hero.ck-hero-diwali .ck-hero-copy { padding-right: 0; }
-  /* The strip, ~18% larger to suit the rangoli, overlaps only the video's empty
-     foot (its bottom 7% is at least 39px), hiding the video's bottom edge. */
-  .ck-showcase-hero.ck-hero-diwali .ck-hero-category-rail { margin-top: -1.5rem; }
-  .ck-hero-diwali .ck-hero-category-rail nav { padding-block: clamp(0.65rem, 1.55vh, 1.12rem); }
-  .ck-hero-diwali .ck-hero-category-rail a { min-height: clamp(5.65rem, 11.4vh, 7.8rem); gap: 0.6rem; }
-  .ck-hero-diwali .ck-hero-category-rail a > span:first-child { width: 2.95rem; height: 2.95rem; }
-  .ck-hero-diwali .ck-hero-category-rail a svg { width: 1.75rem; height: 1.75rem; }
-  /* 1024 has the least room per column, and ELECTRONICS cannot break. */
-  .ck-hero-diwali .ck-hero-category-rail a > span:last-child { font-size: clamp(0.62rem, 0.76vw, 0.9rem); }
-  @media (min-width: 1200px) {
-    .ck-hero-diwali .ck-hero-category-rail a > span:last-child { font-size: clamp(0.68rem, 0.76vw, 0.9rem); }
-  }
-  /* Below 1280 the buttons wrap (same sizes), which leaves the rangoli more room. */
-  @media (max-width: 1279px) {
-    .ck-hero-diwali { --ck-diwali-copy-end: calc(var(--ck-hero-side-gutter, 0px) + clamp(0.75rem, 1.2vw, 1.75rem) + 421.6px + 24px); }
-    .ck-hero-diwali .ck-hero-actions { width: 100%; flex-wrap: wrap; }
-  }
-
-  /* Gentle entrance: each block rises in, 80ms apart. */
-  .ck-hero-diwali :is(.ck-hero-eyebrow, .ck-hero-headline, .ck-hero-subtext, .ck-hero-actions, .ck-hero-category-rail, .ck-hero-trust-rail) {
-    animation: ck-diwali-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-  .ck-hero-diwali .ck-hero-headline { animation-delay: 80ms; }
-  .ck-hero-diwali .ck-hero-subtext { animation-delay: 160ms; }
-  .ck-hero-diwali .ck-hero-actions { animation-delay: 240ms; }
-  .ck-hero-diwali .ck-hero-category-rail { animation-delay: 320ms; }
-  .ck-hero-diwali .ck-hero-trust-rail { animation-delay: 400ms; }
-}
-@keyframes ck-diwali-rise {
-  from { opacity: 0; transform: translate3d(0, 12px, 0); }
-  to { opacity: 1; transform: none; }
-}
-@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
-  .ck-hero-diwali :is(.ck-hero-eyebrow, .ck-hero-headline, .ck-hero-subtext, .ck-hero-actions, .ck-hero-category-rail, .ck-hero-trust-rail) {
-    animation: none;
-  }
-}
 
 
 /* Home page "Real organisations. Real impact." (NGO drives for donors and guests):
@@ -5442,5 +5185,29 @@ header[data-calm-header] .ck-logo-kind-shimmer {
   .ck-donate-sheet-overlay[data-vaul-overlay][data-vaul-snap-points] {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+}
+
+/* NGO landing (mobile): the bell gets the same round frosted button as the
+   menu while the header sits over the hero photo. */
+@media (max-width: 767px) {
+  header[data-ngo-hero][data-home-hero="top"] .ck-mobile-header > div > * {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    color: #292524;
+    background: rgb(250 248 245 / 0.82);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid rgb(255 255 255 / 0.6);
+    box-shadow: 0 6px 18px -8px rgb(28 20 16 / 0.45);
+  }
+  .dark header[data-ngo-hero][data-home-hero="top"] .ck-mobile-header > div > * {
+    background: rgb(9 9 11 / 0.72);
+    border-color: rgb(255 255 255 / 0.12);
+    color: #fff6ed;
   }
 }

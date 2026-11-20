@@ -90,7 +90,7 @@ export function CampaignWizard({ initial, onSubmitted }: { initial: FundraisingC
           <button type="button" className={`${s.btn} ${s.bs}`} onClick={exit}><UiText>Save and exit</UiText></button>
         </div>
       </header>
-      <main className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
+      <div className={s.wrap} style={{ paddingTop: 32, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24 }}>
         {c.status === "CHANGES_REQUESTED" && c.reviewerMessage ? (
           <div role="status" className={s.card} style={{ padding: "16px 20px", display: "flex", gap: 12, alignItems: "flex-start", background: "#fdf3e1", borderColor: "#f0d9a8", maxWidth: 860 }}>
             <Icon name="edit" /><p><strong><UiText>The reviewer asked for changes:</UiText></strong> &ldquo;{c.reviewerMessage}&rdquo;</p>
@@ -112,7 +112,7 @@ export function CampaignWizard({ initial, onSubmitted }: { initial: FundraisingC
         {step === 1 && <Story c={c} set={set} nav={nav(0, 2)} />}
         {step === 2 && <Target c={c} set={set} nav={nav(1, 3, ui("Continue to preview"))} />}
         {step === 3 && <Preview c={c} flush={flush} back={() => go(2)} onCancel={() => setConfirmCancel(true)} onSubmitted={onSubmitted} />}
-      </main>
+      </div>
       {confirmCancel && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(31,20,12,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: 16, zIndex: 60 }}>
           <section role="alertdialog" aria-modal="true" aria-labelledby="cd" className={s.card} style={{ padding: 28, maxWidth: 520, width: "100%", display: "flex", flexDirection: "column", gap: 14 }}>

@@ -1,0 +1,27 @@
+# CauseKind
+
+> CauseKind is an Indian giving platform for in-kind donations. People give clothes, books, electronics and household items directly to verified people and NGOs near them. Requests are verified by admins, donors are matched within about 10 km, there are zero platform fees, and every donation is tracked to a confirmed handover.
+
+CauseKind also hosts campaigns and fundraisers for verified community needs across India.
+
+## Main pages
+
+- [Home](https://www.causekind.com): Overview of in-kind giving on CauseKind
+- [About](https://www.causekind.com/about): Mission, story, and how verified in-kind donations work
+- [Requests](https://www.causekind.com/requests): Items that verified people and NGOs have asked for
+- [FAQ](https://www.causekind.com/faq): Donating, receiving, verification and matching explained
+- [Contact](https://www.causekind.com/contact): Reach the team by email, phone or WhatsApp
+
+## Articles
+
+- [Blog](https://www.causekind.com/blog): Guides on donating items and giving well in India
+
+## Policies
+
+- [Privacy Policy](https://www.causekind.com/privacy)
+- [Terms](https://www.causekind.com/terms)
+- [Refund Policy](https://www.causekind.com/refund)
+
+## Optional
+
+- [Sitemap](https://www.causekind.com/sitemap.xml): Full list of public pages, including every blog post and NGO profile

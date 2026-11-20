@@ -36,7 +36,7 @@ function readToken(): string | null {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main data-ck-role-theme="ngo" className="handover-ngo-drive min-h-[100dvh] bg-[var(--background)] text-stone-900 dark:text-stone-100">
+    <div data-ck-role-theme="ngo" className="handover-ngo-drive min-h-[100dvh] bg-[var(--background)] text-stone-900 dark:text-stone-100">
       <div className="mx-auto w-full max-w-xl space-y-4 px-4 py-4">
         <header className="flex items-center gap-2 border-b border-stone-200 pb-3 dark:border-zinc-700">
           {/* eslint-disable-next-line @next/next/no-img-element -- plain logo, no site chrome here */}
@@ -45,7 +45,7 @@ function Shell({ children }: { children: React.ReactNode }) {
         </header>
         {children}
       </div>
-    </main>
+    </div>
   );
 }
 

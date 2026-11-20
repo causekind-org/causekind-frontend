@@ -28,7 +28,9 @@ describe("NGO Drives tabs and search", { timeout: 15000 }, () => {
     ] as never);
     render(<NgoDriveReviewPanel />);
     await screen.findByText("Winter blankets");
-    expect(screen.getAllByRole("tab").map(t => t.textContent)).toEqual(["Pending", "Changes requested", "Live", "Fully pledged",
+    // Each tab carries its count once loaded, e.g. "Pending (2)".
+    await waitFor(() => expect(screen.getAllByRole("tab")[0].textContent).toBe("Pending (2)"));
+    expect(screen.getAllByRole("tab").map(t => (t.textContent ?? "").replace(/ \(\d+\)$/, ""))).toEqual(["Pending", "Changes requested", "Live", "Fully pledged",
       "Collection complete", "Proof submitted", "Fulfilled", "Closed", "Cancelled", "Rejected"]);
     await search("hope");
     expect(screen.queryByText("School bags")).toBeNull();
@@ -36,7 +38,7 @@ describe("NGO Drives tabs and search", { timeout: 15000 }, () => {
     await search("nothing");
     expect(screen.getByText("No results for \"nothing\"")).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("tab")[2]);
-    await waitFor(() => expect(adminGetNgoDrives).toHaveBeenLastCalledWith("LIVE"));
+    await waitFor(() => expect(adminGetNgoDrives).toHaveBeenCalledWith("LIVE"));
     expect(window.location.search).toContain("status=LIVE");
   });
 });
@@ -49,7 +51,7 @@ describe("Drive offers tabs", { timeout: 15000 }, () => {
     render(<NgoDriveOffersPanel />);
     await screen.findByText(/Ravi/);
     const tabs = screen.getAllByRole("tab");
-    expect(tabs.map(t => t.textContent)).toEqual(["Waiting for the NGO", "Accepted by the NGO", "In handover", "Completed", "Rejected or declined", "Cancelled or withdrawn"]);
+    expect(tabs.map(t => (t.textContent ?? "").replace(/ \(\d+\)$/, ""))).toEqual(["Waiting for the NGO", "Accepted by the NGO", "In handover", "Completed", "Rejected or declined", "Cancelled or withdrawn"]);
     expect(tabs[2]).toHaveAttribute("aria-selected", "true");
     expect(adminGetNgoDriveOffers).toHaveBeenCalledWith("IN_HANDOVER");
     await search("zz");
@@ -68,6 +70,7 @@ describe("Distribution proof review", { timeout: 15000 }, () => {
       donors: [{ offerId: 1, donorName: "Ravi", quantity: 10, offeredAt: null, receivedAt: "2026-10-05", handoverMethod: null, handoverPhotos: [] }],
     }] as never);
     render(<NgoDriveProofsPanel />);
+    fireEvent.click(await screen.findByRole("button", { name: "Review Winter blankets" }));
     const fields = await screen.findByTestId("proof-fields");
     for (const text of ["Winter blankets", "Hope Trust", "Sep", "50 / 40 pieces", "35 families", "38 pieces", "18 Oct 2026",
       "Shanti Nagar hall", "Handed out at noon", "Yes", "19 Oct 2026", "IST"]) {
@@ -79,6 +82,8 @@ describe("Distribution proof review", { timeout: 15000 }, () => {
     expect(screen.getByRole("dialog", { name: "Proof photo" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Approve" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Reject" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: /Back to list/ }));
     await search("asha");
     expect(screen.getByText("No results for \"asha\"")).toBeInTheDocument();
   });

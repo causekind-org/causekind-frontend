@@ -144,7 +144,7 @@ export function RequestDirectory(props: Props) {
                 <Icon className="size-4" aria-hidden />
                 {o.label}
                 <span className="sr-only">: {o.description}, </span>
-                <span className={`tabular-nums ${on ? "text-white/80" : "text-stone-400"}`}>{tabCount[o.urlType]}</span>
+                <span className={`tabular-nums ${on ? "text-white/80" : "text-stone-600"}`}>{tabCount[o.urlType]}</span>
               </button>
             );
           })}
@@ -222,7 +222,7 @@ export function RequestDirectory(props: Props) {
                 <button key={category} type="button" onClick={() => toggleCategory(category)} aria-pressed={on} className={pill(on)}>
                   {visual && <visual.Icon className="size-4" aria-hidden />}
                   <TranslatedText text={category} />
-                  <span className={`tabular-nums ${on ? "text-white/80" : "text-stone-400"}`}>{counts[category] ?? 0}</span>
+                  <span className={`tabular-nums ${on ? "text-white/80" : "text-stone-600"}`}>{counts[category] ?? 0}</span>
                 </button>
               );
             })}
@@ -408,7 +408,7 @@ function DirectoryCard({ request: r, canOffer, onOffer }: { request: ItemRequest
               {isNgo ? <Building2 className="size-3" aria-hidden /> : <UserRound className="size-3" aria-hidden />}
               {isNgo ? ui("NGO") : ui("Person")}
             </span>
-            <span className="text-stone-500"><TranslatedText text={r.category} /></span>
+            <span className="text-stone-600"><TranslatedText text={r.category} /></span>
             {urgentLabel && <span className={`rounded px-1.5 py-0.5 ${urgentTone}`}>{urgentLabel}</span>}
           </div>
           <h3 className="mt-1 line-clamp-2 break-words text-[15px] font-semibold leading-snug sm:text-base">

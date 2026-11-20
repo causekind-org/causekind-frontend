@@ -23,7 +23,7 @@ describe("home drive sections", () => {
     expect(drives).toContain("ck-drives-theme");
     expect(drives).not.toContain("emerald");
     expect(css).not.toContain("ck-drives-donor-tone");
-    expect(drives).toContain("<DiwaliSeam");
+    expect(drives).not.toContain("DiwaliSeam");
     expect(css).toMatch(/\.ck-drives-theme\s*\{[\s\S]*?--color-emerald-700: var\(--ck-home-accent/);
     expect(card).toMatch(/rounded-full bg-ngo-400" aria-hidden="true" \/>\s*(<UiText>)?Verified by CauseKind/);
   });
@@ -31,24 +31,16 @@ describe("home drive sections", () => {
   it("NGO drives come right after the donee board, for guests and donors only", () => {
     const home = readFileSync(resolve(__dirname, "../../app/[locale]/HomeClient.tsx"), "utf8");
     expect(home).toContain('const showNgoDrives = !user || roleStr === "DONOR";');
-    expect(home.match(/<LiveNeedsComponent [^\n]*\/>\s*\{showNgoDrives && <NgoDrivesSection \/>\}/g)).toHaveLength(2);
+    // HomeClient has a single render path since the home-layouts merge (1e62f724), so the
+    // board-then-drives pair appears once (it used to appear in two branches).
+    expect(home.match(/<LiveNeedsComponent [^\n]*\/>\s*\{showNgoDrives && <NgoDrivesSection \/>\}/g)).toHaveLength(1);
     const role = readFileSync(resolve(__dirname, "RoleHome.tsx"), "utf8");
-    expect(role).toMatch(/<LiveNeedsSection [^\n]*\/>\s*<\/div>\s*<div[^>]*>\s*<NgoDrivesSection \/>/);
-  });
-
-  it("the drives section shares the Live board's Diwali ground, desktop and phone", () => {
-    for (const file of ["diwaliDesktop.css", "diwaliMobile.css"]) {
-      const diwali = readFileSync(resolve(__dirname, file), "utf8");
-      expect(diwali).toMatch(/#live-needs-section, #ngo-drives-section,[^{]*\{ background-color: var\(--dw-cream\); \}/);
-    }
-  });
-
-  it("on phones the drives seam spans the viewport and its lamp clears the heading", () => {
-    const mobile = readFileSync(resolve(__dirname, "diwaliMobile.css"), "utf8");
-    expect(mobile).toContain(".ck-dw-seam-line:has(+ #ngo-drives-section) { margin-inline: -1.25rem; }");
-    expect(mobile).toContain("#ngo-drives-section h2 { padding-right: 1.5rem; }");
-    const desktop = readFileSync(resolve(__dirname, "diwaliDesktop.css"), "utf8");
-    expect(desktop).not.toContain(":has(+ #ngo-drives-section)");
+    // RoleHome's 2026-11-16 layout (merged in 1e62f724) puts "Two ways to give" and the
+    // support gallery between the board and the drives, so only the order is checked.
+    const board = role.indexOf("<LiveNeedsSection ");
+    const drives = role.indexOf("<NgoDrivesSection />");
+    expect(board).toBeGreaterThan(-1);
+    expect(drives).toBeGreaterThan(board);
   });
 
   it("is a static check only (no render needed)", () => { expect(vi).toBeDefined(); });

@@ -1,6 +1,12 @@
 import { MetadataRoute } from 'next';
 import { blogPosts } from '@/data/blogData';
 import { IN_KIND_CATEGORIES } from '@/lib/inKindCategories';
+import { initiatives } from '@/lib/initiatives';
+import { FEATURES } from '@/lib/features';
+
+// Fixed, not new Date(): a lastmod that changes on every request tells crawlers
+// nothing. Bump it when the static pages' content actually changes.
+const STATIC_LASTMOD = new Date('2026-11-16T00:00:00+05:30');
 
 /**
  * Every URL here must be canonical and final — the same www host the canonical
@@ -27,21 +33,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '',
     '/about',
     '/blog',
-    '/campaigns',
-    '/donate',
+    // Money campaigns and the old /donate page only show "Coming soon" while
+    // FEATURES.money is off; they rejoin the sitemap when it is turned on.
+    ...(FEATURES.money ? ['/campaigns', '/donate'] : []),
     '/privacy',
     '/terms',
     '/refund',
     '/faq',
     '/contact',
-    '/items',
-    '/offers',
     '/requests',
+    '/ngo',
+    '/donate/money',
+    '/fundraisers',
+    '/sahas',
+    '/razorpay',
+    ...initiatives.map((i) => `/initiatives/${i.slug}`),
   ];
 
   const sitemapEntries: MetadataRoute.Sitemap = routes.map((route) => ({
     url: `${baseUrl}${route}`,
-    lastModified: new Date(),
+    lastModified: STATIC_LASTMOD,
     changeFrequency: route === '' ? 'daily' : 'weekly',
     priority: route === '' ? 1.0 : 0.8,
   }));
@@ -60,7 +71,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   IN_KIND_CATEGORIES.forEach((category) => {
     sitemapEntries.push({
       url: `${baseUrl}/requests/category/${category.slug}`,
-      lastModified: new Date(),
+      lastModified: STATIC_LASTMOD,
       // Editorial copy, not the request list beneath it — the page's own content
       // changes rarely even though what it links to changes constantly.
       changeFrequency: 'monthly',
@@ -72,7 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   blogPosts.forEach((post) => {
     sitemapEntries.push({
       url: `${baseUrl}/blog/${post.slug}`,
-      lastModified: new Date(post.publishedDate),
+      lastModified: new Date(post.dateModified ?? post.datePublished),
       changeFrequency: 'monthly',
       priority: 0.6,
     });
@@ -83,13 +94,64 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const slug of await publicNgoSlugs()) {
     sitemapEntries.push({
       url: `${baseUrl}/ngos/${slug}`,
-      lastModified: new Date(),
+      lastModified: STATIC_LASTMOD,
       changeFrequency: 'weekly',
       priority: 0.6,
     });
   }
 
+  // Public request pages: NGO requests only. A person's request is noindex
+  // (F-24) and must never be listed, so anything not explicitly "NGO" is skipped.
+  for (const id of await publicNgoRequestIds()) {
+    sitemapEntries.push({
+      url: `${baseUrl}/requests/${id}`,
+      lastModified: STATIC_LASTMOD,
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    });
+  }
+
+  // Live public fundraisers.
+  for (const id of await publicFundraiserIds()) {
+    sitemapEntries.push({
+      url: `${baseUrl}/fundraisers/${id}`,
+      lastModified: STATIC_LASTMOD,
+      changeFrequency: 'weekly',
+      priority: 0.5,
+    });
+  }
+
   return sitemapEntries;
+}
+
+const SITEMAP_API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8080';
+
+async function publicNgoRequestIds(): Promise<number[]> {
+  try {
+    const res = await fetch(`${SITEMAP_API}/api/v1/item-requests/public`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const body = (await res.json()) as unknown;
+    if (!Array.isArray(body)) return [];
+    return body
+      .filter((r): r is { id: number; requesterType: string } => !!r && typeof r === 'object' && (r as { requesterType?: unknown }).requesterType === 'NGO' && Number.isInteger((r as { id?: unknown }).id))
+      .map((r) => r.id);
+  } catch {
+    return [];
+  }
+}
+
+async function publicFundraiserIds(): Promise<number[]> {
+  try {
+    const res = await fetch(`${SITEMAP_API}/api/v1/fundraising/public/campaigns`, { next: { revalidate: 3600 } });
+    if (!res.ok) return [];
+    const body = (await res.json()) as unknown;
+    if (!Array.isArray(body)) return [];
+    return body
+      .map((c) => (c && typeof c === 'object' ? (c as { id?: unknown }).id : undefined))
+      .filter((id): id is number => Number.isInteger(id));
+  } catch {
+    return [];
+  }
 }
 
 async function publicNgoSlugs(): Promise<string[]> {

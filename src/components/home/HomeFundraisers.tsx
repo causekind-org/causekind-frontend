@@ -9,7 +9,6 @@ const EmptyStateIcon = Smile;
 import Link from "@/components/AppLink";
 import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
 import { useAuth } from "@/hooks/useAuth";
-import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { fundraisers, type FundraiserCard, type FundraisingCategory } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
@@ -84,7 +83,7 @@ function SpotlightCard({ card, diwali }: { card: FundraiserCard; diwali: boolean
             </span>
           </div>
           <span className="h-2.5 overflow-hidden rounded-full bg-[#f1e7dc] dark:bg-zinc-800" role="progressbar"
-            aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+            aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${pct}% of target raised`}>
             <span className="block h-full rounded-full bg-[#b04a15]" style={{ width: `${Math.max(pct, 1)}%` }} />
           </span>
           <span className="flex items-center gap-1.5 text-[13px] text-stone-600 dark:text-stone-400">
@@ -140,7 +139,7 @@ function RailCard({ card }: { card: FundraiserCard }) {
  */
 export function HomeFundraisers() {
   const { user } = useAuth();
-  const diwali = useDiwaliCampaign();
+  const diwali = false; // Diwali theme removed on staging 2026-11-17 (c1b82263)
   const isDonee = user?.role?.replace(/^ROLE_/, "") === "DONEE";
   const [cards, setCards] = useState<FundraiserCard[] | null>(null);
   const railRef = useRef<HTMLDivElement>(null);

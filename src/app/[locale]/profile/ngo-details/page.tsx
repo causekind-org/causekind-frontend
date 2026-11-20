@@ -574,13 +574,13 @@ function NgoDetailsEditor() {
   }
 
   if (restoreError) return (
-    <main className="mx-auto max-w-xl space-y-4 p-8">
+    <div className="mx-auto max-w-xl space-y-4 p-8">
       <h1 className="text-xl font-bold">Let’s restore your application</h1>
       <p role="alert">{restoreError}</p>
       <ErrorIdNote id={restoreErrorId} />
       <button type="button" className="rounded-lg border px-4 py-2" onClick={() => window.location.reload()}>Try again</button>
       <Link href="/profile" className="ml-4 underline">Back to profile</Link>
-    </main>
+    </div>
   );
 
   const progress = calculateNgoProgress(data);

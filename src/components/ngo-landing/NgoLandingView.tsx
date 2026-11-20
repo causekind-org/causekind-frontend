@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useNgoStatus } from "./useNgoStatus";
 import { ErrorIdNote } from "@/components/ErrorIdNote";
 import "./ngo-redesign.css";
+import { ngoFonts } from "./fonts";
 
 const PostApprovalLanding = lazy(() => import("./PostApprovalLanding"));
 const PreApprovalLanding = lazy(() => import("./PreApprovalLanding"));
@@ -16,7 +17,7 @@ function NgoLandingViewContent() {
   // Donors and donees get no NGO status, CTAs or NGO API calls (useNgoStatus skips them).
   if (viewer === "other" && !isLoading) {
     return (
-      <div className="ck-ngo-landing-page ngo-theme-wrapper min-h-[60vh] flex flex-col items-center justify-center p-8 text-center">
+      <div className={`${ngoFonts} ck-ngo-landing-page ngo-theme-wrapper min-h-[60vh] flex flex-col items-center justify-center p-8 text-center`}>
         <p className="text-lg font-semibold mb-4">This area is for NGO partners.</p>
         <Link
           href="/"
@@ -29,7 +30,7 @@ function NgoLandingViewContent() {
   }
 
   return (
-    <div className="ck-ngo-landing-page ngo-theme-wrapper min-h-screen transition-colors duration-300">
+    <div className={`${ngoFonts} ck-ngo-landing-page ngo-theme-wrapper min-h-screen transition-colors duration-300`}>
 
       {error ? (
         <div className="min-h-[50vh] flex flex-col items-center justify-center p-8 text-center" role="alert">

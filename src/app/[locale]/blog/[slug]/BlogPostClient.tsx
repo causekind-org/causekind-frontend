@@ -8,6 +8,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 // rendered document carries clean HTML and there is never an unsanitized
 // frame. Next splits by route, so the cost lands on the blog page alone.
 import DOMPurify from "isomorphic-dompurify";
+import Image from "next/image";
 import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
@@ -20,6 +21,44 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { blogPosts } from "../../../../data/blogData";
 
 
+
+/**
+ * The eight Material Symbols (Outlined, weight 400, fill 0, grade 0, optical
+ * size 24) this page uses, as their official outline paths. They replace the
+ * Material Symbols icon font, which cost a third-party stylesheet on every
+ * route and put the ligature names ("expand_more") in the HTML as text.
+ */
+const MATERIAL_ICON_PATHS = {
+  check: "M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z",
+  expand_more: "M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z",
+  format_bold: "M272-200v-560h221q65 0 120 40t55 111q0 51-23 78.5T602-491q25 11 55.5 41t30.5 90q0 89-65 124.5T501-200H272Zm121-112h104q48 0 58.5-24.5T566-372q0-11-10.5-35.5T494-432H393v120Zm0-228h93q33 0 48-17t15-38q0-24-17-39t-44-15h-95v109Z",
+  link: "M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z",
+  mail: "M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160Zm320-280L160-640v400h640v-400L480-440Zm0-80 320-200H160l320 200ZM160-640v-80 480-400Z",
+  pause: "M520-200v-560h240v560H520Zm-320 0v-560h240v560H200Zm400-80h80v-400h-80v400Zm-320 0h80v-400h-80v400Zm0-400v400-400Zm320 0v400-400Z",
+  play_arrow: "M320-200v-560l440 280-440 280Zm80-280Zm0 134 210-134-210-134v268Z",
+  replay: "M339.5-108.5q-65.5-28.5-114-77t-77-114Q120-365 120-440h80q0 117 81.5 198.5T480-160q117 0 198.5-81.5T760-440q0-117-81.5-198.5T480-720h-6l62 62-56 58-160-160 160-160 56 58-62 62h6q75 0 140.5 28.5t114 77q48.5 48.5 77 114T840-440q0 75-28.5 140.5t-77 114q-48.5 48.5-114 77T480-80q-75 0-140.5-28.5Z",
+} as const;
+
+/**
+ * Always a 24px box. The icon font's own rule set `font-size: var(--text-2xl)`
+ * unlayered, which beat the Tailwind `text-lg` / `text-sm` utilities on every
+ * icon, so 24px is what each of them actually rendered at.
+ */
+function MaterialIcon({ name, className = "" }: { name: keyof typeof MATERIAL_ICON_PATHS; className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      width="24"
+      height="24"
+      viewBox="0 -960 960 960"
+      fill="currentColor"
+      className={`ck-msym inline-block align-middle shrink-0 ${className}`}
+    >
+      <path d={MATERIAL_ICON_PATHS[name]} />
+    </svg>
+  );
+}
 
 // The route's `params` promise is unwrapped by the server component in
 // page.tsx, which needs the slug anyway to build the post's metadata. This
@@ -78,9 +117,9 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="material-symbols-outlined text-[#b04a15] dark:text-[#e07b3a] text-lg leading-none shrink-0"
+          className="inline-block align-middle leading-none text-[#b04a15] dark:text-[#e07b3a] shrink-0"
         >
-          expand_more
+          <MaterialIcon name="expand_more" className="block" />
         </motion.span>
       </button>
 
@@ -115,7 +154,7 @@ function FontDropdown({ value, onChange }: { value: string; onChange: (v: string
                 >
                   <span className="truncate">{opt.label}</span>
                   {opt.value === value && (
-                    <span className="material-symbols-outlined text-sm leading-none shrink-0">check</span>
+                    <MaterialIcon name="check" />
                   )}
                 </button>
               </motion.li>
@@ -363,84 +402,10 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
   const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 2);
-
-  // Schema.org BlogPosting markup so Google's Rich Results can pick up this
-  // post — otherwise the page renders fine but carries zero structured data.
-  const postSchemaData = {
-    "@context": "https://schema.org",
-    "@graph": [
-      {
-        "@type": "BlogPosting",
-        "mainEntityOfPage": {
-          "@type": "WebPage",
-          "@id": `https://www.causekind.com/blog/${post.slug}`,
-        },
-        "headline": post.title,
-        "description": post.description,
-        "image": post.image.startsWith("http") ? post.image : `https://www.causekind.com${post.image}`,
-        "author": {
-          "@type": "Person",
-          "name": post.author,
-          "image": post.authorImage,
-          "url": "https://www.causekind.com/about",
-        },
-        "publisher": {
-          "@type": "Organization",
-          "name": "CauseKind",
-          "logo": {
-            "@type": "ImageObject",
-            "url": "https://www.causekind.com/logo-filled.webp",
-          },
-        },
-        // publishedDate is stored as "Month YYYY" (e.g. "June 2026") — Date parses that
-        // to the 1st of the month. Outputting the full ISO string ensures a valid timezone.
-        "datePublished": !isNaN(new Date(post.publishedDate).getTime())
-          ? new Date(post.publishedDate).toISOString()
-          : undefined,
-        "url": `https://www.causekind.com/blog/${post.slug}`,
-      },
-      {
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-          {
-            "@type": "ListItem",
-            "position": 1,
-            "name": "Home",
-            "item": "https://www.causekind.com"
-          },
-          {
-            "@type": "ListItem",
-            "position": 2,
-            "name": "Blog",
-            "item": "https://www.causekind.com/blog"
-          },
-          {
-            "@type": "ListItem",
-            "position": 3,
-            "name": post.title,
-            "item": `https://www.causekind.com/blog/${post.slug}`
-          }
-        ]
-      },
-      {
-        "@type": "Organization",
-        "name": "CauseKind",
-        "url": "https://www.causekind.com",
-        "logo": "https://www.causekind.com/logo-filled.webp",
-        "image": "https://www.causekind.com/logo-filled.webp",
-        "description": "A transparent and verified in-kind giving platform connecting donors directly with community needs."
-      }
-    ]
-  };
-
   return (
     <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-4 md:pt-16 lg:pt-24`}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(postSchemaData) }}
-      />
       {/* Main Content Area */}
-      <main className="pb-24">
+      <div className="pb-24">
         <article lang={translation ? `${locale}-x-mtfrom-en` : "en"}>
           {/* Back button */}
           <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 mb-4 md:mb-6">
@@ -456,10 +421,20 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
             {/* Image card */}
             <AnimatedWrapper delay={0} duration={0.6} direction="up">
               <div className="relative w-full aspect-[16/10] md:aspect-auto md:h-[420px] rounded-2xl overflow-hidden shadow-xl mb-6 md:mb-10">
-                <div
-                  className="absolute inset-0 bg-cover bg-center w-full h-full scale-100 md:scale-105 transform origin-center"
-                  style={{ backgroundImage: `url('${post.image}')` }}
-                />
+                {/* Same box, scale and crop as the former CSS background
+                    (bg-cover bg-center = object-cover object-center), now a
+                    real <img> in the server HTML: preloaded as the LCP image,
+                    resized per device, and described for search and screen readers. */}
+                <div className="absolute inset-0 w-full h-full scale-100 md:scale-105 transform origin-center">
+                  <Image
+                    src={post.image}
+                    alt={post.title}
+                    fill
+                    priority
+                    sizes="(min-width: 1280px) 1232px, 100vw"
+                    className="object-cover object-center"
+                  />
+                </div>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
                 {/* Category badge overlaid bottom-left — links back to the
                     listing page pre-filtered to this category */}
@@ -508,13 +483,13 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
               <div className="sticky top-[120px] flex flex-col gap-8">
                 {/* Reading Tools Panel */}
                 <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-3 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
-                  <h3 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
+                  <h2 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
                     {t("readingTools")}
-                  </h3>
+                  </h2>
                   {/* Bold Mode Toggle */}
                   <div className="flex items-center justify-between mb-8">
                     <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">
-                      <span className="material-symbols-outlined text-lg leading-none text-[#b04a15] dark:text-[#e07b3a]">format_bold</span>
+                      <MaterialIcon name="format_bold" className="text-[#b04a15] dark:text-[#e07b3a]" />
                       {t("boldText")}
                     </span>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -549,9 +524,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                           title={narrationState === "playing" ? "Pause" : "Play"}
                           className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-xl leading-none">
-                            {narrationState === "playing" ? "pause" : "play_arrow"}
-                          </span>
+                          <MaterialIcon name={narrationState === "playing" ? "pause" : "play_arrow"} />
                         </button>
                         <button
                           type="button"
@@ -560,7 +533,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                           title="Restart"
                           className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-lg leading-none">replay</span>
+                          <MaterialIcon name="replay" />
                         </button>
                         <span className="font-label-sm text-2xs text-[#78716c] dark:text-[#a8a29e]">
                           {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
@@ -581,7 +554,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       title="Share via Email"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-xl leading-none">mail</span>
+                      <MaterialIcon name="mail" />
                     </button>
                     <button
                       onClick={handleCopyLink}
@@ -589,7 +562,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       title="Copy Link"
                       className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-xl leading-none">link</span>
+                      <MaterialIcon name="link" />
                     </button>
                     {copied && (
                       <span className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-semibold animate-pulse absolute left-28 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 px-2.5 py-1.5 rounded-lg shadow-sm">Copied!</span>
@@ -712,9 +685,9 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                           <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
                             {tr.category}
                           </span>
-                          <h4 className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                          <p className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
                             {tr.title}
-                          </h4>
+                          </p>
                         </Link>
                       </motion.div>
                     );
@@ -725,7 +698,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
           </div>
         </article>
 
-      </main>
+      </div>
 
     </div>
   );

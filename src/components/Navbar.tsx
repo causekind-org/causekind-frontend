@@ -4,12 +4,9 @@ import { UiText, useUiText } from "@/components/UiText";
 
 import { serverDate } from "@/lib/serverTime";
 import { useState, useEffect, useRef, useCallback } from "react";
-// @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
-import StaggeredMenu from "@/components/StaggeredMenu";
+import type { ComponentType } from "react";
 import Link from "@/components/AppLink";
-import { DiwaliVideoLogo } from "@/components/brand/DiwaliVideoLogo";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
-import { isDiwaliCampaignActive } from "@/lib/diwali";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
 import { useRouter, usePathname } from "next/navigation";
@@ -69,6 +66,12 @@ const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 /** The wordmark per size; md is the header's (small on phones). The icon scales with it via `dimensions`. */
 const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl" } as const;
 
+/** Calls `onMount` once its own effects run, i.e. after the earlier siblings'. */
+function AfterMount({ onMount }: { onMount: () => void }) {
+  useEffect(() => { onMount(); }, [onMount]);
+  return null;
+}
+
 export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
@@ -77,17 +80,6 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
   // cannot outlive its window — which is exactly how the Independence Day
   // wordmark ended up still flying a flag on 27 August.
   const rakshaBandhan = isRakshaBandhanCampaignActive();
-
-  // The diya sits with the heart, so the Diwali logo keeps its icon on mobile
-  // too, whatever `hideIcon` asked for. Gated like the tie, so it leaves on 13 Nov.
-  // The footer passes seasonal={false} to keep the everyday logo.
-  if (seasonal && isDiwaliCampaignActive()) {
-    return (
-      <span className="flex items-center" aria-label="CauseKind">
-        <DiwaliVideoLogo />
-      </span>
-    );
-  }
 
   return (
     <motion.span
@@ -236,7 +228,7 @@ function LoginNudgeBubble({ user }: { user: AuthUser | null }) {
         <button
           onClick={dismiss}
           aria-label={ui("Dismiss")}
-          className="absolute top-2.5 right-2.5 w-5 h-5 rounded-full flex items-center justify-center text-stone-400 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+          className="absolute top-2.5 right-2.5 w-5 h-5 box-content p-3 -m-3 bg-clip-content rounded-full flex items-center justify-center text-stone-500 hover:text-stone-700 dark:hover:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
         >
           <X className="w-3 h-3" />
         </button>
@@ -313,6 +305,31 @@ export function SiteHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // The mobile menu (StaggeredMenu + gsap) is code-split out of the shared
+  // bundle and fetched once the browser is idle, so it is ready before the
+  // first tap. It mounts closed and only then receives the real `open` value:
+  // StaggeredMenu ignores `open` on its first mount, so mounting it already
+  // open (a tap before the code arrived) would leave the panel hidden.
+  const [StaggeredMenu, setStaggeredMenu] = useState<ComponentType<any> | null>(null);
+  const [menuMounted, setMenuMounted] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
+    const load = () => import("@/components/StaggeredMenu").then((m) => { if (!cancelled) setStaggeredMenu(() => m.default); });
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    let idleId: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    if (w.requestIdleCallback) idleId = w.requestIdleCallback(load, { timeout: 2000 });
+    else timer = setTimeout(load, 1200);
+    return () => { cancelled = true; if (idleId !== undefined) w.cancelIdleCallback?.(idleId); if (timer) clearTimeout(timer); };
+  }, []);
+  useEffect(() => {
+    // A tap before the idle load fired: fetch now (import() is cached, so this
+    // never downloads twice).
+    // @ts-expect-error — untyped JS module, see above
+    if (isSidebarOpen && !StaggeredMenu) import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
+  }, [isSidebarOpen, StaggeredMenu]);
+  const markMenuMounted = useCallback(() => setMenuMounted(true), []);
   // Closing the menu makes it inert, which pushes focus out to <body>. Without
   // this a keyboard user loses their place entirely, so send focus back to the
   // control they opened it with.
@@ -400,17 +417,23 @@ export function SiteHeader() {
     let observedHero: Element | null = null;
     const update = () => {
       frame = 0;
-      const hero = document.querySelector(".ck-lead-hero-stage");
+      // The NGO landing (also "/") reuses the same see-through header over its mobile photo.
+      // Its photo exists below 768px only, so it counts only there.
+      const hero = document.querySelector(".ck-lead-hero-stage")
+        ?? (window.matchMedia("(max-width: 767px)").matches ? document.querySelector(".ck-ngo-hero-stage") : null);
       if (hero && hero !== observedHero) {
         resize.disconnect();
         resize.observe(hero);
         crossing.disconnect();
         crossing.observe(hero);
         observedHero = hero;
-        mounted.disconnect();
       }
+      // `mounted` keeps watching: the NGO landing swaps its hero for a new
+      // element once the application status loads, and that must be picked up.
       const bounds = hero?.getBoundingClientRect();
-      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0);
+      // The NGO hero can sit a few px off the top mid-layout; allow for it there.
+      const slack = hero?.classList.contains("ck-ngo-hero-stage") ? 16 : 0;
+      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= slack && bounds.bottom > 0);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
@@ -819,6 +842,7 @@ export function SiteHeader() {
       <header data-calm-header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
+        data-ngo-hero={pathname === "/" && overMobileHero && isNgoPartner ? "" : undefined}
         style={{
           // Slide only. Animating opacity here made Chrome flatten the glass
           // (backdrop-filter) buttons inside, and on the way back they could
@@ -874,20 +898,7 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            {isDiwaliCampaignActive() ? (
-              // Both are rendered and styles.css shows one: whitecause over the
-              // transparent home-hero header and in dark mode, blackcause on the
-              // cream bar everywhere else. Gated on the Diwali switch like the
-              // desktop logo: ungated, it stayed on phones after 13 Nov.
-              <span aria-label="CauseKind" className="flex items-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/diwali/blackcause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-dark block h-10 w-auto" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/images/diwali/whitecause.webp" alt="" width={360} height={120} className="ck-dlogo-mobile-light hidden h-10 w-auto" />
-              </span>
-            ) : (
-              <CareNestLogo size="md" hideIcon={true} />
-            )}
+            <CareNestLogo size="md" hideIcon={true} />
           </Link>
           {/* With the bar gone there is nothing behind this button but the
               hero, so it brings its own surface: `glass-pill` is the same
@@ -1377,8 +1388,9 @@ export function SiteHeader() {
           sign-out live in the footer slot; a compact profile line is the header.
           The decorative profile-completion & latest-impact cards were dropped
           in favour of StaggeredMenu's cleaner list. ── */}
-      <StaggeredMenu
-        open={isSidebarOpen}
+      {StaggeredMenu && !menuMounted && <AfterMount onMount={markMenuMounted} />}
+      {StaggeredMenu && <StaggeredMenu
+        open={menuMounted && isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
         accentColor={roleColors.accent}
@@ -1437,7 +1449,7 @@ export function SiteHeader() {
         footer={
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Theme</UiText></span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-500"><UiText>Theme</UiText></span>
               <button
                 onClick={toggleTheme}
                 aria-label={t("nav.toggleTheme")}
@@ -1448,7 +1460,7 @@ export function SiteHeader() {
               </button>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-3xs font-black uppercase tracking-widest text-stone-400 dark:text-stone-500"><UiText>Language</UiText></span>
+              <span className="text-3xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-500"><UiText>Language</UiText></span>
               <LanguageSwitcher dropUp />
             </div>
             {user && (
@@ -1461,7 +1473,7 @@ export function SiteHeader() {
             )}
           </div>
         }
-      />
+      />}
     </>
   );
 }

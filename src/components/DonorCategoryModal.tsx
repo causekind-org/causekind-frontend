@@ -1337,7 +1337,7 @@ useEffect(() => {
               the remaining four.
           ================================================= */}
 
-          <main
+          <div
             className="
               mx-auto
               flex
@@ -1809,7 +1809,7 @@ useEffect(() => {
               )}
 
             </div>
-          </main>
+          </div>
 
           {/* =================================================
               FOOTER

@@ -11,9 +11,9 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const initiative = getInitiative((await params).slug);
-  if (!initiative) return { title: 'Initiative not found | CauseKind' };
+  if (!initiative) return { title: 'Initiative not found' };
   return {
-    title: `${initiative.title} | CauseKind`,
+    title: initiative.title,
     description: initiative.intro,
     alternates: { canonical: `/initiatives/${initiative.slug}` },
     openGraph: { title: `${initiative.title} | CauseKind`, description: initiative.intro, images: [initiative.image] },

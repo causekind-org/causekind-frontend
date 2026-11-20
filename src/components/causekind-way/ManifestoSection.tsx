@@ -422,6 +422,7 @@ export function ManifestoSection() {
               {/* Giant Scattered Letters */}
               <div
                 className="flex items-center justify-center font-serif font-black tracking-tighter leading-none text-stone-950 dark:text-stone-50 select-none text-[clamp(4.5rem,13vw,11rem)]"
+                role="img"
                 aria-label="LOCAL"
               >
                 {["L", "O", "C", "A", "L"].map((char, i) => (
@@ -452,6 +453,7 @@ export function ManifestoSection() {
               {/* Giant DIRECT word */}
               <div
                 className="direct-word font-serif font-black tracking-tighter leading-none text-stone-950 dark:text-stone-50 select-none text-[clamp(4.5rem,13vw,11rem)]"
+                role="img"
                 aria-label="DIRECT"
               >
                 DIRECT
@@ -478,6 +480,7 @@ export function ManifestoSection() {
               {/* Giant DIGNIFIED word (rising upright) */}
               <div
                 className="font-serif font-black tracking-tighter leading-none text-stone-950 dark:text-stone-50 select-none text-[clamp(3.8rem,11.5vw,9.5rem)] flex items-end [perspective:800px]"
+                role="img"
                 aria-label="DIGNIFIED"
               >
                 {["D", "I", "G", "N", "I", "F", "I", "E", "D"].map((char, i) => (
@@ -527,6 +530,7 @@ export function ManifestoSection() {
                 className="finale-line relative group cursor-pointer pointer-events-auto py-0.5"
                 onMouseEnter={() => setHoveredWord("LOCAL")}
                 onMouseLeave={() => setHoveredWord(null)}
+                role="img"
                 aria-label="LOCAL."
               >
                 {["L", "O", "C", "A", "L", "."].map((char, i) => (
@@ -552,6 +556,7 @@ export function ManifestoSection() {
                 className="finale-line relative group cursor-pointer pointer-events-auto py-0.5"
                 onMouseEnter={() => setHoveredWord("DIRECT")}
                 onMouseLeave={() => setHoveredWord(null)}
+                role="img"
                 aria-label="DIRECT."
               >
                 {["D", "I", "R", "E", "C", "T", "."].map((char, i) => (
@@ -577,6 +582,7 @@ export function ManifestoSection() {
                 className="finale-line relative group cursor-pointer pointer-events-auto py-0.5"
                 onMouseEnter={() => setHoveredWord("DIGNIFIED")}
                 onMouseLeave={() => setHoveredWord(null)}
+                role="img"
                 aria-label="DIGNIFIED."
               >
                 {["D", "I", "G", "N", "I", "F", "I", "E", "D", "."].map((char, i) => (

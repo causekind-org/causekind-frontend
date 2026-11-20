@@ -128,7 +128,7 @@ export function DriveGiveScreen({ id, loadDrive, driveHref, giveHref, notFoundHr
   if (view.kind === "error") return <DriveLoadError message={view.message} onRetry={() => void load()} />;
   if (view.kind === "blocked") {
     return (
-      <main data-ck-role-theme="ngo" className="min-h-[60vh] bg-stone-50 px-4 py-16 dark:bg-zinc-950">
+      <div data-ck-role-theme="ngo" className="min-h-[60vh] bg-stone-50 px-4 py-16 dark:bg-zinc-950">
         <div className="mx-auto max-w-md rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <h1 className="text-lg font-bold text-stone-900 dark:text-stone-100 ck-user-text">{view.title}</h1>
           <p className="mt-2 text-sm text-stone-600 dark:text-stone-400">{view.body}</p>
@@ -138,13 +138,13 @@ export function DriveGiveScreen({ id, loadDrive, driveHref, giveHref, notFoundHr
             </Link>
           )}
         </div>
-      </main>
+      </div>
     );
   }
 
   const { drive, offer } = view;
   return (
-    <main data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 dark:bg-zinc-950">
+    <div data-ck-role-theme="ngo" className="min-h-screen bg-stone-50 dark:bg-zinc-950">
       <NgoDriveOfferWizard
         key={offer.id}
         offerId={offer.id}
@@ -178,6 +178,6 @@ export function DriveGiveScreen({ id, loadDrive, driveHref, giveHref, notFoundHr
         onExit={() => router.push(driveHref)}
         onSaveExit={() => router.push("/dashboard")}
       />
-    </main>
+    </div>
   );
 }

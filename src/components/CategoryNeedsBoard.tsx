@@ -539,6 +539,7 @@ function NeedsSlider({
 }
 
 function NeedCardCompact({
+  id,
   title,
   category,
   city,
@@ -595,9 +596,9 @@ function NeedCardCompact({
         </div>
 
         {/* Title */}
-        <h3 className="ck-need-card__title group-hover:text-[var(--ck-role-accent)] transition-colors">
+        <p className="ck-need-card__title group-hover:text-[var(--ck-role-accent)] transition-colors">
           {title}
-        </h3>
+        </p>
 
         {/* Meta row: city + qty */}
         <div className="flex items-center gap-2 mt-auto pb-4">
@@ -618,7 +619,9 @@ function NeedCardCompact({
           </Link>
         </div>
       </div>
-      <Link href={href} className="absolute inset-0 z-0" aria-label={t("offerFor", { title })} />
+      {/* The card body opens the request's own page (a real, crawlable link);
+          the CTA button above still goes straight to the offer flow. */}
+      <Link href={id != null ? `/requests/${id}` : href} className="absolute inset-0 z-0" aria-label={id != null ? title : t("offerFor", { title })} />
     </div>
   );
 }

@@ -7,7 +7,7 @@ import RefundClient from "./RefundClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Refund Policy — CauseKind",
+  title: "Refund Policy",
   description: "CauseKind's refund policy for monetary contributions, including eligibility and how to raise a request.",
   alternates: { canonical: "/refund" },
 };

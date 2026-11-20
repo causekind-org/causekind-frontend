@@ -2,7 +2,10 @@
    CauseKind NGO Landing Page Redesign - Design System Tokens & Aesthetics
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap');
+/* Fraunces and Inter are self-hosted through next/font (see ./fonts.ts and the
+   root layout). The remote Google Fonts @import that used to sit here was
+   dropped by the production CSS bundler and never loaded. next/font registers
+   the faces under these same family names, so the tokens below are unchanged. */
 
 :root {
   --ngo-font-heading: 'Fraunces', Georgia, serif;
@@ -36,6 +39,11 @@
 }
 
 .ngo-theme-wrapper {
+  /* CLS: use next/font's own family names. They carry a size-adjusted local
+     fallback ("Fraunces Fallback" / "Inter Fallback"), so text no longer
+     reflows when the web font swaps in. Same faces once loaded. */
+  --ngo-font-heading: var(--font-ngo-heading-face, 'Fraunces'), Georgia, serif;
+  --ngo-font-body: var(--font-inter, 'Inter'), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background-color: var(--ngo-bg);
   color: var(--ngo-ink);
   font-family: var(--ngo-font-body);
@@ -789,4 +797,54 @@
   .ngo-btn-shine::after {
     animation: none !important;
   }
+}
+
+/* Mobile (<768px) hero: full-bleed photo behind the see-through header, a
+   compact text block pinned to the bottom above the bottom nav. */
+@media (max-width: 767px) {
+  .ck-ngo-hero-stage {
+    margin-top: calc(-1 * var(--ck-nav-h, 4.25rem));
+    height: 100vh;
+    height: 100svh;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: calc(var(--ck-bottom-chrome, 5rem) + 12px);
+    align-items: flex-end;
+    background: #000;
+  }
+  .ck-ngo-hero-shade {
+    background: linear-gradient(to bottom, transparent 40%, rgba(0, 0, 0, 0.55) 62%, rgba(0, 0, 0, 0.75) 100%);
+  }
+  .ck-ngo-hero-badge { margin-bottom: 0.5rem; transform: scale(0.9); transform-origin: left center; }
+  .ck-ngo-hero-title {
+    font-size: 32px !important;
+    line-height: 1.08 !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .ck-ngo-hero-alert { margin-bottom: 0.5rem; padding-block: 0.25rem; font-size: 11px; }
+  .ck-ngo-hero-alert > span { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .ck-ngo-hero-sub {
+    font-size: 15px !important;
+    line-height: 1.4 !important;
+    margin-bottom: 0.75rem !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .ck-ngo-hero-ctas { flex-wrap: nowrap; gap: 8px; margin-bottom: 0.5rem; }
+  /* Right padding keeps the row clear of the floating chat bubble. */
+  .ck-ngo-hero-ctas { padding-right: 44px; max-width: 100%; }
+  .ck-ngo-hero-ctas > * { min-width: 0; flex: 0 0 auto; }
+  .ck-ngo-hero-ctas .ngo-btn-pill {
+    height: 44px;
+    min-height: 44px;
+    max-width: 100%;
+    padding: 0 0.8rem;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .ck-ngo-hero-ctas .ngo-btn-pill svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .ck-ngo-hero-trust { font-size: 12px; margin-top: 0; padding-right: 72px; min-width: 0; max-width: 100%; }
+  .ck-ngo-hero-trust > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }

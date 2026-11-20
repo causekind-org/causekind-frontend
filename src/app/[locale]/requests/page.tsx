@@ -59,3 +59,4 @@ export default async function Page({ params }: LocaleParams) {
 
   return <RequestsClient initialPublicRequests={initialPublicRequests} />;
 }
+

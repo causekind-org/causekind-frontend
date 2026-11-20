@@ -64,10 +64,9 @@ import { toast } from "@/lib/toast";
 
 // ── Extracted section components ─────────────────────────────────────────────
 import { HeroSection } from "@/components/home/HeroSection";
-import { DiwaliMobileLayer, DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
 import { HomeSahasCampaigns } from "@/components/home/HomeSahasCampaigns";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
-import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
+import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { HeroFilm } from "@/components/cinematic/HeroFilm";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { HowItWorksSection } from "@/components/home/HowItWorksSection";
@@ -77,7 +76,6 @@ import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import type { GoogleReviewsData } from "@/data/googleReviews";
 import { FinalCtaSection } from "@/components/home/FinalCtaSection";
 import { CreditsSection } from "@/components/home/CreditsSection";
-import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { HowItWorksDesktop } from "@/components/home/desktop/HowItWorksDesktop";
 import { RoleHome } from "@/components/home/RoleHome";
 import { NgoLandingView } from "@/components/ngo-landing/NgoLandingView";
@@ -85,12 +83,8 @@ import { SmoothScroll } from "@/components/SmoothScroll";
 import { DesktopStatsBar, LiveTicker } from "@/components/home/StatsBars";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 
-if (typeof window !== "undefined") {
-  gsap.registerPlugin(ScrollTrigger);
-}
 
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -172,17 +166,17 @@ export default function HomeClient({
     getItemRequests()
       .then((data) => {
         setItemRequests(data);
-        ScrollTrigger.refresh();
+        refreshScrollTrigger();
       })
       .catch(() => {
-        ScrollTrigger.refresh();
+        refreshScrollTrigger();
       });
   }, [user]);
 
   useEffect(() => {
     // Refresh ScrollTrigger after initial mount and layout settling
     const timer = setTimeout(() => {
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     }, 150);
     return () => clearTimeout(timer);
   }, [initialPublicRequests, stats, loading, error]);
@@ -278,9 +272,6 @@ export default function HomeClient({
   // region around both "Who we are" variants (handoffs/Landing Film Skip Plan.md).
   const afterFilmRef = useRef<HTMLElement>(null);
   const whoWeAreLabel = useLandingTranslation("Who we are");
-  // Every Diwali page rule in diwaliMobile/diwaliDesktop.css hangs off this
-  // class, so the whole festive layer leaves at 13 Nov 00:00 IST in one place.
-  const diwali = useDiwaliCampaign();
 
   // The general landing redesign must not replace the NGO-specific home.
   if (!isRestoring && (roleStr === "NGO" || roleStr === "NGO_PARTNER")) {
@@ -288,9 +279,8 @@ export default function HomeClient({
   }
 
   return (
-    <div className={`ck-home-page${diwali ? " ck-diwali" : ""} bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
+    <div className={`ck-home-page bg-[#fbf9f4] dark:bg-[#09090b] text-stone-900 dark:text-stone-100 min-h-[100svh] overflow-x-clip transition-colors duration-300`}>
       <div aria-hidden className="ck-home-grain" />
-      <DiwaliMobileLayer />
       {/* Full-screen Raksha Bandhan intro. Mounted here rather than in the
           root layout, which is what makes it homepage-only — HomeClient renders
           on "/" and nowhere else, so login, dashboard, requests, profile and
@@ -309,8 +299,6 @@ export default function HomeClient({
       {/* Live fundraisers follow the hero and leave with it, then the film. */}
       {FEATURES.cinematicLanding ? <HeroFilm hero={<><HeroComponent /><HomeSahasCampaigns /></>} destinationRef={afterFilmRef} /> : <><HeroComponent /><HomeSahasCampaigns /></>}
 
-      <DiwaliSeam kind="edge" from="film" to="crimson" />
-      <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
 
       {/* Verified fundraisers come first, then Who Are We / About CauseKind (swapped 2026-11-13).
           The wrapper is the film's skip target, so skipping the intro lands on the fundraisers. */}
@@ -334,37 +322,29 @@ export default function HomeClient({
         <AboutTwoWays />
       </section>
 
-      <DiwaliSeam kind="diya" diyas={3} />
-      <DiwaliSeam kind="line" />
       <SupportGallery />
 
       {/* SECTION 3 — HOW DO WE WORK */}
       <div className="hidden lg:block">
-        <DiwaliSeam kind="edge" to="butter" />
         <HowItWorksDesktop />
       </div>
       {!isRoleHome && (
         <div className="lg:hidden">
-          <DiwaliSeam kind="edge" to="butter" />
           <HowItWorksSection />
         </div>
       )}
 
       {/* SECTION 5 — CAN I TRUST YOU (Desktop) */}
       <div className="hidden lg:block">
-        <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
         <TrustSafetySection variant="desktop" />
       </div>
 
       {/* FOUNDER'S NOTE (Desktop) */}
       <div className="hidden lg:block">
-        <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
-        <DiwaliSeam kind="line" from="butter" webLanterns="both" art="kandil" />
         <FoundersNoteSection variant="desktop" />
       </div>
 
       <div className="hidden lg:block" data-dw-panel>
-        <DiwaliSeam kind="edge" from="butter" />
         <GoogleReviewsSection initial={initialReviews} />
       </div>
 
@@ -487,10 +467,7 @@ export default function HomeClient({
         <CreditsSection />
 
         {/* SECTION 9 — FINAL CTA */}
-        <DiwaliSeam kind="arch-swell" to="crimson" lanterns="both" />
         {!isRestoring && <FinalCtaComponent variant="desktop" card={!isGuest} />}
-        <DiwaliSeam kind="edge" from="crimson" to="night" />
-        <DiwaliSeam kind="lotus" from="night" to="night" />
       </div>
       </div>
       )}
@@ -563,19 +540,15 @@ export default function HomeClient({
         )}
 
         {/* SECTION 5 — CAN I TRUST YOU */}
-        <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
         <div className="-mx-5">
           <TrustSafetySection variant="mobile" seamless={isDoneeHome} />
         </div>
 
         {/* FOUNDER'S NOTE */}
-        <DiwaliSeam kind="line" from="butter" lanterns="both" art="kandil" />
-        <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
         <div className="-mx-5">
           <FoundersNoteSection variant="mobile" seamless={isDoneeHome} />
         </div>
 
-        <DiwaliSeam kind="edge" from="butter" />
         <div className="-mx-5" data-dw-panel>
           <GoogleReviewsSection initial={initialReviews} />
         </div>
@@ -658,14 +631,11 @@ export default function HomeClient({
         </div>
 
         {/* SECTION 9 — FINAL CTA (guests only: it asks them to join) */}
-        {!isRoleHome && <DiwaliSeam kind="arch-swell" to="crimson" lanterns="both" />}
         {!isRoleHome && (
           <div className="-mx-5">
             {!isRestoring && <FinalCtaComponent variant="mobile" card={!isGuest} />}
           </div>
         )}
-        <DiwaliSeam kind="edge" from={isRoleHome ? "cream" : "crimson"} to="night" />
-        <DiwaliSeam kind="lotus" from="night" to="night" />
 
       </div>
     </div>

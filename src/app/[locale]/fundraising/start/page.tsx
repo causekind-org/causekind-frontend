@@ -50,7 +50,7 @@ function Intro() {
   }
 
   return (
-    <main className={s.wrap} style={{ paddingTop: 48, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 40 }}>
+    <div className={s.wrap} style={{ paddingTop: 48, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 40 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14, maxWidth: 720 }}>
         <Link href="/fundraising" className={s.small} style={{ textDecoration: "none" }}><UiText>← Back to fundraisers</UiText></Link>
         <h1 className={s.serif} style={{ fontSize: 44, lineHeight: 1.1 }}><UiText>Start a fundraiser</UiText></h1>
@@ -107,6 +107,6 @@ function Intro() {
         <span className={`${s.muted} ${s.small}`}><UiText>Takes a while — your progress is saved as you go.</UiText></span>
       </div>
       {error && <p role="alert" className={s.errText}><Icon name="alert" />{error}</p>}
-    </main>
+    </div>
   );
 }

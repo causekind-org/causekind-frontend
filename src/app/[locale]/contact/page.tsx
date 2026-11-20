@@ -1,7 +1,7 @@
 import { ContactPageClient } from "./ContactPageClient";
 
 export const metadata = {
-  title: "Contact — CauseKind",
+  title: "Contact",
   description: "Reach the CauseKind team directly by email or phone — no bots, no middlemen.",
   alternates: { canonical: "/contact" },
 };

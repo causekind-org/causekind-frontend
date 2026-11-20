@@ -7,7 +7,7 @@ import OffersClient from "./OffersClient";
 // resolves against metadataBase in src/app/layout.tsx, pinning it to the www
 // host that the apex domain redirects to.
 export const metadata: Metadata = {
-  title: "Offers — CauseKind",
+  title: "Offers",
   description: "Track the donation offers you have made and their progress from match through to confirmed handover.",
   alternates: { canonical: "/offers" },
 };

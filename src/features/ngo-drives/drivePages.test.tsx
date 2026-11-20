@@ -74,7 +74,7 @@ describe("giveState", () => {
 });
 
 describe("donor drive page /drives/[id]", () => {
-  const Page = async () => (await import("@/app/[locale]/drives/[id]/page")).default;
+  const Page = async () => (await import("@/app/[locale]/drives/[id]/DriveDetailClient")).default;
 
   it("a non-404 error shows the message and Retry, not 'Drive not found'", async () => {
     api.getNgoDrive.mockRejectedValueOnce(await apiError(500, "Something went wrong on our end.")).mockResolvedValueOnce(drive());

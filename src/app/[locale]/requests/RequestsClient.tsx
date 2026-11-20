@@ -13,7 +13,6 @@ import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { NgoDrivesRedirect } from "@/components/ngo-landing/NgoDrivesRedirect";
 import { registerUrlPreserving } from "@/lib/postAuthDestination";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -160,6 +159,10 @@ function RequestsHero() {
             {/* Subtitle */}
             <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-md anim-up anim-d3">
               <UiText>Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.</UiText>
+            </p>
+            {/* Server-rendered with the hero (it renders during sign-in restore too). */}
+            <p className="text-white/50 text-xs sm:text-sm leading-relaxed max-w-md mt-3 anim-up anim-d3">
+              <UiText>Every request here is checked by our team before it goes live, from people and NGOs within about 10 km of you. Pick a need, offer the item and hand it over directly; the handover is confirmed with a one-time code and you get a verified certificate. CauseKind is free for donors, donees and NGOs.</UiText>
             </p>
 
             {/* Scroll cue */}
@@ -691,17 +694,21 @@ export default function RequestsClient({
   if (isRestoring) {
     // Shaped like the board that follows, so the page settles once rather than
     // jumping from a centred spinner to a three-column grid.
+    //
+    // The hero needs no signed-in state, so it renders here too: it is then in
+    // the server HTML (the page's H1 and intro), and because this return has
+    // the same shape as the board's below (wrapper > RequestsHero > directory
+    // div), React keeps the same hero when restoring finishes. Only the area
+    // under it swaps from skeleton to board, so there is no second H1.
     return (
-      <PageSkeleton>
-        <div className="space-y-2">
-          <Skeleton className="h-3 w-24" />
-          <Skeleton className="h-9 w-64 max-w-full" />
-          <Skeleton className="h-4 w-full max-w-xl" />
+      <div className="min-h-screen bg-[#f2ede7] dark:bg-zinc-950 text-stone-900 dark:text-stone-100 transition-colors duration-300">
+        <RequestsHero />
+        <div id="request-directory" className="scroll-mt-20">
+          <PageSkeleton>
+            <CardGridSkeleton count={6} label={ui("Loading in-kind requests")} />
+          </PageSkeleton>
         </div>
-        <div className="mt-7">
-          <CardGridSkeleton count={6} label={ui("Loading in-kind requests")} />
-        </div>
-      </PageSkeleton>
+      </div>
     );
   }
 

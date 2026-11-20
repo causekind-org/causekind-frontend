@@ -31,7 +31,7 @@ export function StatusView({ app, onChange, justSubmitted }: { app: FundraisingA
   const step2Label = app.status === "SUBMITTED" ? ui("Waiting for a reviewer") : app.status === "RESUBMITTED" ? ui("Resubmitted", "fundraising status") : ui("In review", "fundraising status");
 
   return (
-    <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 32, alignItems: "start" }}>
+    <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "grid", gridTemplateColumns: "minmax(0,1fr) 320px", gap: 32, alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
         <Link href="/fundraising" className={s.small} style={{ textDecoration: "none" }}><UiText>← Back to fundraisers</UiText></Link>
         {justSubmitted && (
@@ -113,7 +113,7 @@ export function StatusView({ app, onChange, justSubmitted }: { app: FundraisingA
           </section>
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
@@ -127,7 +127,7 @@ function NotApproved({ app }: { app: FundraisingApplication }) {
   const t = useTranslations("fundraiserFlow");
   const fmt = useFundraisingLabels();
   return (
-    <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24, maxWidth: 880 }}>
+    <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, display: "flex", flexDirection: "column", gap: 24, maxWidth: 880 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         <Link href="/fundraising" className={s.small} style={{ textDecoration: "none" }}><UiText>← Back to fundraisers</UiText></Link>
         <span style={{ alignSelf: "flex-start" }}><StatusChip status="NOT_APPROVED" localize /></span>
@@ -154,7 +154,7 @@ function NotApproved({ app }: { app: FundraisingApplication }) {
         )}
       </section>
       <p className={`${s.muted} ${s.small}`}><UiText>This decision doesn&apos;t change any earlier approval you hold, or any campaign already live.</UiText></p>
-    </main>
+    </div>
   );
 }
 

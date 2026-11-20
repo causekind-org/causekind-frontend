@@ -73,7 +73,7 @@ export function LanguageSwitcher({ dropUp = false, pillClassName }: { dropUp?: b
           onClick={() => setOpen((v) => !v)}
           className={`${pillClassName} flex-col gap-0.5`}
           title={languageLabel}
-          aria-label={languageLabel}
+          aria-label={`${current.code.toUpperCase()}: ${languageLabel}`}
           aria-haspopup="listbox"
           aria-expanded={open}
         >

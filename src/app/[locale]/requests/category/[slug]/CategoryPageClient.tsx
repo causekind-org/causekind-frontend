@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Link from "@/components/AppLink";
 import {
   ArrowLeft,
@@ -10,10 +11,9 @@ import {
   TrendingUp,
   Heart,
   MapPin,
-  Sparkles,
   ArrowRight,
 } from "lucide-react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence, useInView, useReducedMotion, type Variants } from "framer-motion";
 import type { InKindCategory } from "@/lib/inKindCategories";
 import { CATEGORY_VISUALS } from "@/lib/categoryVisuals";
 import AnimatedCategoryIcon from "@/components/AnimatedCategoryIcon";
@@ -49,9 +49,35 @@ const staggerContainer: Variants = {
 };
 
 const scaleIn: Variants = {
-  hidden: { opacity: 0, scale: 0.94 },
+  hidden: { opacity: 0, scale: 0.94, transition: { duration: 0 } },
   visible: { opacity: 1, scale: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } },
 };
+
+/** Shared by the Donation Guidelines cards so both match (incl. dark mode). */
+const GUIDELINES_CARD = "ck-cat-guidelines-bento rounded-[2rem] overflow-hidden border border-stone-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-xl shadow-lg";
+
+const fadeUpBlock: Variants = {
+  hidden: { opacity: 0, y: 20, transition: { duration: 0 } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+/**
+ * Same rule as components/Reveal: content is visible in the server HTML and
+ * on first render (initial={false}). After hydration, a section that starts
+ * clearly below the fold (top > viewport + 100px) is hidden instantly while
+ * off screen and animates in when scrolled to. Sections on or near the first
+ * screen are never reset. Reduced motion: never hidden.
+ */
+function useFoldReveal(ref: React.RefObject<HTMLElement | null>): "hidden" | "visible" {
+  const inView = useInView(ref, { once: true, amount: 0.2 });
+  const reduce = useReducedMotion();
+  const [armed, setArmed] = useState(false);
+  useEffect(() => {
+    if (reduce || !ref.current) return;
+    if (ref.current.getBoundingClientRect().top > window.innerHeight + 100) setArmed(true);
+  }, [reduce, ref]);
+  return armed && !inView ? "hidden" : "visible";
+}
 
 /* ── Gradient map per-category accent ──────────────────────────────────── */
 
@@ -81,56 +107,20 @@ export default function CategoryPageClient({ cat }: Props) {
   const [isHeroHovered, setIsHeroHovered] = useState(false);
   
   // Impact Story Carousel state
-  const [currentStoryIndex, setCurrentStoryIndex] = useState(0);
 
-  const imageKey = cat.name.toLowerCase().replace(' ', '_');
-  
-  const ALL_IMAGES = [
-    "medical_aid",
-    "education",
-    "livelihood",
-    "relief",
-    "household",
-    "furniture",
-    "clothing",
-    "electronics",
-    "sports"
-  ];
-  const catIndex = ALL_IMAGES.indexOf(imageKey);
-  const getImg = (offset: number) => {
-    const idx = catIndex === -1 ? 0 : catIndex;
-    const mappedIdx = (idx + offset) % ALL_IMAGES.length;
-    return `/images/stories/${ALL_IMAGES[mappedIdx]}.webp`;
-  };
-
-  const IMPACT_STORIES = [
-    {
-      quote: rt("story1", { category: catName }),
-      author: "Priya Sharma",
-      initial: "P",
-      image: getImg(0),
-    },
-    {
-      quote: rt("story2", { category: catName }),
-      author: "Rahul Verma",
-      initial: "R",
-      image: getImg(1),
-    },
-    {
-      quote: rt("story3", { category: catName }),
-      author: "Anjali Gupta",
-      initial: "A",
-      image: getImg(2),
-    }
-  ];
-
-  const nextStory = () => setCurrentStoryIndex((i) => (i + 1) % IMPACT_STORIES.length);
-  const prevStory = () => setCurrentStoryIndex((i) => (i - 1 + IMPACT_STORIES.length) % IMPACT_STORIES.length);
+  const guidelinesRef = useRef<HTMLElement>(null);
+  const howRef = useRef<HTMLElement>(null);
+  const ctaRef = useRef<HTMLElement>(null);
+  const exploreRef = useRef<HTMLDivElement>(null);
+  const guidelinesAnim = useFoldReveal(guidelinesRef);
+  const howAnim = useFoldReveal(howRef);
+  const ctaAnim = useFoldReveal(ctaRef);
+  const exploreAnim = useFoldReveal(exploreRef);
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6">
+    <div className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6">
       {/* ── Back link ── */}
-      <motion.div initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35 }}>
+      <motion.div initial={false}>
         <Link
           href="/requests"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-stone-500 transition-colors hover:text-[var(--ck-role-accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ck-role-accent)] rounded dark:text-stone-400"
@@ -143,17 +133,27 @@ export default function CategoryPageClient({ cat }: Props) {
       {/* ── Hero Section (Cinematic + Smooth Frosted Hover Reveal) ── */}
       <motion.header
         className="ck-cat-hero mt-5"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] as const }}
+        initial={false}
         onMouseEnter={() => setIsHeroHovered(true)}
         onMouseLeave={() => setIsHeroHovered(false)}
       >
         {/* Parallax background image */}
-        <div
-          className="ck-cat-hero__bg"
-          style={{ backgroundImage: `url(${visual.fallbackImage})` }}
-        />
+        {/* A real <Image>, not a CSS background: the browser can discover it
+            from the HTML and load it with priority. object-position mirrors the old background-position. */}
+        <div className="ck-cat-hero__bg">
+          <Image
+            src={visual.fallbackImage}
+            alt=""
+            fill
+            priority
+            // Served as-is: these files are already 22-61 KB at 1600x900, and the
+            // optimizer re-encodes them larger (measured: +34 KB on desktop).
+            unoptimized
+            sizes="100vw"
+            className="object-cover"
+            style={{ objectPosition: "center 35%" }}
+          />
+        </div>
 
         {/* Gradient overlay */}
         <div
@@ -175,7 +175,7 @@ export default function CategoryPageClient({ cat }: Props) {
         <motion.div
           className="relative z-10 flex flex-col gap-2.5 max-w-2xl"
           variants={staggerContainer}
-          initial="hidden"
+          initial={false}
           animate="visible"
         >
           {/* Floating 3D icon */}
@@ -230,22 +230,36 @@ export default function CategoryPageClient({ cat }: Props) {
 
       {/* ── Guidelines Bento Card ── */}
       <motion.section
+        ref={guidelinesRef}
         className="mt-12"
         variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        initial={false}
+        animate={guidelinesAnim}
       >
-        <div className="mb-5">
+        <div className="mb-6">
           <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
             <UiText>Donation Guidelines</UiText>
           </h2>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            <UiText>Verified criteria to ensure your items are ready for immediate, dignified use.</UiText>
-          </p>
+          {/* Fallback caption only for a category without approved card text. */}
+          {!cat.guideCard && (
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+              <UiText>Verified criteria to ensure your items are ready for immediate, dignified use.</UiText>
+            </p>
+          )}
         </div>
-        
-        <div className="ck-cat-guidelines-bento rounded-[2rem] overflow-hidden border border-stone-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-xl shadow-lg">
+
+        {/* Optional intro card (cat.guideCard): same card styling and width as the
+            Good to donate / Please avoid card below, body-size text. Renders only
+            when a category has guideCard text (all nine do). */}
+        {cat.guideCard && (
+          <div className={`${GUIDELINES_CARD} mb-5`}>
+            <p className="p-6 sm:p-8 text-base leading-[1.6] text-stone-700 dark:text-stone-300 break-words">
+              {cat.guideCard}
+            </p>
+          </div>
+        )}
+
+        <div className={GUIDELINES_CARD}>
           <div className="grid md:grid-cols-2">
             {/* Good to donate half */}
             <div className="p-6 sm:p-8 border-b md:border-b-0 md:border-r border-stone-200/50 dark:border-white/10 bg-emerald-50/30 dark:bg-emerald-950/20">
@@ -300,11 +314,11 @@ export default function CategoryPageClient({ cat }: Props) {
 
       {/* ── How It Works ── */}
       <motion.section
+        ref={howRef}
         className="mt-16"
         variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        initial={false}
+        animate={howAnim}
       >
         <div className="mb-10 text-center">
           <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 dark:text-stone-100">
@@ -334,94 +348,13 @@ export default function CategoryPageClient({ cat }: Props) {
         </div>
       </motion.section>
 
-      {/* ── Impact Story Carousel ── */}
-      <motion.section
-        className="mt-16 ck-cat-impact-story relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-stone-900 border border-stone-200/50 dark:border-white/5 shadow-xl"
-        variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
-      >
-        <div className="grid md:grid-cols-5 min-h-[400px]">
-          <div className="md:col-span-3 p-10 sm:p-14 flex flex-col justify-between relative z-10 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--ck-role-accent)]/10 text-[var(--ck-role-accent)] text-xs font-bold uppercase tracking-wider mb-8 w-fit border border-[var(--ck-role-accent)]/20">
-                <Sparkles className="w-3.5 h-3.5" /> <UiText>Impact Stories</UiText>
-              </div>
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentStoryIndex}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <blockquote className="text-2xl sm:text-3xl font-medium text-stone-800 dark:text-stone-100 leading-snug mb-8">
-                    &quot;{IMPACT_STORIES[currentStoryIndex].quote}&quot;
-                  </blockquote>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[var(--ck-role-accent)] flex items-center justify-center text-white font-bold text-lg shadow-md">
-                      {IMPACT_STORIES[currentStoryIndex].initial}
-                    </div>
-                    <div>
-                      <p className="font-bold text-stone-900 dark:text-stone-100 text-lg">{IMPACT_STORIES[currentStoryIndex].author}</p>
-                      <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">{rt("receivedCategory", { category: catName })}</p>
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-            </div>
-            
-            <div className="flex items-center gap-3 mt-8 pt-6 border-t border-stone-200 dark:border-stone-800">
-              <button 
-                onClick={prevStory}
-                className="w-10 h-10 rounded-full flex items-center justify-center border border-stone-300 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <div className="flex gap-1.5">
-                {IMPACT_STORIES.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCurrentStoryIndex(idx)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      idx === currentStoryIndex ? "bg-[var(--ck-role-accent)] w-6" : "bg-stone-300 dark:bg-stone-700"
-                    }`}
-                    aria-label={rt("goToStory", { n: idx + 1 })}
-                  />
-                ))}
-              </div>
-              <button 
-                onClick={nextStory}
-                className="w-10 h-10 rounded-full flex items-center justify-center border border-stone-300 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-800 hover:text-stone-900 dark:hover:text-stone-100 transition-colors"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="md:col-span-2 relative h-64 md:h-auto overflow-hidden">
-            <AnimatePresence mode="wait">
-              <motion.div 
-                key={currentStoryIndex}
-                className="absolute inset-0 bg-cover bg-center"
-                style={{ backgroundImage: `url(${IMPACT_STORIES[currentStoryIndex].image})` }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-              />
-            </AnimatePresence>
-          </div>
-        </div>
-      </motion.section>
-
       {/* ── Quick Donate CTA Banner ── */}
       <motion.section
+        ref={ctaRef}
         className="ck-cat-cta-banner mt-16 relative overflow-hidden rounded-[2.5rem] shadow-2xl p-8 sm:p-14 text-center border border-white/20"
         variants={scaleIn}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.2 }}
+        initial={false}
+        animate={ctaAnim}
       >
         {/* Dynamic Image Background */}
         <div 
@@ -452,7 +385,7 @@ export default function CategoryPageClient({ cat }: Props) {
           
           <div className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto">
             <Link 
-              href={`/give?category=${encodeURIComponent(cat.name)}`}
+              href="/items/new"
               className="group relative inline-flex items-center justify-center gap-3 px-10 py-4 rounded-full bg-white text-stone-900 font-bold text-lg hover:scale-[1.03] active:scale-[0.97] transition-all shadow-xl"
             >
               <UiText>List an item</UiText>
@@ -473,11 +406,11 @@ export default function CategoryPageClient({ cat }: Props) {
 
       {/* ── Cross-Navigation ── */}
       <motion.div
+        ref={exploreRef}
         className="mt-2"
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.5 }}
+        variants={fadeUpBlock}
+        initial={false}
+        animate={exploreAnim}
       >
         <CategoryExplorer
           exclude={cat.name}
@@ -485,6 +418,6 @@ export default function CategoryPageClient({ cat }: Props) {
           blurb={ui("Each one has its own guidance on what genuinely helps.")}
         />
       </motion.div>
-    </main>
+    </div>
   );
 }

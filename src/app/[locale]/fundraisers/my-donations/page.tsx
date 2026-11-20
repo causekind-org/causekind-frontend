@@ -32,7 +32,7 @@ export default function MyFundraiserDonationsPage() {
 
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
-      <main className={s.wrap} style={{ paddingTop: 36, paddingBottom: 64, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className={s.wrap} style={{ paddingTop: 36, paddingBottom: 64, display: "flex", flexDirection: "column", gap: 20 }}>
         <h1 className={s.serif} style={{ fontSize: 34 }}><UiText>Your fundraiser donations</UiText></h1>
         {failed && <p role="alert" className={s.errText}><UiText>Couldn&apos;t load your donations. Refresh to try again.</UiText></p>}
         {rows && rows.length === 0 && (
@@ -59,7 +59,7 @@ export default function MyFundraiserDonationsPage() {
           </div>
         )}
         <p className={`${s.small} ${s.muted}`}><UiText>Fundraiser donations are not refundable. You get a donation certificate, and an 80G receipt if you added your PAN card before paying. Donations to the CauseKind trust are listed separately.</UiText></p>
-      </main>
+      </div>
     </div>
   );
 }

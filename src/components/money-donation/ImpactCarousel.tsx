@@ -12,13 +12,13 @@ import { DONATE_FORM_ID, scrollToSection } from '@/lib/donateScroll';
 const POSTERS = [1, 2, 3, 4, 5, 6, 7].map((n) => `/videos/posters/impact-${n}.webp`);
 
 const VIDEOS = [
-  "/videos/WhatsApp Video 2026-09-05 at 3.20.14 PM.mp4",
-  "/videos/WhatsApp Video 2026-09-05 at 3.23.16 PM.mp4",
-  "/videos/WhatsApp Video 2026-09-05 at 3.23.31 PM.mp4",
-  "/videos/WhatsApp Video 2026-09-05 at 3.23.40 PM.mp4",
-  "/videos/WhatsApp Video 2026-09-05 at 3.25.11 PM.mp4",
-  "/videos/WhatsApp Video 2026-09-05 at 3.25.12 PM.mp4",
-  "/videos/WhatsApp Video 2026-09-05 at 3.25.13 PM.mp4",
+  "/videos/impact-1-ration-handover.mp4",
+  "/videos/impact-2-volunteer-with-child.mp4",
+  "/videos/impact-3-rakhi-with-girl.mp4",
+  "/videos/impact-4-rakhi-tying.mp4",
+  "/videos/impact-5-ration-drive.mp4",
+  "/videos/impact-6-classroom-talk.mp4",
+  "/videos/impact-7-child-portrait.mp4",
 ];
 
 
@@ -184,8 +184,28 @@ export function ImpactCarousel() {
   // Arm the clips once the section is nearly in view. Observes the STAGE rather
   // than the section so it works regardless of what wraps it; 300px of margin
   // means the clips are usually ready by the time a scrolling visitor arrives.
+  //
+  // Nothing arms before the visitor's first scroll. This section is second on
+  // the page, so on most screens it is already "in view" at load, and on bare
+  // intersection all seven clips (17 MB, measured) downloaded on every visit
+  // without anyone scrolling. The posters carry the fan until then.
+  const [hasScrolled, setHasScrolled] = useState(false);
+  /** False while the whole stage is off screen; the draw loop must not restart clips then. */
+  const stageOnScreenRef = useRef(true);
   useEffect(() => {
-    if (clipsArmed) return;
+    if (hasScrolled) return;
+    const onScroll = () => setHasScrolled(true);
+    // Already scrolled when this mounts (a reload restores the position).
+    if (window.scrollY > 0) {
+      const frame = requestAnimationFrame(onScroll);
+      return () => cancelAnimationFrame(frame);
+    }
+    window.addEventListener('scroll', onScroll, { passive: true, once: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [hasScrolled]);
+
+  useEffect(() => {
+    if (clipsArmed || !hasScrolled) return;
     const stage = stageRef.current;
     if (!stage) return;
     if (typeof IntersectionObserver === 'undefined') { setClipsArmed(true); return; }
@@ -206,10 +226,31 @@ export function ImpactCarousel() {
           dwell = undefined;
         }
       },
-      { rootMargin: '200px' },
+      // No margin: the stage itself has to be on screen.
+      { rootMargin: '0px' },
     );
     io.observe(stage);
     return () => { if (dwell !== undefined) clearTimeout(dwell); io.disconnect(); };
+  }, [clipsArmed, hasScrolled]);
+
+  // Once the clips are loaded, stop them whenever the whole section is off
+  // screen and resume the visible cards when it comes back. The draw loop only
+  // pauses cards that rotate out of the fan, not a fan nobody can see.
+  useEffect(() => {
+    if (!clipsArmed) return;
+    const stage = stageRef.current;
+    if (!stage || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver((entries) => {
+      const onScreen = entries.some((e) => e.isIntersecting);
+      stageOnScreenRef.current = onScreen;
+      videoRefs.current.forEach((vid, i) => {
+        if (!vid) return;
+        if (!onScreen) { if (!vid.paused) vid.pause(); return; }
+        if (cardRefs.current[i]?.style.visibility !== 'hidden' && vid.paused) vid.play().catch(() => {});
+      });
+    });
+    io.observe(stage);
+    return () => io.disconnect();
   }, [clipsArmed]);
 
   // Render loop
@@ -251,7 +292,8 @@ export function ImpactCarousel() {
         if (card.style.visibility === 'hidden') {
           card.style.visibility = 'visible';
           const vid = videoRefs.current[i];
-          if (vid && vid.paused) vid.play().catch(() => {});
+          // Not while the section is off screen: see stageOnScreenRef.
+          if (vid && vid.paused && stageOnScreenRef.current) vid.play().catch(() => {});
         }
         
         const x = centerX + radius * Math.sin(baseAngle) - cardWidth / 2;
@@ -409,7 +451,7 @@ export function ImpactCarousel() {
         </div>
         <div className="mb-4 inline-flex items-center gap-3 rounded-full border border-brand-500/30 bg-brand-50 py-1.5 pl-2 pr-4 text-[0.625rem] font-bold uppercase tracking-widest text-brand-700 sm:mb-6 sm:py-2 sm:pr-5 sm:text-xs dark:bg-brand-900/60 dark:text-brand-200">
           <Image
-            src="/images/money-donation/sahas-logo-transparent.png"
+            src="/images/money-donation/sahas-logo-transparent.webp"
             alt="Sahas Logo"
             width={28}
             height={28}
@@ -482,7 +524,7 @@ export function ImpactCarousel() {
                   boxShadow: '0 18px 40px -12px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.15)',
                 }}
               >
-                <video
+                <video aria-hidden="true"
                   ref={(el) => { videoRefs.current[i] = el; }}
                   // No src until the section is approached — see `clipsArmed`.
                   // `undefined` rather than "" : an empty src resolves to the

@@ -51,7 +51,7 @@ export default function DriveProofPage() {
   }
 
   return (
-    <main className="min-h-screen bg-stone-50 pb-20">
+    <div className="min-h-screen bg-stone-50 pb-20">
       <div className="bg-ngo-900 text-ngo-50 py-12 px-4 text-center">
         <div className="max-w-2xl mx-auto">
           <CheckCircle2 className="w-16 h-16 text-emerald-400 mx-auto mb-4" />
@@ -91,6 +91,6 @@ export default function DriveProofPage() {
           <DriveProofCard proof={{ ...proof, ngoName: proof.ngoName ?? drive.ngoOrganizationName ?? null }} />
         </div>
       </div>
-    </main>
+    </div>
   );
 }

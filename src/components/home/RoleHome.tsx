@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { HeroSection } from "@/components/home/HeroSection";
 import { HomeSahasCampaigns } from "@/components/home/HomeSahasCampaigns";
 import { HomeFundraisers } from "@/components/home/HomeFundraisers";
-import { DiwaliSeam } from "@/components/home/DiwaliMobileLayer";
+import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { SupportGallery } from "@/components/home/supportGallery/SupportGallery";
 import { LiveNeedsSection } from "@/components/home/LiveNeedsSection";
 import { NgoDrivesSection } from "@/features/ngo-drives/components/NgoDrivesSection";
@@ -11,13 +11,11 @@ import { FoundersNoteSection } from "@/components/home/FoundersNoteSection";
 import { GoogleReviewsSection } from "@/components/home/GoogleReviewsSection";
 import { DonorTwoDoors } from "@/components/home/DonorTwoDoors";
 import { WhoAreWeDesktop } from "@/components/home/desktop/WhoAreWeDesktop";
-import { AboutTwoWays } from "@/components/home/AboutTwoWays";
 import { CreditsSection } from "@/components/home/CreditsSection";
 import { HowReceivingWorksSection } from "@/components/home/HowReceivingWorksSection";
 import { MyRequestsSection } from "@/components/home/MyRequestsSection";
 import { HandoverTipsSection } from "@/components/home/HandoverTipsSection";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import type { PublicItemRequest, PlatformStats } from "@/lib/api";
 
 export function RoleHome({ 
@@ -35,7 +33,7 @@ export function RoleHome({
   useEffect(() => {
     // Refresh ScrollTrigger when RoleHome mounts
     setTimeout(() => {
-      ScrollTrigger.refresh();
+      refreshScrollTrigger();
     }, 150);
   }, []);
 
@@ -45,35 +43,25 @@ export function RoleHome({
     <div className={`ck-role-desktop-${role} relative z-10 w-full`}>
       <HeroSection />
       <HomeSahasCampaigns />
-      <DiwaliSeam kind="edge" from="butter" to="crimson" />
-      <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
       {/* Verified fundraisers come first, then About CauseKind (swapped 2026-11-13). */}
       <HomeFundraisers />
       {/* Live needs straight after the fundraisers (owner, 2026-11-16). */}
       <div className="ck-home-paper relative z-10">
         <LiveNeedsSection initialRequests={initialPublicRequests} stats={stats} />
       </div>
-      {/* The main page's About (flip cards), in the default donor colours. */}
+      {/* About: Layout C "Two ways to give" (owner, 2026-11-16). */}
       <AboutTwoWays />
-      <DiwaliSeam kind="diya" diyas={3} />
-      <DiwaliSeam kind="line" />
       <SupportGallery />
       <div className="ck-home-paper relative z-10">
         <NgoDrivesSection />
       </div>
-      <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
       <TrustSafetySection variant="desktop" />
-      <DiwaliSeam kind="diya" from="butter" to="butter" diyas={3} />
-      <DiwaliSeam kind="line" from="butter" webLanterns="both" art="kandil" />
       <FoundersNoteSection variant="desktop" />
-      <DiwaliSeam kind="edge" from="butter" />
       <div data-dw-panel>
         <GoogleReviewsSection />
       </div>
       <DonorTwoDoors />
       <CreditsSection />
-      <DiwaliSeam kind="edge" to="night" />
-      <DiwaliSeam kind="lotus" from="night" to="night" />
     </div>
   );
 }
@@ -89,37 +77,26 @@ function DoneeHome({ hero }: { hero?: React.ReactNode }) {
   return (
     <div className="ck-role-desktop-donee relative z-10 w-full">
       {hero ?? <HeroSection />}
-      <DiwaliSeam kind="edge" from="night" to="crimson" />
-      <DiwaliSeam kind="arch-bulbs" from="crimson" lanterns="right" />
       <WhoAreWeDesktop variant="donee" />
-      <DiwaliSeam kind="edge" to="butter" />
       <HowReceivingWorksSection />
-      <DiwaliSeam kind="edge" from="butter" />
       <MyRequestsSection />
-      <DiwaliSeam kind="arch-step" to="butter" lanterns="both" />
       <div className="hidden lg:block">
         <TrustSafetySection variant="desktop" tone="donee" seamless />
       </div>
       <div className="lg:hidden">
         <TrustSafetySection variant="mobile" tone="donee" seamless />
       </div>
-      <DiwaliSeam kind="edge" from="butter" />
       <HandoverTipsSection />
-      <DiwaliSeam kind="edge" to="butter" />
-      <DiwaliSeam kind="line" from="butter" webLanterns="both" art="kandil" />
       <div className="hidden lg:block">
         <FoundersNoteSection variant="desktop" tone="donee" seamless />
       </div>
       <div className="lg:hidden">
         <FoundersNoteSection variant="mobile" tone="donee" seamless />
       </div>
-      <DiwaliSeam kind="edge" from="butter" />
       <div data-dw-panel>
         <GoogleReviewsSection />
       </div>
       <CreditsSection variant="donee" />
-      <DiwaliSeam kind="edge" to="night" />
-      <DiwaliSeam kind="lotus" from="night" to="night" />
     </div>
   );
 }

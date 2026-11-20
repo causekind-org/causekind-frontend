@@ -1,7 +1,7 @@
 
 import { UiText } from "@/components/UiText";export default function Loading() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6" aria-busy="true">
+    <div className="mx-auto w-full max-w-5xl px-4 pb-24 pt-6 sm:px-6" aria-busy="true">
       {/* Back link skeleton */}
       <div className="h-4 w-24 animate-pulse rounded bg-stone-200 dark:bg-white/10" />
 
@@ -35,7 +35,7 @@ import { UiText } from "@/components/UiText";export default function Loading() {
       </div>
 
       <span className="sr-only"><UiText>Loading category guidance…</UiText></span>
-    </main>
+    </div>
   );
 }
 

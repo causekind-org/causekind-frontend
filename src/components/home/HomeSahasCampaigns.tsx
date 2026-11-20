@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import Link from "@/components/AppLink";
 import { LandingText, useLandingTranslation } from "@/components/LandingTranslation";
 import { useAuth } from "@/hooks/useAuth";
-import { useDiwaliCampaign } from "@/hooks/useDiwaliCampaign";
 import { TranslatedText } from "@/hooks/useDynamicTranslation";
 import { sahasCampaigns, type SahasCampaignCard } from "@/lib/api";
 import { formatINR } from "@/features/fundraising/ui";
@@ -73,7 +72,7 @@ function StoryCard({ card, diwali, onDonate }: {
         {card.collectsMoney && target > 0 && (
           <>
             <span className="h-1.5 overflow-hidden rounded-full bg-white/25" role="progressbar"
-              aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+              aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${pct}% of target raised`}>
               <span className="block h-full rounded-full bg-[#f4a25b]" style={{ width: `${pct}%` }} />
             </span>
             <span className="flex justify-between text-[13px] text-stone-200">
@@ -106,7 +105,7 @@ function StoryCard({ card, diwali, onDonate }: {
  */
 export function HomeSahasCampaigns() {
   const { user } = useAuth();
-  const diwali = useDiwaliCampaign();
+  const diwali = false; // Diwali theme removed on staging 2026-11-17 (c1b82263)
   const isDonee = user?.role?.replace(/^ROLE_/, "") === "DONEE";
   const [cards, setCards] = useState<SahasCampaignCard[] | null>(null);
   const [donatingSlug, setDonatingSlug] = useState<string | null>(null);
@@ -124,7 +123,7 @@ export function HomeSahasCampaigns() {
     return () => { live = false; };
   }, [isDonee]);
 
-  useEffect(() => { if (cards) ScrollTrigger.refresh(); }, [cards]);
+  useEffect(() => { if (cards) refreshScrollTrigger(); }, [cards]);
 
   const syncEdges = () => {
     const row = rowRef.current;

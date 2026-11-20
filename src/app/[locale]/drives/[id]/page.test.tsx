@@ -1,5 +1,5 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
-import DriveDetailPage from "./page";
+import DriveDetailPage from "./DriveDetailClient";
 import { DriveDetailView } from "@/features/ngo-drives/components/DriveDetailView";
 import type { PublicNgoDrive } from "@/lib/api";
 import { describe, it, expect, vi, beforeEach } from "vitest";

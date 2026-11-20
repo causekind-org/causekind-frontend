@@ -88,6 +88,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
       ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
+      { href: "/ngo", label: "For NGOs" },
     ];
   }
 
@@ -114,6 +115,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
     ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
     { href: "/faq", label: "Help & FAQ" },
     { href: "/blog", label: "Read our Blog" },
+    { href: "/ngo", label: "For NGOs" },
   ];
 }
 
@@ -259,7 +261,7 @@ export function Footer({ role }: FooterProps) {
                   {link.href && !link.disabled ? (
                     <Link
                       href={link.href}
-                      className="hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
+                      className="inline-block py-1 -my-1 hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors duration-200"
                     >
                       {label(link.label)}
                     </Link>
@@ -314,7 +316,7 @@ export function Footer({ role }: FooterProps) {
                 </div>
                 <span className="leading-relaxed max-w-xs mx-auto md:max-w-none md:mx-0">
                   {/* A postal address: shown as written, never translated. */}
-                  3rd Floor, Apoorva Bldg, Flat no. 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
+                  3rd Floor, Apoorva CHS, 19, Vartak School Road, Veer Savarkar Nagar, Anand Nagar, Vasai West, Vasai-Virar, Maharashtra 401202
                 </span>
               </div>
 
@@ -371,7 +373,7 @@ export function Footer({ role }: FooterProps) {
                 )}
                 <Link
                   href={item.href}
-                  className="font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
+                  className="inline-block py-2.5 -my-2.5 font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
                 >
                   {label(item.label)}
                 </Link>
