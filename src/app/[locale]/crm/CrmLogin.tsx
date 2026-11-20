@@ -44,7 +44,7 @@ export function CrmLogin() {
           <span className="block text-[11.5px] leading-tight text-white/70">CRM</span>
         </span>
       </div>
-      <main className="w-full max-w-sm">
+      <div className="w-full max-w-sm">
         <form onSubmit={submit} className="ck-glass-solid w-full space-y-4 p-6 sm:p-7">
           <div>
             <h1 className="text-2xl font-bold tracking-[-0.02em]">Sign in to the CRM</h1>
@@ -66,7 +66,7 @@ export function CrmLogin() {
           </Button>
           <p className="text-xs text-muted-foreground">Forgot your password? Ask your super admin to reset it.</p>
         </form>
-      </main>
+      </div>
     </div>
   );
 }
