@@ -16,7 +16,7 @@ import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
 import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
-import { CommandPalette } from "@/components/super-admin/CommandPalette";
+import { CommandPalette, openCommandPalette } from "@/components/super-admin/CommandPalette";
 import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
 import { SaLoadError } from "@/components/super-admin/SaLoadError";
 import { OverviewInsights } from "@/components/super-admin/OverviewInsights";
@@ -625,11 +625,21 @@ export default function SuperAdminPage() {
         email={user.email ?? ""}
         onSignOut={() => { logout(); router.push("/login"); }}
         nav={saNav}
-        topbarStart={<StaffTopbarTitle label={current?.label ?? "Super Admin"} hint={current?.hint} />}
+        topbarStart={
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="hidden shrink-0 text-sm font-semibold sm:inline">{current?.label ?? "Super Admin"}</span>
+            {/* Looks like a field, opens the global search palette (same results as Ctrl K). */}
+            <button type="button" onClick={openCommandPalette} aria-label="Search users, requests, listings, offers, matches and certificates"
+              className="flex h-10 w-full max-w-md min-w-0 items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 text-left text-[13px] text-white/70 transition-colors duration-150 hover:bg-white/15">
+              <Search className="size-4 shrink-0" aria-hidden />
+              <span className="min-w-0 flex-1 truncate">Search users, requests, offers…</span>
+              <kbd className="hidden shrink-0 rounded border border-white/25 px-1.5 font-mono text-[10px] text-white/80 md:inline">Ctrl K</kbd>
+            </button>
+          </div>
+        }
         topbarEnd={
           <span className="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs sm:inline-flex">
             <ShieldAlert className="size-3.5" aria-hidden /> Super Admin
-            <kbd className="ml-1 rounded border border-white/25 px-1.5 font-mono text-[10px]">Ctrl K</kbd>
           </span>
         }
       >
