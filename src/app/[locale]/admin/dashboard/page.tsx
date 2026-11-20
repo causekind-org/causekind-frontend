@@ -698,17 +698,17 @@ export default function AdminDashboardPage() {
   const headerSubtitle = tab === "issues"
     ? `${openIssues} open · every problem report and support case, with its full story`
     : tab === "ngo-applications"
-    ? `${ngoAwaiting} application${ngoAwaiting !== 1 ? "s" : ""} awaiting review · approval unlocks requests and drives`
+    ? "Registration review, document checks and verification for NGOs joining CauseKind"
     : tab === "ngo-drives"
-    ? `${drivesPending} drive${drivesPending !== 1 ? "s" : ""} awaiting review · approval makes a drive live for donors`
+    ? "Review, approval and progress of drives that NGOs post for donors"
     : tab === "drive-offers"
-    ? `${driveOffersPending} donor offer${driveOffersPending !== 1 ? "s" : ""} to drives in handover · monitor only, the NGO accepts offers`
+    ? "Donor offers to NGO drives and their handovers, from offer to completion"
     : tab === "ngo-profile-changes"
-    ? `${profileChangesPending} profile change${profileChangesPending !== 1 ? "s" : ""} awaiting review · approving updates the public page`
+    ? "Changes NGOs request to their verified profile details, for review"
     : tab === "ngo-activities"
-    ? `${activitiesPending} past-activit${activitiesPending !== 1 ? "ies" : "y"} awaiting review · approval shows it on the NGO's public page`
+    ? "Past work NGOs share for their public page, with photos and consent checks"
     : tab === "drive-proofs"
-    ? `${driveProofsPending} distribution proof${driveProofsPending !== 1 ? "s" : ""} awaiting review · approval completes the drive`
+    ? "Distribution photos and reports NGOs submit to complete their drives"
     : tab === "handover-photos"
     ? "Every on-the-spot handover photo, with the full record of each donation"
     : tab === "match-history"
