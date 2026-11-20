@@ -16,7 +16,7 @@ import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
 import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
-import { CommandPalette, openCommandPalette } from "@/components/super-admin/CommandPalette";
+import { CommandPalette } from "@/components/super-admin/CommandPalette";
 import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
 import { SaLoadError } from "@/components/super-admin/SaLoadError";
 import { OverviewInsights } from "@/components/super-admin/OverviewInsights";
@@ -487,6 +487,8 @@ export default function SuperAdminPage() {
   // dark/light toggle (ck_sa_theme) is retired; panels still take `isDark`,
   // which is now always false.
   const isDark = false;
+  // Bumped by the top-bar search field to open the search palette.
+  const [paletteSignal, setPaletteSignal] = useState(0);
   const th = LIGHT;
 
   // SQL warning modal
@@ -629,7 +631,7 @@ export default function SuperAdminPage() {
           <div className="flex min-w-0 items-center gap-4">
             <span className="hidden shrink-0 text-sm font-semibold sm:inline">{current?.label ?? "Super Admin"}</span>
             {/* Looks like a field, opens the global search palette (same results as Ctrl K). */}
-            <button type="button" onClick={openCommandPalette} aria-label="Search users, requests, listings, offers, matches and certificates"
+            <button type="button" onClick={() => setPaletteSignal((n) => n + 1)} aria-label="Search users, requests, listings, offers, matches and certificates"
               className="flex h-10 w-full max-w-md min-w-0 items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 text-left text-[13px] text-white/70 transition-colors duration-150 hover:bg-white/15">
               <Search className="size-4 shrink-0" aria-hidden />
               <span className="min-w-0 flex-1 truncate">Search users, requests, offers…</span>
@@ -653,7 +655,7 @@ export default function SuperAdminPage() {
 
       {/* ⌘K from anywhere in the console. Mounted once, outside the section
           switch, so it survives navigation and does not remount on every tab. */}
-      <CommandPalette onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} />
+      <CommandPalette onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} openSignal={paletteSignal} />
 
       {viewingDonation && (
         <DonationDetailModal

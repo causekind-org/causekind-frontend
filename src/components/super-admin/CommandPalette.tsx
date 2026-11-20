@@ -34,13 +34,17 @@ export function CommandPalette({
   onOpenUser,
   onOpenIntervention,
   isDark,
+  openSignal = 0,
 }: {
   onOpenUser: (id: number) => void;
   onOpenIntervention: (entity: SaInterventionEntity, id: number) => void;
   isDark: boolean;
+  /** Bump this number to open the palette (the top-bar search field does). */
+  openSignal?: number;
 }) {
   const t = saTheme(isDark);
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (openSignal > 0) setOpen(true); }, [openSignal]);
   const [cursor, setCursor] = useState(0);
   const { query, setQuery, results, loading } = useGlobalSearch(2, 5);
 
