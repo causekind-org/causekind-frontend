@@ -83,7 +83,7 @@ function SpotlightCard({ card, diwali }: { card: FundraiserCard; diwali: boolean
             </span>
           </div>
           <span className="h-2.5 overflow-hidden rounded-full bg-[#f1e7dc] dark:bg-zinc-800" role="progressbar"
-            aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+            aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${pct}% of target raised`}>
             <span className="block h-full rounded-full bg-[#b04a15]" style={{ width: `${Math.max(pct, 1)}%` }} />
           </span>
           <span className="flex items-center gap-1.5 text-[13px] text-stone-600 dark:text-stone-400">

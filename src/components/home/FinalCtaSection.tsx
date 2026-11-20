@@ -310,7 +310,7 @@ function FinalCtaSplit({ variant }: { variant: "desktop" | "mobile" }) {
 
           {/* ════════ RIGHT: choose your path ════════ */}
           <div className="min-w-0">
-            <p id="join-paths-label" className="mb-3 text-xs sm:text-sm font-semibold text-stone-500 dark:text-stone-400"><LandingText>
+            <p id="join-paths-label" className="mb-3 text-xs sm:text-sm font-semibold text-stone-600 dark:text-stone-400"><LandingText>
               Choose how you want to join
             </LandingText></p>
             <ul className="flex flex-col gap-3" aria-labelledby="join-paths-label">
