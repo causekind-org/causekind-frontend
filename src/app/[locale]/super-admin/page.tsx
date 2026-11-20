@@ -19,6 +19,7 @@ import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel"
 import { CommandPalette } from "@/components/super-admin/CommandPalette";
 import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
 import { SaLoadError } from "@/components/super-admin/SaLoadError";
+import { OverviewInsights } from "@/components/super-admin/OverviewInsights";
 import { CasesPanel } from "@/components/super-admin/CasesPanel";
 import { InterventionsPanel } from "@/components/super-admin/InterventionsPanel";
 import { CommunicationsPanel } from "@/components/super-admin/CommunicationsPanel";
@@ -405,33 +406,10 @@ function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => 
         <MetricTile label="Donations" value={fmtCount(c["donations"] ?? 0)} icon={CreditCard} tone="amber" hint="All time" onOpen={() => onOpen("donations")} />
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-5">
-        <GlassCard className="lg:col-span-2">
-          <CardTitle title="Where work waits" description="Queues a super admin settles." />
-          <ul className="-mx-3 space-y-0.5">
-            {([
-              ["cases", "Support cases", "Cases, information requests and disputes", LifeBuoy],
-              ["interventions", "Interventions", "Hold, resume or reassess a record", SlidersHorizontal],
-              ["disputes", "Disputes", "Problems raised after handover", Scale],
-              ["money", "Money", "Payments, refunds and payout status", HandCoins],
-              ["operations", "Operational health", "Health checks and runtime config", Activity],
-            ] as const).map(([key, label, hint, Icon]) => (
-              <li key={key}>
-                <button type="button" onClick={() => onOpen(key)}
-                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors duration-150 hover:bg-white/70">
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#dcedf1] text-[#1f5f6d]"><Icon className="size-4" /></span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold">{label}</span>
-                    <span className="block truncate text-xs text-[color:var(--st-text-2)]">{hint}</span>
-                  </span>
-                  <ChevronRight className="size-4 text-[color:var(--st-text-2)]" aria-hidden />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </GlassCard>
+      <OverviewInsights data={data.insights} onOpen={onOpen} />
 
-        <GlassCard className="lg:col-span-3">
+      <div className="mt-5 grid gap-5">
+        <GlassCard>
           <CardTitle title="Users by role" description={`${fmtCount(roleTotal)} accounts in total`} icon={Database} />
           <ul className="space-y-3.5">
             {roles.map(([role, count]) => {
