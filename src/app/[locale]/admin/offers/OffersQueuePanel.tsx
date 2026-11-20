@@ -281,8 +281,8 @@ export function OffersQueuePanel() {
 
   const purchaseToggle = (
     <div role="group" aria-label="Offer type" className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-white/80 bg-white/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
-      <button aria-pressed={!showPurchases} onClick={() => setShowPurchases(false)} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${!showPurchases ? "bg-[#12211c] text-white" : "text-[#3a4a42] hover:bg-white/70"}`}>Item offers</button>
-      <button aria-pressed={showPurchases} onClick={() => setShowPurchases(true)} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${showPurchases ? "bg-[#12211c] text-white" : "text-[#3a4a42] hover:bg-white/70"}`}>Purchases</button>
+      <button aria-pressed={!showPurchases} onClick={() => setShowPurchases(false)} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${!showPurchases ? "bg-[#111c2b] text-white" : "text-[#3a4860] hover:bg-white/70"}`}>Item offers</button>
+      <button aria-pressed={showPurchases} onClick={() => setShowPurchases(true)} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${showPurchases ? "bg-[#111c2b] text-white" : "text-[#3a4860] hover:bg-white/70"}`}>Purchases</button>
     </div>
   );
 
@@ -295,8 +295,8 @@ export function OffersQueuePanel() {
       {purchaseToggle}
       {/* Header strip */}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-[#53665c]" aria-live="polite">{headline}</p>
-        <button onClick={load} className="flex h-10 items-center gap-1.5 rounded-full border border-white/80 bg-white/85 px-4 text-[13px] font-semibold text-[#24352d] transition-colors duration-150 hover:bg-white disabled:opacity-50">
+        <p className="text-sm text-[#52617a]" aria-live="polite">{headline}</p>
+        <button onClick={load} className="flex h-10 items-center gap-1.5 rounded-full border border-white/80 bg-white/85 px-4 text-[13px] font-semibold text-[#223044] transition-colors duration-150 hover:bg-white disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
@@ -310,7 +310,7 @@ export function OffersQueuePanel() {
           return (
             <button key={f.key} aria-pressed={active} onClick={() => setFilter(f.key)}
               className={`flex h-9 shrink-0 items-center rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${
-                active ? "bg-[#12211c] text-white" : "text-[#3a4a42] hover:bg-white/70"
+                active ? "bg-[#111c2b] text-white" : "text-[#3a4860] hover:bg-white/70"
               }`}>
               {f.label}
               {count > 0 && (
@@ -324,7 +324,7 @@ export function OffersQueuePanel() {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-16"><Loader2 className="animate-spin w-8 h-8 text-[#1f6b55]" /></div>
+        <div className="flex justify-center py-16"><Loader2 className="animate-spin w-8 h-8 text-[#1f5592]" /></div>
       )}
 
       {!loading && loadError && (
@@ -340,8 +340,8 @@ export function OffersQueuePanel() {
 
       {/* Reject modal */}
       {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b211b]/55 p-3 sm:p-4 backdrop-blur-sm">
-          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#12211c] shadow-2xl space-y-3 sm:space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1a2e]/55 p-3 sm:p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#111c2b] shadow-2xl space-y-3 sm:space-y-4">
             <h3 className="text-[17px] font-semibold">Reject Offer</h3>
             <p className="text-sm text-stone-500">The donor and donee will both receive a notification with this reason.</p>
             <ReasonField value={rejectReason} onChange={setRejectReason}
@@ -352,7 +352,7 @@ export function OffersQueuePanel() {
                 {acting ? "Rejecting..." : "Confirm Rejection"}
               </button>
               <button onClick={() => { setRejectId(null); setRejectReason(""); }}
-                className="h-10 rounded-full border border-[#cfdcd5] px-4 text-sm font-semibold text-[#53665c] hover:bg-[#eef3f0]">
+                className="h-10 rounded-full border border-[#cfd9e6] px-4 text-sm font-semibold text-[#52617a] hover:bg-[#eef2f8]">
                 Cancel
               </button>
             </div>
@@ -362,8 +362,8 @@ export function OffersQueuePanel() {
 
       {/* Cancel Donation modal (dispute — sides with donee) */}
       {cancelId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b211b]/55 p-3 sm:p-4 backdrop-blur-sm">
-          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#12211c] shadow-2xl space-y-3 sm:space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1a2e]/55 p-3 sm:p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#111c2b] shadow-2xl space-y-3 sm:space-y-4">
             <h3 className="text-[17px] font-semibold">Cancel Donation</h3>
             <p className="text-sm text-stone-500">This sides with the donee — the item was not received. Both parties will be notified and the reservation will be released.</p>
             <ReasonField value={cancelReason} onChange={setCancelReason}
@@ -374,7 +374,7 @@ export function OffersQueuePanel() {
                 {disputeActing ? "Cancelling..." : "Confirm Cancellation"}
               </button>
               <button onClick={() => { setCancelId(null); setCancelReason(""); }}
-                className="h-10 rounded-full border border-[#cfdcd5] px-4 text-sm font-semibold text-[#53665c] hover:bg-[#eef3f0]">
+                className="h-10 rounded-full border border-[#cfd9e6] px-4 text-sm font-semibold text-[#52617a] hover:bg-[#eef2f8]">
                 Back
               </button>
             </div>
@@ -384,8 +384,8 @@ export function OffersQueuePanel() {
 
       {/* Request Info modal */}
       {requestInfoId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b211b]/55 p-3 sm:p-4 backdrop-blur-sm">
-          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#12211c] shadow-2xl space-y-3 sm:space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1a2e]/55 p-3 sm:p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#111c2b] shadow-2xl space-y-3 sm:space-y-4">
             <h3 className="text-[17px] font-semibold">Request More Information</h3>
             <p className="text-sm text-stone-500">The donor will receive a notification and be asked to update their offer.</p>
             <textarea aria-label="Information needed from the donor" value={requestInfoNote} onChange={e => setRequestInfoNote(e.target.value)} rows={3}
@@ -397,7 +397,7 @@ export function OffersQueuePanel() {
                 Send to Donor
               </button>
               <button onClick={() => { setRequestInfoId(null); setRequestInfoNote(""); }}
-                className="h-10 rounded-full border border-[#cfdcd5] px-4 text-sm font-semibold text-[#53665c] hover:bg-[#eef3f0]">
+                className="h-10 rounded-full border border-[#cfd9e6] px-4 text-sm font-semibold text-[#52617a] hover:bg-[#eef2f8]">
                 Cancel
               </button>
             </div>
@@ -415,7 +415,7 @@ export function OffersQueuePanel() {
 
         return (
           <div key={offer.id}
-            className={`ck-glass-solid overflow-hidden transition-shadow duration-200 ${needsAction ? "!border-amber-300" : ""} ${isExpanded ? "ring-2 ring-[#2e8b70]/35" : ""}`}>
+            className={`ck-glass-solid overflow-hidden transition-shadow duration-200 ${needsAction ? "!border-amber-300" : ""} ${isExpanded ? "ring-2 ring-[#2f6fb0]/35" : ""}`}>
 
             {/* Summary row */}
             <button onClick={() => toggleExpand(offer.id)} aria-expanded={isExpanded}
@@ -463,7 +463,7 @@ export function OffersQueuePanel() {
                   )}
                 </div>
 
-                <h3 className="text-[15px] font-semibold text-[#12211c]">{offer.requestTitle}</h3>
+                <h3 className="text-[15px] font-semibold text-[#111c2b]">{offer.requestTitle}</h3>
                 <p className="text-xs text-stone-500 mt-0.5">
                   {offer.requestCategory} · {offer.requestCity}
                   {offer.flowType && ` · ${offer.flowType === "ALREADY_OWN" ? "Donor already owns" : offer.flowType === "WILL_PURCHASE" ? "Donor will purchase" : "Similar item"}`}
@@ -474,7 +474,7 @@ export function OffersQueuePanel() {
                   {FLOW_STAGES.map((_, i) => (
                     <div key={i} className={`h-1 flex-1 rounded-full ${
                       i < stageIdx ? "bg-green-400" :
-                      i === stageIdx ? "bg-[#1f6b55]" :
+                      i === stageIdx ? "bg-[#1f5592]" :
                       "bg-stone-200 dark:bg-zinc-700"
                     }`} />
                   ))}
@@ -485,7 +485,7 @@ export function OffersQueuePanel() {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="font-mono text-[11px] text-[#53665c]">#{offer.id}</span>
+                <span className="font-mono text-[11px] text-[#52617a]">#{offer.id}</span>
                 {isExpanded ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
               </div>
             </button>
@@ -494,7 +494,7 @@ export function OffersQueuePanel() {
             {isExpanded && (
               <div className="border-t border-stone-100 dark:border-zinc-800">
                 {expandLoading && (
-                  <div className="flex justify-center py-5 sm:py-8"><Loader2 className="animate-spin w-6 h-6 text-[#1f6b55]" /></div>
+                  <div className="flex justify-center py-5 sm:py-8"><Loader2 className="animate-spin w-6 h-6 text-[#1f5592]" /></div>
                 )}
 
                 {expandedData && expandedData.offer.id === offer.id && (
@@ -513,7 +513,7 @@ export function OffersQueuePanel() {
                         below, i.e. from "always rendered, never legible" to
                         "on demand, and legible". */}
                     <div className="space-y-2">
-                      <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c]">Flow Progress</h4>
+                      <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#52617a]">Flow Progress</h4>
 
                       <div className="flex gap-0.5" role="list" aria-label="Offer flow progress">
                         {FLOW_STAGES.map((label, i) => {
@@ -528,7 +528,7 @@ export function OffersQueuePanel() {
                               aria-current={current ? "step" : undefined}
                               className={`h-2 flex-1 rounded-full ${
                                 done ? "bg-green-400" :
-                                current ? "bg-[#1f6b55]" :
+                                current ? "bg-[#1f5592]" :
                                 "bg-stone-200 dark:bg-zinc-700"
                               }`}
                             />
@@ -537,7 +537,7 @@ export function OffersQueuePanel() {
                       </div>
 
                       {/* State is icon + colour, never colour alone. */}
-                      <p className="text-2xs font-semibold text-[#1f6b55]">
+                      <p className="text-2xs font-semibold text-[#1f5592]">
                         ● Stage {stageIdx + 1} of {FLOW_STAGES.length} · {FLOW_STAGES[stageIdx]}
                       </p>
 
@@ -546,7 +546,7 @@ export function OffersQueuePanel() {
                           would be far heavier than this warrants inside a queue
                           row that may be one of several open at once. */}
                       <details className="group">
-                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-2xs font-bold text-stone-400 transition-colors hover:text-stone-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f6b55] dark:hover:text-stone-300">
+                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-2xs font-bold text-stone-400 transition-colors hover:text-stone-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f5592] dark:hover:text-stone-300">
                           <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" aria-hidden />
                           All stages
                         </summary>
@@ -560,7 +560,7 @@ export function OffersQueuePanel() {
                                 aria-current={current ? "step" : undefined}
                                 className={`flex items-center gap-1.5 text-2xs ${
                                   done ? "text-green-600 dark:text-green-400" :
-                                  current ? "font-bold text-[#1f6b55]" :
+                                  current ? "font-bold text-[#1f5592]" :
                                   "text-stone-400 dark:text-zinc-600"
                                 }`}
                               >
@@ -578,7 +578,7 @@ export function OffersQueuePanel() {
 
                       {/* Item details */}
                       <div className="space-y-3">
-                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c] flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#52617a] flex items-center gap-1.5">
                           <Package className="w-3 h-3" /> Item Details
                         </h4>
                         {expandedData.offer.itemDetails && (() => {
@@ -621,7 +621,7 @@ export function OffersQueuePanel() {
                         })()}
 
                         {/* AI Assessment */}
-                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c] flex items-center gap-1.5 pt-2">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#52617a] flex items-center gap-1.5 pt-2">
                           <ShieldCheck className="w-3 h-3" /> AI Assessment
                         </h4>
                         <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-2 text-sm">
@@ -737,7 +737,7 @@ export function OffersQueuePanel() {
 
                       {/* Donor / Donee + Photos */}
                       <div className="space-y-3">
-                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c] flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#52617a] flex items-center gap-1.5">
                           <User className="w-3 h-3" /> Parties
                         </h4>
                         <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-3 text-sm">
@@ -747,7 +747,7 @@ export function OffersQueuePanel() {
                             <p className="text-stone-700 dark:text-stone-300 font-semibold">{expandedData.offer.donorName}</p>
                             {expandedData.offer.donorPhone ? (
                               <a href={`tel:${expandedData.offer.donorPhone}`}
-                                className="inline-flex items-center gap-1 text-xs text-[#1f6b55] hover:underline mt-0.5">
+                                className="inline-flex items-center gap-1 text-xs text-[#1f5592] hover:underline mt-0.5">
                                 <Phone className="w-3 h-3" /> {expandedData.offer.donorPhone}
                               </a>
                             ) : (
@@ -761,7 +761,7 @@ export function OffersQueuePanel() {
                             <p className="text-stone-700 dark:text-stone-300 font-semibold">{expandedData.offer.doneeName}</p>
                             {expandedData.offer.doneePhone ? (
                               <a href={`tel:${expandedData.offer.doneePhone}`}
-                                className="inline-flex items-center gap-1 text-xs text-[#1f6b55] hover:underline mt-0.5">
+                                className="inline-flex items-center gap-1 text-xs text-[#1f5592] hover:underline mt-0.5">
                                 <Phone className="w-3 h-3" /> {expandedData.offer.doneePhone}
                               </a>
                             ) : (
@@ -786,7 +786,7 @@ export function OffersQueuePanel() {
                         {/* Photos */}
                         {expandedData.offer.media.length > 0 && (
                           <>
-                            <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c] flex items-center gap-1.5 pt-1">
+                            <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#52617a] flex items-center gap-1.5 pt-1">
                               <MapPin className="w-3 h-3" /> Item Photos
                             </h4>
                             <div className="grid grid-cols-4 gap-2">
@@ -805,7 +805,7 @@ export function OffersQueuePanel() {
                     {/* Status History Timeline */}
                     {expandedData.history.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c] flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#52617a] flex items-center gap-1.5">
                           <Clock className="w-3 h-3" /> Complete Status History
                         </h4>
                         <div className="rounded-xl border border-stone-100 dark:border-zinc-800 overflow-hidden">
@@ -853,7 +853,7 @@ export function OffersQueuePanel() {
                     {/* Chat Thread — problem reports and admin communication */}
                     {expandedData.messages.length > 0 || ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_RAISED", "ISSUE_WINDOW_OPEN"].includes(offer.status) ? (
                       <div className="space-y-3 pt-2 border-t border-stone-100 dark:border-zinc-800">
-                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c] flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#52617a] flex items-center gap-1.5">
                           <AlertTriangle className="w-3 h-3" /> Messages & Problem Reports
                         </h4>
 
@@ -948,7 +948,7 @@ export function OffersQueuePanel() {
                                   onClick={() => setReplyTarget(prev => ({ ...prev, [offer.id]: t }))}
                                   className={`px-3 py-1 transition-colors ${
                                     (replyTarget[offer.id] ?? "BOTH") === t
-                                      ? "bg-[#1f6b55] text-white"
+                                      ? "bg-[#1f5592] text-white"
                                       : "bg-stone-50 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-700"
                                   }`}>
                                   {t === "BOTH" ? "Both" : t === "DONOR" ? "Donor only" : "Donee only"}
@@ -973,12 +973,12 @@ export function OffersQueuePanel() {
                                   : "e.g. We are looking into this. Please wait while we contact the other party."
                               }
                               rows={2}
-                              className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 px-3 py-2 text-sm text-stone-800 dark:text-stone-200 outline-none focus:border-[#1f6b55] resize-none"
+                              className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 px-3 py-2 text-sm text-stone-800 dark:text-stone-200 outline-none focus:border-[#1f5592] resize-none"
                             />
                             <button
                               onClick={() => sendAdminReply(offer.id)}
                               disabled={!adminReply[offer.id]?.trim() || replySending === offer.id}
-                              className="rounded-xl bg-[#1f6b55] px-4 text-sm font-semibold text-white hover:bg-[#c45520] disabled:opacity-40"
+                              className="rounded-xl bg-[#1f5592] px-4 text-sm font-semibold text-white hover:bg-[#c45520] disabled:opacity-40"
                             >
                               {replySending === offer.id ? "..." : "Send"}
                             </button>
@@ -989,7 +989,7 @@ export function OffersQueuePanel() {
 
                     {/* Your decision (round 3): read the checks, then decide. */}
                     {["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL", "PENDING_DONEE_REVIEW"].includes(offer.status) && (
-                      <div className="space-y-3 rounded-2xl border border-white/80 bg-[#eef3f0] p-4">
+                      <div className="space-y-3 rounded-2xl border border-white/80 bg-[#eef2f8] p-4">
                         <div className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-[13px] text-amber-800 space-y-1">
                           <p className="font-semibold">Before approving, verify:</p>
                           <ul className="list-disc list-inside space-y-0.5">
@@ -1001,9 +1001,9 @@ export function OffersQueuePanel() {
                           </ul>
                         </div>
                         <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/80 bg-white/95 p-3">
-                          <span className="mr-auto text-[12px] font-semibold uppercase tracking-wide text-[#53665c]">Your decision</span>
+                          <span className="mr-auto text-[12px] font-semibold uppercase tracking-wide text-[#52617a]">Your decision</span>
                           <button onClick={() => handleApprove(offer.id)} disabled={acting === offer.id}
-                            className="flex h-10 items-center gap-1.5 rounded-full bg-[#2e8b70] px-4 text-[13px] font-semibold text-white hover:bg-[#1f6b55] disabled:opacity-50">
+                            className="flex h-10 items-center gap-1.5 rounded-full bg-[#2f6fb0] px-4 text-[13px] font-semibold text-white hover:bg-[#1f5592] disabled:opacity-50">
                             <Check className="w-4 h-4" aria-hidden /> Approve
                           </button>
                           <button onClick={() => { setRequestInfoId(offer.id); setRequestInfoNote(""); }}

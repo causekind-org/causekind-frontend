@@ -21,7 +21,7 @@ export type SaTheme = ReturnType<typeof saTheme>;
 export function saTheme(isDark: boolean) {
   return isDark
     ? {
-        accent: "#9fe0c8",
+        accent: "#9cc8f0",
         heading: "text-white",
         text: "text-stone-200",
         muted: "text-stone-400",
@@ -33,24 +33,24 @@ export function saTheme(isDark: boolean) {
         rowHover: "hover:bg-white/[0.05]",
         input:
           "border-white/10 bg-[#0b0f1a] text-stone-200 placeholder:text-stone-600 " +
-          "focus:border-[#9fe0c8]/50 focus:outline-none",
+          "focus:border-[#9cc8f0]/50 focus:outline-none",
         btn:
           "border-white/10 bg-white/[0.04] text-stone-300 " +
           "hover:bg-white/[0.08] hover:text-white " +
           "disabled:opacity-35 disabled:pointer-events-none",
-        btnAccent: "bg-[#9fe0c8] text-stone-950 hover:bg-[#e0a96a] border-[#9fe0c8]",
-        chipActive: "bg-[#9fe0c8] text-stone-950 border-[#9fe0c8]",
+        btnAccent: "bg-[#9cc8f0] text-stone-950 hover:bg-[#e0a96a] border-[#9cc8f0]",
+        chipActive: "bg-[#9cc8f0] text-stone-950 border-[#9cc8f0]",
         chipInactive:
           "border-white/10 text-stone-400 hover:border-white/25 hover:text-white",
         badge: "border-white/10 bg-white/[0.06] text-stone-300",
-        badgeAccent: "border-[#9fe0c8]/30 bg-[#9fe0c8]/10 text-[#9fe0c8]",
+        badgeAccent: "border-[#9cc8f0]/30 bg-[#9cc8f0]/10 text-[#9cc8f0]",
         badgeDanger: "border-red-500/30 bg-red-500/10 text-red-400",
         badgeOk: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
-        tabActive: "border-[#9fe0c8] text-white",
+        tabActive: "border-[#9cc8f0] text-white",
         tabInactive: "border-transparent text-stone-400 hover:text-white",
         tabLocked: "border-transparent text-stone-600",
         dangerPanel: "border-red-500/25 bg-red-500/[0.07] text-stone-300",
-        accentPanel: "border-[#9fe0c8]/25 bg-[#9fe0c8]/[0.04]",
+        accentPanel: "border-[#9cc8f0]/25 bg-[#9cc8f0]/[0.04]",
         overlay: "bg-black/70",
         surface: "border-white/10 bg-[#0b0f1a]",
         surfaceAlt: "bg-white/[0.05]",
@@ -63,40 +63,40 @@ export function saTheme(isDark: boolean) {
     : {
         // Staff console "forest glass" palette (2026-11-19). The console has a
         // single theme now, so this branch is the one every panel renders.
-        accent: "#1f6b55",
-        heading: "text-[#12211c]",
-        text: "text-[#24352d]",
-        muted: "text-[#53665c]",
-        dim: "text-[#6b7d73]",
+        accent: "#1f5592",
+        heading: "text-[#111c2b]",
+        text: "text-[#223044]",
+        muted: "text-[#52617a]",
+        dim: "text-[#6a7890]",
         card: "border-white/80 bg-white/90 shadow-[0_16px_34px_-28px_rgba(16,30,24,0.45)]",
-        cardFlat: "border-[#dfe8e3]",
+        cardFlat: "border-[#dfe6ef]",
         divide: "divide-[#e3ebe6]",
-        tableHead: "bg-[#eef3f0] border-[#dfe8e3]",
-        rowHover: "hover:bg-[#f2f7f4]",
+        tableHead: "bg-[#eef2f8] border-[#dfe6ef]",
+        rowHover: "hover:bg-[#f2f5fa]",
         input:
-          "border-[#cfdcd5] bg-white text-[#12211c] placeholder:text-[#8a9a91] " +
-          "focus:border-[#2e8b70] focus:outline-none focus:ring-2 focus:ring-[#2e8b70]/20",
+          "border-[#cfd9e6] bg-white text-[#111c2b] placeholder:text-[#8996aa] " +
+          "focus:border-[#2f6fb0] focus:outline-none focus:ring-2 focus:ring-[#2f6fb0]/20",
         btn:
-          "border-[#cfdcd5] bg-white/90 text-[#24352d] " +
-          "hover:bg-white hover:text-[#12211c] " +
+          "border-[#cfd9e6] bg-white/90 text-[#223044] " +
+          "hover:bg-white hover:text-[#111c2b] " +
           "disabled:opacity-40 disabled:pointer-events-none",
-        btnAccent: "bg-[#12211c] text-white hover:bg-[#1f6b55] border-[#12211c]",
-        chipActive: "bg-[#12211c] text-white border-[#12211c]",
+        btnAccent: "bg-[#111c2b] text-white hover:bg-[#1f5592] border-[#111c2b]",
+        chipActive: "bg-[#111c2b] text-white border-[#111c2b]",
         chipInactive:
-          "border-white/80 bg-white/60 text-[#3a4a42] hover:bg-white hover:text-[#12211c]",
-        badge: "border-[#dfe8e3] bg-[#e7ece9] text-[#44554c]",
+          "border-white/80 bg-white/60 text-[#3a4860] hover:bg-white hover:text-[#111c2b]",
+        badge: "border-[#dfe6ef] bg-[#e7ebf1] text-[#445269]",
         badgeAccent: "border-[#b9d9e0] bg-[#dcedf1] text-[#1f5f6d]",
         badgeDanger: "border-red-200 bg-[#fbe1dc] text-[#9a2a1b]",
         badgeOk: "border-emerald-200 bg-[#dcf1e7] text-[#1c6b4c]",
-        tabActive: "border-[#2e8b70] text-[#12211c]",
-        tabInactive: "border-transparent text-[#53665c] hover:text-[#12211c]",
-        tabLocked: "border-transparent text-[#9aaaa1]",
-        dangerPanel: "border-red-200 bg-red-50/90 text-[#24352d]",
+        tabActive: "border-[#2f6fb0] text-[#111c2b]",
+        tabInactive: "border-transparent text-[#52617a] hover:text-[#111c2b]",
+        tabLocked: "border-transparent text-[#9aa6b8]",
+        dangerPanel: "border-red-200 bg-red-50/90 text-[#223044]",
         accentPanel: "border-[#b9d9e0] bg-[#eef6f8]/80",
-        overlay: "bg-[#0b211b]/55 backdrop-blur-sm",
+        overlay: "bg-[#0b1a2e]/55 backdrop-blur-sm",
         surface: "border-white/80 bg-white",
-        surfaceAlt: "bg-[#eef3f0]",
-        kbd: "border-[#cfdcd5] bg-[#eef3f0] text-[#53665c]",
-        placeholder: "placeholder:text-[#8a9a91]",
+        surfaceAlt: "bg-[#eef2f8]",
+        kbd: "border-[#cfd9e6] bg-[#eef2f8] text-[#52617a]",
+        placeholder: "placeholder:text-[#8996aa]",
       };
 }

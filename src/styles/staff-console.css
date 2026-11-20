@@ -21,15 +21,15 @@
  */
 @layer components {
   .ck-staff {
-    --st-bg: #0b211b;
-    --st-sidebar: rgba(21, 63, 52, 0.72);
-    --st-sidebar-solid: #153f34;
-    --st-primary: #2e8b70;
-    --st-primary-strong: #1f6b55;
-    --st-panel: #dfe8e3;
-    --st-text: #12211c;
-    --st-text-2: #53665c;
-    --st-on-dark: #f2f7f4;
+    --st-bg: #0b1a2e;
+    --st-sidebar: rgba(20, 48, 79, 0.72);
+    --st-sidebar-solid: #14304f;
+    --st-primary: #2f6fb0;
+    --st-primary-strong: #1f5592;
+    --st-panel: #dfe6ef;
+    --st-text: #111c2b;
+    --st-text-2: #52617a;
+    --st-on-dark: #f2f5fa;
     --st-on-dark-2: rgba(242, 247, 244, 0.66);
     --st-line-dark: rgba(255, 255, 255, 0.14);
     --st-line-light: rgba(255, 255, 255, 0.6);
@@ -47,8 +47,8 @@
     min-height: 100vh;
     background-color: var(--st-bg);
     background-image:
-      radial-gradient(900px 600px at 78% -10%, rgba(120, 150, 90, 0.28), transparent 60%),
-      radial-gradient(700px 520px at 10% 110%, rgba(46, 139, 112, 0.22), transparent 60%);
+      radial-gradient(900px 600px at 78% -10%, rgba(70, 120, 190, 0.28), transparent 60%),
+      radial-gradient(700px 520px at 10% 110%, rgba(47, 111, 176, 0.22), transparent 60%);
     background-attachment: fixed;
   }
   .ck-staff .tabular,
@@ -110,7 +110,7 @@
   }
   .ck-staff-nav-item:focus-visible,
   .ck-staff :focus-visible {
-    outline: 2px solid #9fe0c8;
+    outline: 2px solid #9cc8f0;
     outline-offset: 2px;
   }
   .ck-staff-nav-badge {
@@ -136,13 +136,13 @@
     padding: 10px 12px 10px 20px;
     border-radius: 999px;
     color: var(--st-on-dark);
-    background: rgba(21, 63, 52, 0.9);
+    background: rgba(20, 48, 79, 0.9);
     border: 1px solid var(--st-line-dark);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
   }
   @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .ck-staff-topbar {
-      background: rgba(21, 63, 52, 0.55);
+      background: rgba(20, 48, 79, 0.55);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
@@ -167,7 +167,7 @@
     border-radius: var(--st-radius-shell);
     background:
       linear-gradient(160deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 45%),
-      linear-gradient(180deg, #e3ece7, #d6e2dc);
+      linear-gradient(180deg, #e3eaf3, #d5dfeb);
     border: 1px solid var(--st-line-light);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 30px 60px -40px rgba(0, 0, 0, 0.55);
     padding: 32px;
@@ -182,19 +182,19 @@
     border-radius: var(--st-radius-card);
     background: linear-gradient(155deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 42%), rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.7);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 16px 34px -26px rgba(16, 30, 24, 0.5);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 16px 34px -26px rgba(12, 24, 44, 0.5);
   }
   .ck-glass-solid {
     border-radius: var(--st-radius-card);
     background: rgba(255, 255, 255, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.85);
-    box-shadow: 0 16px 34px -28px rgba(16, 30, 24, 0.45);
+    box-shadow: 0 16px 34px -28px rgba(12, 24, 44, 0.45);
   }
   .ck-glass-interactive {
     transition: transform 180ms var(--st-ease), box-shadow 180ms var(--st-ease), background-color 180ms var(--st-ease);
   }
   .ck-glass-interactive:hover {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 20px 40px -24px rgba(16, 30, 24, 0.55);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 20px 40px -24px rgba(12, 24, 44, 0.55);
     transform: translateY(-1px);
   }
 
@@ -228,7 +228,7 @@
   .ck-status[data-tone="success"] { background: #dcf1e7; color: #1c6b4c; }
   .ck-status[data-tone="danger"]  { background: #fbe1dc; color: #9a2a1b; }
   .ck-status[data-tone="info"]    { background: #dcedf1; color: #1f5f6d; }
-  .ck-status[data-tone="neutral"] { background: #e7ece9; color: #44554c; }
+  .ck-status[data-tone="neutral"] { background: #e7ebf1; color: #445269; }
 
   @media (prefers-reduced-motion: reduce) {
     .ck-staff-nav-item,
@@ -266,10 +266,10 @@
 .ck-staff .ck-staff-nav-group .ck-staff-nav-item[aria-current="page"] {
   background: rgba(255, 255, 255, 0.16);
   border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: inset 3px 0 0 #9fe0c8;
+  box-shadow: inset 3px 0 0 #9cc8f0;
 }
 .ck-staff .ck-staff-nav-group .ck-staff-nav-item:focus-visible {
-  outline: 2px solid #9fe0c8;
+  outline: 2px solid #9cc8f0;
   outline-offset: -2px;
 }
 
@@ -285,34 +285,34 @@
  * keeps the site palette.
  */
 .ck-staff {
-  --color-stone-50:  oklch(98.2% 0.006 165);
-  --color-stone-100: oklch(96.2% 0.008 165);
-  --color-stone-150: oklch(94.4% 0.010 165);
-  --color-stone-200: oklch(91.6% 0.012 165);
-  --color-stone-250: oklch(88.6% 0.013 165);
-  --color-stone-300: oklch(84.0% 0.015 165);
-  --color-stone-400: oklch(67.0% 0.018 165);
-  --color-stone-500: oklch(52.5% 0.020 165);
-  --color-stone-600: oklch(43.0% 0.020 165);
-  --color-stone-700: oklch(34.5% 0.020 165);
-  --color-stone-800: oklch(25.5% 0.018 165);
-  --color-stone-850: oklch(21.5% 0.016 165);
-  --color-stone-900: oklch(18.5% 0.015 165);
-  --color-stone-950: oklch(13.5% 0.012 165);
+  --color-stone-50:  oklch(98.2% 0.006 255);
+  --color-stone-100: oklch(96.2% 0.008 255);
+  --color-stone-150: oklch(94.4% 0.010 255);
+  --color-stone-200: oklch(91.6% 0.012 255);
+  --color-stone-250: oklch(88.6% 0.013 255);
+  --color-stone-300: oklch(84.0% 0.015 255);
+  --color-stone-400: oklch(67.0% 0.018 255);
+  --color-stone-500: oklch(52.5% 0.020 255);
+  --color-stone-600: oklch(43.0% 0.020 255);
+  --color-stone-700: oklch(34.5% 0.020 255);
+  --color-stone-800: oklch(25.5% 0.018 255);
+  --color-stone-850: oklch(21.5% 0.016 255);
+  --color-stone-900: oklch(18.5% 0.015 255);
+  --color-stone-950: oklch(13.5% 0.012 255);
 
-  --primary: #1f6b55;
+  --primary: #1f5592;
   --primary-foreground: #ffffff;
-  --ring: #2e8b70;
-  --rust-action: #1f6b55;
-  --border: oklch(91.6% 0.012 165);
-  --input: oklch(88.6% 0.013 165);
-  --muted: oklch(96.2% 0.008 165);
-  --muted-foreground: oklch(43% 0.02 165);
-  --accent: oklch(94.4% 0.02 165);
-  --accent-foreground: oklch(25.5% 0.018 165);
-  --background: #dfe8e3;
-  --foreground: #12211c;
-  --card-foreground: #12211c;
+  --ring: #2f6fb0;
+  --rust-action: #1f5592;
+  --border: oklch(91.6% 0.012 255);
+  --input: oklch(88.6% 0.013 255);
+  --muted: oklch(96.2% 0.008 255);
+  --muted-foreground: oklch(43% 0.02 255);
+  --accent: oklch(94.4% 0.02 255);
+  --accent-foreground: oklch(25.5% 0.018 255);
+  --background: #dfe6ef;
+  --foreground: #111c2b;
+  --card-foreground: #111c2b;
 }
 
 /* White panels written for the old cream ground: give them the card radius
@@ -321,15 +321,15 @@
 .ck-staff .ck-staff-workspace .bg-white.border.rounded-2xl,
 .ck-staff .ck-staff-workspace .bg-white.border.rounded-xl {
   border-color: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 14px 30px -26px rgba(16, 30, 24, 0.5);
+  box-shadow: 0 14px 30px -26px rgba(12, 24, 44, 0.5);
 }
 .ck-staff .ck-staff-workspace table thead th {
   font-size: 12px;
   font-weight: 600;
-  color: #53665c;
+  color: #52617a;
 }
 .ck-staff .ck-staff-workspace :is(input, select, textarea):focus-visible {
-  outline: 2px solid #2e8b70;
+  outline: 2px solid #2f6fb0;
   outline-offset: 1px;
 }
 
@@ -357,7 +357,7 @@
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
-  color: #12211c;
+  color: #111c2b;
 }
 
 /* Sidebar scrollbar: thin and translucent instead of the default white bar. */

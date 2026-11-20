@@ -46,8 +46,8 @@ function fmtDay(iso: string) {
 // ── Role styling — lets the admin tell donors and donees apart at a glance ───
 const ROLE_STYLE: Record<string, { avatarBg: string; avatarText: string; badge: string }> = {
   DONOR: {
-    avatarBg: "bg-[#1f6b55]/10", avatarText: "text-[#1f6b55]",
-    badge: "border-transparent bg-[#1f6b55]/10 text-[#1f6b55] dark:bg-orange-950/30 dark:text-orange-400",
+    avatarBg: "bg-[#1f5592]/10", avatarText: "text-[#1f5592]",
+    badge: "border-transparent bg-[#1f5592]/10 text-[#1f5592] dark:bg-orange-950/30 dark:text-orange-400",
   },
   DONEE: {
     avatarBg: "bg-teal-100 dark:bg-teal-950/40", avatarText: "text-teal-700 dark:text-teal-400",
@@ -217,7 +217,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                 <button
                   key={h.id}
                   onClick={() => { setQuery(""); setJourney(null); loadJourney(h.id); }}
-                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1f6b55]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
+                  className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1f5592]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
                 >
                   <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${rs.avatarBg} ${rs.avatarText}`}>
                     {h.fullName?.charAt(0)?.toUpperCase() ?? "?"}
@@ -260,7 +260,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                   : rf === "DONEE" ? `Donees · ${doneeCount}` : rf === "NGO_PARTNER" ? `NGOs · ${ngoCount}` : `Staff & other · ${otherCount}`;
                 if (rf === "OTHER" && otherCount === 0) return null;
                 const active = roleFilter === rf;
-                const activeBg = rf === "DONOR" ? "#1f6b55" : rf === "DONEE" ? "#0d9488" : rf === "NGO_PARTNER" ? "#1e6b4f" : "#57534e";
+                const activeBg = rf === "DONOR" ? "#1f5592" : rf === "DONEE" ? "#0d9488" : rf === "NGO_PARTNER" ? "#1e6b4f" : "#57534e";
                 return (
                   <button
                     key={rf}
@@ -293,7 +293,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                       <button
                         key={u.id}
                         onClick={() => loadJourney(u.id)}
-                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1f6b55]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
+                        className="flex w-full items-center gap-3 px-4 py-2.5 text-left hover:bg-[#1f5592]/5 transition border-b border-stone-100 dark:border-zinc-800 last:border-0"
                       >
                         <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-black ${rs.avatarBg} ${rs.avatarText}`}>
                           {u.fullName?.charAt(0)?.toUpperCase() ?? "?"}
@@ -317,7 +317,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
         <>
           <button
             onClick={() => setJourney(null)}
-            className="mb-4 text-xs font-semibold text-[#1f6b55] hover:underline"
+            className="mb-4 text-xs font-semibold text-[#1f5592] hover:underline"
           >
             ← All users
           </button>
@@ -326,7 +326,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
             <CardContent className="p-3.5 sm:p-5">
               <div className="flex flex-wrap items-start justify-between gap-3 sm:gap-4">
                 <div className="flex items-center gap-3 sm:gap-4">
-                  <span className="flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1f6b55] to-[#d97a3d] text-base sm:text-xl font-black text-white shadow">
+                  <span className="flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#1f5592] to-[#d97a3d] text-base sm:text-xl font-black text-white shadow">
                     {journey.user.fullName?.charAt(0)?.toUpperCase() ?? "?"}
                   </span>
                   <div>
@@ -347,7 +347,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
                 <div className="flex flex-wrap gap-2">
                   {Object.entries(journey.stats).filter(([k]) => k !== "totalEvents").map(([k, v]) => (
                     <div key={k} className="rounded-xl border border-stone-200/70 bg-stone-50 px-3 py-1.5 text-center dark:border-zinc-700/60 dark:bg-zinc-800/60">
-                      <p className="text-base font-black leading-none tabular-nums" style={{ color: k === "fraudFlags" && v > 0 ? "#dc2626" : "#1f6b55" }}>{v}</p>
+                      <p className="text-base font-black leading-none tabular-nums" style={{ color: k === "fraudFlags" && v > 0 ? "#dc2626" : "#1f5592" }}>{v}</p>
                       <p className="mt-0.5 text-3xs font-semibold uppercase tracking-wide text-stone-400">{k.replace(/([A-Z])/g, " $1")}</p>
                     </div>
                   ))}
@@ -421,7 +421,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
 
           {/* Timeline */}
           <div className="relative pl-6">
-            <div className="journey-rail absolute left-[9px] top-1 bottom-1 w-[2px] rounded bg-gradient-to-b from-[#1f6b55]/60 via-stone-300 to-stone-200 dark:via-zinc-700 dark:to-zinc-800" />
+            <div className="journey-rail absolute left-[9px] top-1 bottom-1 w-[2px] rounded bg-gradient-to-b from-[#1f5592]/60 via-stone-300 to-stone-200 dark:via-zinc-700 dark:to-zinc-800" />
             {visibleEvents.map((e, i) => (
               <TimelineEvent
                 key={`${e.type}-${e.entityType}-${e.entityId}-${e.at}-${i}`}
@@ -442,7 +442,7 @@ export function UserJourneyPanel({ initialUserId }: { initialUserId?: number | n
               onClick={scrollToOldest}
               aria-label="Jump to the start of the journey"
               title="Jump to the start of the journey"
-              className="fixed bottom-6 right-6 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[#1f6b55] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#963c0d]"
+              className="fixed bottom-6 right-6 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[#1f5592] text-white shadow-lg transition-transform hover:scale-105 hover:bg-[#963c0d]"
             >
               <ArrowDown className="h-5 w-5" />
             </button>

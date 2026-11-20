@@ -644,7 +644,7 @@ export default function AdminDashboardPage() {
   const showIssues = canSeeTab("issues");
 
   const TABS = [
-    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#2e8b70" },
+    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#2f6fb0" },
     { key: "requests"  as TabKey, label: "Requests",     count: requests.length,    icon: ClipboardList,  color: "#60a5fa" },
     { key: "listings"  as TabKey, label: "Listings",     count: listings.length,    icon: Package,        color: "#a78bfa" },
     { key: "matches"   as TabKey, label: "Matches",      count: matches.length,     icon: Handshake,      color: "#34d399" },
@@ -854,7 +854,7 @@ export default function AdminDashboardPage() {
                       options={[{ label: `Pending (${campaigns.length})` }, { label: "Approved" }, { label: "Rejected" }]} />
                     <p className="text-xs text-stone-500">
                       Legacy money campaigns from donees. New fundraisers are reviewed under{" "}
-                      <button type="button" className="font-semibold text-[#1f6b55] underline underline-offset-2"
+                      <button type="button" className="font-semibold text-[#1f5592] underline underline-offset-2"
                         onClick={() => openFundraising("/admin/fundraising")}>Fundraising → Applications</button>.
                     </p>
                   </div>
@@ -989,8 +989,8 @@ export default function AdminDashboardPage() {
                   <button key={s} onClick={() => handleMatchHistoryFilter(s)}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                       matchHistoryStatus === s
-                        ? "bg-[#1f6b55] text-white border-[#1f6b55]"
-                        : "bg-white border-stone-200 text-stone-600 hover:border-[#1f6b55]/50"
+                        ? "bg-[#1f5592] text-white border-[#1f5592]"
+                        : "bg-white border-stone-200 text-stone-600 hover:border-[#1f5592]/50"
                     }`}>
                     {matchStatusLabel(s)}
                   </button>
@@ -1033,7 +1033,7 @@ export default function AdminDashboardPage() {
                   { label: "High Fraud Risk", value: assessments.filter(a => a.fraudRisk === "HIGH").length, color: "rose", apply: () => { setAiRecFilter("ALL"); setAiFraudFilter("HIGH"); } },
                 ].map(({ label, value, color, apply }) => (
                   // The cards were dead numbers; clicking one now applies the matching filter.
-                  <button key={label} type="button" onClick={apply} className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6b55]/40">
+                  <button key={label} type="button" onClick={apply} className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f5592]/40">
                     <AiStatCard label={label} value={value} color={color} />
                   </button>
                 ))}
@@ -1047,14 +1047,14 @@ export default function AdminDashboardPage() {
                     placeholder="Search listing, notes, labels…"
                     value={aiSearch}
                     onChange={e => setAiSearch(e.target.value)}
-                    className="pl-8 pr-3 h-8 w-56 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#1f6b55]/30 focus:border-[#1f6b55]/50"
+                    className="pl-8 pr-3 h-8 w-56 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#1f5592]/30 focus:border-[#1f5592]/50"
                   />
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {AI_REC_FILTERS.map(f => (
                     <button key={f} onClick={() => setAiRecFilter(f)}
                       className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
-                        aiRecFilter === f ? "bg-[#1f6b55] text-white border-[#1f6b55]" : "border-stone-300 text-stone-600 hover:border-[#1f6b55]/50"
+                        aiRecFilter === f ? "bg-[#1f5592] text-white border-[#1f5592]" : "border-stone-300 text-stone-600 hover:border-[#1f5592]/50"
                       }`}>
                       {f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase().replace(/_/g, " ")}
                     </button>
@@ -1205,7 +1205,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
               <div key={label} className="bg-white rounded-xl p-3 text-xs space-y-1 border border-stone-100">
                 <p className="font-bold text-stone-700 flex items-center gap-1"><Phone className="w-3 h-3" /> {label}</p>
                 <p>{name}</p>
-                <p className="font-semibold text-[#1f6b55]">{contact ?? "—"}</p>
+                <p className="font-semibold text-[#1f5592]">{contact ?? "—"}</p>
                 <p className="text-stone-400">{city}</p>
               </div>
             ))}
@@ -1245,7 +1245,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
               <ol className="relative border-l border-stone-200 ml-2 space-y-3">
                 {history.map((h, i) => (
                   <li key={i} className="ml-4">
-                    <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#1f6b55]" />
+                    <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#1f5592]" />
                     <p className="text-xs text-stone-400">{serverDate(h.changedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</p>
                     <p className="text-xs font-semibold">
                       <span className="text-stone-400">{formatEnum(h.fromStatus)} → </span>
@@ -1322,7 +1322,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f6b55]/10 text-sm font-black text-[#1f6b55]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f5592]/10 text-sm font-black text-[#1f5592]">
                   {a.donorName?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
                 <span className="min-w-0">
@@ -1338,7 +1338,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             {a.donorId && (
               <a
                 href={`/admin/dashboard?journeyUser=${a.donorId}`}
-                className="mt-2 inline-block text-2xs font-semibold text-[#1f6b55] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#1f5592] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1468,7 +1468,7 @@ function ApprovalCard({
   return (
     <div
       className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
-        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6b55]/40 focus-visible:ring-offset-2" : ""
+        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f5592]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
@@ -1575,7 +1575,7 @@ function ListingApprovalCard({
   return (
     <div
       className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
-        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6b55]/40 focus-visible:ring-offset-2" : ""
+        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f5592]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
@@ -1617,7 +1617,7 @@ function ListingApprovalCard({
             <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f6b55]/10 text-sm font-black text-[#1f6b55]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f5592]/10 text-sm font-black text-[#1f5592]">
                   {l.donorName?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
                 <span className="min-w-0">
@@ -1634,7 +1634,7 @@ function ListingApprovalCard({
               <a
                 href={`/admin/dashboard?journeyUser=${l.donorId}`}
                 onClick={event => event.stopPropagation()}
-                className="mt-2 inline-block text-2xs font-semibold text-[#1f6b55] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#1f5592] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1782,7 +1782,7 @@ function ApprovalDetailDrawer({
       >
         <div className="flex items-start justify-between gap-3 sm:gap-4 border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
           <div className="min-w-0">
-            <p className="text-3xs font-black uppercase tracking-widest text-[#1f6b55]">{kindLabel}</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-[#1f5592]">{kindLabel}</p>
             <h2 id="approval-detail-title" className="mt-1 truncate text-base sm:text-lg font-black leading-tight text-stone-900">
               {title}
             </h2>
@@ -2070,7 +2070,7 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
         <DetailTextBlock label="Delivery address" value={m.deliveryAddress} />
         <DetailTextBlock label="Fulfilment notes" value={m.fulfilmentNotes} />
         {m.deliveryProofUrl && (
-          <a href={m.deliveryProofUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex text-sm font-bold text-[#1f6b55] hover:underline">
+          <a href={m.deliveryProofUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex text-sm font-bold text-[#1f5592] hover:underline">
             Open delivery proof
           </a>
         )}
@@ -2126,7 +2126,7 @@ function PersonInfoCard({
 }) {
   return (
     <div className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50 p-3">
-      <p className="text-3xs font-black uppercase tracking-widest text-[#1f6b55]">{label}</p>
+      <p className="text-3xs font-black uppercase tracking-widest text-[#1f5592]">{label}</p>
       <p className="mt-1 text-sm font-black text-stone-900">{name ?? "Unknown"}</p>
       <div className="mt-2 space-y-1 text-xs text-stone-500">
         {hasDetailValue(id) && <p><span className="font-bold text-stone-400">ID:</span> {id}</p>}
@@ -2148,7 +2148,7 @@ function SectionPhotoStrip({ photos, title = "Photos" }: { photos: string[]; tit
   return (
     <div className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
-        <ImageIcon className="h-4 w-4 text-[#1f6b55]" />
+        <ImageIcon className="h-4 w-4 text-[#1f5592]" />
         <p className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</p>
       </div>
       <PhotoStrip images={photos} />
@@ -2168,7 +2168,7 @@ function DetailSection({
   return (
     <section className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-[#1f6b55]" />
+        <Icon className="h-4 w-4 text-[#1f5592]" />
         <h3 className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</h3>
       </div>
       {children}

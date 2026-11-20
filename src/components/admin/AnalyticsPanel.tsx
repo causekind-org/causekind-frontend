@@ -36,7 +36,7 @@ import {
   XCircle,
 } from "lucide-react";
 
-const CHART_COLORS = ["#1f6b55", "#2e8b70", "#1e3a60", "#9fe0c8", "#4a7fba", "#6b7280"];
+const CHART_COLORS = ["#1f5592", "#2f6fb0", "#1e3a60", "#9cc8f0", "#4a7fba", "#6b7280"];
 
 function formatINR(n: number) {
   return new Intl.NumberFormat("en-IN", {
@@ -171,7 +171,7 @@ export function AnalyticsPanel() {
         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1f6b55]/10 text-[#1f6b55]">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#1f5592]/10 text-[#1f5592]">
                 <HandCoins className="h-5 w-5" />
               </div>
               <div>
@@ -251,7 +251,7 @@ export function AnalyticsPanel() {
                       color: "hsl(var(--foreground))",
                     }}
                   />
-                  <Bar dataKey="amount" fill="#1f6b55" radius={[6, 6, 0, 0]} maxBarSize={56} />
+                  <Bar dataKey="amount" fill="#1f5592" radius={[6, 6, 0, 0]} maxBarSize={56} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -337,7 +337,7 @@ export function AnalyticsPanel() {
                   />
                   <Bar dataKey="amount" radius={[0, 4, 4, 0]}>
                     {topCampaigns.map((_, i) => (
-                      <Cell key={i} fill={i === 0 ? "#1f6b55" : i === 1 ? "#2e8b70" : "#9fe0c8"} />
+                      <Cell key={i} fill={i === 0 ? "#1f5592" : i === 1 ? "#2f6fb0" : "#9cc8f0"} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -377,7 +377,7 @@ export function AnalyticsPanel() {
 
             <div className="rounded-xl border p-3 sm:p-4 text-center">
               <p className="text-xs text-muted-foreground">{t("approvalRate")}</p>
-              <p className="mt-0.5 text-xl sm:text-3xl font-extrabold text-[#1f6b55]">{approvalRate}%</p>
+              <p className="mt-0.5 text-xl sm:text-3xl font-extrabold text-[#1f5592]">{approvalRate}%</p>
               <p className="text-xs text-muted-foreground">{t("ofReviewedCampaigns")}</p>
             </div>
           </CardContent>
