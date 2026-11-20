@@ -375,3 +375,9 @@
    text), wider than the screen, so cards were cut off on the right. Letting
    every grid item shrink to 0 caps that column at the container width. */
 .ck-staff .ck-staff-workspace .grid > * { min-width: 0; }
+
+/* The root <main> reserves room for the public site's mobile bottom dock
+   (.ck-main-bottom-pad, ~92-126px). The staff consoles have no dock, so that
+   room showed as a cream strip under the console. Scoped with :has() to pages
+   that render a console. */
+.ck-main-bottom-pad:has(.ck-staff) { padding-bottom: 0; }
