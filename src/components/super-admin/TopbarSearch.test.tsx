@@ -29,4 +29,17 @@ describe("TopbarSearch (inline search in the Super Admin top bar)", () => {
     fireEvent.change(box, { target: { value: "r" } });
     expect(screen.getByText(/at least two characters/i)).toBeInTheDocument();
   });
+
+  it("offers matching console sections, so typing 'users' finds the Users screens", async () => {
+    const onOpenSection = vi.fn();
+    render(<TopbarSearch onOpenUser={vi.fn()} onOpenIntervention={vi.fn()} onOpenSection={onOpenSection}
+      sections={[{ key: "users", label: "Users (raw)", hint: "Raw user table" }, { key: "directory", label: "User 360", hint: "Everything about one user" }, { key: "sql", label: "SQL Console" }]} />);
+    const box = screen.getByRole("combobox");
+    fireEvent.focus(box);
+    fireEvent.change(box, { target: { value: "users" } });
+    const sec = await screen.findByText("Users (raw)");
+    expect(screen.queryByText("SQL Console")).toBeNull();
+    fireEvent.click(sec);
+    expect(onOpenSection).toHaveBeenCalledWith("users");
+  });
 });

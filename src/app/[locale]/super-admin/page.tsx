@@ -629,7 +629,9 @@ export default function SuperAdminPage() {
           <div className="flex min-w-0 items-center gap-4">
             <span className="hidden shrink-0 text-sm font-semibold sm:inline">{current?.label ?? "Super Admin"}</span>
             {/* Inline search with a suggestion dropdown (Ctrl K focuses it). */}
-            <TopbarSearch onOpenUser={openUser} onOpenIntervention={openIntervention} />
+            <TopbarSearch onOpenUser={openUser} onOpenIntervention={openIntervention}
+              sections={NAV.map(({ key, label, hint }) => ({ key, label, hint }))}
+              onOpenSection={(k) => handleNavClick(k as SectionKey)} />
           </div>
         }
         topbarEnd={

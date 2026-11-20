@@ -17,9 +17,14 @@ const TYPE_LABEL: Record<string, string> = {
  * palette, so debounce, minimum length and the stale-response guard are shared.
  * Ctrl/⌘K focuses this field. A combobox: ↑↓ move, Enter opens, Esc closes.
  */
-export function TopbarSearch({ onOpenUser, onOpenIntervention }: {
+export type SearchSection = { key: string; label: string; hint?: string };
+
+export function TopbarSearch({ onOpenUser, onOpenIntervention, sections = [], onOpenSection }: {
   onOpenUser: (id: number) => void;
   onOpenIntervention: (entity: SaInterventionEntity, id: number) => void;
+  /** Console sections; typing a section's name ("users", "audit") offers it as a shortcut. */
+  sections?: SearchSection[];
+  onOpenSection?: (key: string) => void;
 }) {
   const { query, setQuery, results, loading, failed } = useGlobalSearch(2, 6);
   const [open, setOpen] = useState(false);
@@ -27,8 +32,18 @@ export function TopbarSearch({ onOpenUser, onOpenIntervention }: {
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
-  const flat: SaSearchHit[] = results?.groups.flatMap((g) => g.hits) ?? [];
   const typed = query.trim().length >= 2;
+  const q = query.trim().toLowerCase();
+  // Sections first (instant, no request), then records from the search API.
+  const sectionHits = typed && onOpenSection
+    ? sections.filter((sec) => sec.label.toLowerCase().includes(q) || (sec.hint ?? "").toLowerCase().includes(q)).slice(0, 4)
+    : [];
+  const records: SaSearchHit[] = results?.groups.flatMap((g) => g.hits) ?? [];
+  type Item = { kind: "section"; sec: SearchSection } | { kind: "record"; hit: SaSearchHit };
+  const flat: Item[] = [
+    ...sectionHits.map((sec) => ({ kind: "section" as const, sec })),
+    ...records.map((hit) => ({ kind: "record" as const, hit })),
+  ];
 
   useEffect(() => { setCursor(0); }, [results]);
 
@@ -61,8 +76,8 @@ export function TopbarSearch({ onOpenUser, onOpenIntervention }: {
     return null;
   }
 
-  function choose(hit: SaSearchHit) {
-    const go = destinationOf(hit);
+  function choose(item: Item) {
+    const go = item.kind === "section" ? () => onOpenSection?.(item.sec.key) : destinationOf(item.hit);
     if (!go) return;
     go();
     setOpen(false);
@@ -115,20 +130,24 @@ export function TopbarSearch({ onOpenUser, onOpenIntervention }: {
             ) : failed ? (
               <p className="px-4 py-4 text-xs text-red-700" role="alert">Search failed. Try again in a moment.</p>
             ) : flat.length === 0 && !loading ? (
-              <p className="px-4 py-4 text-xs text-[#4f6480]">No matches for “{query.trim()}”.</p>
+              <p className="px-4 py-4 text-xs text-[#4f6480]">No sections or records match “{query.trim()}”. Records are found by name, email, phone, title or id.</p>
             ) : (
               <ul id={listId} role="listbox" className="py-1">
-                {flat.map((hit, i) => {
-                  const clickable = !!destinationOf(hit);
+                {flat.map((item, i) => {
+                  const clickable = item.kind === "section" || !!destinationOf(item.hit);
+                  const title = item.kind === "section" ? item.sec.label : item.hit.title;
+                  const sub = item.kind === "section" ? item.sec.hint : item.hit.subtitle;
+                  const tag = item.kind === "section" ? "Section" : (TYPE_LABEL[item.hit.type] ?? item.hit.type);
+                  const rowId = item.kind === "section" ? `sec-${item.sec.key}` : `${item.hit.type}-${item.hit.id}`;
                   return (
-                    <li key={`${hit.type}-${hit.id}`} id={`${listId}-${i}`} role="option" aria-selected={i === cursor}>
-                      <button type="button" onMouseEnter={() => setCursor(i)} onClick={() => choose(hit)}
+                    <li key={rowId} id={`${listId}-${i}`} role="option" aria-selected={i === cursor}>
+                      <button type="button" onMouseEnter={() => setCursor(i)} onClick={() => choose(item)}
                         className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition-colors duration-100 ${i === cursor ? "bg-[#eef4fb]" : ""} ${clickable ? "" : "cursor-default"}`}>
                         <span className="min-w-0">
-                          <span className="block truncate text-sm font-medium">{hit.title}</span>
-                          {hit.subtitle && <span className="block truncate text-xs text-[#4f6480]">{hit.subtitle}</span>}
+                          <span className="block truncate text-sm font-medium">{title}</span>
+                          {sub && <span className="block truncate text-xs text-[#4f6480]">{sub}</span>}
                         </span>
-                        <span className="shrink-0 rounded-full bg-[#e6eef8] px-2 py-0.5 text-[10px] font-bold text-[#41567a]">{TYPE_LABEL[hit.type] ?? hit.type}</span>
+                        <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${item.kind === "section" ? "bg-[#d9ebff] text-[#1f66b3]" : "bg-[#e6eef8] text-[#41567a]"}`}>{tag}</span>
                       </button>
                     </li>
                   );
