@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { login } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import "@/styles/staff-console.css";
 
 const LOGIN_DOMAIN = "crm.causekind";
 
@@ -35,12 +36,18 @@ export function CrmLogin() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-muted/40">
-      <header className="flex h-12 items-center bg-[#1e2a44] px-4 font-semibold text-white">CauseKind CRM</header>
-      <div className="flex flex-1 items-center justify-center p-4">
-        <form onSubmit={submit} className="w-full max-w-sm space-y-4 rounded-lg border bg-background p-6 shadow-sm">
+    <div className="ck-staff flex min-h-screen flex-col items-center justify-center gap-6 p-4">
+      <div className="flex items-center gap-3 text-white">
+        <span aria-hidden className="flex size-10 items-center justify-center rounded-[14px] border border-white/20 bg-white/10 text-[15px] font-bold">CK</span>
+        <span>
+          <span className="block text-[15px] font-bold leading-tight">CauseKind</span>
+          <span className="block text-[11.5px] leading-tight text-white/70">CRM</span>
+        </span>
+      </div>
+      <div className="w-full max-w-sm">
+        <form onSubmit={submit} className="ck-glass-solid w-full space-y-4 p-6 sm:p-7">
           <div>
-            <h1 className="text-xl font-semibold">Sign in to the CRM</h1>
+            <h1 className="text-2xl font-bold tracking-[-0.02em]">Sign in to the CRM</h1>
             <p className="text-sm text-muted-foreground">Use the login ID and password your super admin gave you.</p>
           </div>
           <label className="block space-y-1.5 text-sm font-medium">
@@ -54,7 +61,7 @@ export function CrmLogin() {
               onChange={(e) => setPassword(e.target.value)} />
           </label>
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={busy || !loginId.trim() || !password}>
+          <Button type="submit" className="h-10 w-full rounded-full" disabled={busy || !loginId.trim() || !password}>
             {busy && <Loader2 className="size-4 animate-spin" />} Sign in
           </Button>
           <p className="text-xs text-muted-foreground">Forgot your password? Ask your super admin to reset it.</p>
