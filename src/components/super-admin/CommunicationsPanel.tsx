@@ -149,7 +149,7 @@ export function CommunicationsPanel({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className={`text-lg font-bold ${t.heading}`}>Communications</h2>
+        <h2 className={`ck-page-title ${t.heading}`}>Communications</h2>
         <p className={`text-xs ${t.muted}`}>
           Writing to a user, and the record of everything staff has sent.
         </p>

@@ -69,7 +69,7 @@ export function MoneyPanel({ isDark }: { isDark: boolean }) {
   return (
     <div className="flex flex-col gap-5">
       <header>
-        <h1 className={`text-[26px] font-extrabold ${t.heading}`}>Money</h1>
+        <h1 className={`ck-page-title ${t.heading}`}>Money</h1>
         <p className={`mt-1 text-sm ${t.muted}`}>Every completed payment. Payment provider charges aren&apos;t recorded, so they are still inside the cause figure.</p>
       </header>
 

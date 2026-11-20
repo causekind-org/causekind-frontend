@@ -14,15 +14,14 @@
  * tokens. Same approach DisputesPanel and EntityTable already use; this just
  * puts one copy in a shared place instead of a fourth private one.
  *
- * Palette matches the console shell in app/super-admin/page.tsx: amber
- * `#f0b97a` on `#05070d` dark, rust `#b04a15` on `#faf7f2` light.
+ * Light branch = the staff console forest-glass palette (styles/staff-console.css).
  */
 export type SaTheme = ReturnType<typeof saTheme>;
 
 export function saTheme(isDark: boolean) {
   return isDark
     ? {
-        accent: "#f0b97a",
+        accent: "#9fe0c8",
         heading: "text-white",
         text: "text-stone-200",
         muted: "text-stone-400",
@@ -34,24 +33,24 @@ export function saTheme(isDark: boolean) {
         rowHover: "hover:bg-white/[0.05]",
         input:
           "border-white/10 bg-[#0b0f1a] text-stone-200 placeholder:text-stone-600 " +
-          "focus:border-[#f0b97a]/50 focus:outline-none",
+          "focus:border-[#9fe0c8]/50 focus:outline-none",
         btn:
           "border-white/10 bg-white/[0.04] text-stone-300 " +
           "hover:bg-white/[0.08] hover:text-white " +
           "disabled:opacity-35 disabled:pointer-events-none",
-        btnAccent: "bg-[#f0b97a] text-stone-950 hover:bg-[#e0a96a] border-[#f0b97a]",
-        chipActive: "bg-[#f0b97a] text-stone-950 border-[#f0b97a]",
+        btnAccent: "bg-[#9fe0c8] text-stone-950 hover:bg-[#e0a96a] border-[#9fe0c8]",
+        chipActive: "bg-[#9fe0c8] text-stone-950 border-[#9fe0c8]",
         chipInactive:
           "border-white/10 text-stone-400 hover:border-white/25 hover:text-white",
         badge: "border-white/10 bg-white/[0.06] text-stone-300",
-        badgeAccent: "border-[#f0b97a]/30 bg-[#f0b97a]/10 text-[#f0b97a]",
+        badgeAccent: "border-[#9fe0c8]/30 bg-[#9fe0c8]/10 text-[#9fe0c8]",
         badgeDanger: "border-red-500/30 bg-red-500/10 text-red-400",
         badgeOk: "border-emerald-500/25 bg-emerald-500/10 text-emerald-400",
-        tabActive: "border-[#f0b97a] text-white",
+        tabActive: "border-[#9fe0c8] text-white",
         tabInactive: "border-transparent text-stone-400 hover:text-white",
         tabLocked: "border-transparent text-stone-600",
         dangerPanel: "border-red-500/25 bg-red-500/[0.07] text-stone-300",
-        accentPanel: "border-[#f0b97a]/25 bg-[#f0b97a]/[0.04]",
+        accentPanel: "border-[#9fe0c8]/25 bg-[#9fe0c8]/[0.04]",
         overlay: "bg-black/70",
         surface: "border-white/10 bg-[#0b0f1a]",
         surfaceAlt: "bg-white/[0.05]",
@@ -62,40 +61,42 @@ export function saTheme(isDark: boolean) {
         placeholder: "placeholder:text-stone-600",
       }
     : {
-        accent: "#b04a15",
-        heading: "text-stone-900",
-        text: "text-stone-700",
-        muted: "text-stone-500",
-        dim: "text-stone-400",
-        card: "border-stone-200 bg-white",
-        cardFlat: "border-stone-200",
-        divide: "divide-stone-200",
-        tableHead: "bg-stone-100 border-stone-200",
-        rowHover: "hover:bg-stone-50",
+        // Staff console "forest glass" palette (2026-11-19). The console has a
+        // single theme now, so this branch is the one every panel renders.
+        accent: "#1f6b55",
+        heading: "text-[#12211c]",
+        text: "text-[#24352d]",
+        muted: "text-[#53665c]",
+        dim: "text-[#6b7d73]",
+        card: "border-white/80 bg-white/90 shadow-[0_16px_34px_-28px_rgba(16,30,24,0.45)]",
+        cardFlat: "border-[#dfe8e3]",
+        divide: "divide-[#e3ebe6]",
+        tableHead: "bg-[#eef3f0] border-[#dfe8e3]",
+        rowHover: "hover:bg-[#f2f7f4]",
         input:
-          "border-stone-300 bg-white text-stone-800 placeholder:text-stone-400 " +
-          "focus:border-[#b04a15]/50 focus:outline-none",
+          "border-[#cfdcd5] bg-white text-[#12211c] placeholder:text-[#8a9a91] " +
+          "focus:border-[#2e8b70] focus:outline-none focus:ring-2 focus:ring-[#2e8b70]/20",
         btn:
-          "border-stone-300 bg-white text-stone-700 " +
-          "hover:bg-stone-100 hover:text-stone-900 " +
+          "border-[#cfdcd5] bg-white/90 text-[#24352d] " +
+          "hover:bg-white hover:text-[#12211c] " +
           "disabled:opacity-40 disabled:pointer-events-none",
-        btnAccent: "bg-[#b04a15] text-white hover:bg-[#963e11] border-[#b04a15]",
-        chipActive: "bg-[#b04a15] text-white border-[#b04a15]",
+        btnAccent: "bg-[#12211c] text-white hover:bg-[#1f6b55] border-[#12211c]",
+        chipActive: "bg-[#12211c] text-white border-[#12211c]",
         chipInactive:
-          "border-stone-200 text-stone-500 hover:border-stone-400 hover:text-stone-900",
-        badge: "border-stone-200 bg-stone-100 text-stone-600",
-        badgeAccent: "border-[#b04a15]/30 bg-[#b04a15]/10 text-[#b04a15]",
-        badgeDanger: "border-red-300 bg-red-50 text-red-700",
-        badgeOk: "border-emerald-300 bg-emerald-50 text-emerald-700",
-        tabActive: "border-[#b04a15] text-stone-900",
-        tabInactive: "border-transparent text-stone-500 hover:text-stone-900",
-        tabLocked: "border-transparent text-stone-400",
-        dangerPanel: "border-red-200 bg-red-50 text-stone-700",
-        accentPanel: "border-[#b04a15]/20 bg-[#b04a15]/[0.04]",
-        overlay: "bg-stone-900/40",
-        surface: "border-stone-200 bg-white",
-        surfaceAlt: "bg-stone-100",
-        kbd: "border-stone-300 bg-stone-100 text-stone-500",
-        placeholder: "placeholder:text-stone-400",
+          "border-white/80 bg-white/60 text-[#3a4a42] hover:bg-white hover:text-[#12211c]",
+        badge: "border-[#dfe8e3] bg-[#e7ece9] text-[#44554c]",
+        badgeAccent: "border-[#b9d9e0] bg-[#dcedf1] text-[#1f5f6d]",
+        badgeDanger: "border-red-200 bg-[#fbe1dc] text-[#9a2a1b]",
+        badgeOk: "border-emerald-200 bg-[#dcf1e7] text-[#1c6b4c]",
+        tabActive: "border-[#2e8b70] text-[#12211c]",
+        tabInactive: "border-transparent text-[#53665c] hover:text-[#12211c]",
+        tabLocked: "border-transparent text-[#9aaaa1]",
+        dangerPanel: "border-red-200 bg-red-50/90 text-[#24352d]",
+        accentPanel: "border-[#b9d9e0] bg-[#eef6f8]/80",
+        overlay: "bg-[#0b211b]/55 backdrop-blur-sm",
+        surface: "border-white/80 bg-white",
+        surfaceAlt: "bg-[#eef3f0]",
+        kbd: "border-[#cfdcd5] bg-[#eef3f0] text-[#53665c]",
+        placeholder: "placeholder:text-[#8a9a91]",
       };
 }

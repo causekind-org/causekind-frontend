@@ -139,7 +139,7 @@ export function InterventionsPanel({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className={`text-lg font-bold ${t.heading}`}>Interventions</h2>
+        <h2 className={`ck-page-title ${t.heading}`}>Interventions</h2>
         <p className={`text-xs ${t.muted}`}>
           Acting on a record on behalf of the people in it. Every action shows what
           follows from it first.

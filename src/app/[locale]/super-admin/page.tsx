@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
+import { StaffShell, StaffNavGroup, StaffNavItem, StaffTopbarTitle } from "@/components/staff/StaffShell";
+import { PageHeader, GlassCard, CardTitle, MetricTile } from "@/components/staff/primitives";
 import {
   superAdminOverview, type SuperAdminOverview,
   adminGetAllDonations, type SuperAdminRow,
@@ -32,7 +34,7 @@ import type { SaInterventionEntity } from "@/lib/api";
 import {
   LayoutDashboard, Users, Megaphone, CreditCard, ClipboardList, Package, HandCoins,
   Handshake, Terminal, LogOut, ShieldAlert, Loader2, Database, TrendingUp,
-  Sun, Moon, AlertTriangle, KeyRound, History, Scale,
+  AlertTriangle, KeyRound, History, Scale, ChevronRight,
   Search, UserSearch, LifeBuoy, Send, ShieldCheck, SlidersHorizontal, Activity, Lock, Mail,
 } from "lucide-react";
 
@@ -58,57 +60,30 @@ type StatTone = "users" | "campaigns" | "donations" | "requests" | "listings" | 
 
 /** Console-local, deliberately not the app's `ck_theme` — this panel manages
  *  its own palette and should not be dragged around by the public site. */
-const THEME_KEY = "ck_sa_theme";
-
-const DARK: Th = {
-  root:        "bg-[#05070d] text-white",
-  sidebar:     "bg-[#080b14]/80 backdrop-blur-sm",
-  topbar:      "bg-[#05070d]/80 backdrop-blur-md",
-  divider:     "border-white/10",
-  card:        "bg-white/[0.03] border-white/10",
-  textPrimary: "text-white",
-  textMuted:   "text-stone-400",
-  textDim:     "text-stone-500",
-  textDimmer:  "text-stone-600",
-  navActive:   "bg-[#f0b97a]/10 text-[#f0b97a] border-[#f0b97a]/20",
-  navInactive: "text-stone-400 hover:text-white hover:bg-white/5 border-transparent",
-  signout:     "text-stone-400 hover:text-red-400 hover:bg-red-500/10",
-  accent:      "#f0b97a",
-  roleBar:     "bg-white/5",
-  toggleBtn:   "bg-white/10 hover:bg-white/15 text-[#f0b97a]",
-  sqlLabel:    "text-red-400/70",
-  roleText:    "text-stone-400",
-  barGradient: "from-[#b04a15] to-[#f0b97a]",
-  positive:    "text-emerald-400",
-  tone: {
-    users: "#f0b97a", campaigns: "#e07b3a", donations: "#4ade80",
-    requests: "#60a5fa", listings: "#a78bfa", matches: "#f472b6",
-  },
-};
 
 const LIGHT: Th = {
-  root:        "bg-[#faf7f2] text-stone-900",
-  sidebar:     "bg-white",
-  topbar:      "bg-white/95 backdrop-blur-md",
-  divider:     "border-stone-200",
-  card:        "bg-white border-stone-200 shadow-sm",
-  textPrimary: "text-stone-900",
-  textMuted:   "text-stone-500",
-  textDim:     "text-stone-500",
-  textDimmer:  "text-stone-400",
-  navActive:   "bg-[#b04a15]/10 text-[#b04a15] border-[#b04a15]/20",
-  navInactive: "text-stone-600 hover:text-stone-900 hover:bg-stone-100 border-transparent",
-  signout:     "text-stone-500 hover:text-red-600 hover:bg-red-50",
-  accent:      "#b04a15",
-  roleBar:     "bg-stone-100",
-  toggleBtn:   "bg-stone-100 hover:bg-stone-200 text-stone-600",
+  root:        "text-[#12211c]",
+  sidebar:     "",
+  topbar:      "",
+  divider:     "border-[#dfe8e3]",
+  card:        "ck-glass-solid border-white/80",
+  textPrimary: "text-[#12211c]",
+  textMuted:   "text-[#53665c]",
+  textDim:     "text-[#53665c]",
+  textDimmer:  "text-[#6b7d73]",
+  navActive:   "",
+  navInactive: "",
+  signout:     "",
+  accent:      "#2e8b70",
+  roleBar:     "bg-[#c9d8d0]",
+  toggleBtn:   "",
   sqlLabel:    "text-red-600/70",
-  roleText:    "text-stone-500",
-  barGradient: "from-[#b04a15] to-[#e07b3a]",
-  positive:    "text-emerald-700",
+  roleText:    "text-[#53665c]",
+  barGradient: "from-[#1f6b55] to-[#2e8b70]",
+  positive:    "text-[#1c6b4c]",
   tone: {
-    users: "#b04a15", campaigns: "#c2410c", donations: "#047857",
-    requests: "#1d4ed8", listings: "#6d28d9", matches: "#be185d",
+    users: "#1f6b55", campaigns: "#8a5a10", donations: "#1c6b4c",
+    requests: "#1f5f6d", listings: "#1f5f6d", matches: "#1f6b55",
   },
 };
 
@@ -273,6 +248,9 @@ const PLANNED_NAV = [
 
 type SectionKey = (typeof NAV)[number]["key"];
 
+/** Panels that render no page title themselves (round 2 audit, 2026-11-19). */
+const UNTITLED_SECTIONS = new Set<SectionKey>(["search", "directory", "cases", "mail-center", "admin-permissions", "audit-log"]);
+
 /** Sidebar headings, in display order. Every NAV entry carries one of these. */
 const NAV_GROUPS = ["Work", "People & access", "Money", "Records", "Platform"] as const;
 
@@ -371,87 +349,118 @@ function StatTile({
   );
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  DONOR: "Donors", DONEE: "Donees", NGO_PARTNER: "NGO partners", ADMIN: "Admins", SUPER_ADMIN: "Super admins",
+};
+const roleLabel = (r: string) => ROLE_LABELS[r] ?? r.toLowerCase().replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+const fmtCount = (n: number) => new Intl.NumberFormat("en-IN").format(n);
+
+/**
+ * Overview in the staff-console style. Shows only what
+ * GET /super-admin/overview actually returns — all-time table counts, users by
+ * role, total raised. No trends, percentages or "pending" figures: the endpoint
+ * has none, and inventing them is out of scope until a new endpoint is approved.
+ */
 function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => void }) {
   const [data, setData] = useState<SuperAdminOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [reloadKey, setReloadKey] = useState(0);
 
-  // No .catch() before: a failed load was an unhandled rejection, and the
-  // fallback text had no way to try again.
   useEffect(() => {
     setLoading(true);
     superAdminOverview().then(setData).catch(() => setData(null)).finally(() => setLoading(false));
   }, [reloadKey]);
 
-  if (loading) return (
-    <div className="flex justify-center py-20">
-      <Loader2 className="w-7 h-7 animate-spin" style={{ color: th.accent }} />
-    </div>
+  const header = (
+    <PageHeader
+      title="Overview"
+      description="All-time totals across the platform. Open a number to work with the records behind it."
+    />
   );
-  if (!data) return <SaLoadError what="the overview" onRetry={() => setReloadKey((k) => k + 1)} />;
+
+  if (loading) return (
+    <>{header}
+      <div className="flex justify-center py-20" role="status" aria-label="Loading overview">
+        <Loader2 className="size-7 animate-spin" style={{ color: th.accent }} />
+      </div>
+    </>
+  );
+  if (!data) return <>{header}<SaLoadError what="the overview" onRetry={() => setReloadKey((k) => k + 1)} /></>;
 
   const c = data.counts;
+  const roles = Object.entries(data.roleBreakdown).sort((x, y) => y[1] - x[1]);
+  const roleTotal = roles.reduce((sum, [, n]) => sum + n, 0) || 1;
+
   return (
-    <div className="space-y-5 sm:space-y-8">
-      <div>
-        <h2 className={`text-base sm:text-lg font-black tracking-tight ${th.textPrimary}`}>Database Overview</h2>
-        <p className={`text-2xs sm:text-xs ${th.textDim}`}>Live snapshot of every table.</p>
+    <div>
+      {header}
+
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-6">
+        {/* Users opens User 360, not the raw table — that is where user work happens. */}
+        <MetricTile label="Users" value={fmtCount(c["users"] ?? 0)} icon={Users} tone="green" hint="All time" onOpen={() => onOpen("directory")} />
+        <MetricTile label="Requests" value={fmtCount(c["item-requests"] ?? 0)} icon={ClipboardList} tone="teal" hint="All time" onOpen={() => onOpen("item-requests")} />
+        <MetricTile label="Listings" value={fmtCount(c["item-listings"] ?? 0)} icon={Package} tone="teal" hint="All time" onOpen={() => onOpen("item-listings")} />
+        <MetricTile label="Matches" value={fmtCount(c["matches"] ?? 0)} icon={Handshake} tone="green" hint="All time" onOpen={() => onOpen("matches")} />
+        <MetricTile label="Campaigns" value={fmtCount(c["campaigns"] ?? 0)} icon={Megaphone} tone="amber" hint="All time" onOpen={() => onOpen("campaigns")} />
+        <MetricTile label="Donations" value={fmtCount(c["donations"] ?? 0)} icon={CreditCard} tone="amber" hint="All time" onOpen={() => onOpen("donations")} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-4">
-        {/* Users is the one card that does not open the raw table: it lands on
-            the User 360 workspace, which is where this console actually does
-            user work. The other five open the table for the number shown. */}
-        <StatTile label="Users"     value={c["users"] ?? 0}         icon={Users}        delay={0}   tone="users"     th={th} onOpen={() => onOpen("directory")} />
-        <StatTile label="Campaigns" value={c["campaigns"] ?? 0}     icon={Megaphone}    delay={60}  tone="campaigns" th={th} onOpen={() => onOpen("campaigns")} />
-        <StatTile label="Donations" value={c["donations"] ?? 0}     icon={CreditCard}   delay={120} tone="donations" th={th} onOpen={() => onOpen("donations")} />
-        <StatTile label="Requests"  value={c["item-requests"] ?? 0} icon={ClipboardList} delay={180} tone="requests"  th={th} onOpen={() => onOpen("item-requests")} />
-        <StatTile label="Listings"  value={c["item-listings"] ?? 0} icon={Package}      delay={240} tone="listings"  th={th} onOpen={() => onOpen("item-listings")} />
-        <StatTile label="Matches"   value={c["matches"] ?? 0}       icon={Handshake}    delay={300} tone="matches"   th={th} onOpen={() => onOpen("matches")} />
-      </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-5">
+        <GlassCard className="lg:col-span-2">
+          <CardTitle title="Where work waits" description="Queues a super admin settles." />
+          <ul className="-mx-3 space-y-0.5">
+            {([
+              ["cases", "Support cases", "Cases, information requests and disputes", LifeBuoy],
+              ["interventions", "Interventions", "Hold, resume or reassess a record", SlidersHorizontal],
+              ["disputes", "Disputes", "Problems raised after handover", Scale],
+              ["money", "Money", "Payments, refunds and payout status", HandCoins],
+              ["operations", "Operational health", "Health checks and runtime config", Activity],
+            ] as const).map(([key, label, hint, Icon]) => (
+              <li key={key}>
+                <button type="button" onClick={() => onOpen(key)}
+                  className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors duration-150 hover:bg-white/70">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[#dcedf1] text-[#1f5f6d]"><Icon className="size-4" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">{label}</span>
+                    <span className="block truncate text-xs text-[color:var(--st-text-2)]">{hint}</span>
+                  </span>
+                  <ChevronRight className="size-4 text-[color:var(--st-text-2)]" aria-hidden />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </GlassCard>
 
-      <div className="grid lg:grid-cols-2 gap-3 sm:gap-4">
-        {/* Role breakdown */}
-        <div className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 ${th.card}`}>
-          <div className="flex items-center gap-2 mb-3 sm:mb-4">
-            <Database className="w-4 h-4" style={{ color: th.accent }} />
-            <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Users by role</h3>
-          </div>
-          <div className="space-y-2.5 sm:space-y-3">
-            {Object.entries(data.roleBreakdown).map(([role, count]) => {
-              const total = Object.values(data.roleBreakdown).reduce((a, b) => a + b, 0) || 1;
-              const pct = Math.round((count / total) * 100);
+        <GlassCard className="lg:col-span-3">
+          <CardTitle title="Users by role" description={`${fmtCount(roleTotal)} accounts in total`} icon={Database} />
+          <ul className="space-y-3.5">
+            {roles.map(([role, count]) => {
+              const pct = Math.round((count / roleTotal) * 100);
               return (
-                <div key={role}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className={`font-mono ${th.roleText}`}>{role}</span>
-                    <span className={`font-bold ${th.textPrimary}`}>{count}</span>
+                <li key={role}>
+                  <div className="mb-1.5 flex justify-between text-[13px]">
+                    <span className="font-medium">{roleLabel(role)}</span>
+                    <span className="font-semibold tabular-nums">{fmtCount(count)} <span className="font-normal text-[color:var(--st-text-2)]">· {pct}%</span></span>
                   </div>
-                  <div className={`h-1.5 rounded-full overflow-hidden ${th.roleBar}`}>
-                    <div
-                      className={`h-full rounded-full bg-gradient-to-r ${th.barGradient} transition-all duration-700`}
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="h-2 overflow-hidden rounded-full bg-[#c9d8d0]" aria-hidden>
+                    <div className="h-full rounded-full bg-[color:var(--st-primary)]" style={{ width: `${pct}%` }} />
                   </div>
-                </div>
+                </li>
               );
             })}
-          </div>
-        </div>
+          </ul>
 
-        {/* Total raised */}
-        <button type="button" onClick={() => onOpen("money")} className={`rounded-xl sm:rounded-2xl border p-4 sm:p-5 flex flex-col justify-center text-left ${th.card}`}>
-          <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className={`w-4 h-4 ${th.positive}`} />
-            <h3 className={`text-sm sm:text-sm font-bold ${th.textPrimary}`}>Total raised (completed)</h3>
-          </div>
-          {/* Currency values run long (₹1,23,45,678) — text-4xl overflowed the
-              card on a phone before this stepped down. */}
-          <p className={`text-2xl sm:text-4xl font-black tabular-nums break-words ${th.positive}`}>
-            ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
-          </p>
-          <p className={`text-2xs sm:text-xs mt-1 ${th.textDim}`}>Across all completed donations. Open for the breakdown.</p>
-        </button>
+          <button type="button" onClick={() => onOpen("money")}
+            className="mt-6 flex w-full items-center justify-between gap-4 rounded-2xl bg-white/70 px-4 py-4 text-left transition-colors duration-150 hover:bg-white">
+            <span>
+              <span className="flex items-center gap-2 text-[13px] font-semibold"><TrendingUp className="size-4 text-[color:var(--st-primary)]" /> Total raised</span>
+              <span className="block text-xs text-[color:var(--st-text-2)]">Completed money donations, all time</span>
+            </span>
+            <span className="break-all text-right text-2xl font-bold tabular-nums sm:text-[28px]">
+              ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
+            </span>
+          </button>
+        </GlassCard>
       </div>
     </div>
   );
@@ -496,22 +505,11 @@ export default function SuperAdminPage() {
   // initialiser — localStorage does not exist on the server, and seeding state
   // from it during render makes the first client paint disagree with the
   // server HTML.
-  const [isDark, setIsDark] = useState(false);
-  const th = isDark ? DARK : LIGHT;
-
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(THEME_KEY) === "dark") setIsDark(true);
-    } catch { /* private mode / storage disabled — light default stands */ }
-  }, []);
-
-  const toggleTheme = () => {
-    setIsDark((d) => {
-      const next = !d;
-      try { localStorage.setItem(THEME_KEY, next ? "dark" : "light"); } catch { /* ignore */ }
-      return next;
-    });
-  };
+  // One theme: the staff console's light-on-forest look (2026-11-19). The old
+  // dark/light toggle (ck_sa_theme) is retired; panels still take `isDark`,
+  // which is now always false.
+  const isDark = false;
+  const th = LIGHT;
 
   // SQL warning modal
   const [sqlModalOpen, setSqlModalOpen] = useState(false);
@@ -610,175 +608,60 @@ export default function SuperAdminPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [section, isDark, focusUserId, focusIntervention, openFromOverview]);
 
-  // Theme toggle button (reused in sidebar + topbar)
-  const ThemeToggle = (
-    <button
-      onClick={toggleTheme}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${th.toggleBtn}`}
-    >
-      {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-    </button>
-  );
-
   if (isLoading || !user || user.role !== "SUPER_ADMIN") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#05070d]">
-        <Loader2 className="w-7 h-7 animate-spin text-[#f0b97a]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0b211b]">
+        <Loader2 className="w-7 h-7 animate-spin text-[#9fe0c8]" />
       </div>
     );
   }
 
+  const current = NAV.find((n) => n.key === section);
+  const saNav = (
+    <div className="space-y-1">
+      {NAV_GROUPS.map((group) => (
+        <StaffNavGroup key={group} title={group}>
+          {NAV.filter((n) => n.group === group).map(({ key, label, icon, hint }) => (
+            <StaffNavItem key={key} label={label} icon={icon} title={hint} active={section === key} onClick={() => handleNavClick(key)}
+              trailing={key === "sql" ? <span className="ml-auto rounded-full bg-red-500/25 px-2 py-0.5 text-[10px] font-bold uppercase text-red-100">Danger</span> : undefined} />
+          ))}
+        </StaffNavGroup>
+      ))}
+      <StaffNavGroup title="Lives elsewhere">
+        {PLANNED_NAV.map(({ label, icon: Icon, phase }) => (
+          <div key={label} title={`Built — find it ${phase}`} className="ck-staff-nav-item cursor-default opacity-60 hover:!bg-transparent">
+            <Icon className="size-4 shrink-0" aria-hidden />
+            <span className="flex-1 truncate">{label}</span>
+            <span className="text-[10px]">{phase}</span>
+          </div>
+        ))}
+      </StaffNavGroup>
+    </div>
+  );
+
+
   return (
-    <div className={`h-screen overflow-hidden relative ${th.root}`}>
-      {/* Animated grid backdrop (dark only) */}
-      {isDark && (
-        <>
-          <div className="fixed inset-0 sa-grid-bg opacity-40 pointer-events-none" />
-          <div className="fixed top-0 left-1/3 w-[500px] h-[500px] rounded-full bg-[#b04a15]/10 blur-[150px] pointer-events-none" />
-        </>
-      )}
-      {/* Light mode subtle warm glow */}
-      {!isDark && (
-        <div className="fixed top-0 right-0 w-[600px] h-[400px] rounded-full bg-[#b04a15]/5 blur-[120px] pointer-events-none" />
-      )}
-
-      <div className="relative z-10 flex h-screen">
-        {/* ── Sidebar (desktop) ── */}
-        <aside className={`hidden lg:flex w-60 shrink-0 flex-col h-screen border-r ${th.divider} ${th.sidebar}`}>
-          <div className={`shrink-0 px-5 py-5 border-b ${th.divider}`}>
-            <div className="flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#b04a15] to-[#f0b97a] flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-4 h-4 text-white" />
-              </span>
-              <div>
-                <p className={`text-sm font-black tracking-tight leading-none ${th.textPrimary}`}>Command Center</p>
-                <p className={`text-3xs mt-0.5 ${th.textDim}`}>Super Admin</p>
-              </div>
-            </div>
-          </div>
-
-          <nav className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
-            {NAV_GROUPS.map((group) => (
-              <div key={group} className="pt-2 first:pt-0 space-y-1">
-                <p className={`px-3 pb-0.5 text-[9px] font-black uppercase tracking-wider ${th.textDimmer}`}>{group}</p>
-            {NAV.filter((n) => n.group === group).map(({ key, label, icon: Icon, hint }) => (
-              <button
-                key={key}
-                title={hint}
-                onClick={() => handleNavClick(key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-                  section === key ? th.navActive : th.navInactive
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-                {key === "sql" && (
-                  <span className={`ml-auto text-4xs font-black uppercase ${th.sqlLabel}`}>danger</span>
-                )}
-              </button>
-            ))}
-              </div>
-            ))}
-
-            {/* Every rebuild phase now has a home, so this stopped being a list
-                of things that do not exist and became a list of things that live
-                somewhere other than where you would look for them. Labelling it
-                "Not built yet" said the opposite of the truth about Restrictions,
-                which shipped in Phase 4. */}
-            <div className={`mt-4 pt-3 border-t ${th.divider}`}>
-              <p className={`px-3 pb-1.5 text-[9px] font-black uppercase tracking-wider ${th.textDimmer}`}>
-                Lives elsewhere
-              </p>
-              {PLANNED_NAV.map(({ label, icon: Icon, phase }) => (
-                <div
-                  key={label}
-                  title={`Built — find it ${phase}`}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-semibold border border-transparent cursor-default opacity-60 ${th.textMuted}`}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {label}
-                  <span className={`ml-auto shrink-0 text-[9px] ${th.textDimmer}`}>{phase}</span>
-                </div>
-              ))}
-            </div>
-          </nav>
-
-          <div className={`shrink-0 p-3 border-t ${th.divider}`}>
-            <p className={`text-3xs px-3 mb-2 truncate font-mono ${th.textDimmer}`}>{user.email}</p>
-            <div className="flex items-center gap-1.5">
-              {ThemeToggle}
-              <button
-                onClick={() => { logout(); router.push("/login"); }}
-                className={`flex-1 flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${th.signout}`}
-              >
-                <LogOut className="w-4 h-4" /> Sign out
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* ── Main column ── */}
-        <div className="flex-1 min-w-0 h-screen flex flex-col">
-          {/* Topbar */}
-          <header className={`shrink-0 flex items-center justify-between gap-3 px-3.5 py-2.5 sm:px-5 sm:py-3.5 border-b ${th.divider} ${th.topbar}`}>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className={`text-xs font-mono ${th.textMuted}`}>root@causekind</span>
-              {(() => {
-                const cur = NAV.find((n) => n.key === section);
-                return cur ? (
-                  <span className="hidden sm:flex items-baseline gap-2 ml-3 min-w-0">
-                    <span className={`text-sm font-bold ${th.textPrimary}`}>{cur.label}</span>
-                    <span className={`text-xs truncate ${th.textDim}`}>{cur.hint}</span>
-                  </span>
-                ) : null;
-              })()}
-            </div>
-            <div className="flex items-center gap-2">
-              {ThemeToggle}
-              <button
-                onClick={() => { logout(); router.push("/login"); }}
-                className={`lg:hidden flex items-center gap-1.5 text-xs font-semibold transition-colors ${th.signout}`}
-              >
-                <LogOut className="w-3.5 h-3.5" /> Sign out
-              </button>
-            </div>
-          </header>
-
-          {/* Mobile nav strip */}
-          <div className={`shrink-0 lg:hidden flex gap-1.5 overflow-x-auto scrollbar-hide px-3 py-2 border-b ${th.divider}`}>
-            {NAV.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                onClick={() => handleNavClick(key)}
-                className={`flex items-center gap-1.5 shrink-0 px-2.5 py-1.5 rounded-lg text-2xs font-bold transition-colors ${
-                  section === key
-                    ? isDark ? "bg-[#f0b97a]/10 text-[#f0b97a]" : "bg-[#b04a15]/10 text-[#b04a15]"
-                    // hover:text-white here was white-on-white in light mode —
-                    // the label vanished under the cursor.
-                    : `${th.textMuted} ${isDark ? "hover:text-white" : "hover:text-stone-900"}`
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" /> {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Content.
-              The width cap belongs on the inner wrapper, not on <main>. With
-              `max-w-6xl` on the scrolling element itself, the browser painted
-              the scrollbar at that element's right edge — stranding it in the
-              middle of any viewport wider than 72rem, with dead page
-              background beyond it. <main> now spans the full column and only
-              the content inside it is capped. */}
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            <div className="p-3.5 sm:p-7 max-w-6xl w-full">
-              {content}
-            </div>
-          </div>
+    <>
+      <StaffShell
+        consoleLabel="Super Admin"
+        email={user.email ?? ""}
+        onSignOut={() => { logout(); router.push("/login"); }}
+        nav={saNav}
+        topbarStart={<StaffTopbarTitle label={current?.label ?? "Super Admin"} hint={current?.hint} />}
+        topbarEnd={
+          <span className="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs sm:inline-flex">
+            <ShieldAlert className="size-3.5" aria-hidden /> Super Admin
+            <kbd className="ml-1 rounded border border-white/25 px-1.5 font-mono text-[10px]">Ctrl K</kbd>
+          </span>
+        }
+      >
+        <div className="w-full max-w-6xl">
+          {/* Sections whose panel prints no title of its own get one here, from
+              NAV; the rest carry `ck-page-title` inside the panel. */}
+          {current && UNTITLED_SECTIONS.has(current.key) && <PageHeader title={current.label} description={current.hint} />}
+          {content}
         </div>
-      </div>
+      </StaffShell>
 
       {/* ⌘K from anywhere in the console. Mounted once, outside the section
           switch, so it survives navigation and does not remount on every tab. */}
@@ -815,7 +698,7 @@ export default function SuperAdminPage() {
       {/* ── SQL Warning Modal ─────────────────────────────────────────────── */}
       {sqlModalOpen && (
         <div
-          className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm ${isDark ? "bg-black/80" : "bg-stone-900/45"}`}
+          className={`fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-stone-900/45`}
           onClick={() => setSqlModalOpen(false)}
         >
           {/* This modal was written dark-only. In light mode it rendered as a
@@ -823,17 +706,13 @@ export default function SuperAdminPage() {
               product. It keeps its red danger identity in both themes; only the
               ground and the text weights change. */}
           <div
-            className={`w-full max-w-md mx-4 rounded-2xl border shadow-2xl p-6 space-y-5 ${
-              isDark ? "border-red-500/40 bg-[#0f0a0d]" : "border-red-300 bg-white"
-            }`}
+            className={`w-full max-w-md mx-4 rounded-2xl border shadow-2xl p-6 space-y-5 border-red-300 bg-white`}
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex items-start gap-3.5">
-              <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${
-                isDark ? "bg-red-500/10 border-red-500/20" : "bg-red-50 border-red-200"
-              }`}>
-                <AlertTriangle className={`w-5.5 h-5.5 ${isDark ? "text-red-400" : "text-red-600"}`} />
+              <div className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 bg-red-50 border-red-200`}>
+                <AlertTriangle className={`w-5.5 h-5.5 text-red-600`} />
               </div>
               <div>
                 <h2 className={`text-base font-black leading-tight ${th.textPrimary}`}>SQL Console — Danger Zone</h2>
@@ -842,22 +721,20 @@ export default function SuperAdminPage() {
             </div>
 
             {/* Warning body */}
-            <div className={`rounded-xl border px-4 py-3.5 space-y-2 ${
-              isDark ? "border-red-500/20 bg-red-500/[0.05]" : "border-red-200 bg-red-50"
-            }`}>
-              <p className={`text-sm leading-relaxed ${isDark ? "text-stone-200" : "text-stone-700"}`}>
-                <span className={`font-black ${isDark ? "text-red-400" : "text-red-700"}`}>Warning:</span> Changes made here are{" "}
-                <span className={`font-bold underline ${isDark ? "text-white decoration-red-500/50" : "text-stone-900 decoration-red-400"}`}>permanent and cannot be undone</span>.
+            <div className={`rounded-xl border px-4 py-3.5 space-y-2 border-red-200 bg-red-50`}>
+              <p className={`text-sm leading-relaxed text-stone-700`}>
+                <span className={`font-black text-red-700`}>Warning:</span> Changes made here are{" "}
+                <span className={`font-bold underline text-stone-900 decoration-red-400`}>permanent and cannot be undone</span>.
               </p>
-              <p className={`text-sm leading-relaxed ${isDark ? "text-stone-400" : "text-stone-600"}`}>
+              <p className={`text-sm leading-relaxed text-stone-600`}>
                 Queries run directly against the live database. Destructive operations such as{" "}
-                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/5 text-red-300" : "bg-white text-red-700 border border-red-200"}`}>
+                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded bg-white text-red-700 border border-red-200`}>
                   UPDATE
                 </code>{" "}
-                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/5 text-red-300" : "bg-white text-red-700 border border-red-200"}`}>
+                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded bg-white text-red-700 border border-red-200`}>
                   DELETE
                 </code>{" "}
-                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded ${isDark ? "bg-white/5 text-red-300" : "bg-white text-red-700 border border-red-200"}`}>
+                <code className={`text-2xs font-mono px-1.5 py-0.5 rounded bg-white text-red-700 border border-red-200`}>
                   DROP
                 </code>{" "}
                 bypass all application safeguards.
@@ -876,19 +753,13 @@ export default function SuperAdminPage() {
                   setSqlModalOpen(false);
                   setSection("sql");
                 }}
-                className={`flex-1 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-colors ${
-                  isDark ? "bg-red-700/80 hover:bg-red-700" : "bg-red-600 hover:bg-red-700"
-                }`}
+                className={`flex-1 text-white font-bold py-2.5 px-4 rounded-xl text-sm transition-colors bg-red-600 hover:bg-red-700`}
               >
                 I understand — proceed
               </button>
               <button
                 onClick={() => setSqlModalOpen(false)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors ${
-                  isDark
-                    ? "text-stone-400 hover:text-white border-white/10 hover:bg-white/5"
-                    : "text-stone-600 hover:text-stone-900 border-stone-300 hover:bg-stone-100"
-                }`}
+                className={`px-4 py-2.5 rounded-xl text-sm font-semibold border transition-colors text-stone-600 hover:text-stone-900 border-stone-300 hover:bg-stone-100`}
               >
                 Go back
               </button>
@@ -896,6 +767,6 @@ export default function SuperAdminPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

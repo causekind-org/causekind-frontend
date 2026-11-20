@@ -45,6 +45,8 @@ import { AdminFundraisingNav } from "@/features/fundraising/AdminFundraisingNav"
 import { AdminFundraisingPanel } from "@/features/fundraising/AdminFundraisingPanel";
 import { AdminSahasPanel } from "@/features/sahas/AdminSahasPanel";
 import { FEATURES } from "@/lib/features";
+import { StaffShell, StaffNavGroup, StaffNavItem, StaffTopbarTitle } from "@/components/staff/StaffShell";
+import { PageHeader } from "@/components/staff/primitives";
 import {
   AlertTriangle, Bot, Building2, Check, ChevronDown, ChevronUp, ClipboardList, Clock, Gift, Handshake,
   Image as ImageIcon, Loader2, LogOut, MapPin, Megaphone, MessageSquare,
@@ -150,9 +152,17 @@ function formatINR(n: number) {
   }).format(n);
 }
 
+/** Enum → readable label: "HANDOVER_SCHEDULED" → "Handover scheduled". Mixed-case input is only de-underscored. */
 function formatEnum(value?: string | null) {
   if (!value) return null;
-  return value.replace(/[_|]/g, " ").replace(/\s+/g, " ").trim();
+  const spaced = value.replace(/[_|]/g, " ").replace(/\s+/g, " ").trim();
+  if (spaced !== spaced.toUpperCase()) return spaced;
+  const ACRONYMS = new Set(["OTP", "UPI", "NGO", "AI", "PAN", "ID", "QR", "SMS", "KYC"]);
+  return spaced.split(" ").map((w, i) => {
+    if (ACRONYMS.has(w)) return w;
+    const lw = w.toLowerCase();
+    return i === 0 ? lw.charAt(0).toUpperCase() + lw.slice(1) : lw;
+  }).join(" ");
 }
 
 function formatDateTime(value?: string | null) {
@@ -634,7 +644,7 @@ export default function AdminDashboardPage() {
   const showIssues = canSeeTab("issues");
 
   const TABS = [
-    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#e07b3a" },
+    { key: "campaigns" as TabKey, label: "Campaigns",    count: campaigns.length,   icon: Megaphone,     color: "#2e8b70" },
     { key: "requests"  as TabKey, label: "Requests",     count: requests.length,    icon: ClipboardList,  color: "#60a5fa" },
     { key: "listings"  as TabKey, label: "Listings",     count: listings.length,    icon: Package,        color: "#a78bfa" },
     { key: "matches"   as TabKey, label: "Matches",      count: matches.length,     icon: Handshake,      color: "#34d399" },
@@ -729,332 +739,90 @@ export default function AdminDashboardPage() {
       ? `Nothing needs action — ${offersInFlight} offer${offersInFlight !== 1 ? "s" : ""} in flight`
       : "All clear — nothing pending";
 
-  return (
-    <div className="min-h-screen flex bg-[#12101a]">
-      {/* ── DARK LEFT SIDEBAR ────────────────────────────────────────────────── */}
-      <aside className="hidden lg:flex w-[296px] shrink-0 flex-col min-h-screen fixed left-0 top-0 bottom-0 z-10 border-r border-white/[0.07] overflow-hidden"
-        style={{ background: "linear-gradient(180deg, #17141f 0%, #12101a 100%)" }}>
-
-        {/* Brand strip */}
-        <div className="px-4 sm:px-7 pt-8 pb-6 border-b border-white/[0.07]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, #b04a15 0%, #e07b3a 100%)" }}>
-              <ShieldCheck className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-base font-black text-white leading-none tracking-tight">CauseKind</p>
-              <p className="text-2xs text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">Admin Panel</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Only this middle part scrolls; brand and footer stay put (same as super-admin). */}
-        <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-        {/* Queue count pills */}
-        <div className="px-3.5 sm:px-5 pt-5 space-y-2 flex-1">
-          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Review queues</p>
-          {TABS.map(({ key, label, count, icon: Icon, color }) => (
-            <button
-              key={key}
-              onClick={() => selectTab(key)}
-              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
-                tab === key
-                  ? "border-[#b04a15]/40"
-                  : "border-white/[0.05] hover:border-white/10"
-              }`}
-              style={{ background: tab === key ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className="w-4 h-4 shrink-0" style={{ color: tab === key ? "#b04a15" : color }} />
-                <span className={`text-sm font-semibold ${tab === key ? "text-white" : "text-stone-400"}`}>{label}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: count > 0 ? color : "#3d3d52" }}>{count}</span>
-              </div>
-            </button>
+  // Sidebar content for StaffShell (desktop sidebar and the mobile drawer share it).
+  // Groups: review queues, NGO operations, fundraising & Sahas, support, reports.
+  const adminNav = (
+    <div className="space-y-1">
+      {TABS.length > 0 && (
+        <StaffNavGroup title="Review queues">
+          {TABS.map(({ key, label, count, icon }) => (
+            <StaffNavItem key={key} label={label} icon={icon} count={count} active={tab === key} onClick={() => selectTab(key)} />
           ))}
+        </StaffNavGroup>
+      )}
 
-          {showIssues && (
-            <div className="pt-2">
-              <button
-                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
-                aria-current={tab === "issues" ? "page" : undefined}
-                className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-left transition-all border ${
-                  tab === "issues" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
-                }`}
-                style={{ background: tab === "issues" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
-              >
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: tab === "issues" ? "#b04a15" : "#f59e0b" }} aria-hidden />
-                  <span className={`text-sm font-semibold ${tab === "issues" ? "text-white" : "text-stone-400"}`}>Issues</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {openIssues > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                  <span className="text-base sm:text-lg font-black tabular-nums leading-none" style={{ color: openIssues > 0 ? "#f59e0b" : "#3d3d52" }}>{openIssues}</span>
-                </div>
-              </button>
-            </div>
-          )}
+      {showIssues && (
+        <StaffNavGroup title="Support">
+          <StaffNavItem label="Issues" icon={AlertTriangle} count={openIssues} countTone="danger" active={tab === "issues"}
+            onClick={() => { selectTab("issues"); setIssueDeepLink(null); }} />
+        </StaffNavGroup>
+      )}
 
-          {NGO_TABS.length > 0 && (
-            <div className="pt-2 space-y-2">
-              <button
-                onClick={() => setNgoExpanded(open => !open)}
-                aria-expanded={ngoGroupOpen}
-                aria-controls="admin-ngo-group"
-                className="w-full flex items-center justify-between px-1 py-1 text-left"
-              >
-                <span className="flex items-center gap-2 text-3xs font-black uppercase tracking-widest text-stone-500">
-                  <Building2 className="w-3.5 h-3.5" aria-hidden /> NGO
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-sm font-black tabular-nums" style={{ color: ngoTotal > 0 ? "#34a578" : "#3d3d52" }}>{ngoTotal}</span>
-                  {ngoGroupOpen ? <ChevronUp className="w-4 h-4 text-stone-500" aria-hidden /> : <ChevronDown className="w-4 h-4 text-stone-500" aria-hidden />}
-                </span>
-              </button>
-              {ngoGroupOpen && (
-                <div id="admin-ngo-group" className="space-y-2 pl-2 border-l border-white/[0.07]">
-                  {NGO_TABS.map(({ key, label, count, icon: Icon, color }) => (
-                    <button
-                      key={key}
-                      onClick={() => selectTab(key)}
-                      aria-current={tab === key ? "page" : undefined}
-                      className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all border ${
-                        tab === key ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"
-                      }`}
-                      style={{ background: tab === key ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon className="w-4 h-4 shrink-0" style={{ color: tab === key ? "#b04a15" : color }} />
-                        <span className={`text-sm font-semibold ${tab === key ? "text-white" : "text-stone-400"}`}>{label}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {count > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#b04a15] animate-pulse shrink-0" />}
-                        <span className="text-base font-black tabular-nums leading-none" style={{ color: count > 0 ? color : "#3d3d52" }}>{count}</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+      {NGO_TABS.length > 0 && (
+        <StaffNavGroup
+          header={
+            <button type="button" onClick={() => setNgoExpanded(open => !open)} aria-expanded={ngoGroupOpen} aria-controls="admin-ngo-group"
+              className="ck-staff-nav-heading flex w-full items-center justify-between text-left">
+              <span>NGO operations</span>
+              <span className="flex items-center gap-1.5 normal-case tracking-normal">
+                {ngoTotal > 0 && <span className="ck-staff-nav-badge !ml-0">{ngoTotal}</span>}
+                {ngoGroupOpen ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
+              </span>
+            </button>
+          }
+        >
+          {ngoGroupOpen
+            ? NGO_TABS.map(({ key, label, count, icon }) => (
+                <StaffNavItem key={key} label={label} icon={icon} count={count} active={tab === key} onClick={() => selectTab(key)} />
+              ))
+            : <p className="px-3.5 py-2.5 text-xs text-[color:var(--st-on-dark-2)]">{NGO_TABS.length} sections hidden</p>}
+        </StaffNavGroup>
+      )}
 
+      {(canSeeTab("fundraising") || (FEATURES.sahas && canSeeTab("sahas"))) && (
+        <StaffNavGroup title="Fundraising &amp; Sahas">
           <AdminFundraisingNav variant="sidebar" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
           {FEATURES.sahas && canSeeTab("sahas") && (
-            <button type="button" onClick={() => setTab("sahas")} aria-current={tab === "sahas" ? "page" : undefined}
-              className={`mt-2 w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-all border ${tab === "sahas" ? "border-[#b04a15]/40" : "border-white/[0.05] hover:border-white/10"}`}
-              style={{ background: tab === "sahas" ? "rgba(176,74,21,0.12)" : "rgba(255,255,255,0.025)" }}>
-              <span className={`text-sm font-semibold ${tab === "sahas" ? "text-white" : "text-stone-400"}`}>Sahas campaigns</span>
+            <StaffNavItem label="Sahas campaigns" icon={Megaphone} active={tab === "sahas"} onClick={() => setTab("sahas")} />
+          )}
+        </StaffNavGroup>
+      )}
+
+
+      {REPORTS.length > 0 && (
+        <StaffNavGroup title="Reports">
+          {REPORTS.map(({ key, label, icon }) => (
+            <StaffNavItem key={key} label={label} icon={icon} active={tab === key} onClick={() => selectTab(key)} />
+          ))}
+        </StaffNavGroup>
+      )}
+    </div>
+  );
+
+
+  return (
+    <StaffShell
+      consoleLabel="Admin"
+      email={user.email ?? ""}
+      onSignOut={() => { logout(); router.push("/login"); }}
+      nav={adminNav}
+      topbarStart={<StaffTopbarTitle label={headerTitle} hint={total > 0 ? `${total} waiting across your queues` : undefined} />}
+      topbarEnd={
+        <>
+          {tab === "ai-logs" && (
+            <button type="button" onClick={loadAiLogs} disabled={assessmentsLoading} className="ck-staff-icon-btn disabled:opacity-50" aria-label="Refresh AI screening logs">
+              <RefreshCw className={`size-4 ${assessmentsLoading ? "animate-spin" : ""}`} aria-hidden />
             </button>
           )}
-        </div>
-
-        {/* Reports */}
-        <div className="px-3.5 sm:px-5 pb-3 pt-2 space-y-1">
-          <p className="text-3xs font-black uppercase tracking-widest text-stone-600 px-1 pb-1">Reports</p>
-          {REPORTS.map(({ key, label, icon: Icon, color }) => (
-            <button
-              key={key}
-              onClick={() => selectTab(key)}
-              aria-current={tab === key ? "page" : undefined}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all border ${
-                tab === key
-                  ? "border-[#b04a15]/40 text-white"
-                  : "border-white/[0.05] text-stone-400 hover:text-white hover:bg-white/5"
-              }`}
-              style={{ background: tab === key ? "rgba(176,74,21,0.12)" : undefined }}
-            >
-              <Icon className={`w-4 h-4 shrink-0 ${tab === key ? "text-[#b04a15]" : color}`} aria-hidden />
-              {label}
-            </button>
-          ))}
-        </div>
-
-        </div>
-
-        {/* Sign out */}
-        <div className="shrink-0 px-3.5 sm:px-5 pb-5 pt-4 border-t border-white/[0.07] bg-[#12101a]">
-          {/* Same footer shape as the super-admin console: who you are, then sign out. */}
-          <p className="text-3xs px-4 mb-2 truncate font-mono text-stone-500">{user.email}</p>
-          <button
-            onClick={() => { logout(); router.push("/login"); }}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-stone-500 hover:text-red-400 hover:bg-red-500/10 transition-all"
-          >
-            <LogOut className="w-4 h-4 shrink-0" />
-            Sign Out
-          </button>
-        </div>
-      </aside>
-
-      {/* ── CREAM RIGHT PANEL ────────────────────────────────────────────────── */}
-      <div className="flex-1 lg:pl-[296px] min-w-0 flex flex-col bg-[#faf7f2]">
-
-        {/* Mobile top bar */}
-        <div className={`lg:hidden sticky top-0 z-20 flex items-center justify-between px-3.5 py-2.5 border-b border-white/[0.07] transition-shadow duration-300 ${
-            scrolled ? "shadow-[0_10px_28px_-10px_rgba(0,0,0,0.55)]" : "shadow-none"
-          }`}
-          style={{ background: "#17141f" }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "linear-gradient(135deg, #b04a15, #e07b3a)" }}>
-              <ShieldCheck className="w-4.5 h-4.5 text-white" />
-            </div>
-            <div>
-              <p className="text-sm font-black text-white leading-none">Admin Panel</p>
-              <p className="text-4xs text-[#b04a15] font-bold uppercase tracking-widest mt-0.5">CauseKind</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {/* The site navbar (and its bell) is hidden on this page, so admins get the bell here. */}
-            <NotificationBell />
-            <button
-              onClick={() => { logout(); router.push("/login"); }}
-              className="flex items-center gap-1.5 text-xs font-bold text-stone-500 hover:text-red-400 transition-colors px-2.5 py-1.5 rounded-lg hover:bg-red-500/10"
-            >
-              <LogOut className="w-3.5 h-3.5" /> Sign Out
-            </button>
-          </div>
-        </div>
-
-        {/* Sticky content header — gains an elevated shadow once content scrolls under it */}
-        <div className={`sticky top-0 lg:top-0 z-10 border-b border-stone-200 bg-[#faf7f2]/96 backdrop-blur-sm transition-shadow duration-300 ease-out ${
-            scrolled ? "shadow-[0_12px_32px_-14px_rgba(28,25,23,0.28)]" : "shadow-none"
-          }`}>
-          <div className="px-4 sm:px-7 lg:px-10 py-3.5 sm:py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
-            <div>
-              <h1 className="text-xl font-black text-stone-900 tracking-tight leading-none">{headerTitle}</h1>
-              <p className="text-sm text-stone-500 mt-1.5">{headerSubtitle}</p>
-            </div>
-            <div className="hidden lg:block sm:order-last">
-              <NotificationBell />
-            </div>
-
-            {/* AI logs refresh button */}
-            {tab === "ai-logs" && (
-              <button
-                onClick={loadAiLogs}
-                disabled={assessmentsLoading}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border border-stone-200 rounded-xl bg-white text-stone-600 hover:text-stone-900 transition-all disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${assessmentsLoading ? "animate-spin" : ""}`} />
-                Refresh
-              </button>
-            )}
-          </div>
-
-          {/* ── Below-lg navigation ──────────────────────────────────────────
-              One strip carrying *every* destination, always rendered. It used to
-              be two strips switched on `isReportTab`, which meant the reports
-              were unreachable from any queue tab and the queue was unreachable
-              from any report — on a phone the only way across was to edit the
-              URL. Both halves live here now, separated by a rule.
-
-              `lg:hidden`, not `sm:hidden`: the sidebar only appears at `lg`, so
-              anything narrower than that needs this. The old `sm:hidden` left
-              tablets (640–1023px) with no report navigation at all. */}
-          <nav
-            aria-label="Admin sections"
-            ref={navStripRef}
-            className="lg:hidden flex items-center gap-1.5 px-3 pb-2.5 overflow-x-auto scrollbar-hide"
-          >
-            {TABS.map(({ key, label, count }) => (
-              <button
-                key={key}
-                data-active={tab === key || undefined}
-                onClick={() => selectTab(key)}
-                aria-current={tab === key ? "page" : undefined}
-                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  tab === key
-                    ? "bg-[#b04a15] text-white"
-                    : "bg-white text-stone-500 border border-stone-200"
-                }`}
-              >
-                {label}
-                {count > 0 && <span className="opacity-80">{count}</span>}
-              </button>
-            ))}
-
-            {showIssues && (
-              <button
-                data-active={tab === "issues" || undefined}
-                onClick={() => { selectTab("issues"); setIssueDeepLink(null); }}
-                aria-current={tab === "issues" ? "page" : undefined}
-                className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  tab === "issues" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
-                }`}
-              >
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                Issues
-                {openIssues > 0 && <span className="opacity-80">{openIssues}</span>}
-              </button>
-            )}
-
-            {NGO_TABS.length > 0 && (
-              <>
-                <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
-                <button
-                  onClick={() => setNgoExpanded(open => !open)}
-                  aria-expanded={ngoGroupOpen}
-                  className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all ${
-                    NGO_TAB_KEYS.includes(tab) ? "bg-[#34a578] text-white" : "bg-white text-stone-600 border border-stone-200"
-                  }`}
-                >
-                  NGO
-                  {ngoTotal > 0 && <span className="opacity-80">{ngoTotal}</span>}
-                  {ngoGroupOpen ? <ChevronUp className="w-3 h-3" aria-hidden /> : <ChevronDown className="w-3 h-3" aria-hidden />}
-                </button>
-                {ngoGroupOpen && NGO_TABS.map(({ key, label, count }) => (
-                  <button
-                    key={key}
-                    data-active={tab === key || undefined}
-                    onClick={() => selectTab(key)}
-                    aria-current={tab === key ? "page" : undefined}
-                    className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      tab === key ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"
-                    }`}
-                  >
-                    {label}
-                    {count > 0 && <span className="opacity-80">{count}</span>}
-                  </button>
-                ))}
-              </>
-            )}
-
-            <AdminFundraisingNav variant="strip" allowed={canSeeTab("fundraising")} active={tab === "fundraising" ? frPath : null} onSelect={openFundraising} />
-            {FEATURES.sahas && canSeeTab("sahas") && (
-              <button type="button" onClick={() => setTab("sahas")} aria-current={tab === "sahas" ? "page" : undefined}
-                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${tab === "sahas" ? "bg-[#b04a15] text-white" : "bg-white text-stone-500 border border-stone-200"}`}>
-                Sahas
-              </button>
-            )}
-
-            {REPORTS.length > 0 && (
-              <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
-            )}
-
-            {REPORTS.map(({ key, label, icon: Icon }) => (
-              <button
-                key={key}
-                data-active={tab === key || undefined}
-                onClick={() => selectTab(key)}
-                aria-current={tab === key ? "page" : undefined}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  tab === key
-                    ? "bg-[#b04a15] text-white"
-                    : "bg-white text-stone-500 border border-stone-200"
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5 shrink-0" aria-hidden />
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
+          {/* The site navbar (and its bell) is hidden on this page, so admins get the bell here. */}
+          <span className="ck-staff-icon-btn !bg-white !text-[color:var(--st-text)]"><NotificationBell /></span>
+        </>
+      }
+    >
+        <PageHeader title={headerTitle} description={headerSubtitle} />
 
         {/* ── Cards feed ── */}
-        <div className={`flex-1 px-4 sm:px-7 lg:px-10 py-5 sm:py-8 ${tab === "ngo-applications" || tab === "ngo-drives" || tab === "issues" ? "max-w-6xl" : "max-w-4xl"} space-y-3 sm:space-y-4`}>
+        <div className={`${tab === "ngo-applications" || tab === "ngo-drives" || tab === "issues" ? "max-w-6xl" : "max-w-5xl"} space-y-3 sm:space-y-4`}>
 
           {showIssues && (
             <Suspense fallback={null}><IssueLinkWatcher onOpen={openIssueLink} /></Suspense>
@@ -1098,7 +866,7 @@ export default function AdminDashboardPage() {
                       options={[{ label: `Pending (${campaigns.length})` }, { label: "Approved" }, { label: "Rejected" }]} />
                     <p className="text-xs text-stone-500">
                       Legacy money campaigns from donees. New fundraisers are reviewed under{" "}
-                      <button type="button" className="font-semibold text-[#b04a15] underline underline-offset-2"
+                      <button type="button" className="font-semibold text-[#1f6b55] underline underline-offset-2"
                         onClick={() => openFundraising("/admin/fundraising")}>Fundraising → Applications</button>.
                     </p>
                   </div>
@@ -1233,8 +1001,8 @@ export default function AdminDashboardPage() {
                   <button key={s} onClick={() => handleMatchHistoryFilter(s)}
                     className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                       matchHistoryStatus === s
-                        ? "bg-[#b04a15] text-white border-[#b04a15]"
-                        : "bg-white border-stone-200 text-stone-600 hover:border-[#b04a15]/50"
+                        ? "bg-[#1f6b55] text-white border-[#1f6b55]"
+                        : "bg-white border-stone-200 text-stone-600 hover:border-[#1f6b55]/50"
                     }`}>
                     {matchStatusLabel(s)}
                   </button>
@@ -1277,7 +1045,7 @@ export default function AdminDashboardPage() {
                   { label: "High Fraud Risk", value: assessments.filter(a => a.fraudRisk === "HIGH").length, color: "rose", apply: () => { setAiRecFilter("ALL"); setAiFraudFilter("HIGH"); } },
                 ].map(({ label, value, color, apply }) => (
                   // The cards were dead numbers; clicking one now applies the matching filter.
-                  <button key={label} type="button" onClick={apply} className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40">
+                  <button key={label} type="button" onClick={apply} className="text-left rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6b55]/40">
                     <AiStatCard label={label} value={value} color={color} />
                   </button>
                 ))}
@@ -1291,14 +1059,14 @@ export default function AdminDashboardPage() {
                     placeholder="Search listing, notes, labels…"
                     value={aiSearch}
                     onChange={e => setAiSearch(e.target.value)}
-                    className="pl-8 pr-3 h-8 w-56 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#b04a15]/30 focus:border-[#b04a15]/50"
+                    className="pl-8 pr-3 h-8 w-56 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#1f6b55]/30 focus:border-[#1f6b55]/50"
                   />
                 </div>
                 <div className="flex flex-wrap gap-1">
                   {AI_REC_FILTERS.map(f => (
                     <button key={f} onClick={() => setAiRecFilter(f)}
                       className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
-                        aiRecFilter === f ? "bg-[#b04a15] text-white border-[#b04a15]" : "border-stone-300 text-stone-600 hover:border-[#b04a15]/50"
+                        aiRecFilter === f ? "bg-[#1f6b55] text-white border-[#1f6b55]" : "border-stone-300 text-stone-600 hover:border-[#1f6b55]/50"
                       }`}>
                       {f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase().replace(/_/g, " ")}
                     </button>
@@ -1399,8 +1167,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </StaffShell>
   );
 }
 
@@ -1419,7 +1186,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
         <div className="flex-1 min-w-0 space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[m.status] ?? "bg-stone-100 text-stone-700"}`}>
-              {m.status.replace(/_/g, " ")}
+              {formatEnum(m.status)}
             </span>
             {m.matchScore != null && <span className="text-xs text-stone-500">AI Score: <strong>{m.matchScore}%</strong></span>}
             <span className="text-xs text-stone-400">#{m.id}</span>
@@ -1450,7 +1217,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
               <div key={label} className="bg-white rounded-xl p-3 text-xs space-y-1 border border-stone-100">
                 <p className="font-bold text-stone-700 flex items-center gap-1"><Phone className="w-3 h-3" /> {label}</p>
                 <p>{name}</p>
-                <p className="font-semibold text-[#b04a15]">{contact ?? "—"}</p>
+                <p className="font-semibold text-[#1f6b55]">{contact ?? "—"}</p>
                 <p className="text-stone-400">{city}</p>
               </div>
             ))}
@@ -1470,7 +1237,7 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
             <div className="bg-white rounded-xl p-3 text-xs border border-stone-100">
               <p className="font-bold mb-2 flex items-center gap-1"><MapPin className="w-3 h-3" /> Logistics</p>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-stone-600">
-                <div><span className="text-stone-400">Method: </span><strong>{m.handoverMethod.replace(/_/g, " ")}</strong></div>
+                <div><span className="text-stone-400">Method: </span><strong>{formatEnum(m.handoverMethod)}</strong></div>
                 {m.pickupDateTime && <div><span className="text-stone-400">Pickup: </span><strong>{serverDate(m.pickupDateTime).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</strong></div>}
                 {m.handoverAddress && <div className="col-span-2"><span className="text-stone-400">Pickup address: </span><strong>{m.handoverAddress}</strong></div>}
                 {m.deliveryAddress && <div className="col-span-2"><span className="text-stone-400">Delivery address: </span><strong>{m.deliveryAddress}</strong></div>}
@@ -1490,11 +1257,11 @@ function MatchHistoryCard({ match: m, expanded, onToggle, history, historyLoadin
               <ol className="relative border-l border-stone-200 ml-2 space-y-3">
                 {history.map((h, i) => (
                   <li key={i} className="ml-4">
-                    <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#b04a15]" />
+                    <div className="absolute -left-1.5 mt-1 w-3 h-3 rounded-full bg-[#1f6b55]" />
                     <p className="text-xs text-stone-400">{serverDate(h.changedAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}</p>
                     <p className="text-xs font-semibold">
-                      <span className="text-stone-400">{h.fromStatus?.replace(/_/g, " ")} → </span>
-                      <span className={`${STATUS_COLORS[h.toStatus] ?? ""} px-1.5 py-0.5 rounded`}>{h.toStatus.replace(/_/g, " ")}</span>
+                      <span className="text-stone-400">{formatEnum(h.fromStatus)} → </span>
+                      <span className={`${STATUS_COLORS[h.toStatus] ?? ""} px-1.5 py-0.5 rounded`}>{formatEnum(h.toStatus)}</span>
                     </p>
                     <p className="text-xs text-stone-400">{h.changedByEmail}{h.note ? ` · ${h.note}` : ""}</p>
                   </li>
@@ -1530,7 +1297,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
             <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${recBadge}`}>
-              {a.recommendation.replace(/_/g, " ")}
+              {formatEnum(a.recommendation)}
             </span>
             {a.fraudRisk && (
               <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${fraudBadge}`}>
@@ -1559,7 +1326,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             {a.eligibilityResult && <InfoCell label="Eligibility" value={a.eligibilityResult} />}
             {a.conditionGrade && <InfoCell label="Condition Grade" value={a.conditionGrade} />}
             {a.modelVersion && <InfoCell label="Model" value={a.modelVersion} />}
-            {a.listingStatus && <InfoCell label="Listing Status" value={a.listingStatus.replace(/_/g, " ")} />}
+            {a.listingStatus && <InfoCell label="Listing Status" value={formatEnum(a.listingStatus) ?? ""} />}
           </div>
 
           {/* Donor + origin */}
@@ -1567,7 +1334,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f6b55]/10 text-sm font-black text-[#1f6b55]">
                   {a.donorName?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
                 <span className="min-w-0">
@@ -1583,7 +1350,7 @@ function AiLogCard({ assessment: a, expanded, onToggle }: {
             {a.donorId && (
               <a
                 href={`/admin/dashboard?journeyUser=${a.donorId}`}
-                className="mt-2 inline-block text-2xs font-semibold text-[#b04a15] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#1f6b55] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1713,7 +1480,7 @@ function ApprovalCard({
   return (
     <div
       className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
-        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 focus-visible:ring-offset-2" : ""
+        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6b55]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
@@ -1726,7 +1493,6 @@ function ApprovalCard({
       } : undefined}
     >
       <div className="flex">
-        <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
         <div className="flex-1 min-w-0 p-3.5 sm:p-5 space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
@@ -1821,7 +1587,7 @@ function ListingApprovalCard({
   return (
     <div
       className={`group bg-white rounded-xl sm:rounded-2xl border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-px transition-all overflow-hidden ${
-        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 focus-visible:ring-offset-2" : ""
+        clickable ? "cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1f6b55]/40 focus-visible:ring-offset-2" : ""
       }`}
       role={clickable ? "button" : undefined}
       tabIndex={clickable ? 0 : undefined}
@@ -1834,7 +1600,6 @@ function ListingApprovalCard({
       } : undefined}
     >
       <div className="flex">
-        <div className="w-1 shrink-0" style={{ background: "linear-gradient(180deg, #b04a15 0%, #e07b3a 60%, #f0b97a 100%)" }} />
         <div className="flex-1 min-w-0 p-3.5 sm:p-5 space-y-3">
 
           <div className="flex items-start justify-between gap-3">
@@ -1864,7 +1629,7 @@ function ListingApprovalCard({
             <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#b04a15]/10 text-sm font-black text-[#b04a15]">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1f6b55]/10 text-sm font-black text-[#1f6b55]">
                   {l.donorName?.charAt(0)?.toUpperCase() ?? "?"}
                 </span>
                 <span className="min-w-0">
@@ -1881,7 +1646,7 @@ function ListingApprovalCard({
               <a
                 href={`/admin/dashboard?journeyUser=${l.donorId}`}
                 onClick={event => event.stopPropagation()}
-                className="mt-2 inline-block text-2xs font-semibold text-[#b04a15] hover:underline"
+                className="mt-2 inline-block text-2xs font-semibold text-[#1f6b55] hover:underline"
               >
                 View donor&apos;s full journey →
               </a>
@@ -1891,7 +1656,7 @@ function ListingApprovalCard({
           {(l.approximateAge || l.workingStatus || l.dimensions || l.approximateWeight || l.locality || l.pincode) && (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-stone-50 rounded-xl p-3">
               {l.approximateAge    && <div><span className="text-stone-400">Item age: </span><span className="font-semibold text-stone-700">{l.approximateAge}</span></div>}
-              {l.workingStatus     && <div><span className="text-stone-400">Working: </span><span className="font-semibold text-stone-700">{l.workingStatus.replace(/_/g, " ")}</span></div>}
+              {l.workingStatus     && <div><span className="text-stone-400">Working: </span><span className="font-semibold text-stone-700">{formatEnum(l.workingStatus)}</span></div>}
               {l.dimensions        && <div><span className="text-stone-400">Size: </span><span className="font-semibold text-stone-700">{l.dimensions}</span></div>}
               {l.approximateWeight && <div><span className="text-stone-400">Weight: </span><span className="font-semibold text-stone-700">{l.approximateWeight}</span></div>}
               {l.locality          && <div><span className="text-stone-400">Locality: </span><span className="font-semibold text-stone-700">{l.locality}</span></div>}
@@ -2029,7 +1794,7 @@ function ApprovalDetailDrawer({
       >
         <div className="flex items-start justify-between gap-3 sm:gap-4 border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
           <div className="min-w-0">
-            <p className="text-3xs font-black uppercase tracking-widest text-[#b04a15]">{kindLabel}</p>
+            <p className="text-3xs font-black uppercase tracking-widest text-[#1f6b55]">{kindLabel}</p>
             <h2 id="approval-detail-title" className="mt-1 truncate text-base sm:text-lg font-black leading-tight text-stone-900">
               {title}
             </h2>
@@ -2205,33 +1970,6 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
 
   return (
     <>
-      <DetailSection icon={ShieldCheck} title="Match Review">
-        <DetailGrid
-          items={[
-            { label: "Match ID", value: m.id },
-            { label: "Type", value: formatEnum(m.matchType) },
-            { label: "Status", value: formatEnum(m.status) },
-            { label: "AI score", value: m.matchScore != null ? `${m.matchScore.toFixed(0)}%` : null },
-            { label: "Created", value: formatDateTime(m.createdAt) },
-            { label: "Rejection reason", value: m.rejectionReason },
-          ]}
-        />
-      </DetailSection>
-
-      {m.scoreCategory != null && (
-        <DetailSection icon={ShieldCheck} title="Match Confidence Breakdown">
-          <DetailGrid
-            items={[
-              { label: "Category match", value: `${m.scoreCategory}%` },
-              { label: "Spec match", value: m.scoreSpec != null ? `${m.scoreSpec.toFixed(0)}%` : null },
-              { label: "Distance", value: m.scoreDistanceKm != null ? `${m.scoreDistanceKm.toFixed(1)} km (stage ${m.scoreDistanceStage ?? "—"})` : null },
-              { label: "Quantity penalty", value: m.scoreQuantity != null ? `-${m.scoreQuantity}` : null },
-              { label: "Urgency boost", value: m.scoreUrgency != null ? `+${m.scoreUrgency}` : null },
-            ]}
-          />
-        </DetailSection>
-      )}
-
       <DetailSection icon={Phone} title="People">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <PersonInfoCard
@@ -2344,11 +2082,39 @@ function MatchDetailContent({ match: m }: { match: ItemMatch }) {
         <DetailTextBlock label="Delivery address" value={m.deliveryAddress} />
         <DetailTextBlock label="Fulfilment notes" value={m.fulfilmentNotes} />
         {m.deliveryProofUrl && (
-          <a href={m.deliveryProofUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex text-sm font-bold text-[#b04a15] hover:underline">
+          <a href={m.deliveryProofUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex text-sm font-bold text-[#1f6b55] hover:underline">
             Open delivery proof
           </a>
         )}
       </DetailSection>
+
+      {/* Status and the AI score come last (round 2): staff read who and what first, then the record's state. */}
+      <DetailSection icon={ShieldCheck} title="Status and decision">
+        <DetailGrid
+          items={[
+            { label: "Match ID", value: m.id },
+            { label: "Type", value: formatEnum(m.matchType) },
+            { label: "Status", value: formatEnum(m.status) },
+            { label: "AI score", value: m.matchScore != null ? `${m.matchScore.toFixed(0)}%` : null },
+            { label: "Created", value: formatDateTime(m.createdAt) },
+            { label: "Rejection reason", value: m.rejectionReason },
+          ]}
+        />
+      </DetailSection>
+
+      {m.scoreCategory != null && (
+        <DetailSection icon={ShieldCheck} title="AI match score (advisory, not a staff decision)">
+          <DetailGrid
+            items={[
+              { label: "Category match", value: `${m.scoreCategory}%` },
+              { label: "Spec match", value: m.scoreSpec != null ? `${m.scoreSpec.toFixed(0)}%` : null },
+              { label: "Distance", value: m.scoreDistanceKm != null ? `${m.scoreDistanceKm.toFixed(1)} km (stage ${m.scoreDistanceStage ?? "—"})` : null },
+              { label: "Quantity penalty", value: m.scoreQuantity != null ? `-${m.scoreQuantity}` : null },
+              { label: "Urgency boost", value: m.scoreUrgency != null ? `+${m.scoreUrgency}` : null },
+            ]}
+          />
+        </DetailSection>
+      )}
     </>
   );
 }
@@ -2372,7 +2138,7 @@ function PersonInfoCard({
 }) {
   return (
     <div className="rounded-xl sm:rounded-2xl border border-stone-100 bg-stone-50 p-3">
-      <p className="text-3xs font-black uppercase tracking-widest text-[#b04a15]">{label}</p>
+      <p className="text-3xs font-black uppercase tracking-widest text-[#1f6b55]">{label}</p>
       <p className="mt-1 text-sm font-black text-stone-900">{name ?? "Unknown"}</p>
       <div className="mt-2 space-y-1 text-xs text-stone-500">
         {hasDetailValue(id) && <p><span className="font-bold text-stone-400">ID:</span> {id}</p>}
@@ -2394,7 +2160,7 @@ function SectionPhotoStrip({ photos, title = "Photos" }: { photos: string[]; tit
   return (
     <div className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
-        <ImageIcon className="h-4 w-4 text-[#b04a15]" />
+        <ImageIcon className="h-4 w-4 text-[#1f6b55]" />
         <p className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</p>
       </div>
       <PhotoStrip images={photos} />
@@ -2414,7 +2180,7 @@ function DetailSection({
   return (
     <section className="border-b border-stone-100 px-3.5 sm:px-5 py-3 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-[#b04a15]" />
+        <Icon className="h-4 w-4 text-[#1f6b55]" />
         <h3 className="text-3xs font-black uppercase tracking-widest text-stone-400">{title}</h3>
       </div>
       {children}

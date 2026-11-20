@@ -113,7 +113,7 @@ export function GovernancePanel({ isDark }: { isDark: boolean }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className={`text-lg font-bold ${t.heading}`}>Governance</h2>
+        <h2 className={`ck-page-title ${t.heading}`}>Governance</h2>
         <p className={`text-xs ${t.muted}`}>
           Reading a private detail in full, and the record of everyone who has.
         </p>

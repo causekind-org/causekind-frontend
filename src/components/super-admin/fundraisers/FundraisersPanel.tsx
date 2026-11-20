@@ -41,7 +41,7 @@ export function FundraisersPanel({ isDark }: { isDark: boolean }) {
     <div className="flex flex-col gap-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className={`text-[26px] font-extrabold ${t.heading}`}>Fundraisers</h1>
+          <h1 className={`ck-page-title ${t.heading}`}>Fundraisers</h1>
           <p className={`mt-1 text-sm ${t.muted}`}>Every application, campaign, donation and report in one place. Edits are audit-logged.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">

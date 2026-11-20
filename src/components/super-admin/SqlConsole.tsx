@@ -38,7 +38,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
   // ── Theme tokens ──
   const t = isDark ? {
     heading:      "text-white",
-    icon:         "text-[#f0b97a]",
+    icon:         "text-[#9fe0c8]",
     editor:       "border-white/10 bg-[#0b0f1a]",
     editorHeader: "border-b border-white/10 bg-white/[0.02]",
     filenameText: "text-stone-500",
@@ -59,7 +59,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
     histBtn:      "text-stone-500 hover:text-stone-300 border-white/5 hover:border-white/15",
   } : {
     heading:      "text-stone-900",
-    icon:         "text-[#b04a15]",
+    icon:         "text-[#1f6b55]",
     editor:       "border-stone-200 bg-white",
     editorHeader: "border-b border-stone-200 bg-stone-50",
     filenameText: "text-stone-500",
@@ -84,7 +84,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
     <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center gap-2">
         <Terminal className={`w-5 h-5 ${t.icon}`} />
-        <h2 className={`text-base sm:text-lg font-black tracking-tight ${t.heading}`}>SQL Console</h2>
+        <h2 className={`ck-page-title ${t.heading}`}>SQL Console</h2>
       </div>
 
       {/* Danger banner — always red regardless of theme */}
@@ -114,7 +114,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
           <button
             onClick={run}
             disabled={running}
-            className="flex items-center gap-2 bg-[#f0b97a] hover:bg-[#e0a96a] disabled:opacity-50 text-stone-950 font-bold px-5 py-2 rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 bg-[#9fe0c8] hover:bg-[#e0a96a] disabled:opacity-50 text-stone-950 font-bold px-5 py-2 rounded-lg text-sm transition-colors"
           >
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             Run query
