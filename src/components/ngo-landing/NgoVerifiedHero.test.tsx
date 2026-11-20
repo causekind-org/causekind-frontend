@@ -82,6 +82,11 @@ describe("mobile hero (full-bleed photo, no collage)", () => {
     expect(photo.className).toContain("md:hidden");
     expect(photo.querySelector("img")?.getAttribute("src")).toContain("ngo-hero-mobile.webp");
     expect(container.querySelector("#ngo-hero")?.className).toContain("ck-ngo-hero-stage");
+    // No green tint on mobile: the mesh and grain layers are hidden; only a bottom dark gradient.
+    expect(container.querySelector(".ngo-hero-bg")?.className).toContain("max-md:hidden");
+    expect(container.querySelector(".ngo-hero-grain")?.className).toContain("max-md:hidden");
+    expect(photo.querySelector("div")?.className).toContain("ck-ngo-hero-shade");
+    expect(photo.querySelector("img")?.className).toContain("object-[center_30%]");
 
     // The collage is hidden below 768px; the desktop cluster is unchanged.
     expect(screen.getByTestId("ngo-hero-mobile-collage").className).toContain("hidden md:block lg:hidden");

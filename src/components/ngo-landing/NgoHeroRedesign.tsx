@@ -190,31 +190,31 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
     <section
       id="ngo-hero"
       ref={heroRef}
-      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-screen pt-[120px] pb-[96px] flex items-center ck-ngo-hero-stage max-md:-mt-[var(--ck-nav-h,4.25rem)] max-md:min-h-[100svh] max-md:items-end max-md:pt-[calc(var(--ck-nav-h,4.25rem)+1.5rem)] max-md:pb-[calc(7rem+env(safe-area-inset-bottom))]"
+      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-screen pt-[120px] pb-[96px] flex items-center ck-ngo-hero-stage"
     >
       {/* Animated Mesh Layer */}
-      <div className="ngo-hero-bg" aria-hidden="true" />
+      <div className="ngo-hero-bg max-md:hidden" aria-hidden="true" />
       {/* Noise Grain Overlay at 12% */}
-      <div className="ngo-hero-grain" aria-hidden="true" />
+      <div className="ngo-hero-grain max-md:hidden" aria-hidden="true" />
       {/* Mobile (<768px): full-bleed photo with a dark bottom gradient, the same
           pattern as the guest homepage hero; text and buttons sit over it. */}
       <div data-testid="ngo-hero-mobile-photo" className="absolute inset-0 z-0 md:hidden" aria-hidden="true">
-        <Image src="/images/ngo-landing/ngo-hero-mobile.webp" alt="" fill priority sizes="100vw" className="object-cover object-[center_top]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+        <Image src="/images/ngo-landing/ngo-hero-mobile.webp" alt="" fill priority sizes="100vw" className="object-cover object-[center_30%]" />
+        <div className="ck-ngo-hero-shade absolute inset-0" />
       </div>
 
       <div className="ngo-container relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 items-center max-md:gap-0">
           {/* Left Column (1.15fr) */}
-          <div className="flex flex-col items-start z-10">
+          <div className="ck-ngo-hero-copy flex flex-col items-start z-10">
             {/* Status Chip */}
-            <div className="mb-6">
+            <div className="ck-ngo-hero-badge mb-6">
               <NgoGlassStatusChip text={chipText} />
               {isVerified && <span className="sr-only">Verified by CauseKind</span>}
             </div>
 
             {/* Staggered Rising H1 */}
-            <h1 className="ngo-heading text-[clamp(44px,7vw,90px)] text-white tracking-[-0.025em] leading-[1.05] mb-5">
+            <h1 className="ck-ngo-hero-title ngo-heading text-[clamp(44px,7vw,90px)] text-white tracking-[-0.025em] leading-[1.05] mb-5">
               {headingWords.map((word, i) => {
                 const isTarget = word.toLowerCase() === highlightedWord.toLowerCase();
                 return (
@@ -243,7 +243,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
 
             {/* Non-Approved Status & Reason Inline Chip */}
             {!isVerified && (
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-[#F2C969] mb-5 backdrop-blur-md max-w-xl">
+              <div className="ck-ngo-hero-alert flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-white/15 text-xs text-[#F2C969] mb-5 backdrop-blur-md max-w-xl">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0 text-[#F2C969]" />
                 <span className="font-medium text-[#EFEADB] leading-snug">
                   {ngoStatus === "under_review" && (
@@ -277,12 +277,12 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             )}
 
             {/* Lead */}
-            <p className="text-[18px] md:text-[19px] leading-[1.6] text-[#EFEADB]/90 max-w-[520px] mb-8 font-normal">
+            <p className="ck-ngo-hero-sub text-[18px] md:text-[19px] leading-[1.6] text-[#EFEADB]/90 max-w-[520px] mb-8 font-normal">
               {leadText}
             </p>
 
             {/* Hero CTAs */}
-            <div className="flex flex-wrap items-center gap-4 mb-3 relative z-20">
+            <div className="ck-ngo-hero-ctas flex flex-wrap items-center gap-4 mb-3 relative z-20">
               {/* Primary Action Button */}
               {isVerified ? (
                 canPostRequest ? (
@@ -381,9 +381,14 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             </div>
 
             {/* Microcopy Line below buttons: Nothing overlaps or covers buttons */}
-            <div className="flex items-center gap-2 text-xs text-[#EFEADB]/75 font-medium mt-2">
+            <div className="ck-ngo-hero-trust flex items-center gap-2 text-xs text-[#EFEADB]/75 font-medium mt-2">
               <ShieldCheck className="w-3.5 h-3.5 text-[#5BE49B] shrink-0" />
-              <span>Direct handovers · 10 km donor reach · Verified impact certificates</span>
+              {/* Two lines on mobile so nothing is cut off under the chat bubble. */}
+              <span className="max-md:!whitespace-normal max-md:!overflow-visible max-md:leading-snug">
+                <span className="max-md:block">Direct handovers · 10 km donor reach</span>
+                <span className="max-md:hidden"> · </span>
+                <span className="max-md:block">Verified impact certificates</span>
+              </span>
             </div>
           </div>
 

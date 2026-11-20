@@ -427,10 +427,13 @@ export function SiteHeader() {
         crossing.disconnect();
         crossing.observe(hero);
         observedHero = hero;
-        mounted.disconnect();
       }
+      // `mounted` keeps watching: the NGO landing swaps its hero for a new
+      // element once the application status loads, and that must be picked up.
       const bounds = hero?.getBoundingClientRect();
-      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0);
+      // The NGO hero can sit a few px off the top mid-layout; allow for it there.
+      const slack = hero?.classList.contains("ck-ngo-hero-stage") ? 16 : 0;
+      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= slack && bounds.bottom > 0);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
