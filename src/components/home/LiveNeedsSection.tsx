@@ -168,7 +168,7 @@ export function LiveNeedsSection({
           slightly different warm colour, which is most of why the page read as
           a stack of separate pages rather than one surface. */}
 
-      <div className="relative mx-auto max-w-7xl px-0 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 lg:px-8">
         {/* ── Section Header ── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 ck-live-needs-header-gap">
           <div className="max-w-2xl min-w-0">
