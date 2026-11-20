@@ -16,7 +16,7 @@ import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
 import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
-import { CommandPalette } from "@/components/super-admin/CommandPalette";
+import { TopbarSearch } from "@/components/super-admin/TopbarSearch";
 import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
 import { SaLoadError } from "@/components/super-admin/SaLoadError";
 import { OverviewInsights } from "@/components/super-admin/OverviewInsights";
@@ -487,8 +487,6 @@ export default function SuperAdminPage() {
   // dark/light toggle (ck_sa_theme) is retired; panels still take `isDark`,
   // which is now always false.
   const isDark = false;
-  // Bumped by the top-bar search field to open the search palette.
-  const [paletteSignal, setPaletteSignal] = useState(0);
   const th = LIGHT;
 
   // SQL warning modal
@@ -630,13 +628,8 @@ export default function SuperAdminPage() {
         topbarStart={
           <div className="flex min-w-0 items-center gap-4">
             <span className="hidden shrink-0 text-sm font-semibold sm:inline">{current?.label ?? "Super Admin"}</span>
-            {/* Looks like a field, opens the global search palette (same results as Ctrl K). */}
-            <button type="button" onClick={() => setPaletteSignal((n) => n + 1)} aria-label="Search users, requests, listings, offers, matches and certificates"
-              className="flex h-10 w-full max-w-md min-w-0 items-center gap-2.5 rounded-full border border-white/20 bg-white/10 px-4 text-left text-[13px] text-white/70 transition-colors duration-150 hover:bg-white/15">
-              <Search className="size-4 shrink-0" aria-hidden />
-              <span className="min-w-0 flex-1 truncate">Search users, requests, offers…</span>
-              <kbd className="hidden shrink-0 rounded border border-white/25 px-1.5 font-mono text-[10px] text-white/80 md:inline">Ctrl K</kbd>
-            </button>
+            {/* Inline search with a suggestion dropdown (Ctrl K focuses it). */}
+            <TopbarSearch onOpenUser={openUser} onOpenIntervention={openIntervention} />
           </div>
         }
         topbarEnd={
@@ -652,10 +645,6 @@ export default function SuperAdminPage() {
           {content}
         </div>
       </StaffShell>
-
-      {/* ⌘K from anywhere in the console. Mounted once, outside the section
-          switch, so it survives navigation and does not remount on every tab. */}
-      <CommandPalette onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} openSignal={paletteSignal} />
 
       {viewingDonation && (
         <DonationDetailModal
