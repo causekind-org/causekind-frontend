@@ -13,7 +13,7 @@ const LINKS = [
   { key: "reports", href: "/admin/fundraising/reports", label: "Reports" },
 ] as const;
 type Key = (typeof LINKS)[number]["key"];
-const COLOR = "#1f6b55";
+const COLOR = "#1f66b3";
 const APP_DETAIL = /^\/admin\/fundraising\/\d+$/;
 
 /** Waiting counts per fundraising queue; a failed queue counts as 0 rather than hiding the nav. */
@@ -71,13 +71,13 @@ export function AdminFundraisingNav({ variant, allowed, active, onSelect }: {
       <>
         <span className="mx-0.5 h-5 w-px flex-shrink-0 bg-stone-300" aria-hidden />
         <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open}
-          className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all ${active ? "bg-[#1f6b55] text-white" : "bg-white text-stone-600 border border-stone-200"}`}>
+          className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wide transition-all ${active ? "bg-[#1f66b3] text-white" : "bg-white text-stone-600 border border-stone-200"}`}>
           Fundraising{total > 0 && <span className="opacity-80">{total}</span>}
           {open ? <ChevronUp className="w-3 h-3" aria-hidden /> : <ChevronDown className="w-3 h-3" aria-hidden />}
         </button>
         {open && LINKS.map((l) => (
           <button type="button" key={l.key} onClick={() => onSelect(l.href)} aria-current={isOn(l.href) ? "page" : undefined}
-            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isOn(l.href) ? "bg-[#1f6b55] text-white" : "bg-white text-stone-500 border border-stone-200"}`}>
+            className={`flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isOn(l.href) ? "bg-[#1f66b3] text-white" : "bg-white text-stone-500 border border-stone-200"}`}>
             {l.label}{counts[l.key] > 0 && <span className="opacity-80">{counts[l.key]}</span>}
           </button>
         ))}

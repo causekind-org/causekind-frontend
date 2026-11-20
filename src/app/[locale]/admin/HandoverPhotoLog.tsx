@@ -45,7 +45,7 @@ export function HandoverPhotoLog() {
           {rows.map(r => (
             <li key={`${r.type}-${r.id}`}>
               <button type="button" onClick={() => setOpen({ type: r.type, id: r.id })}
-                className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-white p-2.5 text-left shadow-sm hover:border-[#1f6b55]/40">
+                className="flex w-full items-center gap-3 rounded-xl border border-stone-200 bg-white p-2.5 text-left shadow-sm hover:border-[#1f66b3]/40">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-stone-100">
                   {r.thumbUrl
                     // eslint-disable-next-line @next/next/no-img-element -- presigned URL

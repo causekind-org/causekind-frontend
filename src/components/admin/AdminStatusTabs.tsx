@@ -28,7 +28,7 @@ export function AdminStatusTabs({ options, selected, onSelect, label, disabled }
         <button key={`${o.label}-${i}`} ref={(el) => { refs.current[i] = el; }} type="button" role="tab"
           aria-selected={i === selected} tabIndex={i === selected ? 0 : -1} disabled={disabled}
           className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition-colors duration-150 disabled:opacity-50 ${
-            i === selected ? "bg-[#12211c] text-white" : "text-[#3a4a42] hover:bg-white/70"}`}
+            i === selected ? "bg-[#10233a] text-white" : "text-[#3a5070] hover:bg-white/70"}`}
           onClick={() => onSelect(i)} onKeyDown={(e) => key(e, i)}>{o.label}</button>
       ))}
     </div>

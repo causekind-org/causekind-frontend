@@ -38,7 +38,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
   // ── Theme tokens ──
   const t = isDark ? {
     heading:      "text-white",
-    icon:         "text-[#9fe0c8]",
+    icon:         "text-[#c4e2ff]",
     editor:       "border-white/10 bg-[#0b0f1a]",
     editorHeader: "border-b border-white/10 bg-white/[0.02]",
     filenameText: "text-stone-500",
@@ -59,7 +59,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
     histBtn:      "text-stone-500 hover:text-stone-300 border-white/5 hover:border-white/15",
   } : {
     heading:      "text-stone-900",
-    icon:         "text-[#1f6b55]",
+    icon:         "text-[#1f66b3]",
     editor:       "border-stone-200 bg-white",
     editorHeader: "border-b border-stone-200 bg-stone-50",
     filenameText: "text-stone-500",
@@ -114,7 +114,7 @@ export function SqlConsole({ isDark = true }: { isDark?: boolean }) {
           <button
             onClick={run}
             disabled={running}
-            className="flex items-center gap-2 bg-[#9fe0c8] hover:bg-[#e0a96a] disabled:opacity-50 text-stone-950 font-bold px-5 py-2 rounded-lg text-sm transition-colors"
+            className="flex items-center gap-2 bg-[#c4e2ff] hover:bg-[#e0a96a] disabled:opacity-50 text-stone-950 font-bold px-5 py-2 rounded-lg text-sm transition-colors"
           >
             {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
             Run query

@@ -62,28 +62,28 @@ type StatTone = "users" | "campaigns" | "donations" | "requests" | "listings" | 
  *  its own palette and should not be dragged around by the public site. */
 
 const LIGHT: Th = {
-  root:        "text-[#12211c]",
+  root:        "text-[#10233a]",
   sidebar:     "",
   topbar:      "",
-  divider:     "border-[#dfe8e3]",
+  divider:     "border-[#e3edf8]",
   card:        "ck-glass-solid border-white/80",
-  textPrimary: "text-[#12211c]",
-  textMuted:   "text-[#53665c]",
-  textDim:     "text-[#53665c]",
-  textDimmer:  "text-[#6b7d73]",
+  textPrimary: "text-[#10233a]",
+  textMuted:   "text-[#4f6480]",
+  textDim:     "text-[#4f6480]",
+  textDimmer:  "text-[#6a7f99]",
   navActive:   "",
   navInactive: "",
   signout:     "",
-  accent:      "#2e8b70",
-  roleBar:     "bg-[#c9d8d0]",
+  accent:      "#2d7fd6",
+  roleBar:     "bg-[#c8d9ec]",
   toggleBtn:   "",
   sqlLabel:    "text-red-600/70",
-  roleText:    "text-[#53665c]",
-  barGradient: "from-[#1f6b55] to-[#2e8b70]",
-  positive:    "text-[#1c6b4c]",
+  roleText:    "text-[#4f6480]",
+  barGradient: "from-[#1f66b3] to-[#2d7fd6]",
+  positive:    "text-[#1f66b3]",
   tone: {
-    users: "#1f6b55", campaigns: "#8a5a10", donations: "#1c6b4c",
-    requests: "#1f5f6d", listings: "#1f5f6d", matches: "#1f6b55",
+    users: "#1f66b3", campaigns: "#8a5a10", donations: "#1f66b3",
+    requests: "#1f5f6d", listings: "#1f5f6d", matches: "#1f66b3",
   },
 };
 
@@ -442,7 +442,7 @@ function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => 
                     <span className="font-medium">{roleLabel(role)}</span>
                     <span className="font-semibold tabular-nums">{fmtCount(count)} <span className="font-normal text-[color:var(--st-text-2)]">· {pct}%</span></span>
                   </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-[#c9d8d0]" aria-hidden>
+                  <div className="h-2 overflow-hidden rounded-full bg-[#c8d9ec]" aria-hidden>
                     <div className="h-full rounded-full bg-[color:var(--st-primary)]" style={{ width: `${pct}%` }} />
                   </div>
                 </li>
@@ -610,8 +610,8 @@ export default function SuperAdminPage() {
 
   if (isLoading || !user || user.role !== "SUPER_ADMIN") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0b211b]">
-        <Loader2 className="w-7 h-7 animate-spin text-[#9fe0c8]" />
+      <div className="min-h-screen flex items-center justify-center bg-[#12355c]">
+        <Loader2 className="w-7 h-7 animate-spin text-[#c4e2ff]" />
       </div>
     );
   }

@@ -79,7 +79,7 @@ export function StaffShell({
       </div>
 
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="ck-staff !min-h-0 max-h-[88vh] !border-white/15 !bg-[#153f34] text-[color:var(--st-on-dark)]">
+        <DrawerContent className="ck-staff !min-h-0 max-h-[88vh] !border-white/15 !bg-[#1f5490] text-[color:var(--st-on-dark)]">
           <DrawerTitle className="sr-only">{consoleLabel} navigation</DrawerTitle>
           <div className="px-4 pt-3">{brand}</div>
           <nav

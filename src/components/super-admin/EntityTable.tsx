@@ -55,7 +55,7 @@ function RowForm({
 
   return (
     <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm" onClick={onClose} style={{ animation: "fadeIn 0.15s ease forwards" }}>
-      <div className="w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-y-auto bg-[#0e1320] border border-[#9fe0c8]/20 rounded-xl sm:rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="w-full max-w-lg max-h-[85vh] sm:max-h-[88vh] overflow-y-auto bg-[#0e1320] border border-[#c4e2ff]/20 rounded-xl sm:rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 sm:px-5 sm:py-4 border-b border-white/10 sticky top-0 bg-[#0e1320]">
           <h3 className="text-sm sm:text-sm font-bold text-white">{title}</h3>
           <button type="button" onClick={onClose} aria-label="Close dialog" className="text-stone-400 hover:text-white transition-colors"><X className="w-4 h-4" aria-hidden="true" /></button>
@@ -77,7 +77,7 @@ function RowForm({
                 <select
                   value={String(form[c.key] ?? "")}
                   onChange={e => set(c.key, e.target.value)}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#9fe0c8]/50"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:border-[#c4e2ff]/50"
                 >
                   <option value="" className="bg-[#0e1320]">—</option>
                   {c.options?.map(o => <option key={o} value={o} className="bg-[#0e1320]">{o}</option>)}
@@ -87,21 +87,21 @@ function RowForm({
                   rows={3}
                   value={String(form[c.key] ?? "")}
                   onChange={e => set(c.key, e.target.value)}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-[#9fe0c8]/50 resize-none"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-[#c4e2ff]/50 resize-none"
                 />
               ) : (
                 <input
                   type={c.type === "number" ? "number" : "text"}
                   value={String(form[c.key] ?? "")}
                   onChange={e => set(c.key, e.target.value)}
-                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-[#9fe0c8]/50"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-stone-600 focus:outline-none focus:border-[#c4e2ff]/50"
                 />
               )}
             </div>
           ))}
         </div>
         <div className="flex gap-2 px-4 py-3 sm:px-5 sm:py-4 border-t border-white/10 sticky bottom-0 bg-[#0e1320]">
-          <button onClick={() => onSave(form)} disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-[#9fe0c8] hover:bg-[#e0a96a] disabled:opacity-50 text-stone-950 font-bold py-2.5 rounded-lg text-sm transition-colors">
+          <button onClick={() => onSave(form)} disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-[#c4e2ff] hover:bg-[#e0a96a] disabled:opacity-50 text-stone-950 font-bold py-2.5 rounded-lg text-sm transition-colors">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save changes"}
           </button>
           <button onClick={onClose} className="px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg border border-white/15 text-stone-300 hover:bg-white/5 text-sm font-semibold transition-colors">Cancel</button>
@@ -382,7 +382,7 @@ export function EntityTable({
   const t = isDark ? {
     title:       "text-white",
     subtitle:    "text-stone-500",
-    search:      "bg-white/5 border-white/10 text-white placeholder:text-stone-600 focus:border-[#9fe0c8]/50",
+    search:      "bg-white/5 border-white/10 text-white placeholder:text-stone-600 focus:border-[#c4e2ff]/50",
     refreshBtn:  "border-white/10 text-stone-400 hover:text-white hover:bg-white/5",
     table:       "border-white/10 bg-[#0b0f1a]",
     thead:       "bg-white/[0.03] border-b border-white/10",
@@ -393,14 +393,14 @@ export function EntityTable({
     cell:        "text-stone-300",
     skeleton:    "bg-white/5",
     empty:       "text-stone-500",
-    editHover:   "hover:text-[#9fe0c8] hover:bg-[#9fe0c8]/10",
+    editHover:   "hover:text-[#c4e2ff] hover:bg-[#c4e2ff]/10",
     deleteHover: "hover:text-red-400 hover:bg-red-500/10",
     iconMuted:   "text-stone-400",
-    newBtn:      "bg-[#9fe0c8] hover:bg-[#e0a96a] text-stone-950",
+    newBtn:      "bg-[#c4e2ff] hover:bg-[#e0a96a] text-stone-950",
   } : {
     title:       "text-stone-900",
     subtitle:    "text-stone-400",
-    search:      "bg-white border-stone-200 text-stone-900 placeholder:text-stone-400 focus:border-[#1f6b55]/50",
+    search:      "bg-white border-stone-200 text-stone-900 placeholder:text-stone-400 focus:border-[#1f66b3]/50",
     refreshBtn:  "border-stone-200 text-stone-500 hover:text-stone-800 hover:bg-stone-100",
     table:       "border-stone-200 bg-white",
     thead:       "bg-stone-50 border-b border-stone-200",
@@ -411,10 +411,10 @@ export function EntityTable({
     cell:        "text-stone-700",
     skeleton:    "bg-stone-100",
     empty:       "text-stone-500",
-    editHover:   "hover:text-[#1f6b55] hover:bg-[#1f6b55]/10",
+    editHover:   "hover:text-[#1f66b3] hover:bg-[#1f66b3]/10",
     deleteHover: "hover:text-red-600 hover:bg-red-50",
     iconMuted:   "text-stone-400",
-    newBtn:      "bg-[#1f6b55] hover:bg-[#963c0d] text-white",
+    newBtn:      "bg-[#1f66b3] hover:bg-[#963c0d] text-white",
   };
 
   return (
@@ -476,7 +476,7 @@ export function EntityTable({
                     checked={allSelected}
                     disabled={loading || selectable.length === 0}
                     onChange={toggleAll}
-                    className="w-4 h-4 cursor-pointer accent-[#1f6b55]"
+                    className="w-4 h-4 cursor-pointer accent-[#1f66b3]"
                   />
                 </th>
                 <th className={`px-2.5 py-2 sm:px-4 sm:py-3 text-left font-bold text-2xs uppercase tracking-wider whitespace-nowrap ${t.theadTh}`}>
@@ -537,7 +537,7 @@ export function EntityTable({
                         disabled={isSelf(row)}
                         title={isSelf(row) ? "Your own account cannot be bulk-deleted" : undefined}
                         onChange={() => toggle(String(row.id))}
-                        className="w-4 h-4 cursor-pointer accent-[#1f6b55] disabled:cursor-not-allowed disabled:opacity-30"
+                        className="w-4 h-4 cursor-pointer accent-[#1f66b3] disabled:cursor-not-allowed disabled:opacity-30"
                       />
                     </td>
                     <td className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap tabular-nums ${t.cellId}`}>{i + 1}</td>

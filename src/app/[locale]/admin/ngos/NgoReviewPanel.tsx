@@ -17,7 +17,7 @@ import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
 import { readUrlParam, statusIndexFromUrl, writeUrlParams } from "@/components/admin/adminUrlState";
 import { NgoPanCheckBox } from "./NgoPanCheckBox";
 
-const field = "w-full rounded-2xl border border-stone-300 bg-white p-3 text-sm focus:border-[#2e8b70] focus:outline-none focus:ring-2 focus:ring-[#2e8b70]/20 dark:border-zinc-700 dark:bg-zinc-900";
+const field = "w-full rounded-2xl border border-stone-300 bg-white p-3 text-sm focus:border-[#2d7fd6] focus:outline-none focus:ring-2 focus:ring-[#2d7fd6]/20 dark:border-zinc-700 dark:bg-zinc-900";
 const button = "inline-flex h-10 items-center rounded-full border border-white/80 bg-white/85 px-4 text-[13px] font-semibold transition-colors duration-150 hover:bg-white disabled:opacity-50 dark:border-zinc-700";
 const label = (value: string) => value.replaceAll("_", " ").toLowerCase();
 const message = (error: unknown) => error instanceof Error ? error.message : "Could not load NGO applications. Please retry.";
@@ -329,7 +329,7 @@ export function NgoReviewPanel({
           <div data-testid="application-cards" className={selectedId ? "space-y-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
           {applications.map(app => <button key={app.applicationId} disabled={busy} onClick={() => select(app.applicationId)}
             aria-pressed={selectedId === app.applicationId}
-            className={`ck-glass-solid ck-glass-interactive w-full p-4 text-left disabled:opacity-50 ${selectedId === app.applicationId ? "ring-2 ring-[#2e8b70]" : ""}`}>
+            className={`ck-glass-solid ck-glass-interactive w-full p-4 text-left disabled:opacity-50 ${selectedId === app.applicationId ? "ring-2 ring-[#2d7fd6]" : ""}`}>
             <span className="block font-semibold ck-user-text">{app.organizationName}</span>
             <span className="mt-1 block break-all font-mono text-[11px] text-stone-500">{app.applicationId}</span>
             <span className="mt-2 block text-sm capitalize">{label(app.status)}
@@ -482,8 +482,8 @@ export function NgoReviewPanel({
               <p>{detail.application.aiScreeningVerdict || "No screening result yet"}</p>
               <p className="mt-2 whitespace-pre-wrap">{detail.application.aiScreeningNotes || "Review the submitted evidence directly."}</p>
             </div>
-            {detail.current && detail.application.status === "UNDER_REVIEW" && <form onSubmit={saveDecision} className="mt-6 space-y-4 rounded-2xl border border-white/80 bg-[#eef3f0] p-4 sm:p-5">
-              <h3 className="text-[12px] font-semibold uppercase tracking-wide text-[#53665c]">Your decision</h3>
+            {detail.current && detail.application.status === "UNDER_REVIEW" && <form onSubmit={saveDecision} className="mt-6 space-y-4 rounded-2xl border border-white/80 bg-[#eef4fb] p-4 sm:p-5">
+              <h3 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480]">Your decision</h3>
               <label className="block text-sm">Decision<select className={field} value={decision} disabled={busy} onChange={e => setDecision(e.target.value as typeof decision)}>
                 <option value="NEEDS_INFORMATION">Request corrections</option><option value="APPROVED">Approve organization</option><option value="REJECTED">Reject application</option>
               </select></label>
@@ -516,7 +516,7 @@ export function NgoReviewPanel({
                 <textarea className={field} rows={decision === "NEEDS_INFORMATION" ? 2 : 4} maxLength={2000} required={decision === "REJECTED"} disabled={busy} value={reason} onChange={e => setReason(e.target.value)} />
               </label>
               <p className="text-xs text-stone-500">Approving lets this NGO post requests and start drives. Every decision updates the applicant’s status.</p>
-              <button className={`${button} !border-[#12211c] !bg-[#12211c] text-white hover:!bg-[#1f6b55]`}
+              <button className={`${button} !border-[#10233a] !bg-[#10233a] text-white hover:!bg-[#1f66b3]`}
                 disabled={busy || (decision === "NEEDS_INFORMATION" && !correctionsReady)}>{busy ? "Saving decision…" : "Save decision"}</button>
             </form>}
             {detail.decisions.length > 0 && <div className="mt-6"><h3 className="font-bold">Decision history</h3><ul className="mt-2 space-y-3 text-sm">

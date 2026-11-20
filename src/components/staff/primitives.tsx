@@ -46,11 +46,11 @@ export function CardTitle({ title, description, icon: Icon, action }: {
 }
 
 const TONE_BG: Record<string, string> = {
-  green: "bg-[#dcf1e7] text-[#1c6b4c]",
+  green: "bg-[#d9ebff] text-[#1f66b3]",
   amber: "bg-[#fbefd5] text-[#8a5a10]",
   teal: "bg-[#dcedf1] text-[#1f5f6d]",
   red: "bg-[#fbe1dc] text-[#9a2a1b]",
-  neutral: "bg-[#e7ece9] text-[#44554c]",
+  neutral: "bg-[#e6eef8] text-[#41567a]",
 };
 
 /**
