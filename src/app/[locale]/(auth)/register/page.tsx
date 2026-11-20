@@ -15,7 +15,8 @@ import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, reg
 import { trackCompleteRegistration } from "@/lib/metaEvents";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@/lib/lazyGoogleLogin";
+import { preloadGoogleSignIn } from "@/lib/googleSignInPreload";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/[locale]/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
@@ -1154,6 +1155,9 @@ function RegisterContent() {
             <button
               type="button"
               disabled={authBusy}
+              onPointerEnter={() => void preloadGoogleSignIn().catch(() => {})}
+              onTouchStart={() => void preloadGoogleSignIn().catch(() => {})}
+              onFocus={() => void preloadGoogleSignIn().catch(() => {})}
               onClick={() => {
                 if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
                   toast.error("Google Sign-In is not configured.");

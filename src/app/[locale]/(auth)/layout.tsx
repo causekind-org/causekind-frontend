@@ -4,10 +4,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AuthDotGrid } from "@/components/AuthDotGrid";
-// Google sign-in is used only by /login and /register, so its provider (and
-// the accounts.google.com/gsi/client script it injects) lives here, not in the
-// root layout where every page paid for it.
-import { GoogleProvider } from "@/components/GoogleProvider";
+// Google sign-in no longer needs a provider: src/lib/lazyGoogleLogin.ts loads
+// accounts.google.com/gsi/client only when the Google button is reached.
 
 /* ── Shared auth shell for /login and /register ──────────────────────────────
    One persistent layout so the illustration panel is a single element that
@@ -157,7 +155,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               style={{ transformStyle: "preserve-3d" }}
             >
-              <GoogleProvider>{children}</GoogleProvider>
+              {children}
             </motion.div>
           </AnimatePresence>
         </div>

@@ -9,7 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { registerUrlPreserving, resolvePostAuthDestination, socialCompletionUrl } from "@/lib/postAuthDestination";
 import { login, googleAuth } from "@/lib/api";
 import { ArrowRight, Check, Eye, EyeOff } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@/lib/lazyGoogleLogin";
+import { preloadGoogleSignIn } from "@/lib/googleSignInPreload";
 import { useReducedMotion } from "framer-motion";
 import { isGenericCredentialFailure, validateEmail, validateLoginPassword } from "@/features/auth-validation/authValidation";
 import { useTimedFieldValidation } from "@/features/auth-validation/useTimedFieldValidation";
@@ -375,6 +376,9 @@ function LoginContent() {
         type="button"
         disabled={auth.busy}
         aria-busy={auth.op === "google" || undefined}
+        onPointerEnter={() => void preloadGoogleSignIn().catch(() => {})}
+        onTouchStart={() => void preloadGoogleSignIn().catch(() => {})}
+        onFocus={() => void preloadGoogleSignIn().catch(() => {})}
         onClick={startGoogle}
         className="mt-3 flex min-h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 text-[14px] font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] disabled:opacity-60"
       >
