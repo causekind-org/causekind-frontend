@@ -74,7 +74,8 @@ export function StaffShell({
           <div className="flex shrink-0 items-center gap-2">{topbarEnd}</div>
         </header>
 
-        <main className="ck-staff-workspace flex-1">{children}</main>
+        {/* div, not main: the root layout already provides <main id="main"> (SEO, one main per page). */}
+        <div className="ck-staff-workspace flex-1">{children}</div>
       </div>
 
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
