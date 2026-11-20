@@ -4031,10 +4031,44 @@ export type SuperAdminEntity =
 
 export type SuperAdminRow = Record<string, unknown>;
 
+/** One day in an Overview trend series (zero-filled by the backend). */
+export type SaTrendPoint = { date: string; value: number };
+
+/**
+ * Overview insights (2026-11-20). Every figure is a whole-table total; a figure
+ * the backend could not compute arrives as null and must show as "unavailable",
+ * never as 0.
+ */
+export type SuperAdminInsights = {
+  generatedAt: string;
+  attention: { openCases: number | null; overdueCases: number | null; openDisputes: number | null; requestsOnHold: number | null };
+  adminQueues: {
+    requests: number | null; listings: number | null; offers: number | null; matches: number | null;
+    ngoApplications: number | null; fundraisingApplications: number | null;
+  };
+  activity: Record<"last7Days" | "last30Days", {
+    signups: number | null; signupsByRole: Record<string, number> | null; requests: number | null; listings: number | null;
+    certificatesIssued: number | null; moneyDonations: number | null; moneyReceived: number | null;
+  }>;
+  trends: {
+    days: number;
+    signups: SaTrendPoint[] | null; requests: SaTrendPoint[] | null; listings: SaTrendPoint[] | null;
+    certificates: SaTrendPoint[] | null; moneyReceived: SaTrendPoint[] | null;
+  };
+  stuck: { matchesAtRisk: number | null; offersAtRisk: number | null; offersStuckInScreening: number | null; requestsPastVerificationDeadline: number | null };
+  trust: {
+    fraudFlags30d: number | null; usersSuspended: number | null; activeRestrictions: number | null;
+    aiDecisionsReviewed30d: number | null; aiDecisionsOverruled30d: number | null;
+  };
+  mail: { sent7d: number | null; delivered7d: number | null; bounced7d: number | null; suppressedTotal: number | null };
+};
+
 export type SuperAdminOverview = {
   counts: Record<string, number>;
   roleBreakdown: Record<string, number>;
   totalRaised: number;
+  /** Absent on a backend older than 2026-11-20. */
+  insights?: SuperAdminInsights;
 };
 
 export type SqlResult = {
