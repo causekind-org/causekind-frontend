@@ -17,6 +17,9 @@ vi.mock("@/lib/api", async (orig) => ({
 
 const tabs = () => screen.getAllByRole("tab").map(t => t.textContent);
 const tab = (name: RegExp) => screen.getByRole("tab", { name });
+/** Review opens one item in full; Back to list returns to the table. */
+const review = (name: string) => fireEvent.click(screen.getByRole("button", { name: `Review ${name}` }));
+const back = () => fireEvent.click(screen.getByRole("button", { name: /Back to list/ }));
 
 beforeEach(() => { vi.clearAllMocks(); window.history.replaceState(null, "", "/admin/dashboard?tab=ngo-activities"); });
 
@@ -31,29 +34,36 @@ describe("Past activity tabs", () => {
 
   it("each tab lists only its status, with counts that match, and search ANDs with the tab", async () => {
     render(<NgoActivityModerationPanel />);
-    expect(await screen.findAllByTestId("admin-activity")).toHaveLength(2);
+    expect(await screen.findAllByTestId("admin-activity-row")).toHaveLength(2);
     expect(getPendingNgoActivities).toHaveBeenCalledWith("ALL");
     expect(tabs()).toEqual(["Waiting for review (2)", "Approved (1)", "Not approved (1)", "All (4)"]);
-    expect(screen.getAllByRole("button", { name: "Approve" })).toHaveLength(2);
+    review("Meal drive");
+    expect(screen.getAllByTestId("admin-activity")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "Approve" })).toHaveLength(1);
+    back();
 
     fireEvent.click(tab(/^Approved/));
+    expect(screen.getAllByTestId("admin-activity-row")).toHaveLength(1);
+    review("Blanket drive");
     const approved = screen.getAllByTestId("admin-activity");
-    expect(approved).toHaveLength(1);
     expect(approved[0]).toHaveTextContent("Blanket drive");
     expect(within(approved[0]).getByTestId("decision-line")).toHaveTextContent(/Approved by admin@ck\.test · /);
     expect(screen.queryByRole("button", { name: "Approve" })).toBeNull();
     expect(window.location.search).toContain("status=APPROVED");
+    back();
 
     fireEvent.click(tab(/^Not approved/));
+    review("Toy drive");
     expect(screen.getByTestId("decision-line")).toHaveTextContent("Reason: Blur faces");
+    back();
 
     fireEvent.click(tab(/^Waiting/));
     fireEvent.change(screen.getByLabelText("Search past activity"), { target: { value: "Asha" } });
-    await waitFor(() => expect(screen.getAllByTestId("admin-activity").map(n => n.textContent)).toEqual([expect.stringContaining("Book drive")]));
+    await waitFor(() => expect(screen.getAllByTestId("admin-activity-row").map(n => n.textContent)).toEqual([expect.stringContaining("Book drive")]));
     fireEvent.click(tab(/^All/));
-    expect(screen.getAllByTestId("admin-activity")).toHaveLength(1);
+    expect(screen.getAllByTestId("admin-activity-row")).toHaveLength(1);
     fireEvent.change(screen.getByLabelText("Search past activity"), { target: { value: "Hope" } });
-    await waitFor(() => expect(screen.getAllByTestId("admin-activity")).toHaveLength(3));
+    await waitFor(() => expect(screen.getAllByTestId("admin-activity-row")).toHaveLength(3));
   });
 });
 
@@ -66,15 +76,18 @@ describe("Past activity: decided edits of live activities", () => {
       { ...row(7, "APPROVED", "Approved edit"), decidedBy: "admin@ck.test", decidedAt: "2026-11-03T06:30:00Z" },
     ] as never);
     render(<NgoActivityModerationPanel />);
-    expect(await screen.findAllByTestId("admin-activity")).toHaveLength(1);
+    expect(await screen.findAllByTestId("admin-activity-row")).toHaveLength(1);
     expect(tabs()).toEqual(["Waiting for review (1)", "Approved (1)", "Not approved (1)", "All (3)"]);
     fireEvent.click(tab(/^Not approved/));
+    review("Refused edit");
     const refused = screen.getAllByTestId("admin-activity");
     expect(refused).toHaveLength(1);
     expect(within(refused[0]).getByTestId("activity-edit-label")).toHaveTextContent("Edit not approved");
     expect(within(refused[0]).getByTestId("decision-line")).toHaveTextContent(/Edit not approved by admin@ck\.test · .*Reason: Wrong date/);
     expect(within(refused[0]).queryByRole("button", { name: "Approve" })).toBeNull();
+    back();
     fireEvent.click(tab(/^Approved/));
+    review("Approved edit");
     const approved = screen.getAllByTestId("admin-activity");
     expect(approved).toHaveLength(1);
     expect(within(approved[0]).getByTestId("activity-edit-label")).toHaveTextContent("Edit approved");
@@ -91,18 +104,21 @@ describe("Profile changes tabs", () => {
       { ...change(3, "REJECTED", "Asha Trust", { decidedAt: "2026-11-02T06:30:00Z", adminReason: "Wrong number" }), decidedBy: "admin@ck.test" },
     ] as never);
     render(<NgoProfileChangesPanel />);
-    expect(await screen.findAllByTestId("admin-profile-change")).toHaveLength(1);
+    expect(await screen.findAllByTestId("admin-profile-change-row")).toHaveLength(1);
     expect(adminGetNgoProfileChanges).toHaveBeenCalledWith("ALL");
     expect(tabs()).toEqual(["Waiting (1)", "Approved (1)", "Not approved (1)", "All (3)"]);
     expect(screen.queryByRole("button", { pressed: true })).toBeNull();
     fireEvent.click(tab(/^Not approved/));
+    expect(screen.getAllByTestId("admin-profile-change-row")).toHaveLength(1);
+    review("Asha Trust Registration number");
     const rows = screen.getAllByTestId("admin-profile-change");
     expect(rows).toHaveLength(1);
     expect(within(rows[0]).getByTestId("decision-line")).toHaveTextContent(/Not approved by admin@ck\.test · .*Reason: Wrong number/);
     expect(within(rows[0]).queryByRole("button", { name: "Approve" })).toBeNull();
+    back();
     fireEvent.click(tab(/^All/));
     fireEvent.change(screen.getByLabelText("Search profile changes"), { target: { value: "Hope" } });
-    await waitFor(() => expect(screen.getAllByTestId("admin-profile-change")).toHaveLength(2));
+    await waitFor(() => expect(screen.getAllByTestId("admin-profile-change-row")).toHaveLength(2));
   });
 });
 
@@ -115,17 +131,20 @@ describe("Distribution proofs tabs", () => {
       proof(4, "Books", { proofDecision: "REJECTED", proofDecidedBy: "admin@ck.test", proofDecidedAt: "2026-11-01T06:30:00Z", proofDecisionReason: "Photos are blurry" }),
     ] as never);
     render(<NgoDriveProofsPanel />);
-    expect(await screen.findAllByTestId("proof-card")).toHaveLength(2);
+    expect(await screen.findAllByTestId("proof-row")).toHaveLength(2);
     expect(adminGetNgoDriveProofs).toHaveBeenCalledWith("ALL");
     expect(tabs()).toEqual(["Waiting for review (2)", "Approved (1)", "Rejected (1)", "All (4)"]);
     fireEvent.click(tab(/^Rejected/));
+    expect(screen.getAllByTestId("proof-row")).toHaveLength(1);
+    review("Books");
     const cards = screen.getAllByTestId("proof-card");
     expect(cards).toHaveLength(1);
     expect(within(cards[0]).getByTestId("decision-line")).toHaveTextContent(/Rejected by admin@ck\.test · .*Reason: Photos are blurry/);
     expect(within(cards[0]).queryByRole("button", { name: "Approve" })).toBeNull();
+    back();
     fireEvent.click(tab(/^All/));
     fireEvent.change(screen.getByLabelText("Search distribution proofs"), { target: { value: "bags" } });
-    await waitFor(() => expect(screen.getAllByTestId("proof-card")).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByTestId("proof-row")).toHaveLength(1));
   });
 });
 

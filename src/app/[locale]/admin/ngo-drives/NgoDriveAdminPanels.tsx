@@ -21,6 +21,8 @@ import { AdminSearchBox, NoSearchResults, matchesQuery } from "@/components/admi
 import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
 import { DecisionLine, reviewTabs, tabOptions, useAdminStatusTabs } from "@/components/admin/useAdminStatusTabs";
 import { readUrlParam, statusIndexFromUrl, writeUrlParams } from "@/components/admin/adminUrlState";
+import { AdminReviewTable, BackToList, TwoLine, labelWithCount, useServerTabCounts } from "@/components/admin/AdminReviewTable";
+import { useReviewParam } from "@/components/admin/useReviewParam";
 
 /** ?q= search state for a panel; cleared from the URL when the panel unmounts. */
 function useUrlQuery(): [string, (q: string) => void] {
@@ -106,6 +108,8 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const { fail, clear, view: errorView } = useErrors();
+  const [reviewId, setReviewId] = useReviewParam();
+  const counts = useServerTabCounts(DRIVE_FILTERS.map(f => f.value), s => adminGetNgoDrives(s).then(r => r.length), drives);
 
   const load = useCallback(async () => {
     setLoading(true); clear();
@@ -122,6 +126,12 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
       setDetail(drive); setNgo(owner);
     } catch (e) { fail(e, "Could not open this drive."); }
   }
+  // ?review=<id> (a reload, or browser Back/Forward) opens that drive; no id shows the list.
+  useEffect(() => {
+    if (!reviewId) { setDetail(null); return; }
+    if (detail?.id !== Number(reviewId)) void open(Number(reviewId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewId]);
 
   async function decide(kind: "approve" | "changes" | "reject") {
     if (!detail || busy) return;
@@ -144,26 +154,30 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
   const shownDrives = drives.filter(x => matchesQuery(query, x.title, x.id, x.ngoUser?.fullName, (x as { ngoName?: string | null }).ngoName, x.itemName));
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
-      <AdminStatusTabs label="Drive status" options={DRIVE_FILTERS.map(f => ({ label: f.text }))} selected={statusIndex}
-        onSelect={i => { if (i !== statusIndex) { setStatusIndex(i); setDetail(null); } }} />
+      <AdminStatusTabs label="Drive status" options={DRIVE_FILTERS.map((f, i) => ({ label: labelWithCount(f.text, counts[i]) }))} selected={statusIndex}
+        onSelect={i => { if (i !== statusIndex) { setStatusIndex(i); setReviewId(null); setDetail(null); } }} />
       <AdminSearchBox value={query} onChange={setQuery} label="Search drives" placeholder="Search drive title, ID, NGO name or item" />
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      {reviewId ? <BackToList onBack={() => setReviewId(null)} /> : (
         <section aria-label="Drives" className="min-w-0 space-y-3">
           {loading ? <p role="status">Loading drives…</p> : drives.length === 0 ? <p className="text-sm text-stone-500">No drives in this status.</p>
-            : shownDrives.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
-          {shownDrives.map(drive => (
-            <button key={drive.id} onClick={() => void open(drive.id)}
-              className={`w-full rounded-xl border bg-white p-4 text-left dark:bg-zinc-900 ${d?.id === drive.id ? "border-ngo-700 ring-1 ring-ngo-700" : "border-stone-200 dark:border-zinc-700"}`}>
-              <span className="block font-semibold ck-user-text">{drive.title}</span>
-              <span className="mt-1 block text-xs text-stone-500 ck-user-text">{drive.ngoUser?.fullName}</span>
-              <span className="mt-2 block text-sm capitalize">{label(drive.status)}</span>
-            </button>
-          ))}
+            : shownDrives.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : (
+            <AdminReviewTable label="Drives" rows={shownDrives} name={x => x.title} rowKey={x => x.id} highlight={x => x.status === "PENDING_REVIEW"}
+              onReview={x => setReviewId(String(x.id))}
+              columns={[
+                { header: "Drive", cell: x => <TwoLine main={x.title} sub={(x as { ngoName?: string | null }).ngoName || x.ngoUser?.fullName} /> },
+                { header: "Item", cell: x => <span className="ck-user-text">{x.itemName || "—"}</span> },
+                { header: "Quantity", num: true, cell: x => `${x.quantityNeeded ?? "—"} ${label(x.unit)}` },
+                { header: "Needed by", cell: x => x.neededBy || "—" },
+                { header: "State", cell: x => <span className="capitalize">{label(x.status)}</span> },
+              ]} />
+          )}
         </section>
+      )}
+      {reviewId && (
         <section aria-label="Drive details" className={`min-w-0 ${card}`}>
-          {!d ? <p className="text-sm text-stone-500">Select a drive to review it.</p> : <>
+          {!d ? <p role="status" className="text-sm text-stone-500">Loading drive…</p> : <>
             <h2 className="text-2xl font-bold ck-user-text">{d.title}</h2>
             {d.tagline && <p className="mt-1 text-sm italic text-stone-500">{d.tagline}</p>}
             <p className="mt-1 text-sm capitalize">{label(d.status)}</p>
@@ -279,7 +293,7 @@ export function NgoDriveReviewPanel({ onChange }: { onChange?: () => void }) {
             )}
           </>}
         </section>
-      </div>
+      )}
     </div>
   );
 }
@@ -308,6 +322,8 @@ export function NgoDriveOffersPanel() {
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState<AdminDriveOfferDetail | null>(null);
   const { fail, clear, view: errorView } = useErrors();
+  const [reviewId, setReviewId] = useReviewParam();
+  const counts = useServerTabCounts(OFFER_FILTERS.map(f => f.value), s => adminGetNgoDriveOffers(s).then(r => r.length), offers);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -323,21 +339,38 @@ export function NgoDriveOffersPanel() {
     try { setDetail(await adminGetNgoDriveOffer(id)); }
     catch (e) { fail(e, "Could not load this offer."); }
   }
+  // Review opens the offer with its photos and handover already loaded.
+  useEffect(() => {
+    if (!reviewId) { setDetail(null); return; }
+    if (detail?.id !== Number(reviewId)) void open(Number(reviewId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reviewId]);
 
   const when = (v?: string | null) => (v ? new Date(v).toLocaleString() : null);
   const empty = OFFER_FILTERS.find(f => f.value === status)?.empty;
   const shownOffers = offers.filter(o => matchesQuery(query, o.donorName, o.ngoName, o.driveTitle, o.id));
+  const reviewing = reviewId ? offers.filter(o => String(o.id) === reviewId) : [];
 
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
-      <AdminStatusTabs label="Status" options={OFFER_FILTERS.map(f => ({ label: f.text }))} selected={statusIndex}
-        onSelect={i => { if (i !== statusIndex) { setDetail(null); setStatusIndex(i); } }} />
+      <AdminStatusTabs label="Status" options={OFFER_FILTERS.map((f, i) => ({ label: labelWithCount(f.text, counts[i]) }))} selected={statusIndex}
+        onSelect={i => { if (i !== statusIndex) { setReviewId(null); setDetail(null); setStatusIndex(i); } }} />
       <AdminSearchBox value={query} onChange={setQuery} label="Search drive offers" placeholder="Search donor, NGO, drive title or offer ID" />
       <p className="text-sm text-stone-500">Read only. The NGO accepts or declines each offer, and the handover starts as soon as it accepts.</p>
       {errorView}
-      {loading ? <p role="status">Loading drive offers…</p> : offers.length === 0 ? <p className="text-sm text-stone-500">{empty}</p>
-        : shownOffers.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
-      {shownOffers.map(o => (
+      {reviewId && <BackToList onBack={() => setReviewId(null)} />}
+      {loading ? <p role="status">Loading drive offers…</p> : reviewId ? (reviewing.length === 0 ? <p className="text-sm text-stone-500">This offer is not in this list.</p> : null)
+        : offers.length === 0 ? <p className="text-sm text-stone-500">{empty}</p>
+        : shownOffers.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : (
+        <AdminReviewTable label="Drive offers" rows={shownOffers} name={o => `${o.donorName || "Donor"} → ${o.driveTitle}`} rowKey={o => o.id} onReview={o => setReviewId(String(o.id))}
+          columns={[
+            { header: "Donor → drive", cell: o => <TwoLine main={`${o.donorName || "Donor"} → ${o.driveTitle}`} sub={o.ngoName} /> },
+            { header: "Offering", cell: o => `${o.quantity ?? "?"} ${label(o.driveUnit)} of ${o.driveItemName ?? "items"}` },
+            { header: "Submitted", cell: o => (o.submittedAt ? serverDate(o.submittedAt).toLocaleString() : "—") },
+            { header: "State", cell: o => <span className="capitalize">{label(o.status)}</span> },
+          ]} />
+      )}
+      {reviewing.map(o => (
         <article key={o.id} className={card}>
           <h2 className="text-lg font-bold">{o.donorName || "Donor"} → {o.driveTitle}</h2>
           <p className="mt-1 text-sm text-stone-500 ck-user-text">{o.ngoName} · <span className="capitalize">{label(o.status)}</span>{o.submittedAt ? ` · submitted ${serverDate(o.submittedAt).toLocaleString()}` : ""}</p>
@@ -375,9 +408,6 @@ export function NgoDriveOffersPanel() {
               </div>
             ))}
           </dl>
-          <button className={`${button} mt-4`} aria-expanded={detail?.id === o.id} onClick={() => void open(o.id)}>
-            {detail?.id === o.id ? "Hide details" : "View details"}
-          </button>
           {detail?.id === o.id && (
             <section aria-label="Offer details" className="mt-4 space-y-3 border-t border-stone-200 pt-4 text-sm dark:border-zinc-700">
               {detail.photos.length > 0
@@ -418,6 +448,7 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
   const { index: statusIndex, setIndex: setStatusIndex, tab, query, setQuery } = useAdminStatusTabs(PROOF_TABS);
   const [enlarged, setEnlarged] = useState<string | null>(null);
   const { fail, clear, view: errorView } = useErrors();
+  const [reviewId, setReviewId] = useReviewParam();
 
   // Every proof (waiting and decided) once: the tab counts and lists come from the same rows.
   const load = useCallback(async () => {
@@ -442,6 +473,7 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
 
   const inTab = drives.filter(x => tab.matches(proofStatus(x)));
   const shownProofs = inTab.filter(x => matchesQuery(query, x.ngoName, x.ngoUser?.fullName, x.title, x.id));
+  const reviewing = reviewId ? drives.filter(x => String(x.id) === reviewId) : [];
   return (
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
       {enlarged && (
@@ -453,11 +485,22 @@ export function NgoDriveProofsPanel({ onChange }: { onChange?: () => void }) {
       )}
       {errorView}
       {notice && <p role="status" className="rounded-lg border border-green-300 bg-green-50 p-4 text-sm text-green-900">{notice}</p>}
-      <AdminStatusTabs label="Proof status" options={tabOptions(PROOF_TABS, drives, proofStatus)} selected={statusIndex} onSelect={setStatusIndex} />
+      <AdminStatusTabs label="Proof status" options={tabOptions(PROOF_TABS, drives, proofStatus)} selected={statusIndex} onSelect={i => { setReviewId(null); setStatusIndex(i); }} />
       <AdminSearchBox value={query} onChange={setQuery} label="Search distribution proofs" placeholder="Search NGO name, drive title or drive ID" />
-      {loading ? <p role="status">Loading distribution proofs…</p> : inTab.length === 0 ? <p className="text-sm text-stone-500">{statusIndex === 0 ? "No distribution proofs are waiting for review." : "Nothing here."}</p>
-        : shownProofs.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : null}
-      {shownProofs.map(d => (
+      {reviewId && <BackToList onBack={() => setReviewId(null)} />}
+      {loading ? <p role="status">Loading distribution proofs…</p> : reviewId ? null
+        : inTab.length === 0 ? <p className="text-sm text-stone-500">{statusIndex === 0 ? "No distribution proofs are waiting for review." : "Nothing here."}</p>
+        : shownProofs.length === 0 ? <NoSearchResults query={query} onClear={() => setQuery("")} /> : (
+        <AdminReviewTable label="Distribution proofs" rows={shownProofs} name={d => d.title} rowTestId="proof-row" rowKey={d => `${d.id}-${d.proofDecidedAt ?? "waiting"}`}
+          highlight={d => !d.proofDecision} onReview={d => setReviewId(String(d.id))}
+          columns={[
+            { header: "Drive", cell: d => <TwoLine main={d.title} sub={d.ngoName || d.ngoUser?.fullName} /> },
+            { header: "Received / distributed", cell: d => `${d.quantityReceived ?? 0} / ${d.proofQuantityDistributed ?? "—"} ${label(d.unit)}` },
+            { header: "Submitted", cell: d => formatIST(d.distributionProofSubmittedAt) || "—" },
+            { header: "State", cell: d => (d.proofDecision === "APPROVED" ? "Approved" : d.proofDecision === "REJECTED" ? "Rejected" : "Waiting for review") },
+          ]} />
+      )}
+      {reviewing.map(d => (
         <article key={`${d.id}-${d.proofDecidedAt ?? "waiting"}`} className={card} data-testid="proof-card">
           <ProofDetails d={d} onEnlarge={setEnlarged} />
           {d.proofDecision ? (

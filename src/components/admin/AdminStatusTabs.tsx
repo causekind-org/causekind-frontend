@@ -23,9 +23,9 @@ export function AdminStatusTabs({ options, selected, onSelect, label, disabled }
   }
   return (
     <div role="tablist" aria-label={label}
-      className="mb-4 flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-white/80 bg-white/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      className="mb-4 flex w-fit max-w-full flex-wrap gap-1 rounded-[22px] border border-white/80 bg-white/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       {options.map((o, i) => (
-        <button key={`${o.label}-${i}`} ref={(el) => { refs.current[i] = el; }} type="button" role="tab"
+        <button key={i} ref={(el) => { refs.current[i] = el; }} type="button" role="tab"
           aria-selected={i === selected} tabIndex={i === selected ? 0 : -1} disabled={disabled}
           className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition-colors duration-150 disabled:opacity-50 ${
             i === selected ? "bg-[#10233a] text-white" : "text-[#3a5070] hover:bg-white/70"}`}
