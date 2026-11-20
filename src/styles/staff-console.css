@@ -1,3 +1,9 @@
+/* Layer order first. If this file loads before styles.css, its `@layer components`
+   would otherwise be declared first and rank BELOW `base` (where Tailwind sets
+   `* { border-color: var(--border) }`), so base won and every nav item showed an
+   outline. Stating the canonical order here keeps components above base either way. */
+@layer theme, base, components, utilities;
+
 /*
  * Staff console theme — Admin (/admin/**) and Super Admin (/super-admin).
  *
@@ -353,3 +359,13 @@
   letter-spacing: -0.02em;
   color: #12211c;
 }
+
+/* Sidebar scrollbar: thin and translucent instead of the default white bar. */
+.ck-staff .ck-staff-aside nav,
+.ck-staff nav {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+.ck-staff nav::-webkit-scrollbar { width: 6px; }
+.ck-staff nav::-webkit-scrollbar-track { background: transparent; }
+.ck-staff nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 999px; }
