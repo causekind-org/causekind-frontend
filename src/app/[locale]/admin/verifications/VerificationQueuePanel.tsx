@@ -81,7 +81,7 @@ const STATUS_TONE: Record<string, StatusTone> = {
 };
 
 /** Shared pill-control look for the toolbar (40px tall, frosted). */
-const CONTROL = "h-10 rounded-full border border-white/80 bg-white/85 px-4 text-[13px] font-medium text-[#111c2b] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-colors duration-150 hover:bg-white";
+const CONTROL = "h-10 rounded-full border border-white/80 bg-white/85 px-4 text-[13px] font-medium text-[#10233a] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition-colors duration-150 hover:bg-white";
 
 function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -339,13 +339,13 @@ export function VerificationQueuePanel() {
         <div role="group" aria-label="Request status" className="flex max-w-full gap-1 overflow-x-auto rounded-full border border-white/80 bg-white/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
           {STATUS_FILTERS.map((f) => (
             <button key={f.key} aria-pressed={statusFilter === f.key} onClick={() => setStatusFilter(f.key)}
-              className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${statusFilter === f.key ? "bg-[#111c2b] text-white" : "text-[#3a4860] hover:bg-white/70"}`}>
+              className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${statusFilter === f.key ? "bg-[#10233a] text-white" : "text-[#3a5070] hover:bg-white/70"}`}>
               {f.label}
             </button>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <label className="flex items-center gap-2 text-xs font-semibold text-[#52617a]">
+          <label className="flex items-center gap-2 text-xs font-semibold text-[#4f6480]">
             Listed on
             <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
               <PopoverTrigger asChild>
@@ -374,7 +374,7 @@ export function VerificationQueuePanel() {
           </label>
           {listedSince && (
             <button onClick={() => setListedSince("")}
-              className="text-xs font-semibold text-[#52617a] underline underline-offset-2 hover:text-[#111c2b]">
+              className="text-xs font-semibold text-[#4f6480] underline underline-offset-2 hover:text-[#10233a]">
               Clear
             </button>
           )}
@@ -391,7 +391,7 @@ export function VerificationQueuePanel() {
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20" role="status" aria-label="Loading requests"><Loader2 className="w-8 h-8 animate-spin text-[#2f6fb0]" /></div>
+        <div className="flex justify-center py-20" role="status" aria-label="Loading requests"><Loader2 className="w-8 h-8 animate-spin text-[#2d7fd6]" /></div>
       ) : loadError ? (
         <SaLoadError what="requests" onRetry={load} />
       ) : filtered.length === 0 ? (
@@ -403,24 +403,24 @@ export function VerificationQueuePanel() {
             const isExpanded = expanded === r.id;
             const state = expandedData[r.id];
             return (
-              <div key={r.id} className={`ck-glass-solid overflow-hidden transition-shadow duration-200 ${r.isEmergency ? "!border-red-300" : ""} ${isExpanded ? "ring-2 ring-[#2f6fb0]/35" : ""}`}>
+              <div key={r.id} className={`ck-glass-solid overflow-hidden transition-shadow duration-200 ${r.isEmergency ? "!border-red-300" : ""} ${isExpanded ? "ring-2 ring-[#2d7fd6]/35" : ""}`}>
                 <div className="p-4 sm:p-5 space-y-3.5">
                   {/* Identity row — who's asking, where, and their current status at a glance */}
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
-                      <span className="shrink-0 w-10 h-10 rounded-full bg-[#dbe8f6] text-[#1f4f86] flex items-center justify-center font-bold text-sm" aria-hidden>
+                      <span className="shrink-0 w-10 h-10 rounded-full bg-[#d9ebff] text-[#1f66b3] flex items-center justify-center font-bold text-sm" aria-hidden>
                         {r.doneeName.slice(0, 1).toUpperCase()}
                       </span>
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <p className="font-semibold text-[15px] text-[#111c2b] truncate">{r.doneeName}</p>
+                          <p className="font-semibold text-[15px] text-[#10233a] truncate">{r.doneeName}</p>
                           {r.isEmergency && (
                             <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-red-600 text-white flex items-center gap-1 shrink-0">
                               <AlertTriangle className="w-3 h-3" aria-hidden /> Emergency
                             </span>
                           )}
                         </div>
-                        <span className="flex items-center gap-1 text-xs text-[#52617a]">
+                        <span className="flex items-center gap-1 text-xs text-[#4f6480]">
                           <MapPin className="w-3 h-3 shrink-0" />
                           {r.city}{r.pincode ? `, ${r.pincode}` : ""}
                         </span>
@@ -428,7 +428,7 @@ export function VerificationQueuePanel() {
                     </div>
                     <div className="shrink-0 text-right space-y-1">
                       <div className="flex items-center justify-end gap-1.5">
-                        <span className="font-mono text-[11px] text-[#52617a]">#{r.id}</span>
+                        <span className="font-mono text-[11px] text-[#4f6480]">#{r.id}</span>
                         {r.verificationTier && (
                           <span className="ck-status" data-tone="info">
                             {TIER_LABELS[r.verificationTier] ?? r.verificationTier}
@@ -444,7 +444,7 @@ export function VerificationQueuePanel() {
 
 
                   {/* Stat grid — mirrors the reference layout, with "Requesting" standing in for "Sales Representee" */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-2 pt-3 border-t border-[#dfe6ef] text-[13px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-3 gap-x-2 pt-3 border-t border-[#e3edf8] text-[13px]">
                     <Stat label="Requesting">
                       <span className="flex items-center gap-1.5">
                         <Package className="w-3.5 h-3.5 text-stone-400 shrink-0" />
@@ -477,7 +477,7 @@ export function VerificationQueuePanel() {
                     onClick={() => toggleExpand(r.id)}
                     aria-expanded={isExpanded}
                     className={`w-full flex h-9 items-center justify-center gap-1 rounded-full text-[13px] font-semibold transition-colors duration-150 ${
-                      isExpanded ? "bg-[#dbe8f6] text-[#1f4f86]" : "text-[#52617a] hover:bg-[#eef2f8] hover:text-[#111c2b]"
+                      isExpanded ? "bg-[#d9ebff] text-[#1f66b3]" : "text-[#4f6480] hover:bg-[#eef4fb] hover:text-[#10233a]"
                     }`}
                   >
                     {isExpanded ? "Hide review" : "Open review"} {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -485,9 +485,9 @@ export function VerificationQueuePanel() {
                 </div>
 
                 {isExpanded && (
-                  <div className="border-t border-[#dfe6ef] p-4 sm:p-5 space-y-3 bg-[#eef2f8]">
+                  <div className="border-t border-[#e3edf8] p-4 sm:p-5 space-y-3 bg-[#eef4fb]">
                     {!state || state.loading ? (
-                      <div className="flex justify-center py-5 sm:py-8" role="status" aria-label="Loading review"><Loader2 className="w-5 h-5 animate-spin text-[#2f6fb0]" /></div>
+                      <div className="flex justify-center py-5 sm:py-8" role="status" aria-label="Loading review"><Loader2 className="w-5 h-5 animate-spin text-[#2d7fd6]" /></div>
                     ) : (
                       <VerificationDetail
                         request={r}
@@ -500,7 +500,7 @@ export function VerificationQueuePanel() {
 
                     {/* Actions */}
                     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/80 bg-white/95 p-3">
-                      <span className="mr-auto text-[12px] font-semibold uppercase tracking-wide text-[#52617a]">Your decision</span>
+                      <span className="mr-auto text-[12px] font-semibold uppercase tracking-wide text-[#4f6480]">Your decision</span>
                       {r.status === "ON_HOLD" ? (
                         <button onClick={() => handleResume(r.id)} disabled={acting === r.id}
                           className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-[#1e3a60] text-white text-[13px] font-semibold disabled:opacity-50">
@@ -509,7 +509,7 @@ export function VerificationQueuePanel() {
                       ) : r.status === "PENDING_VERIFICATION" ? (
                         <>
                           <button onClick={() => handleApprove(r.id)} disabled={acting === r.id}
-                            className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-[#2f6fb0] hover:bg-[#1f5592] text-white text-[13px] font-semibold disabled:opacity-50">
+                            className="flex items-center gap-1.5 h-10 px-4 rounded-full bg-[#2d7fd6] hover:bg-[#1f66b3] text-white text-[13px] font-semibold disabled:opacity-50">
                             {acting === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Approve
                           </button>
                           <button onClick={() => setRejectId(r.id)} disabled={acting === r.id}
@@ -534,7 +534,7 @@ export function VerificationQueuePanel() {
                         // "All", "Verified" and "Rejected" show decided requests too. Before
                         // this, they all showed Approve/Reject/Hold, which the backend refuses
                         // for anything past verification.
-                        <p className="text-[13px] text-[#52617a]">
+                        <p className="text-[13px] text-[#4f6480]">
                           Already decided ({STATUS_LABELS[r.status] ?? r.status.replace(/_/g, " ").toLowerCase()}) — no review action needed.
                         </p>
                       )}
@@ -551,7 +551,7 @@ export function VerificationQueuePanel() {
       {rejectId && (
         <Modal title="Reject Request" onClose={() => setRejectId(null)}>
           <textarea aria-label="Reason for rejection" value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} rows={6} maxLength={2000}
-            placeholder="Reason for rejection…" className="w-full rounded-2xl border border-[#cfd9e6] bg-white p-3 text-sm focus:border-[#2f6fb0] focus:outline-none focus:ring-2 focus:ring-[#2f6fb0]/25" />
+            placeholder="Reason for rejection…" className="w-full rounded-2xl border border-[#cbdcee] bg-white p-3 text-sm focus:border-[#2d7fd6] focus:outline-none focus:ring-2 focus:ring-[#2d7fd6]/25" />
           <p className={`text-xs mt-1 ${rejectReason.length > 2000 ? "text-red-600 font-semibold" : "text-stone-400"}`}>
             {rejectReason.length}/2000
           </p>
@@ -571,7 +571,7 @@ export function VerificationQueuePanel() {
               <Sparkles className="w-3.5 h-3.5" /> AI Draft
             </button>
             <div className="flex gap-2">
-              <button onClick={() => setRejectId(null)} className="h-10 px-4 rounded-full text-sm font-semibold text-[#52617a] hover:bg-[#eef2f8]">Cancel</button>
+              <button onClick={() => setRejectId(null)} className="h-10 px-4 rounded-full text-sm font-semibold text-[#4f6480] hover:bg-[#eef4fb]">Cancel</button>
               <button onClick={handleReject} disabled={acting === rejectId} className="h-10 px-4 rounded-full bg-red-600 text-white text-sm font-semibold disabled:opacity-50">Confirm reject</button>
             </div>
           </div>
@@ -582,9 +582,9 @@ export function VerificationQueuePanel() {
       {holdId && (
         <Modal title="Place Request On Hold" onClose={() => setHoldId(null)}>
           <textarea aria-label="What is pending" value={holdReason} onChange={(e) => setHoldReason(e.target.value)} rows={3}
-            placeholder="What's pending — a call, more documents, etc.?" className="w-full rounded-2xl border border-[#cfd9e6] bg-white p-3 text-sm focus:border-[#2f6fb0] focus:outline-none focus:ring-2 focus:ring-[#2f6fb0]/25" />
+            placeholder="What's pending — a call, more documents, etc.?" className="w-full rounded-2xl border border-[#cbdcee] bg-white p-3 text-sm focus:border-[#2d7fd6] focus:outline-none focus:ring-2 focus:ring-[#2d7fd6]/25" />
           <div className="flex justify-end gap-2 mt-3">
-            <button onClick={() => setHoldId(null)} className="h-10 px-4 rounded-full text-sm font-semibold text-[#52617a] hover:bg-[#eef2f8]">Cancel</button>
+            <button onClick={() => setHoldId(null)} className="h-10 px-4 rounded-full text-sm font-semibold text-[#4f6480] hover:bg-[#eef4fb]">Cancel</button>
             <button onClick={handleHold} disabled={acting === holdId} className="h-10 px-4 rounded-full bg-amber-600 text-white text-sm font-semibold disabled:opacity-50">Confirm hold</button>
           </div>
         </Modal>
@@ -595,8 +595,8 @@ export function VerificationQueuePanel() {
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0b1a2e]/55 p-3 backdrop-blur-sm sm:p-4" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 text-[#111c2b] shadow-2xl sm:p-6" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#12355c]/55 p-3 backdrop-blur-sm sm:p-4" onClick={onClose}>
+      <div role="dialog" aria-modal="true" aria-label={title} className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 text-[#10233a] shadow-2xl sm:p-6" onClick={(e) => e.stopPropagation()}>
         <p className="mb-3 text-[17px] font-semibold">{title}</p>
         {children}
       </div>
@@ -624,7 +624,7 @@ function VerificationDetail({
         <p className="text-3xs font-semibold uppercase tracking-wide text-stone-400 mb-1.5">Submitted by</p>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#dbe8f6] text-sm font-bold text-[#1f4f86]">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#d9ebff] text-sm font-bold text-[#1f66b3]">
               {request.doneeName?.charAt(0)?.toUpperCase() ?? "?"}
             </span>
             <span className="min-w-0">
@@ -640,7 +640,7 @@ function VerificationDetail({
         {detail.doneeId && (
           <a
             href={`/admin/dashboard?journeyUser=${detail.doneeId}`}
-            className="mt-2 inline-block text-xs font-semibold text-[#1f5592] hover:underline"
+            className="mt-2 inline-block text-xs font-semibold text-[#1f66b3] hover:underline"
           >
             View donee&apos;s full journey →
           </a>
@@ -679,7 +679,7 @@ function VerificationDetail({
               <div className="flex flex-wrap gap-2">
                 {otherDocs.map((d) => (
                   <a key={d.id} href={d.url} target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-3xs font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#dbe8f6] hover:text-[#1f4f86] transition-colors">
+                    className="flex items-center gap-1 text-3xs font-bold px-2.5 py-1.5 rounded-lg bg-stone-100 dark:bg-zinc-700 text-stone-600 dark:text-stone-300 hover:bg-[#d9ebff] hover:text-[#1f66b3] transition-colors">
                     <ExternalLink className="w-3 h-3" /> {d.docType.replace(/_/g, " ")}
                   </a>
                 ))}
@@ -747,7 +747,7 @@ function VerificationDetail({
         <div className="flex flex-wrap gap-1.5 pt-1">
           {TIERS.filter((t) => t.key !== "ALL" && t.key !== detail.tier).map((t) => (
             <button key={t.key} onClick={() => onOverrideTier(t.key)}
-              className="text-3xs font-semibold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#2f6fb0] hover:text-[#1f5592]">
+              className="text-3xs font-semibold px-2 py-1 rounded-lg border border-stone-200 dark:border-zinc-600 text-stone-500 hover:border-[#2d7fd6] hover:text-[#1f66b3]">
               → {t.label}
             </button>
           ))}

@@ -58,7 +58,7 @@ export function RepeatFlagBadge({ flag, who }: { flag: AdminRepeatFlag | null | 
           {flag.keys.map(k => (
             <li key={k}>
               {k.startsWith("pdi-")
-                ? <a href={`/admin/dashboard?tab=issues&issue=${k}`} className="font-semibold text-[#1f5592] underline">Issue #{k.slice(4)}</a>
+                ? <a href={`/admin/dashboard?tab=issues&issue=${k}`} className="font-semibold text-[#1f66b3] underline">Issue #{k.slice(4)}</a>
                 : <span className="text-stone-500">Offer #{k.replace("offer-", "")} (not received yet)</span>}
             </li>
           ))}
@@ -107,8 +107,8 @@ function Fold({ title, count, icon, children, open = false }: { title: string; c
     <details open={open} className="group rounded-3xl border border-stone-200 bg-white shadow-sm">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 sm:px-6">
         <span className="flex items-center gap-2 text-sm font-black uppercase tracking-wide text-stone-500">{icon}{title}{count != null && <span className="rounded-full bg-stone-100 px-2 py-0.5 text-2xs text-stone-600">{count}</span>}</span>
-        <span className="text-xs font-bold text-[#1f5592] group-open:hidden">Show</span>
-        <span className="hidden text-xs font-bold text-[#1f5592] group-open:inline">Hide</span>
+        <span className="text-xs font-bold text-[#1f66b3] group-open:hidden">Show</span>
+        <span className="hidden text-xs font-bold text-[#1f66b3] group-open:inline">Hide</span>
       </summary>
       <div className="border-t border-stone-100 px-5 py-4 sm:px-6">{children}</div>
     </details>
@@ -144,16 +144,16 @@ function PartyCard({ label, p, flag }: { label: "Donor" | "Donee"; p: AdminIssue
       <p className="mt-1 text-base font-bold text-stone-900">{label}: {p?.name ?? "Unknown"}</p>
       <ul className="mt-3 space-y-1.5 text-sm">
         {p?.phone && (
-          <li><a href={`tel:${p.phone}`} className="inline-flex items-center gap-2 font-semibold text-stone-800 hover:text-[#1f5592]"><Phone className="h-4 w-4 text-stone-400" aria-hidden />{p.phone}</a></li>
+          <li><a href={`tel:${p.phone}`} className="inline-flex items-center gap-2 font-semibold text-stone-800 hover:text-[#1f66b3]"><Phone className="h-4 w-4 text-stone-400" aria-hidden />{p.phone}</a></li>
         )}
         {p?.email && (
-          <li className="min-w-0"><a href={`mailto:${p.email}`} className="inline-flex min-w-0 items-center gap-2 font-semibold text-stone-800 hover:text-[#1f5592]"><Mail className="h-4 w-4 shrink-0 text-stone-400" aria-hidden /><span className="truncate">{p.email}</span></a></li>
+          <li className="min-w-0"><a href={`mailto:${p.email}`} className="inline-flex min-w-0 items-center gap-2 font-semibold text-stone-800 hover:text-[#1f66b3]"><Mail className="h-4 w-4 shrink-0 text-stone-400" aria-hidden /><span className="truncate">{p.email}</span></a></li>
         )}
         {p?.city && <li className="inline-flex items-center gap-2 text-stone-600"><MapPin className="h-4 w-4 text-stone-400" aria-hidden />{p.city}</li>}
         {!p?.phone && !p?.email && <li className="text-stone-500">No contact details on file.</li>}
       </ul>
       {p?.userId != null && (
-        <a href={`/admin/dashboard?journeyUser=${p.userId}`} className="mt-3 inline-block text-xs font-bold text-[#1f5592] underline">User journey</a>
+        <a href={`/admin/dashboard?journeyUser=${p.userId}`} className="mt-3 inline-block text-xs font-bold text-[#1f66b3] underline">User journey</a>
       )}
     </div>
   );
@@ -177,7 +177,7 @@ function LinkChips({ links }: { links: AdminIssueLink[] }) {
         <a key={`${l.kind}-${i}`} href={l.url} target="_blank" rel="noopener noreferrer nofollow"
           className={`inline-flex min-h-10 items-center gap-2 rounded-full border px-3.5 text-sm font-bold transition-colors ${
             l.kind === "DELIVERY_PROOF" || l.kind === "ORDER_PROOF"
-              ? "border-[#1f5592]/30 bg-orange-50 text-[#1f5592] hover:bg-orange-100"
+              ? "border-[#1f66b3]/30 bg-orange-50 text-[#1f66b3] hover:bg-orange-100"
               : "border-stone-200 bg-white text-stone-800 hover:border-stone-400"}`}>
           {LINK_ICON[l.kind]} {l.label} <ExternalLink className="h-3.5 w-3.5 opacity-60" aria-hidden />
         </a>
@@ -277,7 +277,7 @@ export function PurchaseIssueCase({ d, purchase, decidable, onDecided, extra }: 
       </Section>
 
       {decidable && (purchase.partialDelivery || purchase.damage || purchase.nonDelivery) && (
-        <Section title="Resolution" icon={<ShieldCheck className="h-4 w-4 text-[#1f5592]" aria-hidden />}>
+        <Section title="Resolution" icon={<ShieldCheck className="h-4 w-4 text-[#1f66b3]" aria-hidden />}>
           <PartialDeliveryResolver purchase={purchase} onDone={onDecided} />
         </Section>
       )}
@@ -299,7 +299,7 @@ export function PurchaseIssueCase({ d, purchase, decidable, onDecided, extra }: 
           <ol className="relative space-y-3 border-s border-stone-200 ps-4">
             {purchase.steps.map((st, i) => (
               <li key={i} className="relative">
-                <span aria-hidden className="absolute -start-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#1f5592]" />
+                <span aria-hidden className="absolute -start-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#1f66b3]" />
                 <p className="text-2xs font-bold uppercase tracking-wide text-stone-500">{when(st.at)} · {st.actor}</p>
                 <p className="text-sm font-bold text-stone-900">{ACTION_LABEL[st.action] ?? st.action}</p>
                 {st.note && <p className="mt-0.5 whitespace-pre-line text-sm text-stone-700">{st.note}</p>}
@@ -365,7 +365,7 @@ function ReturnPickupControl({ offerId, damage, onChanged }: { offerId: number; 
         <p className="text-sm font-bold text-stone-900">
           Return pickup: {damage.returnPickupStatus ? PICKUP_LABEL[damage.returnPickupStatus] : "Not set"}
         </p>
-        {!open && <button type="button" onClick={() => setOpen(true)} className="text-xs font-bold text-[#1f5592] underline">Update</button>}
+        {!open && <button type="button" onClick={() => setOpen(true)} className="text-xs font-bold text-[#1f66b3] underline">Update</button>}
       </div>
       {damage.returnPickupNote && <p className="mt-1 text-sm text-stone-600">{damage.returnPickupNote}</p>}
       {open && (
@@ -392,7 +392,7 @@ function ReturnPickupControl({ offerId, damage, onChanged }: { offerId: number; 
                 setBusy(false);
               }
             }}
-            className="inline-flex min-h-10 items-center rounded-xl bg-[#1f5592] px-3.5 text-sm font-bold text-white disabled:opacity-50">
+            className="inline-flex min-h-10 items-center rounded-xl bg-[#1f66b3] px-3.5 text-sm font-bold text-white disabled:opacity-50">
             Save pickup
           </button>
         </div>
@@ -414,10 +414,10 @@ function NonDeliverySection({ nd, purchase, onChanged }: { nd: AdminNonDeliveryC
     <Section title="Nothing arrived" icon={<Truck className="h-4 w-4" aria-hidden />}>
       <div className="flex flex-wrap gap-2">
         {orderProof
-          ? <a href={orderProof.url} target="_blank" rel="noopener noreferrer nofollow" className={`${chip} bg-orange-50 text-[#1f5592] ring-[#1f5592]/30`}><FileText className="h-4 w-4" aria-hidden /> Order proof</a>
+          ? <a href={orderProof.url} target="_blank" rel="noopener noreferrer nofollow" className={`${chip} bg-orange-50 text-[#1f66b3] ring-[#1f66b3]/30`}><FileText className="h-4 w-4" aria-hidden /> Order proof</a>
           : <span className={`${chip} bg-stone-100 text-stone-600 ring-stone-200`}>Order proof: none</span>}
         {deliveryProof
-          ? <a href={deliveryProof.url} target="_blank" rel="noopener noreferrer nofollow" className={`${chip} bg-orange-50 text-[#1f5592] ring-[#1f5592]/30`}><ShieldCheck className="h-4 w-4" aria-hidden /> Delivery proof</a>
+          ? <a href={deliveryProof.url} target="_blank" rel="noopener noreferrer nofollow" className={`${chip} bg-orange-50 text-[#1f66b3] ring-[#1f66b3]/30`}><ShieldCheck className="h-4 w-4" aria-hidden /> Delivery proof</a>
           : <span className={`${chip} bg-red-50 text-red-700 ring-red-200`}>Delivery proof: Not submitted</span>}
         <span className={`${chip} bg-stone-50 text-stone-800 ring-stone-200`}>Latest expected: {when(purchase.expectedDeliveryAt)}</span>
         {nd.notReceivedYetAt && <span className={`${chip} bg-amber-50 text-amber-900 ring-amber-200`}>&ldquo;Not received yet&rdquo; marked {when(nd.notReceivedYetAt)}</span>}
@@ -468,9 +468,9 @@ function ConfirmationControl({ offerId, nd, onChanged }: { offerId: number; nd: 
         <div className="flex gap-3">
           {nd.confirmationGeneratedAt && (
             <button type="button" onClick={() => void downloadNonDeliveryConfirmation(offerId).catch(e => toast.error(e instanceof Error ? e.message : "Download failed"))}
-              className="text-xs font-bold text-[#1f5592] underline">Download PDF</button>
+              className="text-xs font-bold text-[#1f66b3] underline">Download PDF</button>
           )}
-          {!open && <button type="button" onClick={() => setOpen(true)} className="text-xs font-bold text-[#1f5592] underline">
+          {!open && <button type="button" onClick={() => setOpen(true)} className="text-xs font-bold text-[#1f66b3] underline">
             {nd.confirmationGeneratedAt ? "Generate again" : "Generate non-delivery confirmation"}
           </button>}
         </div>
@@ -495,7 +495,7 @@ function ConfirmationControl({ offerId, nd, onChanged }: { offerId: number; nd: 
                 setBusy(false);
               }
             }}
-            className="inline-flex min-h-10 items-center rounded-xl bg-[#1f5592] px-3.5 text-sm font-bold text-white disabled:opacity-50">
+            className="inline-flex min-h-10 items-center rounded-xl bg-[#1f66b3] px-3.5 text-sm font-bold text-white disabled:opacity-50">
             Generate
           </button>
         </div>

@@ -53,7 +53,7 @@ export function PurchaseQueuePanel() {
         <div className="flex flex-wrap items-center gap-2">
           {([[true, "Needs attention"], [false, "All open"]] as const).map(([v, label]) => (
             <button key={label} onClick={() => { setAttention(v); setPage(0); }}
-              className={`rounded-full px-3 py-1 text-xs font-bold ${attention === v ? "bg-[#1f5592] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>{label}</button>
+              className={`rounded-full px-3 py-1 text-xs font-bold ${attention === v ? "bg-[#1f66b3] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>{label}</button>
           ))}
           <p className="text-sm text-stone-500">{rows.length} purchase{rows.length === 1 ? "" : "s"} on this page</p>
         </div>
@@ -62,7 +62,7 @@ export function PurchaseQueuePanel() {
         </button>
       </div>
 
-      {loading && <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#1f5592]" /></div>}
+      {loading && <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#1f66b3]" /></div>}
       {!loading && rows.length === 0 && <p className="py-10 text-center text-sm text-stone-500">{attention ? "Nothing needs attention right now." : "No open purchases."}</p>}
 
       {!loading && rows.map(r => {
@@ -82,7 +82,7 @@ export function PurchaseQueuePanel() {
             <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="font-bold text-stone-900 dark:text-stone-100">Offer #{r.offerId}</span>
               <span className="rounded-full bg-stone-100 px-2 py-0.5 dark:bg-zinc-800">{purchaseMethodLabel(r.method)}</span>
-              <span className="rounded-full bg-orange-50 px-2 py-0.5 font-semibold text-[#1f5592]">{r.status?.replace(/_/g, " ") ?? "—"}</span>
+              <span className="rounded-full bg-orange-50 px-2 py-0.5 font-semibold text-[#1f66b3]">{r.status?.replace(/_/g, " ") ?? "—"}</span>
               {overdue(r) && <span className="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">Overdue</span>}
               {r.deliveryReportedAt && !r.deliveryEscalatedAt && <span className="rounded-full bg-blue-50 px-2 py-0.5 font-semibold text-blue-800">Delivered {formatLocal(r.deliveryReportedAt)} · awaiting recipient</span>}
               {r.deliveryEscalatedAt && <span className="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-700">Recipient not responding since {formatLocal(r.deliveryReportedAt)}</span>}
@@ -100,7 +100,7 @@ export function PurchaseQueuePanel() {
               <ul className="flex flex-wrap gap-3 text-xs">
                 {r.evidence.map(e => (
                   <li key={e.id}>
-                    <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-[#1f5592] underline">{e.type.replace(/_/g, " ").toLowerCase()}{e.uploadedByRole === "DONEE" ? " (recipient)" : ""}</a>
+                    <a href={e.url} target="_blank" rel="noopener noreferrer" className="text-[#1f66b3] underline">{e.type.replace(/_/g, " ").toLowerCase()}{e.uploadedByRole === "DONEE" ? " (recipient)" : ""}</a>
                     {e.prohibited && <span className="ml-1 font-semibold text-red-600">flagged</span>}
                     {e.screeningAvailable === false && <span className="ml-1 text-amber-600">not screened</span>}
                   </li>
@@ -136,7 +136,7 @@ export function PurchaseQueuePanel() {
                   <button disabled={!reasonOk || !!acting} onClick={() => void act(`ok${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { action: "APPROVE", reason: text.trim() }), "Purchase verified — the handover can be arranged")}
                     className="rounded-lg bg-green-600 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">Approve purchase</button>
                   <button disabled={!reasonOk || !!acting} onClick={() => void act(`info${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { action: "REQUEST_INFO", reason: text.trim() }), "Donor asked for more information")}
-                    className="rounded-lg border border-[#1f5592] px-3 py-1.5 text-xs font-semibold text-[#1f5592] disabled:opacity-50">Request more information</button>
+                    className="rounded-lg border border-[#1f66b3] px-3 py-1.5 text-xs font-semibold text-[#1f66b3] disabled:opacity-50">Request more information</button>
                   <button disabled={!reasonOk || !!acting} onClick={() => void act(`no${r.offerId}`, () => adminReviewPurchaseProof(r.offerId, { action: "REJECT", reason: text.trim() }), "Evidence rejected — donor asked for a new photo")}
                     className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">Reject evidence</button>
                 </>
@@ -205,7 +205,7 @@ function PlanVsActual({ view: r }: { view: PurchaseView }) {
       </table>
       {(d.productUrl || d.purchaseNotes || d.reviewOutcome) && (
         <div className="space-y-1 border-t border-stone-100 px-3 py-2 text-xs dark:border-zinc-800">
-          {d.productUrl && <a href={d.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="text-[#1f5592] underline">Planned product link</a>}
+          {d.productUrl && <a href={d.productUrl} target="_blank" rel="noopener noreferrer nofollow" className="text-[#1f66b3] underline">Planned product link</a>}
           {d.purchaseNotes && <p className="text-stone-600 dark:text-stone-300">Donor: {d.purchaseNotes}</p>}
           {d.reviewOutcome && d.reviewOutcome !== "APPROVED" && (
             <p className="font-semibold text-amber-700">Last review: {d.reviewOutcome === "INFO_REQUIRED" ? "more information requested" : "evidence rejected"}{r.proofRejectionReason ? ` — ${r.proofRejectionReason}` : ""}</p>
