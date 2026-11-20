@@ -369,3 +369,9 @@
 .ck-staff nav::-webkit-scrollbar { width: 6px; }
 .ck-staff nav::-webkit-scrollbar-track { background: transparent; }
 .ck-staff nav::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.22); border-radius: 999px; }
+
+/* Phones (2026-11-20): a grid with no column sizes below a breakpoint gets one
+   implicit `auto` column, sized to its widest content (one-line truncated
+   text), wider than the screen, so cards were cut off on the right. Letting
+   every grid item shrink to 0 caps that column at the container width. */
+.ck-staff .ck-staff-workspace .grid > * { min-width: 0; }

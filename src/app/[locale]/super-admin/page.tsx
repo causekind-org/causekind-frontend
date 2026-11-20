@@ -408,7 +408,7 @@ function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => 
 
       <OverviewInsights data={data.insights} onOpen={onOpen} />
 
-      <div className="mt-5 grid gap-5">
+      <div className="mt-5 grid grid-cols-1 gap-5">
         <GlassCard>
           <CardTitle title="Users by role" description={`${fmtCount(roleTotal)} accounts in total`} icon={Database} />
           <ul className="space-y-3.5">

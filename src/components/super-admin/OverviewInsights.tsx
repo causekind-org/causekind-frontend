@@ -54,12 +54,12 @@ export function OverviewInsights({ data, onOpen }: { data: SuperAdminInsights | 
   }
   return (
     <div className="mt-5 space-y-5">
-      <div className="grid gap-5 lg:grid-cols-5">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
         <NeedsAttention data={data} onOpen={onOpen} />
         <AdminQueues q={data.adminQueues} />
       </div>
       <ActivityAndTrends data={data} />
-      <div className="grid gap-5 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <Stuck s={data.stuck} onOpen={onOpen} />
         <Trust t={data.trust} onOpen={onOpen} />
         <MailHealth m={data.mail} onOpen={onOpen} />
@@ -218,7 +218,7 @@ function ActivityAndTrends({ data }: { data: SuperAdminInsights }) {
         </p>
       )}
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+      <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
         <div className="min-w-0">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h3 className="text-[15px] font-semibold">Daily, last {data.trends.days} days</h3>
