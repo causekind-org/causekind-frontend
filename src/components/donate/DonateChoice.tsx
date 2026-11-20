@@ -278,7 +278,12 @@ function useTrayPhysics(sheet: HTMLElement | null) {
   }, [sheet]);
 }
 
-/** A compact card in the donate bottom sheet: icon, title, one line, one button. */
+/**
+ * A solid colour tile in the donate bottom sheet (design B, 2026-11-20): the
+ * whole tile is the button — large outline icon, title, one line, and the action
+ * as text with an arrow. On phones the tile is a compact row (icon beside text).
+ * The `data-tray` / `data-body` hooks for useTrayPhysics are unchanged.
+ */
 function SheetOption({
   tone, title, text, cta, onSelect, icon,
 }: {
@@ -293,21 +298,20 @@ function SheetOption({
       type="button"
       onClick={onSelect}
       data-tray
-      className={`group flex flex-col gap-3 rounded-[18px] border-2 border-[#ece4da] p-3.5 text-left transition-[border-color,box-shadow] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 md:gap-5 md:p-6 dark:border-zinc-700 ${t.card}`}
+      className={`group flex items-center gap-4 rounded-[20px] p-4 text-left text-white transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-14px_rgba(0,0,0,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0 md:min-h-[240px] md:flex-col md:items-start md:justify-between md:gap-8 md:rounded-[22px] md:p-7 ${t.solid}`}
     >
-      <span className="flex items-start gap-3 md:flex-col md:gap-4">
-        <span data-body="icon" className={`flex size-10 shrink-0 items-center justify-center rounded-xl md:size-14 md:rounded-2xl ${t.icon}`}>
-          <Icon className="size-5 md:size-7" strokeWidth={1.8} aria-hidden />
-        </span>
-        <span className="flex min-w-0 flex-col gap-0.5 md:gap-1.5">
-          <span data-body="title" className="text-[17px] font-extrabold leading-tight text-stone-900 md:text-[22px] dark:text-stone-50">{title}</span>
-          <span data-body="desc" className="text-sm leading-snug text-stone-500 md:text-base md:leading-relaxed dark:text-stone-400">{text}</span>
+      <span data-body="icon" className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 md:size-auto md:bg-transparent">
+        <Icon className="size-6 md:size-[52px]" strokeWidth={1.5} aria-hidden />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-none md:gap-2">
+        <span data-body="title" className="text-[17px] font-extrabold leading-tight tracking-tight md:text-[26px]">{title}</span>
+        <span data-body="desc" className="text-sm leading-snug text-white/85 md:text-[15px] md:leading-relaxed">{text}</span>
+        <span data-body="cta" className="mt-1 hidden items-center gap-2 text-[15px] font-bold md:mt-2 md:inline-flex">
+          {cta}
+          <ArrowRight className="size-[18px] transition-transform duration-150 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0" aria-hidden />
         </span>
       </span>
-      <span data-body="cta" className={`mt-auto flex h-11 shrink-0 items-center justify-center gap-2 rounded-full text-[15px] font-bold md:h-12 md:text-base text-white transition-colors ${t.button}`}>
-        {cta}
-        <ArrowRight className="size-[17px]" aria-hidden />
-      </span>
+      <ArrowRight className="size-5 shrink-0 md:hidden" aria-hidden />
     </button>
   );
 }
@@ -335,6 +339,7 @@ const TONES = {
     icon: "bg-[#fbe6d8] text-brand-500 dark:bg-brand-500/15",
     ink: "text-brand-500",
     button: "bg-brand-500 group-hover:bg-brand-600",
+    solid: "bg-brand-500 hover:bg-brand-600 focus-visible:ring-brand-500",
     Icon: Package,
   },
   money: {
@@ -342,6 +347,7 @@ const TONES = {
     icon: "bg-ngo-50 text-ngo-700 dark:bg-ngo-900/30 dark:text-ngo-300",
     ink: "text-ngo-700 dark:text-ngo-300",
     button: "bg-ngo-700 group-hover:bg-ngo-800",
+    solid: "bg-ngo-700 hover:bg-ngo-800 focus-visible:ring-ngo-700",
     Icon: HandCoins,
   },
   // Donee navy, for answering a request (DonateItemsChoiceModal).
@@ -350,6 +356,7 @@ const TONES = {
     icon: "bg-[#e3edf9] text-[#1e3a60] dark:bg-[#7fb0e8]/15 dark:text-[#7fb0e8]",
     ink: "text-[#1e3a60] dark:text-[#7fb0e8]",
     button: "bg-[#1e3a60] group-hover:bg-[#2d5a96]",
+    solid: "bg-[#1e3a60] hover:bg-[#2d5a96] focus-visible:ring-[#1e3a60]",
     Icon: HandHeart,
   },
 } as const;
