@@ -53,6 +53,9 @@ const scaleIn: Variants = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const } },
 };
 
+/** Shared by the Donation Guidelines cards so both match (incl. dark mode). */
+const GUIDELINES_CARD = "ck-cat-guidelines-bento rounded-[2rem] overflow-hidden border border-stone-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-xl shadow-lg";
+
 const fadeUpBlock: Variants = {
   hidden: { opacity: 0, y: 20, transition: { duration: 0 } },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
@@ -237,13 +240,26 @@ export default function CategoryPageClient({ cat }: Props) {
           <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100">
             <UiText>Donation Guidelines</UiText>
           </h2>
-          {/* Body text, not a caption: readable size, darker grey, ~65ch line length. */}
-          <p className="mt-2 max-w-[65ch] text-base leading-relaxed text-stone-700 dark:text-stone-300 break-words">
-            {cat.guideIntro}
-          </p>
+          {/* Fallback caption only for a category without approved card text. */}
+          {!cat.guideCard && (
+            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+              <UiText>Verified criteria to ensure your items are ready for immediate, dignified use.</UiText>
+            </p>
+          )}
         </div>
-        
-        <div className="ck-cat-guidelines-bento rounded-[2rem] overflow-hidden border border-stone-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-xl shadow-lg">
+
+        {/* Optional intro card (cat.guideCard): same card styling and width as the
+            Good to donate / Please avoid card below, body-size text. Renders only
+            when a category has guideCard text (all nine do). */}
+        {cat.guideCard && (
+          <div className={`${GUIDELINES_CARD} mb-5`}>
+            <p className="p-6 sm:p-8 text-base leading-[1.6] text-stone-700 dark:text-stone-300 break-words">
+              {cat.guideCard}
+            </p>
+          </div>
+        )}
+
+        <div className={GUIDELINES_CARD}>
           <div className="grid md:grid-cols-2">
             {/* Good to donate half */}
             <div className="p-6 sm:p-8 border-b md:border-b-0 md:border-r border-stone-200/50 dark:border-white/10 bg-emerald-50/30 dark:bg-emerald-950/20">
