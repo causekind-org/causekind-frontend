@@ -37,7 +37,10 @@ import { AdminRedirect } from "@/components/AdminRedirect";
   bringing any of it back is uncommenting two lines here and one in
   DeferredOverlays.
 */
-import GoogleTagManagerGated from "@/components/GoogleTagManagerGated";
+// GTM removed 2026-11-20 (owner decision): GA4, Meta Pixel and Clarity load
+// directly, and the agency container added ~65 KiB of unused JS plus a tag
+// that hit a CSP-blocked run.app endpoint (4 console errors per page).
+// GoogleTagManagerGated.tsx is kept; re-adding is this import and one mount.
 import MetaPixel from "@/components/MetaPixel";
 import ClarityAnalytics from "@/components/ClarityAnalytics";
 import GoogleAnalyticsGated from "@/components/GoogleAnalyticsGated";
@@ -178,7 +181,6 @@ export default async function RootLayout({
           <HiddenOnStaffPage>
             <MetaPixel />
             <ClarityAnalytics />
-            <GoogleTagManagerGated />
             <GoogleAnalyticsGated />
           </HiddenOnStaffPage>
           <SiteTracking />

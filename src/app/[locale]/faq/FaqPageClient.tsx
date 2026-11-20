@@ -89,7 +89,7 @@ export function FaqPageClient() {
                 onClick={() => selectCategory(i)}
                 className={`relative py-6 text-sm font-bold whitespace-nowrap transition-colors ${activeCategory === i
                     ? "text-stone-900 dark:text-white"
-                    : "text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                    : "text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-300"
                   }`}
               >
                 {cat.label}
@@ -127,8 +127,8 @@ export function FaqPageClient() {
                     aria-expanded={isOpen}
                   >
                     <span
-                      className="text-xs font-black tabular-nums mt-1 shrink-0 transition-colors"
-                      style={{ fontFamily: "var(--font-roboto-mono)", color: isOpen ? TERRACOTTA : "#a8a29e" }}
+                      className={`text-xs font-black tabular-nums mt-1 shrink-0 transition-colors ${isOpen ? "" : "text-stone-600 dark:text-stone-400"}`}
+                      style={{ fontFamily: "var(--font-roboto-mono)", color: isOpen ? TERRACOTTA : undefined }}
                     >
                       {item.num}
                     </span>

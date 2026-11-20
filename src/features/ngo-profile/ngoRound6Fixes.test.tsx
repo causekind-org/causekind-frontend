@@ -53,7 +53,7 @@ describe("Past activity tab (item 4)", () => {
     vi.mocked(getPendingNgoActivities).mockResolvedValue([item] as never);
     const onCount = vi.fn();
     render(<NgoActivityModerationPanel onCount={onCount} />);
-    expect(await screen.findAllByTestId("admin-activity")).toHaveLength(1);
+    expect(await screen.findAllByTestId("admin-activity-row")).toHaveLength(1);
     expect(onCount).toHaveBeenLastCalledWith(1);
     expect(screen.queryByText("Nothing waiting.")).toBeNull();
   });
@@ -63,6 +63,6 @@ describe("Past activity tab (item 4)", () => {
     render(<NgoActivityModerationPanel />);
     fireEvent.click(await screen.findByRole("button", { name: "Retry" }));
     expect(screen.queryByText("Nothing waiting.")).toBeNull();
-    await waitFor(() => expect(screen.getAllByTestId("admin-activity")).toHaveLength(1));
+    await waitFor(() => expect(screen.getAllByTestId("admin-activity-row")).toHaveLength(1));
   });
 });

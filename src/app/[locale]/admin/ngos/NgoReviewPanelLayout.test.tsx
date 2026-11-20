@@ -35,19 +35,22 @@ beforeEach(() => {
   vi.mocked(adminGetNgoEvidenceLink).mockResolvedValue({ url: "https://x" });
 });
 
-const card = (name: string) => within(screen.getByTestId("application-cards")).getByRole("button", { name: new RegExp(name) });
+const card = (name: string) => within(screen.getByTestId("application-cards")).getByRole("button", { name: new RegExp(`Review ${name}`) });
+const plain = (t: HTMLElement) => (t.textContent ?? "").replace(/ \(\d+\)$/, "");
 const details = () => screen.queryByRole("region", { name: "Application details" });
 
 describe("NGO Applications: tabs, search and layout", { timeout: 15000 }, () => {
   it("replaces the dropdown with the same options as tabs and writes ?status=", async () => {
     render(<NgoReviewPanel />);
     const tabs = await screen.findAllByRole("tab");
-    expect(tabs.map(t => t.textContent)).toEqual(APPLICATION_STATUS_OPTIONS.map(o => o.label));
-    expect(tabs.map(t => t.textContent)).toEqual(["Awaiting review", "Pending verification", "Corrections requested", "Approved", "Rejected", "Email verification pending", "All current applications"]);
+    // Each tab shows its count once loaded, e.g. "Awaiting review (2)".
+    await waitFor(() => expect(tabs[0].textContent).toBe("Awaiting review (2)"));
+    expect(tabs.map(plain)).toEqual(APPLICATION_STATUS_OPTIONS.map(o => o.label));
+    expect(tabs.map(plain)).toEqual(["Awaiting review", "Pending verification", "Corrections requested", "Approved", "Rejected", "Email verification pending", "All current applications"]);
     expect(tabs[0]).toHaveAttribute("aria-selected", "true");
     expect(screen.queryByRole("combobox")).toBeNull();
     fireEvent.click(tabs[3]);
-    await waitFor(() => expect(adminGetNgoApplications).toHaveBeenLastCalledWith("APPROVED", 0, ""));
+    await waitFor(() => expect(adminGetNgoApplications).toHaveBeenCalledWith("APPROVED", 0, ""));
     expect(window.location.search).toContain("status=APPROVED");
     expect(window.location.search).toContain("tab=ngo-applications");
   });
@@ -58,25 +61,25 @@ describe("NGO Applications: tabs, search and layout", { timeout: 15000 }, () => 
     vi.mocked(adminGetNgoApplications).mockResolvedValue({ content: [], totalPages: 0, totalElements: 0 } as never);
     fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzz" } });
     await act(async () => { await new Promise(r => setTimeout(r, 350)); });
-    await waitFor(() => expect(adminGetNgoApplications).toHaveBeenLastCalledWith("UNDER_REVIEW", 0, "zzz"));
+    await waitFor(() => expect(adminGetNgoApplications).toHaveBeenCalledWith("UNDER_REVIEW", 0, "zzz"));
     expect(await screen.findByText("No results for \"zzz\"")).toBeInTheDocument();
     expect(window.location.search).toContain("q=zzz");
     const clears = screen.getAllByRole("button", { name: "Clear search" });
     fireEvent.click(clears[clears.length - 1]);
-    await waitFor(() => expect(adminGetNgoApplications).toHaveBeenLastCalledWith("UNDER_REVIEW", 0, ""));
+    await waitFor(() => expect(adminGetNgoApplications).toHaveBeenCalledWith("UNDER_REVIEW", 0, ""));
   });
 
-  it("cards fill the width until one is selected; clicking it again, x or Escape closes; ?app= in URL", async () => {
+  it("a table until Review opens one full width; Back to list, x or Escape closes; ?app= in URL", async () => {
     render(<NgoReviewPanel />);
     await screen.findByText("Org 1");
-    expect(screen.getByTestId("application-cards").className).toContain("lg:grid-cols-3");
+    expect(within(screen.getByTestId("application-cards")).getByRole("table")).toBeInTheDocument();
     expect(details()).toBeNull();
 
     fireEvent.click(card("Org 1"));
     expect(await screen.findByRole("region", { name: "Application details" })).toBeInTheDocument();
     expect(window.location.search).toContain("app=CK-NGO-1");
-    expect(screen.getByTestId("application-cards").className).not.toContain("grid-cols-3");
-    fireEvent.click(card("Org 1"));
+    expect(screen.queryByTestId("application-cards")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Back to list/ }));
     expect(details()).toBeNull();
     expect(window.location.search).not.toContain("app=");
 
@@ -98,7 +101,7 @@ describe("NGO Applications: tabs, search and layout", { timeout: 15000 }, () => 
     fireEvent.click(card("Org 2"));
     const checks = await screen.findAllByRole("checkbox");
     fireEvent.click(checks[0]);
-    fireEvent.click(card("Org 1"));
+    fireEvent.click(screen.getByRole("button", { name: /Back to list/ }));
     expect(confirm).toHaveBeenCalledWith("Discard your unsaved decision?");
     expect(screen.getByRole("heading", { name: "Org 2" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Close application" }));

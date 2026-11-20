@@ -72,7 +72,7 @@ function StoryCard({ card, diwali, onDonate }: {
         {card.collectsMoney && target > 0 && (
           <>
             <span className="h-1.5 overflow-hidden rounded-full bg-white/25" role="progressbar"
-              aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}>
+              aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={`${pct}% of target raised`}>
               <span className="block h-full rounded-full bg-[#f4a25b]" style={{ width: `${pct}%` }} />
             </span>
             <span className="flex justify-between text-[13px] text-stone-200">

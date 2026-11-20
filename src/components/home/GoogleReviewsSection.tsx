@@ -160,7 +160,7 @@ function ReviewCard({ review, onExpandChange }: { review: GoogleReview, onExpand
              <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-current' : 'fill-transparent text-stone-300'}`} />
           ))}
         </div>
-        <div className="flex items-center gap-1 opacity-70">
+        <div className="flex items-center gap-1">
            <span translate="no" className="text-xs font-normal whitespace-nowrap text-[#5E5E5E] dark:text-white">Google Maps</span>
         </div>
       </div>

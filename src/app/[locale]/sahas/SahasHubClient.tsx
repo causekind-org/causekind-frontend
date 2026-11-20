@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { useLocale } from "next-intl";
 import Link from "@/components/AppLink";
@@ -13,12 +13,12 @@ import { SahasHubList } from "@/features/sahas/SahasHubList";
 const TABS: SahasTab[] = ["active", "upcoming", "completed"];
 
 /** /sahas — the Sahas Campaigns hub (design board HF · /sahas hub). */
-export default function SahasHubPage() {
+export default function SahasHubPage({ intro }: { intro?: ReactNode }) {
   if (!FEATURES.sahas) notFound();
-  return <SahasHub />;
+  return <SahasHub intro={intro} />;
 }
 
-function SahasHub() {
+function SahasHub({ intro }: { intro?: ReactNode }) {
   const ui = useUiText();
   const locale = useLocale();
   const [cards, setCards] = useState<SahasCampaignCard[] | null>(null);
@@ -72,7 +72,10 @@ function SahasHub() {
           </p>
         </header>
 
-        <div role="tablist" aria-label={ui("Campaign status")} className="flex justify-center gap-5 overflow-x-auto border-y border-[#1F140D] lg:-mt-5 lg:justify-start lg:gap-7 lg:border-t-0 lg:border-[#D9C9B8] dark:border-zinc-700">
+        {/* Server-rendered intro (from page.tsx), visible without JS. */}
+        {intro}
+
+        <div role="tablist" aria-label={ui("Campaign status")} className={`flex justify-center gap-5 overflow-x-auto border-y border-[#1F140D] ${intro ? "" : "lg:-mt-5 "}lg:justify-start lg:gap-7 lg:border-t-0 lg:border-[#D9C9B8] dark:border-zinc-700`}>
           {TABS.map((t) => (
             <button key={t} type="button" role="tab" aria-selected={tab === t} onClick={() => pick(t)}
               className={`min-h-[44px] cursor-pointer whitespace-nowrap border-0 bg-transparent px-0 text-sm font-semibold underline-offset-[6px] ${tab === t ? "text-[#8f3a0e] underline dark:text-[#e07b3a]" : "text-[#5c4a3d] hover:text-[#8f3a0e] dark:text-stone-400"}`}>

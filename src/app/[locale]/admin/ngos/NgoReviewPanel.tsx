@@ -14,6 +14,7 @@ import { LEGACY_TEXT_FIELDS as TEXT_FIELDS, V2_TEXT_FIELDS, REPRESENTATIVE_TEXT_
 import { formatIST } from "@/lib/formatIST";
 import { AdminSearchBox, NoSearchResults } from "@/components/admin/AdminSearchBox";
 import { AdminStatusTabs } from "@/components/admin/AdminStatusTabs";
+import { AdminReviewTable, TwoLine, labelWithCount, useServerTabCounts } from "@/components/admin/AdminReviewTable";
 import { readUrlParam, statusIndexFromUrl, writeUrlParams } from "@/components/admin/adminUrlState";
 import { NgoPanCheckBox } from "./NgoPanCheckBox";
 
@@ -38,9 +39,6 @@ export const APPLICATION_STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "PENDING_VERIFICATION", label: "Email verification pending" },
   { value: "", label: "All current applications" },
 ];
-/** Desktop layout (list beside detail): Back is not used to close the detail there. */
-const isDesktop = () => typeof window !== "undefined" && typeof window.matchMedia === "function"
-  && window.matchMedia("(min-width: 1024px)").matches;
 const DISCARD_PROMPT = "Discard your unsaved decision?";
 /** The NGO's latest application id when this one is an older submission (none when it is the latest). */
 export const supersededBy = (d: { current?: boolean; application: { applicationId: string }; submissions?: { applicationId: string }[] } | null) =>
@@ -125,6 +123,7 @@ export function NgoReviewPanel({
   }, [status, page, query]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+  const counts = useServerTabCounts(APPLICATION_STATUS_OPTIONS.map(o => o.value), s => adminGetNgoApplications(s).then(r => r.totalElements), applications);
   useEffect(() => { writeUrlParams({ status: statusIndex === 0 ? null : (status || "ALL"), q: query || null }); }, [statusIndex, status, query]);
   // This panel's URL state goes when the dashboard switches tab.
   useEffect(() => () => writeUrlParams({ status: null, q: null, app: null }), []);
@@ -166,7 +165,8 @@ export function NgoReviewPanel({
   const select = useCallback((id: string) => {
     if (selectedRef.current === id) { close(); return; }
     if (selectedRef.current && !okToLeave()) return;
-    writeUrlParams({ app: id }, selectedRef.current || isDesktop() ? "replace" : "push");
+    // Opening from the list pushes a history entry, so browser Back returns to the list.
+    writeUrlParams({ app: id }, selectedRef.current ? "replace" : "push");
     setSelectedId(id);
     void open(id);
   }, [close, okToLeave, open]);
@@ -303,7 +303,7 @@ export function NgoReviewPanel({
     <div className="space-y-6 text-stone-900 dark:text-stone-100">
       <div className="flex flex-wrap items-end gap-3">
         <div className="min-w-0 flex-1">
-          <AdminStatusTabs label="Application status" options={APPLICATION_STATUS_OPTIONS} selected={statusIndex}
+          <AdminStatusTabs label="Application status" options={APPLICATION_STATUS_OPTIONS.map((o, i) => ({ label: labelWithCount(o.label, counts[i]) }))} selected={statusIndex}
             onSelect={changeStatus} disabled={busy || loading} />
         </div>
         <button className={button} disabled={loading || busy} onClick={() => void refresh()}>Refresh</button>
@@ -321,32 +321,30 @@ export function NgoReviewPanel({
         </div>
       )}
       {notice && <p role="status" className="rounded-2xl border border-emerald-300 bg-emerald-50/95 p-4 text-sm text-emerald-900">{notice}</p>}
-      <div className={selectedId ? "grid gap-6 lg:grid-cols-[320px_1fr] lg:items-start" : ""}>
-        <section aria-label="Current applications"
-          className={selectedId ? "min-w-0 space-y-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto lg:pr-1" : "space-y-3"}>
+      <div>
+        {!selectedId && <section aria-label="Current applications" className="space-y-3">
           {loading ? <p role="status">Loading applications…</p> : !error && applications.length === 0
             ? (query ? <NoSearchResults query={query} onClear={() => changeQuery("")} /> : <EmptyState title="No applications in this status" description="Pick another status above, or check back later." />) : null}
-          <div data-testid="application-cards" className={selectedId ? "space-y-3" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
-          {applications.map(app => <button key={app.applicationId} disabled={busy} onClick={() => select(app.applicationId)}
-            aria-pressed={selectedId === app.applicationId}
-            className={`ck-glass-solid ck-glass-interactive w-full p-4 text-left disabled:opacity-50 ${selectedId === app.applicationId ? "ring-2 ring-[#2d7fd6]" : ""}`}>
-            <span className="block font-semibold ck-user-text">{app.organizationName}</span>
-            <span className="mt-1 block break-all font-mono text-[11px] text-stone-500">{app.applicationId}</span>
-            <span className="mt-2 block text-sm capitalize">{label(app.status)}
-              {app.status === "UNDER_REVIEW" && isResubmitted(app) && <span data-testid="resubmitted-badge" className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold normal-case text-sky-800 dark:bg-sky-900/50 dark:text-sky-200">Resubmitted</span>}
-            </span>
-          </button>)}
-          </div>
+          {applications.length > 0 && <div data-testid="application-cards">
+            <AdminReviewTable label="Applications" rows={applications} name={app => app.organizationName} rowKey={app => app.applicationId} disabled={busy}
+              highlight={app => app.status === "UNDER_REVIEW"} onReview={app => select(app.applicationId)}
+              columns={[
+                { header: "Organization", cell: app => <TwoLine main={app.organizationName} sub={<span className="break-all font-mono text-[11px]">{app.applicationId}</span>} /> },
+                { header: "State", cell: app => <span className="capitalize">{label(app.status)}
+                  {app.status === "UNDER_REVIEW" && isResubmitted(app) && <span data-testid="resubmitted-badge" className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold normal-case text-sky-800 dark:bg-sky-900/50 dark:text-sky-200">Resubmitted</span>}
+                </span> },
+              ]} />
+          </div>}
           <div className="flex items-center gap-3">
             <button className={button} disabled={page === 0 || loading || busy} onClick={() => setPage(p => p - 1)}>Previous</button>
             <span className="text-xs">{pages ? `${page + 1} / ${pages}` : "0 pages"}</span>
             <button className={button} disabled={page + 1 >= pages || loading || busy} onClick={() => setPage(p => p + 1)}>Next</button>
           </div>
-        </section>
+        </section>}
         {selectedId && <section aria-label="Application details" role="region"
           className="fixed inset-0 z-40 overflow-y-auto bg-white dark:bg-zinc-900 lg:static lg:z-auto lg:max-h-[calc(100vh-2rem)] lg:rounded-[22px] lg:border lg:border-white/80 lg:shadow-[0_16px_34px_-28px_rgba(16,30,24,0.45)]">
           <div className="sticky top-0 z-10 flex items-start gap-3 border-b border-stone-200 bg-white px-5 py-3 dark:border-zinc-700 dark:bg-zinc-900 sm:px-7">
-            <button type="button" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold lg:hidden" onClick={() => close()}>
+            <button type="button" className="inline-flex min-h-10 items-center gap-1 text-sm font-semibold" onClick={() => close()}>
               <ArrowLeft className="h-4 w-4" aria-hidden /> Back to list
             </button>
             <div className="hidden min-w-0 flex-1 lg:block">
