@@ -84,7 +84,7 @@ export function OperationsPanel({ isDark }: { isDark: boolean }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h2 className={`text-lg font-bold ${t.heading}`}>Operational health</h2>
+          <h2 className={`ck-page-title ${t.heading}`}>Operational health</h2>
           <p className={`text-xs ${t.muted}`}>
             Cheap checks only, so this stays safe to open during an incident.
           </p>
