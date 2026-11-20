@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { adminGetMyPermissions } from "@/lib/api";
 import { CrmLogin } from "./CrmLogin";
+import "@/styles/staff-console.css";
 
 /**
  * Guard for the staff CRM portal. Same accounts as /admin (ADMIN, SUPER_ADMIN),
@@ -31,17 +32,17 @@ export default function CrmLayout({ children }: { children: React.ReactNode }) {
 
   if (allowed === false) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center text-sm text-muted-foreground">
+      <div className="ck-staff flex min-h-screen flex-col items-center justify-center gap-3 p-6 text-center text-sm text-white/85">
         <p>This account cannot use the CRM. Sign in with the CRM login your super admin gave you.</p>
-        <button type="button" onClick={logout} className="font-medium text-blue-700 hover:underline">Sign out</button>
+        <button type="button" onClick={logout} className="font-semibold text-white underline underline-offset-2">Sign out</button>
       </div>
     );
   }
 
   if (isLoading || !user || allowed === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      <div className="ck-staff flex min-h-screen items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-white/80" />
       </div>
     );
   }
