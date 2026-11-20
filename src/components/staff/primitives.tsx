@@ -23,7 +23,7 @@ export function PageHeader({ title, description, actions, eyebrow }: {
 }
 
 export function GlassCard({ children, className = "", solid = false }: { children: ReactNode; className?: string; solid?: boolean }) {
-  return <section className={`${solid ? "ck-glass-solid" : "ck-glass-card"} p-5 sm:p-6 ${className}`}>{children}</section>;
+  return <section className={`${solid ? "ck-glass-solid" : "ck-glass-card"} min-w-0 p-5 sm:p-6 ${className}`}>{children}</section>;
 }
 
 export function CardTitle({ title, description, icon: Icon, action }: {

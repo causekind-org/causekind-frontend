@@ -408,7 +408,7 @@ function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => 
 
       <OverviewInsights data={data.insights} onOpen={onOpen} />
 
-      <div className="mt-5 grid gap-5">
+      <div className="mt-5 grid grid-cols-1 gap-5">
         <GlassCard>
           <CardTitle title="Users by role" description={`${fmtCount(roleTotal)} accounts in total`} icon={Database} />
           <ul className="space-y-3.5">
@@ -429,12 +429,12 @@ function OverviewSection({ th, onOpen }: { th: Th; onOpen: (key: SectionKey) => 
           </ul>
 
           <button type="button" onClick={() => onOpen("money")}
-            className="mt-6 flex w-full items-center justify-between gap-4 rounded-2xl bg-white/70 px-4 py-4 text-left transition-colors duration-150 hover:bg-white">
+            className="mt-6 flex w-full flex-col items-start gap-2 rounded-2xl bg-white/70 px-4 py-4 text-left transition-colors duration-150 hover:bg-white sm:flex-row sm:items-center sm:justify-between sm:gap-4">
             <span>
               <span className="flex items-center gap-2 text-[13px] font-semibold"><TrendingUp className="size-4 text-[color:var(--st-primary)]" /> Total raised</span>
               <span className="block text-xs text-[color:var(--st-text-2)]">Completed money donations, all time</span>
             </span>
-            <span className="break-all text-right text-2xl font-bold tabular-nums sm:text-[28px]">
+            <span className="whitespace-nowrap text-2xl font-bold tabular-nums sm:text-right sm:text-[28px]">
               ₹{new Intl.NumberFormat("en-IN").format(Number(data.totalRaised ?? 0))}
             </span>
           </button>
