@@ -758,24 +758,12 @@ export default function AdminDashboardPage() {
         </StaffNavGroup>
       )}
 
+      {/* Always open (owner, 2026-11-20): no collapse toggle on the NGO group. */}
       {NGO_TABS.length > 0 && (
-        <StaffNavGroup
-          header={
-            <button type="button" onClick={() => setNgoExpanded(open => !open)} aria-expanded={ngoGroupOpen} aria-controls="admin-ngo-group"
-              className="ck-staff-nav-heading flex w-full items-center justify-between text-left">
-              <span>NGO operations</span>
-              <span className="flex items-center gap-1.5 normal-case tracking-normal">
-                {ngoTotal > 0 && <span className="ck-staff-nav-badge !ml-0">{ngoTotal}</span>}
-                {ngoGroupOpen ? <ChevronUp className="size-3.5" aria-hidden /> : <ChevronDown className="size-3.5" aria-hidden />}
-              </span>
-            </button>
-          }
-        >
-          {ngoGroupOpen
-            ? NGO_TABS.map(({ key, label, count, icon }) => (
-                <StaffNavItem key={key} label={label} icon={icon} count={count} active={tab === key} onClick={() => selectTab(key)} />
-              ))
-            : <p className="px-3.5 py-2.5 text-xs text-[color:var(--st-on-dark-2)]">{NGO_TABS.length} sections hidden</p>}
+        <StaffNavGroup title="NGO operations">
+          {NGO_TABS.map(({ key, label, count, icon }) => (
+            <StaffNavItem key={key} label={label} icon={icon} count={count} active={tab === key} onClick={() => selectTab(key)} />
+          ))}
         </StaffNavGroup>
       )}
 

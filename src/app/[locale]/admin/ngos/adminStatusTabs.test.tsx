@@ -134,6 +134,6 @@ describe("Admin sidebar", () => {
     const src = readFileSync(resolve(__dirname, "../dashboard/page.tsx"), "utf8");
     const sidebar = src.slice(src.indexOf("{TABS.map("), src.indexOf('<AdminFundraisingNav variant="sidebar"'));
     expect(sidebar.indexOf('selectTab("issues")')).toBeGreaterThan(0);
-    expect(sidebar.indexOf('selectTab("issues")')).toBeLessThan(sidebar.indexOf('aria-controls="admin-ngo-group"'));
+    expect(sidebar.indexOf('selectTab("issues")')).toBeLessThan(sidebar.indexOf('title="NGO operations"'));
   });
 });
