@@ -14,6 +14,7 @@ import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
 import { Search, X, BookOpen } from "lucide-react";
 import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
+import { serverDate } from "@/lib/serverTime";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { formatReadTime, formatPublishedDate } from "@/lib/blogMeta";
 import { Sparkles } from "lucide-react";
@@ -23,13 +24,18 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 // new category automatically shows up here — no manual list to maintain.
 const ALL_CATEGORIES = "All";
 
-function timeAgo(date: Date): string {
-  const mins = Math.floor((Date.now() - date.getTime()) / 60000);
+/** "X AGO" from a real timestamp (ms). Unknown time gives "RECENTLY". */
+function timeAgo(at: number | null, now: number): string {
+  if (at == null || Number.isNaN(at)) return "RECENTLY";
+  const mins = Math.max(0, Math.floor((now - at) / 60000));
   if (mins < 1) return "JUST NOW";
   if (mins < 60) return `${mins} MINUTE${mins > 1 ? "S" : ""} AGO`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs} HOUR${hrs > 1 ? "S" : ""} AGO`;
-  return `${Math.floor(hrs / 24)} DAYS AGO`;
+  const days = Math.floor(hrs / 24);
+  if (days < 30) return `${days} DAY${days > 1 ? "S" : ""} AGO`;
+  const months = Math.floor(days / 30);
+  return `${months} MONTH${months > 1 ? "S" : ""} AGO`;
 }
 
 function activityToFeedItem(a: RecentActivity, i: number) {
@@ -37,7 +43,10 @@ function activityToFeedItem(a: RecentActivity, i: number) {
     ? `donated ₹${a.amount?.toLocaleString("en-IN") ?? ""} to "${a.campaignTitle}".`
     : `posted a new campaign: "${a.campaignTitle}".`;
   const name = a.type === "DONATION" ? `Donor from ${a.city || "India"}` : `${a.city || "India"} fundraiser`;
-  return { id: i, time: timeAgo(new Date(Date.now() - i * 8 * 60000)), user: name, text };
+  // The real time of the event from the backend (zone-less stamps are UTC,
+  // see lib/serverTime). It used to be invented as i x 8 minutes ago.
+  const at = serverDate(a.createdAt).getTime();
+  return { id: i, at: Number.isNaN(at) ? null : at, user: name, text };
 }
 
 function BlogListingContent() {
@@ -88,7 +97,13 @@ function BlogListingContent() {
   const [selectedCategory, setSelectedCategory] = useState(categoryFromUrl || ALL_CATEGORIES);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchBoxRef = useRef<HTMLDivElement>(null);
-  const [liveFeed, setLiveFeed] = useState<{ id: number; time: string; user: string; text: string }[]>([]);
+  const [liveFeed, setLiveFeed] = useState<{ id: number; at: number | null; user: string; text: string }[]>([]);
+  // Re-render the "X ago" labels every minute so they stay true.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(id);
+  }, []);
   const [positiveUpdate, setPositiveUpdate] = useState<string | null>(null);
 
   // Category list is computed from the live blogPosts array — new posts with
@@ -172,13 +187,13 @@ function BlogListingContent() {
           setLiveFeed(data.slice(0, 3).map(activityToFeedItem));
         } else {
           setLiveFeed([
-            { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
+            { id: 1, at: null, user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
           ]);
         }
       })
       .catch(() => {
         setLiveFeed([
-          { id: 1, time: "RECENTLY", user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
+          { id: 1, at: null, user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
         ]);
       });
   }, []);
@@ -543,7 +558,7 @@ function BlogListingContent() {
                           }`}
                         >
                           <p className="text-4xs md:text-3xs text-orange-600 dark:text-orange-400 font-bold opacity-80 uppercase tracking-wide md:tracking-wider">
-                            {item.time}
+                            {timeAgo(item.at, now)}
                           </p>
                           <p className="text-3xs md:text-xs leading-[1.35] md:leading-normal mt-0.5 text-stone-600 dark:text-stone-400">
                             <strong className="text-stone-800 dark:text-stone-200">{item.user}</strong> {item.text}

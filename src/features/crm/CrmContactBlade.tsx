@@ -178,7 +178,7 @@ export function CrmContactBlade({ contact, canManage, onBack, onChanged }: {
           })}
         </aside>
 
-        <main className="min-w-0 flex-1 p-4 md:p-6">
+        <div className="min-w-0 flex-1 p-4 md:p-6">
           {view === "overview" && (
             <dl className="grid max-w-3xl gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
               {facts.map(([k, v]) => (
@@ -193,7 +193,7 @@ export function CrmContactBlade({ contact, canManage, onBack, onChanged }: {
           {view === "call" && (
             <CrmLogCallForm userId={contact.userId} role={contact.role} onChanged={() => { changed(); setView("log"); }} />
           )}
-        </main>
+        </div>
       </div>
     </div>
   );

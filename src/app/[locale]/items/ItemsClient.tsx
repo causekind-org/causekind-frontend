@@ -13,7 +13,7 @@ export default function ItemsClient() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#f7f4f0] dark:bg-zinc-950">
       <div className="text-center">
-        <p className="text-sm text-stone-500 dark:text-stone-400">Redirecting to dashboard...</p>
+        <h1 className="text-sm font-normal text-stone-500 dark:text-stone-400">Redirecting to dashboard...</h1>
       </div>
     </div>
   );

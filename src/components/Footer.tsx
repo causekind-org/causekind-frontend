@@ -88,6 +88,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
       ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
       { href: "/faq", label: "Help & FAQ" },
       { href: "/blog", label: "Read our Blog" },
+      { href: "/ngo", label: "For NGOs" },
     ];
   }
 
@@ -114,6 +115,7 @@ export function getSupportLinks(role?: string | null): SupportLinkItem[] {
     ...(FEATURES?.sahas ? [{ href: "/sahas", label: "Sahas Campaigns" }] : []),
     { href: "/faq", label: "Help & FAQ" },
     { href: "/blog", label: "Read our Blog" },
+    { href: "/ngo", label: "For NGOs" },
   ];
 }
 

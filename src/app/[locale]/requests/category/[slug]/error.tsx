@@ -6,7 +6,7 @@ import { AlertTriangle } from "lucide-react";
 import { UiText } from "@/components/UiText";
 export default function CategoryError({ reset }: { error: Error; reset: () => void }) {
   return (
-    <main className="mx-auto flex w-full max-w-xl flex-col items-center px-4 py-24 text-center">
+    <div className="mx-auto flex w-full max-w-xl flex-col items-center px-4 py-24 text-center">
       <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/10 text-red-600 dark:text-red-400">
         <AlertTriangle className="w-6 h-6" aria-hidden="true" />
       </span>
@@ -31,6 +31,6 @@ export default function CategoryError({ reset }: { error: Error; reset: () => vo
           <UiText>All needs</UiText>
         </Link>
       </div>
-    </main>
+    </div>
   );
 }

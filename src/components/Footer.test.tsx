@@ -69,6 +69,7 @@ describe("Footer Component", () => {
         "Register your NGO · Coming soon",
         "Help & FAQ",
         "Read our Blog",
+        "For NGOs",
       ]);
       expect(links[0].href).toBe("/register");
       expect(links[1].href).toBe("/login");
@@ -84,6 +85,7 @@ describe("Footer Component", () => {
         "My dashboard",
         "Help & FAQ",
         "Read our Blog",
+        "For NGOs",
       ]);
       expect(links[1].href).toBe("/dashboard");
     });
@@ -96,6 +98,7 @@ describe("Footer Component", () => {
         "My dashboard",
         "Help & FAQ",
         "Read our Blog",
+        "For NGOs",
       ]);
       expect(links[1].href).toBe("/dashboard");
     });

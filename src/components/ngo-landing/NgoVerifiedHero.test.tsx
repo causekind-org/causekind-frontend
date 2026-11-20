@@ -68,3 +68,29 @@ describe("verified toast", () => {
     expect(screen.queryByRole("button", { name: /Close verified welcome notification/i })).toBeNull();
   });
 });
+
+describe("mobile hero (full-bleed photo, no collage)", () => {
+  it.each([
+    ["APPROVED", /Start a Drive/i],
+    ["UNDER_REVIEW", /Start a Drive/i],
+  ])("status %s: mobile photo + existing content, collage desktop-only", async (status, cta) => {
+    vi.mocked(getMyNgoApplication).mockResolvedValue({ status, organizationName: "Hope Foundation" } as never);
+    const { container } = render(<NgoLandingView />);
+    await screen.findAllByRole(status === "APPROVED" ? "link" : "button", { name: cta });
+
+    const photo = await screen.findByTestId("ngo-hero-mobile-photo");
+    expect(photo.className).toContain("md:hidden");
+    expect(photo.querySelector("img")?.getAttribute("src")).toContain("ngo-hero-mobile.webp");
+    expect(container.querySelector("#ngo-hero")?.className).toContain("ck-ngo-hero-stage");
+    // No green tint on mobile: the mesh and grain layers are hidden; only a bottom dark gradient.
+    expect(container.querySelector(".ngo-hero-bg")?.className).toContain("max-md:hidden");
+    expect(container.querySelector(".ngo-hero-grain")?.className).toContain("max-md:hidden");
+    expect(photo.querySelector("div")?.className).toContain("ck-ngo-hero-shade");
+    expect(photo.querySelector("img")?.className).toContain("object-[center_30%]");
+
+    // The collage is hidden below 768px; the desktop cluster is unchanged.
+    expect(screen.getByTestId("ngo-hero-mobile-collage").className).toContain("hidden md:block lg:hidden");
+    expect(container.querySelector('[class^="hidden lg:block"]')).not.toBeNull();
+    if (status === "APPROVED") expect(screen.getByText("Verified by CauseKind")).toBeInTheDocument();
+  });
+});

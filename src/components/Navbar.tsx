@@ -417,17 +417,23 @@ export function SiteHeader() {
     let observedHero: Element | null = null;
     const update = () => {
       frame = 0;
-      const hero = document.querySelector(".ck-lead-hero-stage");
+      // The NGO landing (also "/") reuses the same see-through header over its mobile photo.
+      // Its photo exists below 768px only, so it counts only there.
+      const hero = document.querySelector(".ck-lead-hero-stage")
+        ?? (window.matchMedia("(max-width: 767px)").matches ? document.querySelector(".ck-ngo-hero-stage") : null);
       if (hero && hero !== observedHero) {
         resize.disconnect();
         resize.observe(hero);
         crossing.disconnect();
         crossing.observe(hero);
         observedHero = hero;
-        mounted.disconnect();
       }
+      // `mounted` keeps watching: the NGO landing swaps its hero for a new
+      // element once the application status loads, and that must be picked up.
       const bounds = hero?.getBoundingClientRect();
-      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= 0 && bounds.bottom > 0);
+      // The NGO hero can sit a few px off the top mid-layout; allow for it there.
+      const slack = hero?.classList.contains("ck-ngo-hero-stage") ? 16 : 0;
+      setOverMobileHero(mobile.matches && !!bounds && bounds.top <= slack && bounds.bottom > 0);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
     const resize = new ResizeObserver(schedule);
@@ -836,6 +842,7 @@ export function SiteHeader() {
       <header data-calm-header
         ref={headerRef}
         data-home-hero={pathname === "/" && overMobileHero ? "top" : undefined}
+        data-ngo-hero={pathname === "/" && overMobileHero && isNgoPartner ? "" : undefined}
         style={{
           // Slide only. Animating opacity here made Chrome flatten the glass
           // (backdrop-filter) buttons inside, and on the way back they could

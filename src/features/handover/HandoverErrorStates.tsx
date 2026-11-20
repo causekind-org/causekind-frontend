@@ -53,8 +53,8 @@ export function HandoverNotAParticipant() {
 
 function Centered({ children }: { children: React.ReactNode }) {
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-[var(--background)] px-4">
+    <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--background)] px-4">
       <div className="flex max-w-md flex-col items-center gap-3 text-center">{children}</div>
-    </main>
+    </div>
   );
 }

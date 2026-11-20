@@ -31,7 +31,7 @@ export default function MyReportsPage() {
 
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
-      <main className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, maxWidth: 820, display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, maxWidth: 820, display: "flex", flexDirection: "column", gap: 18 }}>
         <h1 className={s.serif} style={{ fontSize: 30 }}><UiText>Your reports</UiText></h1>
         <p className={`${s.small} ${s.muted}`}><UiText>&quot;Closed&quot; means the review is finished. We don&apos;t share what we found.</UiText></p>
         {failed ? <p className={s.errText} role="alert"><UiText>Couldn&apos;t load your reports.</UiText></p>
@@ -51,7 +51,7 @@ export default function MyReportsPage() {
               </section>
             );
           })}
-      </main>
+      </div>
     </div>
   );
 }

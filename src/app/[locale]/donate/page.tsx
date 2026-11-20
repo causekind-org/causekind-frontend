@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import DonateClient from "./DonateClient";
 import { SeoLinkSection } from "@/components/SeoLinkSection";
+import { FEATURES } from "@/lib/features";
 
 // Server wrapper so this route can carry its own metadata — a "use client"
 // module cannot export it, which previously left this page inheriting the root
@@ -11,6 +12,9 @@ export const metadata: Metadata = {
   title: "Donate",
   description: "Give in kind to verified requests near you. Zero platform fees, matched within 10 km, and tracked through to confirmed delivery.",
   alternates: { canonical: "/donate" },
+  // Same as /campaigns: "Coming soon" while FEATURES.money is off, so noindex;
+  // /donate/money is live and stays indexed.
+  ...(FEATURES.money ? {} : { robots: { index: false, follow: true } }),
 };
 
 export default function Page() {

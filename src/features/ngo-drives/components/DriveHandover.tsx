@@ -311,7 +311,7 @@ export function DriveHandover({
   const roleClass = role === "NGO" ? "handover-ngo-drive" : "handover-donor";
 
   return (
-    <main data-ck-role-theme={role === "NGO" ? "ngo" : undefined} className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-16`}>
+    <div data-ck-role-theme={role === "NGO" ? "ngo" : undefined} className={`${roleClass} min-h-[100dvh] bg-[var(--background)] pb-16`}>
       <div className="mx-auto max-w-6xl px-4 pt-5">
         {/* ── Context Header (Donee Reference style) ───────────────────────── */}
         <header className="mb-5">
@@ -754,6 +754,6 @@ export function DriveHandover({
           </aside>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

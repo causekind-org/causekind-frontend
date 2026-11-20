@@ -28,11 +28,11 @@ export default function AdminReportsPage() {
     ]).then((c) => setCounts(c));
   }, [rows]);
 
-  if (!FEATURES.fundraising) return <div className={a.root}><main className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></main></div>;
+  if (!FEATURES.fundraising) return <div className={a.root}><div className={a.wrap} style={{ paddingTop: 40 }}><p className={a.muted}>Fundraising is switched off.</p></div></div>;
 
   return (
     <div className={a.root}>
-      <main className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
+      <div className={a.wrap} style={{ paddingTop: 28, paddingBottom: 56, display: "flex", flexDirection: "column", gap: 18 }}>
         <nav className={a.switch} aria-label="Fundraising review">
           <Link href="/admin/fundraising" className={a.switchBtn}>Applications</Link>
           <Link href="/admin/fundraising/campaigns" className={a.switchBtn}>Publication review</Link>
@@ -70,7 +70,7 @@ export default function AdminReportsPage() {
               </table>
             </div>
           )}
-      </main>
+      </div>
     </div>
   );
 }

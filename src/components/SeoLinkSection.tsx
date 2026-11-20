@@ -38,7 +38,7 @@ export async function SeoLinkSection({
         {heading}
       </h2>
       <p className="mt-2 max-w-2xl text-sm sm:text-base text-stone-600 dark:text-stone-400">{intro}</p>
-      <ul className="mt-4 flex flex-wrap gap-2">
+      {all.length > 0 && <ul className="mt-4 flex flex-wrap gap-2">
         {all.map((l) => (
           <li key={l.href}>
             <Link
@@ -49,7 +49,7 @@ export async function SeoLinkSection({
             </Link>
           </li>
         ))}
-      </ul>
+      </ul>}
     </section>
   );
 }

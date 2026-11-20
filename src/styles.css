@@ -5187,3 +5187,27 @@ header[data-calm-header] .ck-logo-kind-shimmer {
     transition-duration: 1ms !important;
   }
 }
+
+/* NGO landing (mobile): the bell gets the same round frosted button as the
+   menu while the header sits over the hero photo. */
+@media (max-width: 767px) {
+  header[data-ngo-hero][data-home-hero="top"] .ck-mobile-header > div > * {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    color: #292524;
+    background: rgb(250 248 245 / 0.82);
+    -webkit-backdrop-filter: blur(12px) saturate(1.2);
+    backdrop-filter: blur(12px) saturate(1.2);
+    border: 1px solid rgb(255 255 255 / 0.6);
+    box-shadow: 0 6px 18px -8px rgb(28 20 16 / 0.45);
+  }
+  .dark header[data-ngo-hero][data-home-hero="top"] .ck-mobile-header > div > * {
+    background: rgb(9 9 11 / 0.72);
+    border-color: rgb(255 255 255 / 0.12);
+    color: #fff6ed;
+  }
+}

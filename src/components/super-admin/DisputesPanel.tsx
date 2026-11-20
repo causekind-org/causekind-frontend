@@ -26,30 +26,30 @@ type StatusTab = (typeof STATUS_TABS)[number]["key"];
 function useTheme(isDark: boolean) {
   return isDark ? {
     heading: "text-white",
-    icon: "text-[#f0b97a]",
+    icon: "text-[#c4e2ff]",
     dim: "text-stone-500",
     muted: "text-stone-400",
     card: "border-white/10 bg-white/[0.03]",
-    chipActive: "bg-[#f0b97a] text-stone-950 border-[#f0b97a]",
+    chipActive: "bg-[#c4e2ff] text-stone-950 border-[#c4e2ff]",
     chipInactive: "border-white/10 text-stone-400 hover:border-white/20 hover:text-white",
     textarea: "border-white/10 bg-[#0b0f1a] text-stone-200 placeholder:text-stone-600",
-    primaryBtn: "bg-[#f0b97a] hover:bg-[#e0a96a] text-stone-950",
-    link: "text-[#f0b97a] hover:underline",
+    primaryBtn: "bg-[#c4e2ff] hover:bg-[#e0a96a] text-stone-950",
+    link: "text-[#c4e2ff] hover:underline",
     ok: "text-emerald-400",
     okBg: "bg-emerald-500/10 border-emerald-500/20",
     warnBg: "bg-red-500/10 border-red-500/20",
     warnText: "text-red-400",
   } : {
     heading: "text-stone-900",
-    icon: "text-[#b04a15]",
+    icon: "text-[#1f66b3]",
     dim: "text-stone-500",
     muted: "text-stone-500",
     card: "border-stone-200 bg-white",
-    chipActive: "bg-[#b04a15] text-white border-[#b04a15]",
+    chipActive: "bg-[#1f66b3] text-white border-[#1f66b3]",
     chipInactive: "border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-900",
     textarea: "border-stone-200 bg-white text-stone-800 placeholder:text-stone-400",
-    primaryBtn: "bg-[#b04a15] hover:bg-[#963e11] text-white",
-    link: "text-[#b04a15] hover:underline",
+    primaryBtn: "bg-[#1f66b3] hover:bg-[#963e11] text-white",
+    link: "text-[#1f66b3] hover:underline",
     ok: "text-emerald-600",
     okBg: "bg-emerald-50 border-emerald-200",
     warnBg: "bg-red-50 border-red-200",
@@ -121,7 +121,7 @@ export function DisputesPanel({ isDark }: { isDark: boolean }) {
   return (
     <div className="space-y-4 sm:space-y-5">
       <div>
-        <h2 className={`text-base sm:text-lg font-black tracking-tight ${t.heading}`}>Disputes</h2>
+        <h2 className={`ck-page-title ${t.heading}`}>Disputes</h2>
         <p className={`text-xs ${t.dim}`}>Post-delivery issue reports from donors and recipients.</p>
       </div>
 

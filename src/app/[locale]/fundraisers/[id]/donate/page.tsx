@@ -128,7 +128,7 @@ export default function DonatePage() {
   if (!FEATURES.fundraising) return null;
   if (!d || isLoading || isRestoring) return <div className={`${s.root} ${s.publicTheme}`} aria-busy="true">{error && <p role="alert" className={s.errText} style={{ padding: 32 }}>{errorText}</p>}</div>;
   if (!d.acceptingDonations) {
-    return <div className={`${s.root} ${s.publicTheme}`}><main className={s.wrap} style={{ paddingTop: 48 }}><p><strong><UiText>This fundraiser isn&apos;t accepting donations right now.</UiText></strong> <UiText>Nothing was charged.</UiText></p><Link href={`/fundraisers/${id}`}><UiText>Back to fundraiser</UiText></Link></main></div>;
+    return <div className={`${s.root} ${s.publicTheme}`}><div className={s.wrap} style={{ paddingTop: 48 }}><p><strong><UiText>This fundraiser isn&apos;t accepting donations right now.</UiText></strong> <UiText>Nothing was charged.</UiText></p><Link href={`/fundraisers/${id}`}><UiText>Back to fundraiser</UiText></Link></div></div>;
   }
 
   const value = amount ?? (custom.trim() ? Number(custom.replace(/,/g, "")) : NaN);
@@ -185,7 +185,7 @@ export default function DonatePage() {
   const steps = [ui("Amount", "donate step"), ui("Your details", "donate step"), ui("Review", "donate step")];
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
-      <main className={`${s.wrap} ${s.donateLayout}`} style={{ paddingTop: 32, paddingBottom: 64, alignItems: "start", maxWidth: 1080 }}>
+      <div className={`${s.wrap} ${s.donateLayout}`} style={{ paddingTop: 32, paddingBottom: 64, alignItems: "start", maxWidth: 1080 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 22, minWidth: 0 }}>
           <ol aria-label={ui("Donation steps")} style={{ listStyle: "none", padding: 0, display: "flex", gap: 6, fontSize: 14, fontWeight: 600, color: "#6b5d52", flexWrap: "wrap" }}>
             {steps.map((label, i) => <li key={label} aria-current={i === step ? "step" : undefined} style={{ color: i === step ? "#7a3410" : undefined }}>{i + 1} {label}{i < step ? " ✓" : ""}{i < steps.length - 1 ? " ·" : ""}</li>)}
@@ -372,7 +372,7 @@ export default function DonatePage() {
             <Link href={`/fundraisers/${id}`} className={s.small}><UiText>Back to fundraiser</UiText></Link>
           </div>
         </aside>
-      </main>
+      </div>
     </div>
   );
 }

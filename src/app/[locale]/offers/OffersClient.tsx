@@ -103,7 +103,7 @@ export default function OffersClient() {
   if (!user) return null;
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <div className="mx-auto max-w-2xl px-4 pt-5 sm:pt-8">
         <Link
           href="/dashboard#offers"
@@ -239,6 +239,6 @@ export default function OffersClient() {
           ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }

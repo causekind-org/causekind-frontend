@@ -100,9 +100,9 @@ export function SahasDonateForm({ slug, onClose }: { slug: string; onClose?: () 
   const shell = (body: React.ReactNode) => (
     onClose
       ? <div className="flex h-full flex-col gap-4 overflow-y-auto p-6 pe-14 text-[#1F140D] dark:text-stone-100">{body}</div>
-      : <main className="min-h-[70vh] bg-[#FBF7F2] px-4 py-10 text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
+      : <div className="min-h-[70vh] bg-[#FBF7F2] px-4 py-10 text-[#1F140D] dark:bg-zinc-950 dark:text-stone-100">
           <div className="mx-auto flex max-w-xl flex-col gap-5">{body}</div>
-        </main>
+        </div>
   );
   if (!data || !data.moneyOpen) {
     return shell(<>

@@ -70,7 +70,7 @@ export default function ReportProblemPage() {
 
   if (submitted) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950 p-3 sm:p-4">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950 p-3 sm:p-4">
         <div className="max-w-sm w-full rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-5 sm:p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-11 sm:h-14 w-11 sm:w-14 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-950 text-lg sm:text-2xl">!</div>
           <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Problem Reported</h2>
@@ -79,12 +79,12 @@ export default function ReportProblemPage() {
             Back to Offers
           </button>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 pb-20">
       <div className="mx-auto max-w-lg px-4 pt-5 sm:pt-8 space-y-4 sm:space-y-5">
         <div>
           <button onClick={() => router.back()} className="mb-2 text-sm text-gray-400 hover:text-gray-600">← Back</button>
@@ -142,6 +142,6 @@ export default function ReportProblemPage() {
           </button>
         </div>
       </div>
-    </main>
+    </div>
   );
 }

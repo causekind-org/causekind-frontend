@@ -21,6 +21,10 @@ export type InKindCategory = {
   /** URL segment only. Never sent to the backend. */
   slug: string;
   tagline: string;
+  /** First draft intro (not shown: it repeated the lists). Kept for reference. */
+  guideIntro: string;
+  /** Approved card text under "Donation Guidelines"; the card renders only when set. */
+  guideCard?: string;
   intro: string;
   goodToDonate: string[];
   avoid: string[];
@@ -35,7 +39,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Medical Aid Near You",
     seoDescription: "Donate wheelchairs, walkers, BP monitors and in-date medical consumables directly to verified people and NGOs near you. See current requests on CauseKind.",
     tagline: "Mobility, comfort and health-related support.",
-    intro:
+    guideIntro:
+      "Donate Medical Aid Near You: medical aid covers mobility, comfort and health-related support. People here ask for things like wheelchairs, walkers and crutches, hospital beds and pressure-relief mattresses, and everyday devices such as nebulisers, blood pressure monitors and glucometers. Hearing aids, spectacles and mobility ramps are also useful. Consumables such as adult diapers or dressings help most when they are unopened and still in date. Before you give, check that the device has all its parts and still works properly. Please do not offer prescription medicines of any kind, opened or expired consumables, or devices with cracked frames, seized wheels or missing safety straps. Anything that needs a prescription fitting, such as used orthotics, also should not be offered.",
+    guideCard:
+      "Donate medical aid near you with care. People use this kind of equipment every day to move around, rest and monitor their health, so safety and reliability matter more here than in most categories. When you list an item, give its model, size and approximate age, and mention anything that affects use, such as a weight limit, batteries or a charger. Keep the user guide with it if you have one. Clean and disinfect every part that touches the body, check that the item works fully, and be open about any wear or repair, so the receiver can judge with confidence whether it suits them.",    intro:
       "Medical needs are the most time-sensitive on CauseKind. A wheelchair that arrives three weeks late is a person who stayed indoors for three weeks. These are also the items where condition matters most — a mobility aid that fails under load is worse than none at all.",
     goodToDonate: [
       "Wheelchairs, walkers and crutches with all parts present",
@@ -68,6 +75,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Books & Stationery",
     seoDescription: "Donate books, textbooks, stationery and school bags directly to verified students, families and NGOs near you. See current requests on CauseKind.",
     tagline: "Books, stationery and the tools of a school day.",
+    guideIntro:
+      "Donate Books & Stationery: education requests are for books, stationery and the tools of a school day. Students ask for textbooks and guides for their current syllabus, unused notebooks, pens, geometry boxes and art supplies, and school bags with working zips and intact straps. Uniforms in common sizes help when they are cleaned and pressed, and calculators, drawing boards and lab equipment are often needed too. Story books and reference books are welcome in any local language. To make sure your donation is used, avoid textbooks from an older syllabus or a different board, books with heavy highlighting, missing pages or filled-in exercises, half-used notebooks and dried-out pens, and uniforms with a school crest that will not match the student's school.",
+    guideCard:
+      "Donate Books & Stationery: a student who has the right books and supplies at the start of term can keep up in class instead of borrowing, copying or falling behind. Before you offer anything, read the request carefully and match it: the class, the subject, the board and the language all matter. Group books by class or subject, state how many you have, and mention whether they come with workbooks or guides. A clear photo of the covers lets the family confirm that it is the right edition. Give everything a quick wipe and a check for loose pages, so it is ready to open on the first day.",
     intro:
       "Education requests cluster around the start of a term and around exams. A school bag in June is worth more than the same bag in October. Match the syllabus and the year where you can — the right textbook for the wrong board helps nobody.",
     goodToDonate: [
@@ -101,6 +112,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Livelihood Tools Near You",
     seoDescription: "Donate sewing machines, tools and work equipment that help people earn a living. Give directly to verified people and NGOs near you on CauseKind.",
     tagline: "Tools that let someone earn rather than receive.",
+    guideIntro:
+      "Donate Livelihood Tools Near You: livelihood requests are for tools that let someone earn rather than receive. People ask for sewing machines, overlockers and tailoring equipment, hand tools and power tools for carpentry, masonry or repair, and commercial-grade kitchen equipment for food vendors. Small traders often need carts, crates and weighing scales, and working laptops help with freelance or data-entry work. Salon, embroidery and craft equipment is useful as well. A tool only helps if it is complete, so please avoid items missing the bit, blade, foot or attachment that makes them usable, machines that need a part no longer made, and power tools with damaged cords or missing guards. Hobby-grade equipment is not suitable when the request is clearly for daily commercial use.",
+    guideCard:
+      "Donate Livelihood Tools Near You: the right tool can turn a skill into steady income, helping someone take on paid work, open a small stall or run a home business. Because the person will rely on it for their earnings, be specific: say how often it was used, whether it needs electricity or fuel, and which accessories, spare parts or manuals are included. A photo of the complete set, with every accessory laid out, helps the receiver judge what they are getting. Clean it, oil any moving parts, and test it once before the handover, so the receiver can start earning with it straight away instead of paying for repairs.",
     intro:
       "Livelihood is the category with the longest tail. A sewing machine is not a one-time gift — it is income every month for years. These requests are usually specific, because the person asking already knows the trade and knows exactly which tool is missing.",
     goodToDonate: [
@@ -134,6 +149,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Relief Supplies Near You",
     seoDescription: "Donate blankets, tarpaulins, mosquito nets, solar lamps and sealed hygiene items directly to verified people and NGOs near you. See requests on CauseKind.",
     tagline: "Essentials for families in the middle of an emergency.",
+    guideIntro:
+      "Donate Relief Supplies Near You: relief requests are for essentials that families need in the middle of an emergency. The most useful items are blankets, bedsheets, towels and mats, tarpaulins, mosquito nets and basic shelter material, and cooking vessels, stoves and water containers. Torches, batteries, power banks and solar lamps help when power is out, and sealed hygiene items such as soap, sanitary pads and toothbrushes are always needed. Sturdy footwear and weather-appropriate outerwear also make a real difference. Please do not send perishable or home-cooked food, anything damp, mildewed or stored in a flooded space, or single fragile items that will not survive transport. Used personal hygiene products of any kind should not be offered.",
+    guideCard:
+      "Donate Relief Supplies Near You: when a family has lost its home or belongings, basic supplies help them get through the first days and weeks with some comfort and dignity. In these situations speed matters, so offer only what you can hand over soon, and describe it accurately. Pack items in sets that a family can use straight away, for example bedding together with a mat, and label each bag with what is inside. State how many sets you have, so the family or NGO can plan. Keep everything clean, dry and in sturdy bags, so it travels well and arrives in the condition you promised.",
     intro:
       "Relief requests come from households that have lost most of what they owned — to a flood, a fire, an eviction, a sudden illness. Speed and basic dignity beat quality here. A clean blanket today is worth more than an excellent one next month.",
     goodToDonate: [
@@ -167,6 +186,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Household Items Near You",
     seoDescription: "Donate kitchen utensils, appliances and everyday household items directly to verified families and NGOs near you. See current requests on CauseKind.",
     tagline: "The daily-use items that make a room a home.",
+    guideIntro:
+      "Donate Household Items Near You: household requests are for the daily-use items that make a room a home. Families ask for cookware, pressure cookers, utensils and cutlery, bedding, pillows, curtains and floor mats, and storage containers, shelves and organisers. Small appliances such as fans, irons and mixers are welcome when they are in working order, and buckets, mops and basic cleaning equipment are often needed. Check items before you list them: avoid chipped or cracked crockery, non-stick pans with a flaking coating, pillows and mattresses with stains or a lasting smell, and appliances that trip a socket or run hot. If a set is incomplete, say clearly what is missing so the receiver knows what they are getting.",
+    guideCard:
+      "Donate Household Items Near You: for a family setting up a home again, everyday items turn an empty room into a place where they can cook, rest and look after themselves. Since these things are used every day, point out anything that is worn or missing, and say whether an item belongs to a set. Offer matching pieces together, such as pans with their lids, so the receiver gets something complete. For electrical items, mention the age and whether the plug and cord are in good condition. Wash or wipe everything down so it is ready to use the day it arrives.",
     intro:
       "Household requests often follow a move, a marriage or a first independent home. They are rarely dramatic and almost always practical: something to cook in, something to sleep on, something to store things in.",
     goodToDonate: [
@@ -199,6 +222,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Furniture Near You",
     seoDescription: "Donate beds, tables, chairs, cupboards and other usable furniture directly to verified families and NGOs near you. See current requests on CauseKind.",
     tagline: "Beds, chairs, tables and storage that still have decades left.",
+    guideIntro:
+      "Donate Furniture Near You: furniture requests are for beds, chairs, tables and storage that still have years of use left. People ask for beds, cots and mattresses that are clean and structurally sound, chairs, tables and desks with all legs true, and wardrobes, cupboards and shelving units. Sofas are welcome when the frame is intact and the upholstery is unstained, and flat-pack items are useful if you still have the fittings. Please avoid anything with woodworm, termite damage or signs of pests, water-damaged particleboard that will not survive another move, mattresses with stains, tears or a bed-bug history, and glass tops with chips or edge cracks. Be clear about size and weight so the receiver can plan how to collect it.",
+    guideCard:
+      "Donate Furniture Near You: a sturdy place to sleep, sit, work or store belongings can make a new or crowded home far more livable for a family. Furniture is large, so the most useful thing you can do is give accurate dimensions and weight, and say whether it comes apart. Measure doorways, stairs and lift access on your side, because the receiver will need to plan how to move it. Keep screws, bolts and fittings in a labelled bag and offer any assembly instructions. Add photos from the front and side, and clear out anything stored inside before the handover.",
     intro:
       "Furniture is the category where transport decides everything. A donee with no vehicle cannot accept a wardrobe, however good it is. Be honest about size and weight up front — a listing that says 'two people can lift this' gets matched far faster than one that does not.",
     goodToDonate: [
@@ -231,6 +258,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Clothes Near You",
     seoDescription: "Donate clean, wearable clothes for children, women and men directly to verified people and NGOs near you. See current clothing requests on CauseKind.",
     tagline: "Clean, wearable clothes for every age and season.",
+    guideIntro:
+      "Donate Clothes Near You: clothing requests are for clean, wearable clothes for every age and season. Everyday wear in good repair, washed and folded, is always useful, and children's and infant clothing is needed often. Season-appropriate outerwear such as sweaters, jackets and shawls helps in colder months, and footwear with life left in the sole should be paired and tied together. Uniforms, workwear and modest-wear in common sizes are also requested. Please avoid torn, stained, faded or stretched-out garments, underwear and swimwear unless they are brand new and sealed, odd shoes or shoes with worn-through soles, and heavily seasonal items sent long before or after their season.",
+    guideCard:
+      "Donate Clothes Near You: clean clothes that fit help a child go to school with confidence and help adults stay warm, attend interviews and feel comfortable in public. To make sure your clothes are worn, list the size, the age group and the number of pieces, and add a clear photo of each bundle laid flat. Sort by person and by season, with children's clothes, adult clothes and winter wear in separate bags, so the receiver can see at a glance what fits. Describe any marks or alterations honestly. Wash and fold everything, and keep pairs and sets together, before you hand them over.",
     intro:
       "Clothing is the most donated category and the one most often misused as a way to empty a wardrobe. The test is simple and worth applying honestly: would you be comfortable wearing this in public tomorrow? If not, it belongs in textile recycling, not on CauseKind.",
     goodToDonate: [
@@ -263,6 +294,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Laptops & Electronics",
     seoDescription: "Donate working laptops, phones and tablets to verified students and NGOs near you. See current requests and how to wipe your data first on CauseKind.",
     tagline: "Working phones, laptops and appliances with real life left.",
+    guideIntro:
+      "Donate Laptops & Electronics: electronics requests are for working phones, laptops and appliances with real life left in them. Students and families ask for phones and tablets that hold a charge and are fully factory reset, laptops in working order with their charger, and televisions, monitors and speakers that power on cleanly. Kitchen appliances such as mixers, kettles and induction plates are useful too, along with cables, chargers and adapters that are clearly labelled. Before you give, sign out of your accounts: a device still locked to you cannot be used. Avoid swollen, leaking or badly worn batteries, cracked screens, frayed cables or damaged charging ports, and say so if a device has not been powered on for a long time.",
+    guideCard:
+      "Donate Laptops & Electronics: a working device can connect a student to online classes, help a job seeker apply for work or keep a family in touch. Be precise about what you are giving: the model, its age, how long the battery lasts and whether the charger is included. Add a clear photo of the device switched on, and describe any faults honestly. Before the handover, back up your data, sign out of every account and reset the device, then wipe it clean. A device that is still linked to your account cannot be used by anyone else. Pack the device with its charger and cables in one bag, and say clearly if any key, port or button does not work.",
     intro:
       "Electronics carry two risks nothing else does: your data, and a device that dies a week after handover. Both are solvable in ten minutes on your side and unsolvable on theirs. Wipe it, test it, and include the charger.",
     goodToDonate: [
@@ -295,6 +330,10 @@ export const IN_KIND_CATEGORIES: InKindCategory[] = [
     seoTitle: "Donate Sports Equipment Near You",
     seoDescription: "Donate bats, balls, bicycles, sports shoes and indoor games in playable condition directly to verified people and NGOs near you. See requests on CauseKind.",
     tagline: "Gear, cycles and fitness equipment for kids and adults.",
+    guideIntro:
+      "Donate Sports Equipment Near You: sports requests are for gear, cycles and fitness equipment for children and adults. People ask for bats, balls, racquets and team equipment in playable condition, bicycles with sound brakes, true wheels and inflated tyres, and fitness equipment such as dumbbells, mats and resistance bands. Sports shoes and kit that have been outgrown rather than worn out are welcome, as are carrom boards, chess sets and other indoor games. Safety comes first: please avoid helmets and protective gear that have taken an impact, cracked bats, delaminated racquets or perished rubber, and cycles that need repairs worth more than the cycle. Do not give anything where a failure during use could cause an injury.",
+    guideCard:
+      "Donate Sports Equipment Near You: sports and games give children and adults a healthy outlet, a reason to join a team and a chance to build skills and friendships. Because equipment is used with force, safety comes first: describe its condition honestly and mention any repairs. Add a clear photo, and state the size, the age range it suits and how many pieces are included. Keep sets together, such as a bat with its balls or a racquet with its cover, and include a pump or spare parts if you have them. Clean it and check that every moving part works before the handover.",
     intro:
       "Sports requests come from schools, coaching groups and individual young players who have the ability and not the kit. Sizing and safety carry the weight here — outgrown gear that still fits someone smaller is exactly right, worn-out protective gear never is.",
     goodToDonate: [

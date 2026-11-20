@@ -8,9 +8,7 @@ CauseKind also hosts campaigns and fundraisers for verified community needs acro
 
 - [Home](https://www.causekind.com): Overview of in-kind giving on CauseKind
 - [About](https://www.causekind.com/about): Mission, story, and how verified in-kind donations work
-- [Donate](https://www.causekind.com/donate): Give in kind to verified requests near you
 - [Requests](https://www.causekind.com/requests): Items that verified people and NGOs have asked for
-- [Campaigns](https://www.causekind.com/campaigns): Active campaigns supporting verified community needs
 - [FAQ](https://www.causekind.com/faq): Donating, receiving, verification and matching explained
 - [Contact](https://www.causekind.com/contact): Reach the team by email, phone or WhatsApp
 

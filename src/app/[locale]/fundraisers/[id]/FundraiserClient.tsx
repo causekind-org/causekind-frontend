@@ -29,10 +29,10 @@ export default function FundraiserPage() {
 
   if (!FEATURES.fundraising || missing) {
     return (
-      <div className={`${s.root} ${s.publicTheme}`}><main className={s.wrap} style={{ paddingTop: 64, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div className={`${s.root} ${s.publicTheme}`}><div className={s.wrap} style={{ paddingTop: 64, display: "flex", flexDirection: "column", gap: 8 }}>
         <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>This fundraiser isn&apos;t available</UiText></h1>
         <Link href="/fundraisers"><UiText>See other fundraisers</UiText></Link>
-      </main></div>
+      </div></div>
     );
   }
   if (!d) return <div className={`${s.root} ${s.publicTheme}`} aria-busy="true" />;
@@ -48,7 +48,7 @@ export default function FundraiserPage() {
 
   return (
     <div className={`${s.root} ${s.publicTheme}`} style={{ fontSize: 16, lineHeight: 1.6 }}>
-      <main className={`${s.wrap} ${s.detail}`} style={{ paddingTop: 32, paddingBottom: 72, maxWidth: 1180 }}>
+      <div className={`${s.wrap} ${s.detail}`} style={{ paddingTop: 32, paddingBottom: 72, maxWidth: 1180 }}>
         <article style={{ display: "flex", flexDirection: "column", gap: 28, minWidth: 0 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <Link href="/fundraisers" className={s.small} style={{ textDecoration: "none" }}><UiText>← All fundraisers</UiText></Link>
@@ -155,7 +155,7 @@ export default function FundraiserPage() {
           <p className={`${s.small} ${s.muted}`}><UiText>The total counts only payments our server has confirmed.</UiText></p>
           <Link href={`/fundraisers/${c.id}/report`} className={s.small} style={{ alignSelf: "flex-start" }}><UiText>Report this fundraiser</UiText></Link>
         </aside>
-      </main>
+      </div>
     </div>
   );
 }

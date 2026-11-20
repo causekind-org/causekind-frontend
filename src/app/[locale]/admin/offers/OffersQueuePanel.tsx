@@ -1,5 +1,6 @@
 "use client";
 
+import { EmptyState } from "@/components/staff/primitives";
 import { serverDate } from "@/lib/serverTime";
 import { useEffect, useState } from "react";
 import Image from "next/image";
@@ -279,9 +280,9 @@ export function OffersQueuePanel() {
       : "No open offers";
 
   const purchaseToggle = (
-    <div className="flex gap-2">
-      <button onClick={() => setShowPurchases(false)} className={`rounded-full px-4 py-1.5 text-xs font-bold ${!showPurchases ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>Item offers</button>
-      <button onClick={() => setShowPurchases(true)} className={`rounded-full px-4 py-1.5 text-xs font-bold ${showPurchases ? "bg-[#b04a15] text-white" : "border border-stone-200 bg-white text-stone-600 dark:border-zinc-700 dark:bg-zinc-900"}`}>Purchases</button>
+    <div role="group" aria-label="Offer type" className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-white/80 bg-white/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+      <button aria-pressed={!showPurchases} onClick={() => setShowPurchases(false)} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${!showPurchases ? "bg-[#10233a] text-white" : "text-[#3a5070] hover:bg-white/70"}`}>Item offers</button>
+      <button aria-pressed={showPurchases} onClick={() => setShowPurchases(true)} className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${showPurchases ? "bg-[#10233a] text-white" : "text-[#3a5070] hover:bg-white/70"}`}>Purchases</button>
     </div>
   );
 
@@ -294,22 +295,22 @@ export function OffersQueuePanel() {
       {purchaseToggle}
       {/* Header strip */}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm text-stone-500">{headline}</p>
-        <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold border border-stone-200 rounded-xl bg-white text-stone-600 hover:text-stone-900 transition-all disabled:opacity-50">
+        <p className="text-sm text-[#4f6480]" aria-live="polite">{headline}</p>
+        <button onClick={load} className="flex h-10 items-center gap-1.5 rounded-full border border-white/80 bg-white/85 px-4 text-[13px] font-semibold text-[#1a2f48] transition-colors duration-150 hover:bg-white disabled:opacity-50">
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div role="group" aria-label="Offer status" className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-white/80 bg-white/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
         {FILTER_OPTIONS.map(f => {
           const count = countFor(f.key);
           const active = filter === f.key;
           return (
-            <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`flex-shrink-0 rounded-full px-4 py-1.5 text-xs font-bold transition-colors ${
-                active ? "bg-[#b04a15] text-white" : "bg-white dark:bg-zinc-900 text-stone-600 dark:text-stone-400 border border-stone-200 dark:border-zinc-700 hover:border-[#b04a15]"
+            <button key={f.key} aria-pressed={active} onClick={() => setFilter(f.key)}
+              className={`flex h-9 shrink-0 items-center rounded-full px-4 text-[13px] font-medium transition-colors duration-150 ${
+                active ? "bg-[#10233a] text-white" : "text-[#3a5070] hover:bg-white/70"
               }`}>
               {f.label}
               {count > 0 && (
@@ -323,39 +324,35 @@ export function OffersQueuePanel() {
       </div>
 
       {loading && (
-        <div className="flex justify-center py-16"><Loader2 className="animate-spin w-8 h-8 text-[#b04a15]" /></div>
+        <div className="flex justify-center py-16"><Loader2 className="animate-spin w-8 h-8 text-[#1f66b3]" /></div>
       )}
 
       {!loading && loadError && (
-        <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+        <div role="alert" className="rounded-[22px] border border-red-200 bg-red-50/95 p-6 text-center">
           <p className="text-sm font-semibold text-red-700">{loadError}</p>
-          <button onClick={load} className="mt-3 rounded-xl bg-red-600 px-4 py-2 text-xs font-bold text-white">Retry</button>
+          <button onClick={load} className="mt-3 h-10 rounded-full bg-red-600 px-5 text-[13px] font-semibold text-white hover:bg-red-700">Retry</button>
         </div>
       )}
 
       {!loading && !loadError && visible.length === 0 && (
-        <div className="rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 p-6 sm:p-12 text-center shadow-sm">
-          <Check className="w-10 h-10 text-green-500 mx-auto mb-3" />
-          <h3 className="font-bold text-stone-700 dark:text-stone-300">All clear</h3>
-          <p className="text-sm text-stone-400 mt-1">No offers in this category.</p>
-        </div>
+        <EmptyState title="All clear" description="No offers in this category." />
       )}
 
       {/* Reject modal */}
       {rejectId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4">
-            <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100">Reject Offer</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#12355c]/55 p-3 sm:p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#10233a] shadow-2xl space-y-3 sm:space-y-4">
+            <h3 className="text-[17px] font-semibold">Reject Offer</h3>
             <p className="text-sm text-stone-500">The donor and donee will both receive a notification with this reason.</p>
             <ReasonField value={rejectReason} onChange={setRejectReason}
               placeholder="Enter the reason for rejection..." disabled={acting !== null} />
             <div className="flex gap-2">
               <button onClick={handleReject} disabled={acting !== null || !isMeaningfulReason(rejectReason)}
-                className="flex-1 rounded-xl bg-red-600 text-white py-2.5 text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
+                className="h-10 flex-1 rounded-full bg-red-600 text-white text-sm font-semibold hover:bg-red-700 disabled:opacity-50">
                 {acting ? "Rejecting..." : "Confirm Rejection"}
               </button>
               <button onClick={() => { setRejectId(null); setRejectReason(""); }}
-                className="rounded-xl border border-stone-200 dark:border-zinc-700 px-4 py-2.5 text-sm text-stone-600 dark:text-stone-400">
+                className="h-10 rounded-full border border-[#cbdcee] px-4 text-sm font-semibold text-[#4f6480] hover:bg-[#eef4fb]">
                 Cancel
               </button>
             </div>
@@ -365,19 +362,19 @@ export function OffersQueuePanel() {
 
       {/* Cancel Donation modal (dispute — sides with donee) */}
       {cancelId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4">
-            <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100">Cancel Donation</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#12355c]/55 p-3 sm:p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#10233a] shadow-2xl space-y-3 sm:space-y-4">
+            <h3 className="text-[17px] font-semibold">Cancel Donation</h3>
             <p className="text-sm text-stone-500">This sides with the donee — the item was not received. Both parties will be notified and the reservation will be released.</p>
             <ReasonField value={cancelReason} onChange={setCancelReason}
               placeholder="Reason for cancellation (shared with both parties)..." disabled={disputeActing !== null} />
             <div className="flex gap-2">
               <button onClick={handleCancelDonation} disabled={disputeActing !== null || !isMeaningfulReason(cancelReason)}
-                className="flex-1 rounded-xl bg-red-700 text-white py-2.5 text-sm font-semibold hover:bg-red-800 disabled:opacity-50">
+                className="h-10 flex-1 rounded-full bg-red-700 text-white text-sm font-semibold hover:bg-red-800 disabled:opacity-50">
                 {disputeActing ? "Cancelling..." : "Confirm Cancellation"}
               </button>
               <button onClick={() => { setCancelId(null); setCancelReason(""); }}
-                className="rounded-xl border border-stone-200 dark:border-zinc-700 px-4 py-2.5 text-sm text-stone-600 dark:text-stone-400">
+                className="h-10 rounded-full border border-[#cbdcee] px-4 text-sm font-semibold text-[#4f6480] hover:bg-[#eef4fb]">
                 Back
               </button>
             </div>
@@ -387,20 +384,20 @@ export function OffersQueuePanel() {
 
       {/* Request Info modal */}
       {requestInfoId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 p-4 sm:p-6 shadow-2xl space-y-3 sm:space-y-4">
-            <h3 className="font-bold text-base sm:text-lg text-stone-900 dark:text-stone-100">Request More Information</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#12355c]/55 p-3 sm:p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-3xl border border-white/80 bg-white p-5 sm:p-6 text-[#10233a] shadow-2xl space-y-3 sm:space-y-4">
+            <h3 className="text-[17px] font-semibold">Request More Information</h3>
             <p className="text-sm text-stone-500">The donor will receive a notification and be asked to update their offer.</p>
-            <textarea value={requestInfoNote} onChange={e => setRequestInfoNote(e.target.value)} rows={3}
+            <textarea aria-label="Information needed from the donor" value={requestInfoNote} onChange={e => setRequestInfoNote(e.target.value)} rows={3}
               placeholder="What information is needed from the donor?"
               className="w-full rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 px-3 py-2 text-sm outline-none focus:border-amber-400" />
             <div className="flex gap-2">
               <button onClick={handleRequestInfo} disabled={acting !== null}
-                className="flex-1 rounded-xl bg-amber-500 text-white py-2.5 text-sm font-semibold hover:bg-amber-600 disabled:opacity-50">
+                className="h-10 flex-1 rounded-full bg-amber-600 text-white text-sm font-semibold hover:bg-amber-700 disabled:opacity-50">
                 Send to Donor
               </button>
               <button onClick={() => { setRequestInfoId(null); setRequestInfoNote(""); }}
-                className="rounded-xl border border-stone-200 dark:border-zinc-700 px-4 py-2.5 text-sm text-stone-600 dark:text-stone-400">
+                className="h-10 rounded-full border border-[#cbdcee] px-4 text-sm font-semibold text-[#4f6480] hover:bg-[#eef4fb]">
                 Cancel
               </button>
             </div>
@@ -410,7 +407,7 @@ export function OffersQueuePanel() {
 
       {/* Offer cards */}
       {!loading && visible.map(offer => {
-        const cfg = STATUS_CFG[offer.status] ?? { label: offer.status.replace(/_/g, " "), color: "text-stone-600", bg: "bg-stone-50 border-stone-200" };
+        const cfg = STATUS_CFG[offer.status] ?? { label: offer.status.charAt(0) + offer.status.slice(1).toLowerCase().replace(/_/g, " "), color: "text-stone-600", bg: "bg-stone-50 border-stone-200" };
         const stageIdx = STATUS_TO_STAGE[offer.status] ?? 0;
         const isExpanded = expanded === offer.id;
         const needsAction = ["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL"].includes(offer.status);
@@ -418,11 +415,11 @@ export function OffersQueuePanel() {
 
         return (
           <div key={offer.id}
-            className={`rounded-xl sm:rounded-2xl bg-white dark:bg-zinc-900 border shadow-sm overflow-hidden transition-shadow ${needsAction ? "border-amber-300 dark:border-amber-700 shadow-amber-100 dark:shadow-none" : "border-stone-100 dark:border-zinc-800"}`}>
+            className={`ck-glass-solid overflow-hidden transition-shadow duration-200 ${needsAction ? "!border-amber-300" : ""} ${isExpanded ? "ring-2 ring-[#2d7fd6]/35" : ""}`}>
 
             {/* Summary row */}
-            <button onClick={() => toggleExpand(offer.id)}
-              className="w-full text-left p-3.5 sm:p-5 flex items-start gap-3 sm:gap-4 hover:bg-stone-50 dark:hover:bg-zinc-800/50 transition-colors">
+            <button onClick={() => toggleExpand(offer.id)} aria-expanded={isExpanded}
+              className="w-full text-left p-4 sm:p-5 flex items-start gap-3 sm:gap-4 hover:bg-stone-50 dark:hover:bg-zinc-800/50 transition-colors">
 
               {/* Thumbnail */}
               {offer.media?.[0] ? (
@@ -441,13 +438,13 @@ export function OffersQueuePanel() {
                     {cfg.label}
                   </span>
                   {needsAction && (
-                    <span className="rounded-full bg-amber-500 text-white px-2 py-0.5 text-3xs font-black uppercase tracking-wide animate-pulse">
-                      Action Required
+                    <span className="ck-status" data-tone="waiting">
+                      Needs your decision
                     </span>
                   )}
                   {isScreening && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-500 text-white px-2 py-0.5 text-3xs font-black uppercase tracking-wide">
-                      <Bot className="w-2.5 h-2.5" /> AI Screening
+                    <span className="ck-status" data-tone="info">
+                      <Bot className="w-3 h-3" aria-hidden /> AI screening
                     </span>
                   )}
                   {offer.matchScore != null && (
@@ -461,12 +458,12 @@ export function OffersQueuePanel() {
                   )}
                   {offer.compatibilityIndicator && (
                     <span className="rounded-full bg-stone-100 dark:bg-zinc-800 px-2 py-0.5 text-3xs text-stone-500">
-                      {offer.compatibilityIndicator.replace(/_/g, " ")}
+                      {offer.compatibilityIndicator.charAt(0) + offer.compatibilityIndicator.slice(1).toLowerCase().replace(/_/g, " ")}
                     </span>
                   )}
                 </div>
 
-                <h3 className="font-bold text-stone-900 dark:text-stone-100">{offer.requestTitle}</h3>
+                <h3 className="text-[15px] font-semibold text-[#10233a]">{offer.requestTitle}</h3>
                 <p className="text-xs text-stone-500 mt-0.5">
                   {offer.requestCategory} · {offer.requestCity}
                   {offer.flowType && ` · ${offer.flowType === "ALREADY_OWN" ? "Donor already owns" : offer.flowType === "WILL_PURCHASE" ? "Donor will purchase" : "Similar item"}`}
@@ -477,7 +474,7 @@ export function OffersQueuePanel() {
                   {FLOW_STAGES.map((_, i) => (
                     <div key={i} className={`h-1 flex-1 rounded-full ${
                       i < stageIdx ? "bg-green-400" :
-                      i === stageIdx ? "bg-[#b04a15]" :
+                      i === stageIdx ? "bg-[#1f66b3]" :
                       "bg-stone-200 dark:bg-zinc-700"
                     }`} />
                   ))}
@@ -488,7 +485,7 @@ export function OffersQueuePanel() {
               </div>
 
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-xs text-stone-400">#{offer.id}</span>
+                <span className="font-mono text-[11px] text-[#4f6480]">#{offer.id}</span>
                 {isExpanded ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
               </div>
             </button>
@@ -497,7 +494,7 @@ export function OffersQueuePanel() {
             {isExpanded && (
               <div className="border-t border-stone-100 dark:border-zinc-800">
                 {expandLoading && (
-                  <div className="flex justify-center py-5 sm:py-8"><Loader2 className="animate-spin w-6 h-6 text-[#b04a15]" /></div>
+                  <div className="flex justify-center py-5 sm:py-8"><Loader2 className="animate-spin w-6 h-6 text-[#1f66b3]" /></div>
                 )}
 
                 {expandedData && expandedData.offer.id === offer.id && (
@@ -516,7 +513,7 @@ export function OffersQueuePanel() {
                         below, i.e. from "always rendered, never legible" to
                         "on demand, and legible". */}
                     <div className="space-y-2">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-stone-400">Flow Progress</h4>
+                      <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480]">Flow Progress</h4>
 
                       <div className="flex gap-0.5" role="list" aria-label="Offer flow progress">
                         {FLOW_STAGES.map((label, i) => {
@@ -531,7 +528,7 @@ export function OffersQueuePanel() {
                               aria-current={current ? "step" : undefined}
                               className={`h-2 flex-1 rounded-full ${
                                 done ? "bg-green-400" :
-                                current ? "bg-[#b04a15]" :
+                                current ? "bg-[#1f66b3]" :
                                 "bg-stone-200 dark:bg-zinc-700"
                               }`}
                             />
@@ -540,7 +537,7 @@ export function OffersQueuePanel() {
                       </div>
 
                       {/* State is icon + colour, never colour alone. */}
-                      <p className="text-2xs font-semibold text-[#b04a15]">
+                      <p className="text-2xs font-semibold text-[#1f66b3]">
                         ● Stage {stageIdx + 1} of {FLOW_STAGES.length} · {FLOW_STAGES[stageIdx]}
                       </p>
 
@@ -549,7 +546,7 @@ export function OffersQueuePanel() {
                           would be far heavier than this warrants inside a queue
                           row that may be one of several open at once. */}
                       <details className="group">
-                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-2xs font-bold text-stone-400 transition-colors hover:text-stone-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#b04a15] dark:hover:text-stone-300">
+                        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-2xs font-bold text-stone-400 transition-colors hover:text-stone-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1f66b3] dark:hover:text-stone-300">
                           <ChevronDown className="h-3 w-3 transition-transform group-open:rotate-180" aria-hidden />
                           All stages
                         </summary>
@@ -563,7 +560,7 @@ export function OffersQueuePanel() {
                                 aria-current={current ? "step" : undefined}
                                 className={`flex items-center gap-1.5 text-2xs ${
                                   done ? "text-green-600 dark:text-green-400" :
-                                  current ? "font-bold text-[#b04a15]" :
+                                  current ? "font-bold text-[#1f66b3]" :
                                   "text-stone-400 dark:text-zinc-600"
                                 }`}
                               >
@@ -581,7 +578,7 @@ export function OffersQueuePanel() {
 
                       {/* Item details */}
                       <div className="space-y-3">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480] flex items-center gap-1.5">
                           <Package className="w-3 h-3" /> Item Details
                         </h4>
                         {expandedData.offer.itemDetails && (() => {
@@ -624,7 +621,7 @@ export function OffersQueuePanel() {
                         })()}
 
                         {/* AI Assessment */}
-                        <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5 pt-2">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480] flex items-center gap-1.5 pt-2">
                           <ShieldCheck className="w-3 h-3" /> AI Assessment
                         </h4>
                         <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-2 text-sm">
@@ -740,7 +737,7 @@ export function OffersQueuePanel() {
 
                       {/* Donor / Donee + Photos */}
                       <div className="space-y-3">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480] flex items-center gap-1.5">
                           <User className="w-3 h-3" /> Parties
                         </h4>
                         <div className="rounded-xl bg-stone-50 dark:bg-zinc-800 p-3 sm:p-4 space-y-3 text-sm">
@@ -750,7 +747,7 @@ export function OffersQueuePanel() {
                             <p className="text-stone-700 dark:text-stone-300 font-semibold">{expandedData.offer.donorName}</p>
                             {expandedData.offer.donorPhone ? (
                               <a href={`tel:${expandedData.offer.donorPhone}`}
-                                className="inline-flex items-center gap-1 text-xs text-[#b04a15] hover:underline mt-0.5">
+                                className="inline-flex items-center gap-1 text-xs text-[#1f66b3] hover:underline mt-0.5">
                                 <Phone className="w-3 h-3" /> {expandedData.offer.donorPhone}
                               </a>
                             ) : (
@@ -764,7 +761,7 @@ export function OffersQueuePanel() {
                             <p className="text-stone-700 dark:text-stone-300 font-semibold">{expandedData.offer.doneeName}</p>
                             {expandedData.offer.doneePhone ? (
                               <a href={`tel:${expandedData.offer.doneePhone}`}
-                                className="inline-flex items-center gap-1 text-xs text-[#b04a15] hover:underline mt-0.5">
+                                className="inline-flex items-center gap-1 text-xs text-[#1f66b3] hover:underline mt-0.5">
                                 <Phone className="w-3 h-3" /> {expandedData.offer.doneePhone}
                               </a>
                             ) : (
@@ -789,7 +786,7 @@ export function OffersQueuePanel() {
                         {/* Photos */}
                         {expandedData.offer.media.length > 0 && (
                           <>
-                            <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5 pt-1">
+                            <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480] flex items-center gap-1.5 pt-1">
                               <MapPin className="w-3 h-3" /> Item Photos
                             </h4>
                             <div className="grid grid-cols-4 gap-2">
@@ -808,7 +805,7 @@ export function OffersQueuePanel() {
                     {/* Status History Timeline */}
                     {expandedData.history.length > 0 && (
                       <div className="space-y-2">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480] flex items-center gap-1.5">
                           <Clock className="w-3 h-3" /> Complete Status History
                         </h4>
                         <div className="rounded-xl border border-stone-100 dark:border-zinc-800 overflow-hidden">
@@ -856,7 +853,7 @@ export function OffersQueuePanel() {
                     {/* Chat Thread — problem reports and admin communication */}
                     {expandedData.messages.length > 0 || ["HANDOVER_IN_PROGRESS", "HANDOVER_AT_RISK", "ISSUE_RAISED", "ISSUE_WINDOW_OPEN"].includes(offer.status) ? (
                       <div className="space-y-3 pt-2 border-t border-stone-100 dark:border-zinc-800">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5">
+                        <h4 className="text-[12px] font-semibold uppercase tracking-wide text-[#4f6480] flex items-center gap-1.5">
                           <AlertTriangle className="w-3 h-3" /> Messages & Problem Reports
                         </h4>
 
@@ -951,7 +948,7 @@ export function OffersQueuePanel() {
                                   onClick={() => setReplyTarget(prev => ({ ...prev, [offer.id]: t }))}
                                   className={`px-3 py-1 transition-colors ${
                                     (replyTarget[offer.id] ?? "BOTH") === t
-                                      ? "bg-[#b04a15] text-white"
+                                      ? "bg-[#1f66b3] text-white"
                                       : "bg-stone-50 dark:bg-zinc-800 text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-700"
                                   }`}>
                                   {t === "BOTH" ? "Both" : t === "DONOR" ? "Donor only" : "Donee only"}
@@ -976,12 +973,12 @@ export function OffersQueuePanel() {
                                   : "e.g. We are looking into this. Please wait while we contact the other party."
                               }
                               rows={2}
-                              className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 px-3 py-2 text-sm text-stone-800 dark:text-stone-200 outline-none focus:border-[#b04a15] resize-none"
+                              className="flex-1 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 px-3 py-2 text-sm text-stone-800 dark:text-stone-200 outline-none focus:border-[#1f66b3] resize-none"
                             />
                             <button
                               onClick={() => sendAdminReply(offer.id)}
                               disabled={!adminReply[offer.id]?.trim() || replySending === offer.id}
-                              className="rounded-xl bg-[#b04a15] px-4 text-sm font-semibold text-white hover:bg-[#c45520] disabled:opacity-40"
+                              className="rounded-xl bg-[#1f66b3] px-4 text-sm font-semibold text-white hover:bg-[#c45520] disabled:opacity-40"
                             >
                               {replySending === offer.id ? "..." : "Send"}
                             </button>
@@ -990,28 +987,11 @@ export function OffersQueuePanel() {
                       </div>
                     ) : null}
 
-                    {/* Admin Actions */}
+                    {/* Your decision (round 3): read the checks, then decide. */}
                     {["DONOR_RECONFIRMED", "PENDING_ADMIN_APPROVAL", "PENDING_DONEE_REVIEW"].includes(offer.status) && (
-                      <div className="space-y-3 pt-2 border-t border-stone-100 dark:border-zinc-800">
-                        <h4 className="text-xs font-black uppercase tracking-widest text-stone-400 flex items-center gap-1.5">
-                          <ShieldCheck className="w-3 h-3" /> Admin Actions
-                        </h4>
-                        <div className="grid grid-cols-3 gap-3">
-                          <button onClick={() => handleApprove(offer.id)} disabled={acting === offer.id}
-                            className="rounded-xl bg-green-600 hover:bg-green-700 text-white py-3 text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
-                            <Check className="w-4 h-4" /> Approve
-                          </button>
-                          <button onClick={() => { setRequestInfoId(offer.id); setRequestInfoNote(""); }}
-                            className="rounded-xl bg-amber-500 hover:bg-amber-600 text-white py-3 text-sm font-semibold flex items-center justify-center gap-2">
-                            <Info className="w-4 h-4" /> Request Info
-                          </button>
-                          <button onClick={() => { setRejectId(offer.id); setRejectReason(""); }}
-                            className="rounded-xl bg-red-600 hover:bg-red-700 text-white py-3 text-sm font-semibold flex items-center justify-center gap-2">
-                            <X className="w-4 h-4" /> Reject
-                          </button>
-                        </div>
-                        <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-4 py-3 text-xs text-amber-700 dark:text-amber-400 space-y-1">
-                          <p className="font-bold">Before approving, verify:</p>
+                      <div className="space-y-3 rounded-2xl border border-white/80 bg-[#eef4fb] p-4">
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-[13px] text-amber-800 space-y-1">
+                          <p className="font-semibold">Before approving, verify:</p>
                           <ul className="list-disc list-inside space-y-0.5">
                             <li>Item photos match description and appear genuine</li>
                             <li>Disclosed defects are acceptable for the request</li>
@@ -1019,6 +999,21 @@ export function OffersQueuePanel() {
                             <li>AI compatibility score is reasonable</li>
                             <li>No red flags in status history (repeated reconfirmations, suspicious activity)</li>
                           </ul>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/80 bg-white/95 p-3">
+                          <span className="mr-auto text-[12px] font-semibold uppercase tracking-wide text-[#4f6480]">Your decision</span>
+                          <button onClick={() => handleApprove(offer.id)} disabled={acting === offer.id}
+                            className="flex h-10 items-center gap-1.5 rounded-full bg-[#2d7fd6] px-4 text-[13px] font-semibold text-white hover:bg-[#1f66b3] disabled:opacity-50">
+                            <Check className="w-4 h-4" aria-hidden /> Approve
+                          </button>
+                          <button onClick={() => { setRequestInfoId(offer.id); setRequestInfoNote(""); }}
+                            className="flex h-10 items-center gap-1.5 rounded-full border border-amber-300 bg-amber-50 px-4 text-[13px] font-semibold text-amber-800 hover:bg-amber-100">
+                            <Info className="w-4 h-4" aria-hidden /> Request info
+                          </button>
+                          <button onClick={() => { setRejectId(offer.id); setRejectReason(""); }}
+                            className="flex h-10 items-center gap-1.5 rounded-full bg-red-600 px-4 text-[13px] font-semibold text-white hover:bg-red-700">
+                            <X className="w-4 h-4" aria-hidden /> Reject
+                          </button>
                         </div>
                       </div>
                     )}

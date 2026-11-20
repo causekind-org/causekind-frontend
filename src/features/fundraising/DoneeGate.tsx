@@ -25,10 +25,10 @@ export function DoneeGate({ path, children }: { path: string; children: ReactNod
   if (!FEATURES.fundraising) {
     return (
       <div className={s.root}>
-        <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
+        <div className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
           <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Fundraising isn&apos;t available yet</UiText></h1>
           <p className={s.muted} style={{ marginTop: 8 }}><UiText>You can still</UiText> <Link href="/requests/new"><UiText>request items</UiText></Link>.</p>
-        </main>
+        </div>
       </div>
     );
   }
@@ -36,10 +36,10 @@ export function DoneeGate({ path, children }: { path: string; children: ReactNod
   if (user.role !== "DONEE") {
     return (
       <div className={s.root}>
-        <main className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
+        <div className={s.wrap} style={{ paddingTop: 64, paddingBottom: 64 }}>
           <h1 className={s.serif} style={{ fontSize: 28 }}><UiText>Fundraisers are for recipient accounts</UiText></h1>
           <p className={s.muted} style={{ marginTop: 8 }}><UiText>Sign in with the account of the person organising the fundraiser.</UiText></p>
-        </main>
+        </div>
       </div>
     );
   }

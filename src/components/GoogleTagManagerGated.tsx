@@ -3,6 +3,7 @@
 import { GoogleTagManager } from "@next/third-parties/google";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { isInternalTraffic } from "@/lib/internalTraffic";
+import { useAfterLoadIdle } from "@/hooks/useAfterLoadIdle";
 
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-P7693M56";
 
@@ -53,8 +54,12 @@ const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
 
 export default function GoogleTagManagerGated() {
   const consent = useCookieConsent();
+  // Loads after the page has shown (window load + idle, 3 s cap). Events pushed
+  // to window.dataLayer before then are processed when gtm.js arrives.
+  const ready = useAfterLoadIdle();
   if (TRACKING_DISABLED || isInternalTraffic()) return null;
   if (!TESTING_BYPASS && consent !== "accepted") return null;
 
+  if (!ready) return null;
   return <GoogleTagManager gtmId={GTM_ID} />;
 }

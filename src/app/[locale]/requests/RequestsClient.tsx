@@ -160,6 +160,10 @@ function RequestsHero() {
             <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-md anim-up anim-d3">
               <UiText>Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.</UiText>
             </p>
+            {/* Server-rendered with the hero (it renders during sign-in restore too). */}
+            <p className="text-white/50 text-xs sm:text-sm leading-relaxed max-w-md mt-3 anim-up anim-d3">
+              <UiText>Every request here is checked by our team before it goes live, from people and NGOs within about 10 km of you. Pick a need, offer the item and hand it over directly; the handover is confirmed with a one-time code and you get a verified certificate. CauseKind is free for donors, donees and NGOs.</UiText>
+            </p>
 
             {/* Scroll cue */}
             <div className="flex items-center gap-2 pt-1 anim-up anim-d4">

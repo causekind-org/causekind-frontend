@@ -5,6 +5,7 @@ import Script from "next/script";
 import { useEffect, useRef, Suspense } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { isInternalTraffic } from "@/lib/internalTraffic";
+import { useAfterLoadIdle } from "@/hooks/useAfterLoadIdle";
 import { META_PIXEL_ID } from "@/lib/metaEvents";
 
 // The one site pixel, defined once in metaEvents.ts and shared with the
@@ -23,6 +24,7 @@ function hasValidPreviewToken(searchParams: URLSearchParams): boolean {
 }
 
 function MetaPixelInner() {
+  const ready = useAfterLoadIdle();
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -41,25 +43,28 @@ function MetaPixelInner() {
     }
   }, [pathname, searchParams]);
 
+  // The standard fbq queue stub runs at once and queues init + the first
+  // PageView (no network), so early events are kept in order. fbevents.js
+  // loads after the page has shown (window load + idle, 3 s cap) and drains
+  // the queue; the PageView is still sent exactly once.
   return (
-    <Script
-      id="fb-pixel"
-      strategy="afterInteractive"
-      dangerouslySetInnerHTML={{
-        __html: `
-          !function(f,b,e,v,n,t,s)
-          {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-          n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-          if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-          n.queue=[];t=b.createElement(e);t.async=!0;
-          t.src=v;s=b.getElementsByTagName(e)[0];
-          s.parentNode.insertBefore(t,s)}(window, document,'script',
-          'https://connect.facebook.net/en_US/fbevents.js');
-          fbq('init', '${PIXEL_ID}');
-          fbq('track', 'PageView');
-        `,
-      }}
-    />
+    <>
+      <Script
+        id="fb-pixel"
+        strategy="afterInteractive"
+        dangerouslySetInnerHTML={{
+          __html: `
+            !function(f){if(f.fbq)return;var n=f.fbq=function(){n.callMethod?
+            n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+            if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+            n.queue=[];}(window);
+            fbq('init', '${PIXEL_ID}');
+            fbq('track', 'PageView');
+          `,
+        }}
+      />
+      {ready && <Script id="fb-pixel-lib" src="https://connect.facebook.net/en_US/fbevents.js" strategy="afterInteractive" />}
+    </>
   );
 }
 

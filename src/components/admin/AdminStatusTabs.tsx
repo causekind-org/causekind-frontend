@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import a from "@/features/fundraising/admin.module.css";
 
 /**
- * The status filter as a tab row — same classes as the admin "Fundraising applications"
- * tabs (admin.module.css .tabs/.tab/.tabOn). role="tablist" with arrow/Home/End keys.
+ * The status filter as a segmented pill row in the staff-console style
+ * (2026-11-19; used to borrow the fundraising canvas tab classes, which the
+ * fundraising pages still use themselves). role="tablist" with arrow/Home/End keys.
  */
 export function AdminStatusTabs({ options, selected, onSelect, label, disabled }: {
   options: { label: string }[]; selected: number; onSelect: (index: number) => void; label: string; disabled?: boolean;
@@ -22,11 +22,13 @@ export function AdminStatusTabs({ options, selected, onSelect, label, disabled }
     onSelect(next);
   }
   return (
-    <div className={a.tabs} role="tablist" aria-label={label} style={{ overflowX: "auto" }}>
+    <div role="tablist" aria-label={label}
+      className="mb-4 flex w-fit max-w-full gap-1 overflow-x-auto rounded-full border border-white/80 bg-white/55 p-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
       {options.map((o, i) => (
         <button key={`${o.label}-${i}`} ref={(el) => { refs.current[i] = el; }} type="button" role="tab"
           aria-selected={i === selected} tabIndex={i === selected ? 0 : -1} disabled={disabled}
-          className={`${a.tab} ${i === selected ? a.tabOn : ""}`} style={{ whiteSpace: "nowrap" }}
+          className={`h-9 shrink-0 whitespace-nowrap rounded-full px-4 text-[13px] font-medium transition-colors duration-150 disabled:opacity-50 ${
+            i === selected ? "bg-[#10233a] text-white" : "text-[#3a5070] hover:bg-white/70"}`}
           onClick={() => onSelect(i)} onKeyDown={(e) => key(e, i)}>{o.label}</button>
       ))}
     </div>

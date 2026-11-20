@@ -31,6 +31,8 @@ export function captureUtm(search: string): Utm {
 
 /** The pixel loads after hydration, so an event fired on page load would otherwise be dropped. */
 function whenPixelReady(send: () => void, triesLeft = 25): void {
+  // No window (server, or a test environment already torn down): stop retrying.
+  if (typeof window === "undefined") return;
   if (typeof (window as unknown as { fbq?: unknown }).fbq === "function") send();
   else if (triesLeft > 0) window.setTimeout(() => whenPixelReady(send, triesLeft - 1), 200);
 }

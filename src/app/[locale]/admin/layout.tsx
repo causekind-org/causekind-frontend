@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import "@/styles/staff-console.css";
 
 /**
  * Shared guard for every /admin/** route — replaces the inline useEffect
