@@ -26,17 +26,25 @@ const TYPE_LABEL: Record<string, string> = {
  * on a plain input, and the dialog primitive's focus trap fights the arrow-key
  * navigation below for no benefit at this size.
  */
+/** Dispatch on `window` to open the palette (used by the Super Admin top-bar search field). */
+export const OPEN_PALETTE_EVENT = "ck-sa-open-search";
+export const openCommandPalette = () => window.dispatchEvent(new Event(OPEN_PALETTE_EVENT));
+
 export function CommandPalette({
   onOpenUser,
   onOpenIntervention,
   isDark,
+  openSignal = 0,
 }: {
   onOpenUser: (id: number) => void;
   onOpenIntervention: (entity: SaInterventionEntity, id: number) => void;
   isDark: boolean;
+  /** Bump this number to open the palette (the top-bar search field does). */
+  openSignal?: number;
 }) {
   const t = saTheme(isDark);
   const [open, setOpen] = useState(false);
+  useEffect(() => { if (openSignal > 0) setOpen(true); }, [openSignal]);
   const [cursor, setCursor] = useState(0);
   const { query, setQuery, results, loading } = useGlobalSearch(2, 5);
 
@@ -52,8 +60,14 @@ export function CommandPalette({
       }
       if (e.key === "Escape") setOpen(false);
     }
+    // The top-bar search field opens the same palette (2026-11-20).
+    const onOpenEvent = () => setOpen(true);
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener(OPEN_PALETTE_EVENT, onOpenEvent);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener(OPEN_PALETTE_EVENT, onOpenEvent);
+    };
   }, []);
 
   useEffect(() => { setCursor(0); }, [results]);

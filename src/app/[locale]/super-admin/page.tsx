@@ -16,7 +16,7 @@ import { DisputesPanel } from "@/components/super-admin/DisputesPanel";
 import { AuditLogPanel } from "@/components/super-admin/AuditLogPanel";
 import { GlobalSearchPanel } from "@/components/super-admin/GlobalSearchPanel";
 import { UserDirectoryPanel } from "@/components/super-admin/UserDirectoryPanel";
-import { CommandPalette } from "@/components/super-admin/CommandPalette";
+import { TopbarSearch } from "@/components/super-admin/TopbarSearch";
 import { CrmStaffPanel } from "@/features/crm/CrmStaffPanel";
 import { SaLoadError } from "@/components/super-admin/SaLoadError";
 import { OverviewInsights } from "@/components/super-admin/OverviewInsights";
@@ -625,11 +625,18 @@ export default function SuperAdminPage() {
         email={user.email ?? ""}
         onSignOut={() => { logout(); router.push("/login"); }}
         nav={saNav}
-        topbarStart={<StaffTopbarTitle label={current?.label ?? "Super Admin"} hint={current?.hint} />}
+        topbarStart={
+          <div className="flex min-w-0 items-center gap-4">
+            <span className="hidden shrink-0 text-sm font-semibold sm:inline">{current?.label ?? "Super Admin"}</span>
+            {/* Inline search with a suggestion dropdown (Ctrl K focuses it). */}
+            <TopbarSearch onOpenUser={openUser} onOpenIntervention={openIntervention}
+              sections={NAV.map(({ key, label, hint }) => ({ key, label, hint }))}
+              onOpenSection={(k) => handleNavClick(k as SectionKey)} />
+          </div>
+        }
         topbarEnd={
           <span className="hidden items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs sm:inline-flex">
             <ShieldAlert className="size-3.5" aria-hidden /> Super Admin
-            <kbd className="ml-1 rounded border border-white/25 px-1.5 font-mono text-[10px]">Ctrl K</kbd>
           </span>
         }
       >
@@ -640,10 +647,6 @@ export default function SuperAdminPage() {
           {content}
         </div>
       </StaffShell>
-
-      {/* ⌘K from anywhere in the console. Mounted once, outside the section
-          switch, so it survives navigation and does not remount on every tab. */}
-      <CommandPalette onOpenUser={openUser} onOpenIntervention={openIntervention} isDark={isDark} />
 
       {viewingDonation && (
         <DonationDetailModal
