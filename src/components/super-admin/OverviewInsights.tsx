@@ -206,7 +206,7 @@ function ActivityAndTrends({ data }: { data: SuperAdminInsights }) {
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-2xl bg-white/80 px-4 py-3">
-            <p className="text-[22px] font-bold leading-tight tabular-nums">{t.value}</p>
+            <p className="whitespace-nowrap text-[19px] font-bold leading-tight tabular-nums sm:text-[22px]">{t.value}</p>
             <p className="mt-1 text-xs text-[#4f6480]">{t.label}</p>
           </div>
         ))}
