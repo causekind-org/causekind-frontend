@@ -5,6 +5,8 @@ export interface BlogPost {
   content?: string;
   category: string;
   image: string;
+  /** Hero image alt text; falls back to the title when absent. */
+  heroAlt?: string;
   author: string;
   authorImage: string;
   /** Display string shown on the page, e.g. "June 2026". */
@@ -30,6 +32,54 @@ export interface BlogPost {
 }
 
 export const blogPosts: BlogPost[] = [
+  {
+    slug: "how-to-donate-books-india",
+    title: "How to Donate Books in India: What NGOs Accept and How to Give",
+    description: "A practical guide to donate books in India: which books are useful, which to leave out, how to prepare them, and how to reach a verified request.",
+    category: "Education & Children",
+    image: "/how-to-donate-books-india.webp",
+    heroAlt: "Stack of children's books ready to donate in India",
+    author: "CauseKind",
+    authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
+    publishedDate: "November 2026",
+    datePublished: "2026-11-21T00:00:00+05:30",
+    dateModified: "2026-11-21T00:00:00+05:30",
+    seoTitle: "How to Donate Books in India: What NGOs Accept",
+    seoDescription: "Learn how to donate books in India: which books NGOs accept, how to prepare them, and how to give to a verified request near you.",
+    readTime: "6 min read",
+  },
+  {
+    slug: "how-to-donate-furniture-india",
+    title: "How to Donate Furniture in India: A Practical Step-by-Step Guide",
+    description: "Everything you need to donate furniture in India: what is accepted, what to leave out, how to prepare it and how to get it to a verified request.",
+    category: "Furniture Donation",
+    image: "/how-to-donate-furniture-india.webp",
+    heroAlt: "Wooden study table and chairs ready to donate in India",
+    author: "CauseKind",
+    authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
+    publishedDate: "November 2026",
+    datePublished: "2026-11-21T00:00:00+05:30",
+    dateModified: "2026-11-21T00:00:00+05:30",
+    seoTitle: "How to Donate Furniture in India: Step-by-Step",
+    seoDescription: "Learn how to donate furniture in India: what is accepted, how to prepare it, how to plan transport, and how to give to a verified request.",
+    readTime: "6 min read",
+  },
+  {
+    slug: "how-to-donate-blankets-india",
+    title: "How to Donate Blankets in India This Winter: A Practical Guide",
+    description: "A simple guide to donate blankets in India: timing, condition, cleaning and packing, and how to give to a verified request near you.",
+    category: "Clothing Donation",
+    image: "/how-to-donate-blankets-india.webp",
+    heroAlt: "Folded clean blankets stacked for winter donation in India",
+    author: "CauseKind",
+    authorImage: "https://lh3.googleusercontent.com/aida-public/AB6AXuABI5YAyEovE5yILtURhCjGmz70ZuJqw9kfN-8nHKa8zURaO7lpuqGNObVYVt3RgTrWsJ-m5xXjj-smC7fnViISgB6_JDgE9nLFaES7yojtrsEJQMVdx1pIMbj8dKgQhwicZZTgLAG7Pigs6qwUyecmaxz-zqzhspdTu6rlOuwDWBNIPBp5DFK_sF_jQfpzqtMCMP8cZFsIyWjWySFeFUXllOu5UjIq-PwOS4LvFzmJ_DZYEnaJm406FB15rr9csPOr_RUN16gBOcTI",
+    publishedDate: "November 2026",
+    datePublished: "2026-11-21T00:00:00+05:30",
+    dateModified: "2026-11-21T00:00:00+05:30",
+    seoTitle: "How to Donate Blankets in India This Winter",
+    seoDescription: "Learn how to donate blankets in India this winter: what makes a good blanket, how to clean and pack it, and how to give to a verified request.",
+    readTime: "5 min read",
+  },
   {
     slug: "qr-codes-impact-certificates-and-the-future-of-verified-giving",
     title: "QR Codes, Impact Certificates, and the Future of Verified Giving in India",

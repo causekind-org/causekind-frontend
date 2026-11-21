@@ -360,7 +360,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                 <div className="absolute inset-0 w-full h-full scale-100 md:scale-105 transform origin-center">
                   <Image
                     src={post.image}
-                    alt={post.title}
+                    alt={post.heroAlt ?? post.title}
                     fill
                     priority
                     sizes="(min-width: 1680px) 1600px, 100vw"
