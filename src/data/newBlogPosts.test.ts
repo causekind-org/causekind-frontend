@@ -6,7 +6,8 @@ import { blogPosts } from "./blogData";
 import { blogContent } from "./blogContent";
 
 /**
- * The three posts added on 2026-11-21 (books, furniture, blankets): each has
+ * The posts added on 2026-11-21 (books, furniture, blankets, sports equipment,
+ * kitchen utensils, wheelchairs): each has
  * the on-page SEO basics the other posts have, its hero image, and its place
  * in the sitemap and llms.txt.
  */
@@ -14,6 +15,9 @@ const NEW_POSTS = [
   { slug: "how-to-donate-books-india", keyword: "donate books in India" },
   { slug: "how-to-donate-furniture-india", keyword: "donate furniture in India" },
   { slug: "how-to-donate-blankets-india", keyword: "donate blankets in India" },
+  { slug: "how-to-donate-sports-equipment-india", keyword: "donate sports equipment in India" },
+  { slug: "how-to-donate-kitchen-utensils-india", keyword: "donate kitchen utensils in India" },
+  { slug: "how-to-donate-wheelchairs-india", keyword: "donate wheelchairs in India" },
 ];
 
 const text = (html: string) => html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
@@ -64,7 +68,10 @@ describe("new blog posts (2026-11-21)", () => {
       });
 
       it("is in the sitemap and in llms.txt", () => {
-        expect(sitemapEntries.some((e) => e.url.endsWith(`/blog/${slug}`))).toBe(true);
+        const entry = sitemapEntries.find((e) => e.url.endsWith(`/blog/${slug}`));
+        expect(entry).toBeDefined();
+        // lastmod = 2026-11-21 in India time (00:00 +05:30).
+        expect(new Date(entry!.lastModified as Date).getTime()).toBe(new Date("2026-11-21T00:00:00+05:30").getTime());
         expect(llms).toContain(`/blog/${slug}`);
       });
     });
