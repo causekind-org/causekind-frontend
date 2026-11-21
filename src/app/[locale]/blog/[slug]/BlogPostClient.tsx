@@ -13,11 +13,12 @@ import Link from "@/components/AppLink";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { fetchBlogTranslation, getBlogTranslation, preloadBlogTranslations, type BlogTranslation } from "@/data/blogTranslations";
-import { searchBlogPosts } from "@/lib/blogSearch";
 import { AnimatedWrapper } from "../../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../../components/StaggerContainer";
-import { Search, X } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { searchBlogPosts } from "@/lib/blogSearch";
+import { withHeadingIds } from "@/lib/blogToc";
+import { Search, X } from "lucide-react";
 import { blogPosts } from "../../../../data/blogData";
 
 
@@ -75,102 +76,9 @@ interface BlogPostClientProps {
   content: string;
 }
 
-const FONT_OPTIONS = [
-  { value: "font-serif-mode", label: "Source Serif", family: "var(--font-source-serif-4), serif" },
-  { value: "font-sans-mode",  label: "Plus Jakarta", family: "var(--font-plus-jakarta-sans), sans-serif" },
-  { value: "font-inter-mode", label: "Inter Sans",   family: "var(--font-inter), sans-serif" },
-  { value: "font-lora-mode",  label: "Lora Serif",   family: "var(--font-lora), serif" },
-  { value: "font-mono-mode",  label: "Roboto Mono",  family: "var(--font-roboto-mono), monospace" },
-];
-
-function FontDropdown({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const selected = FONT_OPTIONS.find((o) => o.value === value) ?? FONT_OPTIONS[0];
-
-  useEffect(() => {
-    if (!open) return;
-    function onClickOutside(e: MouseEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setOpen(false);
-    }
-    function onEscape(e: globalThis.KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
-    }
-    document.addEventListener("mousedown", onClickOutside);
-    document.addEventListener("keydown", onEscape);
-    return () => {
-      document.removeEventListener("mousedown", onClickOutside);
-      document.removeEventListener("keydown", onEscape);
-    };
-  }, [open]);
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        aria-haspopup="listbox"
-        className="w-full flex items-center justify-between gap-1 pl-2.5 pr-1.5 py-2 bg-white dark:bg-stone-800 border border-[#b04a15]/20 dark:border-[#e07b3a]/20 rounded-xl font-body-md text-xs text-[#1c1917] dark:text-[#e7e5e4] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15]/40 dark:focus-visible:ring-[#e07b3a]/40 hover:border-[#b04a15]/50 dark:hover:border-[#e07b3a]/50 transition-colors cursor-pointer shadow-sm"
-      >
-        <span className="truncate" style={{ fontFamily: selected.family }}>{selected.label}</span>
-        <motion.span
-          animate={{ rotate: open ? 180 : 0 }}
-          transition={{ duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="inline-block align-middle leading-none text-[#b04a15] dark:text-[#e07b3a] shrink-0"
-        >
-          <MaterialIcon name="expand_more" className="block" />
-        </motion.span>
-      </button>
-
-      <AnimatePresence>
-        {open && (
-          <motion.ul
-            role="listbox"
-            initial={{ opacity: 0, y: -8, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.96 }}
-            transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-            className="absolute z-50 mt-2 w-full origin-top rounded-xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 bg-white dark:bg-stone-800 shadow-lg overflow-hidden py-1"
-          >
-            {FONT_OPTIONS.map((opt, i) => (
-              <motion.li
-                key={opt.value}
-                role="option"
-                aria-selected={opt.value === value}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.18, delay: 0.03 * i }}
-              >
-                <button
-                  type="button"
-                  onClick={() => { onChange(opt.value); setOpen(false); }}
-                  className={`w-full flex items-center justify-between gap-1 px-2.5 py-2 text-xs text-left cursor-pointer transition-colors ${
-                    opt.value === value
-                      ? "bg-orange-50 dark:bg-stone-700/60 text-[#b04a15] dark:text-[#e07b3a] font-semibold"
-                      : "text-stone-700 dark:text-stone-200 hover:bg-orange-50 dark:hover:bg-stone-700/60 hover:text-[#b04a15] dark:hover:text-[#e07b3a]"
-                  }`}
-                  style={{ fontFamily: opt.family }}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {opt.value === value && (
-                    <MaterialIcon name="check" />
-                  )}
-                </button>
-              </motion.li>
-            ))}
-          </motion.ul>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const post = blogPosts.find((p) => p.slug === slug);
 
-  const [boldMode, setBoldMode] = useState(false);
-  const [fontMode, setFontMode] = useState("font-serif-mode");
   const [copied, setCopied] = useState(false);
 
   // Google-backed translations reuse the server cache. Only this article's
@@ -215,6 +123,30 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
     () => (rawContentForLocale ? DOMPurify.sanitize(rawContentForLocale) : ""),
     [rawContentForLocale]
   );
+
+  // Heading ids (from the English source, so links match in every language)
+  // and the desktop "In this article" list. Computed during render, so both
+  // are in the server HTML. Ids only: heading levels and text are unchanged.
+  const { html: articleHtml, toc } = useMemo(
+    () => withHeadingIds(sanitizedContent, content || ""),
+    [sanitizedContent, content]
+  );
+  // The card lists main headings (H2) only; ids stay on every heading.
+  const tocMain = useMemo(() => toc.filter((item) => item.level === 2), [toc]);
+  const showToc = tocMain.length >= 2;
+  // Both desktop side columns are always sticky. The TOC card does not track
+  // scrolling at all: it stays still; if it is taller than the space under
+  // the header the reader can scroll it (hidden scrollbar).
+
+  // Scrolls to the heading only. The page URL never changes (no #hash, no
+  // history update): the items are buttons, not links.
+  const handleTocClick = (event: React.MouseEvent<HTMLButtonElement>, id: string) => {
+    event.preventDefault();
+    const target = document.getElementById(id);
+    if (!target) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+  };
 
   // Voice narration — English and Hindi stories only, using a Web Speech API
   // voice (a Google Hindi female voice, per design) rather than a
@@ -401,14 +333,14 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
   const otherPosts = blogPosts.filter((p) => p.slug !== slug);
   const sameCategoryPosts = otherPosts.filter((p) => p.category === post.category);
   const otherCategoryPosts = otherPosts.filter((p) => p.category !== post.category);
-  const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 2);
+  const recommendedPosts = [...sameCategoryPosts, ...otherCategoryPosts].slice(0, 3);
   return (
-    <div id="page-body" className={`${fontMode} ${boldMode ? "bold-mode-active" : ""} min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-4 md:pt-16 lg:pt-24`}>
+    <div id="page-body" className="font-serif-mode min-h-screen bg-[#faf8f5] dark:bg-[#0c0a09] transition-colors duration-300 pt-2 md:pt-6 lg:pt-8">
       {/* Main Content Area */}
       <div className="pb-24">
         <article lang={translation ? `${locale}-x-mtfrom-en` : "en"}>
           {/* Back button */}
-          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 mb-4 md:mb-6">
+          <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 mb-4 md:mb-6">
             <Link
               href="/blog"
               className="inline-flex items-center gap-1.5 text-sm font-bold text-stone-600 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-orange-400 transition-colors group"
@@ -417,7 +349,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
             </Link>
           </div>
           {/* Hero Section — contained card */}
-          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 pt-6 pb-6 md:pt-10 md:pb-10">
+          <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 pt-6 pb-6 md:pt-10 md:pb-10 lg:pb-0">
             {/* Image card */}
             <AnimatedWrapper delay={0} duration={0.6} direction="up">
               <div className="relative w-full aspect-[16/10] md:aspect-auto md:h-[420px] rounded-2xl overflow-hidden shadow-xl mb-6 md:mb-10">
@@ -431,7 +363,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                     alt={post.title}
                     fill
                     priority
-                    sizes="(min-width: 1280px) 1232px, 100vw"
+                    sizes="(min-width: 1680px) 1600px, 100vw"
                     className="object-cover object-center"
                   />
                 </div>
@@ -449,8 +381,8 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
               </div>
             </AnimatedWrapper>
 
-            {/* Article meta below the image */}
-            <div className="max-w-3xl">
+            {/* Article meta below the image: same left/right edges as the hero image */}
+            <div>
               <AnimatedWrapper delay={0.15} duration={0.6} direction="up">
                 <h1 className="font-display-lg text-[#b04a15] dark:text-[#e07b3a] mb-4 leading-tight text-2xl sm:text-4xl md:text-5xl font-bold break-words">
                   {displayTitle}
@@ -462,6 +394,38 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                 </p>
               </AnimatedWrapper>
 
+              {/* Voice Narration (English and Hindi only): desktop-only, as before, now under the subtitle */}
+              {canNarrate && narrationSupported && (
+                <div className="hidden md:block space-y-3 mb-6">
+                  <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
+                    Listen to Story
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={narrationState === "playing" ? handleNarrationPause : handleNarrationPlay}
+                      aria-label={narrationState === "playing" ? "Pause narration" : "Play narration"}
+                      title={narrationState === "playing" ? "Pause" : "Play"}
+                      className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
+                    >
+                      <MaterialIcon name={narrationState === "playing" ? "pause" : "play_arrow"} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNarrationRestart}
+                      aria-label="Restart narration"
+                      title="Restart"
+                      className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
+                    >
+                      <MaterialIcon name="replay" />
+                    </button>
+                    <span className="font-label-sm text-2xs text-[#78716c] dark:text-[#a8a29e]">
+                      {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Reading controls are otherwise `hidden md:block` in the left
                   sidebar, so a phone reader had no way to switch language on a
                   post at all. Surfaced here on every post, mobile only. */}
@@ -472,76 +436,15 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
           </div>
 
           {/* Content Grid Layout */}
-          <div className="max-w-[1280px] mx-auto px-5 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-12 gap-12 relative">
-            {/* Left Sidebar: Reading Tools & Social */}
+          <div className="max-w-[1280px] lg:max-w-[1680px] mx-auto px-5 sm:px-6 lg:px-10 grid grid-cols-1 md:grid-cols-12 gap-12 lg:grid-cols-[11rem_minmax(0,1fr)_13rem] lg:gap-8 xl:grid-cols-[12rem_minmax(0,1fr)_16rem] xl:gap-10 relative">
+            {/* Left Sidebar: Share Story */}
             <motion.aside
-              className="hidden md:block md:col-span-3 lg:col-span-2 relative"
+              className="hidden md:block lg:hidden md:col-span-3 relative"
               initial={{ opacity: 0, x: -24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, delay: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
               <div className="sticky top-[120px] flex flex-col gap-8">
-                {/* Reading Tools Panel */}
-                <div className="relative z-30 bg-[#faf8f5] dark:bg-[#1c1917] backdrop-blur-md p-3 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm text-[#1c1917] dark:text-[#e7e5e4]">
-                  <h2 className="font-label-md text-xs uppercase tracking-widest mb-6 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-3 text-[#b04a15] dark:text-[#e07b3a] font-bold">
-                    {t("readingTools")}
-                  </h2>
-                  {/* Bold Mode Toggle */}
-                  <div className="flex items-center justify-between mb-8">
-                    <span className="font-label-sm text-xs text-[#1c1917] dark:text-[#e7e5e4] flex items-center gap-1.5 font-medium whitespace-nowrap">
-                      <MaterialIcon name="format_bold" className="text-[#b04a15] dark:text-[#e07b3a]" />
-                      {t("boldText")}
-                    </span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        className="sr-only peer"
-                        id="bold-toggle"
-                        type="checkbox"
-                        checked={boldMode}
-                        onChange={(e) => setBoldMode(e.target.checked)}
-                      />
-                      <div className="relative w-9 h-5 bg-stone-200 dark:bg-stone-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#b04a15] dark:peer-checked:bg-[#e07b3a] shadow-inner" />
-                    </label>
-                  </div>
-                  {/* Font Selector */}
-                  <div className="space-y-3">
-                    <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
-                      {t("fontOptions")}
-                    </span>
-                    <FontDropdown value={fontMode} onChange={setFontMode} />
-                  </div>
-                  {/* Voice Narration — English and Hindi only, for now */}
-                  {canNarrate && narrationSupported && (
-                    <div className="space-y-3 mt-8 pt-6 border-t border-[#b04a15]/20 dark:border-[#e07b3a]/20">
-                      <span className="font-label-sm text-sm text-[#1c1917] dark:text-[#e7e5e4] block font-medium">
-                        Listen to Story
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={narrationState === "playing" ? handleNarrationPause : handleNarrationPlay}
-                          aria-label={narrationState === "playing" ? "Pause narration" : "Play narration"}
-                          title={narrationState === "playing" ? "Pause" : "Play"}
-                          className="w-10 h-10 rounded-full bg-[#b04a15] dark:bg-[#e07b3a] text-white flex items-center justify-center hover:opacity-90 shadow-sm transition-opacity cursor-pointer"
-                        >
-                          <MaterialIcon name={narrationState === "playing" ? "pause" : "play_arrow"} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleNarrationRestart}
-                          aria-label="Restart narration"
-                          title="Restart"
-                          className="w-10 h-10 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 transition-colors cursor-pointer"
-                        >
-                          <MaterialIcon name="replay" />
-                        </button>
-                        <span className="font-label-sm text-2xs text-[#78716c] dark:text-[#a8a29e]">
-                          {narrationState === "playing" ? "Playing…" : narrationState === "paused" ? "Paused" : "Read aloud"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
                 {/* Social Share */}
                 <div className="flex flex-col gap-3 relative">
                   <span className="font-label-sm text-3xs text-[#78716c] dark:text-[#a8a29e] uppercase tracking-wider mb-1 font-bold">
@@ -572,9 +475,40 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
               </div>
             </motion.aside>
 
+            {/* Left column, desktop only (lg+): "In this article". The column
+                stays (empty) when a post has fewer than 2 headings. */}
+            <aside className="hidden lg:block lg:col-span-1 min-w-0">
+              {showToc && (
+                <nav
+                  aria-label="In this article"
+                  className={`sticky top-[120px] max-h-[calc(100vh-144px)] overflow-y-auto ck-no-scrollbar bg-[#faf8f5] dark:bg-[#1c1917] p-2.5 rounded-2xl border border-[#b04a15]/20 dark:border-[#e07b3a]/20 shadow-sm`}
+                >
+                  <p className="font-label-md text-3xs uppercase tracking-widest mb-3 border-b border-[#b04a15]/20 dark:border-[#e07b3a]/20 pb-2 text-[#b04a15] dark:text-[#e07b3a] font-bold">
+                    In this article
+                  </p>
+                  <ul className="space-y-3">
+                    {tocMain.map((item) => {
+                      return (
+                        <li key={item.id}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleTocClick(e, item.id)}
+                            className="block w-full text-left cursor-pointer rounded-md px-1.5 py-0.5 text-[13px] leading-snug break-words transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] dark:focus-visible:ring-[#e07b3a] text-stone-600 dark:text-stone-400 hover:text-[#b04a15] dark:hover:text-[#e07b3a]"
+                          >
+                            {item.text}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </nav>
+              )}
+            </aside>
+
             {/* Center Article Content */}
+            <div className="col-span-1 md:col-span-6 lg:col-span-1 min-w-0">
             <motion.div
-              className="col-span-1 md:col-span-6 lg:col-span-7 article-content text-stone-800 dark:text-stone-100"
+              className="article-content text-stone-800 dark:text-stone-100"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.7, delay: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
@@ -584,19 +518,81 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
               // the DOM while the sanitizer was still loading. sanitizedContent is
               // now computed during render, so it is never empty when there is
               // content to show.
-              dangerouslySetInnerHTML={{ __html: sanitizedContent }}
+              dangerouslySetInnerHTML={{ __html: articleHtml }}
             />
+
+            {/* Share Story, desktop only (lg+): same buttons as the tablet sidebar,
+                which is hidden at lg. Phones show neither, as before. */}
+            <div className="hidden lg:block mt-10">
+              <div className="flex flex-col gap-3 relative">
+                <span className="font-label-sm text-3xs text-[#78716c] dark:text-[#a8a29e] uppercase tracking-wider mb-1 font-bold">
+                  Share Story
+                </span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleEmailShare}
+                    aria-label="Share via Email"
+                    title="Share via Email"
+                    className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
+                  >
+                    <MaterialIcon name="mail" />
+                  </button>
+                  <button
+                    onClick={handleCopyLink}
+                    aria-label="Copy Link"
+                    title="Copy Link"
+                    className="w-11 h-11 rounded-full border border-stone-300 dark:border-stone-600 bg-white dark:bg-stone-800 flex items-center justify-center text-stone-600 dark:text-stone-300 hover:text-[#b04a15] dark:hover:text-[#e07b3a] hover:border-[#b04a15]/60 dark:hover:border-[#e07b3a]/60 hover:shadow-md transition-all duration-300 cursor-pointer"
+                  >
+                    <MaterialIcon name="link" />
+                  </button>
+                  {copied && (
+                    <span className="text-xs text-[#b04a15] dark:text-[#e07b3a] font-semibold animate-pulse absolute left-28 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 px-2.5 py-1.5 rounded-lg shadow-sm">Copied!</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Read Next row below the article: phones and tablets (desktop has the right column) */}
+            {recommendedPosts.length > 0 && (
+              <section className="mt-12 lg:hidden">
+                  <h2 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">{t("readNext")}</h2>
+                  <StaggerContainer delayStart={0.6} staggerDelay={0.12} className={`grid grid-cols-1 sm:grid-cols-2 ${recommendedPosts.length >= 3 ? "lg:grid-cols-3" : ""} gap-6`}>
+                    {recommendedPosts.map((rec) => {
+                      const tr = translatePost(rec);
+                      return (
+                        <motion.div key={rec.slug} variants={itemVariants}>
+                          <Link className="group block" href={`/blog/${rec.slug}`}>
+                            <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
+                              <div
+                                className="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500"
+                                style={{ backgroundImage: `url('${rec.image}')` }}
+                              />
+                            </div>
+                            <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
+                              {tr.category}
+                            </span>
+                            <p className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                              {tr.title}
+                            </p>
+                          </Link>
+                        </motion.div>
+                      );
+                    })}
+                  </StaggerContainer>
+              </section>
+            )}
+            </div>
 
             {/* Right Sidebar: Next For You */}
             <motion.aside
-              className="hidden lg:block lg:col-span-3 pl-8 border-l border-stone-200 dark:border-stone-700"
+              className="hidden lg:block lg:col-span-1 min-w-0 pl-8 border-l border-stone-200 dark:border-stone-700"
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.55, delay: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
             >
-              <div className="sticky top-[120px]">
+              <div className="sticky top-[120px] flex max-h-[calc(100vh-144px)] flex-col">
                 {/* Search Stories — live dropdown, same ranking as the blog listing page */}
-                <div ref={searchBoxRef} className="relative mb-8">
+                <div ref={searchBoxRef} className="relative z-20 shrink-0 mb-[clamp(1rem,3vh,2rem)]">
                   <div className="relative flex items-center">
                     <Search className="absolute left-3 w-4 h-4 text-stone-400 dark:text-stone-500" />
                     <input
@@ -669,14 +665,14 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                   </AnimatePresence>
                 </div>
 
-                <h3 className="font-display-lg text-2xl text-[#b04a15] dark:text-[#e07b3a] mb-6 font-bold">{t("readNext")}</h3>
-                <StaggerContainer delayStart={0.6} staggerDelay={0.12} className="flex flex-col gap-6">
-                  {recommendedPosts.map((rec) => {
+                <h2 className="relative z-10 shrink-0 font-display-lg text-[clamp(1rem,2.4vh,1.125rem)] leading-snug whitespace-nowrap text-[#b04a15] dark:text-[#e07b3a] mb-[clamp(0.75rem,2vh,1rem)] pb-0.5 font-bold">{t("readNext")}</h2>
+                <StaggerContainer delayStart={0.6} staggerDelay={0.12} className="min-h-0 flex-1 overflow-y-auto ck-no-scrollbar flex flex-col gap-[clamp(0.75rem,2.2vh,1.25rem)]">
+                  {recommendedPosts.slice(0, 2).map((rec) => {
                     const tr = translatePost(rec);
                     return (
                       <motion.div key={rec.slug} variants={itemVariants}>
                         <Link className="group block" href={`/blog/${rec.slug}`}>
-                          <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
+                          <div className="w-full h-[clamp(3.5rem,11vh,5.5rem)] rounded-xl overflow-hidden mb-2 border border-stone-200 dark:border-stone-700">
                             <div
                               className="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500"
                               style={{ backgroundImage: `url('${rec.image}')` }}
@@ -685,7 +681,7 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                           <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
                             {tr.category}
                           </span>
-                          <p className="font-headline-md text-base text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
+                          <p className="break-words font-headline-md text-sm text-stone-800 dark:text-stone-200 mt-1 group-hover:text-[#b04a15] dark:group-hover:text-[#e07b3a] transition-colors leading-snug">
                             {tr.title}
                           </p>
                         </Link>

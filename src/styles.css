@@ -2908,6 +2908,23 @@ div:not([data-slot]):not([role="dialog"]):not([aria-modal="true"]):has(> .search
   color: currentColor;
 }
 
+/* "In this article" links and #hash URLs land below the fixed header.
+   Affects scrolling to a heading only, never the layout. */
+.article-content h2,
+.article-content h3,
+.article-content h4 {
+  scroll-margin-top: 120px;
+}
+
+/* Blog post TOC card: scrolls inside itself when it is taller than the
+   space under the header, with no visible scrollbar. */
+.ck-no-scrollbar {
+  scrollbar-width: none;
+}
+.ck-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 .article-content h2 {
   font-family: var(--font-source-serif-4), serif;
   font-size: var(--text-4xl);
