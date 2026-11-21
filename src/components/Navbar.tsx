@@ -1252,9 +1252,9 @@ export function SiteHeader() {
                             Story
                           </UiText></span>
                         </div>
-                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-[var(--ck-role-accent)] transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.about")}
-                        </h4>
+                        </p>
                         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><UiText>
                           Our story, mission, and transparent model for direct peer-to-peer giving.
                         </UiText></p>
@@ -1280,9 +1280,9 @@ export function SiteHeader() {
                             Help & Safety
                           </UiText></span>
                         </div>
-                        <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1.5 flex items-center gap-1.5">
+                        <p className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors mb-1.5 flex items-center gap-1.5">
                           {t("nav.faq")}
-                        </h4>
+                        </p>
                         <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed"><UiText>
                           Clear answers on item matching, verification rules, and donor safety.
                         </UiText></p>
@@ -1305,9 +1305,9 @@ export function SiteHeader() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-0.5">
-                            <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            <p className="text-sm font-bold text-stone-900 dark:text-stone-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                               {t("nav.contact")}
-                            </h4>
+                            </p>
                             <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-500/20"><UiText>
                               Support
                             </UiText></span>
@@ -1333,9 +1333,9 @@ export function SiteHeader() {
                           Direct Giving
                         </UiText></span>
                       </div>
-                      <h4 className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><UiText>
+                      <p className="text-base font-bold text-stone-900 dark:text-stone-100 leading-snug mb-2"><UiText>
                         Giving Directly to People in Need.
-                      </UiText></h4>
+                      </UiText></p>
                       <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed mb-4"><UiText>
                         Zero platform fees on in-kind donations. Every request is vetted to ensure your generosity makes an immediate impact.
                       </UiText></p>

@@ -416,7 +416,7 @@ function BlogListingContent() {
                 />
               </div>
               <nav className="hidden lg:block lg:sticky lg:top-28 border-t border-stone-200 dark:border-stone-800">
-                <p className="pt-4 pb-2 text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                <p className="pt-4 pb-2 text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
                   {t("categories")}
                 </p>
                 <div className="flex flex-col divide-y divide-stone-200 dark:divide-stone-800">
@@ -484,7 +484,7 @@ function BlogListingContent() {
                         </div>
                       </div>
                       <div className="p-3 md:p-8">
-                        <p className="text-4xs md:text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5 md:mb-3">
+                        <p className="text-4xs md:text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-1.5 md:mb-3">
                           {tr.category} · {formatPublishedDate(featured.publishedDate, locale)}
                         </p>
                         <h2 className="font-extrabold text-base md:text-3xl text-stone-900 dark:text-stone-100 mb-1.5 md:mb-3 line-clamp-3 md:line-clamp-none group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
@@ -618,7 +618,7 @@ function BlogListingContent() {
                       />
                     </div>
                     <div className={`flex flex-col flex-1 ${isLarge ? "p-8" : "p-6"}`}>
-                      <p className="text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                      <p className="text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">
                         {tr.category} · {formatPublishedDate(post.publishedDate, locale)}
                       </p>
                       <h3

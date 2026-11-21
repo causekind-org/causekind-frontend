@@ -11,5 +11,13 @@ export const metadata: Metadata = {
 };
 
 export default function LoginLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  // The page itself is a client component behind Suspense, so its heading is
+  // not in the server HTML that crawlers read. This h1 is; the page's visible
+  // title is an h2 so there is exactly one h1.
+  return (
+    <>
+      <h1 className="sr-only">Log in</h1>
+      {children}
+    </>
+  );
 }

@@ -710,13 +710,13 @@ function RegisterContent() {
           <span className="text-2xs font-black uppercase tracking-widest text-[var(--accent)]">
             {form.role === "NGO_PARTNER" ? "Create Account" : "Create account"}
           </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
             {form.role === "NGO_PARTNER"
               ? "Join CauseKind 🌱"
               : isSocialFlow
                 ? `${t("almostThereTitle")} 🎉`
                 : `${t("joinTitle")} 🌱`}
-          </h1>
+          </h2>
           <p className="text-sm text-stone-500 dark:text-stone-400">
             {form.role === "NGO_PARTNER"
               ? "Create your account and start making a difference today."

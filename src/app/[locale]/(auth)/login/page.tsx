@@ -212,9 +212,9 @@ function LoginContent() {
         <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#b04a15] dark:text-[#e07b3a]">
           {t("eyebrow")}
         </p>
-        <h1 className="mt-2 font-serif text-[30px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.02em] text-stone-900 dark:text-stone-50">
+        <h2 className="mt-2 font-serif text-[30px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.02em] text-stone-900 dark:text-stone-50">
           {t("title")}
-        </h1>
+        </h2>
         <p className="mt-1.5 text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
           {t("subtitle")}
         </p>

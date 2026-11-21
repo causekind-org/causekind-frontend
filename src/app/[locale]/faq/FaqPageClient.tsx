@@ -109,7 +109,9 @@ export function FaqPageClient() {
 
       {/* ── Question list — numbered rows, grid-rows height animation, no cards ── */}
       <div className="mx-auto max-w-4xl px-6 sm:px-10 py-16 sm:py-20">
-        <AnimatePresence mode="wait">
+        {/* initial={false}: the first list is visible in the server HTML (it is
+            the LCP text); only later tab switches fade in. */}
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={activeCategory}
             initial={{ opacity: 0, y: 8 }}

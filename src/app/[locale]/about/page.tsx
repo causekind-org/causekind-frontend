@@ -48,7 +48,7 @@ export default async function AboutPage({ params }: LocaleParams) {
         <div className="mx-auto max-w-7xl px-6 sm:px-10">
           <Link
             href="/"
-            className="inline-flex items-center gap-1.5 text-stone-400 hover:text-white text-xs font-semibold mb-8 transition-all duration-300"
+            className="inline-flex min-h-6 items-center gap-1.5 text-stone-400 hover:text-white text-xs font-semibold mb-8 transition-all duration-300"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             {t("backToHome")}
@@ -237,7 +237,7 @@ export default async function AboutPage({ params }: LocaleParams) {
                 {t("securePlatformText")}
               </p>
             </div>
-            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-400 uppercase tracking-widest">
+            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
               {t("razorpaySecured")}
             </div>
           </div>
@@ -258,7 +258,7 @@ export default async function AboutPage({ params }: LocaleParams) {
                 {t("verifiedNeedsText")}
               </p>
             </div>
-            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-400 uppercase tracking-widest">
+            <div className="pt-4 mt-4 md:pt-6 md:mt-6 border-t border-stone-100 dark:border-zinc-800 text-2xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
               {t("adminAudited")}
             </div>
           </div>

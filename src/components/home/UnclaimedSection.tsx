@@ -99,7 +99,7 @@ export function UnclaimedSection({
                   className="group flex h-full flex-col gap-3 p-4 lg:p-6 transition-colors hover:bg-white focus-visible:outline focus-visible:-outline-offset-2 focus-visible:outline-2 focus-visible:outline-[#9a6b12] dark:hover:bg-zinc-800/70"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-400 dark:text-stone-500">
+                    <span className="text-[10px] font-black uppercase tracking-[0.14em] text-stone-500 dark:text-stone-400">
                       <LandingText>{request.category}</LandingText>
                     </span>
                     {days !== null && (

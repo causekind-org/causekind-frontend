@@ -1,8 +1,7 @@
 "use client";
 
+import { loadGsap } from "@/lib/gsapLoader";
 import React, { useEffect, useRef, useState } from "react";
-import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Heart } from "lucide-react";
 
 interface Milestone {
@@ -33,103 +32,115 @@ export function WayVerticalRoad() {
   const [activeMilestones, setActiveMilestones] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    // gsap loads after the browser is idle (lib/gsapLoader), not in the first bundle.
+    let cancelled = false;
+    let cleanup: void | (() => void);
+    loadGsap().then(({ gsap, ScrollTrigger }) => {
+      if (cancelled) return;
+      cleanup = (() => {
+        if (typeof window === "undefined") return;
 
-    gsap.registerPlugin(ScrollTrigger);
+        gsap.registerPlugin(ScrollTrigger);
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mm = gsap.matchMedia();
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const mm = gsap.matchMedia();
 
-    mm.add("(min-width: 1280px)", () => {
-      const container = containerRef.current;
-      if (!container) return;
+        mm.add("(min-width: 1280px)", () => {
+          const container = containerRef.current;
+          if (!container) return;
 
-      const calculatePath = () => {
-        const parent = container.parentElement;
-        if (!parent) return;
+          const calculatePath = () => {
+            const parent = container.parentElement;
+            if (!parent) return;
 
-        const parentRect = parent.getBoundingClientRect();
-        const totalHeight = parent.scrollHeight;
-        const screenWidth = window.innerWidth;
+            const parentRect = parent.getBoundingClientRect();
+            const totalHeight = parent.scrollHeight;
+            const screenWidth = window.innerWidth;
 
-        const contentWidth = Math.min(1152, screenWidth - 80);
-        const contentLeft = (screenWidth - contentWidth) / 2;
-        const gutterX = Math.max(28, contentLeft - 36);
+            const contentWidth = Math.min(1152, screenWidth - 80);
+            const contentLeft = (screenWidth - contentWidth) / 2;
+            const gutterX = Math.max(28, contentLeft - 36);
 
-        const newMilestones: Milestone[] = [];
+            const newMilestones: Milestone[] = [];
 
-        WAY_SECTION_IDS.forEach(({ id, name }) => {
-          const el = document.getElementById(id);
-          if (el) {
-            const elRect = el.getBoundingClientRect();
-            const relativeY = elRect.top - parentRect.top + 80;
-            newMilestones.push({ id, name, y: relativeY });
-          }
-        });
-
-        if (newMilestones.length < 2) return;
-
-        setRoadHeight(totalHeight);
-        setMilestones(newMilestones);
-
-        const startY = Math.max(60, newMilestones[0].y - 40);
-        let d = `M ${gutterX} ${startY}`;
-
-        for (let i = 0; i < newMilestones.length; i++) {
-          const curr = newMilestones[i];
-          const next = newMilestones[i + 1];
-
-          if (next) {
-            const midY = (curr.y + next.y) / 2;
-            const curveOffset = i % 2 === 0 ? 8 : -8;
-            d += ` C ${gutterX + curveOffset} ${curr.y + 40}, ${gutterX + curveOffset} ${midY}, ${gutterX} ${next.y}`;
-          }
-        }
-
-        setPathData(d);
-
-        requestAnimationFrame(() => {
-          const pathEl = pathRef.current;
-          if (!pathEl) return;
-
-          const pathLen = pathEl.getTotalLength();
-          gsap.set(pathEl, { strokeDasharray: pathLen, strokeDashoffset: pathLen });
-
-          if (!prefersReducedMotion) {
-            gsap.to(pathEl, {
-              strokeDashoffset: 0,
-              ease: "none",
-              scrollTrigger: {
-                trigger: parent,
-                start: "top top",
-                end: "bottom bottom",
-                scrub: 0.5,
-                onUpdate: (self) => {
-                  const scrollProgress = self.progress;
-                  const newActive: Record<string, boolean> = {};
-                  newMilestones.forEach((m, idx) => {
-                    const ratio = m.y / totalHeight;
-                    newActive[m.id] = scrollProgress >= ratio - 0.05;
-                  });
-                  setActiveMilestones(newActive);
-                },
-              },
+            WAY_SECTION_IDS.forEach(({ id, name }) => {
+              const el = document.getElementById(id);
+              if (el) {
+                const elRect = el.getBoundingClientRect();
+                const relativeY = elRect.top - parentRect.top + 80;
+                newMilestones.push({ id, name, y: relativeY });
+              }
             });
-          }
+
+            if (newMilestones.length < 2) return;
+
+            setRoadHeight(totalHeight);
+            setMilestones(newMilestones);
+
+            const startY = Math.max(60, newMilestones[0].y - 40);
+            let d = `M ${gutterX} ${startY}`;
+
+            for (let i = 0; i < newMilestones.length; i++) {
+              const curr = newMilestones[i];
+              const next = newMilestones[i + 1];
+
+              if (next) {
+                const midY = (curr.y + next.y) / 2;
+                const curveOffset = i % 2 === 0 ? 8 : -8;
+                d += ` C ${gutterX + curveOffset} ${curr.y + 40}, ${gutterX + curveOffset} ${midY}, ${gutterX} ${next.y}`;
+              }
+            }
+
+            setPathData(d);
+
+            requestAnimationFrame(() => {
+              const pathEl = pathRef.current;
+              if (!pathEl) return;
+
+              const pathLen = pathEl.getTotalLength();
+              gsap.set(pathEl, { strokeDasharray: pathLen, strokeDashoffset: pathLen });
+
+              if (!prefersReducedMotion) {
+                gsap.to(pathEl, {
+                  strokeDashoffset: 0,
+                  ease: "none",
+                  scrollTrigger: {
+                    trigger: parent,
+                    start: "top top",
+                    end: "bottom bottom",
+                    scrub: 0.5,
+                    onUpdate: (self) => {
+                      const scrollProgress = self.progress;
+                      const newActive: Record<string, boolean> = {};
+                      newMilestones.forEach((m, idx) => {
+                        const ratio = m.y / totalHeight;
+                        newActive[m.id] = scrollProgress >= ratio - 0.05;
+                      });
+                      setActiveMilestones(newActive);
+                    },
+                  },
+                });
+              }
+            });
+          };
+
+          const timer = setTimeout(calculatePath, 500);
+          window.addEventListener("resize", calculatePath);
+
+          return () => {
+            clearTimeout(timer);
+            window.removeEventListener("resize", calculatePath);
+          };
         });
-      };
 
-      const timer = setTimeout(calculatePath, 500);
-      window.addEventListener("resize", calculatePath);
-
-      return () => {
-        clearTimeout(timer);
-        window.removeEventListener("resize", calculatePath);
-      };
+        return () => {
+          mm.revert();
+        };
+      })();
     });
-
     return () => {
-      mm.revert();
+      cancelled = true;
+      if (typeof cleanup === "function") cleanup();
     };
   }, []);
 

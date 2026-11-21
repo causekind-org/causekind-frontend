@@ -127,7 +127,7 @@ export function LiveNeedCard({
             {need.byName && (
               <>
                 <span className="text-stone-300 dark:text-stone-700">·</span>
-                <span className="truncate text-stone-400 dark:text-stone-500 text-3xs"><LandingText>
+                <span className="truncate text-stone-500 dark:text-stone-400 text-3xs"><LandingText>
                   <UiText>By</UiText> </LandingText>{need.byName}
                 </span>
               </>

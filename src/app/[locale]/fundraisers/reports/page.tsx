@@ -32,7 +32,7 @@ export default function MyReportsPage() {
   return (
     <div className={`${s.root} ${s.publicTheme}`}>
       <div className={s.wrap} style={{ paddingTop: 40, paddingBottom: 72, maxWidth: 820, display: "flex", flexDirection: "column", gap: 18 }}>
-        <h1 className={s.serif} style={{ fontSize: 30 }}><UiText>Your reports</UiText></h1>
+        <h2 className={s.serif} style={{ fontSize: 30 }}><UiText>Your reports</UiText></h2>
         <p className={`${s.small} ${s.muted}`}><UiText>&quot;Closed&quot; means the review is finished. We don&apos;t share what we found.</UiText></p>
         {failed ? <p className={s.errText} role="alert"><UiText>Couldn&apos;t load your reports.</UiText></p>
           : rows === null ? <div className={s.card} aria-busy="true" style={{ minHeight: 120 }} />

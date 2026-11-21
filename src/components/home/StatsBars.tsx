@@ -34,7 +34,7 @@ export function DesktopStatsBar({ stats }: { stats: PlatformStats | null }) {
             <s.icon className={`h-6 w-6 shrink-0 ${s.color}`} />
             <div>
               <p className="text-2xl font-black text-stone-900 dark:text-stone-100 tabular-nums leading-none"><LandingText>{s.value}</LandingText></p>
-              <p className="text-2xs font-bold text-stone-400 dark:text-stone-500 uppercase tracking-wider mt-0.5 whitespace-nowrap"><LandingText>{s.label}</LandingText></p>
+              <p className="text-2xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider mt-0.5 whitespace-nowrap"><LandingText>{s.label}</LandingText></p>
             </div>
           </div>
         ))}

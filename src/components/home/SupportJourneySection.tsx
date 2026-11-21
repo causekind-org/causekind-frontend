@@ -1,9 +1,7 @@
 "use client";
 
+import { loadGsap } from "@/lib/gsapLoader";
 import React, { useEffect, useRef, useState, useCallback } from "react";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { MotionPathPlugin } from "gsap/MotionPathPlugin";
 import { motion, useInView } from "framer-motion";
 import {
   Package,
@@ -119,7 +117,7 @@ function ImpactCertificateSample() {
             CauseKind
           </span>
         </div>
-        <span className="text-4xs font-mono font-bold tracking-wider text-stone-400 dark:text-stone-500">
+        <span className="text-4xs font-mono font-bold tracking-wider text-stone-500 dark:text-stone-400">
           CK-SAMPLE-0001
         </span>
       </div>
@@ -269,253 +267,265 @@ export function SupportJourneySection() {
   }, []);
 
   useEffect(() => {
-    if (!isClient) return;
+    // gsap loads after the browser is idle (lib/gsapLoader), not in the first bundle.
+    let cancelled = false;
+    let cleanup: void | (() => void);
+    Promise.all([loadGsap(), import("gsap/MotionPathPlugin")]).then(([{ gsap, ScrollTrigger }, { MotionPathPlugin }]) => {
+      if (cancelled) return;
+      cleanup = (() => {
+        if (!isClient) return;
 
-    gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
+        gsap.registerPlugin(ScrollTrigger, MotionPathPlugin);
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const mm = gsap.matchMedia();
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const mm = gsap.matchMedia();
 
-    if (prefersReducedMotion || !ENABLE_SUPPORT_JOURNEY_ANIMATION) {
-      // Static mode: ensure all elements are visible in their natural state
-      mm.add("(min-width: 1024px)", () => {
-        gsap.set(
-          [
-            ".ck-stop-pin",
-            ".ck-stop-card",
-            ".ck-cert-card",
-            ".ck-cert-stamp",
-            ".ck-benefit-point",
-            ".ck-journey-parcel",
-          ],
-          {
-            opacity: 1,
-            x: 0,
-            y: 0,
-            scale: 1,
-            rotate: 0,
-            rotateX: 0,
-            rotateY: 0,
-            clearProps: "all",
-          }
-        );
-        if (roadPathRef.current) {
-          gsap.set(roadPathRef.current, { strokeDashoffset: 0 });
-        }
-      });
-      return () => mm.revert();
-    }
-
-    mm.add("(min-width: 1024px)", () => {
-      const track = trackRef.current;
-      const pinTarget = pinTargetRef.current;
-      const pathEl = roadPathRef.current;
-      const parcelEl = parcelRef.current;
-      const certCard = document.querySelector<HTMLElement>(".ck-cert-card");
-      const certStamp = document.querySelector<HTMLElement>(".ck-cert-stamp");
-      const glowBurst = document.querySelector<HTMLElement>(".ck-handover-glow");
-      const happyFace = document.querySelector<HTMLElement>(".ck-happy-recipient");
-      const dustParticles = gsap.utils.toArray<HTMLElement>(".ck-stamp-dust-particle");
-      const stopCards = gsap.utils.toArray<HTMLElement>(".ck-stop-card");
-      const stopPins = gsap.utils.toArray<HTMLElement>(".ck-stop-pin");
-      const benefitPoints = gsap.utils.toArray<HTMLElement>(".ck-benefit-point");
-
-      if (!track || !pinTarget || !pathEl || !parcelEl) return;
-
-      const pathLength = pathEl.getTotalLength();
-      gsap.set(pathEl, {
-        strokeDasharray: pathLength,
-        strokeDashoffset: pathLength,
-      });
-
-      // Initial state of interactive elements
-      gsap.set(parcelEl, { opacity: 1, scale: 1 });
-      gsap.set(stopPins, { y: -30, opacity: 0, scale: 0.6 });
-      gsap.set(stopCards, { y: 15, opacity: 0, scale: 0.9 });
-      if (glowBurst) gsap.set(glowBurst, { scale: 0, opacity: 0 });
-      if (happyFace) gsap.set(happyFace, { scale: 0, opacity: 0, y: 10 });
-      if (certCard) gsap.set(certCard, { rotateX: 35, rotateY: -12, scale: 0.88, opacity: 0 });
-      if (certStamp) gsap.set(certStamp, { scale: 2.8, opacity: 0, rotate: -28 });
-      gsap.set(benefitPoints, { opacity: 0, x: 25 });
-
-      // Master Scroll-pinned scrub timeline
-      const totalScroll = () => Math.max(window.innerHeight * 1.8, track.scrollWidth - window.innerWidth + 120);
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: pinTarget,
-          pin: true,
-          scrub: 1,
-          anticipatePin: 1,
-          start: "top top",
-          end: () => `+=${totalScroll()}`,
-          invalidateOnRefresh: true,
-          onLeave: () => {
-            // Clean residual GPU compositing transforms for crisp text
-            if (certCard) certCard.style.willChange = "auto";
-          },
-        },
-      });
-
-      // 1. Translate horizontal track across the view
-      tl.to(
-        track,
-        {
-          x: () => -(track.scrollWidth - window.innerWidth + 80),
-          ease: "none",
-          duration: 4.0,
-        },
-        0
-      );
-
-      // 2. Draw the dashed orange road progressively
-      tl.to(
-        pathEl,
-        {
-          strokeDashoffset: 0,
-          ease: "none",
-          duration: 2.4,
-        },
-        0
-      );
-
-      // 3. Move Parcel along the actual SVG curve via MotionPathPlugin
-      tl.to(
-        parcelEl,
-        {
-          motionPath: {
-            path: pathEl,
-            align: pathEl,
-            alignOrigin: [0.5, 0.5],
-            autoRotate: false,
-          },
-          ease: "none",
-          duration: 2.4,
-        },
-        0
-      );
-
-      // 4. Stops reveal in sync with parcel progression
-      // Stop 1: ~progress 0.1 (t = 0.2s)
-      if (stopPins[0]) {
-        tl.to(stopPins[0], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 0.15);
-      }
-      if (stopCards[0]) {
-        tl.to(stopCards[0], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, 0.2);
-      }
-
-      // Stop 2: ~progress 0.45 (t = 1.0s)
-      if (stopPins[1]) {
-        tl.to(stopPins[1], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 0.9);
-      }
-      if (stopCards[1]) {
-        tl.to(stopCards[1], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, 0.95);
-      }
-
-      // Stop 3 (Handover): ~progress 0.75 (t = 1.7s)
-      if (stopPins[2]) {
-        tl.to(stopPins[2], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 1.6);
-      }
-      if (stopCards[2]) {
-        tl.to(stopCards[2], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, 1.65);
-      }
-      if (glowBurst) {
-        tl.to(glowBurst, { scale: 1.5, opacity: 0.85, duration: 0.3, ease: "sine.out" }, 1.65);
-        tl.to(glowBurst, { scale: 0.8, opacity: 0, duration: 0.3, ease: "sine.in" }, 1.95);
-      }
-      if (happyFace) {
-        tl.to(happyFace, { scale: 1.2, opacity: 1, y: 0, rotate: 12, duration: 0.35, ease: "back.out(2)" }, 1.75);
-      }
-
-      // 5. Parcel arrives at certificate entrance (t = 2.4s) & disappears cleanly (never overlaps certificate)
-      tl.to(
-        parcelEl,
-        {
-          scale: 0.4,
-          opacity: 0,
-          duration: 0.25,
-          ease: "power2.in",
-        },
-        2.35
-      );
-
-      // 6. Certificate flies in and rotates upright in 3D (t = 2.45s)
-      if (certCard) {
-        tl.to(
-          certCard,
-          {
-            rotateX: 0,
-            rotateY: 0,
-            scale: 1,
-            opacity: 1,
-            duration: 0.5,
-            ease: "power2.out",
-          },
-          2.45
-        );
-      }
-
-      // 7. Stamp Slams down onto certificate with dust burst + subtle card-only shake (t = 2.95s)
-      if (certStamp) {
-        tl.to(
-          certStamp,
-          {
-            scale: 1,
-            opacity: 1,
-            rotate: -12,
-            duration: 0.35,
-            ease: "back.out(2.4)",
-          },
-          2.95
-        );
-
-        // Certificate subtle shake
-        if (certCard) {
-          tl.to(certCard, { x: 3, yoyo: true, repeat: 4, duration: 0.04, ease: "linear" }, 3.1);
-          tl.to(certCard, { x: 0, duration: 0.02 }, 3.26);
+        if (prefersReducedMotion || !ENABLE_SUPPORT_JOURNEY_ANIMATION) {
+          // Static mode: ensure all elements are visible in their natural state
+          mm.add("(min-width: 1024px)", () => {
+            gsap.set(
+              [
+                ".ck-stop-pin",
+                ".ck-stop-card",
+                ".ck-cert-card",
+                ".ck-cert-stamp",
+                ".ck-benefit-point",
+                ".ck-journey-parcel",
+              ],
+              {
+                opacity: 1,
+                x: 0,
+                y: 0,
+                scale: 1,
+                rotate: 0,
+                rotateX: 0,
+                rotateY: 0,
+                clearProps: "all",
+              }
+            );
+            if (roadPathRef.current) {
+              gsap.set(roadPathRef.current, { strokeDashoffset: 0 });
+            }
+          });
+          return () => mm.revert();
         }
 
-        // Dust particle explosion
-        if (dustParticles.length > 0) {
-          tl.fromTo(
-            dustParticles,
-            { scale: 0, opacity: 1, x: 0, y: 0 },
-            {
-              scale: (i) => 0.5 + ((i * 3) % 4) * 0.2,
-              opacity: 0,
-              x: (i) => Math.cos((i / 8) * Math.PI * 2) * (20 + (i % 3) * 8),
-              y: (i) => Math.sin((i / 8) * Math.PI * 2) * (20 + (i % 3) * 8),
-              duration: 0.35,
-              ease: "power2.out",
+        mm.add("(min-width: 1024px)", () => {
+          const track = trackRef.current;
+          const pinTarget = pinTargetRef.current;
+          const pathEl = roadPathRef.current;
+          const parcelEl = parcelRef.current;
+          const certCard = document.querySelector<HTMLElement>(".ck-cert-card");
+          const certStamp = document.querySelector<HTMLElement>(".ck-cert-stamp");
+          const glowBurst = document.querySelector<HTMLElement>(".ck-handover-glow");
+          const happyFace = document.querySelector<HTMLElement>(".ck-happy-recipient");
+          const dustParticles = gsap.utils.toArray<HTMLElement>(".ck-stamp-dust-particle");
+          const stopCards = gsap.utils.toArray<HTMLElement>(".ck-stop-card");
+          const stopPins = gsap.utils.toArray<HTMLElement>(".ck-stop-pin");
+          const benefitPoints = gsap.utils.toArray<HTMLElement>(".ck-benefit-point");
+
+          if (!track || !pinTarget || !pathEl || !parcelEl) return;
+
+          const pathLength = pathEl.getTotalLength();
+          gsap.set(pathEl, {
+            strokeDasharray: pathLength,
+            strokeDashoffset: pathLength,
+          });
+
+          // Initial state of interactive elements
+          gsap.set(parcelEl, { opacity: 1, scale: 1 });
+          gsap.set(stopPins, { y: -30, opacity: 0, scale: 0.6 });
+          gsap.set(stopCards, { y: 15, opacity: 0, scale: 0.9 });
+          if (glowBurst) gsap.set(glowBurst, { scale: 0, opacity: 0 });
+          if (happyFace) gsap.set(happyFace, { scale: 0, opacity: 0, y: 10 });
+          if (certCard) gsap.set(certCard, { rotateX: 35, rotateY: -12, scale: 0.88, opacity: 0 });
+          if (certStamp) gsap.set(certStamp, { scale: 2.8, opacity: 0, rotate: -28 });
+          gsap.set(benefitPoints, { opacity: 0, x: 25 });
+
+          // Master Scroll-pinned scrub timeline
+          const totalScroll = () => Math.max(window.innerHeight * 1.8, track.scrollWidth - window.innerWidth + 120);
+
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: pinTarget,
+              pin: true,
+              scrub: 1,
+              anticipatePin: 1,
+              start: "top top",
+              end: () => `+=${totalScroll()}`,
+              invalidateOnRefresh: true,
+              onLeave: () => {
+                // Clean residual GPU compositing transforms for crisp text
+                if (certCard) certCard.style.willChange = "auto";
+              },
             },
-            3.05
+          });
+
+          // 1. Translate horizontal track across the view
+          tl.to(
+            track,
+            {
+              x: () => -(track.scrollWidth - window.innerWidth + 80),
+              ease: "none",
+              duration: 4.0,
+            },
+            0
           );
-        }
-      }
 
-      // 8. Three Points Fade Up Sequentially (t = 3.3s to 3.8s)
-      benefitPoints.forEach((pt, i) => {
-        tl.to(
-          pt,
-          {
-            opacity: 1,
-            x: 0,
-            duration: 0.35,
-            ease: "power2.out",
-          },
-          3.25 + i * 0.2
-        );
-      });
-    }, containerRef);
+          // 2. Draw the dashed orange road progressively
+          tl.to(
+            pathEl,
+            {
+              strokeDashoffset: 0,
+              ease: "none",
+              duration: 2.4,
+            },
+            0
+          );
 
-    // Refresh triggers after fonts and layout settle
-    const refreshTimer = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 400);
+          // 3. Move Parcel along the actual SVG curve via MotionPathPlugin
+          tl.to(
+            parcelEl,
+            {
+              motionPath: {
+                path: pathEl,
+                align: pathEl,
+                alignOrigin: [0.5, 0.5],
+                autoRotate: false,
+              },
+              ease: "none",
+              duration: 2.4,
+            },
+            0
+          );
 
+          // 4. Stops reveal in sync with parcel progression
+          // Stop 1: ~progress 0.1 (t = 0.2s)
+          if (stopPins[0]) {
+            tl.to(stopPins[0], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 0.15);
+          }
+          if (stopCards[0]) {
+            tl.to(stopCards[0], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, 0.2);
+          }
+
+          // Stop 2: ~progress 0.45 (t = 1.0s)
+          if (stopPins[1]) {
+            tl.to(stopPins[1], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 0.9);
+          }
+          if (stopCards[1]) {
+            tl.to(stopCards[1], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, 0.95);
+          }
+
+          // Stop 3 (Handover): ~progress 0.75 (t = 1.7s)
+          if (stopPins[2]) {
+            tl.to(stopPins[2], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2)" }, 1.6);
+          }
+          if (stopCards[2]) {
+            tl.to(stopCards[2], { y: 0, opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, 1.65);
+          }
+          if (glowBurst) {
+            tl.to(glowBurst, { scale: 1.5, opacity: 0.85, duration: 0.3, ease: "sine.out" }, 1.65);
+            tl.to(glowBurst, { scale: 0.8, opacity: 0, duration: 0.3, ease: "sine.in" }, 1.95);
+          }
+          if (happyFace) {
+            tl.to(happyFace, { scale: 1.2, opacity: 1, y: 0, rotate: 12, duration: 0.35, ease: "back.out(2)" }, 1.75);
+          }
+
+          // 5. Parcel arrives at certificate entrance (t = 2.4s) & disappears cleanly (never overlaps certificate)
+          tl.to(
+            parcelEl,
+            {
+              scale: 0.4,
+              opacity: 0,
+              duration: 0.25,
+              ease: "power2.in",
+            },
+            2.35
+          );
+
+          // 6. Certificate flies in and rotates upright in 3D (t = 2.45s)
+          if (certCard) {
+            tl.to(
+              certCard,
+              {
+                rotateX: 0,
+                rotateY: 0,
+                scale: 1,
+                opacity: 1,
+                duration: 0.5,
+                ease: "power2.out",
+              },
+              2.45
+            );
+          }
+
+          // 7. Stamp Slams down onto certificate with dust burst + subtle card-only shake (t = 2.95s)
+          if (certStamp) {
+            tl.to(
+              certStamp,
+              {
+                scale: 1,
+                opacity: 1,
+                rotate: -12,
+                duration: 0.35,
+                ease: "back.out(2.4)",
+              },
+              2.95
+            );
+
+            // Certificate subtle shake
+            if (certCard) {
+              tl.to(certCard, { x: 3, yoyo: true, repeat: 4, duration: 0.04, ease: "linear" }, 3.1);
+              tl.to(certCard, { x: 0, duration: 0.02 }, 3.26);
+            }
+
+            // Dust particle explosion
+            if (dustParticles.length > 0) {
+              tl.fromTo(
+                dustParticles,
+                { scale: 0, opacity: 1, x: 0, y: 0 },
+                {
+                  scale: (i) => 0.5 + ((i * 3) % 4) * 0.2,
+                  opacity: 0,
+                  x: (i) => Math.cos((i / 8) * Math.PI * 2) * (20 + (i % 3) * 8),
+                  y: (i) => Math.sin((i / 8) * Math.PI * 2) * (20 + (i % 3) * 8),
+                  duration: 0.35,
+                  ease: "power2.out",
+                },
+                3.05
+              );
+            }
+          }
+
+          // 8. Three Points Fade Up Sequentially (t = 3.3s to 3.8s)
+          benefitPoints.forEach((pt, i) => {
+            tl.to(
+              pt,
+              {
+                opacity: 1,
+                x: 0,
+                duration: 0.35,
+                ease: "power2.out",
+              },
+              3.25 + i * 0.2
+            );
+          });
+        }, containerRef);
+
+        // Refresh triggers after fonts and layout settle
+        const refreshTimer = setTimeout(() => {
+          ScrollTrigger.refresh();
+        }, 400);
+
+        return () => {
+          clearTimeout(refreshTimer);
+          mm.revert();
+        };
+      })();
+    });
     return () => {
-      clearTimeout(refreshTimer);
-      mm.revert();
+      cancelled = true;
+      if (typeof cleanup === "function") cleanup();
     };
   }, [isClient]);
 

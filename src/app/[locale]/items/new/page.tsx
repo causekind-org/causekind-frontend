@@ -107,6 +107,7 @@ export default function NewItemPage() {
       listing={listing}
       initialDraftId={resumeId}
       onDraftCreated={handleDraftCreated}
+      stepTitleIsH2
     />
   );
 }
