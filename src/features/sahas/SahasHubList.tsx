@@ -15,7 +15,6 @@ import { Chip, ItemsBar, PhaseChip, SahasSurplus, formatDate, serif } from "./sa
 const rule = "border-[#D9C9B8] dark:border-zinc-800";
 const muted = "text-[#5c4a3d] dark:text-stone-400";
 const solid = "inline-flex min-h-[44px] items-center justify-center rounded-full bg-[#b04a15] px-5 text-sm font-semibold text-white no-underline hover:bg-[#9a3f10]";
-const textLink = "inline-flex min-h-[44px] items-center text-sm font-semibold text-[#8f3a0e] underline underline-offset-2 dark:text-[#e07b3a]";
 
 function useDesktop() {
   const [desktop, setDesktop] = useState(true);
@@ -153,7 +152,8 @@ function PhoneRow({ c }: { c: SahasCampaignCard }) {
           <Link href={`/sahas/${c.slug}`} className="text-inherit no-underline">{c.title}</Link>
         </h3>
         <div className="mt-1 text-sm"><PhoneMoney c={c} /></div>
-        <Action c={c} className={`${textLink} cursor-pointer border-0 bg-transparent p-0`} onDonate={donate.start} />
+        {/* Same full-width button as the lead card (phones only; same action). */}
+        <Action c={c} className={`${solid} mt-2 w-full`} onDonate={donate.start} />
       </div>
       <Photo c={c} className="h-[84px]" />
       {donate.dialog}

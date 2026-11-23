@@ -90,7 +90,66 @@ const LIGHT: Th = {
 
 // ── Enum option sets (mirror backend enums) ──────────────────────────────────
 const ROLES = ["DONOR", "DONEE", "ADMIN", "SUPER_ADMIN"];
-const CAMPAIGN_STATUS = ["PENDING_APPROVAL", "APPROVED", "REJECTED"];
+// Mirrors backend CampaignStatus (all 12 values).
+const CAMPAIGN_STATUS = [
+  "PENDING_APPROVAL", "APPROVED", "REJECTED", "DRAFT", "PUBLICATION_REVIEW",
+  "CHANGES_REQUESTED", "PUBLICATION_DECLINED", "APPROVED_SETUP_INCOMPLETE",
+  "CANCELLED", "COLLECTIONS_CLOSED", "PAUSED", "OUTCOME_REPORTING",
+];
+
+type Pill = { label: string; cls: string };
+const PILL_BASE = "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold border";
+const GREEN = "bg-emerald-500/15 text-emerald-600 border-emerald-500/30";
+const AMBER = "bg-amber-500/15 text-amber-600 border-amber-500/30";
+const RED = "bg-rose-500/15 text-rose-600 border-rose-500/30";
+const GREY = "bg-slate-500/15 text-slate-500 border-slate-500/30";
+const BLUE = "bg-sky-500/15 text-sky-600 border-sky-500/30";
+
+/** Review result of the campaign (the stored status, in plain words). */
+const APPROVAL_PILL: Record<string, Pill> = {
+  PENDING_APPROVAL: { label: "Pending", cls: AMBER },
+  PUBLICATION_REVIEW: { label: "In review", cls: AMBER },
+  CHANGES_REQUESTED: { label: "Changes requested", cls: AMBER },
+  DRAFT: { label: "Draft", cls: GREY },
+  APPROVED_SETUP_INCOMPLETE: { label: "Setup incomplete", cls: BLUE },
+  REJECTED: { label: "Rejected", cls: RED },
+  PUBLICATION_DECLINED: { label: "Declined", cls: RED },
+};
+
+/** Today as YYYY-MM-DD in local time (endDate is a plain LocalDate). */
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function fmtEndDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Whether the campaign is live — derived from status + end date, not stored. */
+function liveState(status: string, endDate?: string): Pill {
+  switch (status) {
+    case "APPROVED":
+      // End date is the last day donations are taken.
+      return endDate && endDate < todayIso() ? { label: "Ended", cls: GREY } : { label: "Live", cls: GREEN };
+    case "PAUSED": return { label: "Paused", cls: AMBER };
+    case "COLLECTIONS_CLOSED":
+    case "OUTCOME_REPORTING": return { label: "Closed", cls: GREY };
+    case "CANCELLED": return { label: "Cancelled", cls: RED };
+    default: return { label: "Not live", cls: GREY };
+  }
+}
+
+function approvalPill(status: string): Pill {
+  // Statuses past approval (live/paused/closed/cancelled) were all approved first,
+  // except CANCELLED, which can happen before approval.
+  if (APPROVAL_PILL[status]) return APPROVAL_PILL[status];
+  if (status === "CANCELLED") return { label: "Cancelled", cls: RED };
+  return { label: "Approved", cls: GREEN };
+}
+
+const renderPill = (p: Pill) => <span className={`${PILL_BASE} ${p.cls}`}>{p.label}</span>;
 const DONATION_STATUS = ["INITIATED", "COMPLETED", "FAILED"];
 const REQUEST_STATUS = ["DRAFT", "PENDING_VERIFICATION", "VERIFIED_PRIVATE_MATCHING", "POTENTIAL_MATCH_FOUND", "AWAITING_MATCH_APPROVAL", "PUBLICATION_CONSENT_REQUIRED", "PUBLIC_REQUEST", "RESERVED", "FULFILMENT_IN_PROGRESS", "FULFILLED", "EXPIRED", "REJECTED"];
 const LISTING_STATUS = ["DRAFT", "PENDING_REVIEW", "AVAILABLE", "POTENTIAL_MATCH", "AWAITING_DONOR_CONFIRMATION", "RESERVED", "HANDOVER_SCHEDULED", "IN_TRANSIT", "FULFILLED", "EXPIRED", "WITHDRAWN", "REJECTED"];
@@ -124,7 +183,23 @@ const CAMPAIGN_COLS: Column[] = [
   { key: "state", label: "State", editable: true },
   { key: "targetAmount", label: "Target", editable: true, type: "number" },
   { key: "amountRaised", label: "Raised", editable: true, type: "number" },
-  { key: "status", label: "Status", editable: true, type: "select", options: CAMPAIGN_STATUS },
+  { key: "status", label: "Approval", editable: true, type: "select", options: CAMPAIGN_STATUS,
+    render: row => renderPill(approvalPill(String(row.status ?? ""))) },
+  { key: "liveState", label: "Live state",
+    render: row => {
+      const status = String(row.status ?? "");
+      const end = typeof row.endDate === "string" && row.endDate ? row.endDate.slice(0, 10) : undefined;
+      return (
+        <div className="flex flex-col items-start gap-0.5">
+          {renderPill(liveState(status, end))}
+          {end && (
+            <span className="text-[11px] opacity-60">
+              {end < todayIso() ? "ended" : "ends"} {fmtEndDate(end)}
+            </span>
+          )}
+        </div>
+      );
+    } },
   { key: "description", label: "Description", editable: true, type: "textarea", inTable: false },
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];

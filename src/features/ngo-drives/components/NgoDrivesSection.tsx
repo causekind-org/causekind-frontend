@@ -122,7 +122,7 @@ function NgoDrivesBoard({ initialDrives, className = "" }: NgoDrivesSectionProps
       className={`ck-m-section ck-drives-theme relative w-full lg:bg-[var(--surface-cream,#faf8f5)] lg:dark:bg-zinc-950 ck-live-needs-section overflow-hidden transition-colors ${className}`}
       data-testid="ngo-drives-section"
     >
-      <div className="relative mx-auto max-w-7xl px-0 lg:px-8">
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* ── Section Header ── */}
         <LiveBoardHeader
           headingId="ngo-drives-heading"
