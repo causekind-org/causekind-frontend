@@ -549,7 +549,7 @@ function BlogListingContent() {
                       ))}
                     </div>
                   </div>
-                  <Link href="/requests" className="mt-3 md:mt-6 block text-center w-full py-2 md:py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-2xs md:text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
+                  <Link href="/requests" data-donate-choice className="mt-3 md:mt-6 block text-center w-full py-2 md:py-3 bg-[#b04a15] hover:bg-[#963c0d] text-white rounded-xl font-bold text-2xs md:text-sm transition-all duration-300 shadow-md hover:-translate-y-0.5 active:scale-[0.97]">
                     {t("startYourImpact")}
                   </Link>
                 </div>

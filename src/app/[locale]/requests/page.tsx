@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPublicItemRequests } from "@/lib/api";
+import { SahasIntroCard } from "@/features/sahas/SahasIntroCard";
 import RequestsClient from "./RequestsClient";
 
 // Server wrapper so this route can carry its own metadata — a "use client"
@@ -62,15 +63,9 @@ export default async function Page({ params }: LocaleParams) {
       <RequestsClient initialPublicRequests={initialPublicRequests} />
       {/* Server-rendered explainer (owner-approved text, 23 Nov 2026): the
           page was thin (207 words). Same background and width as the page. */}
-      <section
-        aria-labelledby="requests-how-heading"
-        className="bg-[#f2ede7] text-stone-900 dark:bg-zinc-950 dark:text-stone-100"
-      >
+      <div className="bg-[#f2ede7] dark:bg-zinc-950">
         <div className="mx-auto w-full max-w-6xl px-4 pt-4 pb-12 sm:px-6 lg:pb-16">
-          <h2 id="requests-how-heading" className="text-xl font-extrabold tracking-tight sm:text-2xl">
-            How giving to a request works
-          </h2>
-          <div className="mt-3 max-w-3xl space-y-3 text-sm leading-relaxed text-stone-600 sm:text-base dark:text-stone-300">
+          <SahasIntroCard heading={{ id: "requests-how-heading", text: "How giving to a request works" }}>
             <p>
               Every request on this page comes from a real person or a registered NGO, and our team checks it before it goes live. You see exactly what is needed, how many, and roughly where, so you can give the item that will actually be used.
             </p>
@@ -80,9 +75,9 @@ export default async function Page({ params }: LocaleParams) {
             <p>
               Once the handover is confirmed by both sides, you receive an Impact Certificate as a record of what you gave and where it went. Not sure what to give? Browse by category, from education and clothing to medical aid and household items, and start with something you already own.
             </p>
-          </div>
+          </SahasIntroCard>
         </div>
-      </section>
+      </div>
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "@/components/AppLink";
 import { FEATURES } from "@/lib/features";
@@ -26,7 +26,7 @@ function useFundraisingCategoryLabel() {
 }
 
 /** F21 — fundraiser discovery (canvas F21-Discovery.dc.html). */
-export default function FundraisersPage() {
+export default function FundraisersPage({ intro }: { intro?: ReactNode } = {}) {
   const ui = useUiText();
   const t = useTranslations("fundraisersList");
   const locale = useLocale();
@@ -62,6 +62,7 @@ export default function FundraisersPage() {
             <Link href="/fundraisers/reports"><UiText>Your reports</UiText></Link>
           </p>
         </div>
+        {intro}
         <label style={{ display: "flex" }}>
           <span style={{ position: "absolute", left: -9999 }}><UiText>Search fundraisers</UiText></span>
           <input className={s.in} placeholder={ui("Search by title or city")} value={q} onChange={(e) => setQ(e.target.value)} />
