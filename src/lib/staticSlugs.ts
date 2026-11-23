@@ -6,6 +6,10 @@
 
 /** From src/data/blogData.ts. */
 export const BLOG_SLUGS: readonly string[] = [
+  "what-to-donate-each-month-india",
+  "how-to-help-ngo-without-money-india",
+  "how-to-donate-loved-ones-belongings-india",
+  "what-to-do-with-old-items-india",
   "how-to-donate-sports-equipment-india",
   "how-to-donate-kitchen-utensils-india",
   "how-to-donate-wheelchairs-india",
