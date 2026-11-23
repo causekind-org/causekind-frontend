@@ -25,7 +25,7 @@ const BUNDLE_CAMPAIGNS = new Set(["feed-stray-animals"]);
  * Every other campaign takes PAN and address from every donor. Keep in step with the backend's
  * DonationService.SAHAS_PAN_ONLY_FOR_80G.
  */
-const PAN_ONLY_FOR_80G = new Set(["feed-stray-animals"]);
+const PAN_ONLY_FOR_80G = new Set(["feed-stray-animals", "diwali-feed-hungry01"]);
 
 export type SahasBundle = { value: number; text: string };
 
