@@ -21,6 +21,8 @@ export type Column = {
   type?: ColumnType;
   options?: string[];
   inTable?: boolean;
+  /** Custom table-cell renderer (e.g. a status pill). Edit form is unaffected. */
+  render?: (row: Record<string, unknown>) => import("react").ReactNode;
 };
 
 function fmt(v: unknown): string {
@@ -544,7 +546,9 @@ export function EntityTable({
                     <td className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap font-mono text-xs ${t.cellId}`}>{rowCode(entity, row.id)}</td>
                     {tableCols.map(c => (
                       <td key={c.key} className={`px-2.5 py-2 sm:px-4 sm:py-3 whitespace-nowrap ${t.cell}`}>
-                        {c.type === "boolean"
+                        {c.render
+                          ? c.render(row)
+                          : c.type === "boolean"
                           ? <span className={`text-xs font-bold ${row[c.key] ? "text-emerald-500" : t.iconMuted}`}>{fmt(row[c.key])}</span>
                           : fmt(row[c.key])}
                       </td>
