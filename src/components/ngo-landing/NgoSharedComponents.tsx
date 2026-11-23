@@ -374,136 +374,58 @@ export function NgoFinalCtaBand({
   secondaryButton,
   photos = DEFAULT_CTA_PHOTOS,
 }: NgoFinalCtaBandProps) {
-  const bandRef = useRef<HTMLElement>(null);
-  const prefersReducedMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: bandRef,
-    offset: ["start end", "end start"],
-  });
-
-  const yLeft = useTransform(
-    scrollYProgress,
-    [0, 1],
-    prefersReducedMotion ? [0, 0] : [-16, 16]
-  );
-  const yRight = useTransform(
-    scrollYProgress,
-    [0, 1],
-    prefersReducedMotion ? [0, 0] : [16, -16]
-  );
-
+  const reduce = useReducedMotion();
+  const photo = photos[0];
   return (
     <div className="ngo-cta-band-wrapper w-full overflow-x-clip">
-      <section
-        ref={bandRef}
-        className="ngo-cta-band relative w-full text-center text-white bg-gradient-to-br from-[#0B3D2E] via-[#1E6B4A] to-[#2F8F5B]"
-      >
-        <div className="ngo-container relative">
-          {/* Floating Photo Card Left (Desktop) */}
-          <div className="ngo-cta-floater ngo-cta-floater-left">
-            <motion.div
-              style={{ y: yLeft }}
-              className="ngo-cta-card ngo-cta-card-left"
-            >
-              <Image
-                src={photos[0].src}
-                alt={photos[0].alt}
-                fill
-                sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
-                className="object-cover"
-                loading="lazy"
-              />
-              <div className="ngo-cta-card-gradient" />
-            </motion.div>
-          </div>
+      <section className="relative isolate flex min-h-[560px] w-full items-end overflow-hidden bg-[var(--ngo-darkest)] text-white md:min-h-[640px]">
+        <motion.div
+          className="absolute inset-0 -z-10"
+          initial={reduce ? false : { scale: 1.12 }}
+          whileInView={{ scale: 1 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <Image src={photo.src} alt={photo.alt} fill sizes="100vw" className="object-cover object-[center_35%]" loading="lazy" />
+        </motion.div>
+        <div className="absolute inset-0 -z-10 bg-gradient-to-t from-black/90 via-black/45 to-black/5" />
 
-          {/* Floating Photo Card Right (Desktop) */}
-          <div className="ngo-cta-floater ngo-cta-floater-right">
-            <motion.div
-              style={{ y: yRight }}
-              className="ngo-cta-card ngo-cta-card-right"
-            >
-              <Image
-                src={photos[1].src}
-                alt={photos[1].alt}
-                fill
-                sizes="(max-width: 1000px) 45vw, (max-width: 1200px) 190px, 240px"
-                className="object-cover"
-                loading="lazy"
-              />
-              <div className="ngo-cta-card-gradient" />
-            </motion.div>
-          </div>
-
-          {/* Centre Column: Headline + Buttons + Mobile Photo Row */}
-          <div className="ngo-cta-center-col mx-auto flex flex-col items-center">
-            <h2 className="ngo-heading text-[clamp(36px,5.4vw,88px)] mb-8 leading-[1.05]">
+        <motion.div
+          className="ngo-container py-14 md:py-24"
+          initial={reduce ? false : { opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
+        >
+          <div className="max-w-[760px]">
+            <h2 className="ngo-heading text-[clamp(40px,6.4vw,96px)] mb-8 md:mb-10 leading-[1] tracking-[-0.04em]">
               {headline}
             </h2>
-
-            <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="ngo-cta-actions flex w-full flex-wrap items-center gap-3 md:gap-4">
               {primaryButton.isLocked || primaryButton.disabled || !primaryButton.href ? (
                 <button
                   type="button"
                   onClick={primaryButton.onClick}
                   aria-disabled={primaryButton.disabled ? "true" : undefined}
-                  className="ngo-btn-pill ngo-btn-gold ngo-btn-shine cursor-pointer"
+                  className="ngo-btn-pill ngo-btn-gold ngo-btn-shine cursor-pointer max-sm:flex-1 max-sm:justify-center"
                 >
                   <span>{primaryButton.label}</span>
-                  {primaryButton.showArrow !== false && (
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  )}
+                  {primaryButton.showArrow !== false && <ArrowRight className="w-4 h-4 ml-2" />}
                 </button>
               ) : (
-                <Link
-                  href={primaryButton.href}
-                  className="ngo-btn-pill ngo-btn-gold ngo-btn-shine"
-                >
+                <Link href={primaryButton.href} className="ngo-btn-pill ngo-btn-gold ngo-btn-shine max-sm:flex-1 max-sm:justify-center">
                   <span>{primaryButton.label}</span>
-                  {primaryButton.showArrow !== false && (
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  )}
+                  {primaryButton.showArrow !== false && <ArrowRight className="w-4 h-4 ml-2" />}
                 </Link>
               )}
-
               {secondaryButton && (
-                <Link
-                  href={secondaryButton.href}
-                  className="ngo-btn-pill ngo-btn-outline"
-                >
+                <Link href={secondaryButton.href} className="ngo-btn-pill ngo-btn-outline backdrop-blur-md max-sm:flex-1 max-sm:justify-center">
                   <span>{secondaryButton.label}</span>
                 </Link>
               )}
             </div>
-
-            {/* Mobile Photo Row (Under 1000px: 2 cards, ~45% width, 180px tall) */}
-            <div className="ngo-cta-mobile-row">
-              <div className="ngo-cta-mobile-card">
-                <Image
-                  src={photos[0].src}
-                  alt={photos[0].alt}
-                  fill
-                  sizes="(max-width: 1000px) 45vw, 190px"
-                  className="object-cover"
-                  loading="lazy"
-                />
-                <div className="ngo-cta-card-gradient" />
-              </div>
-
-              <div className="ngo-cta-mobile-card">
-                <Image
-                  src={photos[1].src}
-                  alt={photos[1].alt}
-                  fill
-                  sizes="(max-width: 1000px) 45vw, 190px"
-                  className="object-cover"
-                  loading="lazy"
-                />
-                <div className="ngo-cta-card-gradient" />
-              </div>
-            </div>
           </div>
-        </div>
+        </motion.div>
       </section>
     </div>
   );

@@ -122,6 +122,8 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
   const card1ParallaxY = useTransform(scrollYProgress, [0, 1], [0, 36]);
   const card2ParallaxY = useTransform(scrollYProgress, [0, 1], [0, -32]);
   const card3ParallaxY = useTransform(scrollYProgress, [0, 1], [0, 28]);
+  const stageY = useTransform(scrollYProgress, [0, 1], ["0%", "12%"]);
+  const stageScale = useTransform(scrollYProgress, [0, 1], [1.06, 1.14]);
 
   // Chip text determination
   let chipText = "Not yet verified · ready to begin";
@@ -190,12 +192,12 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
     <section
       id="ngo-hero"
       ref={heroRef}
-      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-screen pt-[120px] pb-[96px] flex items-center ck-ngo-hero-stage"
+      className="relative w-full overflow-hidden bg-[#0B3D2E] text-[#F6F1E4] min-h-[calc(100vh-80px)] lg:min-h-[calc(100vh-72px)] pt-[120px] pb-[96px] lg:pt-24 lg:pb-20 flex items-center lg:items-end ck-ngo-hero-stage"
     >
       {/* Animated Mesh Layer */}
-      <div className="ngo-hero-bg max-md:hidden" aria-hidden="true" />
+      <div className="ngo-hero-bg max-md:hidden lg:hidden" aria-hidden="true" />
       {/* Noise Grain Overlay at 12% */}
-      <div className="ngo-hero-grain max-md:hidden" aria-hidden="true" />
+      <div className="ngo-hero-grain max-md:hidden lg:hidden" aria-hidden="true" />
       {/* Mobile (<768px): full-bleed photo with a dark bottom gradient, the same
           pattern as the guest homepage hero; text and buttons sit over it. */}
       <div data-testid="ngo-hero-mobile-photo" className="absolute inset-0 z-0 md:hidden" aria-hidden="true">
@@ -203,10 +205,20 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
         <div className="ck-ngo-hero-shade absolute inset-0" />
       </div>
 
-      <div className="ngo-container relative z-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-8 lg:gap-12 items-center max-md:gap-0">
+      {/* Desktop (lg+): one full-bleed photo, slow zoom + parallax, dark gradients only (no colour tint). */}
+      <div className="ck-ngo-hero-stage-photo absolute inset-0 z-0 hidden overflow-hidden lg:block" aria-hidden="true">
+        <motion.div className="absolute inset-0 will-change-transform"
+          style={shouldReduceMotion ? undefined : { y: stageY, scale: stageScale }}>
+          <Image src="/images/ngo-landing/ngo-winter-blankets-elderly-landscape.webp" alt="" fill priority sizes="100vw" className="object-cover object-[center_45%]" />
+        </motion.div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/20 to-transparent" />
+      </div>
+
+      <div className="ngo-container relative z-10 w-full lg:!max-w-none lg:!px-10 xl:!px-14">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8 lg:gap-14 items-center lg:items-end max-md:gap-0">
           {/* Left Column (1.15fr) */}
-          <div className="ck-ngo-hero-copy flex flex-col items-start z-10">
+          <div className="ck-ngo-hero-copy flex flex-col items-start z-10 lg:max-w-[560px] xl:max-w-[600px]">
             {/* Status Chip */}
             <div className="ck-ngo-hero-badge mb-6">
               <NgoGlassStatusChip text={chipText} />
@@ -214,7 +226,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             </div>
 
             {/* Staggered Rising H1 */}
-            <h1 className="ck-ngo-hero-title ngo-heading text-[clamp(44px,7vw,90px)] text-white tracking-[-0.025em] leading-[1.05] mb-5">
+            <h1 className="ck-ngo-hero-title ngo-heading text-[clamp(44px,7vw,90px)] lg:text-[clamp(56px,5.6vw,92px)] text-white tracking-[-0.025em] lg:tracking-[-0.045em] leading-[1.05] lg:leading-[0.98] mb-5 lg:mb-7">
               {headingWords.map((word, i) => {
                 const isTarget = word.toLowerCase() === highlightedWord.toLowerCase();
                 return (
@@ -277,7 +289,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             )}
 
             {/* Lead */}
-            <p className="ck-ngo-hero-sub text-[18px] md:text-[19px] leading-[1.6] text-[#EFEADB]/90 max-w-[520px] mb-8 font-normal">
+            <p className="ck-ngo-hero-sub text-[18px] md:text-[19px] lg:text-[21px] leading-[1.6] text-[#EFEADB]/90 max-w-[520px] lg:max-w-[560px] mb-8 lg:mb-10 font-normal lg:font-light">
               {leadText}
             </p>
 
@@ -381,7 +393,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             </div>
 
             {/* Microcopy Line below buttons: Nothing overlaps or covers buttons */}
-            <div className="ck-ngo-hero-trust flex items-center gap-2 text-xs text-[#EFEADB]/75 font-medium mt-2">
+            <div className="ck-ngo-hero-trust flex items-center gap-2 text-xs text-[#EFEADB]/75 font-medium mt-2 lg:mt-4 lg:rounded-full lg:border lg:border-white/15 lg:bg-black/30 lg:px-4 lg:py-2 lg:backdrop-blur-md">
               <ShieldCheck className="w-3.5 h-3.5 text-[#5BE49B] shrink-0" />
               {/* Two lines on mobile so nothing is cut off under the chat bubble. */}
               <span className="max-md:!whitespace-normal max-md:!overflow-visible max-md:leading-snug">
@@ -397,138 +409,8 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
             {/* ------------------------------------------------------------- */}
             {/* DESKTOP PHOTO CLUSTER (~440px tall, visible >= lg / 860px)    */}
             {/* ------------------------------------------------------------- */}
-            <div
-              className="hidden lg:block relative w-full max-w-[490px] h-[440px]"
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-            >
-              {/* Soft Gold & Emerald Glow behind cluster */}
-              <div
-                className="absolute top-8 right-2 w-[390px] h-[390px] rounded-full bg-[radial-gradient(circle,rgba(217,164,65,0.20)_0%,rgba(47,143,91,0.12)_45%,transparent_72%)] blur-3xl pointer-events-none z-0"
-                aria-hidden="true"
-              />
-
-              {/* Faint Dotted & Arc SVG Decoration */}
-              <svg
-                className="absolute -top-6 -right-4 w-[470px] h-[470px] pointer-events-none z-0 opacity-35"
-                viewBox="0 0 500 500"
-                fill="none"
-                aria-hidden="true"
-              >
-                <circle cx="270" cy="230" r="150" stroke="#D9A441" strokeWidth="1.5" strokeDasharray="5 7" />
-                <circle cx="270" cy="230" r="210" stroke="rgba(255,255,255,0.22)" strokeWidth="1" strokeDasharray="4 6" />
-                <circle cx="270" cy="230" r="260" stroke="#2F8F5B" strokeWidth="1.2" strokeOpacity="0.4" strokeDasharray="6 8" />
-                <circle cx="270" cy="80" r="4.5" fill="#D9A441" />
-                <circle cx="420" cy="230" r="3.5" fill="#F2C969" />
-                <circle cx="120" cy="230" r="4" fill="#5BE49B" />
-              </svg>
-
-              {/* Corner Badge 1: Top-Left (Verified impact certificates) */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="absolute -top-3 left-1 z-30 ngo-cluster-float-badge-1 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#071A13]/85 backdrop-blur-md border border-white/25 text-[#EFEADB] text-xs font-semibold shadow-xl pointer-events-none"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#5BE49B] shrink-0" />
-                <span>Verified impact certificates</span>
-              </motion.div>
-
-              {/* Photo 1: Large portrait (about 54% wide x 380px, left, -4deg) */}
-              <motion.div
-                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 35 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.85, delay: 0, ease: [0.2, 0.8, 0.2, 1] }}
-                style={{
-                  y: shouldReduceMotion ? 0 : card1ParallaxY,
-                  x: shouldReduceMotion ? 0 : mouseTilt.x * 0.9,
-                }}
-                className="absolute top-[40px] left-0 z-10 w-[272px] h-[340px]"
-              >
-                <div className="ngo-cluster-float-1 -rotate-[4deg] w-full h-full rounded-[28px] border border-white/25 shadow-[0_24px_50px_-10px_rgba(0,0,0,0.65)] overflow-hidden relative group">
-                  <Image
-                    src="/images/ngo-landing/ngo-school-supplies-girl-portrait.webp"
-                    alt="A volunteer handing notebooks and a pencil box to a smiling schoolgirl outside a village school"
-                    fill
-                    sizes="(max-width: 860px) 100vw, 270px"
-                    priority
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-3.5 left-3.5 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[12px] font-medium shadow-md pointer-events-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
-                    <span>School kit handover</span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Photo 2: Wide card (about 50% x 190px, top-right, +4deg) */}
-              <motion.div
-                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 35 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.85, delay: 0.12, ease: [0.2, 0.8, 0.2, 1] }}
-                style={{
-                  y: shouldReduceMotion ? 0 : card2ParallaxY,
-                  x: shouldReduceMotion ? 0 : mouseTilt.x * -0.8,
-                }}
-                className="absolute top-[18px] right-0 z-20 w-[246px] h-[164px]"
-              >
-                <div className="ngo-cluster-float-2 rotate-[4deg] w-full h-full rounded-[24px] border border-white/25 shadow-[0_20px_45px_-8px_rgba(0,0,0,0.55)] overflow-hidden relative group">
-                  <Image
-                    src="/images/ngo-landing/ngo-winter-blankets-elderly-landscape.webp"
-                    alt="Volunteers giving warm blankets to elderly villagers seated on charpais"
-                    fill
-                    sizes="(max-width: 860px) 50vw, 250px"
-                    loading="lazy"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-3 left-3 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[12px] font-medium shadow-md pointer-events-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#D9A441]" />
-                    <span>Blankets for elders</span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Photo 3: Medium card (about 46% x 200px, bottom-right, -2deg) */}
-              <motion.div
-                initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 35 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.85, delay: 0.24, ease: [0.2, 0.8, 0.2, 1] }}
-                style={{
-                  y: shouldReduceMotion ? 0 : card3ParallaxY,
-                  x: shouldReduceMotion ? 0 : mouseTilt.x * 0.7,
-                }}
-                className="absolute top-[212px] right-[10px] z-20 w-[234px] h-[156px]"
-              >
-                <div className="ngo-cluster-float-3 -rotate-[2deg] w-full h-full rounded-[24px] border border-white/25 shadow-[0_20px_40px_-8px_rgba(0,0,0,0.55)] overflow-hidden relative group">
-                  <Image
-                    src="/images/ngo-landing/ngo-ration-distribution-landscape.webp"
-                    alt="Volunteers handing a grain sack and ration box to villagers waiting in line"
-                    fill
-                    sizes="(max-width: 860px) 50vw, 230px"
-                    loading="lazy"
-                    className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent pointer-events-none" />
-                  <div className="absolute bottom-2.5 left-2.5 z-20 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-black/45 backdrop-blur-md border border-white/20 text-white text-[11px] font-medium shadow-md pointer-events-none">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#5BE49B]" />
-                    <span>Ration distribution</span>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Corner Badge 2: Bottom-Right (10 km donor reach) */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.6, delay: 0.54 }}
-                className="absolute -bottom-3 right-1 z-30 ngo-cluster-float-badge-2 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#071A13]/85 backdrop-blur-md border border-white/25 text-[#EFEADB] text-xs font-semibold shadow-xl pointer-events-none"
-              >
-                <span className="w-2 h-2 rounded-full bg-[#D9A441] shrink-0 shadow-[0_0_8px_#D9A441]" />
-                <span>10 km donor reach</span>
-              </motion.div>
-            </div>
+            {/* Desktop right side intentionally empty: the photo carries it. */}
+            <div className="hidden lg:block" aria-hidden="true" />
 
             {/* ------------------------------------------------------------- */}
             {/* MOBILE PHOTO GRID (< 860px / lg)                               */}
@@ -557,7 +439,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
               <motion.div
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full max-w-[490px] mt-4 rounded-[20px] bg-[#071A13]/90 border border-white/20 p-4 backdrop-blur-xl text-white shadow-xl relative z-20"
+                className="w-full max-w-[490px] lg:max-w-[420px] lg:ml-0 mt-4 lg:mt-3 rounded-[20px] lg:rounded-[24px] bg-[#071A13]/90 lg:bg-black/40 border border-white/20 p-4 lg:p-5 backdrop-blur-xl text-white shadow-xl relative z-20"
               >
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs uppercase font-bold tracking-wider text-[#5BE49B]">
