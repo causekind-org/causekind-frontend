@@ -14,6 +14,7 @@ import { TranslationAttribution } from "@/components/TranslationAttribution";
 import { AutoPageTranslator } from "@/components/AutoPageTranslator";
 import { getInterfaceCatalogue } from "@/lib/translation/messages";
 import { isTranslationLocale } from "@/lib/translation/server";
+import { clientMessagesFor } from "@/lib/translation/clientMessages";
 import { AuthProvider } from "@/hooks/useAuth";
 import { NotificationsProvider } from "@/hooks/useNotifications";
 import { NeedProfileGateProvider } from "@/hooks/useNeedProfileGate";
@@ -153,6 +154,9 @@ export default async function RootLayout({
   setRequestLocale(locale);
   const messages = await getMessages();
   const catalogue = await getInterfaceCatalogue(isTranslationLocale(locale) ? locale : "en");
+  // English drops the `ui` lookup table from the browser payload (output is
+  // identical, see clientMessages.ts); every other locale gets everything.
+  const clientMessages = clientMessagesFor(isTranslationLocale(locale) ? locale : "en", messages);
 
   return (
     <html lang={catalogue.translated ? `${locale}-x-mtfrom-en` : "en"} suppressHydrationWarning>
@@ -185,7 +189,7 @@ export default async function RootLayout({
           </HiddenOnStaffPage>
           <SiteTracking />
         </HiddenOnVolunteerPage>
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider messages={clientMessages}>
             <AuthProvider>
               <NotificationsProvider>
                 <NeedProfileGateProvider>

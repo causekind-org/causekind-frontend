@@ -11,6 +11,7 @@ import HelpAction from "./HelpAction";
 import RetryButton from "./RetryButton";
 
 import { UiText, useUiText } from "@/components/UiText";
+import { capTitle } from "@/lib/requestTitle";
 type Props = {
   params: Promise<{ id: string; locale: string }>;
   searchParams: Promise<{ from?: string | string[] }>;
@@ -51,17 +52,6 @@ function backHref(raw: string | string[] | undefined): string {
   return "/requests";
 }
 
-/**
- * The <title> only: about 50 characters before " | CauseKind", cut at a word
- * boundary with an ellipsis. The page's visible H1 keeps the full title.
- */
-function capTitle(title: string, max = 50): string {
-  const t = title.replace(/\s+/g, " ").trim();
-  if (t.length <= max) return t;
-  const cut = t.slice(0, max - 1);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s,;:.\-–—]+$/, "")}…`;
-}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id, locale } = await params;

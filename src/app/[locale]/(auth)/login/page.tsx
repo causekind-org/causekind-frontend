@@ -9,7 +9,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { registerUrlPreserving, resolvePostAuthDestination, socialCompletionUrl } from "@/lib/postAuthDestination";
 import { login, googleAuth } from "@/lib/api";
 import { ArrowRight, Check, Eye, EyeOff } from "lucide-react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@/lib/lazyGoogleLogin";
+import { preloadGoogleSignIn } from "@/lib/googleSignInPreload";
 import { useReducedMotion } from "framer-motion";
 import { isGenericCredentialFailure, validateEmail, validateLoginPassword } from "@/features/auth-validation/authValidation";
 import { useTimedFieldValidation } from "@/features/auth-validation/useTimedFieldValidation";
@@ -211,9 +212,9 @@ function LoginContent() {
         <p className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-[#b04a15] dark:text-[#e07b3a]">
           {t("eyebrow")}
         </p>
-        <h1 className="mt-2 font-serif text-[30px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.02em] text-stone-900 dark:text-stone-50">
+        <h2 className="mt-2 font-serif text-[30px] sm:text-[32px] font-normal leading-[1.1] tracking-[-0.02em] text-stone-900 dark:text-stone-50">
           {t("title")}
-        </h1>
+        </h2>
         <p className="mt-1.5 text-[13px] leading-relaxed text-stone-500 dark:text-stone-400">
           {t("subtitle")}
         </p>
@@ -375,6 +376,9 @@ function LoginContent() {
         type="button"
         disabled={auth.busy}
         aria-busy={auth.op === "google" || undefined}
+        onPointerEnter={() => void preloadGoogleSignIn().catch(() => {})}
+        onTouchStart={() => void preloadGoogleSignIn().catch(() => {})}
+        onFocus={() => void preloadGoogleSignIn().catch(() => {})}
         onClick={startGoogle}
         className="mt-3 flex min-h-12 w-full items-center justify-center gap-2.5 rounded-lg border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 text-[14px] font-medium text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b04a15] disabled:opacity-60"
       >

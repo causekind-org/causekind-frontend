@@ -97,7 +97,7 @@ vi.mock("@/hooks/useLocations", () => ({
   }),
 }));
 
-vi.mock("@react-oauth/google", () => ({
+vi.mock("@/lib/lazyGoogleLogin", () => ({
   useGoogleLogin: () => vi.fn(),
 }));
 

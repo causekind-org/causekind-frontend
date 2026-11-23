@@ -44,7 +44,7 @@ function CopyableChannel({
       <div className="group py-6 sm:py-10 border-b border-[#e5e2d5]/60 dark:border-zinc-800 first:border-t">
         <div className="flex items-center justify-between gap-3 sm:gap-6">
           <a href={href} target={href.startsWith("http") ? "_blank" : undefined} rel="noopener noreferrer" className="flex-1 min-w-0">
-            <p className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-stone-400 mb-1.5 sm:mb-2">{label}</p>
+            <p className="text-3xs sm:text-2xs font-black uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-1.5 sm:mb-2">{label}</p>
             {/* break-words, not break-all: break-all split "causekind.com" mid-word
                 across two lines. At text-lg the longest value (the support address)
                 fits one line on a 360px phone, so it rarely wraps at all now. */}
@@ -88,7 +88,7 @@ function CopyableChannel({
           )}
         </div>
         {copyValue && (
-          <span className="text-2xs text-stone-400 dark:text-stone-500">
+          <span className="text-2xs text-stone-500 dark:text-stone-400">
             {copied ? "Copied to clipboard" : "Tap the address to email, or copy it"}
           </span>
         )}
@@ -192,17 +192,17 @@ export function ContactPageClient() {
             </span>
             <dl className="space-y-3 sm:space-y-4">
               <div>
-                <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Name</dt>
+                <dt className="text-2xs sm:text-xs text-stone-500 dark:text-stone-400 font-semibold">Name</dt>
                 <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Gaurav Yadav</dd>
               </div>
               <div>
-                <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Email</dt>
+                <dt className="text-2xs sm:text-xs text-stone-500 dark:text-stone-400 font-semibold">Email</dt>
                 {/* break-words over break-all — same reason as the channel rows:
                     break-all chops the domain mid-word. */}
                 <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100 break-words [overflow-wrap:anywhere]">gaurav@causekind.com</dd>
               </div>
               <div>
-                <dt className="text-2xs sm:text-xs text-stone-400 font-semibold">Response time</dt>
+                <dt className="text-2xs sm:text-xs text-stone-500 dark:text-stone-400 font-semibold">Response time</dt>
                 <dd className="text-sm sm:text-lg font-bold text-stone-800 dark:text-stone-100">Within 48 hours</dd>
               </div>
             </dl>

@@ -42,6 +42,8 @@ const nextConfig: NextConfig = {
     // not a downgraded image — so a value missing here is a blank picture, not
     // a slightly heavier one.
     qualities: [75, 90, 95, 100],
+    // Optimised images stay cached for 31 days (Lighthouse cache-lifetime audit).
+    minimumCacheTTL: 2678400,
     // AVIF first (smaller), WebP fallback; browsers pick via the Accept header.
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -70,8 +72,9 @@ const nextConfig: NextConfig = {
         source: "/videos/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
       },
-      // Same one-day policy for the other public asset folders and the loose
-      // blog/hero images at the public root (also not "immutable": names reused).
+      // Other public asset folders and the loose blog/hero images at the public
+      // root: 7 days (owner decision, Report 2). Not "immutable": names are reused,
+      // so a replaced file can take up to a week to reach returning visitors.
       ...[
         "/images/:path*",
         "/brand/:path*",
@@ -81,7 +84,7 @@ const nextConfig: NextConfig = {
         "/:file([^/]+\.(?:webp|avif|png|jpg|jpeg|svg|mp4|webm))",
       ].map((source) => ({
         source,
-        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+        headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
       })),
       /*
        * Private, auth and utility pages stay out of search. Sources match the

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import type { NgoSuccessStory } from "@/lib/api";
 import { NgoSectionHeader } from "./NgoSharedComponents";
+import { useFocusFrame } from "./NgoMotion";
 
 const LIMIT = 6;
 
@@ -25,6 +26,7 @@ const unitText = (unit?: string | null) => (unit ?? "").toLowerCase().replace(/_
 export function NgoSuccessStories({ stories }: { stories?: NgoSuccessStory[] | null }) {
   const list = (stories ?? []).filter((s) => s.photoUrls?.length).slice(0, LIMIT);
   const carousel = list.length > 3;
+  const { rowRef, active } = useFocusFrame<HTMLUListElement>(carousel);
   return (
     <section className="ngo-section ngo-band-cream" data-testid="ngo-success-stories" aria-labelledby="ngo-success-stories-heading">
       <div className="ngo-container">
@@ -38,21 +40,22 @@ export function NgoSuccessStories({ stories }: { stories?: NgoSuccessStory[] | n
             </div>
           </div>
         ) : (
-          <ul data-testid={carousel ? "ngo-success-carousel" : undefined}
+          <ul ref={rowRef} data-testid={carousel ? "ngo-success-carousel" : undefined}
             className={carousel
-              ? "-mx-4 flex snap-x snap-mandatory gap-6 overflow-x-auto px-4 pb-2 [scrollbar-width:thin]"
+              ? "ngo-focus-row -mx-5 md:-mx-7 flex gap-5 md:gap-8 overflow-x-auto pb-4 pt-2 [scrollbar-width:none]"
               : "grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"}>
-            {list.map((s) => {
+            {list.map((s, idx) => {
               const facts = [
                 s.peopleReached ? `${s.peopleReached.toLocaleString("en-IN")} people reached` : null,
                 s.quantityDistributed ? `${s.quantityDistributed.toLocaleString("en-IN")} ${unitText(s.unit)} distributed` : null,
               ].filter(Boolean) as string[];
               const where = [s.location?.trim() || null, formatDate(s.distributedOn)].filter(Boolean) as string[];
               return (
-                <li key={s.id} className={carousel ? "w-[85%] shrink-0 snap-start sm:w-[calc((100%-3rem)/3)]" : ""}>
+                <li key={s.id} data-active={carousel ? String(idx === active) : undefined}
+                  className={carousel ? "ngo-focus-item w-[85%] shrink-0 sm:w-[60%] lg:w-[44%]" : ""}>
                   <Link href={`/drives/${s.id}/proof`} data-testid="ngo-success-story" aria-label={`Open the distribution proof for ${s.title}`}
                     className="ngo-card ngo-card-interactive group !p-0 flex h-full min-w-0 flex-col overflow-hidden">
-                    <div className="relative h-56 w-full overflow-hidden bg-stone-100 dark:bg-white/5">
+                    <div className="relative h-56 md:h-72 w-full overflow-hidden bg-stone-100 dark:bg-white/5">
                       {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
                       <img src={s.photoUrls[0]} alt={`Distribution proof for ${s.title}`} loading="lazy"
                         className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />

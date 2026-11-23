@@ -5348,7 +5348,7 @@
     "receivedCategory": "Received {category}",
     "goToStory": "Go to story {n}",
     "readyToDonate": "Ready to donate {category}?",
-    "metaListTitle": "Verified Requests",
+    "metaListTitle": "Browse Verified Donation Requests",
     "metaListDescription": "See admin-verified in-kind requests from families and organisations near you, and donate the specific items they have asked for."
   },
   "offerFlow": {

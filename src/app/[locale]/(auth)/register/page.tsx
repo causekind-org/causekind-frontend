@@ -15,7 +15,8 @@ import { initiateRegistration, verifyRegistrationOtp, resendRegistrationOtp, reg
 import { trackCompleteRegistration } from "@/lib/metaEvents";
 import { Eye, EyeOff, MapPin, Phone } from "lucide-react";
 import { AnimatedEmailOtp } from "@/components/auth/AnimatedEmailOtp";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin } from "@/lib/lazyGoogleLogin";
+import { preloadGoogleSignIn } from "@/lib/googleSignInPreload";
 import { useLocations } from "@/hooks/useLocations";
 import { resolveLocationFromGPS } from "@/app/[locale]/actions/locations";
 import { SearchableSelect, type SelectOption } from "@/components/profile/SearchableSelect";
@@ -709,13 +710,13 @@ function RegisterContent() {
           <span className="text-2xs font-black uppercase tracking-widest text-[var(--accent)]">
             {form.role === "NGO_PARTNER" ? "Create Account" : "Create account"}
           </span>
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
+          <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-stone-900 dark:text-stone-50">
             {form.role === "NGO_PARTNER"
               ? "Join CauseKind 🌱"
               : isSocialFlow
                 ? `${t("almostThereTitle")} 🎉`
                 : `${t("joinTitle")} 🌱`}
-          </h1>
+          </h2>
           <p className="text-sm text-stone-500 dark:text-stone-400">
             {form.role === "NGO_PARTNER"
               ? "Create your account and start making a difference today."
@@ -1154,6 +1155,9 @@ function RegisterContent() {
             <button
               type="button"
               disabled={authBusy}
+              onPointerEnter={() => void preloadGoogleSignIn().catch(() => {})}
+              onTouchStart={() => void preloadGoogleSignIn().catch(() => {})}
+              onFocus={() => void preloadGoogleSignIn().catch(() => {})}
               onClick={() => {
                 if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
                   toast.error("Google Sign-In is not configured.");

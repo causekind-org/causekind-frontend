@@ -12,13 +12,13 @@ export const dynamic = "force-dynamic";
  * in [slug]/page.tsx.
  */
 export const metadata: Metadata = {
-  title: "Blog",
+  title: "Donation Guides & Giving Tips in India",
   description:
     "Guides and stories on giving in India: how to verify an NGO, what to donate, how in-kind giving works, and the people your donations reach.",
   alternates: { canonical: "/blog" },
   openGraph: {
     type: "website",
-    title: "Blog | CauseKind",
+    title: "Donation Guides & Giving Tips in India | CauseKind",
     description:
       "Guides and stories on giving in India: how to verify an NGO, what to donate, how in-kind giving works, and the people your donations reach.",
     url: "/blog",

@@ -223,7 +223,7 @@ function WaitingRow({
             <span className="block text-2xl font-black leading-none tabular-nums text-[var(--ck-home-accent,#c54805)]">
               {days}
             </span>
-            <span className="mt-1 block text-3xs font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500">
+            <span className="mt-1 block text-3xs font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">
               <TranslatedText text={days === 1 ? "day waiting" : "days waiting"} />
             </span>
             <span className="sr-only">{waitingLabel(days)}</span>

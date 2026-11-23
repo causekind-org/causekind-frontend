@@ -73,9 +73,11 @@ const GROUP_TITLES = {
  * payloads for the same listing.
  */
 export function ItemListingWizard({
-  mode, listing, initialDraftId, initialStep, adminNote, onDraftCreated,
+  mode, listing, initialDraftId, initialStep, adminNote, onDraftCreated, stepTitleIsH2 = false,
 }: {
   mode: WizardMode;
+  /** True when the route layout already renders the page h1 (/items/new). */
+  stepTitleIsH2?: boolean;
   /** Hydration source for draft / needs-info. */
   listing?: ItemListing | null;
   initialDraftId?: number | null;
@@ -112,6 +114,9 @@ export function ItemListingWizard({
   /** Fields the donor has touched — the AI may never overwrite these. */
   const dirtyRef = useRef<Set<string>>(new Set());
   const headingRef = useRef<HTMLHeadingElement>(null);
+  // /items/new puts a server-rendered h1 in its layout (crawlers read raw HTML),
+  // so the step title is an h2 there; the edit page has no other h1.
+  const StepHeading = stepTitleIsH2 ? "h2" : "h1";
   const scrollRef = useRef<HTMLDivElement>(null);
   /**
    * The photo set the current AI note describes, or null if none.
@@ -706,14 +711,14 @@ export function ItemListingWizard({
                   <div className="ck-wizard-step-card-content">
                   <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                  <h1
+                  <StepHeading
                     ref={headingRef}
                     tabIndex={-1}
                     className="text-base font-bold text-stone-900 outline-none sm:text-lg dark:text-stone-100"
                     style={{ fontFamily: "var(--font-source-serif-4), serif" }}
                   >
                     {STEP_HEADINGS[step] ?? STEP_LABELS[step]}
-                  </h1>
+                  </StepHeading>
                   <p className="mb-2 mt-0.5 text-xs text-stone-500 dark:text-stone-400">{STEP_INTROS[step]}</p>
                   </div>
                   </div>

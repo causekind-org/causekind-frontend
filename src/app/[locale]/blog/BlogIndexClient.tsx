@@ -13,11 +13,10 @@ import { getBlogTranslation, getInsiderTipTranslation, preloadBlogTranslations }
 import { AnimatedWrapper } from "../components/AnimatedWrapper";
 import { StaggerContainer, itemVariants } from "../components/StaggerContainer";
 import { Search, X, BookOpen } from "lucide-react";
-import { getRecentActivity, getPositiveUpdate, type RecentActivity } from "@/lib/api";
+import { getRecentActivity, type RecentActivity } from "@/lib/api";
 import { serverDate } from "@/lib/serverTime";
 import { searchBlogPosts } from "@/lib/blogSearch";
 import { formatReadTime, formatPublishedDate } from "@/lib/blogMeta";
-import { Sparkles } from "lucide-react";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 // Categories are derived from blogPosts itself, so adding a new post with a
@@ -104,7 +103,8 @@ function BlogListingContent() {
     const id = setInterval(() => setNow(Date.now()), 60000);
     return () => clearInterval(id);
   }, []);
-  const [positiveUpdate, setPositiveUpdate] = useState<string | null>(null);
+  // True once the feed loaded with no rows (or failed): a neutral empty line.
+  const [feedEmpty, setFeedEmpty] = useState(false);
 
   // Category list is computed from the live blogPosts array — new posts with
   // a new category value appear here automatically.
@@ -179,33 +179,18 @@ function BlogListingContent() {
     setTipIndex(next);
   };
 
-  // Fetch real recent activity for live feed
+  // Live feed: the 5 newest rows of the existing recent-activity response,
+  // newest first. Only real rows are shown; no invented fallback text.
   useEffect(() => {
     getRecentActivity()
-      .then(data => {
-        if (data.length > 0) {
-          setLiveFeed(data.slice(0, 3).map(activityToFeedItem));
-        } else {
-          setLiveFeed([
-            { id: 1, at: null, user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
-          ]);
-        }
+      .then((data) => {
+        const rows = [...data]
+          .sort((a, b) => serverDate(b.createdAt).getTime() - serverDate(a.createdAt).getTime())
+          .slice(0, 5);
+        setLiveFeed(rows.map(activityToFeedItem));
+        setFeedEmpty(rows.length === 0);
       })
-      .catch(() => {
-        setLiveFeed([
-          { id: 1, at: null, user: "CauseKind Community", text: "is growing - be the first donor in your area!" },
-        ]);
-      });
-  }, []);
-
-  // Fetch the AI-generated positive spin on recent activity (refreshed
-  // server-side on a schedule, not per-request — see PositiveUpdateService).
-  // Silently keeps the widget's existing content if this fails or the
-  // feature isn't configured (no GEMINI_API_KEY) — never a hard failure.
-  useEffect(() => {
-    getPositiveUpdate()
-      .then((data) => setPositiveUpdate(data.text))
-      .catch(() => {});
+      .catch(() => setFeedEmpty(true));
   }, []);
 
   // Cycle through live feed items
@@ -416,7 +401,7 @@ function BlogListingContent() {
                 />
               </div>
               <nav className="hidden lg:block lg:sticky lg:top-28 border-t border-stone-200 dark:border-stone-800">
-                <p className="pt-4 pb-2 text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                <p className="pt-4 pb-2 text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400">
                   {t("categories")}
                 </p>
                 <div className="flex flex-col divide-y divide-stone-200 dark:divide-stone-800">
@@ -484,7 +469,7 @@ function BlogListingContent() {
                         </div>
                       </div>
                       <div className="p-3 md:p-8">
-                        <p className="text-4xs md:text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-1.5 md:mb-3">
+                        <p className="text-4xs md:text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-1.5 md:mb-3">
                           {tr.category} · {formatPublishedDate(featured.publishedDate, locale)}
                         </p>
                         <h2 className="font-extrabold text-base md:text-3xl text-stone-900 dark:text-stone-100 mb-1.5 md:mb-3 line-clamp-3 md:line-clamp-none group-hover:text-[#b04a15] dark:group-hover:text-orange-400 transition-colors leading-tight">
@@ -541,13 +526,10 @@ function BlogListingContent() {
                         {t("liveFeedTitle")}
       </h3>
                     </div>
-                    {positiveUpdate && (
-                      <div className="flex items-start gap-2 mb-2.5 p-2 md:mb-4 md:p-3 rounded-xl bg-[#b04a15]/8 dark:bg-orange-400/10 border border-[#b04a15]/15 dark:border-orange-400/20">
-                        <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-[#b04a15] dark:text-orange-400 shrink-0 mt-0.5" />
-                        <p className="text-3xs md:text-xs leading-[1.4] md:leading-relaxed text-stone-700 dark:text-stone-300 font-medium line-clamp-4 md:line-clamp-none">
-                          {positiveUpdate}
-                        </p>
-                      </div>
+                    {feedEmpty && (
+                      <p className="text-3xs md:text-xs leading-[1.35] md:leading-normal text-stone-600 dark:text-stone-400">
+                        No recent activity yet.
+                      </p>
                     )}
                     <div className="space-y-2 md:space-y-4">
                       {liveFeed.map((item, idx) => (
@@ -618,7 +600,7 @@ function BlogListingContent() {
                       />
                     </div>
                     <div className={`flex flex-col flex-1 ${isLarge ? "p-8" : "p-6"}`}>
-                      <p className="text-3xs font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500 mb-2">
+                      <p className="text-3xs font-bold uppercase tracking-widest text-stone-500 dark:text-stone-400 mb-2">
                         {tr.category} · {formatPublishedDate(post.publishedDate, locale)}
                       </p>
                       <h3

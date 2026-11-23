@@ -6,6 +6,12 @@
 
 /** From src/data/blogData.ts. */
 export const BLOG_SLUGS: readonly string[] = [
+  "how-to-donate-sports-equipment-india",
+  "how-to-donate-kitchen-utensils-india",
+  "how-to-donate-wheelchairs-india",
+  "how-to-donate-books-india",
+  "how-to-donate-furniture-india",
+  "how-to-donate-blankets-india",
   "qr-codes-impact-certificates-and-the-future-of-verified-giving",
   "what-students-need-in-january-and-february",
   "why-company-csr-budget-doing-less",

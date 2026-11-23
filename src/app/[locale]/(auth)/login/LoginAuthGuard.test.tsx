@@ -43,7 +43,7 @@ type GoogleOpts = {
 };
 let googleOpts: GoogleOpts;
 const triggerGoogle = vi.fn();
-vi.mock("@react-oauth/google", () => ({
+vi.mock("@/lib/lazyGoogleLogin", () => ({
   useGoogleLogin: (opts: GoogleOpts) => { googleOpts = opts; return triggerGoogle; },
 }));
 

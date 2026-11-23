@@ -848,3 +848,237 @@
   .ck-ngo-hero-trust { font-size: 12px; margin-top: 0; padding-right: 72px; min-width: 0; max-width: 100%; }
   .ck-ngo-hero-trust > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* ==========================================================================
+   Apple-style polish + scroll primitives (NgoMotion.tsx). Existing tokens only.
+   ========================================================================== */
+.ngo-theme-wrapper .ngo-section { padding: clamp(72px, 10vw, 144px) 0; }
+.ngo-theme-wrapper .ngo-section.pt-0 { padding-top: 0; }
+.ngo-theme-wrapper .ngo-h2 { font-size: clamp(36px, 5.6vw, 72px); letter-spacing: -0.035em; line-height: 1.02; }
+.ngo-theme-wrapper .ngo-card {
+  border-radius: 28px;
+  box-shadow: 0 1px 2px rgba(11, 61, 46, 0.04), 0 14px 36px -16px rgba(11, 61, 46, 0.16);
+}
+.ngo-theme-wrapper .ngo-card-body { font-weight: 400; opacity: 0.8; }
+
+/* Sideways display heading */
+.ngo-h2-display { font-size: clamp(44px, 8.5vw, 128px); letter-spacing: -0.045em; line-height: 0.98; }
+.ngo-sideways { overflow-x: clip; }
+
+/* Stacking cards */
+.ngo-stack { display: flex; flex-direction: column; gap: 20px; list-style: none; margin: 0; padding: 0; }
+.ngo-stack-item { min-width: 0; }
+@media (min-width: 768px) {
+  .ngo-stack-card > div > div { display: grid; grid-template-columns: 180px 1fr; column-gap: 48px; align-items: start; }
+  .ngo-stack-card .ngo-card-number { grid-row: span 2; font-size: clamp(72px, 8vw, 112px); margin-bottom: 0; }
+  .ngo-stack-card .ngo-card-title { font-size: clamp(28px, 3vw, 40px); align-self: end; }
+  .ngo-stack-card .ngo-card-body { font-size: 18px; }
+  .ngo-stack-card { padding: 48px; min-height: 240px; }
+}
+@media (min-width: 768px) and (prefers-reduced-motion: no-preference) {
+  .ngo-stack { gap: 32px; padding-bottom: 6vh; }
+  .ngo-stack-item { position: sticky; top: calc(112px + var(--i, 0) * 24px); }
+  .ngo-stack-item > .ngo-card { box-shadow: 0 -1px 0 var(--ngo-line), 0 28px 64px -28px rgba(11, 61, 46, 0.35); }
+  .ngo-band-dark .ngo-stack-item > .ngo-card { box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.14), 0 28px 64px -28px rgba(0, 0, 0, 0.6); }
+}
+
+/* Photo panel with blurred text box */
+.ngo-photo-panel {
+  position: relative; overflow: hidden; border-radius: 32px;
+  min-height: clamp(480px, 60vw, 640px); display: flex; align-items: flex-end;
+  background: var(--ngo-darkest);
+  box-shadow: 0 30px 80px -40px rgba(11, 61, 46, 0.45);
+}
+.ngo-photo-panel-box {
+  position: relative; z-index: 1; margin: 40px; max-width: 760px; padding: 40px;
+  border-radius: 24px; color: #fff;
+  background: rgba(0, 0, 0, 0.32); border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
+}
+@media (max-width: 767px) {
+  .ngo-photo-panel { margin-inline: -20px; border-radius: 0; min-height: 520px; box-shadow: none; }
+  .ngo-photo-panel-box { margin: 16px; padding: 24px; border-radius: 20px; }
+}
+
+/* Focus-frame slider */
+.ngo-focus-row { scroll-snap-type: x mandatory; scroll-padding-inline: 7.5%; padding-inline: 7.5%; }
+.ngo-focus-item { scroll-snap-align: center; transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease; }
+.ngo-focus-item[data-active="false"] { transform: scale(0.92); opacity: 0.55; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ngo-focus-item, .ngo-focus-item[data-active="false"] { transform: none; opacity: 1; transition: none; }
+}
+
+/* ==========================================================================
+   Showcase layouts (NgoShowcase.tsx). Existing palette only.
+   ========================================================================== */
+.ngo-icon-light { background: color-mix(in srgb, var(--ngo-accent) 12%, transparent); color: var(--ngo-accent); }
+.ngo-arch { border-radius: 999px 999px 32px 32px; box-shadow: 0 30px 70px -35px rgba(11, 61, 46, 0.45); }
+.ngo-zoom-img { transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (hover: hover) { .group:hover .ngo-zoom-img, .ngo-arch:hover .ngo-zoom-img { transform: scale(1.05); } }
+
+/* Soft organic blob behind collages */
+.ngo-blob { position: absolute; border-radius: 42% 58% 63% 37% / 41% 44% 56% 59%; background: color-mix(in srgb, var(--ngo-gold) 22%, transparent); filter: blur(2px); pointer-events: none; }
+.ngo-ring { position: absolute; border-radius: 9999px; border: 2px dashed color-mix(in srgb, var(--ngo-accent) 40%, transparent); pointer-events: none; }
+
+/* Bento mosaic */
+.ngo-bento { display: grid; gap: 20px; grid-template-columns: 1fr; }
+@media (min-width: 768px) {
+  .ngo-bento { grid-template-columns: repeat(12, 1fr); grid-auto-rows: 260px; gap: 24px; }
+  .ngo-bento > :nth-child(1) { grid-column: span 5; grid-row: span 2; }
+  .ngo-bento > :nth-child(2) { grid-column: span 7; }
+  .ngo-bento > :nth-child(3) { grid-column: span 3; }
+  .ngo-bento > :nth-child(4) { grid-column: span 4; }
+}
+.ngo-tile { position: relative; overflow: hidden; border-radius: 28px; padding: 28px; display: flex; flex-direction: column; justify-content: space-between; min-height: 220px; }
+.ngo-tile-deep { background: var(--ngo-deep); color: #F6F1E4; }
+.ngo-tile-forest { background: var(--ngo-forest); color: #F6F1E4; }
+.ngo-tile-gold { background: var(--ngo-gold); color: var(--ngo-darkest); }
+.ngo-tile-card { background: var(--ngo-card); color: var(--ngo-ink); border: 1px solid var(--ngo-line); }
+.ngo-tile-title { font-family: var(--ngo-font-heading); font-weight: 600; letter-spacing: -0.03em; line-height: 1.02; font-size: clamp(30px, 3.2vw, 46px); }
+.ngo-tile-tag { font-size: 11px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.75; }
+
+/* Timeline (registration) */
+.ngo-timeline { position: relative; display: grid; gap: 28px; grid-template-columns: 1fr; }
+@media (min-width: 768px) {
+  .ngo-timeline { grid-template-columns: repeat(3, 1fr); gap: 32px; }
+  .ngo-timeline::before { content: ""; position: absolute; top: 44px; left: 16%; right: 16%; border-top: 2px dashed color-mix(in srgb, var(--ngo-accent) 45%, transparent); }
+}
+.ngo-timeline-dot { position: relative; z-index: 1; width: 88px; height: 88px; border-radius: 9999px; display: grid; place-items: center; background: var(--ngo-deep); color: var(--ngo-gold-light); font-family: var(--ngo-font-heading); font-size: 36px; font-weight: 600; box-shadow: 0 0 0 10px var(--ngo-bg), 0 20px 40px -18px rgba(11, 61, 46, 0.6); }
+
+/* Checklist rows (documents) */
+.ngo-check-row { display: flex; gap: 18px; align-items: flex-start; padding: 22px 0; border-bottom: 1px solid var(--ngo-line); }
+.ngo-check-row:first-child { border-top: 1px solid var(--ngo-line); }
+
+/* Dark stats slab (verified impact) */
+.ngo-stat-slab { position: relative; overflow: hidden; border-radius: 36px; background: var(--ngo-deep); color: #F6F1E4; box-shadow: 0 40px 90px -45px rgba(11, 61, 46, 0.7); }
+.ngo-stat-cell { padding: 36px 32px; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+@media (min-width: 768px) {
+  .ngo-stat-cell { border-top: 0; border-left: 1px solid rgba(255, 255, 255, 0.12); padding: 48px 40px; }
+  .ngo-stat-cell:first-child { border-left: 0; }
+}
+.ngo-stat-num { font-family: var(--ngo-font-heading); font-weight: 600; letter-spacing: -0.04em; line-height: 0.95; font-size: clamp(64px, 7vw, 104px); color: var(--ngo-gold-light); }
+
+.ngo-glass-photo { min-height: 420px; }
+@media (max-width: 767px) { .ngo-glass-photo { min-height: 380px; } }
+.ngo-tile-icon { display: inline-flex; width: 44px; height: 44px; align-items: center; justify-content: center; border-radius: 16px; background: color-mix(in srgb, currentColor 12%, transparent); }
+
+/* ==========================================================================
+   Mobile hero v2 (<768px): photo on top with a curved bottom edge, text on the
+   deep-green panel below, slow photo zoom and a staggered entrance.
+   ========================================================================== */
+@keyframes ngoKenBurns { from { transform: scale(1.14); } to { transform: scale(1); } }
+@keyframes ngoRiseIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
+@media (max-width: 767px) {
+  .ck-ngo-hero-stage { background: var(--ngo-deep); }
+  .ck-ngo-hero-stage > [data-testid="ngo-hero-mobile-photo"] {
+    bottom: 44%;
+    overflow: hidden;
+    border-radius: 0 0 40px 40px;
+    box-shadow: 0 24px 50px -24px rgba(0, 0, 0, 0.7);
+  }
+  .ck-ngo-hero-stage > [data-testid="ngo-hero-mobile-photo"] img { animation: ngoKenBurns 14s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .ck-ngo-hero-shade { background: linear-gradient(to bottom, rgba(0, 0, 0, 0.35) 0%, transparent 28%, transparent 55%, rgba(0, 0, 0, 0.7) 100%) !important; }
+  .ck-ngo-hero-title { font-size: 40px !important; line-height: 1.02 !important; letter-spacing: -0.04em !important; margin-bottom: 0.75rem !important; }
+  .ck-ngo-hero-copy > * { animation: ngoRiseIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .ck-ngo-hero-copy > :nth-child(1) { animation-delay: 0.1s; }
+  .ck-ngo-hero-copy > :nth-child(3) { animation-delay: 0.45s; }
+  .ck-ngo-hero-copy > :nth-child(4) { animation-delay: 0.55s; }
+  .ck-ngo-hero-copy > :nth-child(5) { animation-delay: 0.65s; }
+  .ck-ngo-hero-copy > :nth-child(6) { animation-delay: 0.75s; }
+  .ck-ngo-hero-copy > .ck-ngo-hero-title { animation: none; }
+  .ck-ngo-hero-sub { color: rgba(239, 234, 219, 0.82) !important; }
+  .ck-ngo-hero-trust { opacity: 0.85; }
+}
+@media (max-width: 767px) and (prefers-reduced-motion: reduce) {
+  .ck-ngo-hero-stage > [data-testid="ngo-hero-mobile-photo"] img,
+  .ck-ngo-hero-copy > * { animation: none !important; }
+}
+
+/* ==========================================================================
+   Mobile swipe rows (SwipeRow): long grids become one snap row with a focus
+   card and dots, so the page stays short on phones.
+   ========================================================================== */
+@media (max-width: 767px) {
+  .ngo-mswipe {
+    display: flex !important; overflow-x: auto; scroll-snap-type: x mandatory;
+    gap: 14px; margin-inline: -20px; padding: 4px 20px 8px; scroll-padding-inline: 20px;
+    scrollbar-width: none; overscroll-behavior-x: contain;
+  }
+  .ngo-mswipe::-webkit-scrollbar { display: none; }
+  .ngo-mswipe > * { flex: 0 0 84%; scroll-snap-align: center; }
+  .ngo-mswipe-inner { height: 100%; transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.45s ease; }
+  .ngo-mswipe-inner[data-active="false"] { transform: scale(0.94); opacity: 0.6; }
+}
+.ngo-mswipe-dots { display: flex; justify-content: center; gap: 6px; margin-top: 18px; }
+.ngo-mswipe-dots > span { width: 6px; height: 6px; border-radius: 9999px; background: var(--ngo-line); transition: width 0.3s ease, background-color 0.3s ease; }
+.ngo-mswipe-dots > span[data-on="true"] { width: 22px; background: var(--ngo-accent); }
+@media (min-width: 768px) { .ngo-mswipe-dots { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ngo-mswipe-inner, .ngo-mswipe-inner[data-active="false"] { transform: none; opacity: 1; transition: none; }
+}
+
+/* ==========================================================================
+   Mobile hero v3: one continuous scene. The photo dissolves (mask, no colour
+   overlay) into the near-black NGO panel, and the text starts inside the fade.
+   ========================================================================== */
+@media (max-width: 767px) {
+  .ck-ngo-hero-stage { background: var(--ngo-darkest); }
+  .ck-ngo-hero-stage > [data-testid="ngo-hero-mobile-photo"] {
+    bottom: 30%;
+    border-radius: 0;
+    box-shadow: none;
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 55%, transparent 100%);
+  }
+  .ck-ngo-hero-shade { background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, transparent 22%, transparent 50%, rgba(0, 0, 0, 0.55) 100%) !important; }
+}
+
+/* Documents checklist as cards inside the mobile swipe row */
+@media (max-width: 767px) {
+  .ngo-mswipe .ngo-check-row {
+    border: 1px solid var(--ngo-line) !important; border-radius: 24px; background: var(--ngo-card);
+    padding: 24px; flex-direction: column; gap: 14px; min-height: 180px;
+    box-shadow: 0 14px 36px -16px rgba(11, 61, 46, 0.16);
+  }
+}
+
+/* Mobile hero v3 spacing: clear rhythm between chip, title, text, buttons, trust */
+@media (max-width: 767px) {
+  .ck-ngo-hero-badge { margin-bottom: 1rem !important; }
+  .ck-ngo-hero-title { margin-bottom: 1rem !important; line-height: 1.08 !important; letter-spacing: -0.03em !important; word-spacing: 0.04em; }
+  .ck-ngo-hero-title > span { margin-right: 0.28em !important; }
+  .ck-ngo-hero-alert { margin-bottom: 0.875rem !important; }
+  .ck-ngo-hero-sub { margin-bottom: 1.25rem !important; line-height: 1.5 !important; }
+  .ck-ngo-hero-ctas { margin-bottom: 1rem !important; gap: 10px !important; }
+  .ck-ngo-hero-trust { line-height: 1.5; }
+}
+
+/* Mobile hero v4: always fills the whole screen (nav overlap included), text sits
+   lower with an even rhythm so there is no dead space under the trust line. */
+@media (max-width: 767px) {
+  .ck-ngo-hero-stage {
+    height: auto !important;
+    min-height: calc(100vh + var(--ck-nav-h, 4.25rem)) !important;
+    min-height: calc(100svh + var(--ck-nav-h, 4.25rem)) !important;
+    padding-bottom: calc(var(--ck-bottom-chrome, 4rem) + 20px) !important;
+  }
+  .ck-ngo-hero-stage > [data-testid="ngo-hero-mobile-photo"] { bottom: 26%; }
+  .ck-ngo-hero-badge { margin-bottom: 1.25rem !important; }
+  .ck-ngo-hero-title { font-size: 42px !important; line-height: 1.1 !important; margin-bottom: 1.25rem !important; }
+  .ck-ngo-hero-sub { font-size: 16px !important; line-height: 1.55 !important; margin-bottom: 1.5rem !important; }
+  .ck-ngo-hero-ctas { margin-bottom: 1.25rem !important; }
+  .ck-ngo-hero-trust { font-size: 12.5px !important; line-height: 1.6 !important; }
+  .ck-ngo-hero-trust > span > span.max-md\:block + span + span { margin-top: 2px; }
+}
+
+/* Final CTA buttons on phones: compact, one line each, side by side */
+@media (max-width: 639px) {
+  .ngo-cta-actions { flex-wrap: nowrap; gap: 10px; }
+  .ngo-cta-actions .ngo-btn-pill {
+    flex: 1 1 0; min-width: 0; height: 48px; min-height: 48px; padding: 0 14px;
+    font-size: 14px; white-space: nowrap; justify-content: center;
+  }
+  .ngo-cta-actions .ngo-btn-pill span { overflow: hidden; text-overflow: ellipsis; }
+  .ngo-cta-actions .ngo-btn-pill svg { width: 15px; height: 15px; margin-left: 6px; flex-shrink: 0; }
+}
