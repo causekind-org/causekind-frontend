@@ -98,6 +98,13 @@ describe("new blog posts (November 2026)", () => {
         expect(llms).toContain(`/blog/${slug}`);
       });
 
+      it("has no leftover markdown (raw tables, ** or ## markers)", () => {
+        const plain = text(html);
+        expect(plain).not.toMatch(/\|\s*-{3,}\s*\|/); // table separator row
+        expect(plain).not.toMatch(/(^|\s)\|[^|]+\|[^|]+\|/); // pipe-delimited cells
+        expect(plain).not.toMatch(/\*\*|(^|\s)#{2,}\s/);
+      });
+
       it("links only to existing posts and pages", () => {
         const hrefs = [...html.matchAll(/href="([^"]+)"/g)]
           .map((m) => m[1])
