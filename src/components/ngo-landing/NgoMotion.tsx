@@ -166,42 +166,10 @@ export function SwipeRow({ children, className = "", label, reveal = true }: { c
   const desktop = useIsDesktop();
   const reduce = useReducedMotion();
   const { rowRef, active } = useFocusFrame<HTMLDivElement>(!desktop);
-  const [paused, setPaused] = useState(false);
-  const [onScreen, setOnScreen] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const activeRef = useRef(active);
-  activeRef.current = active;
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (desktop || !el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { threshold: 0.5 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [desktop]);
-
-  useEffect(() => {
-    if (desktop || reduce || paused || !onScreen || items.length < 2) return;
-    const id = window.setInterval(() => {
-      const row = rowRef.current;
-      if (!row) return;
-      const next = row.children[(activeRef.current + 1) % row.children.length] as HTMLElement | undefined;
-      if (!next) return;
-      row.scrollTo({ left: next.offsetLeft - (row.clientWidth - next.clientWidth) / 2, behavior: "smooth" });
-    }, 3000);
-    return () => window.clearInterval(id);
-  }, [desktop, reduce, paused, onScreen, items.length, rowRef]);
+  const auto = useAutoAdvance(rowRef, active, !desktop && !reduce && items.length > 1);
 
   return (
-    <div
-      ref={wrapRef}
-      onPointerEnter={() => setPaused(true)}
-      onPointerLeave={() => setPaused(false)}
-      onTouchStart={() => setPaused(true)}
-      onTouchEnd={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={() => setPaused(false)}
-    >
+    <div {...auto}>
       <motion.div
         ref={rowRef}
         role="list"
@@ -225,4 +193,44 @@ export function SwipeRow({ children, className = "", label, reveal = true }: { c
       </div>
     </div>
   );
+}
+
+/** Phones: scroll a snap row to its next item every 3 s while it is half on screen.
+ *  Pauses while a finger, the mouse or keyboard focus is on it. Spread the result on a wrapper. */
+export function useAutoAdvance(rowRef: React.RefObject<HTMLElement | null>, active: number, enabled: boolean) {
+  const [paused, setPaused] = useState(false);
+  const [onScreen, setOnScreen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const activeRef = useRef(active);
+  activeRef.current = active;
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!enabled || !el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting), { threshold: 0.5 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!enabled || paused || !onScreen) return;
+    const id = window.setInterval(() => {
+      const row = rowRef.current;
+      if (!row || row.children.length < 2) return;
+      const next = row.children[(activeRef.current + 1) % row.children.length] as HTMLElement | undefined;
+      if (!next) return;
+      row.scrollTo({ left: next.offsetLeft - (row.clientWidth - next.clientWidth) / 2, behavior: "smooth" });
+    }, 3000);
+    return () => window.clearInterval(id);
+  }, [enabled, paused, onScreen, rowRef]);
+
+  return {
+    ref: wrapRef,
+    onPointerEnter: () => setPaused(true),
+    onPointerLeave: () => setPaused(false),
+    onTouchStart: () => setPaused(true),
+    onTouchEnd: () => setPaused(false),
+    onFocusCapture: () => setPaused(true),
+    onBlurCapture: () => setPaused(false),
+  };
 }

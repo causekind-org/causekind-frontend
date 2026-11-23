@@ -1082,3 +1082,13 @@
   .ngo-cta-actions .ngo-btn-pill span { overflow: hidden; text-overflow: ellipsis; }
   .ngo-cta-actions .ngo-btn-pill svg { width: 15px; height: 15px; margin-left: 6px; flex-shrink: 0; }
 }
+
+/* Success stories: phones get a snap slider with a focus card */
+@media (max-width: 767px) {
+  .ngo-stories-row { scroll-padding-inline: 7%; padding-inline: 7%; }
+  .ngo-stories-item { transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.5s ease; }
+  .ngo-stories-item[data-active="false"] { transform: scale(0.94); opacity: 0.6; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ngo-stories-item, .ngo-stories-item[data-active="false"] { transform: none; opacity: 1; transition: none; }
+}
