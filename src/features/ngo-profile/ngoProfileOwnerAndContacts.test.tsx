@@ -155,6 +155,7 @@ describe("admin: Profile changes tab", () => {
         newValue: JSON.stringify([{ fullName: "Asha Rao", designation: "Secretary" }, { fullName: "Ravi Rao", designation: "Director",
           mobileNumber: "+919812345678", email: "ravi@hope.test", panNumber: "ABCPR1234K", idProofDocumentId: 77 }]) } }]);
     render(<NgoProfileChangesPanel />);
+    fireEvent.click(await screen.findByRole("button", { name: /^Review/ })); // the queue is a table now (44a934b2); Review opens the item
     const item = await screen.findByTestId("admin-profile-change");
     expect(item).toHaveTextContent("ravi@hope.test");
     expect(item).toHaveTextContent("PAN ABCPR1234K");
@@ -168,6 +169,7 @@ describe("admin: Profile changes tab", () => {
     api.adminApproveNgoProfileChange.mockResolvedValue({});
     api.adminRejectNgoProfileChange.mockResolvedValue({});
     render(<NgoProfileChangesPanel />);
+    fireEvent.click(await screen.findByRole("button", { name: /^Review/ })); // the queue is a table now (44a934b2); Review opens the item
     const item = await screen.findByTestId("admin-profile-change");
     expect(item).toHaveTextContent("Hope Foundation");
     fireEvent.click(within(item).getByRole("button", { name: "Reject" }));

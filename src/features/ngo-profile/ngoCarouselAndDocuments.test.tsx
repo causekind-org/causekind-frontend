@@ -123,6 +123,7 @@ describe("/profile Documents", () => {
       organizationName: "Hope", slug: "hope", idProofUrls: { "7": "https://s/old", "55": "https://s/new" } }] as never);
     vi.mocked(adminApproveNgoProfileChange).mockResolvedValue({} as never);
     render(<NgoProfileChangesPanel />);
+    fireEvent.click(await screen.findByRole("button", { name: /^Review/ })); // the queue is a table now (44a934b2); Review opens the item
     const row = await screen.findByTestId("admin-profile-change");
     expect(row).toHaveTextContent("Document: 80G certificate");
     const links = within(row).getAllByTestId("admin-doc-file");
