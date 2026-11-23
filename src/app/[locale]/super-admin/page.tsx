@@ -116,10 +116,23 @@ const APPROVAL_PILL: Record<string, Pill> = {
   PUBLICATION_DECLINED: { label: "Declined", cls: RED },
 };
 
-/** Whether the campaign is live — derived from status, not stored. */
-function liveState(status: string): Pill {
+/** Today as YYYY-MM-DD in local time (endDate is a plain LocalDate). */
+function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function fmtEndDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Whether the campaign is live — derived from status + end date, not stored. */
+function liveState(status: string, endDate?: string): Pill {
   switch (status) {
-    case "APPROVED": return { label: "Live", cls: GREEN };
+    case "APPROVED":
+      // End date is the last day donations are taken.
+      return endDate && endDate < todayIso() ? { label: "Ended", cls: GREY } : { label: "Live", cls: GREEN };
     case "PAUSED": return { label: "Paused", cls: AMBER };
     case "COLLECTIONS_CLOSED":
     case "OUTCOME_REPORTING": return { label: "Closed", cls: GREY };
@@ -173,7 +186,20 @@ const CAMPAIGN_COLS: Column[] = [
   { key: "status", label: "Approval", editable: true, type: "select", options: CAMPAIGN_STATUS,
     render: row => renderPill(approvalPill(String(row.status ?? ""))) },
   { key: "liveState", label: "Live state",
-    render: row => renderPill(liveState(String(row.status ?? ""))) },
+    render: row => {
+      const status = String(row.status ?? "");
+      const end = typeof row.endDate === "string" && row.endDate ? row.endDate.slice(0, 10) : undefined;
+      return (
+        <div className="flex flex-col items-start gap-0.5">
+          {renderPill(liveState(status, end))}
+          {end && (
+            <span className="text-[11px] opacity-60">
+              {end < todayIso() ? "ended" : "ends"} {fmtEndDate(end)}
+            </span>
+          )}
+        </div>
+      );
+    } },
   { key: "description", label: "Description", editable: true, type: "textarea", inTable: false },
   { key: "rejectionReason", label: "Rejection reason", editable: true, type: "text", inTable: false },
 ];
