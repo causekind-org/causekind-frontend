@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
     // Branded 404 for unmatched URLs (src/app/global-not-found.tsx). The root
     // layout lives under [locale], so a plain not-found.tsx never sees them.
     globalNotFound: true,
+    // CSS goes into the HTML as <style> instead of a render-blocking <link>
+    // (owner decision, Report 3, 23 Nov: about 105 KiB compressed blocked
+    // first paint for 300-600 ms on mobile). Trade-off accepted: every page's
+    // HTML carries the CSS and returning visitors cannot reuse a cached file.
+    inlineCss: true,
     optimizePackageImports: [
       "lucide-react",
       "framer-motion",
@@ -72,19 +77,34 @@ const nextConfig: NextConfig = {
         source: "/videos/:path*",
         headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
       },
-      // Other public asset folders and the loose blog/hero images at the public
-      // root: 7 days (owner decision, Report 2). Not "immutable": names are reused,
-      // so a replaced file can take up to a week to reach returning visitors.
+      // Other public files (videos, PDFs) in these folders and loose videos at
+      // the public root: 7 days (owner decision, Report 2).
       ...[
-        "/images/:path*",
         "/brand/:path*",
-        "/categories/:path*",
         "/certificates/:path*",
-        "/screenshots/:path*",
-        "/:file([^/]+\.(?:webp|avif|png|jpg|jpeg|svg|mp4|webm))",
+        "/:file([^/]+\.(?:mp4|webm))",
       ].map((source) => ({
         source,
         headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+      })),
+      /*
+       * Public IMAGES: 1 year, immutable (owner decision, Report 3, 23 Nov).
+       * RULE: never replace an image under the same file name. A changed image
+       * must get a new name (e.g. hero-v2.webp) and the code must point to it;
+       * otherwise returning visitors keep the old picture for up to a year.
+       * Listed after the 7-day rules on purpose: for the same header key the
+       * later match wins, so images in /brand and /certificates get this one.
+       */
+      ...[
+        "/images/:path*",
+        "/categories/:path*",
+        "/screenshots/:path*",
+        "/brand/:file([^/]+\.(?:webp|avif|png|jpg|jpeg|svg))",
+        "/certificates/:file([^/]+\.(?:webp|avif|png|jpg|jpeg|svg))",
+        "/:file([^/]+\.(?:webp|avif|png|jpg|jpeg|svg))",
+      ].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
       })),
       /*
        * Private, auth and utility pages stay out of search. Sources match the

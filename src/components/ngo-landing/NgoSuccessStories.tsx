@@ -4,7 +4,8 @@ import Link from "next/link";
 import { CheckCircle2 } from "lucide-react";
 import type { NgoSuccessStory } from "@/lib/api";
 import { NgoSectionHeader } from "./NgoSharedComponents";
-import { useFocusFrame } from "./NgoMotion";
+import { useFocusFrame, useAutoAdvance, useIsDesktop } from "./NgoMotion";
+import { useReducedMotion } from "framer-motion";
 
 const LIMIT = 6;
 
@@ -26,7 +27,11 @@ const unitText = (unit?: string | null) => (unit ?? "").toLowerCase().replace(/_
 export function NgoSuccessStories({ stories }: { stories?: NgoSuccessStory[] | null }) {
   const list = (stories ?? []).filter((s) => s.photoUrls?.length).slice(0, LIMIT);
   const carousel = list.length > 3;
-  const { rowRef, active } = useFocusFrame<HTMLUListElement>(carousel);
+  const desktop = useIsDesktop();
+  const reduce = useReducedMotion();
+  const swipe = !desktop && list.length > 1;
+  const { rowRef, active } = useFocusFrame<HTMLUListElement>(swipe);
+  const auto = useAutoAdvance(rowRef, active, swipe && !reduce);
   return (
     <section className="ngo-section ngo-band-cream" data-testid="ngo-success-stories" aria-labelledby="ngo-success-stories-heading">
       <div className="ngo-container">
@@ -40,10 +45,9 @@ export function NgoSuccessStories({ stories }: { stories?: NgoSuccessStory[] | n
             </div>
           </div>
         ) : (
+          <div {...auto}>
           <ul ref={rowRef} data-testid={carousel ? "ngo-success-carousel" : undefined}
-            className={carousel
-              ? "ngo-focus-row -mx-5 md:-mx-7 flex gap-5 md:gap-8 overflow-x-auto pb-4 pt-2 [scrollbar-width:none]"
-              : "grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"}>
+            className="ngo-stories-row max-md:-mx-5 max-md:flex max-md:snap-x max-md:snap-mandatory max-md:overflow-x-auto max-md:[scrollbar-width:none] max-md:gap-4 max-md:pb-2 grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
             {list.map((s, idx) => {
               const facts = [
                 s.peopleReached ? `${s.peopleReached.toLocaleString("en-IN")} people reached` : null,
@@ -51,32 +55,32 @@ export function NgoSuccessStories({ stories }: { stories?: NgoSuccessStory[] | n
               ].filter(Boolean) as string[];
               const where = [s.location?.trim() || null, formatDate(s.distributedOn)].filter(Boolean) as string[];
               return (
-                <li key={s.id} data-active={carousel ? String(idx === active) : undefined}
-                  className={carousel ? "ngo-focus-item w-[85%] shrink-0 sm:w-[60%] lg:w-[44%]" : ""}>
+                <li key={s.id} data-active={swipe ? String(idx === active) : undefined}
+                  className="ngo-stories-item max-md:w-[86%] max-md:shrink-0 max-md:snap-center min-w-0">
                   <Link href={`/drives/${s.id}/proof`} data-testid="ngo-success-story" aria-label={`Open the distribution proof for ${s.title}`}
-                    className="ngo-card ngo-card-interactive group !p-0 flex h-full min-w-0 flex-col overflow-hidden">
-                    <div className="relative h-56 md:h-72 w-full overflow-hidden bg-stone-100 dark:bg-white/5">
-                      {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
-                      <img src={s.photoUrls[0]} alt={`Distribution proof for ${s.title}`} loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-                      <div className="absolute left-4 top-4 z-10">
-                        <span className="ngo-card-tag !bg-white/90 dark:!bg-[#0F2A20]/90 !backdrop-blur-sm">Proof approved</span>
-                      </div>
+                    className="group relative block aspect-[16/10] w-full overflow-hidden rounded-[24px] bg-stone-200 shadow-[0_18px_40px_-22px_rgba(11,61,46,0.45)] outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[var(--ngo-accent)] dark:bg-white/5 md:rounded-[28px]">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- signed storage URL */}
+                    <img src={s.photoUrls[0]} alt={`Distribution proof for ${s.title}`} loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+                    <div className="absolute left-4 top-4 flex items-center gap-2">
+                      <span className="rounded-full border border-white/25 bg-black/35 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-white backdrop-blur-md">Proof approved</span>
                       {s.photoUrls.length > 1 && (
-                        <span className="absolute bottom-3 right-3 rounded-full bg-black/55 px-2.5 py-0.5 text-xs font-medium text-white">{s.photoUrls.length} photos</span>
+                        <span className="rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-md">{s.photoUrls.length} photos</span>
                       )}
                     </div>
-                    <div className="flex min-w-0 flex-1 flex-col p-6">
-                      <h3 className="ngo-heading ck-user-text mb-2 text-xl leading-snug text-[#0B3D2E] dark:text-[#EFEADB]">{s.title}</h3>
-                      {facts.length > 0 && <p className="mb-1 text-xs font-semibold text-[#2F8F5B]">{facts.join(" · ")}</p>}
-                      {where.length > 0 && <p className="ck-user-text mb-2 text-xs text-stone-500 dark:text-stone-400">{where.join(" · ")}</p>}
-                      {s.note?.trim() && <p className="ck-user-text line-clamp-3 text-sm leading-relaxed text-stone-600 dark:text-stone-300">{s.note.trim()}</p>}
+                    <div className="absolute inset-x-0 bottom-0 p-5 md:p-6 text-white">
+                      <h3 className="ngo-heading ck-user-text text-xl leading-snug md:text-2xl">{s.title}</h3>
+                      {facts.length > 0 && <p className="mt-1 text-[13px] font-semibold text-[var(--ngo-gold-light)]">{facts.join(" · ")}</p>}
+                      {where.length > 0 && <p className="ck-user-text mt-0.5 text-[12px] text-white/75">{where.join(" · ")}</p>}
+                      {s.note?.trim() && <p className="ck-user-text mt-1.5 line-clamp-1 text-[13px] text-white/80 max-md:hidden">{s.note.trim()}</p>}
                     </div>
                   </Link>
                 </li>
               );
             })}
           </ul>
+          </div>
         )}
       </div>
     </section>
