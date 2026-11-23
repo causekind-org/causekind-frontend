@@ -53,7 +53,7 @@ describe("Past activity tab (item 4)", () => {
     vi.mocked(getPendingNgoActivities).mockResolvedValue([item] as never);
     const onCount = vi.fn();
     render(<NgoActivityModerationPanel onCount={onCount} />);
-    expect(await screen.findAllByTestId("admin-activity-row")).toHaveLength(1); // one table row per item since 44a934b2
+    expect(await screen.findAllByTestId("admin-activity-row")).toHaveLength(1);
     expect(onCount).toHaveBeenLastCalledWith(1);
     expect(screen.queryByText("Nothing waiting.")).toBeNull();
   });

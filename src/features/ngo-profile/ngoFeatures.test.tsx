@@ -291,7 +291,7 @@ describe("4. past activity", () => {
       activity: { id: 9, title: "Meal drive", activityDate: "2026-09-01", consentGiven: true, status: "PENDING", sortOrder: 0, media: [] } }]);
     api.rejectNgoActivity.mockResolvedValue({});
     render(<NgoActivityModerationPanel />);
-    fireEvent.click(await screen.findByRole("button", { name: /^Review/ })); // the queue is a table now (44a934b2); Review opens the item
+    fireEvent.click((await screen.findAllByRole("button", { name: /^Review/ }))[0]);
     const item = await screen.findByTestId("admin-activity");
     fireEvent.click(within(item).getByRole("button", { name: "Send back" }));
     expect(api.rejectNgoActivity).not.toHaveBeenCalled();
