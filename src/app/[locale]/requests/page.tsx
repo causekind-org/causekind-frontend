@@ -57,6 +57,33 @@ export default async function Page({ params }: LocaleParams) {
     return null;
   });
 
-  return <RequestsClient initialPublicRequests={initialPublicRequests} />;
+  return (
+    <>
+      <RequestsClient initialPublicRequests={initialPublicRequests} />
+      {/* Server-rendered explainer (owner-approved text, 23 Nov 2026): the
+          page was thin (207 words). Same background and width as the page. */}
+      <section
+        aria-labelledby="requests-how-heading"
+        className="bg-[#f2ede7] text-stone-900 dark:bg-zinc-950 dark:text-stone-100"
+      >
+        <div className="mx-auto w-full max-w-6xl px-4 pt-4 pb-12 sm:px-6 lg:pb-16">
+          <h2 id="requests-how-heading" className="text-xl font-extrabold tracking-tight sm:text-2xl">
+            How giving to a request works
+          </h2>
+          <div className="mt-3 max-w-3xl space-y-3 text-sm leading-relaxed text-stone-600 sm:text-base dark:text-stone-300">
+            <p>
+              Every request on this page comes from a real person or a registered NGO, and our team checks it before it goes live. You see exactly what is needed, how many, and roughly where, so you can give the item that will actually be used.
+            </p>
+            <p>
+              Pick a request you can fully meet and offer your item. CauseKind matches you with people and NGOs within about 10 km, so you hand the item over in person: no courier, no warehouse and no middlemen. There are no fees for donors or for the people receiving.
+            </p>
+            <p>
+              Once the handover is confirmed by both sides, you receive an Impact Certificate as a record of what you gave and where it went. Not sure what to give? Browse by category, from education and clothing to medical aid and household items, and start with something you already own.
+            </p>
+          </div>
+        </div>
+      </section>
+    </>
+  );
 }
 

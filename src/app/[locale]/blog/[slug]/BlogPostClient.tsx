@@ -563,10 +563,9 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                         <motion.div key={rec.slug} variants={itemVariants}>
                           <Link className="group block" href={`/blog/${rec.slug}`}>
                             <div className="w-full h-32 rounded-xl overflow-hidden mb-3 border border-stone-200 dark:border-stone-700">
-                              <div
-                                className="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500"
-                                style={{ backgroundImage: `url('${rec.image}')` }}
-                              />
+                              <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-500">
+                                <Image src={rec.image} alt="" fill sizes="(min-width: 640px) 50vw, 100vw" className="object-cover object-center" />
+                              </div>
                             </div>
                             <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
                               {tr.category}
@@ -673,10 +672,9 @@ export default function BlogPostClient({ slug, content }: BlogPostClientProps) {
                       <motion.div key={rec.slug} variants={itemVariants}>
                         <Link className="group block" href={`/blog/${rec.slug}`}>
                           <div className="w-full h-[clamp(3.5rem,11vh,5.5rem)] rounded-xl overflow-hidden mb-2 border border-stone-200 dark:border-stone-700">
-                            <div
-                              className="bg-cover bg-center w-full h-full group-hover:scale-105 transition-transform duration-500"
-                              style={{ backgroundImage: `url('${rec.image}')` }}
-                            />
+                            <div className="relative w-full h-full group-hover:scale-105 transition-transform duration-500">
+                              <Image src={rec.image} alt="" fill sizes="(min-width: 1280px) 224px, 176px" className="object-cover object-center" />
+                            </div>
                           </div>
                           <span className="text-[#b04a15] dark:text-[#e07b3a] font-label-sm text-xs uppercase tracking-wide font-bold">
                             {tr.category}

@@ -124,9 +124,9 @@ function ImpactCertificateSample() {
 
       {/* Certificate Title */}
       <div className="relative z-10 text-center mb-3">
-        <h4 className="text-xs sm:text-sm font-black uppercase tracking-wider text-stone-900 dark:text-stone-100">
+        <p className="text-xs sm:text-sm font-black uppercase tracking-wider text-stone-900 dark:text-stone-100">
           Certificate of Impact
-        </h4>
+        </p>
         <p className="text-4xs text-[var(--ck-role-accent,#B5480F)] dark:text-[var(--ck-role-accent,#F4A25B)] font-bold uppercase tracking-widest">
           Verified In-Kind Handover
         </p>
@@ -698,9 +698,9 @@ export function SupportJourneySection() {
                         <IconComp className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
+                        <h3 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
                           {pt.title}
-                        </h4>
+                        </h3>
                         <p className="text-3xs sm:text-xs text-stone-600 dark:text-stone-300 font-medium leading-relaxed mt-0.5">
                           {pt.text}
                         </p>
@@ -738,9 +738,9 @@ export function SupportJourneySection() {
                     >
                       Stop {st.step}
                     </span>
-                    <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-1">
+                    <h3 className="text-xs font-bold text-stone-900 dark:text-stone-100 mt-1">
                       {st.title}
-                    </h4>
+                    </h3>
                     <p className="text-3xs text-stone-600 dark:text-stone-300 font-medium mt-0.5">
                       {st.desc}
                     </p>
@@ -768,9 +768,9 @@ export function SupportJourneySection() {
                     <IconComp className="w-3.5 h-3.5" />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-stone-900 dark:text-stone-100">
+                    <h3 className="text-xs font-bold text-stone-900 dark:text-stone-100">
                       {pt.title}
-                    </h4>
+                    </h3>
                     <p className="text-3xs text-stone-600 dark:text-stone-300 font-medium mt-0.5 leading-snug">
                       {pt.text}
                     </p>
