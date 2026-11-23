@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "@/components/AppLink";
 import { UiText, useUiText } from "@/components/UiText";
 import type { SahasCampaignCard } from "@/lib/api";
@@ -29,13 +30,40 @@ function useDesktop() {
   return desktop;
 }
 
-function Photo({ c, className }: { c: SahasCampaignCard; className: string }) {
+/**
+ * Hosts next/image may optimise (they match images.remotePatterns in
+ * next.config.ts). Campaign photos from these are resized for the slot and
+ * cached for 31 days instead of loading the full upload; any other host keeps
+ * the plain <img>, so an unexpected URL can never break the page.
+ */
+const OPTIMISABLE_HOSTS = new Set([
+  "causekind-item-images.s3.ap-south-1.amazonaws.com",
+  "causekind-staging-images.s3.ap-southeast-1.amazonaws.com",
+  "images.unsplash.com",
+]);
+
+function optimisable(url: string): boolean {
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && OPTIMISABLE_HOSTS.has(u.hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * `sizes` is the slot's rendered width. `priority` is for the phone lead
+ * card, which is the page's LCP image: it loads first instead of lazily.
+ */
+function Photo({ c, className, sizes, priority = false }: { c: SahasCampaignCard; className: string; sizes: string; priority?: boolean }) {
   return (
-    <div className={`overflow-hidden bg-[#E6D5C3] dark:bg-zinc-800 ${className}`}>
-      {c.imageUrl && (
+    <div className={`relative overflow-hidden bg-[#E6D5C3] dark:bg-zinc-800 ${className}`}>
+      {c.imageUrl && (optimisable(c.imageUrl) ? (
+        <Image src={c.imageUrl} alt={c.coverAltText ?? ""} fill sizes={sizes} priority={priority} className="object-cover" />
+      ) : (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={c.imageUrl} alt={c.coverAltText ?? ""} className="h-full w-full object-cover" loading="lazy" />
-      )}
+        <img src={c.imageUrl} alt={c.coverAltText ?? ""} className="h-full w-full object-cover" loading={priority ? "eager" : "lazy"} />
+      ))}
     </div>
   );
 }
@@ -77,7 +105,7 @@ function RegisterRow({ c, no, locale }: { c: SahasCampaignCard; no: number; loca
   return (
     <article className={`grid grid-cols-[44px_128px_minmax(0,1fr)_210px_150px] xl:grid-cols-[52px_200px_minmax(0,1fr)_300px_170px] items-center gap-6 border-b py-6 ${rule}`}>
       <span className={`text-sm tabular-nums ${muted}`}>{String(no).padStart(2, "0")}</span>
-      <Photo c={c} className="h-24 xl:h-32" />
+      <Photo c={c} className="h-24 xl:h-32" sizes="(min-width: 1280px) 200px, 128px" priority={no === 1} />
       <div className="min-w-0">
         <h2 className={`${serif} m-0 text-3xl leading-tight`}>
           <Link href={`/sahas/${c.slug}`} className="text-inherit no-underline hover:underline">{c.title}</Link>
@@ -131,7 +159,7 @@ function Lead({ c, locale }: { c: SahasCampaignCard; locale: string }) {
   const donate = useDonate(c.slug);
   return (
     <article className="flex flex-col gap-2">
-      <Photo c={c} className="h-52" />
+      <Photo c={c} className="h-52" sizes="100vw" priority />
       <h2 className={`${serif} m-0 mt-1 text-3xl leading-tight`}>
         <Link href={`/sahas/${c.slug}`} className="text-inherit no-underline">{c.title}</Link>
       </h2>
@@ -155,7 +183,7 @@ function PhoneRow({ c }: { c: SahasCampaignCard }) {
         {/* Same full-width button as the lead card (phones only; same action). */}
         <Action c={c} className={`${solid} mt-2 w-full`} onDonate={donate.start} />
       </div>
-      <Photo c={c} className="h-[84px]" />
+      <Photo c={c} className="h-[84px]" sizes="84px" />
       {donate.dialog}
     </article>
   );
