@@ -394,7 +394,7 @@ export function HeroSection() {
                 <LandingText>{subtext}</LandingText>
               </p>
 
-              <div data-guest={!user && !isRestoring ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
+              <div data-guest={!user ? "true" : undefined} className="ck-hero-actions mt-6 flex w-full flex-col gap-3 lg:mt-[clamp(1rem,2.6vh,2.2rem)] lg:w-max lg:flex-row lg:flex-nowrap lg:gap-3">
                 {primaryAction.href ? (
                   <NewRequestLink
                     href={primaryAction.href}
@@ -408,7 +408,7 @@ export function HeroSection() {
                 ) : (
                   <span
                     aria-hidden
-                    className="ck-hero-auth-placeholder inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
+                    className="ck-hero-auth-placeholder ck-hero-primary-cta inline-flex min-h-12 min-w-0 w-full items-center justify-center gap-1.5 rounded-[0.8rem] bg-[var(--ck-home-accent,#b04a15)]/70 px-2 text-[0.58rem] font-extrabold uppercase leading-tight tracking-[0.035em] text-white/80 lg:min-h-14 lg:w-auto lg:shrink-0 lg:gap-3 lg:whitespace-nowrap lg:rounded-full lg:px-6 sm:text-xs sm:tracking-[0.045em]"
                   >
                     <MapPin className="size-4 shrink-0 sm:size-5" />
                     <span className="min-w-0 text-center"><LandingText>{primaryAction.label}</LandingText></span>

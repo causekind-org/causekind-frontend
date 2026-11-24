@@ -330,7 +330,7 @@ export function Footer({ role }: FooterProps) {
                 </div>
                 <a
                   href="tel:+917719938619"
-                  className="min-h-[40px] md:min-h-0 inline-flex items-center hover:text-[#E58A4B] transition-colors"
+                  className="min-h-[44px] md:min-h-0 inline-flex items-center hover:text-[#E58A4B] transition-colors"
                 >
                   +91 7719938619
                 </a>
@@ -346,7 +346,7 @@ export function Footer({ role }: FooterProps) {
                 </div>
                 <a
                   href="mailto:support@causekind.com"
-                  className="min-h-[40px] md:min-h-0 inline-flex items-center hover:text-[#E58A4B] transition-colors"
+                  className="min-h-[44px] md:min-h-0 inline-flex items-center hover:text-[#E58A4B] transition-colors"
                 >
                   support@causekind.com
                 </a>
