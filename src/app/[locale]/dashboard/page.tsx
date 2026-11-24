@@ -2068,7 +2068,9 @@ function driveDoneEntry(o: DonationOffer, labels: DriveDoneLabels) {
       <DriveHistoryCard
         offerId={o.id} title={o.requestTitle ?? labels.ngoDrive} ngoName={d.ngoName ?? null}
         ngoDriveLabel={labels.ngoDrive} tag={tag} published={published}
-        qty={qty} itemName={d.driveItemName ?? null} city={o.requestCity ?? null}
+        qty={qty} itemName={d.driveItemName ?? null}
+        // For drive offers the server fills requestCity with the NGO's name, not a place; don't show it twice.
+        city={o.requestCity && o.requestCity.trim().toLowerCase() !== (d.ngoName ?? "").trim().toLowerCase() ? o.requestCity : null}
         handedOver={when ? doneDate(when) : null} distributed={distributed}
         photos={photos}
         proof={published && d.proofPublished ? (
