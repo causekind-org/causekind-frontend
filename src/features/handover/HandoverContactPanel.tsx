@@ -39,6 +39,19 @@ export function HandoverContactPanel({ vm, onTogglePermission }: {
     ? (!donor && Boolean(onTogglePermission) && !vm.closed)
     : (donor && Boolean(onTogglePermission) && !vm.closed);
 
+  // Once the handover is complete (or cancelled) there is nothing left to arrange,
+  // so the call button is switched off for both sides (owner, 24 Nov 2026).
+  if (vm.closed) {
+    return (
+      <Panel title="Contact">
+        <CallAction phone={null} label={label}
+          lockedMessage={vm.state === "completed"
+            ? "Calls are off — this donation is complete."
+            : "Calls are off — this handover is closed."} />
+      </Panel>
+    );
+  }
+
   return (
     <Panel title="Contact">
       <div className="space-y-3">
