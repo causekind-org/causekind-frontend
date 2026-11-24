@@ -3,7 +3,8 @@
 import React from "react";
 import { CareNestLogo } from "@/components/Navbar";
 import Link from "@/components/AppLink";
-import { usePathname } from "next/navigation";
+// Visitor path without the internal /en segment, so server and client agree (React #418).
+import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { useAuth } from "@/hooks/useAuth";
 import { FEATURES } from "@/lib/features";
 import { MapPin, Phone, Mail } from "lucide-react";

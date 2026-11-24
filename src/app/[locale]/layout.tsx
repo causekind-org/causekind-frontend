@@ -53,13 +53,11 @@ import { ROLE_THEME_BOOT_SCRIPT } from "@/lib/roleTheme";
 // Client boundary holding the deferred, client-only overlays and prompts.
 // They live behind their own `"use client"` file because `next/dynamic` with
 // `ssr: false` is rejected inside a Server Component, and this layout is one.
-import { DeferredOverlays, DeferredScrollProgress } from "@/components/DeferredOverlays";
+import {
+  DeferredOverlays, DeferredScrollProgress, DeferredDonateChoice, DeferredDonateItemsChoice,
+  DeferredMatchActionDock, DeferredDriveNotificationDock, DeferredCompletionCelebration,
+} from "@/components/DeferredOverlays";
 import { HiddenOnStaffPage, HiddenOnVolunteerPage } from "@/components/HiddenOnVolunteerPage";
-import { DonateChoice } from "@/components/donate/DonateChoice";
-import { DonateItemsChoiceModal } from "@/components/donate/DonateItemsChoiceModal";
-import { MatchActionDock } from "@/components/matches/MatchActionDock";
-import { DriveNotificationDock } from "@/components/notifications/DriveNotificationDock";
-import { CompletionCelebrationWatcher } from "@/components/handover/CompletionCelebrationWatcher";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -242,15 +240,15 @@ export default async function RootLayout({
                   />
                   <HiddenOnVolunteerPage><DeferredOverlays /></HiddenOnVolunteerPage>
                   {/* Every Donate button opens this In-Kind / Money choice. */}
-                  <HiddenOnVolunteerPage><DonateChoice /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredDonateChoice /></HiddenOnVolunteerPage>
                   <HiddenOnVolunteerPage><StartDriveChoice /></HiddenOnVolunteerPage>
                   {/* Guests' and donors' next step after "Donate items". */}
-                  <HiddenOnVolunteerPage><DonateItemsChoiceModal /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredDonateItemsChoice /></HiddenOnVolunteerPage>
                   {/* Donor-only: a waiting match, once, until answered or closed. */}
-                  <HiddenOnVolunteerPage><MatchActionDock /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredMatchActionDock /></HiddenOnVolunteerPage>
                   {/* NGO and donor drive notices: unread ones, one at a time. */}
-                  <HiddenOnVolunteerPage><DriveNotificationDock /></HiddenOnVolunteerPage>
-                  <HiddenOnVolunteerPage><CompletionCelebrationWatcher /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredDriveNotificationDock /></HiddenOnVolunteerPage>
+                  <HiddenOnVolunteerPage><DeferredCompletionCelebration /></HiddenOnVolunteerPage>
                 </RoleClickSpark>
                 </NeedProfileGateProvider>
               </NotificationsProvider>

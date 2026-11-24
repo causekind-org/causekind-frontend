@@ -10,6 +10,7 @@ import { Drawer, DrawerClose, DrawerOverlay, DrawerPortal, DrawerTitle } from "@
 import { DONATE_HREF } from "@/lib/donateScroll";
 import { useAuth } from "@/hooks/useAuth";
 import { openDonateItemsChoice } from "@/components/donate/DonateItemsChoiceModal";
+import { OPEN_DONATE_CHOICE_EVENT, openDonateChoice, takePendingDonateChoice } from "@/components/donate/donateChoiceEvents";
 import { TUNING, calmness, createBody, isAtRest, stackedPairs, stepTray, type Body, type BodyKind } from "@/components/donate/trayPhysics";
 
 /**
@@ -33,13 +34,11 @@ import { TUNING, calmness, createBody, isAtRest, stackedPairs, stepTray, type Bo
  * routes and the money/items choice itself are not affected.
  */
 
-const OPEN_EVENT = "ck:open-donate-choice";
+const OPEN_EVENT = OPEN_DONATE_CHOICE_EVENT;
 const IN_KIND_HREF = "/requests";
 const FUNDRAISERS_HREF = "/fundraisers";
 
-export function openDonateChoice() {
-  window.dispatchEvent(new Event(OPEN_EVENT));
-}
+export { openDonateChoice };
 
 export function useIsPhone() {
   const [isPhone, setIsPhone] = useState(false);
@@ -68,7 +67,9 @@ export function DonateChoice() {
       e.preventDefault();
       setOpen(true);
     };
-    const onOpen = () => setOpen(true);
+    const onOpen = () => { takePendingDonateChoice(); setOpen(true); };
+    // Opened (e.g. from the mobile menu) before this deferred chunk loaded.
+    if (takePendingDonateChoice()) setOpen(true);
     // Capture phase: runs before Next's Link handler starts the navigation.
     document.addEventListener("click", onClick, true);
     window.addEventListener(OPEN_EVENT, onOpen);

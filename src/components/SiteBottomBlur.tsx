@@ -1,6 +1,7 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+// Visitor path without the internal /en segment, so server and client agree (React #418).
+import { useSitePathname as usePathname } from "@/lib/useSitePathname";
 import { useNearFooter } from "@/hooks/useNearFooter";
 import { FEATURES } from "@/lib/features";
 // @ts-expect-error — GradualBlur is the JS/CSS React Bits variant (no types shipped)

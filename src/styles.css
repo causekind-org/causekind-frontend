@@ -5245,3 +5245,34 @@ header[data-calm-header] .ck-logo-kind-shimmer {
 .mc-rich a { color: #2563eb; text-decoration: underline; }
 .mc-rich hr { border: 0; border-top: 1px solid #ccc; margin: 1em 0; }
 .mc-rich img { max-width: 100%; height: auto; }
+
+/* ── Header motion (replaces framer-motion in Navbar, 24 Nov 2026) ──────────
+   Same timings as the framer versions. Only transform and opacity animate,
+   so these stay on the compositor. */
+@keyframes ck-logo-icon-in {
+  0%   { opacity: 0; transform: scale(0.3) rotate(-20deg); }
+  60%  { opacity: 1; transform: scale(1.08) rotate(3deg); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes ck-rise-in {
+  from { opacity: 0; transform: translateY(var(--ck-rise, 8px)); }
+  to   { opacity: 1; transform: none; }
+}
+.ck-logo-hover { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.ck-logo-hover:hover { transform: scale(1.03); }
+.ck-logo-icon-in { animation: ck-logo-icon-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both; }
+.ck-logo-letter-in { animation: ck-rise-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.ck-logo-kind-in { --ck-rise: 6px; animation: ck-rise-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) 0.44s both; }
+.ck-nav-panel-in { --ck-rise: -8px; animation: ck-rise-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ck-nav-pill[data-animate="true"] {
+  transition:
+    transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ck-logo-icon-in, .ck-logo-letter-in, .ck-logo-kind-in, .ck-nav-panel-in { animation: none; }
+  .ck-logo-hover, .ck-logo-hover:hover { transition: none; transform: none; }
+  .ck-nav-pill[data-animate="true"] { transition: none; }
+}
