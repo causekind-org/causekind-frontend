@@ -11,7 +11,7 @@ import { getItemRequests, getPublicItemRequests, getNgoDrives, donateToRequest, 
 import { useAuth } from "@/hooks/useAuth";
 import { useEntityUpdates } from "@/hooks/useEntityUpdates";
 import { NgoDrivesRedirect } from "@/components/ngo-landing/NgoDrivesRedirect";
-import { registerUrlPreserving } from "@/lib/postAuthDestination";
+import { loginUrlFor } from "@/lib/safeRedirect";
 import { CardGridSkeleton, PageSkeleton } from "@/components/skeletons";
 import { Reveal } from "@/components/Reveal";
 import { Input } from "@/components/ui/input";
@@ -159,10 +159,6 @@ function RequestsHero() {
             {/* Subtitle */}
             <p className="text-white/60 text-sm sm:text-base leading-relaxed max-w-md anim-up anim-d3">
               <UiText>Real people nearby need specific items — not cash. Browse verified requests and donate directly, no shipping fees, no middlemen.</UiText>
-            </p>
-            {/* Server-rendered with the hero (it renders during sign-in restore too). */}
-            <p className="text-white/60 text-xs sm:text-sm leading-relaxed max-w-md mt-3 anim-up anim-d3">
-              <UiText>Every request here is checked by our team before it goes live, from people and NGOs within about 10 km of you. Pick a need, offer the item and hand it over directly; the handover is confirmed with a one-time code and you get a verified certificate. CauseKind is free for donors, donees and NGOs.</UiText>
             </p>
 
             {/* Scroll cue */}
@@ -600,7 +596,7 @@ export default function RequestsClient({
   function openDonateModal(req: ItemRequest) {
     // A guest signs up first (Donor preselected, "Log in" offered there) and
     // comes back to this need's offer through `?next=`.
-    if (!user) { router.push(registerUrlPreserving(`/requests/${req.id}/offer`)); return; }
+    if (!user) { router.push(loginUrlFor(`/requests/${req.id}/offer`)); return; }
     router.push(`/requests/${req.id}/offer`);
   }
 

@@ -98,8 +98,8 @@ describe("/requests is public", () => {
   it("builds any auth URL through the validated helpers", () => {
     const rawAuthPushes = PAGE.match(/router\.(replace|push)\(\s*["'`]\/(login|register)/g) ?? [];
     expect(rawAuthPushes).toEqual([]);
-    // A guest offering an item signs up and returns to that need's offer.
-    expect(PAGE).toContain("registerUrlPreserving(`/requests/${req.id}/offer`)");
+    // A guest offering an item logs in and returns to that need's offer.
+    expect(PAGE).toContain("loginUrlFor(`/requests/${req.id}/offer`)");
   });
 });
 

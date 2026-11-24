@@ -1395,6 +1395,17 @@ export type PublicItemRequest = {
   requesterType?: "PERSON" | "NGO";
   /** Registered organisation name; NGO requests only, and not a verification claim. */
   organizationName?: string | null;
+  /*
+   * "About this need" facts. Sent on the single-request detail
+   * (getPublicItemRequest) only; null/absent on the board. Never a photo.
+   */
+  verificationTier?: string | null;
+  householdSize?: number | null;
+  dependents?: number | null;
+  peopleAffected?: number | null;
+  housingType?: string | null;
+  numberOfEarners?: number | null;
+  reasonCannotBuy?: string | null;
 };
 
 /** One open public request; rejects (404) once it is no longer publicly open. */

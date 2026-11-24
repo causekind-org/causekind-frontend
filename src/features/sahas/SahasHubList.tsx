@@ -155,11 +155,12 @@ function PhoneMoney({ c }: { c: SahasCampaignCard }) {
   );
 }
 
-function Lead({ c, locale }: { c: SahasCampaignCard; locale: string }) {
+/** Phone card: photo, title, place and end date, raised of target, Donate. Every campaign uses it; only the first photo loads with priority (LCP). */
+function Lead({ c, locale, priority = false }: { c: SahasCampaignCard; locale: string; priority?: boolean }) {
   const donate = useDonate(c.slug);
   return (
     <article className="flex flex-col gap-2">
-      <Photo c={c} className="h-52" sizes="100vw" priority />
+      <Photo c={c} className="h-52" sizes="100vw" priority={priority} />
       <h2 className={`${serif} m-0 mt-1 text-3xl leading-tight`}>
         <Link href={`/sahas/${c.slug}`} className="text-inherit no-underline">{c.title}</Link>
       </h2>
@@ -171,30 +172,10 @@ function Lead({ c, locale }: { c: SahasCampaignCard; locale: string }) {
   );
 }
 
-function PhoneRow({ c }: { c: SahasCampaignCard }) {
-  const donate = useDonate(c.slug);
-  return (
-    <article className={`grid grid-cols-[minmax(0,1fr)_84px] gap-3.5 border-b py-4 ${rule}`}>
-      <div className="min-w-0">
-        <h3 className={`${serif} m-0 text-lg leading-snug`}>
-          <Link href={`/sahas/${c.slug}`} className="text-inherit no-underline">{c.title}</Link>
-        </h3>
-        <div className="mt-1 text-sm"><PhoneMoney c={c} /></div>
-        {/* Same full-width button as the lead card (phones only; same action). */}
-        <Action c={c} className={`${solid} mt-2 w-full`} onDonate={donate.start} />
-      </div>
-      <Photo c={c} className="h-[84px]" sizes="84px" />
-      {donate.dialog}
-    </article>
-  );
-}
-
 function FrontPage({ cards, locale }: { cards: SahasCampaignCard[]; locale: string }) {
-  const [lead, ...rest] = cards;
   return (
-    <div className="flex flex-col gap-2">
-      <Lead c={lead} locale={locale} />
-      {rest.map((c) => <PhoneRow key={c.slug} c={c} />)}
+    <div className={`flex flex-col gap-6 divide-y ${rule} [&>*+*]:pt-6`}>
+      {cards.map((c, i) => <Lead key={c.slug} c={c} locale={locale} priority={i === 0} />)}
     </div>
   );
 }
