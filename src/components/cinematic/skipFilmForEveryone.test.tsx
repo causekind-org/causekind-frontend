@@ -48,7 +48,20 @@ describe("Skip intro", () => {
     // Let the (mocked) gsap load resolve so the triggers are created.
     await act(async () => { await Promise.resolve(); });
 
-    act(() => triggers.at(-1)!.onToggle({ isActive: true }));
+    // Active state follows live geometry now; the remaining GSAP trigger only
+    // collapses a film that has completely scrolled away.
+    const film = document.querySelector<HTMLElement>(".ck-cinematic") ??
+      document.querySelector<HTMLElement>("[data-cinematic-root]");
+    expect(film).not.toBeNull();
+    vi.spyOn(film!, "getBoundingClientRect").mockReturnValue({
+      top: -1, bottom: window.innerHeight + 100, left: 0, right: 400,
+      width: 400, height: window.innerHeight + 101, x: 0, y: -1,
+      toJSON: () => ({}),
+    });
+    await act(async () => {
+      window.dispatchEvent(new Event("scroll"));
+      await new Promise(resolve => requestAnimationFrame(resolve));
+    });
     const button = screen.getByRole("button", { name: /skip/i });
 
     fireEvent.click(button);

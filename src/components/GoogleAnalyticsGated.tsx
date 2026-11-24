@@ -3,7 +3,7 @@
 import Script from "next/script";
 import { useDeferredTracker } from "@/hooks/useDeferredTracker";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
-import { isInternalTraffic } from "@/lib/internalTraffic";
+import { useInternalTraffic } from "@/hooks/useInternalTraffic";
 
 import { GA_ID } from "@/lib/gaId";
 
@@ -23,7 +23,8 @@ const TRACKING_DISABLED = process.env.NEXT_PUBLIC_DISABLE_TRACKING === "true";
 export default function GoogleAnalyticsGated() {
   const consent = useCookieConsent();
   const ready = useDeferredTracker(1800);
-  if (!GA_ID || TRACKING_DISABLED || isInternalTraffic()) return null;
+  const internal = useInternalTraffic();
+  if (!GA_ID || TRACKING_DISABLED || internal !== false) return null;
   if (!TESTING_BYPASS && consent !== "accepted") return null;
   // The stub runs at once (no network): it sets up dataLayer/gtag and queues
   // 'js' + 'config' exactly once, so the first page_view is sent once and any

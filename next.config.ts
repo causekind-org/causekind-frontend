@@ -7,6 +7,8 @@ import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from "next/constants
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
+  // Isolated audit builds must not overwrite a running dev server's .next.
+  distDir: process.env.CAUSEKIND_BUILD_DIR || ".next",
   // The floating black "N" badge that overlaps the mobile bottom navigation in
   // local dev is Next.js's own development indicator — not a CauseKind element.
   // Hidden here rather than working around it with navbar spacing or CSS, which

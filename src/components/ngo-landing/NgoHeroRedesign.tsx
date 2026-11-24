@@ -2,8 +2,8 @@
 
 import { NGO_TOAST_STYLE } from "./ngoToastStyle";
 import React, { useState, useRef } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import Image, { getImageProps } from "next/image";
+import Link from "@/components/AppLink";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Lock, AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
@@ -11,6 +11,10 @@ import { toast } from "sonner";
 import { NGO_LOGIN_HREF, type NgoStatusData } from "./useNgoStatus";
 import { formatISTDate } from "@/lib/formatIST";
 import { NgoGlassStatusChip } from "./NgoSharedComponents";
+
+const BLANK_PIXEL = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
+const mobileHeroPhoto = getImageProps({ src: "/images/ngo-landing/ngo-hero-mobile.webp", alt: "", fill: true, sizes: "100vw", loading: "eager", fetchPriority: "high" }).props;
+const desktopHeroPhoto = getImageProps({ src: "/images/ngo-landing/ngo-winter-blankets-elderly-landscape.webp", alt: "", fill: true, sizes: "100vw", loading: "eager", fetchPriority: "high" }).props;
 
 export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
   const router = useRouter();
@@ -200,8 +204,11 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
       <div className="ngo-hero-grain max-md:hidden lg:hidden" aria-hidden="true" />
       {/* Mobile (<768px): full-bleed photo with a dark bottom gradient, the same
           pattern as the guest homepage hero; text and buttons sit over it. */}
-      <div data-testid="ngo-hero-mobile-photo" className="absolute inset-0 z-0 md:hidden" aria-hidden="true">
-        <Image src="/images/ngo-landing/ngo-hero-mobile.webp" alt="" fill priority sizes="100vw" className="object-cover object-[center_30%]" />
+      <div data-testid="ngo-hero-mobile-photo" className="absolute inset-0 z-0 lg:hidden" aria-hidden="true">
+        <picture>
+          <source media="(min-width: 1024px)" srcSet={BLANK_PIXEL} />
+          <img {...mobileHeroPhoto} alt="" className="object-cover object-[center_30%]" />
+        </picture>
         <div className="ck-ngo-hero-shade absolute inset-0" />
       </div>
 
@@ -209,7 +216,10 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
       <div className="ck-ngo-hero-stage-photo absolute inset-0 z-0 hidden overflow-hidden lg:block" aria-hidden="true">
         <motion.div className="absolute inset-0 will-change-transform"
           style={shouldReduceMotion ? undefined : { y: stageY, scale: stageScale }}>
-          <Image src="/images/ngo-landing/ngo-winter-blankets-elderly-landscape.webp" alt="" fill priority sizes="100vw" className="object-cover object-[center_45%]" />
+          <picture>
+            <source media="(max-width: 1023px)" srcSet={BLANK_PIXEL} />
+            <img {...desktopHeroPhoto} alt="" className="object-cover object-[center_45%]" />
+          </picture>
         </motion.div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/10" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/20 to-transparent" />
@@ -235,7 +245,7 @@ export function NgoHeroRedesign({ status }: { status: NgoStatusData }) {
                     className="inline-block mr-[0.26em] overflow-hidden align-top"
                   >
                     <motion.span
-                      initial={{ y: shouldReduceMotion ? 0 : 46, opacity: shouldReduceMotion ? 1 : 0 }}
+                      initial={false}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{
                         duration: shouldReduceMotion ? 0 : 0.9,

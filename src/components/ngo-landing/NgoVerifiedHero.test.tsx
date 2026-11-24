@@ -79,7 +79,7 @@ describe("mobile hero (full-bleed photo, no collage)", () => {
     await screen.findAllByRole(status === "APPROVED" ? "link" : "button", { name: cta });
 
     const photo = await screen.findByTestId("ngo-hero-mobile-photo");
-    expect(photo.className).toContain("md:hidden");
+    expect(photo.className).toContain("lg:hidden");
     expect(photo.querySelector("img")?.getAttribute("src")).toContain("ngo-hero-mobile.webp");
     expect(container.querySelector("#ngo-hero")?.className).toContain("ck-ngo-hero-stage");
     // No green tint on mobile: the mesh and grain layers are hidden; only a bottom dark gradient.

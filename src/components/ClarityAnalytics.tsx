@@ -2,7 +2,7 @@
 
 import Script from "next/script";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
-import { isInternalTraffic } from "@/lib/internalTraffic";
+import { useInternalTraffic } from "@/hooks/useInternalTraffic";
 import { useDeferredTracker } from "@/hooks/useDeferredTracker";
 
 const CLARITY_PROJECT_ID = "ykpnfnuc02";
@@ -25,8 +25,9 @@ export default function ClarityAnalytics() {
   const consent = useCookieConsent();
   const consentAccepted = TESTING_BYPASS || consent === "accepted";
   const ready = useDeferredTracker(5000);
+  const internal = useInternalTraffic();
 
-  if (TRACKING_DISABLED || isInternalTraffic() || !consentAccepted) return null;
+  if (TRACKING_DISABLED || internal !== false || !consentAccepted) return null;
 
   // Queue stub at once (early window.clarity calls are kept); the tag script
   // loads after interaction, a quiet window and a staggered idle slot.

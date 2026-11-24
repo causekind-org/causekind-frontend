@@ -373,7 +373,7 @@ export function Footer({ role }: FooterProps) {
                 )}
                 <Link
                   href={item.href}
-                  className="inline-block py-2.5 -my-2.5 font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
+                  className="inline-flex min-h-11 items-center px-1 py-2.5 font-medium text-[#D9CCBB] hover:text-[#E58A4B] hover:underline underline-offset-4 transition-colors"
                 >
                   {label(item.label)}
                 </Link>
