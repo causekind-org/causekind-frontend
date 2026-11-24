@@ -4,7 +4,7 @@ import { UiText, useUiText } from "@/components/UiText";
 
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { Search, X, ClipboardList, Loader2, ArrowRight } from "lucide-react";
 import { getItemRequests, type ItemRequest } from "@/lib/api";
 import { useAuth } from "@/hooks/useAuth";

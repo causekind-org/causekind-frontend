@@ -3,7 +3,7 @@ import { UiText, useUiText } from "@/components/UiText";
 
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { ArrowRight, Check, ChevronRight, HandCoins, HandHeart, Megaphone, Package, X, type LucideIcon } from "lucide-react";
 import { Drawer as VaulDrawer } from "vaul";
 import { Drawer, DrawerClose, DrawerOverlay, DrawerPortal, DrawerTitle } from "@/components/ui/drawer";
@@ -177,9 +177,9 @@ export function DonateChoice() {
  * The loop stops once everything is at rest and restarts when the sheet is
  * touched or starts an animation. Off under prefers-reduced-motion.
  */
-type Tray = { card: HTMLElement; els: HTMLElement[]; bodies: Body[]; pairs: [number, number][] };
+type Tray = { card: HTMLElement; els: HTMLElement[]; bodies: Body[]; pairs: [number, number][]; forces: number[]; held: boolean };
 
-function useTrayPhysics(sheet: HTMLElement | null) {
+export function useTrayPhysics(sheet: HTMLElement | null) {
   useEffect(() => {
     if (!sheet || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let frame = 0;
@@ -199,17 +199,19 @@ function useTrayPhysics(sheet: HTMLElement | null) {
     // each body's full size set how far it may travel.
     const build = () => {
       clear();
-      trays = Array.from(sheet.querySelectorAll<HTMLElement>("[data-tray]")).map((card) => {
+      const measured = Array.from(sheet.querySelectorAll<HTMLElement>("[data-tray]")).map((card) => {
         const c = card.getBoundingClientRect();
         const els = Array.from(card.querySelectorAll<HTMLElement>("[data-body]"));
         const bodies = els.map((el) => {
           const r = el.getBoundingClientRect();
           const home = { left: r.left - c.left, top: r.top - c.top, right: r.right - c.left, bottom: r.bottom - c.top };
-          return createBody(el.dataset.body as BodyKind, home, { width: c.width, height: c.height }, Math.random);
+          return createBody(el.dataset.body as BodyKind, home, { width: c.width, height: c.height }, Math.random, el.dataset.freeBody === "true");
         });
-        for (const el of els) el.style.willChange = "transform";
-        return { card, els, bodies, pairs: stackedPairs(bodies) };
+        return { card, els, bodies, pairs: stackedPairs(bodies), forces: new Array<number>(bodies.length).fill(0), held: false };
       });
+      // Finish every layout read before promoting/writing any layer.
+      trays = measured;
+      for (const t of trays) for (const el of t.els) el.style.willChange = "transform";
     };
 
     const stop = () => {
@@ -227,9 +229,12 @@ function useTrayPhysics(sheet: HTMLElement | null) {
       if (dt <= 0) return;
       if (!trays) build();
       const y = sheet.getBoundingClientRect().top;
+      // Read focus/press state for all cards before any transform writes.
+      for (const t of trays!) t.held = t.card.matches(":active, :focus-visible");
       const v = (y - sheetY) / dt;
       // Lightly smoothed: raw frame-to-frame differences are noisy.
-      accel += ((v - sheetV) / dt - accel) * 0.6;
+      const measuredAccel = Math.max(-60_000, Math.min(60_000, (v - sheetV) / dt));
+      accel += (measuredAccel - accel) * 0.6;
       sheetY = y;
       sheetV = v;
       if (Math.abs(accel) > TUNING.activeAccel) activeAt = now;
@@ -239,9 +244,8 @@ function useTrayPhysics(sheet: HTMLElement | null) {
       let resting = calm >= 1;
       for (const t of trays!) {
         // A focused or pressed card keeps its button steady under the finger.
-        const held = t.card.matches(":active, :focus-visible");
-        for (const b of t.bodies) b.held = held && b.kind === "cta";
-        for (let i = 0; i < steps; i++) stepTray(t.bodies, t.pairs, accel, calm, dt / steps);
+        for (const b of t.bodies) b.held = t.held && b.kind === "cta";
+        for (let i = 0; i < steps; i++) stepTray(t.bodies, t.pairs, accel, calm, dt / steps, t.forces);
         t.bodies.forEach((b, i) => {
           t.els[i].style.transform =
             `translate3d(${b.x.toFixed(2)}px, ${b.y.toFixed(2)}px, 0) rotate(${b.r.toFixed(3)}deg)`;
@@ -249,11 +253,12 @@ function useTrayPhysics(sheet: HTMLElement | null) {
         if (resting && !isAtRest(t.bodies)) resting = false;
       }
       // Calm sheet, everything home: snap exactly into the layout and stop.
-      if (resting) stop();
+      // Tiny wall/rotation contacts must not keep a settled sheet ticking.
+      if (resting || now - activeAt > 3000) stop();
     };
 
     const start = () => {
-      if (running) return;
+      if (running || document.hidden) return;
       running = true;
       last = performance.now();
       activeAt = last;
@@ -264,15 +269,20 @@ function useTrayPhysics(sheet: HTMLElement | null) {
     };
     // Boxes change with the viewport; remeasure from rest on the next frame.
     const remeasure = () => { if (trays) { clear(); trays = null; } };
+    const onVisibility = () => { if (document.hidden) stop(); else start(); };
 
-    sheet.addEventListener("pointerdown", start);
+    sheet.addEventListener("pointerdown", start, { passive: true });
     sheet.addEventListener("animationstart", start);
+    sheet.addEventListener("transitionrun", start);
     window.addEventListener("resize", remeasure);
+    document.addEventListener("visibilitychange", onVisibility);
     start();
     return () => {
       sheet.removeEventListener("pointerdown", start);
       sheet.removeEventListener("animationstart", start);
+      sheet.removeEventListener("transitionrun", start);
       window.removeEventListener("resize", remeasure);
+      document.removeEventListener("visibilitychange", onVisibility);
       stop();
     };
   }, [sheet]);
@@ -415,16 +425,19 @@ export function PhoneOption({
     <button
       type="button"
       onClick={onSelect}
-      className={`flex min-h-11 items-center gap-3.5 rounded-[18px] border-2 border-[#ece4da] p-4 text-left focus-visible:outline-none focus-visible:ring-2 dark:border-zinc-700 ${t.card}`}
+      data-tray
+      className={`relative isolate flex min-h-11 items-center gap-3.5 overflow-hidden rounded-[18px] border-2 border-[#ece4da] p-4 text-left focus-visible:outline-none focus-visible:ring-2 dark:border-zinc-700 ${t.card}`}
     >
-      <span className={`flex size-[52px] shrink-0 items-center justify-center rounded-[14px] ${t.icon}`}>
+      <span data-body="icon" data-free-body="true" className={`pointer-events-none relative z-10 flex size-[52px] shrink-0 items-center justify-center rounded-[14px] ${t.icon}`}>
         <Icon className="size-[26px]" strokeWidth={1.8} aria-hidden />
       </span>
-      <span className="flex flex-1 flex-col gap-0.5">
-        <span className="text-[17px] font-extrabold text-stone-900 dark:text-stone-50">{title}</span>
-        <span className="text-[13px] leading-snug text-stone-500 dark:text-stone-400">{text}</span>
+      <span className="relative z-20 flex flex-1 flex-col gap-0.5">
+        <span data-body="title" className="text-[17px] font-extrabold text-stone-900 dark:text-stone-50">{title}</span>
+        <span data-body="desc" className="text-[13px] leading-snug text-stone-500 dark:text-stone-400">{text}</span>
       </span>
-      <ChevronRight className={`size-5 shrink-0 ${t.ink}`} aria-hidden />
+      <span data-body="cta" className="relative z-20 flex size-5 shrink-0 items-center justify-center" aria-hidden>
+        <ChevronRight className={`size-5 ${t.ink}`} />
+      </span>
     </button>
   );
 }

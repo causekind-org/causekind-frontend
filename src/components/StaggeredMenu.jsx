@@ -244,12 +244,26 @@ export const StaggeredMenu = ({
 
     const tl = gsap.timeline({ paused: true });
 
-    layerStates.forEach((ls, i) => {
-      tl.fromTo(ls.el, { xPercent: ls.start }, { xPercent: 0, duration: 0.5, ease: 'power4.out' }, i * 0.07);
-    });
     const lastTime = layerStates.length ? (layerStates.length - 1) * 0.07 : 0;
     const panelInsertTime = lastTime + (layerStates.length ? 0.08 : 0);
     const panelDuration = 0.65;
+    const compact = window.matchMedia('(pointer: coarse), (max-width: 1023px)').matches;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (compact || reduced) {
+      // All mobile entries arrive together; the old per-item 100ms stagger
+      // made lower entries spend over a second travelling into tap position.
+      gsap.set(layers, { xPercent: 0 });
+      tl.fromTo(panel, { xPercent: panelStart }, { xPercent: 0, duration: reduced ? 0 : 0.2, ease: 'power3.out' }, 0);
+      if (itemEls.length) tl.to(itemEls, { yPercent: 0, rotate: 0, duration: reduced ? 0 : 0.16, stagger: reduced ? 0 : { amount: 0.08 }, ease: 'power2.out' }, 0);
+      if (numberEls.length) gsap.set(numberEls, { '--sm-num-opacity': 1 });
+      if (socialTitle) gsap.set(socialTitle, { opacity: 1 });
+      if (socialLinks.length) gsap.set(socialLinks, { y: 0, opacity: 1 });
+      openTlRef.current = tl;
+      return tl;
+    }
+    layerStates.forEach((ls, i) => {
+      tl.fromTo(ls.el, { xPercent: ls.start }, { xPercent: 0, duration: 0.5, ease: 'power4.out' }, i * 0.07);
+    });
     tl.fromTo(panel, { xPercent: panelStart }, { xPercent: 0, duration: panelDuration, ease: 'power4.out' }, panelInsertTime);
 
     if (itemEls.length) {
@@ -292,7 +306,6 @@ export const StaggeredMenu = ({
   }, [position]);
 
   const playOpen = useCallback(() => {
-    if (busyRef.current) return;
     busyRef.current = true;
     const tl = buildOpenTimeline();
     if (tl) {
@@ -318,7 +331,7 @@ export const StaggeredMenu = ({
     const offscreen = position === 'left' ? -100 : 100;
     closeTweenRef.current = gsap.to(all, {
       xPercent: offscreen,
-      duration: 0.32,
+      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : window.matchMedia('(pointer: coarse), (max-width: 1023px)').matches ? 0.16 : 0.32,
       ease: 'power3.in',
       overwrite: 'auto',
       onComplete: () => {

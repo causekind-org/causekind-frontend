@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "@/components/AppLink";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNeedProfileGate } from "@/hooks/useNeedProfileGate";
@@ -36,6 +36,7 @@ export function NewRequestLink({
       href={isNgo ? destination : href}
       className={className}
       aria-busy={pending || undefined}
+      data-navigation-managed={destination.startsWith("/requests/new") || undefined}
       onClick={async (e) => {
         // Callers' own handlers still run first (DoneeListingPrompt dismisses
         // itself here), and can opt out by preventing default themselves.

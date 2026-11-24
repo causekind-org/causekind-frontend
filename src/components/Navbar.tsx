@@ -9,7 +9,8 @@ import Link from "@/components/AppLink";
 import { RakshaBandhanWordmark } from "@/components/brand/RakshaBandhanWordmark";
 import { isRakshaBandhanCampaignActive } from "@/lib/raksha-bandhan";
 import { LogoVideo } from "@/components/LogoVideo";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { useTranslations } from "next-intl";
 import { motion, AnimatePresence } from "framer-motion";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
@@ -72,9 +73,9 @@ function AfterMount({ onMount }: { onMount: () => void }) {
   return null;
 }
 
-export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
-  const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl" };
-  const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 } };
+export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg" | "xl"; hideIcon?: boolean; seasonal?: boolean }) {
+  const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl", xl: "text-[1.625rem]" };
+  const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 }, xl: { w: 44, h: 44 } };
 
   // Gated on the same switch as every other Raksha Bandhan surface, so the tie
   // cannot outlive its window — which is exactly how the Independence Day
@@ -154,7 +155,7 @@ export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }
 }
 
 // Keep CareNestLogo exported and map it to CauseKindLogo to prevent any broken imports in other files
-export function CareNestLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg"; hideIcon?: boolean; seasonal?: boolean }) {
+export function CareNestLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg" | "xl"; hideIcon?: boolean; seasonal?: boolean }) {
   return <CauseKindLogo size={size} hideIcon={hideIcon} seasonal={seasonal} />;
 }
 
@@ -422,7 +423,7 @@ export function SiteHeader() {
       const hero = document.querySelector(".ck-lead-hero-stage")
         ?? (window.matchMedia("(max-width: 767px)").matches ? document.querySelector(".ck-ngo-hero-stage") : null);
       if (hero && hero !== observedHero) {
-        resize.disconnect();
+        if (observedHero) resize.unobserve(observedHero);
         resize.observe(hero);
         crossing.disconnect();
         crossing.observe(hero);
@@ -431,8 +432,10 @@ export function SiteHeader() {
       // `mounted` keeps watching: the NGO landing swaps its hero for a new
       // element once the application status loads, and that must be picked up.
       const bounds = hero?.getBoundingClientRect();
-      // The NGO hero can sit a few px off the top mid-layout; allow for it there.
-      const slack = hero?.classList.contains("ck-ngo-hero-stage") ? 16 : 0;
+      // Either hero can sit a few px off the top mid-layout (it is pulled up by
+      // --ck-nav-h, which lags a header height change); allow for it. Without
+      // this the header could stick in its solid cream state over the photo.
+      const slack = 16;
       setOverMobileHero(mobile.matches && !!bounds && bounds.top <= slack && bounds.bottom > 0);
     };
     const schedule = () => { if (!frame) frame = requestAnimationFrame(update); };
@@ -446,6 +449,9 @@ export function SiteHeader() {
     // The homepage may arrive after the shared header during client navigation.
     const mounted = new MutationObserver(schedule);
     mounted.observe(document.body, { childList: true, subtree: true });
+    // The header's own height moves the hero (its margin is -header height).
+    const headerEl = document.querySelector("header[data-calm-header]");
+    if (headerEl) resize.observe(headerEl);
     update();
     window.addEventListener("resize", schedule);
     mobile.addEventListener("change", schedule);
@@ -898,7 +904,7 @@ export function SiteHeader() {
             <NotificationBell />
           </div>
           <Link href="/" className="flex items-center justify-center">
-            <CareNestLogo size="md" hideIcon={true} />
+            <CareNestLogo size="lg" hideIcon={true} />
           </Link>
           {/* With the bar gone there is nothing behind this button but the
               hero, so it brings its own surface: `glass-pill` is the same
