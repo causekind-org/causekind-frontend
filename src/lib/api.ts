@@ -538,6 +538,8 @@ export type RecentActivity = {
   category: string;
   amount: number | null;
   createdAt: string;
+  /** Donor's name on DONATION rows; null when they chose not to show it. */
+  donorName?: string | null;
 };
 
 export function getRecentActivity() {
