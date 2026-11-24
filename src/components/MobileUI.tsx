@@ -3,7 +3,8 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
 
 
 import Link from "@/components/AppLink";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { Home, Megaphone, ClipboardList, User, MessageCircle, X, Mail, Phone, Plus, type LucideIcon } from "lucide-react";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -45,7 +46,11 @@ export function MobileBottomNav() {
   // The landing film owns the whole screen while it plays; the dock parks
   // exactly as it does near the footer.
   const immersive = useImmersiveNav();
-  const parked = nearFooter || immersive;
+  // Auth pages are short enough for the footer to be visible immediately.
+  // Keep their navigation available, including on locale-prefixed URLs.
+  const routeWithoutLocale = pathname.replace(new RegExp(`^/${locale}(?=/|$)`), "") || "/";
+  const isAuthPage = /^\/(login|register)\/?$/.test(routeWithoutLocale);
+  const parked = !isAuthPage && (nearFooter || immersive);
 
   // Centre + button — smart routing based on feature flag + role
   const centerHref = FEATURES.money

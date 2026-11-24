@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useFurthestStep } from "@/features/wizard-kit/useFurthestStep";
 import { useLocationPinHandlers } from "@/hooks/useLocationPinHandlers";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/hooks/useAppRouter";
 import { AnimatePresence, MotionConfig, motion, useReducedMotion } from "framer-motion";
 import { useLocale } from "next-intl";
 import { ArrowLeft, TriangleAlert } from "lucide-react";
@@ -582,7 +582,7 @@ export function ItemListingWizard({
       setSubmitted(true);
       trackListItem({ mode });
       toast.success(mode === "needs-info" ? "Resubmitted for review." : "Submitted for review.");
-      setTimeout(() => router.push("/dashboard"), 700);
+      router.push("/dashboard");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Submission failed. Please try again.");
     } finally {

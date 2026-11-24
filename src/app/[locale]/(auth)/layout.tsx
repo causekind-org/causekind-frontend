@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AuthDotGrid } from "@/components/AuthDotGrid";
@@ -40,6 +41,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   const variant: "login" | "register" = pathname?.startsWith("/register") ? "register" : "login";
   const content = PANEL_CONTENT[variant];
   const reduceMotion = useReducedMotion();
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setCompact(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   return (
     /* pb reserves room for the floating mobile dock, which every other page that
@@ -104,7 +113,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               transition={{ duration: reduceMotion ? 0 : 0.45 }}
               className="absolute inset-0"
             >
-              <Image src={content.image} alt="" fill className="object-cover" priority />
+              <Image src={content.image} alt="" fill className="object-cover" sizes="(min-width: 1024px) 50vw, 1px" />
             </motion.div>
           </AnimatePresence>
           <div className="absolute inset-0 bg-gradient-to-t from-[#120c04] via-transparent to-[#120c04]" />
@@ -127,7 +136,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           and on mobile the illustration panel is hidden so nothing reorders at
           all there. */}
       <motion.div
-        layout="position"
+        layout={compact ? false : "position"}
         transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 140, damping: 22 }}
         style={{ order: variant === "register" ? 1 : 2 }}
         className="flex flex-1 min-w-0 flex-col justify-between bg-[#faf8f5] dark:bg-zinc-950 px-4 pt-5 pb-[calc(var(--ck-bottom-chrome)+1.25rem)] sm:px-6 sm:pt-8 sm:pb-[calc(var(--ck-bottom-chrome)+2rem)] lg:px-12 lg:pb-8 overflow-y-auto relative overflow-hidden"
@@ -142,22 +151,22 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div />
 
         <div className="w-full mx-auto relative z-10" style={{ perspective: 1400 }}>
-          <AnimatePresence mode="wait">
+          {compact ? children : <AnimatePresence mode="wait">
             <motion.div
               key={pathname}
-              initial={reduceMotion
-                ? { opacity: 0 }
+              initial={compact || reduceMotion
+                ? false
                 : { opacity: 0, y: 36, rotateX: -12, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, rotateX: 0, scale: 1 }}
-              exit={reduceMotion
-                ? { opacity: 0 }
+              exit={compact || reduceMotion
+                ? { opacity: 1 }
                 : { opacity: 0, y: -18, rotateX: 8, scale: 0.98 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: compact || reduceMotion ? 0 : 0.5, ease: [0.22, 1, 0.36, 1] }}
               style={{ transformStyle: "preserve-3d" }}
             >
               {children}
             </motion.div>
-          </AnimatePresence>
+          </AnimatePresence>}
         </div>
 
         <p className="mt-5 sm:mt-8 text-center text-xs text-stone-400 dark:text-zinc-600">
