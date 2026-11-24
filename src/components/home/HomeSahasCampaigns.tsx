@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { refreshScrollTrigger } from "@/lib/gsapLoader";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -45,9 +46,9 @@ function StoryCard({ card, diwali, onDonate }: {
   return (
     <article className="ck-sr-card relative flex shrink-0 snap-start flex-col justify-between overflow-hidden rounded-[22px] bg-[#cbbba5] dark:bg-zinc-800 w-[78vw] max-w-[300px] sm:w-[300px] h-[460px] sm:h-[520px]">
       {card.imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={card.imageUrl} alt={card.coverAltText ?? card.title} loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover" />
+        <Image src={card.imageUrl} alt={card.coverAltText ?? card.title} fill
+          sizes="(max-width: 384px) 78vw, 300px"
+          className="object-cover" />
       ) : diwali ? (
         <span className="ck-dw-diya absolute inset-0 m-auto" />
       ) : null}

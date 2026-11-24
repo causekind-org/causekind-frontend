@@ -9,8 +9,9 @@ import { Drawer as VaulDrawer } from "vaul";
 import { Drawer, DrawerClose, DrawerOverlay, DrawerPortal, DrawerTitle } from "@/components/ui/drawer";
 import { DONATE_HREF } from "@/lib/donateScroll";
 import { useAuth } from "@/hooks/useAuth";
+import { useDeviceTilt } from "@/hooks/useDeviceTilt";
 import { openDonateItemsChoice } from "@/components/donate/DonateItemsChoiceModal";
-import { TUNING, calmness, createBody, isAtRest, stackedPairs, stepTray, type Body, type BodyKind } from "@/components/donate/trayPhysics";
+import { TUNING, calmness, createBody, isAtRest, stackedPairs, stepTray, type Body, type BodyKind, type TrayTiltInput } from "@/components/donate/trayPhysics";
 
 /**
  * "How would you like to give?" — the choice every Donate button opens.
@@ -57,7 +58,9 @@ export function DonateChoice() {
   const ui = useUiText();
   const [open, setOpen] = useState(false);
   const [sheet, setSheet] = useState<HTMLDivElement | null>(null);
-  useTrayPhysics(sheet);
+  const isPhone = useIsPhone();
+  const tilt = useDeviceTilt(open && isPhone && sheet !== null);
+  useTrayPhysics(sheet, tilt);
   const router = useRouter();
 
   useEffect(() => {
@@ -136,6 +139,7 @@ export function DonateChoice() {
             </div>
             <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-3 md:gap-4">
               <SheetOption
+                freeIcon={isPhone}
                 tone="items"
                 title={ui("Donate items")}
                 text={ui("Give clothes, books, furniture or appliances to someone who needs them.")}
@@ -143,6 +147,7 @@ export function DonateChoice() {
                 onSelect={goItems}
               />
               <SheetOption
+                freeIcon={isPhone}
                 tone="money"
                 title={ui("Donate money")}
                 text={ui("Support a verified cause with a secure online donation.")}
@@ -150,6 +155,7 @@ export function DonateChoice() {
                 onSelect={() => go(DONATE_HREF)}
               />
               <SheetOption
+                freeIcon={isPhone}
                 tone="need"
                 icon={Megaphone}
                 title={ui("Back a fundraiser")}
@@ -179,7 +185,7 @@ export function DonateChoice() {
  */
 type Tray = { card: HTMLElement; els: HTMLElement[]; bodies: Body[]; pairs: [number, number][]; forces: number[]; held: boolean };
 
-export function useTrayPhysics(sheet: HTMLElement | null) {
+export function useTrayPhysics(sheet: HTMLElement | null, tilt?: TrayTiltInput) {
   useEffect(() => {
     if (!sheet || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let frame = 0;
@@ -190,6 +196,8 @@ export function useTrayPhysics(sheet: HTMLElement | null) {
     let accel = 0;
     let activeAt = 0;
     let trays: Tray[] | null = null;
+    let tiltX = 0;
+    let tiltY = 0;
 
     const clear = () => {
       for (const t of trays ?? []) for (const el of t.els) { el.style.transform = ""; el.style.willChange = ""; }
@@ -214,11 +222,15 @@ export function useTrayPhysics(sheet: HTMLElement | null) {
       for (const t of trays) for (const el of t.els) el.style.willChange = "transform";
     };
 
-    const stop = () => {
+    const stop = (preservePosition = false) => {
       running = false;
       cancelAnimationFrame(frame);
-      clear();
-      trays = null;
+      if (preservePosition) {
+        for (const t of trays ?? []) for (const b of t.bodies) { b.vx = 0; b.vy = 0; b.vr = 0; }
+      } else {
+        clear();
+        trays = null;
+      }
     };
 
     const tick = (now: number) => {
@@ -239,22 +251,26 @@ export function useTrayPhysics(sheet: HTMLElement | null) {
       sheetV = v;
       if (Math.abs(accel) > TUNING.activeAccel) activeAt = now;
       const calm = calmness((now - activeAt) / 1000);
+      const smoothing = 1 - Math.exp(-12 * dt);
+      tiltX += ((tilt?.x ?? 0) - tiltX) * smoothing;
+      tiltY += ((tilt?.y ?? 0) - tiltY) * smoothing;
+      const tilted = Math.abs(tiltX) + Math.abs(tiltY) > 10;
 
       const steps = Math.max(1, Math.round(dt / 0.004));
       let resting = calm >= 1;
       for (const t of trays!) {
         // A focused or pressed card keeps its button steady under the finger.
         for (const b of t.bodies) b.held = t.held && b.kind === "cta";
-        for (let i = 0; i < steps; i++) stepTray(t.bodies, t.pairs, accel, calm, dt / steps, t.forces);
+        for (let i = 0; i < steps; i++) stepTray(t.bodies, t.pairs, accel, calm, dt / steps, t.forces, tiltX, tiltY);
         t.bodies.forEach((b, i) => {
           t.els[i].style.transform =
             `translate3d(${b.x.toFixed(2)}px, ${b.y.toFixed(2)}px, 0) rotate(${b.r.toFixed(3)}deg)`;
         });
-        if (resting && !isAtRest(t.bodies)) resting = false;
+        if (resting && !isAtRest(t.bodies, tilted)) resting = false;
       }
       // Calm sheet, everything home: snap exactly into the layout and stop.
       // Tiny wall/rotation contacts must not keep a settled sheet ticking.
-      if (resting || now - activeAt > 3000) stop();
+      if (resting || now - activeAt > 3000) stop(tilted);
     };
 
     const start = () => {
@@ -270,6 +286,8 @@ export function useTrayPhysics(sheet: HTMLElement | null) {
     // Boxes change with the viewport; remeasure from rest on the next frame.
     const remeasure = () => { if (trays) { clear(); trays = null; } };
     const onVisibility = () => { if (document.hidden) stop(); else start(); };
+    const wakeFromTilt = () => { activeAt = performance.now(); start(); };
+    if (tilt) tilt.wake = wakeFromTilt;
 
     sheet.addEventListener("pointerdown", start, { passive: true });
     sheet.addEventListener("animationstart", start);
@@ -283,9 +301,10 @@ export function useTrayPhysics(sheet: HTMLElement | null) {
       sheet.removeEventListener("transitionrun", start);
       window.removeEventListener("resize", remeasure);
       document.removeEventListener("visibilitychange", onVisibility);
+      if (tilt?.wake === wakeFromTilt) tilt.wake = null;
       stop();
     };
-  }, [sheet]);
+  }, [sheet, tilt]);
 }
 
 /**
@@ -295,11 +314,12 @@ export function useTrayPhysics(sheet: HTMLElement | null) {
  * The `data-tray` / `data-body` hooks for useTrayPhysics are unchanged.
  */
 function SheetOption({
-  tone, title, text, cta, onSelect, icon,
+  tone, title, text, cta, onSelect, icon, freeIcon = false,
 }: {
   tone: keyof typeof TONES; title: string; text: string; cta: string; onSelect: () => void;
   /** Overrides the tone's icon. */
   icon?: LucideIcon;
+  freeIcon?: boolean;
 }) {
   const t = TONES[tone];
   const Icon = icon ?? t.Icon;
@@ -308,12 +328,12 @@ function SheetOption({
       type="button"
       onClick={onSelect}
       data-tray
-      className={`group flex items-center gap-4 rounded-[20px] p-4 text-left text-white transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-14px_rgba(0,0,0,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0 md:min-h-[240px] md:flex-col md:items-start md:justify-between md:gap-8 md:rounded-[22px] md:p-7 ${t.solid}`}
+      className={`group relative isolate flex items-center gap-4 overflow-hidden rounded-[20px] p-4 text-left text-white transition-[background-color,box-shadow,transform] duration-150 hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-14px_rgba(0,0,0,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:hover:translate-y-0 md:min-h-[240px] md:flex-col md:items-start md:justify-between md:gap-8 md:rounded-[22px] md:p-7 ${t.solid}`}
     >
-      <span data-body="icon" className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 md:size-auto md:bg-transparent">
+      <span data-body="icon" data-free-body={freeIcon ? "true" : undefined} className="pointer-events-none relative z-10 flex size-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 md:size-auto md:bg-transparent">
         <Icon className="size-6 md:size-[52px]" strokeWidth={1.5} aria-hidden />
       </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-1 md:flex-none md:gap-2">
+      <span className="relative z-20 flex min-w-0 flex-1 flex-col gap-1 md:flex-none md:gap-2">
         <span data-body="title" className="text-[17px] font-extrabold leading-tight tracking-tight md:text-[26px]">{title}</span>
         <span data-body="desc" className="text-sm leading-snug text-white/85 md:text-[15px] md:leading-relaxed">{text}</span>
         <span data-body="cta" className="mt-1 hidden items-center gap-2 text-[15px] font-bold md:mt-2 md:inline-flex">
@@ -321,7 +341,7 @@ function SheetOption({
           <ArrowRight className="size-[18px] transition-transform duration-150 group-hover:translate-x-1 motion-reduce:group-hover:translate-x-0" aria-hidden />
         </span>
       </span>
-      <ArrowRight className="size-5 shrink-0 md:hidden" aria-hidden />
+      <ArrowRight className="relative z-20 size-5 shrink-0 md:hidden" aria-hidden />
     </button>
   );
 }

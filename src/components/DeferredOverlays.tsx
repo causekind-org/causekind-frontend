@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useAuth } from "@/hooks/useAuth";
 
 /**
  * Client boundary that owns every deferred, client-only overlay in the root
@@ -115,19 +116,28 @@ export function DeferredScrollProgress() {
 }
 
 export function DeferredOverlays() {
+  const { user } = useAuth();
+  const role = user?.role?.replace(/^ROLE_/, "");
   return (
     <>
       {/* Cookie banner switched off — see the note on the import below. */}
       <WelcomeOverlay />
       <TourController />
-      <DonorCategoryModal />
-      <DoneeListingPrompt />
-      <DonorListingPrompt />
-      <DoneeRequestPrompt />
-      <NgoProfileToast />
-      <NgoCampaignPrompt />
-      <DriveProofPublishedPopup />
-      <DrivePickupScheduledPopup />
+      {role === "DONOR" && <><DonorCategoryModal /><DonorListingPrompt /><DoneeRequestPrompt /></>}
+      {role === "DONEE" && <DoneeListingPrompt />}
+      {(role === "NGO" || role === "NGO_PARTNER") && <><NgoProfileToast /><NgoCampaignPrompt /></>}
+      {user && <><DriveProofPublishedPopup /><DrivePickupScheduledPopup /></>}
     </>
   );
+}
+
+const MatchActionDock = dynamic(() => import("@/components/matches/MatchActionDock").then(m => m.MatchActionDock), { ssr: false });
+const DriveNotificationDock = dynamic(() => import("@/components/notifications/DriveNotificationDock").then(m => m.DriveNotificationDock), { ssr: false });
+const CompletionCelebrationWatcher = dynamic(() => import("@/components/handover/CompletionCelebrationWatcher").then(m => m.CompletionCelebrationWatcher), { ssr: false });
+
+/** Keep authenticated handover/match modules out of anonymous page startup. */
+export function DeferredMemberDocks() {
+  const { user } = useAuth();
+  if (!user) return null;
+  return <><MatchActionDock /><DriveNotificationDock /><CompletionCelebrationWatcher /></>;
 }

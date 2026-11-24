@@ -13,8 +13,7 @@ import { LandingText, LandingAttributes } from "@/components/LandingTranslation"
    - `header` / `footer` slots render arbitrary content at the top/bottom of the
      panel (used to keep the profile line + theme/language/logout controls). */
 
-import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { gsap } from 'gsap';
+import React, { useEffect, useRef, useState } from 'react';
 import { ChevronDown, Lock } from 'lucide-react';
 import './StaggeredMenu.css';
 
@@ -108,6 +107,7 @@ const StaggeredMenuParentItem = ({
     <li
       ref={wrapperRef}
       className="sm-panel-itemWrap sm-panel-itemWrap--parent"
+      style={{ '--sm-reveal-delay': `${Math.min(idx, 8) * 28}ms` }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onFocus={handleFocus}
@@ -190,167 +190,7 @@ export const StaggeredMenu = ({
   header,
   footer
 }) => {
-  const panelRef = useRef(null);
-  const preLayersRef = useRef(null);
-  const preLayerElsRef = useRef([]);
-  const openTlRef = useRef(null);
-  const closeTweenRef = useRef(null);
-  const busyRef = useRef(false);
-  const mountedRef = useRef(false);
-
-  useLayoutEffect(() => {
-    const ctx = gsap.context(() => {
-      const panel = panelRef.current;
-      const preContainer = preLayersRef.current;
-      if (!panel) return;
-
-      let preLayers = [];
-      if (preContainer) {
-        preLayers = Array.from(preContainer.querySelectorAll('.sm-prelayer'));
-      }
-      preLayerElsRef.current = preLayers;
-
-      const offscreen = position === 'left' ? -100 : 100;
-      gsap.set([panel, ...preLayers], { xPercent: offscreen, opacity: 1 });
-      if (preContainer) gsap.set(preContainer, { xPercent: 0, opacity: 1 });
-    });
-    return () => ctx.revert();
-  }, [position]);
-
-  const buildOpenTimeline = useCallback(() => {
-    const panel = panelRef.current;
-    const layers = preLayerElsRef.current;
-    if (!panel) return null;
-
-    openTlRef.current?.kill();
-    if (closeTweenRef.current) {
-      closeTweenRef.current.kill();
-      closeTweenRef.current = null;
-    }
-
-    const itemEls = Array.from(panel.querySelectorAll('.sm-panel-itemLabel'));
-    const numberEls = Array.from(panel.querySelectorAll('.sm-panel-list[data-numbering] > .sm-panel-itemWrap > .sm-panel-item'));
-    const socialTitle = panel.querySelector('.sm-socials-title');
-    const socialLinks = Array.from(panel.querySelectorAll('.sm-socials-link'));
-
-    const offscreen = position === 'left' ? -100 : 100;
-    const layerStates = layers.map(el => ({ el, start: offscreen }));
-    const panelStart = offscreen;
-
-    if (itemEls.length) gsap.set(itemEls, { yPercent: 140, rotate: 10 });
-    if (numberEls.length) gsap.set(numberEls, { '--sm-num-opacity': 0 });
-    if (socialTitle) gsap.set(socialTitle, { opacity: 0 });
-    if (socialLinks.length) gsap.set(socialLinks, { y: 25, opacity: 0 });
-
-    const tl = gsap.timeline({ paused: true });
-
-    const lastTime = layerStates.length ? (layerStates.length - 1) * 0.07 : 0;
-    const panelInsertTime = lastTime + (layerStates.length ? 0.08 : 0);
-    const panelDuration = 0.65;
-    const compact = window.matchMedia('(pointer: coarse), (max-width: 1023px)').matches;
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (compact || reduced) {
-      // All mobile entries arrive together; the old per-item 100ms stagger
-      // made lower entries spend over a second travelling into tap position.
-      gsap.set(layers, { xPercent: 0 });
-      tl.fromTo(panel, { xPercent: panelStart }, { xPercent: 0, duration: reduced ? 0 : 0.2, ease: 'power3.out' }, 0);
-      if (itemEls.length) tl.to(itemEls, { yPercent: 0, rotate: 0, duration: reduced ? 0 : 0.16, stagger: reduced ? 0 : { amount: 0.08 }, ease: 'power2.out' }, 0);
-      if (numberEls.length) gsap.set(numberEls, { '--sm-num-opacity': 1 });
-      if (socialTitle) gsap.set(socialTitle, { opacity: 1 });
-      if (socialLinks.length) gsap.set(socialLinks, { y: 0, opacity: 1 });
-      openTlRef.current = tl;
-      return tl;
-    }
-    layerStates.forEach((ls, i) => {
-      tl.fromTo(ls.el, { xPercent: ls.start }, { xPercent: 0, duration: 0.5, ease: 'power4.out' }, i * 0.07);
-    });
-    tl.fromTo(panel, { xPercent: panelStart }, { xPercent: 0, duration: panelDuration, ease: 'power4.out' }, panelInsertTime);
-
-    if (itemEls.length) {
-      const itemsStart = panelInsertTime + panelDuration * 0.15;
-      tl.to(
-        itemEls,
-        { yPercent: 0, rotate: 0, duration: 1, ease: 'power4.out', stagger: { each: 0.1, from: 'start' } },
-        itemsStart
-      );
-      if (numberEls.length) {
-        tl.to(
-          numberEls,
-          { duration: 0.6, ease: 'power2.out', '--sm-num-opacity': 1, stagger: { each: 0.08, from: 'start' } },
-          itemsStart + 0.1
-        );
-      }
-    }
-
-    if (socialTitle || socialLinks.length) {
-      const socialsStart = panelInsertTime + panelDuration * 0.4;
-      if (socialTitle) tl.to(socialTitle, { opacity: 1, duration: 0.5, ease: 'power2.out' }, socialsStart);
-      if (socialLinks.length) {
-        tl.to(
-          socialLinks,
-          {
-            y: 0,
-            opacity: 1,
-            duration: 0.55,
-            ease: 'power3.out',
-            stagger: { each: 0.08, from: 'start' },
-            onComplete: () => gsap.set(socialLinks, { clearProps: 'opacity' })
-          },
-          socialsStart + 0.04
-        );
-      }
-    }
-
-    openTlRef.current = tl;
-    return tl;
-  }, [position]);
-
-  const playOpen = useCallback(() => {
-    busyRef.current = true;
-    const tl = buildOpenTimeline();
-    if (tl) {
-      tl.eventCallback('onComplete', () => {
-        busyRef.current = false;
-      });
-      tl.play(0);
-    } else {
-      busyRef.current = false;
-    }
-  }, [buildOpenTimeline]);
-
-  const playClose = useCallback(() => {
-    openTlRef.current?.kill();
-    openTlRef.current = null;
-
-    const panel = panelRef.current;
-    const layers = preLayerElsRef.current;
-    if (!panel) return;
-
-    const all = [...layers, panel];
-    closeTweenRef.current?.kill();
-    const offscreen = position === 'left' ? -100 : 100;
-    closeTweenRef.current = gsap.to(all, {
-      xPercent: offscreen,
-      duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : window.matchMedia('(pointer: coarse), (max-width: 1023px)').matches ? 0.16 : 0.32,
-      ease: 'power3.in',
-      overwrite: 'auto',
-      onComplete: () => {
-        busyRef.current = false;
-      }
-    });
-  }, [position]);
-
-  // Drive open/close from the controlled `open` prop. Skip the very first mount
-  // so the panel starts hidden without a stray close animation.
-  useEffect(() => {
-    if (!mountedRef.current) {
-      mountedRef.current = true;
-      return;
-    }
-    if (open) playOpen();
-    else playClose();
-  }, [open, playOpen, playClose]);
-
+  // CSS owns the panel transform; no per-item JS animation on opening.
   const handleItemClick = (e, it) => {
     if (it.onClick) {
       e.preventDefault();
@@ -364,13 +204,6 @@ export const StaggeredMenu = ({
       onClose?.();
     }
   };
-
-  const rawColors = colors && colors.length ? colors.slice(0, 4) : ['#1e1e22', '#35353c'];
-  let layerColors = [...rawColors];
-  if (layerColors.length >= 3) {
-    const mid = Math.floor(layerColors.length / 2);
-    layerColors.splice(mid, 1);
-  }
 
   return (
     <div
@@ -389,19 +222,13 @@ export const StaggeredMenu = ({
       {/* Backdrop — click away to close */}
       <LandingAttributes><button
         type="button"
-        className="sm-backdrop backdrop-blur-md"
+        className="sm-backdrop"
         aria-label="Close menu"
         tabIndex={open ? 0 : -1}
         onClick={() => onClose?.()}
       /></LandingAttributes>
 
-      <div ref={preLayersRef} className="sm-prelayers" aria-hidden="true">
-        {layerColors.map((c, i) => (
-          <div key={i} className="sm-prelayer" style={{ background: c }} />
-        ))}
-      </div>
-
-      <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" data-lenis-prevent inert={!open}>
+      <aside id="staggered-menu-panel" className="staggered-menu-panel" data-lenis-prevent inert={!open}>
         <div className="sm-panel-inner">
           {header && <div className="sm-panel-header"><LandingText>{header}</LandingText></div>}
 
@@ -417,7 +244,7 @@ export const StaggeredMenu = ({
                     parentMenuOpen={open}
                   />
                 ) : (
-                  <li className="sm-panel-itemWrap" key={it.label + idx}>
+                  <li className="sm-panel-itemWrap" key={it.label + idx} style={{ '--sm-reveal-delay': `${Math.min(idx, 8) * 28}ms` }}>
                     <LandingAttributes><a
                       className={
                         'sm-panel-item' +

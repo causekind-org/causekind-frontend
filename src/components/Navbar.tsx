@@ -67,12 +67,6 @@ const NGO_APPROVED_PILL_MS = 2 * 60 * 1000;
 /** The wordmark per size; md is the header's (small on phones). The icon scales with it via `dimensions`. */
 const WORDMARK_SIZE = { sm: "text-base", md: "text-base sm:text-xl", lg: "text-xl sm:text-2xl" } as const;
 
-/** Calls `onMount` once its own effects run, i.e. after the earlier siblings'. */
-function AfterMount({ onMount }: { onMount: () => void }) {
-  useEffect(() => { onMount(); }, [onMount]);
-  return null;
-}
-
 export function CauseKindLogo({ size = "md", hideIcon = false, seasonal = true }: { size?: "sm" | "md" | "lg" | "xl"; hideIcon?: boolean; seasonal?: boolean }) {
   const sizes = { sm: "text-base", md: "text-xl", lg: "text-2xl", xl: "text-[1.625rem]" };
   const dimensions = { sm: { w: 24, h: 24 }, md: { w: 32, h: 32 }, lg: { w: 40, h: 40 }, xl: { w: 44, h: 44 } };
@@ -306,13 +300,13 @@ export function SiteHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  // The mobile menu (StaggeredMenu + gsap) is code-split out of the shared
-  // bundle and fetched once the browser is idle, so it is ready before the
-  // first tap. It mounts closed and only then receives the real `open` value:
-  // StaggeredMenu ignores `open` on its first mount, so mounting it already
-  // open (a tap before the code arrived) would leave the panel hidden.
+  // The CSS-driven menu is code-split and warmed at idle or pointer intent.
   const [StaggeredMenu, setStaggeredMenu] = useState<ComponentType<any> | null>(null);
-  const [menuMounted, setMenuMounted] = useState(false);
+  const preloadMenu = useCallback(() => {
+    // Start before the click handler on touch, without prefetching any routes.
+    // @ts-expect-error — untyped JS module
+    void import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
+  }, []);
   useEffect(() => {
     let cancelled = false;
     // @ts-expect-error — StaggeredMenu is the JS/CSS React Bits variant (no types shipped)
@@ -330,7 +324,6 @@ export function SiteHeader() {
     // @ts-expect-error — untyped JS module, see above
     if (isSidebarOpen && !StaggeredMenu) import("@/components/StaggeredMenu").then((m) => setStaggeredMenu(() => m.default));
   }, [isSidebarOpen, StaggeredMenu]);
-  const markMenuMounted = useCallback(() => setMenuMounted(true), []);
   // Closing the menu makes it inert, which pushes focus out to <body>. Without
   // this a keyboard user loses their place entirely, so send focus back to the
   // control they opened it with.
@@ -919,6 +912,8 @@ export function SiteHeader() {
               hover tint goes: it fought the glass for the same surface. */}
           <button
             ref={menuTriggerRef}
+            onPointerDown={preloadMenu}
+            onFocus={preloadMenu}
             onClick={() => setIsSidebarOpen(true)}
             aria-label={t("nav.openMenu")}
             aria-expanded={isSidebarOpen}
@@ -1118,6 +1113,8 @@ export function SiteHeader() {
 
             {/* Hamburger menu trigger */}
             <button
+              onPointerDown={preloadMenu}
+              onFocus={preloadMenu}
               onClick={() => setIsSidebarOpen(true)}
               className={iconBtnCls}
               aria-label={ui("Open workspace menu")}
@@ -1394,9 +1391,8 @@ export function SiteHeader() {
           sign-out live in the footer slot; a compact profile line is the header.
           The decorative profile-completion & latest-impact cards were dropped
           in favour of StaggeredMenu's cleaner list. ── */}
-      {StaggeredMenu && !menuMounted && <AfterMount onMount={markMenuMounted} />}
       {StaggeredMenu && <StaggeredMenu
-        open={menuMounted && isSidebarOpen}
+        open={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
         position="right"
         accentColor={roleColors.accent}

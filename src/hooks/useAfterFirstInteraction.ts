@@ -7,9 +7,9 @@ export const INTERACTION_EVENTS = ["pointerdown", "keydown", "touchstart", "scro
 
 /**
  * True from the visitor's first interaction with the page: a scroll, tap,
- * touch, key press, mouse wheel or mouse move. The trackers (GA4, Meta Pixel,
- * Clarity) use it so their scripts (about 300 KiB, about 330 ms of main-thread
- * work) stay out of the first load entirely (owner decision, Report 3, 23 Nov).
+ * touch, key press, mouse wheel or mouse move. Tracker callers additionally
+ * useDeferredTracker so library loading waits for quiet/idle time and is spaced
+ * across providers, rather than competing with this first interaction.
  *
  * Their queue stubs are set up before this, so events from the visitor's
  * session are still sent once the scripts arrive. Trade-off accepted: a visitor

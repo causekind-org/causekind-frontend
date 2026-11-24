@@ -5,7 +5,7 @@ import Script from "next/script";
 import { useEffect, useRef, Suspense } from "react";
 import { useCookieConsent } from "@/hooks/useCookieConsent";
 import { isInternalTraffic } from "@/lib/internalTraffic";
-import { useAfterFirstInteraction } from "@/hooks/useAfterFirstInteraction";
+import { useDeferredTracker } from "@/hooks/useDeferredTracker";
 import { META_PIXEL_ID } from "@/lib/metaEvents";
 
 // The one site pixel, defined once in metaEvents.ts and shared with the
@@ -24,7 +24,7 @@ function hasValidPreviewToken(searchParams: URLSearchParams): boolean {
 }
 
 function MetaPixelInner() {
-  const ready = useAfterFirstInteraction();
+  const ready = useDeferredTracker(3200);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -45,7 +45,7 @@ function MetaPixelInner() {
 
   // The standard fbq queue stub runs at once and queues init + the first
   // PageView (no network), so early events are kept in order. fbevents.js
-  // loads after the page has shown (on the first scroll, tap, key press or mouse move; see useAfterFirstInteraction) and drains
+  // loads after an interaction, a quiet window and a staggered idle slot, and drains
   // the queue; the PageView is still sent exactly once.
   return (
     <>
